@@ -22,10 +22,13 @@ import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
-import { trackCallback } from 'web/lib/service/analytics'
+import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
-import { NEW_USER_GROUP_SLUGS } from 'common/group'
+import { Group, NEW_USER_GROUP_SLUGS } from 'common/group'
+import { PillButton } from './buttons/pill-button'
+import { sortBy } from 'lodash'
+import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -36,14 +39,16 @@ const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 
 const sortIndexes = [
   { label: 'Newest', value: indexPrefix + 'contracts-newest' },
-  { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
-  { label: 'Most popular', value: indexPrefix + 'contracts-most-popular' },
+  // { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
+  { label: 'Most popular', value: indexPrefix + 'contracts-score' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
   { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
+  { label: 'Subsidy', value: indexPrefix + 'contracts-liquidity' },
   { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
+export const DEFAULT_SORT = 'score'
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
@@ -76,9 +81,24 @@ export function ContractSearch(props: {
   } = props
 
   const user = useUser()
-  const memberGroupSlugs = useMemberGroups(user?.id)
-    ?.map((g) => g.slug)
-    .filter((s) => !NEW_USER_GROUP_SLUGS.includes(s))
+  const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
+    (group) => !NEW_USER_GROUP_SLUGS.includes(group.slug)
+  )
+  const memberGroupSlugs =
+    memberGroups.length > 0
+      ? memberGroups.map((g) => g.slug)
+      : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
+
+  const memberPillGroups = sortBy(
+    memberGroups.filter((group) => group.contractIds.length > 0),
+    (group) => group.contractIds.length
+  ).reverse()
+
+  const defaultPillGroups = DEFAULT_CATEGORY_GROUPS as Group[]
+
+  const pillGroups =
+    memberPillGroups.length > 0 ? memberPillGroups : defaultPillGroups
+
   const follows = useFollows(user?.id)
   const { initialSort } = useInitialQueryAndSort(querySortOptions)
 
@@ -86,34 +106,51 @@ export function ContractSearch(props: {
     .map(({ value }) => value)
     .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
     ? initialSort
-    : querySortOptions?.defaultSort ?? 'most-popular'
+    : querySortOptions?.defaultSort ?? DEFAULT_SORT
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
   )
+  const pillsEnabled = !additionalFilter
+
+  const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
+
+  const selectFilter = (pill: string | undefined) => () => {
+    setPillFilter(pill)
+    track('select search category', { category: pill ?? 'all' })
+  }
 
   const { filters, numericFilters } = useMemo(() => {
     let filters = [
       filter === 'open' ? 'isResolved:false' : '',
       filter === 'closed' ? 'isResolved:false' : '',
       filter === 'resolved' ? 'isResolved:true' : '',
-      filter === 'personal'
+      additionalFilter?.creatorId
+        ? `creatorId:${additionalFilter.creatorId}`
+        : '',
+      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+      additionalFilter?.groupSlug
+        ? `groupLinks.slug:${additionalFilter.groupSlug}`
+        : '',
+      pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
+        ? `groupLinks.slug:${pillFilter}`
+        : '',
+      pillFilter === 'personal'
         ? // Show contracts in groups that the user is a member of
-          (memberGroupSlugs?.map((slug) => `groupSlugs:${slug}`) ?? [])
+          memberGroupSlugs
+            .map((slug) => `groupLinks.slug:${slug}`)
             // Show contracts created by users the user follows
             .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
             // Show contracts bet on by users the user follows
             .concat(
               follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
-              // Show contracts bet on by the user
             )
-            .concat(user ? `uniqueBettorIds:${user.id}` : [])
         : '',
-      additionalFilter?.creatorId
-        ? `creatorId:${additionalFilter.creatorId}`
-        : '',
-      additionalFilter?.groupSlug
-        ? `groupSlugs:${additionalFilter.groupSlug}`
+      // Subtract contracts you bet on from For you.
+      pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
+      pillFilter === 'your-bets' && user
+        ? // Show contracts bet on by the user
+          `uniqueBettorIds:${user.id}`
         : '',
     ].filter((f) => f)
     // Hack to make Algolia work.
@@ -128,8 +165,9 @@ export function ContractSearch(props: {
   }, [
     filter,
     Object.values(additionalFilter ?? {}).join(','),
-    (memberGroupSlugs ?? []).join(','),
+    memberGroupSlugs.join(','),
     (follows ?? []).join(','),
+    pillFilter,
   ])
 
   const indexName = `${indexPrefix}contracts-${sort}`
@@ -160,12 +198,11 @@ export function ContractSearch(props: {
           className="!select !select-bordered"
           value={filter}
           onChange={(e) => setFilter(e.target.value as filter)}
-          onBlur={trackCallback('select search filter')}
+          onBlur={trackCallback('select search filter', { filter })}
         >
           <option value="open">Open</option>
           <option value="closed">Closed</option>
           <option value="resolved">Resolved</option>
-          <option value="personal">For you</option>
           <option value="all">All</option>
         </select>
         {!hideOrderSelector && (
@@ -174,7 +211,7 @@ export function ContractSearch(props: {
             classNames={{
               select: '!select !select-bordered',
             }}
-            onBlur={trackCallback('select search sort')}
+            onBlur={trackCallback('select search sort', { sort })}
           />
         )}
         <Configure
@@ -187,11 +224,52 @@ export function ContractSearch(props: {
 
       <Spacer h={3} />
 
-      {/*<Spacer h={4} />*/}
+      {pillsEnabled && (
+        <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
+          <PillButton
+            key={'all'}
+            selected={pillFilter === undefined}
+            onSelect={selectFilter(undefined)}
+          >
+            All
+          </PillButton>
+          <PillButton
+            key={'personal'}
+            selected={pillFilter === 'personal'}
+            onSelect={selectFilter('personal')}
+          >
+            {user ? 'For you' : 'Featured'}
+          </PillButton>
+
+          {user && (
+            <PillButton
+              key={'your-bets'}
+              selected={pillFilter === 'your-bets'}
+              onSelect={selectFilter('your-bets')}
+            >
+              Your bets
+            </PillButton>
+          )}
+
+          {pillGroups.map(({ name, slug }) => {
+            return (
+              <PillButton
+                key={slug}
+                selected={pillFilter === slug}
+                onSelect={selectFilter(slug)}
+              >
+                {name}
+              </PillButton>
+            )
+          })}
+        </Row>
+      )}
+
+      <Spacer h={3} />
 
       {filter === 'personal' &&
       (follows ?? []).length === 0 &&
-      (memberGroupSlugs ?? []).length === 0 ? (
+      memberGroupSlugs.length === 0 ? (
         <>You're not following anyone, nor in any of your own groups yet.</>
       ) : (
         <ContractSearchInner

@@ -1,6 +1,6 @@
 import { Tabs } from 'web/components/layout/tabs'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import React, { useEffect, useState } from 'react'
+import { usePrivateUser } from 'web/hooks/use-user'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -9,10 +9,13 @@ import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { UserLink } from 'web/components/user-page'
-import { notification_subscribe_types, PrivateUser } from 'common/user'
-import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { listenForPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USERNAME,
+  PrivateUser,
+  User,
+} from 'common/user'
+import { getUser } from 'web/lib/firebase/users'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
@@ -27,8 +30,7 @@ import {
   NotificationGroup,
   usePreferredGroupedNotifications,
 } from 'web/hooks/use-notifications'
-import { CheckIcon, TrendingUpIcon, XIcon } from '@heroicons/react/outline'
-import toast from 'react-hot-toast'
+import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
@@ -37,13 +39,40 @@ import Custom404 from 'web/pages/404'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { safeLocalStorage } from 'web/lib/util/local'
+import {
+  getServerAuthenticatedUid,
+  redirectIfLoggedOut,
+} from 'web/lib/firebase/server-auth'
+import { SiteLink } from 'web/components/site-link'
+import { NotificationSettings } from 'web/components/NotificationSettings'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
+const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
-export default function Notifications() {
-  const user = useUser()
+export const getServerSideProps = redirectIfLoggedOut('/', async (ctx) => {
+  const uid = await getServerAuthenticatedUid(ctx)
+  if (!uid) {
+    return { props: { user: null } }
+  }
+  const user = await getUser(uid)
+  return { props: { user } }
+})
+
+export default function Notifications(props: { user: User }) {
+  const { user } = props
   const privateUser = usePrivateUser(user?.id)
+  const local = safeLocalStorage()
+  let localNotifications = [] as Notification[]
+  const localSavedNotificationGroups = local?.getItem('notification-groups')
+  let localNotificationGroups = [] as NotificationGroup[]
+  if (localSavedNotificationGroups) {
+    localNotificationGroups = JSON.parse(localSavedNotificationGroups)
+    localNotifications = localNotificationGroups
+      .map((g) => g.notifications)
+      .flat()
+  }
 
   if (!user) return <Custom404 />
   return (
@@ -60,9 +89,16 @@ export default function Notifications() {
               {
                 title: 'Notifications',
                 content: privateUser ? (
-                  <NotificationsList privateUser={privateUser} />
+                  <NotificationsList
+                    privateUser={privateUser}
+                    cachedNotifications={localNotifications}
+                  />
                 ) : (
-                  <LoadingIndicator />
+                  <div className={'min-h-[100vh]'}>
+                    <RenderNotificationGroups
+                      notificationGroups={localNotificationGroups}
+                    />
+                  </div>
                 ),
               },
               {
@@ -81,39 +117,13 @@ export default function Notifications() {
   )
 }
 
-function NotificationsList(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const [page, setPage] = useState(0)
-  const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
-  const [paginatedGroupedNotifications, setPaginatedGroupedNotifications] =
-    useState<NotificationGroup[] | undefined>(undefined)
-
-  useEffect(() => {
-    if (!allGroupedNotifications) return
-    const start = page * NOTIFICATIONS_PER_PAGE
-    const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
-    const remainingNotification = allGroupedNotifications.slice(end)
-    for (const notification of remainingNotification) {
-      if (notification.isSeen) break
-      else setNotificationsAsSeen(notification.notifications)
-    }
-    setPaginatedGroupedNotifications(maxNotificationsToShow)
-  }, [allGroupedNotifications, page])
-
-  if (!paginatedGroupedNotifications || !allGroupedNotifications)
-    return <LoadingIndicator />
-
+function RenderNotificationGroups(props: {
+  notificationGroups: NotificationGroup[]
+}) {
+  const { notificationGroups } = props
   return (
-    <div className={'min-h-[100vh]'}>
-      {paginatedGroupedNotifications.length === 0 && (
-        <div className={'mt-2'}>
-          You don't have any notifications. Try changing your settings to see
-          more.
-        </div>
-      )}
-
-      {paginatedGroupedNotifications.map((notification) =>
+    <>
+      {notificationGroups.map((notification) =>
         notification.type === 'income' ? (
           <IncomeNotificationGroupItem
             notificationGroup={notification}
@@ -131,6 +141,52 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           />
         )
       )}
+    </>
+  )
+}
+
+function NotificationsList(props: {
+  privateUser: PrivateUser
+  cachedNotifications: Notification[]
+}) {
+  const { privateUser, cachedNotifications } = props
+  const [page, setPage] = useState(0)
+  const allGroupedNotifications = usePreferredGroupedNotifications(
+    privateUser,
+    cachedNotifications
+  )
+  const paginatedGroupedNotifications = useMemo(() => {
+    if (!allGroupedNotifications) return
+    const start = page * NOTIFICATIONS_PER_PAGE
+    const end = start + NOTIFICATIONS_PER_PAGE
+    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
+    const remainingNotification = allGroupedNotifications.slice(end)
+    for (const notification of remainingNotification) {
+      if (notification.isSeen) break
+      else setNotificationsAsSeen(notification.notifications)
+    }
+    const local = safeLocalStorage()
+    local?.setItem(
+      'notification-groups',
+      JSON.stringify(allGroupedNotifications)
+    )
+    return maxNotificationsToShow
+  }, [allGroupedNotifications, page])
+
+  if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
+
+  return (
+    <div className={'min-h-[100vh]'}>
+      {paginatedGroupedNotifications.length === 0 && (
+        <div className={'mt-2'}>
+          You don't have any notifications. Try changing your settings to see
+          more.
+        </div>
+      )}
+
+      <RenderNotificationGroups
+        notificationGroups={paginatedGroupedNotifications}
+      />
       {paginatedGroupedNotifications.length > 0 &&
         allGroupedNotifications.length > NOTIFICATIONS_PER_PAGE && (
           <Pagination
@@ -139,6 +195,8 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
             totalItems={allGroupedNotifications.length}
             setPage={setPage}
             scrollToTop
+            nextTitle={'Older'}
+            prevTitle={'Newer'}
           />
         )}
     </div>
@@ -234,7 +292,7 @@ function IncomeNotificationGroupItem(props: {
         'relative cursor-pointer bg-white px-2 pt-6 text-sm',
         className,
         !expanded ? 'hover:bg-gray-100' : '',
-        highlighted && !expanded ? 'bg-indigo-200 hover:bg-indigo-100' : ''
+        highlighted && !expanded ? HIGHLIGHT_CLASS : ''
       )}
       onClick={onClickHandler}
     >
@@ -333,7 +391,7 @@ function IncomeNotificationItem(props: {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } unique bettors`
+          } unique traders`
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you` : `in tips on`
@@ -372,10 +430,14 @@ function IncomeNotificationItem(props: {
     <div
       className={clsx(
         'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
+        highlighted && HIGHLIGHT_CLASS
       )}
     >
-      <a href={getSourceUrl(notification)}>
+      <div className={'relative'}>
+        <SiteLink
+          href={getSourceUrl(notification) ?? ''}
+          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
+        />
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <div className={'line-clamp-2 flex max-w-xl shrink '}>
             <div className={'inline'}>
@@ -401,7 +463,7 @@ function IncomeNotificationItem(props: {
           </div>
         </Row>
         <div className={'mt-4 border-b border-gray-300'} />
-      </a>
+      </div>
     </div>
   )
 }
@@ -441,7 +503,7 @@ function NotificationGroupItem(props: {
         'relative cursor-pointer bg-white px-2 pt-6 text-sm',
         className,
         !expanded ? 'hover:bg-gray-100' : '',
-        highlighted && !expanded ? 'bg-indigo-200 hover:bg-indigo-100' : ''
+        highlighted && !expanded ? HIGHLIGHT_CLASS : ''
       )}
       onClick={onClickHandler}
     >
@@ -550,6 +612,8 @@ function NotificationItem(props: {
     setNotificationsAsSeen([notification])
   }, [notification])
 
+  const questionNeedsResolution = sourceUpdateType == 'closed'
+
   if (justSummary) {
     return (
       <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
@@ -565,7 +629,7 @@ function NotificationItem(props: {
               <span className={'flex-shrink-0'}>
                 {sourceType &&
                   reason &&
-                  getReasonForShowingNotification(notification, true, true)}
+                  getReasonForShowingNotification(notification, true)}
               </span>
               <div className={'ml-1 text-black'}>
                 <NotificationTextLabel
@@ -585,31 +649,39 @@ function NotificationItem(props: {
     <div
       className={clsx(
         'bg-white px-2 pt-6 text-sm sm:px-4',
-        highlighted && 'bg-indigo-200 hover:bg-indigo-100'
+        highlighted && HIGHLIGHT_CLASS
       )}
     >
-      <a
-        href={getSourceUrl(notification)}
-        onClick={() =>
-          track('Notification Clicked', {
-            type: 'notification item',
-            sourceType,
-            sourceUserName,
-            sourceUserAvatarUrl,
-            sourceUpdateType,
-            reasonText,
-            reason,
-            sourceUserUsername,
-            sourceText,
-          })
-        }
-      >
+      <div className={'relative cursor-pointer'}>
+        <SiteLink
+          href={getSourceUrl(notification) ?? ''}
+          className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
+          onClick={() =>
+            track('Notification Clicked', {
+              type: 'notification item',
+              sourceType,
+              sourceUserName,
+              sourceUserAvatarUrl,
+              sourceUpdateType,
+              reasonText,
+              reason,
+              sourceUserUsername,
+              sourceText,
+            })
+          }
+        />
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
-            avatarUrl={sourceUserAvatarUrl}
+            avatarUrl={
+              questionNeedsResolution
+                ? MANIFOLD_AVATAR_URL
+                : sourceUserAvatarUrl
+            }
             size={'sm'}
-            className={'mr-2'}
-            username={sourceUserName}
+            className={'z-10 mr-2'}
+            username={
+              questionNeedsResolution ? MANIFOLD_USERNAME : sourceUserUsername
+            }
           />
           <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
             <div
@@ -618,18 +690,17 @@ function NotificationItem(props: {
               }
             >
               <div>
-                {sourceUpdateType != 'closed' && (
+                {!questionNeedsResolution && (
                   <UserLink
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
-                    className={'mr-1 flex-shrink-0'}
+                    className={'relative mr-1 flex-shrink-0'}
                     justFirstName={true}
                   />
                 )}
                 {getReasonForShowingNotification(
                   notification,
-                  false,
-                  isChildOfGroup
+                  isChildOfGroup ?? false
                 )}
                 {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
@@ -650,7 +721,7 @@ function NotificationItem(props: {
         </div>
 
         <div className={'mt-6 border-b border-gray-300'} />
-      </a>
+      </div>
     </div>
   )
 }
@@ -690,15 +761,17 @@ function QuestionOrGroupLink(props: {
       </span>
     )
   return (
-    <a
-      className={
-        'ml-1 font-bold hover:underline hover:decoration-indigo-400 hover:decoration-2 '
-      }
+    <SiteLink
+      className={'relative ml-1 font-bold'}
       href={
         sourceContractCreatorUsername
           ? `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-          : (sourceType === 'group' || sourceType === 'tip') && sourceSlug
+          : // User's added to group or received a tip there
+          (sourceType === 'group' || sourceType === 'tip') && sourceSlug
           ? `${groupPath(sourceSlug)}`
+          : // User referral via group
+          sourceSlug?.includes('/group/')
+          ? `${sourceSlug}`
           : ''
       }
       onClick={() =>
@@ -714,7 +787,7 @@ function QuestionOrGroupLink(props: {
       }
     >
       {sourceContractTitle || sourceTitle}
-    </a>
+    </SiteLink>
   )
 }
 
@@ -729,12 +802,16 @@ function getSourceUrl(notification: Notification) {
   } = notification
   if (sourceType === 'follow') return `/${sourceUserUsername}`
   if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
+  // User referral via contract:
   if (
     sourceContractCreatorUsername &&
     sourceContractSlug &&
     sourceType === 'user'
   )
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
+  // User referral:
+  if (sourceType === 'user' && !sourceContractSlug)
+    return `/${sourceUserUsername}`
   if (sourceType === 'tip' && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
   if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
@@ -769,17 +846,10 @@ function NotificationTextLabel(props: {
   justSummary?: boolean
 }) {
   const { className, notification, justSummary } = props
-  const {
-    sourceUpdateType,
-    sourceType,
-    sourceText,
-    sourceContractTitle,
-    reasonText,
-  } = notification
+  const { sourceUpdateType, sourceType, sourceText, reasonText } = notification
   const defaultText = sourceText ?? reasonText ?? ''
   if (sourceType === 'contract') {
-    if (justSummary) return <span>{sourceContractTitle}</span>
-    if (!sourceText) return <div />
+    if (justSummary || !sourceText) return <div />
     // Resolved contracts
     if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
       {
@@ -857,27 +927,27 @@ function NotificationTextLabel(props: {
 
 function getReasonForShowingNotification(
   notification: Notification,
-  simple?: boolean,
-  replaceOn?: boolean
+  justSummary: boolean
 ) {
   const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
   let reasonText: string
   switch (sourceType) {
     case 'comment':
       if (reason === 'reply_to_users_answer')
-        reasonText = !simple ? 'replied to you on' : 'replied'
+        reasonText = justSummary ? 'replied' : 'replied to you on'
       else if (reason === 'tagged_user')
-        reasonText = !simple ? 'tagged you on' : 'tagged you'
+        reasonText = justSummary ? 'tagged you' : 'tagged you on'
       else if (reason === 'reply_to_users_comment')
-        reasonText = !simple ? 'replied to you on' : 'replied'
-      else reasonText = `commented on`
+        reasonText = justSummary ? 'replied' : 'replied to you on'
+      else reasonText = justSummary ? `commented` : `commented on`
       break
     case 'contract':
-      if (reason === 'you_follow_user') reasonText = 'asked'
-      else if (sourceUpdateType === 'resolved') reasonText = `resolved`
-      else if (sourceUpdateType === 'closed')
-        reasonText = `Please resolve your question`
-      else reasonText = `updated`
+      if (reason === 'you_follow_user')
+        reasonText = justSummary ? 'asked the question' : 'asked'
+      else if (sourceUpdateType === 'resolved')
+        reasonText = justSummary ? `resolved the question` : `resolved`
+      else if (sourceUpdateType === 'closed') reasonText = `Please resolve`
+      else reasonText = justSummary ? 'updated the question' : `updated`
       break
     case 'answer':
       if (reason === 'on_users_contract') reasonText = `answered your question `
@@ -904,205 +974,5 @@ function getReasonForShowingNotification(
     default:
       reasonText = ''
   }
-  return replaceOn ? reasonText.replace(' on', '') : reasonText
-}
-
-// TODO: where should we put referral bonus notifications?
-function NotificationSettings() {
-  const user = useUser()
-  const [notificationSettings, setNotificationSettings] =
-    useState<notification_subscribe_types>('all')
-  const [emailNotificationSettings, setEmailNotificationSettings] =
-    useState<notification_subscribe_types>('all')
-  const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
-
-  useEffect(() => {
-    if (user) listenForPrivateUser(user.id, setPrivateUser)
-  }, [user])
-
-  useEffect(() => {
-    if (!privateUser) return
-    if (privateUser.notificationPreferences) {
-      setNotificationSettings(privateUser.notificationPreferences)
-    }
-    if (
-      privateUser.unsubscribedFromResolutionEmails &&
-      privateUser.unsubscribedFromCommentEmails &&
-      privateUser.unsubscribedFromAnswerEmails
-    ) {
-      setEmailNotificationSettings('none')
-    } else if (
-      !privateUser.unsubscribedFromResolutionEmails &&
-      !privateUser.unsubscribedFromCommentEmails &&
-      !privateUser.unsubscribedFromAnswerEmails
-    ) {
-      setEmailNotificationSettings('all')
-    } else {
-      setEmailNotificationSettings('less')
-    }
-  }, [privateUser])
-
-  const loading = 'Changing Notifications Settings'
-  const success = 'Notification Settings Changed!'
-  function changeEmailNotifications(newValue: notification_subscribe_types) {
-    if (!privateUser) return
-    if (newValue === 'all') {
-      toast.promise(
-        updatePrivateUser(privateUser.id, {
-          unsubscribedFromResolutionEmails: false,
-          unsubscribedFromCommentEmails: false,
-          unsubscribedFromAnswerEmails: false,
-        }),
-        {
-          loading,
-          success,
-          error: (err) => `${err.message}`,
-        }
-      )
-    } else if (newValue === 'less') {
-      toast.promise(
-        updatePrivateUser(privateUser.id, {
-          unsubscribedFromResolutionEmails: false,
-          unsubscribedFromCommentEmails: true,
-          unsubscribedFromAnswerEmails: true,
-        }),
-        {
-          loading,
-          success,
-          error: (err) => `${err.message}`,
-        }
-      )
-    } else if (newValue === 'none') {
-      toast.promise(
-        updatePrivateUser(privateUser.id, {
-          unsubscribedFromResolutionEmails: true,
-          unsubscribedFromCommentEmails: true,
-          unsubscribedFromAnswerEmails: true,
-        }),
-        {
-          loading,
-          success,
-          error: (err) => `${err.message}`,
-        }
-      )
-    }
-  }
-
-  function changeInAppNotificationSettings(
-    newValue: notification_subscribe_types
-  ) {
-    if (!privateUser) return
-    track('In-App Notification Preferences Changed', {
-      newPreference: newValue,
-      oldPreference: privateUser.notificationPreferences,
-    })
-    toast.promise(
-      updatePrivateUser(privateUser.id, {
-        notificationPreferences: newValue,
-      }),
-      {
-        loading,
-        success,
-        error: (err) => `${err.message}`,
-      }
-    )
-  }
-
-  useEffect(() => {
-    if (privateUser && privateUser.notificationPreferences)
-      setNotificationSettings(privateUser.notificationPreferences)
-    else setNotificationSettings('all')
-  }, [privateUser])
-
-  if (!privateUser) {
-    return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
-  }
-
-  function NotificationSettingLine(props: {
-    label: string
-    highlight: boolean
-  }) {
-    const { label, highlight } = props
-    return (
-      <Row className={clsx('my-1 text-gray-300', highlight && '!text-black')}>
-        {highlight ? <CheckIcon height={20} /> : <XIcon height={20} />}
-        {label}
-      </Row>
-    )
-  }
-
-  return (
-    <div className={'p-2'}>
-      <div>In App Notifications</div>
-      <ChoicesToggleGroup
-        currentChoice={notificationSettings}
-        choicesMap={{ All: 'all', Less: 'less', None: 'none' }}
-        setChoice={(choice) =>
-          changeInAppNotificationSettings(
-            choice as notification_subscribe_types
-          )
-        }
-        className={'col-span-4 p-2'}
-        toggleClassName={'w-24'}
-      />
-      <div className={'mt-4 text-sm'}>
-        <div>
-          <div className={''}>
-            You will receive notifications for:
-            <NotificationSettingLine
-              label={"Resolution of questions you've interacted with"}
-              highlight={notificationSettings !== 'none'}
-            />
-            <NotificationSettingLine
-              highlight={notificationSettings !== 'none'}
-              label={'Activity on your own questions, comments, & answers'}
-            />
-            <NotificationSettingLine
-              highlight={notificationSettings !== 'none'}
-              label={"Activity on questions you're betting on"}
-            />
-            <NotificationSettingLine
-              highlight={notificationSettings !== 'none'}
-              label={"Income & referral bonuses you've received"}
-            />
-            <NotificationSettingLine
-              label={"Activity on questions you've ever bet or commented on"}
-              highlight={notificationSettings === 'all'}
-            />
-          </div>
-        </div>
-      </div>
-      <div className={'mt-4'}>Email Notifications</div>
-      <ChoicesToggleGroup
-        currentChoice={emailNotificationSettings}
-        choicesMap={{ All: 'all', Less: 'less', None: 'none' }}
-        setChoice={(choice) =>
-          changeEmailNotifications(choice as notification_subscribe_types)
-        }
-        className={'col-span-4 p-2'}
-        toggleClassName={'w-24'}
-      />
-      <div className={'mt-4 text-sm'}>
-        <div>
-          You will receive emails for:
-          <NotificationSettingLine
-            label={"Resolution of questions you're betting on"}
-            highlight={emailNotificationSettings !== 'none'}
-          />
-          <NotificationSettingLine
-            label={'Closure of your questions'}
-            highlight={emailNotificationSettings !== 'none'}
-          />
-          <NotificationSettingLine
-            label={'Activity on your questions'}
-            highlight={emailNotificationSettings === 'all'}
-          />
-          <NotificationSettingLine
-            label={"Activity on questions you've answered or commented on"}
-            highlight={emailNotificationSettings === 'all'}
-          />
-        </div>
-      </div>
-    </div>
-  )
+  return reasonText
 }

@@ -1,4 +1,4 @@
-import { sumBy } from 'lodash'
+import { sumBy, uniq } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
@@ -7,11 +7,12 @@ import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
-import { getValues } from './utils'
+import { getValues, log } from './utils'
 import { Bet } from '../../common/bet'
 import { floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsQuery, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
+import { redeemShares } from './redeem-shares'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -23,7 +24,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
   const { contractId, shares, outcome } = validate(bodySchema, req.body)
 
   // Run as transaction to prevent race conditions.
-  return await firestore.runTransaction(async (transaction) => {
+  const result = await firestore.runTransaction(async (transaction) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
@@ -97,8 +98,14 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       })
     )
 
-    return { status: 'success' }
+    return { newBet, makers }
   })
+
+  const userIds = uniq(result.makers.map((maker) => maker.bet.userId))
+  await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
+  log('Share redemption transaction finished.')
+
+  return { status: 'success' }
 })
 
 const firestore = admin.firestore()

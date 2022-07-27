@@ -20,6 +20,7 @@ import { Text } from '@tiptap/extension-text'
 // other tiptap extensions
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
+import Iframe from './tiptap-iframe'
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
@@ -49,6 +50,16 @@ export function parseWordsAsTags(text: string) {
   return parseTags(taggedText)
 }
 
+// TODO: fuzzy matching
+export const wordIn = (word: string, corpus: string) =>
+  corpus.toLocaleLowerCase().includes(word.toLocaleLowerCase())
+
+const checkAgainstQuery = (query: string, corpus: string) =>
+  query.split(' ').every((word) => wordIn(word, corpus))
+
+export const searchInAny = (query: string, ...fields: string[]) =>
+  fields.some((field) => checkAgainstQuery(query, field))
+
 // can't just do [StarterKit, Image...] because it doesn't work with cjs imports
 export const exhibitExts = [
   Blockquote,
@@ -70,6 +81,7 @@ export const exhibitExts = [
 
   Image,
   Link,
+  Iframe,
 ]
 // export const exhibitExts = [StarterKit as unknown as Extension, Image]
 

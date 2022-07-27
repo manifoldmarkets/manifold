@@ -9,8 +9,9 @@ export function BucketInput(props: {
   contract: NumericContract | PseudoNumericContract
   isSubmitting?: boolean
   onBucketChange: (value?: number, bucket?: string) => void
+  placeholder?: string
 }) {
-  const { contract, isSubmitting, onBucketChange } = props
+  const { contract, isSubmitting, onBucketChange, placeholder } = props
 
   const [numberString, setNumberString] = useState('')
 
@@ -39,7 +40,7 @@ export function BucketInput(props: {
       error={undefined}
       disabled={isSubmitting}
       numberString={numberString}
-      label="Value"
+      placeholder={placeholder}
     />
   )
 }

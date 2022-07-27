@@ -5,6 +5,7 @@ import Head from 'next/head'
 import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 import { QueryClient, QueryClientProvider } from 'react-query'
+import { AuthProvider } from 'web/components/auth-context'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -78,9 +79,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
       </Head>
 
-      <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
-      </QueryClientProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <Component {...pageProps} />
+        </QueryClientProvider>
+      </AuthProvider>
     </>
   )
 }

@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
-  getGroupsWithContractId,
   listenForGroup,
   listenForGroups,
   listenForMemberGroups,
+  listGroups,
 } from 'web/lib/firebase/groups'
 import { getUser, getUsers } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
+import { Contract } from 'common/contract'
+import { uniq } from 'lodash'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -32,19 +34,27 @@ export const useGroups = () => {
 
 export const useMemberGroups = (
   userId: string | null | undefined,
-  options?: { withChatEnabled: boolean }
+  options?: { withChatEnabled: boolean },
+  sort?: { by: 'mostRecentChatActivityTime' | 'mostRecentContractAddedTime' }
 ) => {
   const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
   useEffect(() => {
     if (userId)
-      return listenForMemberGroups(userId, (groups) => {
-        if (options?.withChatEnabled)
-          return setMemberGroups(
-            filterDefined(groups.filter((group) => group.chatDisabled !== true))
-          )
-        return setMemberGroups(groups)
-      })
-  }, [options?.withChatEnabled, userId])
+      return listenForMemberGroups(
+        userId,
+        (groups) => {
+          if (options?.withChatEnabled)
+            return setMemberGroups(
+              filterDefined(
+                groups.filter((group) => group.chatDisabled !== true)
+              )
+            )
+          return setMemberGroups(groups)
+        },
+        sort
+      )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options?.withChatEnabled, sort?.by, userId])
   return memberGroups
 }
 
@@ -88,19 +98,22 @@ export async function listMembers(group: Group, max?: number) {
   const { memberIds } = group
   const numToRetrieve = max ?? memberIds.length
   if (memberIds.length === 0) return []
-  if (numToRetrieve)
+  if (numToRetrieve > 100)
     return (await getUsers()).filter((user) =>
       group.memberIds.includes(user.id)
     )
   return await Promise.all(group.memberIds.slice(0, numToRetrieve).map(getUser))
 }
 
-export const useGroupsWithContract = (contractId: string | undefined) => {
-  const [groups, setGroups] = useState<Group[] | null | undefined>()
+export const useGroupsWithContract = (contract: Contract) => {
+  const [groups, setGroups] = useState<Group[]>([])
 
   useEffect(() => {
-    if (contractId) getGroupsWithContractId(contractId, setGroups)
-  }, [contractId])
+    if (contract.groupSlugs)
+      listGroups(uniq(contract.groupSlugs)).then((groups) =>
+        setGroups(filterDefined(groups))
+      )
+  }, [contract.groupSlugs])
 
   return groups
 }

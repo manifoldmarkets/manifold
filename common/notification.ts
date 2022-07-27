@@ -63,3 +63,4 @@ export type notification_reason_types =
   | 'on_group_you_are_member_of'
   | 'tip_received'
   | 'bet_fill'
+  | 'user_joined_from_your_group_invite'

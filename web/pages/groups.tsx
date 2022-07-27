@@ -1,4 +1,4 @@
-import { sortBy, debounce } from 'lodash'
+import { debounce, sortBy } from 'lodash'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { Group } from 'common/group'
@@ -12,12 +12,13 @@ import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
-import { checkAgainstQuery } from 'web/hooks/use-sort-and-query-params'
 import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { UserLink } from 'web/components/user-page'
+import { searchInAny } from 'common/util/parse'
+import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])
@@ -71,20 +72,28 @@ export default function Groups(props: {
   const matches = sortBy(groups, [
     (group) => -1 * group.contractIds.length,
     (group) => -1 * group.memberIds.length,
-  ]).filter(
-    (g) =>
-      checkAgainstQuery(query, g.name) ||
-      checkAgainstQuery(query, g.about || '') ||
-      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
+  ]).filter((g) =>
+    searchInAny(
+      query,
+      g.name,
+      g.about || '',
+      creatorsDict[g.creatorId].username
+    )
   )
 
   const matchesOrderedByRecentActivity = sortBy(groups, [
-    (group) => -1 * group.mostRecentActivityTime,
-  ]).filter(
-    (g) =>
-      checkAgainstQuery(query, g.name) ||
-      checkAgainstQuery(query, g.about || '') ||
-      checkAgainstQuery(query, creatorsDict[g.creatorId].username)
+    (group) =>
+      -1 *
+      (group.mostRecentChatActivityTime ??
+        group.mostRecentContractAddedTime ??
+        group.mostRecentActivityTime),
+  ]).filter((g) =>
+    searchInAny(
+      query,
+      g.name,
+      g.about || '',
+      creatorsDict[g.creatorId].username
+    )
   )
 
   // Not strictly necessary, but makes the "hold delete" experience less laggy
@@ -92,6 +101,11 @@ export default function Groups(props: {
 
   return (
     <Page>
+      <SEO
+        title="Groups"
+        description="Manifold Groups are communities centered around a collection of prediction markets. Discuss and compete on questions with your friends."
+        url="/groups"
+      />
       <Col className="items-center">
         <Col className="w-full max-w-2xl px-4 sm:px-2">
           <Row className="items-center justify-between">
@@ -177,7 +191,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       </Link>
       <div>
         <Avatar
-          className={'absolute top-2 right-2'}
+          className={'absolute top-2 right-2 z-10'}
           username={creator?.username}
           avatarUrl={creator?.avatarUrl}
           noLink={false}
@@ -224,7 +238,7 @@ function GroupMembersList(props: { group: Group }) {
   )
 }
 
-export function GroupLink(props: { group: Group; className?: string }) {
+export function GroupLinkItem(props: { group: Group; className?: string }) {
   const { group, className } = props
 
   return (

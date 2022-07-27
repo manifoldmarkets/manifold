@@ -1,29 +1,28 @@
 import React, { useEffect, useState } from 'react'
-import Router, { useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import { PlusSmIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
 import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
-import { ContractSearch } from 'web/components/contract-search'
+import { ContractSearch, DEFAULT_SORT } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 const Home = () => {
-  const user = useUser()
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
   useTracking('view home')
 
-  if (user === null) {
-    Router.replace('/')
-    return <></>
-  }
+  useSaveReferral()
 
   return (
     <>
@@ -32,7 +31,7 @@ const Home = () => {
           <ContractSearch
             querySortOptions={{
               shouldLoadFromStorage: true,
-              defaultSort: getSavedSort() ?? 'most-popular',
+              defaultSort: getSavedSort() ?? DEFAULT_SORT,
             }}
             onContractClick={(c) => {
               // Show contract without navigating to contract page.

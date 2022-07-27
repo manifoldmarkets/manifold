@@ -4,12 +4,12 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Title } from '../title'
 import { User } from 'common/user'
-import { ManalinkCardPreview, ManalinkInfo } from 'web/components/manalink-card'
+import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
 import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
-import Button from '../button'
+import { Button } from '../button'
 import { getManalinkUrl } from 'web/pages/links'
 import { DuplicateIcon } from '@heroicons/react/outline'
 
@@ -66,12 +66,14 @@ function CreateManalinkForm(props: {
   const defaultExpire = 'week'
   const [expiresIn, setExpiresIn] = useState(defaultExpire)
 
+  const defaultMessage = 'from ' + user.name
+
   const [newManalink, setNewManalink] = useState<ManalinkInfo>({
     expiresTime: dayjs().add(1, defaultExpire).valueOf(),
     amount: 100,
     maxUses: 1,
     uses: 0,
-    message: '',
+    message: defaultMessage,
   })
 
   const EXPIRE_OPTIONS = {
@@ -161,7 +163,8 @@ function CreateManalinkForm(props: {
             <div className="form-control w-full">
               <label className="label">Message</label>
               <Textarea
-                placeholder={`From ${user.name}`}
+                placeholder={defaultMessage}
+                maxLength={200}
                 className="input input-bordered resize-none"
                 autoFocus
                 value={newManalink.message}
@@ -189,11 +192,7 @@ function CreateManalinkForm(props: {
       {finishedCreating && (
         <>
           <Title className="!my-0" text="Manalink Created!" />
-          <ManalinkCardPreview
-            className="my-4"
-            defaultMessage={`From ${user.name}`}
-            info={newManalink}
-          />
+          <ManalinkCard className="my-4" info={newManalink} preview />
           <Row
             className={clsx(
               'rounded border bg-gray-50 py-2 px-3 text-sm text-gray-500 transition-colors duration-700',

@@ -27,6 +27,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
    1. `$ brew install java`
    2. `$ sudo ln -sfn /opt/homebrew/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk`
+
 2. `$ gcloud auth login` to authenticate the CLI tools to Google Cloud
 3. `$ gcloud config set project <project-id>` to choose the project (`$ gcloud projects list` to see options)
 4. `$ mkdir firestore_export` to create a folder to store the exported database
@@ -53,7 +54,10 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
 ## Deploying
 
-0. `$ firebase use prod` to switch to prod
+0. After merging, you need to manually deploy to backend:
+1. `git checkout main`
+1. `git pull origin main`
+1. `$ firebase use prod` to switch to prod
 1. `$ firebase deploy --only functions` to push your changes live!
    (Future TODO: auto-deploy functions on Git push)
 
