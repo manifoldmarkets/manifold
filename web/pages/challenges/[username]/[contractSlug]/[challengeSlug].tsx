@@ -96,9 +96,11 @@ export default function ChallengePage(props: {
   if (!contract || !challenge) return <Custom404 />
   const ogCardProps = getOpenGraphProps(contract)
 
+  ogCardProps.creatorUsername = challenge.creatorUsername
+  ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
   ogCardProps.question =
     challenge.creatorName.split(' ')[0] +
-    "'s CHALLENGING you: " +
+    'I challenge you to a bet on: ' +
     contract.question
   ogCardProps.probability =
     Math.round(challenge.creatorsOutcomeProb * 100) + '%'
