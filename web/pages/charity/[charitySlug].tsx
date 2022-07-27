@@ -33,10 +33,10 @@ export default function CharityPageWrapper() {
   if (!charity) {
     return <Custom404 />
   }
-  return <CharityPage charity={charity} />
+  // return <CharityPage charity={charity} />
 }
 
-function CharityPage(props: { charity: Charity }) {
+function _CharityPage(props: { charity: Charity }) {
   const { charity } = props
   const { name, photo, description } = charity
 
