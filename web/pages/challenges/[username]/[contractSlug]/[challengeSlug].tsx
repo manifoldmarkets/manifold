@@ -350,9 +350,7 @@ function OpenChallengeContent(props: {
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   const bottomBarHeight = (width ?? 0) < 1024 ? 58 : 0
   const remainingHeight =
-    (height ?? window.innerHeight) -
-    (containerRef?.offsetTop ?? 0) -
-    bottomBarHeight
+    (height ?? 0) - (containerRef?.offsetTop ?? 0) - bottomBarHeight
 
   const isBinary = contract.outcomeType === 'BINARY'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
