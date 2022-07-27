@@ -441,12 +441,6 @@ export function NewContract(props: {
           {ante > balance && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
               <span className="mr-2 text-red-500">Insufficient balance</span>
-              <button
-                className="btn btn-xs btn-primary"
-                onClick={() => (window.location.href = '/add-funds')}
-              >
-                Get M$
-              </button>
             </div>
           )}
         </div>

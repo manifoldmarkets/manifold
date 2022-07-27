@@ -240,7 +240,6 @@ export default function ProfilePage() {
             <label className="label">Balance</label>
             <Row className="ml-1 items-start gap-4 text-gray-500">
               {formatMoney(user?.balance || 0)}
-              <AddFundsButton />
             </Row>
           </div>
 

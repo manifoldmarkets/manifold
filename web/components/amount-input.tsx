@@ -61,16 +61,7 @@ export function AmountInput(props: {
 
       {error && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          {error === 'Insufficient balance' ? (
-            <>
-              Not enough funds.
-              <span className="ml-1 text-indigo-500">
-                <SiteLink href="/add-funds">Buy more?</SiteLink>
-              </span>
-            </>
-          ) : (
-            error
-          )}
+          {error === 'Insufficient balance' ? <>Not enough funds.</> : error}
         </div>
       )}
     </Col>
