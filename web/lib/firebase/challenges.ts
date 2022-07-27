@@ -1,6 +1,7 @@
 import {
   collectionGroup,
   doc,
+  getDoc,
   orderBy,
   query,
   setDoc,
@@ -129,4 +130,9 @@ export const useUserChallenges = (fromId: string) => {
   }, [fromId])
 
   return links
+}
+
+export const getChallenge = async (slug: string, contractId: string) => {
+  const challenge = await getDoc(doc(challenges(contractId), slug))
+  return challenge.data() as Challenge
 }

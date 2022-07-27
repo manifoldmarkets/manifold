@@ -12,7 +12,11 @@ import { Spacer } from 'web/components/layout/spacer'
 import { Row } from 'web/components/layout/row'
 
 import { Challenge } from 'common/challenge'
-import { getChallengeUrl, useChallenge } from 'web/lib/firebase/challenges'
+import {
+  getChallenge,
+  getChallengeUrl,
+  useChallenge,
+} from 'web/lib/firebase/challenges'
 import { getPortfolioHistory, getUserByUsername } from 'web/lib/firebase/users'
 import { PortfolioMetrics, User } from 'common/user'
 import { Page } from 'web/components/page'
@@ -45,6 +49,9 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const user = (await getUserByUsername(username)) || null
   const bets = contract?.id ? await listAllBets(contract.id) : []
+  const challenge = contract?.id
+    ? await getChallenge(challengeSlug, contract.id)
+    : null
 
   return {
     props: {
@@ -53,6 +60,7 @@ export async function getStaticPropz(props: {
       slug: contractSlug,
       challengeSlug,
       bets,
+      challenge,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -68,7 +76,7 @@ export default function ChallengePage(props: {
   user: User
   slug: string
   bets: Bet[]
-
+  challenge: Challenge | null
   challengeSlug: string
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -76,31 +84,17 @@ export default function ChallengePage(props: {
     user: null,
     challengeSlug: '',
     bets: [],
-
+    challenge: null,
     slug: '',
   }
   const contract = useContractWithPreload(props.contract) ?? props.contract
-  const challenge = useChallenge(props.challengeSlug, contract?.id)
+  const challenge =
+    useChallenge(props.challengeSlug, contract?.id) ?? props.challenge
   const { user, bets } = props
   const currentUser = useUser()
 
-  if (!contract) return <Custom404 />
+  if (!contract || !challenge) return <Custom404 />
   const ogCardProps = getOpenGraphProps(contract)
-  if (!challenge) {
-    return (
-      <Page>
-        <SEO
-          title={ogCardProps.question}
-          description={ogCardProps.description}
-          // url={getChallengeUrl(challenge)}
-          ogCardProps={ogCardProps}
-        />
-        <Col className={'min-h-screen items-center justify-center'}>
-          <LoadingIndicator />
-        </Col>
-      </Page>
-    )
-  }
 
   ogCardProps.question =
     challenge.creatorName.split(' ')[0] +
