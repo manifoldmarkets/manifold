@@ -98,10 +98,7 @@ export default function ChallengePage(props: {
 
   ogCardProps.creatorUsername = challenge.creatorUsername
   ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
-  ogCardProps.question =
-    challenge.creatorName.split(' ')[0] +
-    'I challenge you to a bet on: ' +
-    contract.question
+  ogCardProps.question = 'I challenge you to a bet: ' + contract.question
   ogCardProps.probability =
     Math.round(challenge.creatorsOutcomeProb * 100) + '%'
 
