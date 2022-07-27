@@ -1,39 +1,48 @@
-import { mapValues, groupBy, sumBy, sum, debounce, uniqBy } from 'lodash'
+import {
+  mapValues,
+  groupBy,
+  sumBy,
+  sum,
+  sortBy,
+  debounce,
+  uniqBy,
+} from 'lodash'
 import { useState, useMemo } from 'react'
-import { Charity as CharityType } from 'common/charity'
+import { charities, Charity as CharityType } from 'common/charity'
 import { CharityCard } from 'web/components/charity/charity-card'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
+import { getAllCharityTxns } from 'web/lib/firebase/txns'
 import { manaToUSD } from 'common/util/format'
 import { quadraticMatches } from 'common/quadratic-funding'
-import { DonationTxn, Txn } from 'common/txn'
+import { Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
-import { getUser } from 'web/lib/firebase/users'
 import { SiteLink } from 'web/components/site-link'
-import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
-  const txns: DonationTxn[] = []
+  const txns = await getAllCharityTxns()
   const totals = mapValues(groupBy(txns, 'toId'), (txns) =>
     sumBy(txns, (txn) => txn.amount)
   )
   const totalRaised = sum(Object.values(totals))
+  const sortedCharities = sortBy(charities, [
+    (charity) => (charity.tags?.includes('Featured') ? 0 : 1),
+    (charity) => -totals[charity.id],
+  ])
   const matches = quadraticMatches(txns, totalRaised)
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
-  const mostRecentDonor = await getUser(txns[txns.length - 1].fromId)
 
   return {
     props: {
       totalRaised,
-      charities: [],
+      charities: sortedCharities,
       matches,
       txns,
       numDonors,
-      mostRecentDonor,
     },
     revalidate: 60,
   }
@@ -77,9 +86,8 @@ export default function Charity(props: {
   matches: { [charityId: string]: number }
   txns: Txn[]
   numDonors: number
-  mostRecentDonor: User
 }) {
-  const { totalRaised, charities, matches, numDonors, mostRecentDonor } = props
+  const { totalRaised, charities, matches, numDonors } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
@@ -136,8 +144,8 @@ export default function Charity(props: {
               },
               {
                 name: 'Most recent donor',
-                stat: mostRecentDonor.name ?? 'Nobody',
-                url: `/${mostRecentDonor.username}`,
+                stat: 'Nobody',
+                url: `/`,
               },
             ]}
           />
