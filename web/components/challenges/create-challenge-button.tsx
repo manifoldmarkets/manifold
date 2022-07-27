@@ -63,12 +63,13 @@ export function CreateChallengeButton(props: {
       <button
         onClick={() => setOpen(true)}
         className={clsx(
-          'border-w-0 h-11 rounded-md bg-gradient-to-r text-base font-semibold text-white shadow-sm',
-          gradient,
-          'max-w-xs justify-center px-2 mb-4'
+          // 'border-w-0 h-11 rounded-md bg-gradient-to-r text-base font-semibold text-white shadow-sm',
+          // gradient,
+          'btn btn-outline',
+          'mb-4 max-w-xs'
         )}
       >
-        ⚔️ Challenge a friend ⚔️
+        Challenge ️
       </button>
     </>
   )

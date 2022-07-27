@@ -19,7 +19,7 @@ import { AnswersGraph } from '../answers/answers-graph'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
-import { ShareMarket } from '../share-market'
+import { ShareMarketButton } from '../share-market-button'
 import { NumericGraph } from './numeric-graph'
 import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
 import React from 'react'
@@ -118,16 +118,26 @@ export const ContractOverview = (props: {
         <AnswersGraph contract={contract} bets={bets} />
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
-      {(contract.description || isCreator) && <Spacer h={6} />}
-      {showChallenge && (
-        <CreateChallengeButton user={user} contract={contract} />
-      )}
-      {isCreator && <ShareMarket className="px-2" contract={contract} />}
+      {/* {(contract.description || isCreator) && <Spacer h={6} />} */}
       <ContractDescription
         className="px-2"
         contract={contract}
         isCreator={isCreator}
       />
+      <Col className="mx-4 mt-4 justify-around sm:flex-row">
+        {showChallenge && (
+          <Col className="gap-3">
+            <div className="text-lg">⚔️ Challenge a friend ⚔️</div>
+            <CreateChallengeButton user={user} contract={contract} />
+          </Col>
+        )}
+        {isCreator && (
+          <Col className="gap-3">
+            <div className="text-lg">Share your market</div>
+            <ShareMarketButton contract={contract} />
+          </Col>
+        )}
+      </Col>
     </Col>
   )
 }
