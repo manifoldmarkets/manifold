@@ -4,7 +4,6 @@ import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
-import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 export function AmountInput(props: {

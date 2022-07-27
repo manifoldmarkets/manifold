@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
-import { PlusSmIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -10,7 +8,6 @@ import { Contract } from 'common/contract'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { useTracking } from 'web/hooks/use-tracking'
-import { track } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 
@@ -19,7 +16,6 @@ export const getServerSideProps = redirectIfLoggedOut('/')
 const Home = () => {
   const [contract, setContract] = useContractPage()
 
-  const router = useRouter()
   useTracking('view home')
 
   useSaveReferral()

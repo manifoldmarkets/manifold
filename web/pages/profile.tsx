@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
 
-import { AddFundsButton } from 'web/components/add-funds-button'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
