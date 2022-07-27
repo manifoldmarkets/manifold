@@ -293,7 +293,6 @@ function BuyPanel(props: {
       />
       {isLimitOrder && (
         <>
-          <p> test </p>
           <Row className="my-3 items-center gap-2 text-left text-sm text-gray-500">
             Limit {isPseudoNumeric ? 'value' : 'probability'}
             <InfoTooltip
