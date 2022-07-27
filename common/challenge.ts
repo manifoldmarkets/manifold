@@ -16,13 +16,13 @@ export type Challenge = {
   creatorAmount: number
 
   // YES or NO for now
-  creatorsOutcome: string
+  creatorOutcome: string
 
   // Different than the creator
   yourOutcome: string
 
   // The probability the challenger thinks
-  creatorsOutcomeProb: number
+  creatorOutcomeProb: number
 
   contractId: string
   contractSlug: string

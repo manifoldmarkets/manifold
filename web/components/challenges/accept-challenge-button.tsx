@@ -21,9 +21,9 @@ export function AcceptChallengeButton(props: {
   const [open, setOpen] = useState(false)
   const [errorText, setErrorText] = useState('')
   const [loading, setLoading] = useState(false)
-  const { creatorsOutcomeProb, creatorAmount } = challenge
+  const { creatorOutcomeProb, creatorAmount } = challenge
   const yourCost =
-    ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
+    ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
   useEffect(() => {
     setErrorText('')
   }, [open])

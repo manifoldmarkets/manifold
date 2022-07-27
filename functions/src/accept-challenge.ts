@@ -50,17 +50,17 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     if (!creatorSnap.exists) throw new APIError(400, 'User not found.')
     const creator = creatorSnap.data() as User
 
-    const { creatorAmount, yourOutcome, creatorsOutcome, creatorsOutcomeProb } =
+    const { creatorAmount, yourOutcome, creatorOutcome, creatorOutcomeProb } =
       challenge
 
     const yourCost =
-      ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
+      ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
 
     if (user.balance < yourCost)
       throw new APIError(400, 'Insufficient balance.')
 
     const contract = anyContract as CPMMBinaryContract
-    const shares = (1 / creatorsOutcomeProb) * creatorAmount
+    const shares = (1 / creatorOutcomeProb) * creatorAmount
     const createdTime = Date.now()
 
     log(
@@ -70,7 +70,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       yourOutcome,
       'shares',
       'at',
-      formatPercent(creatorsOutcomeProb),
+      formatPercent(creatorOutcomeProb),
       'for',
       formatMoney(yourCost)
     )
@@ -82,8 +82,8 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       isCancelled: false,
       contractId: contract.id,
       outcome: yourOutcome,
-      probBefore: creatorsOutcomeProb,
-      probAfter: creatorsOutcomeProb,
+      probBefore: creatorOutcomeProb,
+      probAfter: creatorOutcomeProb,
       loanAmount: 0,
       createdTime,
       fees: noFees,
@@ -104,9 +104,9 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       shares: shares,
       isCancelled: false,
       contractId: contract.id,
-      outcome: creatorsOutcome,
-      probBefore: creatorsOutcomeProb,
-      probAfter: creatorsOutcomeProb,
+      outcome: creatorOutcome,
+      probBefore: creatorOutcomeProb,
+      probAfter: creatorOutcomeProb,
       loanAmount: 0,
       createdTime,
       fees: noFees,

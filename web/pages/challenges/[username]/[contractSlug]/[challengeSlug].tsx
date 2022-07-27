@@ -100,7 +100,7 @@ export default function ChallengePage(props: {
   ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
   ogCardProps.question = 'I challenge you to a bet: ' + contract.question
   ogCardProps.probability =
-    Math.round(challenge.creatorsOutcomeProb * 100) + '%'
+    formatMoney(challenge.creatorAmount) + ' on ' + challenge.creatorOutcome
 
   return (
     <Page>
@@ -156,8 +156,8 @@ function ClosedChallengeContent(props: {
   const {
     acceptances,
     creatorAmount,
-    creatorsOutcome,
-    creatorsOutcomeProb,
+    creatorOutcome,
+    creatorOutcomeProb,
     yourOutcome,
   } = challenge
 
@@ -169,10 +169,10 @@ function ClosedChallengeContent(props: {
     if (acceptances[0].createdTime > Date.now() - 1000 * 60)
       setShowConfetti(true)
   }, [acceptances])
-  const creatorWon = resolution === creatorsOutcome
+  const creatorWon = resolution === creatorOutcome
   const amountWon = creatorWon ? acceptances[0].amount : creatorAmount
   const yourCost =
-    ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
+    ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
 
   if (!user) return <LoadingIndicator />
 
@@ -275,12 +275,12 @@ function ClosedChallengeContent(props: {
           >
             {userCol(
               creator,
-              creatorsOutcome,
-              creatorsOutcomeProb,
+              creatorOutcome,
+              creatorOutcomeProb,
               creatorAmount
             )}
             <Col className="items-center justify-center py-4 text-xl">VS</Col>
-            {userCol(user, yourOutcome, 1 - creatorsOutcomeProb, yourCost)}
+            {userCol(user, yourOutcome, 1 - creatorOutcomeProb, yourCost)}
           </Col>
         )}
         <Spacer h={3} />
@@ -328,8 +328,8 @@ function OpenChallengeContent(props: {
   const {
     creatorAmount,
     creatorId,
-    creatorsOutcome,
-    creatorsOutcomeProb,
+    creatorOutcome,
+    creatorOutcomeProb,
     yourOutcome,
   } = challenge
 
@@ -354,7 +354,7 @@ function OpenChallengeContent(props: {
   const isBinary = contract.outcomeType === 'BINARY'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const yourCost =
-    ((1 - creatorsOutcomeProb) / creatorsOutcomeProb) * creatorAmount
+    ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
 
   const userColumn = (
     challenger: User | null | undefined,
@@ -364,9 +364,9 @@ function OpenChallengeContent(props: {
   ) => {
     const lastPortfolioMetrics = last(portfolioHistory)
     const prob =
-      (outcome === creatorsOutcome
-        ? creatorsOutcomeProb
-        : 1 - creatorsOutcomeProb) * 100
+      (outcome === creatorOutcome
+        ? creatorOutcomeProb
+        : 1 - creatorOutcomeProb) * 100
 
     return (
       <Col className="w-full items-start justify-center gap-1">
@@ -436,7 +436,7 @@ function OpenChallengeContent(props: {
           {userColumn(
             creator,
             creatorPortfolioHistory,
-            creatorsOutcome,
+            creatorOutcome,
             creatorAmount
           )}
           <Col className="items-center justify-center py-4 text-4xl">VS</Col>
