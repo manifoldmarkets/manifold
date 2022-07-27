@@ -233,6 +233,7 @@ function CreateChallengeForm(props: {
         <>
           <Title className="!my-0" text="Challenge Created!" />
 
+          <div>Share the challenge using the link.</div>
           <CopyLinkButton
             url={highlightedSlug}
             buttonClassName="btn-md rounded-l-none"
@@ -242,9 +243,9 @@ function CreateChallengeForm(props: {
             toastClassName={'-left-40 -top-20 mt-1'}
             icon={DuplicateIcon}
           />
-          <Row className={'gap-1'}>
+          <Row className={'gap-1 text-gray-500'}>
             See your other
-            <SiteLink className={'font-bold'} href={'/challenges'}>
+            <SiteLink className={'underline'} href={'/challenges'}>
               challenges
             </SiteLink>
           </Row>
