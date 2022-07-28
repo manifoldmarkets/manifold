@@ -208,7 +208,9 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     const betDocs = (answers ?? []).map(() => betCol.doc())
 
     const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
-    const answerDocs = (answers ?? []).map(() => answerCol.doc())
+    const answerDocs = (answers ?? []).map((_, i) =>
+      answerCol.doc(i.toString())
+    )
 
     const { bets, answerObjects } = getMultipleChoiceAntes(
       user,
