@@ -60,7 +60,8 @@ function putIntoMapAndFetch(data) {
     } else if (whichGuesser === 'burn') {
       document.getElementById('guess-type').innerText = 'Match With Hot Singles'
     } else if (whichGuesser === 'beast') {
-      document.getElementById('guess-type').innerText = 'Finding Fantastic Beasts'
+      document.getElementById('guess-type').innerText =
+        'Finding Fantastic Beasts'
     }
     setUpNewGame()
   }
