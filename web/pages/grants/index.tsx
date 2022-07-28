@@ -1,3 +1,6 @@
+import { searchInAny } from 'common/util/parse'
+import { debounce } from 'lodash'
+import { useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
@@ -66,14 +69,32 @@ function grantsToGrantees(grantsList: Grant[]) {
 }
 
 export default function Grants() {
+  const [query, setQuery] = useState('')
+  const debouncedQuery = debounce(setQuery, 50)
+
+  const filteredGrantees = useMemo(
+    () =>
+      grantees.filter((grantee) =>
+        searchInAny(query, grantee.name, grantee.description)
+      ),
+    [query]
+  )
+
   return (
     <Page>
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="">
-          <Title className="!mt-0" text="Manifold for Charity" />
+          <Title className="!mt-0" text="EA Grants Database" />
+
+          <input
+            type="text"
+            onChange={(e) => debouncedQuery(e.target.value)}
+            placeholder="Find a charity"
+            className="input input-bordered mb-6 w-full"
+          />
 
           <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
-            {grantees.map((grantee) => (
+            {filteredGrantees.map((grantee) => (
               <GranteeCard grantee={grantee} key={grantee.name} />
             ))}
           </div>
