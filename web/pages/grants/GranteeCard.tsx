@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Grantee } from '.'
 import { Row } from 'web/components/layout/row'
 import { sumBy } from 'lodash'
+import { formatLargeNumber, formatMoney } from 'common/util/format'
 
 export default function GranteeCard(props: { grantee: Grantee }) {
   const { grantee } = props
@@ -21,7 +22,7 @@ export default function GranteeCard(props: { grantee: Grantee }) {
               <Image src={photo} alt="" layout="fill" objectFit="contain" />
             ) : (
               <div className="h-full w-full bg-gradient-to-r from-slate-300 to-indigo-200">
-                <div className="absolute inset-0 flex items-center justify-center text-2xl font-light">
+                <div className="absolute inset-0 flex items-center justify-center p-2 text-2xl font-light">
                   {grantee.name}
                 </div>
               </div>
@@ -53,5 +54,5 @@ export default function GranteeCard(props: { grantee: Grantee }) {
 }
 
 function formatUsd(usd: number) {
-  return `$${usd}`
+  return `$${formatLargeNumber(usd)}`
 }
