@@ -3,8 +3,6 @@
 import * as cheerio from 'cheerio'
 import * as fs from 'fs'
 
-import { log } from '../utils'
-
 type SffGrant = {
   round: string
   source: string
