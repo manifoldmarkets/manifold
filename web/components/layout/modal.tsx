@@ -57,7 +57,7 @@ export function Modal(props: {
           >
             <div
               className={clsx(
-                'my-8 mx-6 inline-block w-full transform overflow-hidden text-left align-bottom transition-all sm:align-middle',
+                'my-8 mx-6 inline-block w-full transform overflow-hidden text-left align-bottom transition-all sm:self-center sm:align-middle',
                 sizeClass,
                 className
               )}
