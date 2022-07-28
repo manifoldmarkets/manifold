@@ -3,8 +3,6 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { Modal } from 'web/components/layout/modal'
-import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
@@ -34,7 +32,6 @@ export function FeedAnswerCommentGroup(props: {
   const { username, avatarUrl, name, text } = answer
 
   const [replyToUsername, setReplyToUsername] = useState('')
-  const [open, setOpen] = useState(false)
   const [showReply, setShowReply] = useState(false)
   const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
   const [highlighted, setHighlighted] = useState(false)
@@ -104,26 +101,15 @@ export function FeedAnswerCommentGroup(props: {
 
   return (
     <Col className={'relative flex-1 gap-3'} key={answer.id + 'comment'}>
-      <Modal open={open} setOpen={setOpen}>
-        <AnswerBetPanel
-          answer={answer}
-          contract={contract}
-          closePanel={() => setOpen(false)}
-          className="sm:max-w-84 !rounded-md bg-white !px-8 !py-6"
-          isModal={true}
-        />
-      </Modal>
-
       <Row
         className={clsx(
-          'mt-4 flex gap-3 space-x-3 transition-all duration-1000',
+          'flex gap-3 space-x-3 pt-4 transition-all duration-1000',
           highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
         id={answerElementId}
       >
-        <div className="px-1">
-          <Avatar username={username} avatarUrl={avatarUrl} />
-        </div>
+        <Avatar username={username} avatarUrl={avatarUrl} />
+
         <Col className="min-w-0 flex-1 lg:gap-1">
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
@@ -135,25 +121,21 @@ export function FeedAnswerCommentGroup(props: {
             />
           </div>
 
-          <Col className="align-items justify-between gap-4 sm:flex-row">
+          <Col className="align-items justify-between gap-2 sm:flex-row">
             <span className="whitespace-pre-line text-lg">
               <Linkify text={text} />
             </span>
 
-            <Row className="items-center justify-center gap-4">
-              {isFreeResponseContractPage && (
-                <div className={'sm:hidden'}>
-                  <button
-                    className={
-                      'text-xs font-bold text-gray-500 hover:underline'
-                    }
-                    onClick={() => scrollAndOpenReplyInput(undefined, answer)}
-                  >
-                    Reply
-                  </button>
-                </div>
-              )}
-            </Row>
+            {isFreeResponseContractPage && (
+              <div className={'sm:hidden'}>
+                <button
+                  className={'text-xs font-bold text-gray-500 hover:underline'}
+                  onClick={() => scrollAndOpenReplyInput(undefined, answer)}
+                >
+                  Reply
+                </button>
+              </div>
+            )}
           </Col>
           {isFreeResponseContractPage && (
             <div className={'justify-initial hidden sm:block'}>
@@ -180,9 +162,9 @@ export function FeedAnswerCommentGroup(props: {
       />
 
       {showReply && (
-        <div className={'ml-6 pt-4'}>
+        <div className={'ml-6'}>
           <span
-            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="absolute -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
           <CommentInput

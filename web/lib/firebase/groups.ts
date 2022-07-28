@@ -7,7 +7,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { sortBy, uniq } from 'lodash'
-import { Group, GROUP_CHAT_SLUG } from 'common/group'
+import { Group, GROUP_CHAT_SLUG, GroupLink } from 'common/group'
 import { updateContract } from './contracts'
 import {
   coll,
@@ -24,7 +24,7 @@ export function groupPath(
   groupSlug: string,
   subpath?:
     | 'edit'
-    | 'questions'
+    | 'markets'
     | 'about'
     | typeof GROUP_CHAT_SLUG
     | 'leaderboards'
@@ -42,6 +42,10 @@ export function deleteGroup(group: Group) {
 
 export async function listAllGroups() {
   return getValues<Group>(groups)
+}
+
+export async function listGroups(groupSlugs: string[]) {
+  return Promise.all(groupSlugs.map(getGroupBySlug))
 }
 
 export function listenForGroups(setGroups: (groups: Group[]) => void) {
@@ -86,12 +90,12 @@ export function listenForMemberGroups(
   })
 }
 
-export async function getGroupsWithContractId(
+export async function listenForGroupsWithContractId(
   contractId: string,
   setGroups: (groups: Group[]) => void
 ) {
   const q = query(groups, where('contractIds', 'array-contains', contractId))
-  setGroups(await getValues<Group>(q))
+  return listenForValues<Group>(q, setGroups)
 }
 
 export async function addUserToGroupViaId(groupId: string, userId: string) {
@@ -120,22 +124,85 @@ export async function leaveGroup(group: Group, userId: string): Promise<void> {
   return await updateGroup(group, { memberIds: uniq(newMemberIds) })
 }
 
-export async function addContractToGroup(group: Group, contract: Contract) {
-  await updateContract(contract.id, {
-    groupSlugs: [...(contract.groupSlugs ?? []), group.slug],
-  })
-  return await updateGroup(group, {
-    contractIds: uniq([...group.contractIds, contract.id]),
-  })
-    .then(() => group)
-    .catch((err) => {
-      console.error('error adding contract to group', err)
-      return err
+export async function addContractToGroup(
+  group: Group,
+  contract: Contract,
+  userId: string
+) {
+  if (!contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
+    const newGroupLinks = [
+      ...(contract.groupLinks ?? []),
+      {
+        groupId: group.id,
+        createdTime: Date.now(),
+        slug: group.slug,
+        userId,
+        name: group.name,
+      } as GroupLink,
+    ]
+
+    await updateContract(contract.id, {
+      groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
+      groupLinks: newGroupLinks,
     })
+  }
+  if (!group.contractIds.includes(contract.id)) {
+    return await updateGroup(group, {
+      contractIds: uniq([...group.contractIds, contract.id]),
+    })
+      .then(() => group)
+      .catch((err) => {
+        console.error('error adding contract to group', err)
+        return err
+      })
+  }
 }
 
-export async function setContractGroupSlugs(group: Group, contractId: string) {
-  await updateContract(contractId, { groupSlugs: [group.slug] })
+export async function removeContractFromGroup(
+  group: Group,
+  contract: Contract
+) {
+  if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
+    const newGroupLinks = contract.groupLinks?.filter(
+      (link) => link.slug !== group.slug
+    )
+    await updateContract(contract.id, {
+      groupSlugs:
+        contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
+      groupLinks: newGroupLinks ?? [],
+    })
+  }
+
+  if (group.contractIds.includes(contract.id)) {
+    const newContractIds = group.contractIds.filter((id) => id !== contract.id)
+    return await updateGroup(group, {
+      contractIds: uniq(newContractIds),
+    })
+      .then(() => group)
+      .catch((err) => {
+        console.error('error removing contract from group', err)
+        return err
+      })
+  }
+}
+
+export async function setContractGroupLinks(
+  group: Group,
+  contractId: string,
+  userId: string
+) {
+  await updateContract(contractId, {
+    groupSlugs: [group.slug],
+    groupLinks: [
+      {
+        groupId: group.id,
+        name: group.name,
+        slug: group.slug,
+        userId,
+        createdTime: Date.now(),
+      } as GroupLink,
+    ],
+  })
   return await updateGroup(group, {
     contractIds: uniq([...group.contractIds, contractId]),
   })

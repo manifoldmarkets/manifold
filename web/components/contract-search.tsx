@@ -15,14 +15,17 @@ import {
   useInitialQueryAndSort,
   useUpdateQueryAndSort,
 } from '../hooks/use-sort-and-query-params'
-import { ContractsGrid } from './contract/contracts-list'
+import {
+  ContractHighlightOptions,
+  ContractsGrid,
+} from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
-import { trackCallback } from 'web/lib/service/analytics'
+import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { Group, NEW_USER_GROUP_SLUGS } from 'common/group'
@@ -39,11 +42,12 @@ const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 
 const sortIndexes = [
   { label: 'Newest', value: indexPrefix + 'contracts-newest' },
-  { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
+  // { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
   { label: 'Most popular', value: indexPrefix + 'contracts-score' },
   { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
   { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
   { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
+  { label: 'Subsidy', value: indexPrefix + 'contracts-liquidity' },
   { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
   { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
 ]
@@ -63,11 +67,15 @@ export function ContractSearch(props: {
     excludeContractIds?: string[]
     groupSlug?: string
   }
+  highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   showPlaceHolder?: boolean
   hideOrderSelector?: boolean
   overrideGridClassName?: string
-  hideQuickBet?: boolean
+  cardHideOptions?: {
+    hideGroupLink?: boolean
+    hideQuickBet?: boolean
+  }
 }) {
   const {
     querySortOptions,
@@ -76,7 +84,8 @@ export function ContractSearch(props: {
     overrideGridClassName,
     hideOrderSelector,
     showPlaceHolder,
-    hideQuickBet,
+    cardHideOptions,
+    highlightOptions,
   } = props
 
   const user = useUser()
@@ -111,7 +120,13 @@ export function ContractSearch(props: {
     querySortOptions?.defaultFilter ?? 'open'
   )
   const pillsEnabled = !additionalFilter
+
   const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
+
+  const selectFilter = (pill: string | undefined) => () => {
+    setPillFilter(pill)
+    track('select search category', { category: pill ?? 'all' })
+  }
 
   const { filters, numericFilters } = useMemo(() => {
     let filters = [
@@ -123,15 +138,15 @@ export function ContractSearch(props: {
         : '',
       additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
       additionalFilter?.groupSlug
-        ? `groupSlugs:${additionalFilter.groupSlug}`
+        ? `groupLinks.slug:${additionalFilter.groupSlug}`
         : '',
       pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
-        ? `groupSlugs:${pillFilter}`
+        ? `groupLinks.slug:${pillFilter}`
         : '',
       pillFilter === 'personal'
         ? // Show contracts in groups that the user is a member of
           memberGroupSlugs
-            .map((slug) => `groupSlugs:${slug}`)
+            .map((slug) => `groupLinks.slug:${slug}`)
             // Show contracts created by users the user follows
             .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
             // Show contracts bet on by users the user follows
@@ -191,7 +206,7 @@ export function ContractSearch(props: {
           className="!select !select-bordered"
           value={filter}
           onChange={(e) => setFilter(e.target.value as filter)}
-          onBlur={trackCallback('select search filter')}
+          onBlur={trackCallback('select search filter', { filter })}
         >
           <option value="open">Open</option>
           <option value="closed">Closed</option>
@@ -204,7 +219,7 @@ export function ContractSearch(props: {
             classNames={{
               select: '!select !select-bordered',
             }}
-            onBlur={trackCallback('select search sort')}
+            onBlur={trackCallback('select search sort', { sort })}
           />
         )}
         <Configure
@@ -222,32 +237,34 @@ export function ContractSearch(props: {
           <PillButton
             key={'all'}
             selected={pillFilter === undefined}
-            onSelect={() => setPillFilter(undefined)}
+            onSelect={selectFilter(undefined)}
           >
             All
           </PillButton>
           <PillButton
             key={'personal'}
             selected={pillFilter === 'personal'}
-            onSelect={() => setPillFilter('personal')}
+            onSelect={selectFilter('personal')}
           >
-            For you
+            {user ? 'For you' : 'Featured'}
           </PillButton>
 
-          <PillButton
-            key={'your-bets'}
-            selected={pillFilter === 'your-bets'}
-            onSelect={() => setPillFilter('your-bets')}
-          >
-            Your bets
-          </PillButton>
+          {user && (
+            <PillButton
+              key={'your-bets'}
+              selected={pillFilter === 'your-bets'}
+              onSelect={selectFilter('your-bets')}
+            >
+              Your bets
+            </PillButton>
+          )}
 
           {pillGroups.map(({ name, slug }) => {
             return (
               <PillButton
                 key={slug}
                 selected={pillFilter === slug}
-                onSelect={() => setPillFilter(slug)}
+                onSelect={selectFilter(slug)}
               >
                 {name}
               </PillButton>
@@ -267,8 +284,9 @@ export function ContractSearch(props: {
           querySortOptions={querySortOptions}
           onContractClick={onContractClick}
           overrideGridClassName={overrideGridClassName}
-          hideQuickBet={hideQuickBet}
           excludeContractIds={additionalFilter?.excludeContractIds}
+          highlightOptions={highlightOptions}
+          cardHideOptions={cardHideOptions}
         />
       )}
     </InstantSearch>
@@ -284,13 +302,19 @@ export function ContractSearchInner(props: {
   overrideGridClassName?: string
   hideQuickBet?: boolean
   excludeContractIds?: string[]
+  highlightOptions?: ContractHighlightOptions
+  cardHideOptions?: {
+    hideQuickBet?: boolean
+    hideGroupLink?: boolean
+  }
 }) {
   const {
     querySortOptions,
     onContractClick,
     overrideGridClassName,
-    hideQuickBet,
+    cardHideOptions,
     excludeContractIds,
+    highlightOptions,
   } = props
   const { initialQuery } = useInitialQueryAndSort(querySortOptions)
 
@@ -351,7 +375,8 @@ export function ContractSearchInner(props: {
       showTime={showTime}
       onContractClick={onContractClick}
       overrideGridClassName={overrideGridClassName}
-      hideQuickBet={hideQuickBet}
+      highlightOptions={highlightOptions}
+      cardHideOptions={cardHideOptions}
     />
   )
 }

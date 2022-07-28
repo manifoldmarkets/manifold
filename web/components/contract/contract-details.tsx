@@ -11,7 +11,7 @@ import { UserLink } from '../user-page'
 import {
   Contract,
   contractMetrics,
-  contractPool,
+  contractPath,
   updateContract,
 } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
@@ -22,17 +22,19 @@ import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
-import { CATEGORY_LIST } from 'common/categories'
-import { TagsList } from '../tags-list'
 import { UserFollowButton } from '../follow-button'
-import { groupPath } from 'web/lib/firebase/groups'
-import { SiteLink } from 'web/components/site-link'
 import { DAY_MS } from 'common/util/time'
-import { useGroupsWithContract } from 'web/hooks/use-group'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { useUser } from 'web/hooks/use-user'
 import { Editor } from '@tiptap/react'
 import { exhibitExts } from 'common/util/parse'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { Button } from 'web/components/button'
+import { Modal } from 'web/components/layout/modal'
+import { Col } from 'web/components/layout/col'
+import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
+import { SiteLink } from 'web/components/site-link'
+import { groupPath } from 'web/lib/firebase/groups'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -40,21 +42,19 @@ export function MiscDetails(props: {
   contract: Contract
   showHotVolume?: boolean
   showTime?: ShowTime
+  hideGroupLink?: boolean
 }) {
-  const { contract, showHotVolume, showTime } = props
+  const { contract, showHotVolume, showTime, hideGroupLink } = props
   const {
     volume,
     volume24Hours,
     closeTime,
-    tags,
     isResolved,
     createdTime,
     resolutionTime,
+    groupLinks,
   } = contract
-  // Show at most one category that this contract is tagged by
-  const categories = CATEGORY_LIST.filter((category) =>
-    tags.map((t) => t.toLowerCase()).includes(category)
-  ).slice(0, 1)
+
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
@@ -76,13 +76,21 @@ export function MiscDetails(props: {
           {fromNow(resolutionTime || 0)}
         </Row>
       ) : volume > 0 || !isNew ? (
-        <Row>{contractPool(contract)} pool</Row>
+        <Row className={'shrink-0'}>{formatMoney(contract.volume)} bet</Row>
       ) : (
         <NewContractBadge />
       )}
 
-      {categories.length > 0 && (
-        <TagsList className="text-gray-400" tags={categories} noLabel />
+      {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
+        <SiteLink
+          href={groupPath(groupLinks[0].slug)}
+          className="text-sm text-gray-400"
+        >
+          <Row className={'line-clamp-1 flex-wrap items-center '}>
+            <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
+            {groupLinks[0].name}
+          </Row>
+        </SiteLink>
       )}
     </Row>
   )
@@ -130,34 +138,15 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, bets, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername, creatorId } = contract
+  const { closeTime, creatorName, creatorUsername, creatorId, groupLinks } =
+    contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
-  const groups = (useGroupsWithContract(contract.id) ?? []).sort((g1, g2) => {
-    return g2.createdTime - g1.createdTime
-  })
-  const user = useUser()
-
-  const groupsUserIsMemberOf = groups
-    ? groups.filter((g) => g.memberIds.includes(contract.creatorId))
-    : []
-  const groupsUserIsCreatorOf = groups
-    ? groups.filter((g) => g.creatorId === contract.creatorId)
-    : []
-
-  // Priorities for which group the contract belongs to:
-  // In order of created most recently
-  // Group that the contract owner created
-  // Group the contract owner is a member of
-  // Any group the contract is in
   const groupToDisplay =
-    groupsUserIsCreatorOf.length > 0
-      ? groupsUserIsCreatorOf[0]
-      : groupsUserIsMemberOf.length > 0
-      ? groupsUserIsMemberOf[0]
-      : groups
-      ? groups[0]
-      : undefined
+    groupLinks?.sort((a, b) => a.createdTime - b.createdTime)[0] ?? null
+  const user = useUser()
+  const [open, setOpen] = useState(false)
+
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -178,16 +167,34 @@ export function ContractDetails(props: {
         )}
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
-      {groupToDisplay ? (
-        <Row className={'line-clamp-1 mt-1 max-w-[200px]'}>
-          <SiteLink href={`${groupPath(groupToDisplay.slug)}`}>
-            <UserGroupIcon className="mx-1 mb-1 inline h-5 w-5" />
-            <span>{groupToDisplay.name}</span>
-          </SiteLink>
-        </Row>
-      ) : (
-        <div />
-      )}
+      <Row>
+        <Button
+          size={'xs'}
+          className={'max-w-[200px]'}
+          color={'gray-white'}
+          onClick={() => setOpen(!open)}
+        >
+          <Row>
+            <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+            <span className={'line-clamp-1'}>
+              {groupToDisplay ? groupToDisplay.name : 'No group'}
+            </span>
+          </Row>
+        </Button>
+      </Row>
+      <Modal open={open} setOpen={setOpen} size={'md'}>
+        <Col
+          className={
+            'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
+          }
+        >
+          <ContractGroupsList
+            groupLinks={groupLinks ?? []}
+            contract={contract}
+            user={user}
+          />
+        </Col>
+      </Modal>
 
       {(!!closeTime || !!resolvedDate) && (
         <Row className="items-center gap-1">
@@ -222,9 +229,12 @@ export function ContractDetails(props: {
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
       <ShareIconButton
-        contract={contract}
+        copyPayload={`https://${ENV_CONFIG.domain}${contractPath(contract)}${
+          user?.username && contract.creatorUsername !== user?.username
+            ? '?referrer=' + user?.username
+            : ''
+        }`}
         toastClassName={'sm:-left-40 -left-24 min-w-[250%]'}
-        username={user?.username}
       />
 
       {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
@@ -321,12 +331,13 @@ function EditableCloseDate(props: {
             Done
           </button>
         ) : (
-          <button
-            className="btn btn-xs btn-ghost"
+          <Button
+            size={'xs'}
+            color={'gray-white'}
             onClick={() => setIsEditingCloseTime(true)}
           >
-            <PencilIcon className="mr-2 inline h-4 w-4" /> Edit
-          </button>
+            <PencilIcon className="mr-0.5 inline h-4 w-4" /> Edit
+          </Button>
         ))}
     </>
   )

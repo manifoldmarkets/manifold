@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react'
-import { useRouter } from 'next/router'
-import { useUser } from 'web/hooks/use-user'
 import { Contract, getContractsBySlugs } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { SEO } from 'web/components/SEO'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   // These hardcoded markets will be shown in the frontpage for signed-out users:
@@ -28,18 +27,15 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 export default function Home(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
 
-  // for now this redirect in the component is how we handle the case where they are
-  // on this page and they log in -- in the future we will make some cleaner way
-  const user = useUser()
-  const router = useRouter()
-  useEffect(() => {
-    if (user != null) {
-      router.replace('/home')
-    }
-  }, [router, user])
+  useSaveReferral()
 
   return (
     <Page>
+      <SEO
+        title="Manifold Markets"
+        description="Create a play-money prediction market on any topic you care about
+            and bet with your friends on what will happen!"
+      />
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
       </div>

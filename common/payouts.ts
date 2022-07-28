@@ -117,6 +117,7 @@ export const getDpmPayouts = (
   resolutionProbability?: number
 ): PayoutInfo => {
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
+  const { outcomeType } = contract
 
   switch (outcome) {
     case 'YES':
@@ -124,7 +125,8 @@ export const getDpmPayouts = (
       return getDpmStandardPayouts(outcome, contract, openBets)
 
     case 'MKT':
-      return contract.outcomeType === 'FREE_RESPONSE' // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return outcomeType === 'FREE_RESPONSE' ||
+        outcomeType === 'MULTIPLE_CHOICE' // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         ? getPayoutsMultiOutcome(resolutions!, contract, openBets)
         : getDpmMktPayouts(contract, openBets, resolutionProbability)
     case 'CANCEL':
@@ -132,7 +134,7 @@ export const getDpmPayouts = (
       return getDpmCancelPayouts(contract, openBets)
 
     default:
-      if (contract.outcomeType === 'NUMERIC')
+      if (outcomeType === 'NUMERIC')
         return getNumericDpmPayouts(outcome, contract, openBets as NumericBet[])
 
       // Outcome is a free response answer id.

@@ -8,7 +8,7 @@ export default function Markets() {
     <Page>
       <SEO
         title="Explore"
-        description="Discover what's new, trending, or soon-to-close. Or search among our hundreds of markets."
+        description="Discover what's new, trending, or soon-to-close. Or search thousands of prediction markets."
         url="/markets"
       />
       <ContractSearch />

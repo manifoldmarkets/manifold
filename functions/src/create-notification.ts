@@ -29,12 +29,22 @@ export const createNotification = async (
   sourceUser: User,
   idempotencyKey: string,
   sourceText: string,
-  sourceContract?: Contract,
-  relatedSourceType?: notification_source_types,
-  relatedUserId?: string,
-  sourceSlug?: string,
-  sourceTitle?: string
+  miscData?: {
+    contract?: Contract
+    relatedSourceType?: notification_source_types
+    relatedUserId?: string
+    slug?: string
+    title?: string
+  }
 ) => {
+  const {
+    contract: sourceContract,
+    relatedSourceType,
+    relatedUserId,
+    slug,
+    title,
+  } = miscData ?? {}
+
   const shouldGetNotification = (
     userId: string,
     userToReasonTexts: user_to_reason_texts
@@ -70,8 +80,8 @@ export const createNotification = async (
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
           sourceContractTitle: sourceContract?.question,
           sourceContractSlug: sourceContract?.slug,
-          sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
-          sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
+          sourceSlug: slug ? slug : sourceContract?.slug,
+          sourceTitle: title ? title : sourceContract?.question,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })

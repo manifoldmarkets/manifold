@@ -1,4 +1,4 @@
-import { take, sortBy, debounce } from 'lodash'
+import { debounce, sortBy, take } from 'lodash'
 import PlusSmIcon from '@heroicons/react/solid/PlusSmIcon'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
@@ -6,20 +6,15 @@ import { Page } from 'web/components/page'
 import { listAllBets } from 'web/lib/firebase/bets'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
-  groupPath,
-  getGroupBySlug,
-  updateGroup,
-  joinGroup,
   addContractToGroup,
+  getGroupBySlug,
+  groupPath,
+  joinGroup,
+  updateGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
-import {
-  firebaseLogin,
-  getUser,
-  User,
-  writeReferralInfo,
-} from 'web/lib/firebase/users'
+import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
@@ -34,7 +29,7 @@ import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
 import { CreateQuestionButton } from 'web/components/create-question-button'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { GroupChat } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
@@ -53,6 +48,8 @@ import { searchInAny } from 'common/util/parse'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { Button } from 'web/components/button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -113,7 +110,7 @@ export async function getStaticPaths() {
 const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
-  'questions',
+  'markets',
   'leaderboards',
   'about',
 ] as const
@@ -155,13 +152,11 @@ export default function GroupPage(props: {
   const messages = useCommentsOnGroup(group?.id)
 
   const user = useUser()
-  useEffect(() => {
-    const { referrer } = router.query as {
-      referrer?: string
-    }
-    if (!user && router.isReady)
-      writeReferralInfo(creator.username, undefined, referrer, group?.id)
-  }, [user, creator, group, router])
+
+  useSaveReferral(user, {
+    defaultReferrer: creator.username,
+    groupId: group?.id,
+  })
 
   const { width } = useWindowSize()
   const chatDisabled = !group || group.chatDisabled
@@ -232,9 +227,9 @@ export default function GroupPage(props: {
           },
         ]),
     {
-      title: 'Questions',
+      title: 'Markets',
       content: questionsTab,
-      href: groupPath(group.slug, 'questions'),
+      href: groupPath(group.slug, 'markets'),
     },
     {
       title: 'Leaderboards',
@@ -498,7 +493,7 @@ function GroupLeaderboards(props: {
             <SortedLeaderboard
               users={members}
               scoreFunction={(user) => traderScores[user.id] ?? 0}
-              title="🏅 Top bettors"
+              title="🏅 Top traders"
               header="Profit"
               maxToShow={maxToShow}
             />
@@ -514,7 +509,7 @@ function GroupLeaderboards(props: {
           <>
             <Leaderboard
               className="max-w-xl"
-              title="🏅 Top bettors"
+              title="🏅 Top traders"
               users={topTraders}
               columns={[
                 {
@@ -547,10 +542,26 @@ function GroupLeaderboards(props: {
 function AddContractButton(props: { group: Group; user: User }) {
   const { group, user } = props
   const [open, setOpen] = useState(false)
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [loading, setLoading] = useState(false)
 
   async function addContractToCurrentGroup(contract: Contract) {
-    await addContractToGroup(group, contract)
-    setOpen(false)
+    if (contracts.map((c) => c.id).includes(contract.id)) {
+      setContracts(contracts.filter((c) => c.id !== contract.id))
+    } else setContracts([...contracts, contract])
+  }
+
+  async function doneAddingContracts() {
+    Promise.all(
+      contracts.map(async (contract) => {
+        setLoading(true)
+        await addContractToGroup(group, contract, user.id)
+      })
+    ).then(() => {
+      setLoading(false)
+      setOpen(false)
+      setContracts([])
+    })
   }
 
   return (
@@ -564,37 +575,66 @@ function AddContractButton(props: { group: Group; user: User }) {
         </button>
       </div>
 
-      <Modal open={open} setOpen={setOpen} className={'sm:p-0'}>
-        <Col
-          className={
-            'max-h-[60vh] min-h-[60vh] w-full gap-4 rounded-md bg-white'
-          }
-        >
+      <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
+        <Col className={' w-full gap-4 rounded-md bg-white'}>
           <Col className="p-8 pb-0">
             <div className={'text-xl text-indigo-700'}>
               Add a question to your group
             </div>
 
-            <Col className="items-center">
-              <CreateQuestionButton
-                user={user}
-                overrideText={'New question'}
-                className={'w-48 flex-shrink-0 '}
-                query={`?groupId=${group.id}`}
-              />
+            {contracts.length === 0 ? (
+              <Col className="items-center justify-center">
+                <CreateQuestionButton
+                  user={user}
+                  overrideText={'New question'}
+                  className={'w-48 flex-shrink-0 '}
+                  query={`?groupId=${group.id}`}
+                />
 
-              <div className={'mt-2 text-lg text-indigo-700'}>or</div>
-            </Col>
+                <div className={'mt-1 text-lg text-gray-600'}>
+                  (or select old questions)
+                </div>
+              </Col>
+            ) : (
+              <Col className={'w-full '}>
+                {!loading ? (
+                  <Row className={'justify-end gap-4'}>
+                    <Button onClick={doneAddingContracts} color={'indigo'}>
+                      Add {contracts.length} question
+                      {contracts.length > 1 && 's'}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setContracts([])
+                      }}
+                      color={'gray'}
+                    >
+                      Cancel
+                    </Button>
+                  </Row>
+                ) : (
+                  <Row className={'justify-center'}>
+                    <LoadingIndicator />
+                  </Row>
+                )}
+              </Col>
+            )}
           </Col>
 
           <div className={'overflow-y-scroll sm:px-8'}>
             <ContractSearch
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
-              overrideGridClassName={'flex grid-cols-1 flex-col gap-3 p-1'}
+              overrideGridClassName={
+                'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
+              }
               showPlaceHolder={true}
-              hideQuickBet={true}
+              cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
               additionalFilter={{ excludeContractIds: group.contractIds }}
+              highlightOptions={{
+                contractIds: contracts.map((c) => c.id),
+                highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
+              }}
             />
           </div>
         </Col>

@@ -31,9 +31,8 @@ export default function UserProfile(props: { user: User | null }) {
   const { user } = props
 
   const router = useRouter()
-  const { username, tab } = router.query as {
+  const { username } = router.query as {
     username: string
-    tab?: string | undefined
   }
   const currentUser = useUser()
 
@@ -42,11 +41,7 @@ export default function UserProfile(props: { user: User | null }) {
   if (user === undefined) return <div />
 
   return user ? (
-    <UserPage
-      user={user}
-      currentUser={currentUser || undefined}
-      defaultTabTitle={tab}
-    />
+    <UserPage user={user} currentUser={currentUser || undefined} />
   ) : (
     <Custom404 />
   )

@@ -1,14 +1,9 @@
 import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
-initAdmin()
-
 import { getValues, isProd } from '../utils'
-import {
-  CATEGORIES_GROUP_SLUG_POSTFIX,
-  DEFAULT_CATEGORIES,
-} from 'common/categories'
-import { Group } from 'common/group'
+import { CATEGORIES_GROUP_SLUG_POSTFIX } from 'common/categories'
+import { Group, GroupLink } from 'common/group'
 import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -18,28 +13,12 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 
+initAdmin()
+
 const adminFirestore = admin.firestore()
 
-async function convertCategoriesToGroups() {
-  const groups = await getValues<Group>(adminFirestore.collection('groups'))
-  const contracts = await getValues<Contract>(
-    adminFirestore.collection('contracts')
-  )
-  for (const group of groups) {
-    const groupContracts = contracts.filter((contract) =>
-      group.contractIds.includes(contract.id)
-    )
-    for (const contract of groupContracts) {
-      await adminFirestore
-        .collection('contracts')
-        .doc(contract.id)
-        .update({
-          groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
-        })
-    }
-  }
-
-  for (const category of Object.values(DEFAULT_CATEGORIES)) {
+const convertCategoriesToGroupsInternal = async (categories: string[]) => {
+  for (const category of categories) {
     const markets = await getValues<Contract>(
       adminFirestore
         .collection('contracts')
@@ -77,7 +56,7 @@ async function convertCategoriesToGroups() {
       createdTime: Date.now(),
       anyoneCanJoin: true,
       memberIds: [manifoldAccount],
-      about: 'Official group for all things related to ' + category,
+      about: 'Default group for all things related to ' + category,
       mostRecentActivityTime: Date.now(),
       contractIds: markets.map((market) => market.id),
       chatDisabled: true,
@@ -93,14 +72,33 @@ async function convertCategoriesToGroups() {
       })
 
     for (const market of markets) {
+      if (market.groupLinks?.map((l) => l.groupId).includes(newGroup.id))
+        continue // already in that group
+
+      const newGroupLinks = [
+        ...(market.groupLinks ?? []),
+        {
+          groupId: newGroup.id,
+          createdTime: Date.now(),
+          slug: newGroup.slug,
+          name: newGroup.name,
+        } as GroupLink,
+      ]
       await adminFirestore
         .collection('contracts')
         .doc(market.id)
         .update({
-          groupSlugs: uniq([...(market?.groupSlugs ?? []), newGroup.slug]),
+          groupSlugs: uniq([...(market.groupSlugs ?? []), newGroup.slug]),
+          groupLinks: newGroupLinks,
         })
     }
   }
+}
+
+async function convertCategoriesToGroups() {
+  // const defaultCategories = Object.values(DEFAULT_CATEGORIES)
+  const moreCategories = ['world', 'culture']
+  await convertCategoriesToGroupsInternal(moreCategories)
 }
 
 if (require.main === module) {

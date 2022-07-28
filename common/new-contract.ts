@@ -5,6 +5,7 @@ import {
   CPMM,
   DPM,
   FreeResponse,
+  MultipleChoice,
   Numeric,
   outcomeType,
   PseudoNumeric,
@@ -30,7 +31,10 @@ export function getNewContract(
   bucketCount: number,
   min: number,
   max: number,
-  isLogScale: boolean
+  isLogScale: boolean,
+
+  // for multiple choice
+  answers: string[]
 ) {
   const tags = parseTags(
     [
@@ -48,6 +52,8 @@ export function getNewContract(
       ? getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale)
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
+      : outcomeType === 'MULTIPLE_CHOICE'
+      ? getMultipleChoiceProps(ante, answers)
       : getFreeAnswerProps(ante)
 
   const contract: Contract = removeUndefinedProps({
@@ -145,6 +151,26 @@ const getFreeAnswerProps = (ante: number) => {
     pool: { '0': ante },
     totalShares: { '0': ante },
     totalBets: { '0': ante },
+    answers: [],
+  }
+
+  return system
+}
+
+const getMultipleChoiceProps = (ante: number, answers: string[]) => {
+  const numAnswers = answers.length
+  const betAnte = ante / numAnswers
+  const betShares = Math.sqrt(ante ** 2 / numAnswers)
+
+  const defaultValues = (x: any) =>
+    Object.fromEntries(range(0, numAnswers).map((k) => [k, x]))
+
+  const system: DPM & MultipleChoice = {
+    mechanism: 'dpm-2',
+    outcomeType: 'MULTIPLE_CHOICE',
+    pool: defaultValues(betAnte),
+    totalShares: defaultValues(betShares),
+    totalBets: defaultValues(betAnte),
     answers: [],
   }
 

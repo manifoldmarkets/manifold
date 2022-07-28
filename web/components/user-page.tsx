@@ -8,9 +8,9 @@ import Confetti from 'react-confetti'
 
 import {
   follow,
+  getPortfolioHistory,
   unfollow,
   User,
-  getPortfolioHistory,
 } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-list'
 import { SEO } from './SEO'
@@ -22,7 +22,7 @@ import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
-import { Tabs } from './layout/tabs'
+import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
@@ -40,6 +40,8 @@ import { filterDefined } from 'common/util/array'
 import { useUserBets } from 'web/hooks/use-user-bets'
 import { ReferralsButton } from 'web/components/referrals-button'
 import { formatMoney } from 'common/util/format'
+import { ShareIconButton } from 'web/components/share-icon-button'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function UserLink(props: {
   name: string
@@ -64,12 +66,8 @@ export function UserLink(props: {
 export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
-export function UserPage(props: {
-  user: User
-  currentUser?: User
-  defaultTabTitle?: string | undefined
-}) {
-  const { user, currentUser, defaultTabTitle } = props
+export function UserPage(props: { user: User; currentUser?: User }) {
+  const { user, currentUser } = props
   const router = useRouter()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
@@ -216,9 +214,6 @@ export function UserPage(props: {
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
-            {currentUser?.username === 'ian' && (
-              <ReferralsButton user={user} currentUser={currentUser} />
-            )}
             <GroupsButton user={user} />
           </Row>
 
@@ -273,32 +268,39 @@ export function UserPage(props: {
           )}
         </Col>
 
-        <Spacer h={10} />
+        <Spacer h={5} />
+        {currentUser?.id === user.id && (
+          <Row
+            className={
+              'w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
+            }
+          >
+            <span>
+              Refer a friend and earn {formatMoney(500)} when they sign up! You
+              have <ReferralsButton user={user} currentUser={currentUser} />
+            </span>
+            <ShareIconButton
+              copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
+              toastClassName={'sm:-left-40 -left-40 min-w-[250%]'}
+              buttonClassName={'h-10 w-10'}
+              iconClassName={'h-8 w-8 text-indigo-700'}
+            />
+          </Row>
+        )}
+        <Spacer h={5} />
 
         {usersContracts !== 'loading' && contractsById && usersComments ? (
-          <Tabs
+          <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 '}
-            defaultIndex={
-              defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
-            }
-            onClick={(tabName) => {
-              const tabId = tabName.toLowerCase()
-              const subpath = tabId === 'markets' ? '' : '?tab=' + tabId
-              // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
-              // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
-              router.push(`/${user.username}${subpath}`, undefined, {
-                shallow: true,
-              })
-            }}
             tabs={[
               {
                 title: 'Markets',
                 content: <CreatorContractsList creator={user} />,
                 tabIcon: (
-                  <div className="px-0.5 font-bold">
+                  <span className="px-0.5 font-bold">
                     {usersContracts.length}
-                  </div>
+                  </span>
                 ),
               },
               {
@@ -311,7 +313,9 @@ export function UserPage(props: {
                   />
                 ),
                 tabIcon: (
-                  <div className="px-0.5 font-bold">{usersComments.length}</div>
+                  <span className="px-0.5 font-bold">
+                    {usersComments.length}
+                  </span>
                 ),
               },
               {
@@ -329,7 +333,7 @@ export function UserPage(props: {
                     />
                   </div>
                 ),
-                tabIcon: <div className="px-0.5 font-bold">{betCount}</div>,
+                tabIcon: <span className="px-0.5 font-bold">{betCount}</span>,
               },
             ]}
           />

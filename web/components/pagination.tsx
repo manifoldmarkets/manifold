@@ -1,9 +1,12 @@
+import clsx from 'clsx'
+
 export function Pagination(props: {
   page: number
   itemsPerPage: number
   totalItems: number
   setPage: (page: number) => void
   scrollToTop?: boolean
+  className?: string
   nextTitle?: string
   prevTitle?: string
 }) {
@@ -15,13 +18,17 @@ export function Pagination(props: {
     scrollToTop,
     nextTitle,
     prevTitle,
+    className,
   } = props
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
 
   return (
     <nav
-      className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
+      className={clsx(
+        'flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6',
+        className
+      )}
       aria-label="Pagination"
     >
       <div className="hidden sm:block">

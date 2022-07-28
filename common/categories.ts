@@ -31,10 +31,8 @@ export const EXCLUDED_CATEGORIES: category[] = [
   'manifold',
   'personal',
   'covid',
-  'culture',
   'gaming',
   'crypto',
-  'world',
 ]
 
 export const DEFAULT_CATEGORIES = difference(CATEGORY_LIST, EXCLUDED_CATEGORIES)

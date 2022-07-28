@@ -9,8 +9,8 @@ export function NumberInput(props: {
   numberString: string
   onChange: (newNumberString: string) => void
   error: string | undefined
-  label: string
   disabled?: boolean
+  placeholder?: string
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -21,8 +21,8 @@ export function NumberInput(props: {
     numberString,
     onChange,
     error,
-    label,
     disabled,
+    placeholder,
     className,
     inputClassName,
     inputRef,
@@ -32,16 +32,17 @@ export function NumberInput(props: {
   return (
     <Col className={className}>
       <label className="input-group">
-        <span className="bg-gray-200 text-sm">{label}</span>
         <input
           className={clsx(
-            'input input-bordered max-w-[200px] text-lg',
+            'input input-bordered max-w-[200px] text-lg placeholder:text-gray-400',
             error && 'input-error',
             inputClassName
           )}
           ref={inputRef}
           type="number"
-          placeholder="0"
+          pattern="[0-9]*"
+          inputMode="numeric"
+          placeholder={placeholder ?? '0'}
           maxLength={9}
           value={numberString}
           disabled={disabled}

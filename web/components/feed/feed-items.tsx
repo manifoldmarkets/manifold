@@ -23,6 +23,7 @@ import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
 import { useSaveSeenContract } from 'web/hooks/use-seen-contracts'
+import { useUser } from 'web/hooks/use-user'
 import { trackClick } from 'web/lib/firebase/tracking'
 import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
@@ -35,14 +36,18 @@ import {
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { CPMMBinaryContract, NumericContract } from 'common/contract'
 import { FeedLiquidity } from './feed-liquidity'
+import { SignUpPrompt } from '../sign-up-prompt'
+import { User } from 'common/user'
+import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 
 export function FeedItems(props: {
   contract: Contract
   items: ActivityItem[]
   className?: string
   betRowClassName?: string
+  user: User | null | undefined
 }) {
-  const { contract, items, className, betRowClassName } = props
+  const { contract, items, className, betRowClassName, user } = props
   const { outcomeType } = contract
 
   const [elem, setElem] = useState<HTMLElement | null>(null)
@@ -66,11 +71,20 @@ export function FeedItems(props: {
           </div>
         ))}
       </div>
-      {outcomeType === 'BINARY' && tradingAllowed(contract) && (
-        <BetRow
-          contract={contract as CPMMBinaryContract}
-          className={clsx('mb-2', betRowClassName)}
-        />
+
+      {!user ? (
+        <Col className="mt-4 max-w-sm items-center xl:hidden">
+          <SignUpPrompt />
+          <PlayMoneyDisclaimer />
+        </Col>
+      ) : (
+        outcomeType === 'BINARY' &&
+        tradingAllowed(contract) && (
+          <BetRow
+            contract={contract as CPMMBinaryContract}
+            className={clsx('mb-2', betRowClassName)}
+          />
+        )
       )}
     </div>
   )
@@ -118,6 +132,7 @@ export function FeedQuestion(props: {
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  const user = useUser()
 
   return (
     <div className={'flex gap-2'}>
@@ -149,7 +164,7 @@ export function FeedQuestion(props: {
             href={
               props.contractPath ? props.contractPath : contractPath(contract)
             }
-            onClick={() => trackClick(contract.id)}
+            onClick={() => user && trackClick(user.id, contract.id)}
             className="text-lg text-indigo-700 sm:text-xl"
           >
             {question}

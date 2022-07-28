@@ -10,7 +10,7 @@ const bodySchema = z.object({
 export const cancelbet = newEndpoint({}, async (req, auth) => {
   const { betId } = validate(bodySchema, req.body)
 
-  const result = await firestore.runTransaction(async (trans) => {
+  return await firestore.runTransaction(async (trans) => {
     const snap = await trans.get(
       firestore.collectionGroup('bets').where('id', '==', betId)
     )
@@ -28,8 +28,6 @@ export const cancelbet = newEndpoint({}, async (req, auth) => {
 
     return { ...bet, isCancelled: true }
   })
-
-  return result
 })
 
 const firestore = admin.firestore()

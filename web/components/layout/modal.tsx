@@ -26,7 +26,7 @@ export function Modal(props: {
         className="fixed inset-0 z-50 overflow-y-auto"
         onClose={setOpen}
       >
-        <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:p-0">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -57,7 +57,7 @@ export function Modal(props: {
           >
             <div
               className={clsx(
-                'my-8 mx-6 inline-block w-full transform overflow-hidden text-left align-bottom transition-all sm:align-middle',
+                'my-8 mx-6 inline-block w-full transform overflow-hidden text-left align-bottom transition-all sm:self-center sm:align-middle',
                 sizeClass,
                 className
               )}

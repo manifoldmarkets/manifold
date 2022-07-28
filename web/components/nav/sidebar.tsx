@@ -11,7 +11,7 @@ import {
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
@@ -31,6 +31,13 @@ import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { PrivateUser } from 'common/user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
+const logout = async () => {
+  // log out, and then reload the page, in case SSR wants to boot them out
+  // of whatever logged-in-only area of the site they might be in
+  await withTracking(firebaseLogout, 'sign out')()
+  await Router.replace(Router.asPath)
+}
+
 function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
@@ -39,6 +46,8 @@ function getNavigation() {
       href: `/notifications`,
       icon: NotificationsIcon,
     },
+
+    { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
 
     ...(IS_PRIVATE_MANIFOLD
       ? []
@@ -53,7 +62,6 @@ function getMoreNavigation(user?: User | null) {
 
   if (!user) {
     return [
-      { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
       { name: 'Blog', href: 'https://news.manifold.markets' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -62,15 +70,15 @@ function getMoreNavigation(user?: User | null) {
   }
 
   return [
-    { name: 'Send M$', href: '/links' },
-    { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
+    { name: 'Send M$', href: '/links' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
     {
       name: 'Sign out',
       href: '#',
-      onClick: withTracking(firebaseLogout, 'sign out'),
+      onClick: logout,
     },
   ]
 }
@@ -78,7 +86,6 @@ function getMoreNavigation(user?: User | null) {
 const signedOutNavigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
   { name: 'Explore', href: '/markets', icon: SearchIcon },
-  { name: 'Charity', href: '/charity', icon: HeartIcon },
   {
     name: 'About',
     href: 'https://docs.manifold.markets/$how-to',
@@ -98,6 +105,7 @@ const signedOutMobileNavigation = [
 ]
 
 const signedInMobileNavigation = [
+  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
   ...(IS_PRIVATE_MANIFOLD
     ? []
     : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
@@ -113,15 +121,15 @@ function getMoreMobileNav() {
     ...(IS_PRIVATE_MANIFOLD
       ? []
       : [
-          { name: 'Send M$', href: '/links' },
+          { name: 'Referrals', href: '/referrals' },
           { name: 'Charity', href: '/charity' },
+          { name: 'Send M$', href: '/links' },
           { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         ]),
-    { name: 'Leaderboards', href: '/leaderboards' },
     {
       name: 'Sign out',
       href: '#',
-      onClick: withTracking(firebaseLogout, 'sign out'),
+      onClick: logout,
     },
   ]
 }

@@ -41,7 +41,7 @@ export function AmountInput(props: {
         <span className="bg-gray-200 text-sm">{label}</span>
         <input
           className={clsx(
-            'input input-bordered max-w-[200px] text-lg',
+            'input input-bordered max-w-[200px] text-lg placeholder:text-gray-400',
             error && 'input-error',
             inputClassName
           )}
