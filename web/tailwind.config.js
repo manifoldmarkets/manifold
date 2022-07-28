@@ -18,6 +18,19 @@ module.exports = {
       backgroundImage: {
         'world-trading': "url('/world-trading-background.webp')",
       },
+      colors: {
+        // primary: '#4338CA',
+        // 'primary-dark': '#1F1F6D',
+        // secondary: '#E97176',
+        // 'secondary-dark': '#6060C6',
+        'greyscale-1': '#FBFBFF',
+        'greyscale-2': '#E7E7F4',
+        'greyscale-3': '#D8D8EB',
+        'greyscale-4': '#B1B1C7',
+        'greyscale-5': '#9191A7',
+        'greyscale-6': '#66667C',
+        'greyscale-7': '#111140',
+      },
       typography: {
         quoteless: {
           css: {
