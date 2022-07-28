@@ -8,6 +8,7 @@ import {
   BinaryContract,
   Contract,
   FreeResponseContract,
+  MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
@@ -227,7 +228,7 @@ function FreeResponseTopAnswer(props: {
 }
 
 export function FreeResponseResolutionOrChance(props: {
-  contract: FreeResponseContract
+  contract: FreeResponseContract | MultipleChoiceContract
   truncate: 'short' | 'long' | 'none'
   className?: string
 }) {

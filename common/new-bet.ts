@@ -18,6 +18,7 @@ import {
   CPMMBinaryContract,
   DPMBinaryContract,
   FreeResponseContract,
+  MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
 } from './contract'
@@ -322,7 +323,7 @@ export const getNewBinaryDpmBetInfo = (
 export const getNewMultiBetInfo = (
   outcome: string,
   amount: number,
-  contract: FreeResponseContract,
+  contract: FreeResponseContract | MultipleChoiceContract,
   loanAmount: number
 ) => {
   const { pool, totalShares, totalBets } = contract

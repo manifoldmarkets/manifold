@@ -23,6 +23,7 @@ import {
   BinaryContract,
   FreeResponseContract,
   PseudoNumericContract,
+  MultipleChoiceContract,
 } from './contract'
 import { floatingEqual } from './util/math'
 
@@ -200,7 +201,9 @@ export function getContractBetNullMetrics() {
   }
 }
 
-export function getTopAnswer(contract: FreeResponseContract) {
+export function getTopAnswer(
+  contract: FreeResponseContract | MultipleChoiceContract
+) {
   const { answers } = contract
   const top = maxBy(
     answers?.map((answer) => ({
