@@ -7,6 +7,7 @@ import {
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
+  MultipleChoiceContract,
   NumericContract,
   OUTCOME_TYPES,
 } from '../../common/contract'
@@ -20,15 +21,18 @@ import {
   FIXED_ANTE,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
+  getMultipleChoiceAntes,
   getNumericAnte,
 } from '../../common/antes'
-import { getNoneAnswer } from '../../common/answer'
+import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
+import { zip } from 'lodash'
+import { Bet } from 'common/bet'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -79,11 +83,15 @@ const numericSchema = z.object({
   isLogScale: z.boolean().optional(),
 })
 
+const multipleChoiceSchema = z.object({
+  answers: z.string().trim().min(1).array().min(2),
+})
+
 export const createmarket = newEndpoint({}, async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType, groupId } =
     validate(bodySchema, req.body)
 
-  let min, max, initialProb, isLogScale
+  let min, max, initialProb, isLogScale, answers
 
   if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
     let initialValue
@@ -104,8 +112,13 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
         )
       else throw new APIError(400, 'Invalid initial probability.')
   }
+
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
+  }
+
+  if (outcomeType === 'MULTIPLE_CHOICE') {
+    ;({ answers } = validate(multipleChoiceSchema, req.body))
   }
 
   const userDoc = await firestore.collection('users').doc(auth.uid).get()
@@ -167,7 +180,8 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,
-    isLogScale ?? false
+    isLogScale ?? false,
+    answers ?? []
   )
 
   if (ante) await chargeUser(user.id, ante, true)
@@ -189,6 +203,29 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     )
 
     await liquidityDoc.set(lp)
+  } else if (outcomeType === 'MULTIPLE_CHOICE') {
+    const betCol = firestore.collection(`contracts/${contract.id}/bets`)
+    const betDocs = (answers ?? []).map(() => betCol.doc())
+
+    const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
+    const answerDocs = (answers ?? []).map(() => answerCol.doc())
+
+    const { bets, answerObjects } = getMultipleChoiceAntes(
+      user,
+      contract as MultipleChoiceContract,
+      answers ?? [],
+      betDocs.map((bd) => bd.id)
+    )
+
+    await Promise.all(
+      zip(bets, betDocs).map(([bet, doc]) => doc?.create(bet as Bet))
+    )
+    await Promise.all(
+      zip(answerObjects, answerDocs).map(([answer, doc]) =>
+        doc?.create(answer as Answer)
+      )
+    )
+    await contractRef.update({ answers: answerObjects })
   } else if (outcomeType === 'FREE_RESPONSE') {
     const noneAnswerDoc = firestore
       .collection(`contracts/${contract.id}/answers`)
