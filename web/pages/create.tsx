@@ -31,6 +31,7 @@ import { Checkbox } from 'web/components/checkbox'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
+import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -116,6 +117,8 @@ export function NewContract(props: {
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
 
+  const [answers, setAnswers] = useState<string[]>([]) // for multiple choice
+
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
@@ -160,6 +163,10 @@ export function NewContract(props: {
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
+  const isValidMultipleChoice = answers.every(
+    (answer) => answer.trim().length > 0
+  )
+
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
     question.length > 0 &&
@@ -178,7 +185,8 @@ export function NewContract(props: {
         min < max &&
         max - min > 0.01 &&
         min < initialValue &&
-        initialValue < max))
+        initialValue < max)) &&
+    (outcomeType !== 'MULTIPLE_CHOICE' || isValidMultipleChoice)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -221,6 +229,7 @@ export function NewContract(props: {
           max,
           initialValue,
           isLogScale,
+          answers,
           groupId: selectedGroup?.id,
         })
       )
@@ -259,10 +268,11 @@ export function NewContract(props: {
               'Users can submit their own answers to this market.'
             )
           else setMarketInfoText('')
-          setOutcomeType(choice as 'BINARY' | 'FREE_RESPONSE')
+          setOutcomeType(choice as outcomeType)
         }}
         choicesMap={{
           'Yes / No': 'BINARY',
+          'Multiple choice': 'MULTIPLE_CHOICE',
           'Free response': 'FREE_RESPONSE',
           Numeric: 'PSEUDO_NUMERIC',
         }}
@@ -276,6 +286,10 @@ export function NewContract(props: {
       )}
 
       <Spacer h={6} />
+
+      {outcomeType === 'MULTIPLE_CHOICE' && (
+        <MultipleChoiceAnswers setAnswers={setAnswers} />
+      )}
 
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>

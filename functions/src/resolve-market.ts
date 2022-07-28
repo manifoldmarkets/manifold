@@ -5,6 +5,7 @@ import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 import {
   Contract,
   FreeResponseContract,
+  MultipleChoiceContract,
   RESOLUTIONS,
 } from '../../common/contract'
 import { User } from '../../common/user'
@@ -245,7 +246,10 @@ function getResolutionParams(contract: Contract, body: string) {
       ...validate(pseudoNumericSchema, body),
       resolutions: undefined,
     }
-  } else if (outcomeType === 'FREE_RESPONSE') {
+  } else if (
+    outcomeType === 'FREE_RESPONSE' ||
+    outcomeType === 'MULTIPLE_CHOICE'
+  ) {
     const freeResponseParams = validate(freeResponseSchema, body)
     const { outcome } = freeResponseParams
     switch (outcome) {
@@ -292,7 +296,10 @@ function getResolutionParams(contract: Contract, body: string) {
   throw new APIError(500, `Invalid outcome type: ${outcomeType}`)
 }
 
-function validateAnswer(contract: FreeResponseContract, answer: number) {
+function validateAnswer(
+  contract: FreeResponseContract | MultipleChoiceContract,
+  answer: number
+) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answer.toString())) {
     throw new APIError(400, `${answer} is not a valid answer ID`)
