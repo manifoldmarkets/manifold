@@ -41,16 +41,24 @@ async function scrapeFtx() {
   const resp = await fetch('https://ftxfuturefund.org/all-grants/#grants')
   const text = await resp.text()
   const $ = cheerio.load(text)
+  const strip = (text: string) => text.replace(/'/g, '')
+  const toNum = (text: string) => Number(text.replace(/[^0-9.-]+/g, ''))
+
   // Parse Grant objects from each <div class="grant-card"> using cheerio
   const csvLines = [
     // Add a header row
-    'title\tdescription\tdate\tamount\tareasOfInterest\tlink',
+    // 'title\tdescription\tdate\tamount\tareasOfInterest\tlink',
     ...$('div.grant-card')
       .map((_, el) => elToFtxGrant($, el))
       .get()
-      .map((grant) =>
-        // Join all attributes with tabs
-        Object.values(grant).join('\t')
+      .map(
+        (grant) =>
+          // Join all attributes with tabs
+          `{ from: 'FTX FF', to: '${
+            grant.title
+          }', date: '2022-07-27', amount: ${toNum(
+            grant.amount
+          )}, description: '${strip(grant.description)}' },`
       ),
   ]
   fs.writeFileSync('ftx-grants.csv', csvLines.join('\n'))
