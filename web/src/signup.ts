@@ -1,3 +1,4 @@
+import { TWTICH_APP_CLIENT_ID } from "common/secrets";
 import "./style/signup.scss";
 
 function signup() {
@@ -37,3 +38,5 @@ function signup() {
 document.getElementById("signup").addEventListener("click", () => {
     signup();
 });
+
+(<HTMLLinkElement> document.getElementById("addbot")).href = `https://id.twitch.tv/oauth2/authorize?client_id=${TWTICH_APP_CLIENT_ID}&response_type=code&redirect_uri=http://localhost:9172/registerchanneltwitch&scope=user:read:email`;

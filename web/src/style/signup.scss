@@ -33,7 +33,7 @@ input {
     transition: all 0.2s ease-in-out;
 }
 
-button {
+a, button {
     padding: 1em;
     font-family: "Readex Pro", sans-serif;
     outline: none;
@@ -48,6 +48,10 @@ button {
 
     border-radius: 8px;
     cursor: pointer;
+}
+
+a {
+    text-decoration: none;
 }
 
 .col {

@@ -1,4 +1,4 @@
-import express, { Express, response } from "express";
+import express, { Express } from "express";
 import { AddressInfo } from "net";
 import fetch from "node-fetch";
 import moment from "moment";
@@ -12,6 +12,7 @@ import * as Packet from "common/packet-ids";
 import TwitchBot from "./twitch-bot";
 import { getParamsFromURL } from "common/utils-node";
 import { TWITCH_APP_CLIENT_SECRET, TWTICH_APP_CLIENT_ID } from "common/secrets";
+import { InsufficientBalanceException, UserNotRegisteredException } from "./exceptions";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -29,7 +30,7 @@ export default class App {
 
     bot: TwitchBot;
 
-    readonly userList = {};
+    readonly userList: {[k: string]: {manifoldUsername: string, APIKey: string}} = {};
 
     selectedMarketSlug = "";
 
@@ -40,6 +41,7 @@ export default class App {
 
     constructor() {
         this.app = express();
+        this.bot = new TwitchBot(this);
 
         const server = http.createServer(this.app);
         this.io = new Server(server);
@@ -49,7 +51,7 @@ export default class App {
             socket.emit(Packet.ADD_BETS, this.latestBets);
         });
         server.listen(3000, () => {
-            const address = <AddressInfo> server.address();
+            const address = <AddressInfo>server.address();
             console.log(`Websocket listening on ${address.address}:${address.port}`);
         });
 
@@ -78,12 +80,13 @@ export default class App {
             const data = JSON.parse(rawDataString);
             if (data.version === USER_FILE_GUID) {
                 this.userList = data.userData;
-            }
-            else {
+            } else {
                 console.error("User data file version mismatch. Data not loaded.");
             }
         }
         // console.log(this.userList);
+
+        this.selectMarket("this-is-a-local-market");
     }
 
     private selectMarket(slug: string) {
@@ -96,12 +99,12 @@ export default class App {
         const data = {
             version: USER_FILE_GUID,
             userData: this.userList,
-        }
-        fs.writeFile("data/users.json", JSON.stringify(data, null, 2), {flag: "w+"}, err => {
+        };
+        fs.writeFile("data/users.json", JSON.stringify(data, null, 2), { flag: "w+" }, (err) => {
             if (err) {
                 console.trace(err);
             }
-        }); 
+        });
     }
 
     loadUser(userId: string) {
@@ -115,12 +118,6 @@ export default class App {
                 console.log(`Loaded user ${user.name}.`);
                 delete this.pendingFetches[userId];
                 this.userIdToNameMap[user.id] = user.name;
-
-
-                //!!! Move this / tidy up
-                // const userObj = new User();
-                // userObj.username = user.username;
-                // userObj.APIKey = "1234567";
 
                 const betsToRemove = [];
                 for (const bet of this.pendingBets) {
@@ -152,32 +149,50 @@ export default class App {
         console.log(`[${new Date().toLocaleTimeString()}] ${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
-    async getCurrentUserStake_shares(): Promise<{shares: number, outcome: "YES" | "NO"}> {
-        return fetch(`${APIBase}bets?market=this-is-a-local-market&username=PhilBladen`) //!!! This is not the right user!
-        .then(r => <Promise<ManifoldAPI.Bet[]>> r.json())
-        .then(bets => {
-            let total = 0;
-            for (const bet of bets) {
-                if (bet.outcome == "YES") {
-                    total += bet.shares;
+    getUserForTwitchUsername(twitchUsername: string): {manifoldUsername: string, APIKey: string} {
+        twitchUsername = twitchUsername.toLocaleLowerCase();
+        const user = this.userList[twitchUsername];
+        if (!user) {
+            throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
+        }
+        return user;
+    }
+
+    async getUserBalance(twitchUsername: string): Promise<number> {
+        const user = this.getUserForTwitchUsername(twitchUsername);
+        const response = await fetch(`${APIBase}user/${user.manifoldUsername}`);
+        const data = <ManifoldAPI.LiteUser> await response.json();
+        return data.balance;
+    }
+
+    async getCurrentUserStake_shares(manifoldUsername: string): Promise<{ shares: number; outcome: "YES" | "NO" }> {
+        const market = "this-is-a-local-market"; //!!!
+        return fetch(`${APIBase}bets?market=${market}&username=${manifoldUsername}`)
+            .then((r) => <Promise<ManifoldAPI.Bet[]>>r.json())
+            .then((bets) => {
+                let total = 0;
+                for (const bet of bets) {
+                    if (bet.outcome == "YES") {
+                        total += bet.shares;
+                    } else {
+                        total -= bet.shares;
+                    }
                 }
-                else {
-                    total -= bet.shares;
-                }
-            }
-            return {shares: Math.abs(total), outcome: total > 0 ? "YES" : "NO"};
-        });
+                return { shares: Math.abs(total), outcome: total > 0 ? "YES" : "NO" };
+            });
+    }
+
+    async allIn(twitchUsername: string, yes: boolean) {
+        const balance = await this.getUserBalance(twitchUsername);
+        this.placeBet(twitchUsername, Math.floor(balance), yes);
     }
 
     //TODO: Currently uses the Firebase API - should be updated to the Manifold REST API when possible
-    async sellAllShares(username: string) {
-        username = username.toLocaleLowerCase();
-        if (!this.userList[username]) {
-            throw Error(`No user record for username ${username}`);
-        }
-        const APIKey = this.userList[username].APIKey;
+    async sellAllShares(twitchUsername: string) {
+        const user = this.getUserForTwitchUsername(twitchUsername);
+        const APIKey = user.APIKey;
 
-        const stake = await this.getCurrentUserStake_shares();
+        const stake = await this.getCurrentUserStake_shares(user.manifoldUsername);
         if (Math.abs(stake.shares) < 1) {
             return;
         }
@@ -187,34 +202,29 @@ export default class App {
                 contractId: "litD59HFH1eUx5sAGCNL", //!!! Not using current market info
                 outcome: stake.outcome,
                 shares: stake.shares,
-            }
-    
+            };
+
             const response = await fetch(`https://sellshares-w3txbmd3ba-uc.a.run.app`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Key ${APIKey}`
+                    Authorization: `Key ${APIKey}`,
                 },
                 body: JSON.stringify(requestData),
             });
             if (response.status !== 200) {
-                const error = <{message: string}> await response.json();
+                const error = <{ message: string }>await response.json();
                 throw new Error(error.message);
             }
             console.log("Shares sold successfully.");
-        }
-        catch (e) {
+        } catch (e) {
             console.trace(e);
         }
     }
 
-    async placeBet(username: string, amount: number, yes: boolean) {
-        username = username.toLocaleLowerCase();
-        console.log(`Looking for user ${username}, found ${this.userList[username]}`);
-        if (!this.userList[username]) {
-            throw Error(`No user record for username ${username}`);
-        }
-        const APIKey = this.userList[username].APIKey;
+    async placeBet(twitchUsername: string, amount: number, yes: boolean) {
+        const user = this.getUserForTwitchUsername(twitchUsername);
+        const APIKey = user.APIKey;
 
         const requestData = {
             amount: amount,
@@ -222,27 +232,25 @@ export default class App {
             outcome: yes ? "YES" : "NO",
         };
 
-        try {
-            const response = await fetch(`${APIBase}bet`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Key ${APIKey}`,
-                },
-                body: JSON.stringify(requestData),
-            });
-            if (response.status != 200) {
-                const text = await response.text();
-                throw Error(text);
+        const response = await fetch(`${APIBase}bet`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Key ${APIKey}`,
+            },
+            body: JSON.stringify(requestData),
+        });
+        if (response.status != 200) {
+            const data = <{message: string}> await response.json();
+            if (data.message == "Insufficient balance.") {
+                throw new InsufficientBalanceException();
             }
-        }
-        catch (e) {
-            console.trace(e);
+            throw new Error(JSON.stringify(data));
         }
     }
 
     launch() {
-        this.bot = new TwitchBot(this);
+        this.bot.connect();
 
         let latestLoadedBetId: string = null;
         const pollLatestMarketBets = (numBetsToLoad = 10) => {
@@ -316,20 +324,18 @@ export default class App {
             const params = getParamsFromURL(request.url);
             const channelName = params["c"];
             if (!channelName) {
-                response.status(400).json({msg: "Bad request: missing channel name parameter c."});
+                response.status(400).json({ msg: "Bad request: missing channel name parameter c." });
                 return;
             }
             try {
                 this.bot.leaveChannel(channelName);
-                response.json({msg: `Bot successfully removed from channel ${channelName}.`});
-            }
-            catch (e) {
-                response.status(400).json({msg: `Failed to remove bot: ${e.message}`});
+                response.json({ msg: `Bot successfully removed from channel ${channelName}.` });
+            } catch (e) {
+                response.status(400).json({ msg: `Failed to remove bot: ${e.message}` });
             }
         });
 
         this.app.get("/registerchanneltwitch", (request, response) => {
-            
             const params = getParamsFromURL(request.url);
             const code = params["code"];
 
@@ -342,7 +348,7 @@ export default class App {
 
             const f = async () => {
                 let raw = await fetch(`https://id.twitch.tv/oauth2/token?${queryString}`, {
-                    method: "POST"
+                    method: "POST",
                 });
                 let json = await raw.json();
 
@@ -355,8 +361,8 @@ export default class App {
                 raw = await fetch("https://api.twitch.tv/helix/users", {
                     headers: {
                         "client-id": TWTICH_APP_CLIENT_ID,
-                        "authorization": `Bearer ${accessToken}`
-                    }
+                        authorization: `Bearer ${accessToken}`,
+                    },
                 });
                 json = await raw.json();
 
@@ -366,15 +372,16 @@ export default class App {
                 console.log(`Authorized Twitch user ${twitchLogin}`);
 
                 this.bot.joinChannel(twitchLogin);
-            }
+            };
             f()
-            .then(() => {
-                response.json({message: "Successfully registered bot."});
-            })
-            .catch((e) => {
-                console.trace(e);
-                response.status(400).json({error: e.message, message: "Failed to register bot."});
-            });
+                .then(() => {
+                    // response.json({ message: "Successfully registered bot." });
+                    response.send("<html><head><script>close();</script></head><html>")
+                })
+                .catch((e) => {
+                    console.trace(e);
+                    response.status(400).json({ error: e.message, message: "Failed to register bot." });
+                });
         });
 
         this.app.get("/link", (request, response) => {
@@ -383,7 +390,7 @@ export default class App {
             const musername = ps["m"];
             const apikey = ps["a"];
             if (!tusername || !musername || !apikey) {
-                response.status(400).json({msg: "Bad request. Parameters t, m and a required."});
+                response.status(400).json({ msg: "Bad request. Parameters t, m and a required." });
                 return;
             }
             tusername = tusername.toLocaleLowerCase(); // Twitch usernames are all lowercase. This is a temporary solution until Twitch auth supported.
@@ -392,23 +399,23 @@ export default class App {
             fetch(`${APIBase}bet`, {
                 method: "POST",
                 headers: {
-                    "Authorization": `Key ${apikey}`,
-                }
+                    Authorization: `Key ${apikey}`,
+                },
             })
-            .then(r => {
-                console.log("Status: " + r.status);
-                if (r.status != 403) {
-                    const user = new User();
-                    user.manifoldUsername = musername;
-                    user.APIKey = apikey;
-                    this.userList[tusername] = user;
-                    this.saveUsersToFile();
-                }
-                return r.json();
-            })
-            .then(r => {
-                console.log(r);
-            });
+                .then((r) => {
+                    console.log("Status: " + r.status);
+                    if (r.status != 403) {
+                        const user = new User();
+                        user.manifoldUsername = musername;
+                        user.APIKey = apikey;
+                        this.userList[tusername] = user;
+                        this.saveUsersToFile();
+                    }
+                    return r.json();
+                })
+                .then((r) => {
+                    console.log(r);
+                });
         });
 
         const server = this.app.listen(9172, () => {
