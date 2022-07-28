@@ -35,7 +35,9 @@ export function AnswersPanel(props: {
   const answers = useAnswers(contract.id) ?? contract.answers
   const [winningAnswers, losingAnswers] = partition(
     answers.filter(
-      (answer) => answer.id !== '0' && totalBets[answer.id] > 0.000000001
+      (answer) =>
+        (answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE') &&
+        totalBets[answer.id] > 0.000000001
     ),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
