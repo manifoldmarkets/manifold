@@ -23,7 +23,7 @@ export default function RedeemManaPage() {
   const user = useUser()
   const privateUser = usePrivateUser(user?.id)
   useTracking('view redeem mana page')
-  const cost = 5000
+  const cost = 7500
   useEffect(() => {
     if (open) setSuccess(false)
     setError('')

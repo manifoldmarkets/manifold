@@ -1,27 +1,27 @@
 import { APIError, newEndpoint } from './api'
 import { isProd, log } from './utils'
 import * as admin from 'firebase-admin'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser, User } from '../../common/user'
 import { runTxn, TxnData } from './transact'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+} from '../../common/antes'
 
 // sandbox
 const API_KEY = 'TEST_k-dOX64gXbmZgaaPgbb_7aP6jhI-iXae_mASnHedTvQ'
 const FUNDING_ID = 'Y46Z09MJBQXY'
 const CAMPAIGN_ID = 'DVFR42FR12KO'
+
 // prod
-// const API_KEY = ''
 // const FUNDING_ID = ''
 // const CAMPAIGN_ID = 'T5436LGG2KP6'
 
 const firestore = admin.firestore()
-const amount = 5000
-// Production environment
-// var client = new Tremendous("[PRODUCTION_ACCESS_TOKEN]", "https://www.tremendous.com/api/v2/");
-export const convertmana = newEndpoint({}, async (req, auth) => {
+const amount = 7500
+const opts = { secrets: ['TREMENDOUS_TEST_KEY'] }
+
+export const convertmana = newEndpoint(opts, async (req, auth) => {
   const result = await firestore.runTransaction(async (trans) => {
     log('Inside main transaction.')
     const userDoc = firestore.doc(`users/${auth.uid}`)
@@ -60,9 +60,14 @@ export const convertmana = newEndpoint({}, async (req, auth) => {
     log('sending gift card to:', privateUser.email)
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Tremendous = require('tremendous')
+    // TODO: this isn't working
+    // const apiKey = process.env.TREMENDOUS_TEST_KEY as string
+    const apiKey = API_KEY
+    log('apiKey:', apiKey)
+
     // Sandbox environment
     const client = new Tremendous(
-      API_KEY,
+      apiKey,
       'https://testflight.tremendous.com/api/v2/'
     )
     const order_data = {

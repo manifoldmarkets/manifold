@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import { onRequest } from 'firebase-functions/v2/https'
 import { EndpointDefinition } from './api'
+admin.initializeApp()
 // v2
 import { health } from './health'
 import { transact } from './transact'
@@ -20,8 +21,6 @@ import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
 import { createcheckoutsession, stripewebhook } from './stripe'
 import { convertmana } from './convert-mana-to-gift-card'
-
-admin.initializeApp()
 
 // v1
 export * from './on-create-bet'
