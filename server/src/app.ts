@@ -11,6 +11,7 @@ import { FullBet } from "common/transaction";
 import * as Packet from "common/packet-ids";
 import TwitchBot from "./twitch-bot";
 import { getParamsFromURL } from "common/utils-node";
+import { TWITCH_APP_CLIENT_SECRET, TWTICH_APP_CLIENT_ID } from "common/secrets";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -43,7 +44,6 @@ export default class App {
         const server = http.createServer(this.app);
         this.io = new Server(server);
         this.io.on("connection", (socket) => {
-            // console.log("A client connected by websocket: " + socket.id);
             socket.emit(Packet.CLEAR);
             socket.emit(Packet.SELECT_MARKET, this.selectedMarketSlug);
             socket.emit(Packet.ADD_BETS, this.latestBets);
@@ -153,7 +153,7 @@ export default class App {
     }
 
     async getCurrentUserStake_shares(): Promise<{shares: number, outcome: "YES" | "NO"}> {
-        return fetch(`${APIBase}bets?market=this-is-a-local-market&username=PhilBladen`)
+        return fetch(`${APIBase}bets?market=this-is-a-local-market&username=PhilBladen`) //!!! This is not the right user!
         .then(r => <Promise<ManifoldAPI.Bet[]>> r.json())
         .then(bets => {
             let total = 0;
@@ -169,7 +169,7 @@ export default class App {
         });
     }
 
-    //!!! Currently uses the Firebase API - should be updated to the Manifold REST API when possible
+    //TODO: Currently uses the Firebase API - should be updated to the Manifold REST API when possible
     async sellAllShares(username: string) {
         username = username.toLocaleLowerCase();
         if (!this.userList[username]) {
@@ -213,8 +213,6 @@ export default class App {
         console.log(`Looking for user ${username}, found ${this.userList[username]}`);
         if (!this.userList[username]) {
             throw Error(`No user record for username ${username}`);
-            // console.error(`No user record for username ${username}`);
-            // return;
         }
         const APIKey = this.userList[username].APIKey;
 
@@ -298,25 +296,21 @@ export default class App {
         };
         setInterval(pollLatestMarketBets, 1000);
 
-        // this.app.get("/transactions", (request, response) => {
-        //     response.json(this.latestBets);
+        // this.app.get("/registerchannel", (request, response) => {
+        //     const params = getParamsFromURL(request.url);
+        //     const channelName = params["c"];
+        //     if (!channelName) {
+        //         response.status(400).json({msg: "Bad request: missing channel name parameter c."});
+        //         return;
+        //     }
+        //     try {
+        //         this.bot.joinChannel(channelName);
+        //         response.json({msg: `Bot successfully added to channel ${channelName}.`});
+        //     }
+        //     catch (e) {
+        //         response.status(400).json({msg: `Failed to add bot: ${e.message}`});
+        //     }
         // });
-
-        this.app.get("/registerchannel", (request, response) => {
-            const params = getParamsFromURL(request.url);
-            const channelName = params["c"];
-            if (!channelName) {
-                response.status(400).json({msg: "Bad request: missing channel name parameter c."});
-                return;
-            }
-            try {
-                this.bot.joinChannel(channelName);
-                response.json({msg: `Bot successfully added to channel ${channelName}.`});
-            }
-            catch (e) {
-                response.status(400).json({msg: `Failed to add bot: ${e.message}`});
-            }
-        });
 
         this.app.get("/unregisterchannel", (request, response) => {
             const params = getParamsFromURL(request.url);
@@ -334,13 +328,66 @@ export default class App {
             }
         });
 
-        this.app.get("/link", (request) => {
+        this.app.get("/registerchanneltwitch", (request, response) => {
+            
+            const params = getParamsFromURL(request.url);
+            const code = params["code"];
+
+            console.log("Got a Twitch link request: " + code);
+
+            const grant_type = "authorization_code";
+            const redirect_uri = "http://localhost:9172/registerchanneltwitch";
+
+            const queryString = `client_id=${TWTICH_APP_CLIENT_ID}&client_secret=${TWITCH_APP_CLIENT_SECRET}&code=${code}&grant_type=${grant_type}&redirect_uri=${redirect_uri}`;
+
+            const f = async () => {
+                let raw = await fetch(`https://id.twitch.tv/oauth2/token?${queryString}`, {
+                    method: "POST"
+                });
+                let json = await raw.json();
+
+                const accessToken = json["access_token"];
+                if (!accessToken) {
+                    console.error(json);
+                    throw new Error("Failed to fetch access token.");
+                }
+
+                raw = await fetch("https://api.twitch.tv/helix/users", {
+                    headers: {
+                        "client-id": TWTICH_APP_CLIENT_ID,
+                        "authorization": `Bearer ${accessToken}`
+                    }
+                });
+                json = await raw.json();
+
+                console.log(json);
+
+                const twitchLogin = json["data"][0]["login"];
+                console.log(`Authorized Twitch user ${twitchLogin}`);
+
+                this.bot.joinChannel(twitchLogin);
+            }
+            f()
+            .then(() => {
+                response.json({message: "Successfully registered bot."});
+            })
+            .catch((e) => {
+                console.trace(e);
+                response.status(400).json({error: e.message, message: "Failed to register bot."});
+            });
+        });
+
+        this.app.get("/link", (request, response) => {
             const ps = getParamsFromURL(request.url);
             let tusername = ps["t"];
             const musername = ps["m"];
             const apikey = ps["a"];
+            if (!tusername || !musername || !apikey) {
+                response.status(400).json({msg: "Bad request. Parameters t, m and a required."});
+                return;
+            }
+            tusername = tusername.toLocaleLowerCase(); // Twitch usernames are all lowercase. This is a temporary solution until Twitch auth supported.
             console.log("Got link request: " + `${tusername}, ${musername}, ${apikey}`);
-
 
             fetch(`${APIBase}bet`, {
                 method: "POST",
@@ -354,18 +401,14 @@ export default class App {
                     const user = new User();
                     user.manifoldUsername = musername;
                     user.APIKey = apikey;
-                    tusername = tusername.toLocaleLowerCase(); //!!!
                     this.userList[tusername] = user;
                     this.saveUsersToFile();
-                    // client.say(channel, "Successfully linked Twitch account.");
                 }
                 return r.json();
             })
             .then(r => {
                 console.log(r);
             });
-
-
         });
 
         const server = this.app.listen(9172, () => {

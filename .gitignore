@@ -2,3 +2,4 @@ node_modules
 /Manifold notes.txt
 dist
 data
+secrets.ts
