@@ -72,6 +72,7 @@ function getMoreNavigation(user?: User | null) {
   return [
     { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
+    { name: 'Redeem M$', href: '/redeem' },
     { name: 'Send M$', href: '/links' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
@@ -123,6 +124,7 @@ function getMoreMobileNav() {
       : [
           { name: 'Referrals', href: '/referrals' },
           { name: 'Charity', href: '/charity' },
+          { name: 'Redeem M$', href: '/redeem' },
           { name: 'Send M$', href: '/links' },
           { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         ]),

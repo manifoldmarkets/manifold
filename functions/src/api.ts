@@ -7,10 +7,11 @@ import { z } from 'zod'
 import { APIError } from '../../common/api'
 import { PrivateUser } from '../../common/user'
 import {
-  CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_LOCALHOST,
+  CORS_ORIGIN_MANIFOLD,
   CORS_ORIGIN_VERCEL,
 } from '../../common/envs/constants'
+
 export { APIError } from '../../common/api'
 
 type Output = Record<string, unknown>
@@ -23,13 +24,9 @@ type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
 type KeyCredentials = { kind: 'key'; data: string }
 type Credentials = JwtCredentials | KeyCredentials
 
-const auth = admin.auth()
-const firestore = admin.firestore()
-const privateUsers = firestore.collection(
-  'private-users'
-) as admin.firestore.CollectionReference<PrivateUser>
-
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
+  const auth = admin.auth()
+
   const authHeader = req.get('Authorization')
   if (!authHeader) {
     throw new APIError(403, 'Missing Authorization header.')
@@ -57,6 +54,10 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
 }
 
 export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
+  const firestore = admin.firestore()
+  const privateUsers = firestore.collection(
+    'private-users'
+  ) as admin.firestore.CollectionReference<PrivateUser>
   switch (creds.kind) {
     case 'jwt': {
       if (typeof creds.data.user_id !== 'string') {

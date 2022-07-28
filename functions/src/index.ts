@@ -1,6 +1,25 @@
 import * as admin from 'firebase-admin'
 import { onRequest } from 'firebase-functions/v2/https'
 import { EndpointDefinition } from './api'
+// v2
+import { health } from './health'
+import { transact } from './transact'
+import { changeuserinfo } from './change-user-info'
+import { createuser } from './create-user'
+import { createanswer } from './create-answer'
+import { placebet } from './place-bet'
+import { cancelbet } from './cancel-bet'
+import { sellbet } from './sell-bet'
+import { sellshares } from './sell-shares'
+import { claimmanalink } from './claim-manalink'
+import { createmarket } from './create-contract'
+import { addliquidity } from './add-liquidity'
+import { withdrawliquidity } from './withdraw-liquidity'
+import { creategroup } from './create-group'
+import { resolvemarket } from './resolve-market'
+import { unsubscribe } from './unsubscribe'
+import { createcheckoutsession, stripewebhook } from './stripe'
+import { convertmana } from './convert-mana-to-gift-card'
 
 admin.initializeApp()
 
@@ -26,25 +45,6 @@ export * from './on-create-txn'
 export * from './on-delete-group'
 export * from './score-contracts'
 
-// v2
-import { health } from './health'
-import { transact } from './transact'
-import { changeuserinfo } from './change-user-info'
-import { createuser } from './create-user'
-import { createanswer } from './create-answer'
-import { placebet } from './place-bet'
-import { cancelbet } from './cancel-bet'
-import { sellbet } from './sell-bet'
-import { sellshares } from './sell-shares'
-import { claimmanalink } from './claim-manalink'
-import { createmarket } from './create-contract'
-import { addliquidity } from './add-liquidity'
-import { withdrawliquidity } from './withdraw-liquidity'
-import { creategroup } from './create-group'
-import { resolvemarket } from './resolve-market'
-import { unsubscribe } from './unsubscribe'
-import { stripewebhook, createcheckoutsession } from './stripe'
-
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
 }
@@ -66,6 +66,7 @@ const resolveMarketFunction = toCloudFunction(resolvemarket)
 const unsubscribeFunction = toCloudFunction(unsubscribe)
 const stripeWebhookFunction = toCloudFunction(stripewebhook)
 const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
+const convertMana = toCloudFunction(convertmana)
 
 export {
   healthFunction as health,
@@ -86,4 +87,5 @@ export {
   unsubscribeFunction as unsubscribe,
   stripeWebhookFunction as stripewebhook,
   createCheckoutSessionFunction as createcheckoutsession,
+  convertMana as convertmana,
 }

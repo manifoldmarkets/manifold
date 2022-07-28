@@ -1,13 +1,9 @@
 import * as cors from 'cors'
 import * as express from 'express'
-import { Express, Request, Response, NextFunction } from 'express'
+import { Express, NextFunction, Request, Response } from 'express'
 import { EndpointDefinition } from './api'
-
-const PORT = 8088
-
 import { initAdmin } from './scripts/script-init'
 initAdmin()
-
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
@@ -24,7 +20,10 @@ import { withdrawliquidity } from './withdraw-liquidity'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
-import { stripewebhook, createcheckoutsession } from './stripe'
+import { createcheckoutsession, stripewebhook } from './stripe'
+import { convertmana } from './convert-mana-to-gift-card'
+
+const PORT = 8088
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -62,6 +61,7 @@ addJsonEndpointRoute('/creategroup', creategroup)
 addJsonEndpointRoute('/resolvemarket', resolvemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)
 addJsonEndpointRoute('/createcheckoutsession', createcheckoutsession)
+addJsonEndpointRoute('/convertmana', convertmana)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 
 app.listen(PORT)
