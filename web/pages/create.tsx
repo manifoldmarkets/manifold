@@ -477,6 +477,8 @@ export function NewContract(props: {
           {isSubmitting ? 'Creating...' : 'Create question'}
         </button>
       </Row>
+
+      <Spacer h={6} />
     </div>
   )
 }
