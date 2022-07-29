@@ -59,7 +59,7 @@ const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-  description: descScehma.optional(),
+  description: descScehma.or(z.string()).optional(),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
   closeTime: zTimestamp().refine(
     (date) => date.getTime() > new Date().getTime(),
@@ -166,13 +166,27 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     ante || 0
   )
 
+  // convert string descriptions into JSONContent
+  const newDescription =
+    typeof description === 'string'
+      ? {
+          type: 'doc',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: description }],
+            },
+          ],
+        }
+      : description ?? {}
+
   const contract = getNewContract(
     contractRef.id,
     slug,
     user,
     question,
     outcomeType,
-    description ?? {},
+    newDescription,
     initialProb ?? 0,
     ante,
     closeTime.getTime(),

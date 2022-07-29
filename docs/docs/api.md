@@ -504,6 +504,7 @@ Parameters:
 - `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, or `NUMERIC`.
 - `question`: Required. The headline question for the market.
 - `description`: Required. A long description describing the rules for the market.
+  - Note: string descriptions do **not** turn into links, mentions, formatted text. Instead, rich text descriptions must be in [TipTap json](https://tiptap.dev/guide/output#option-1-json).
 - `closeTime`: Required. The time at which the market will close, represented as milliseconds since the epoch.
 - `tags`: Optional. An array of string tags for the market.
 
