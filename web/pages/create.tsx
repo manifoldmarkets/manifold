@@ -242,10 +242,6 @@ export function NewContract(props: {
         selectedGroup: selectedGroup?.id,
         isFree: false,
       })
-      if (result && selectedGroup) {
-        await addContractToGroup(selectedGroup, result.id, creator.id)
-      }
-
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
