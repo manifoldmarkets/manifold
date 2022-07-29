@@ -1,16 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
-import { useInfiniteHits, useSortBy } from 'react-instantsearch-hooks-web'
 
 import { Contract } from 'common/contract'
 import {
   Sort,
   useInitialQueryAndSort,
-  useUpdateQueryAndSort,
 } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
@@ -178,8 +176,6 @@ export function ContractSearch(props: {
     .flat()
 
   useEffect(() => {
-    console.log('page', page)
-    let mostRecentQuery = true
     index
       .search(query, {
         facetFilters,
@@ -188,10 +184,9 @@ export function ContractSearch(props: {
         hitsPerPage: 20,
       })
       .then((results) => {
-        // if (mostRecentQuery) {
         if (page === 0) {
           setHitsByPage({
-            '0': results.hits as any as Contract[],
+            [0]: results.hits as any as Contract[],
           })
         } else {
           setHitsByPage((hitsByPage) => ({
@@ -199,17 +194,9 @@ export function ContractSearch(props: {
             [page]: results.hits,
           }))
         }
-        // setHits(results.hits as any as Contract[])
-        console.log(results.page, results.nbPages, hits)
-        // }
+        console.log(results.page, '/', results.nbPages, results.hits)
       })
-
-    return () => {
-      mostRecentQuery = false
-    }
   }, [query, page, index, facetFilters, numericFilters])
-
-  console.log('query', query, 'index', index, 'hits', hits)
 
   const showTime =
     sort === 'close-date' || sort === 'resolve-date' ? sort : undefined
@@ -336,86 +323,5 @@ export function ContractSearch(props: {
         />
       )}
     </Col>
-  )
-}
-
-export function ContractSearchInner(props: {
-  querySortOptions?: {
-    defaultSort: Sort
-    shouldLoadFromStorage?: boolean
-  }
-  onContractClick?: (contract: Contract) => void
-  overrideGridClassName?: string
-  hideQuickBet?: boolean
-  excludeContractIds?: string[]
-}) {
-  const {
-    querySortOptions,
-    onContractClick,
-    overrideGridClassName,
-    hideQuickBet,
-    excludeContractIds,
-  } = props
-  const { initialQuery } = useInitialQueryAndSort(querySortOptions)
-
-  const { query, setQuery, setSort } = useUpdateQueryAndSort({
-    shouldLoadFromStorage: true,
-  })
-
-  useEffect(() => {
-    setQuery(initialQuery)
-  }, [initialQuery])
-
-  const { currentRefinement: index } = useSortBy({
-    items: [],
-  })
-
-  useEffect(() => {
-    setQuery(query)
-  }, [query])
-
-  const isFirstRender = useRef(true)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
-
-    const sort = index.split('contracts-')[1] as Sort
-    if (sort) {
-      setSort(sort)
-    }
-  }, [index])
-
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
-  useEffect(() => {
-    const id = setTimeout(() => setIsInitialLoad(false), 1000)
-    return () => clearTimeout(id)
-  }, [])
-
-  const { showMore, hits, isLastPage } = useInfiniteHits()
-  let contracts = hits as any as Contract[]
-
-  if (isInitialLoad && contracts.length === 0) return <></>
-
-  const showTime = index.endsWith('close-date')
-    ? 'close-date'
-    : index.endsWith('resolve-date')
-    ? 'resolve-date'
-    : undefined
-
-  if (excludeContractIds)
-    contracts = contracts.filter((c) => !excludeContractIds.includes(c.id))
-
-  return (
-    <ContractsGrid
-      contracts={contracts}
-      loadMore={showMore}
-      hasMore={!isLastPage}
-      showTime={showTime}
-      onContractClick={onContractClick}
-      overrideGridClassName={overrideGridClassName}
-      hideQuickBet={hideQuickBet}
-    />
   )
 }
