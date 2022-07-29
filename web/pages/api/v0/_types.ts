@@ -97,6 +97,11 @@ export function toLiteMarket(contract: Contract): LiteMarket {
   const probability =
     contract.outcomeType === 'BINARY' ? getProbability(contract) : undefined
 
+  let min, max, isLogScale: any
+  if (contract.outcomeType === 'PSEUDO_NUMERIC') {
+    ;({ min, max, isLogScale } = contract)
+  }
+
   return removeUndefinedProps({
     id,
     creatorUsername,
@@ -124,6 +129,9 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
     resolutionProbability,
+    min,
+    max,
+    isLogScale,
   })
 }
 
