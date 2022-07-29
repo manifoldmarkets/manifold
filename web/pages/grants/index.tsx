@@ -1,5 +1,5 @@
 import { searchInAny } from 'common/util/parse'
-import { debounce } from 'lodash'
+import { debounce, sortBy } from 'lodash'
 import { useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/page'
@@ -16,6 +16,7 @@ export type Grantee = {
   preview: string
   description: string
   grantsReceived: Grant[]
+  totalReceived: number
 }
 
 export type Grant = {
@@ -59,10 +60,12 @@ function grantsToGrantees(grantsList: Grant[]) {
         preview: grant.description,
         description: grant.description,
         grantsReceived: [],
+        totalReceived: 0,
       }
       grantees.push(grantee)
     }
     grantee.grantsReceived.push(grant)
+    grantee.totalReceived += grant.amount
   }
   console.log(grantees)
   return grantees
@@ -72,13 +75,12 @@ export default function Grants() {
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
 
-  const filteredGrantees = useMemo(
-    () =>
-      grantees.filter((grantee) =>
-        searchInAny(query, grantee.name, grantee.description)
-      ),
-    [query]
-  )
+  const filteredGrantees = useMemo(() => {
+    const g = grantees.filter((grantee) =>
+      searchInAny(query, grantee.name, grantee.description)
+    )
+    return sortBy(g, 'totalReceived').reverse()
+  }, [query])
 
   return (
     <Page>

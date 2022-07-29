@@ -3,15 +3,11 @@ import Image from 'next/image'
 
 import { Grantee } from '.'
 import { Row } from 'web/components/layout/row'
-import { sumBy } from 'lodash'
-import { formatLargeNumber, formatMoney } from 'common/util/format'
+import { formatLargeNumber } from 'common/util/format'
 
 export default function GranteeCard(props: { grantee: Grantee }) {
   const { grantee } = props
-  const { slug, photo, preview } = grantee
-
-  // sumBy grantee.grantsReceived amount
-  const raised = sumBy(grantee.grantsReceived, (grant) => grant.amount)
+  const { slug, photo, preview, totalReceived } = grantee
 
   return (
     <Link href={`/grants/${slug}`} passHref>
@@ -31,11 +27,11 @@ export default function GranteeCard(props: { grantee: Grantee }) {
         </div>
         <div className="card-body">
           <div className="line-clamp-4 text-sm">{preview}</div>
-          {raised > 0 && (
+          {totalReceived > 0 && (
             <Row className="mt-4 flex-1 items-end justify-center gap-6 text-gray-900">
               <Row className="items-baseline gap-1">
                 <span className="text-3xl font-semibold">
-                  {formatUsd(raised)}
+                  {formatUsd(totalReceived)}
                 </span>
                 raised
               </Row>
