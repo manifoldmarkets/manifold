@@ -113,69 +113,65 @@ export function ContractSearch(props: {
     track('select search category', { category: pill ?? 'all' })
   }
 
-  const { facetFilters, numericFilters } = useMemo(() => {
-    let facetFilters = [
-      filter === 'open' ? 'isResolved:false' : '',
-      filter === 'closed' ? 'isResolved:false' : '',
-      filter === 'resolved' ? 'isResolved:true' : '',
-      additionalFilter?.creatorId
-        ? `creatorId:${additionalFilter.creatorId}`
-        : '',
-      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-      additionalFilter?.groupSlug
-        ? `groupLinks.slug:${additionalFilter.groupSlug}`
-        : '',
-      pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
-        ? `groupLinks.slug:${pillFilter}`
-        : '',
-      pillFilter === 'personal'
-        ? // Show contracts in groups that the user is a member of
-          memberGroupSlugs
-            .map((slug) => `groupLinks.slug:${slug}`)
-            // Show contracts created by users the user follows
-            .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
-            // Show contracts bet on by users the user follows
-            .concat(
-              follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
-            )
-        : '',
-      // Subtract contracts you bet on from For you.
-      pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
-      pillFilter === 'your-bets' && user
-        ? // Show contracts bet on by the user
-          `uniqueBettorIds:${user.id}`
-        : '',
-    ].filter((f) => f)
-    // Hack to make Algolia work.
-    facetFilters = ['', ...facetFilters]
+  let facetFilters = [
+    filter === 'open' ? 'isResolved:false' : '',
+    filter === 'closed' ? 'isResolved:false' : '',
+    filter === 'resolved' ? 'isResolved:true' : '',
+    additionalFilter?.creatorId
+      ? `creatorId:${additionalFilter.creatorId}`
+      : '',
+    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+    additionalFilter?.groupSlug
+      ? `groupLinks.slug:${additionalFilter.groupSlug}`
+      : '',
+    pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
+      ? `groupLinks.slug:${pillFilter}`
+      : '',
+    pillFilter === 'personal'
+      ? // Show contracts in groups that the user is a member of
+        memberGroupSlugs
+          .map((slug) => `groupLinks.slug:${slug}`)
+          // Show contracts created by users the user follows
+          .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
+          // Show contracts bet on by users the user follows
+          .concat(
+            follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
+          )
+      : '',
+    // Subtract contracts you bet on from For you.
+    pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
+    pillFilter === 'your-bets' && user
+      ? // Show contracts bet on by the user
+        `uniqueBettorIds:${user.id}`
+      : '',
+  ].filter((f) => f)
+  // Hack to make Algolia work.
+  facetFilters = ['', ...facetFilters]
 
-    const numericFilters = [
-      filter === 'open' ? `closeTime > ${Date.now()}` : '',
-      filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-    ].filter((f) => f)
-
-    return { facetFilters, numericFilters }
-  }, [
-    filter,
-    Object.values(additionalFilter ?? {}).join(','),
-    memberGroupSlugs.join(','),
-    (follows ?? []).join(','),
-    pillFilter,
-  ])
+  const numericFilters = [
+    filter === 'open' ? `closeTime > ${Date.now()}` : '',
+    filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+  ].filter((f) => f)
 
   const indexName = `${indexPrefix}contracts-${sort}`
   const index = useMemo(() => searchClient.initIndex(indexName), [indexName])
 
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(0)
+  const [numPages, setNumPages] = useState(1)
   const [hitsByPage, setHitsByPage] = useState<{ [page: string]: Contract[] }>(
     {}
   )
-  const hits = range(0, page + 1)
-    .map((p) => hitsByPage[p] ?? [])
-    .flat()
 
   useEffect(() => {
+    console.log('search', {
+      query,
+      page,
+      numPages,
+      index,
+      facetFilters,
+      numericFilters,
+    })
     index
       .search(query, {
         facetFilters,
@@ -194,16 +190,30 @@ export function ContractSearch(props: {
             [page]: results.hits,
           }))
         }
+        setNumPages(results.nbPages)
         console.log(results.page, '/', results.nbPages, results.hits)
       })
-  }, [query, page, index, facetFilters, numericFilters])
+    // Note numeric filters are unique based on current time, so can't compare
+    // them by value.
+  }, [query, page, index, JSON.stringify(facetFilters), filter])
 
-  const showTime =
-    sort === 'close-date' || sort === 'resolve-date' ? sort : undefined
+  const loadMore = () => {
+    if (page >= numPages - 1) return
+
+    const haveLoadedCurrentPage = hitsByPage[page]
+    if (haveLoadedCurrentPage) setPage(page + 1)
+  }
+
+  const hits = range(0, page + 1)
+    .map((p) => hitsByPage[p] ?? [])
+    .flat()
 
   const contracts = hits.filter(
     (c) => !additionalFilter?.excludeContractIds?.includes(c.id)
   )
+
+  const showTime =
+    sort === 'close-date' || sort === 'resolve-date' ? sort : undefined
 
   const selectFilter = (filter: filter) => {
     setFilter(filter)
@@ -314,7 +324,7 @@ export function ContractSearch(props: {
       ) : (
         <ContractsGrid
           contracts={contracts}
-          loadMore={() => hitsByPage[page] && setPage(page + 1)}
+          loadMore={loadMore}
           hasMore={true}
           showTime={showTime}
           onContractClick={onContractClick}
