@@ -6,7 +6,6 @@ import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider } from 'web/components/auth-context'
-import { useUser } from 'web/hooks/use-user'
 import Welcome from 'web/components/onboarding/welcome'
 
 function firstLine(msg: string) {
@@ -82,7 +81,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
-          <Welcome {...pageProps}/>
+          <Welcome {...pageProps} />
           <Component {...pageProps} />
         </QueryClientProvider>
       </AuthProvider>
