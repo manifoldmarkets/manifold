@@ -2,10 +2,7 @@
 import algoliasearch from 'algoliasearch/lite'
 
 import { Contract } from 'common/contract'
-import {
-  Sort,
-  useQueryAndSortParams,
-} from '../hooks/use-sort-and-query-params'
+import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useState } from 'react'
@@ -161,14 +158,6 @@ export function ContractSearch(props: {
   )
 
   useEffect(() => {
-    console.log('search', {
-      query,
-      page,
-      numPages,
-      index,
-      facetFilters,
-      numericFilters,
-    })
     let wasMostRecentQuery = true
     index
       .search(query, {
@@ -191,7 +180,6 @@ export function ContractSearch(props: {
           }))
         }
         setNumPages(results.nbPages)
-        console.log(results.page + 1, '/', results.nbPages, results.hits)
       })
     return () => {
       wasMostRecentQuery = false
