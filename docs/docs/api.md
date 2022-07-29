@@ -113,7 +113,8 @@ Requires no authorization.
     // Market attributes. All times are in milliseconds since epoch
     closeTime?: number // Min of creator's chosen date, and resolutionTime
     question: string
-    description: string
+    description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
+    textDescription: string // string description without formatting, images, or embeds
 
     // A list of tags on each market. Any user can add tags to any market.
     // This list also includes the predefined categories shown as filters on the home page.
