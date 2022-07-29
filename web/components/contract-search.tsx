@@ -4,7 +4,7 @@ import algoliasearch from 'algoliasearch/lite'
 import { Contract } from 'common/contract'
 import {
   Sort,
-  useInitialQueryAndSort,
+  useQueryAndSortParams,
 } from '../hooks/use-sort-and-query-params'
 import { ContractsGrid } from './contract/contracts-list'
 import { Row } from './layout/row'
@@ -91,14 +91,12 @@ export function ContractSearch(props: {
     memberPillGroups.length > 0 ? memberPillGroups : defaultPillGroups
 
   const follows = useFollows(user?.id)
-  const { initialSort: savedSort } = useInitialQueryAndSort(querySortOptions)
 
-  const initialSort =
-    savedSort && sortOptions.map(({ value }) => value).includes(savedSort)
-      ? savedSort
-      : querySortOptions?.defaultSort ?? DEFAULT_SORT
-
-  const [sort, setSort] = useState(initialSort)
+  const { shouldLoadFromStorage, defaultSort } = querySortOptions ?? {}
+  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
+    defaultSort,
+    shouldLoadFromStorage,
+  })
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
@@ -156,7 +154,6 @@ export function ContractSearch(props: {
   const indexName = `${indexPrefix}contracts-${sort}`
   const index = useMemo(() => searchClient.initIndex(indexName), [indexName])
 
-  const [query, setQuery] = useState('')
   const [page, setPage] = useState(0)
   const [numPages, setNumPages] = useState(1)
   const [hitsByPage, setHitsByPage] = useState<{ [page: string]: Contract[] }>(
@@ -172,6 +169,7 @@ export function ContractSearch(props: {
       facetFilters,
       numericFilters,
     })
+    let wasMostRecentQuery = true
     index
       .search(query, {
         facetFilters,
@@ -180,6 +178,8 @@ export function ContractSearch(props: {
         hitsPerPage: 20,
       })
       .then((results) => {
+        if (!wasMostRecentQuery) return
+
         if (page === 0) {
           setHitsByPage({
             [0]: results.hits as any as Contract[],
@@ -191,8 +191,11 @@ export function ContractSearch(props: {
           }))
         }
         setNumPages(results.nbPages)
-        console.log(results.page, '/', results.nbPages, results.hits)
+        console.log(results.page + 1, '/', results.nbPages, results.hits)
       })
+    return () => {
+      wasMostRecentQuery = false
+    }
     // Note numeric filters are unique based on current time, so can't compare
     // them by value.
   }, [query, page, index, JSON.stringify(facetFilters), filter])
@@ -215,9 +218,16 @@ export function ContractSearch(props: {
   const showTime =
     sort === 'close-date' || sort === 'resolve-date' ? sort : undefined
 
-  const selectFilter = (filter: filter) => {
-    setFilter(filter)
-    trackCallback('select search filter', { filter })
+  const updateQuery = (newQuery: string) => {
+    setQuery(newQuery)
+    setPage(0)
+  }
+
+  const selectFilter = (newFilter: filter) => {
+    if (newFilter === filter) return
+    setFilter(newFilter)
+    setPage(0)
+    trackCallback('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
@@ -243,7 +253,7 @@ export function ContractSearch(props: {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => updateQuery(e.target.value)}
           placeholder={showPlaceHolder ? `Search ${filter} markets` : ''}
           className="input input-bordered w-full"
         />
