@@ -19,8 +19,6 @@ import {
   createCommentOnContract,
   MAX_COMMENT_LENGTH,
 } from 'web/lib/firebase/comments'
-import Textarea from 'react-expanding-textarea'
-import { Linkify } from 'web/components/linkify'
 import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
@@ -28,10 +26,11 @@ import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { track } from 'web/lib/service/analytics'
-import { useEvent } from 'web/hooks/use-event'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { Content, TextEditor, useTextEditor } from '../editor'
+import { Editor, JSONContent } from '@tiptap/react'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -60,15 +59,13 @@ export function FeedCommentThread(props: {
       parentComment.id && comment.replyToCommentId === parentComment.id
   )
   commentsList.unshift(parentComment)
-  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
+
   function scrollAndOpenReplyInput(comment: Comment) {
     setReplyToUsername(comment.userUsername)
     setShowReply(true)
-    inputRef?.focus()
+    //TODO focus
   }
-  useEffect(() => {
-    if (showReply && inputRef) inputRef.focus()
-  }, [inputRef, showReply])
+
   return (
     <Col className={'w-full gap-3 pr-1'}>
       <span
@@ -100,7 +97,6 @@ export function FeedCommentThread(props: {
             parentCommentId={parentComment.id}
             replyToUsername={replyToUsername}
             parentAnswerOutcome={comments[0].answerOutcome}
-            setRef={setInputRef}
             onSubmitComment={() => {
               setShowReply(false)
               setReplyToUsername('')
@@ -195,7 +191,8 @@ export function FeedComment(props: {
     truncate,
     onReplyClick,
   } = props
-  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
+  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
+    comment
   let betOutcome: string | undefined,
     bought: string | undefined,
     money: string | undefined
@@ -277,7 +274,7 @@ export function FeedComment(props: {
           />
         </div>
         <TruncatedComment
-          comment={text}
+          comment={content || text}
           moreHref={contractPath(contract)}
           shouldTruncate={truncate}
         />
@@ -346,7 +343,6 @@ export function CommentInput(props: {
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: Comment[]
   replyToUsername?: string
-  setRef?: (ref: HTMLTextAreaElement) => void
   // Reply to a free response answer
   parentAnswerOutcome?: string
   // Reply to another comment
@@ -361,10 +357,16 @@ export function CommentInput(props: {
     parentCommentId,
     replyToUsername,
     onSubmitComment,
-    setRef,
   } = props
   const user = useUser()
-  const [comment, setComment] = useState('')
+  const { editor, upload } = useTextEditor({
+    simple: true,
+    max: MAX_COMMENT_LENGTH,
+    placeholder:
+      !!parentCommentId || !!parentAnswerOutcome
+        ? 'Write a reply...'
+        : 'Write a comment...',
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const mostRecentCommentableBet = getMostRecentCommentableBet(
@@ -380,18 +382,17 @@ export function CommentInput(props: {
       track('sign in to comment')
       return await firebaseLogin()
     }
-    if (!comment || isSubmitting) return
+    if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
     await createCommentOnContract(
       contract.id,
-      comment,
+      editor.getJSON(),
       user,
       betId,
       parentAnswerOutcome,
       parentCommentId
     )
     onSubmitComment?.()
-    setComment('')
     setIsSubmitting(false)
   }
 
@@ -446,14 +447,12 @@ export function CommentInput(props: {
                 )}
             </div>
             <CommentInputTextArea
-              commentText={comment}
-              setComment={setComment}
-              isReply={!!parentCommentId || !!parentAnswerOutcome}
+              editor={editor}
+              upload={upload}
               replyToUsername={replyToUsername ?? ''}
               user={user}
               submitComment={submitComment}
               isSubmitting={isSubmitting}
-              setRef={setRef}
               presetId={id}
             />
           </div>
@@ -465,81 +464,43 @@ export function CommentInput(props: {
 
 export function CommentInputTextArea(props: {
   user: User | undefined | null
-  isReply: boolean
   replyToUsername: string
-  commentText: string
-  setComment: (text: string) => void
+  editor: Editor | null
+  upload: any
   submitComment: (id?: string) => void
   isSubmitting: boolean
-  setRef?: (ref: HTMLTextAreaElement) => void
   presetId?: string
-  enterToSubmitOnDesktop?: boolean
 }) {
   const {
-    isReply,
-    setRef,
     user,
-    commentText,
-    setComment,
+    editor,
+    upload,
     submitComment,
     presetId,
     isSubmitting,
     replyToUsername,
-    enterToSubmitOnDesktop,
   } = props
   const { width } = useWindowSize()
-  const memoizedSetComment = useEvent(setComment)
   useEffect(() => {
-    if (!replyToUsername || !user || replyToUsername === user.username) return
-    const replacement = `@${replyToUsername} `
-    memoizedSetComment(replacement + commentText.replace(replacement, ''))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, replyToUsername, memoizedSetComment])
+    editor?.setEditable(!isSubmitting)
+  }, [isSubmitting, editor])
+
+  // TODO: make at mention show up at beginning
   return (
     <>
       <Row className="gap-1.5 text-gray-700">
-        <Textarea
-          ref={setRef}
-          value={commentText}
-          onChange={(e) => setComment(e.target.value)}
-          className={clsx('textarea textarea-bordered w-full resize-none')}
-          // Make room for floating submit button.
-          style={{ paddingRight: 48 }}
-          placeholder={
-            isReply
-              ? 'Write a reply... '
-              : enterToSubmitOnDesktop
-              ? 'Send a message'
-              : 'Write a comment...'
-          }
-          autoFocus={false}
-          maxLength={MAX_COMMENT_LENGTH}
-          disabled={isSubmitting}
-          onKeyDown={(e) => {
-            if (
-              (enterToSubmitOnDesktop &&
-                e.key === 'Enter' &&
-                !e.shiftKey &&
-                width &&
-                width > 768) ||
-              (e.key === 'Enter' && (e.ctrlKey || e.metaKey))
-            ) {
-              e.preventDefault()
-              submitComment(presetId)
-              e.currentTarget.blur()
-            }
-          }}
-        />
-
+        <TextEditor editor={editor} upload={upload} />
         <Col className={clsx('relative justify-end')}>
           {user && !isSubmitting && (
             <button
               className={clsx(
                 'btn btn-ghost btn-sm absolute right-2 bottom-2 flex-row pl-2 capitalize',
-                !commentText && 'pointer-events-none text-gray-500'
+                (!editor || editor.isEmpty) &&
+                  'pointer-events-none text-gray-500'
               )}
               onClick={() => {
                 submitComment(presetId)
+                editor?.commands.clearContent()
               }}
             >
               <PaperAirplaneIcon
@@ -568,28 +529,22 @@ export function CommentInputTextArea(props: {
 }
 
 export function TruncatedComment(props: {
-  comment: string
+  comment: JSONContent
   moreHref: string
   shouldTruncate?: boolean
 }) {
   const { comment, moreHref, shouldTruncate } = props
   let truncated = comment
 
-  // Keep descriptions to at most 400 characters
+  // TODO: Keep descriptions to at most 80 words (~400 characters)
   const MAX_CHARS = 400
-  if (shouldTruncate && truncated.length > MAX_CHARS) {
-    truncated = truncated.slice(0, MAX_CHARS)
-    // Make sure to end on a space
-    const i = truncated.lastIndexOf(' ')
-    truncated = truncated.slice(0, i)
-  }
 
   return (
     <div
       className="mt-2 whitespace-pre-line break-words text-gray-700"
       style={{ fontSize: 15 }}
     >
-      <Linkify text={truncated} />
+      <Content content={comment} />
       {truncated != comment && (
         <SiteLink href={moreHref} className="text-indigo-700">
           ... (show more)

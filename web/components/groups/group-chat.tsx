@@ -23,6 +23,7 @@ import { Tipper } from 'web/components/tipper'
 import { sum } from 'lodash'
 import { formatMoney } from 'common/util/format'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { useTextEditor } from '../editor'
 
 export function GroupChat(props: {
   messages: Comment[]
@@ -31,7 +32,10 @@ export function GroupChat(props: {
   tips: CommentTipMap
 }) {
   const { messages, user, group, tips } = props
-  const [messageText, setMessageText] = useState('')
+  const { editor, upload } = useTextEditor({
+    simple: true,
+    placeholder: 'Send a message',
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrollToBottomRef, setScrollToBottomRef] =
     useState<HTMLDivElement | null>(null)
@@ -39,30 +43,30 @@ export function GroupChat(props: {
   const [scrollToMessageRef, setScrollToMessageRef] =
     useState<HTMLDivElement | null>(null)
   const [replyToUsername, setReplyToUsername] = useState('')
-  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
-  const [groupedMessages, setGroupedMessages] = useState<Comment[]>([])
+
   const router = useRouter()
   const isMember = user && group.memberIds.includes(user?.id)
 
-  useMemo(() => {
+  // array of groups, where each group is an array of messages that are displayed as one
+  const groupedMessages = useMemo(() => {
     // Group messages with createdTime within 2 minutes of each other.
-    const tempMessages = []
+    const tempGrouped: Comment[][] = []
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i]
-      if (i === 0) tempMessages.push({ ...message })
+      if (i === 0) tempGrouped.push([message])
       else {
         const prevMessage = messages[i - 1]
         const diff = message.createdTime - prevMessage.createdTime
         const creatorsMatch = message.userId === prevMessage.userId
         if (diff < 2 * 60 * 1000 && creatorsMatch) {
-          tempMessages[tempMessages.length - 1].text += `\n${message.text}`
+          tempGrouped.at(-1)?.push(message)
         } else {
-          tempMessages.push({ ...message })
+          tempGrouped.push([message])
         }
       }
     }
 
-    setGroupedMessages(tempMessages)
+    return tempGrouped
   }, [messages])
 
   useEffect(() => {
@@ -90,16 +94,16 @@ export function GroupChat(props: {
       track('sign in to comment')
       return await firebaseLogin()
     }
-    if (!messageText || isSubmitting) return
+    if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
-    await createCommentOnGroup(group.id, messageText, user)
-    setMessageText('')
+    await createCommentOnGroup(group.id, editor.getJSON(), user)
+    editor.commands.clearContent()
     setIsSubmitting(false)
     setReplyToUsername('')
-    inputRef?.focus()
+    focusInput()
   }
   function focusInput() {
-    inputRef?.focus()
+    editor?.commands.focus()
   }
 
   const { width, height } = useWindowSize()
@@ -119,20 +123,20 @@ export function GroupChat(props: {
         }
         ref={setScrollToBottomRef}
       >
-        {groupedMessages.map((message) => (
+        {groupedMessages.map((messages) => (
           <GroupMessage
             user={user}
-            key={message.id}
-            comment={message}
+            key={`group ${messages[0].id}`}
+            comments={messages}
             group={group}
             onReplyClick={onReplyClick}
-            highlight={message.id === scrollToMessageId}
+            highlight={messages[0].id === scrollToMessageId}
             setRef={
-              scrollToMessageId === message.id
+              scrollToMessageId === messages[0].id
                 ? setScrollToMessageRef
                 : undefined
             }
-            tips={tips[message.id] ?? {}}
+            tips={tips[messages[0].id] ?? {}}
           />
         ))}
         {messages.length === 0 && (
@@ -140,7 +144,7 @@ export function GroupChat(props: {
             No messages yet. Why not{isMember ? ` ` : ' join and '}
             <button
               className={'cursor-pointer font-bold text-gray-700'}
-              onClick={() => focusInput()}
+              onClick={focusInput}
             >
               add one?
             </button>
@@ -158,15 +162,12 @@ export function GroupChat(props: {
           </div>
           <div className={'flex-1'}>
             <CommentInputTextArea
-              commentText={messageText}
-              setComment={setMessageText}
-              isReply={false}
+              editor={editor}
+              upload={upload}
               user={user}
               replyToUsername={replyToUsername}
               submitComment={submitMessage}
               isSubmitting={isSubmitting}
-              enterToSubmitOnDesktop={true}
-              setRef={setInputRef}
             />
           </div>
         </div>
@@ -177,16 +178,18 @@ export function GroupChat(props: {
 
 const GroupMessage = memo(function GroupMessage_(props: {
   user: User | null | undefined
-  comment: Comment
+  comments: Comment[]
   group: Group
   onReplyClick?: (comment: Comment) => void
   setRef?: (ref: HTMLDivElement) => void
   highlight?: boolean
   tips: CommentTips
 }) {
-  const { comment, onReplyClick, group, setRef, highlight, user, tips } = props
-  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
-  const isCreatorsComment = user && comment.userId === user.id
+  const { comments, onReplyClick, group, setRef, highlight, user, tips } = props
+  const first = comments[0]
+  const { id, userUsername, userName, userAvatarUrl, createdTime } = first
+
+  const isCreatorsComment = user && comments[0].userId === user.id
   return (
     <Col
       ref={setRef}
@@ -216,15 +219,17 @@ const GroupMessage = memo(function GroupMessage_(props: {
           prefix={'group'}
           slug={group.slug}
           createdTime={createdTime}
-          elementId={comment.id}
+          elementId={id}
         />
       </Row>
       <Row className={'text-black'}>
-        <TruncatedComment
-          comment={text}
-          moreHref={groupPath(group.slug)}
-          shouldTruncate={false}
-        />
+        {comments.map((comment) => (
+          <TruncatedComment
+            comment={comment.content} // TODO: || comment.text
+            moreHref={groupPath(group.slug)}
+            shouldTruncate={false}
+          />
+        ))}
       </Row>
       <Row>
         {!isCreatorsComment && onReplyClick && (
@@ -232,7 +237,7 @@ const GroupMessage = memo(function GroupMessage_(props: {
             className={
               'self-start py-1 text-xs font-bold text-gray-500 hover:underline'
             }
-            onClick={() => onReplyClick(comment)}
+            onClick={() => onReplyClick(first)}
           >
             Reply
           </button>
@@ -242,7 +247,7 @@ const GroupMessage = memo(function GroupMessage_(props: {
             {formatMoney(sum(Object.values(tips)))}
           </span>
         )}
-        {!isCreatorsComment && <Tipper comment={comment} tips={tips} />}
+        {!isCreatorsComment && <Tipper comment={first} tips={tips} />}
       </Row>
     </Col>
   )

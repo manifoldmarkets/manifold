@@ -72,7 +72,7 @@ export function FeedAnswerCommentGroup(props: {
     (comment?: Comment, answer?: Answer) => {
       setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
       setShowReply(true)
-      inputRef?.focus()
+      // TODO: focus
     }
   )
 
@@ -80,7 +80,7 @@ export function FeedAnswerCommentGroup(props: {
     // Only show one comment input for a bet at a time
     if (
       betsByCurrentUser.length > 1 &&
-      inputRef?.textContent?.length === 0 &&
+      // inputRef?.textContent?.length === 0 && //TODO: editor.isEmpty
       betsByCurrentUser.sort((a, b) => b.createdTime - a.createdTime)[0]
         ?.outcome !== answer.number.toString()
     )
@@ -173,7 +173,6 @@ export function FeedAnswerCommentGroup(props: {
             commentsByCurrentUser={commentsByCurrentUser}
             parentAnswerOutcome={answer.number.toString()}
             replyToUsername={replyToUsername}
-            setRef={setInputRef}
             onSubmitComment={() => {
               setShowReply(false)
               setReplyToUsername('')
