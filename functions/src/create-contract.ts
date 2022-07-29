@@ -31,8 +31,9 @@ import { User } from '../../common/user'
 import { Group, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
-import { zip } from 'lodash'
+import { uniq, zip } from 'lodash'
 import { Bet } from 'common/bet'
+import { createGroupLinks } from 'functions/src/on-update-group'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -145,16 +146,22 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     }
 
     group = groupDoc.data() as Group
-    if (!group.memberIds.includes(user.id)) {
+    if (
+      !group.memberIds.includes(user.id) &&
+      !group.anyoneCanJoin &&
+      group.creatorId !== user.id
+    ) {
       throw new APIError(
         400,
-        'User must be a member of the group to add markets to it.'
+        'User must be a member/creator of the group or group must be open to add markets to it.'
       )
     }
     if (!group.contractIds.includes(contractRef.id))
       await groupDocRef.update({
-        contractIds: [...group.contractIds, contractRef.id],
+        contractIds: uniq([...group.contractIds, contractRef.id]),
       })
+    // We'll update the group links manually here bc we have the user's id and won't in the trigger
+    await createGroupLinks(group, [contractRef.id], auth.uid)
   }
 
   console.log(

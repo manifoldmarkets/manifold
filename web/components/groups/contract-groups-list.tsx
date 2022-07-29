@@ -7,6 +7,7 @@ import { Button } from 'web/components/button'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import {
   addContractToGroup,
+  canModifyGroupContracts,
   removeContractFromGroup,
 } from 'web/lib/firebase/groups'
 import { User } from 'common/user'
@@ -37,7 +38,7 @@ export function ContractGroupsList(props: {
               ignoreGroupIds: groupLinks.map((g) => g.groupId),
             }}
             setSelectedGroup={(group) =>
-              group && addContractToGroup(group, contract, user.id)
+              group && addContractToGroup(group, contract.id, user.id)
             }
             selectedGroup={undefined}
             creator={user}
@@ -57,11 +58,13 @@ export function ContractGroupsList(props: {
           <Row className="line-clamp-1 items-center gap-2">
             <GroupLinkItem group={group} />
           </Row>
-          {user && group.memberIds.includes(user.id) && (
+          {user && canModifyGroupContracts(group, user.id) && (
             <Button
               color={'gray-white'}
               size={'xs'}
-              onClick={() => removeContractFromGroup(group, contract)}
+              onClick={() =>
+                removeContractFromGroup(group, contract.id, user.id)
+              }
             >
               <XIcon className="h-4 w-4 text-gray-500" />
             </Button>

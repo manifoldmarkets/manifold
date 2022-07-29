@@ -19,7 +19,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup, setContractGroupLinks } from 'web/lib/firebase/groups'
+import { addContractToGroup, getGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -122,7 +122,10 @@ export function NewContract(props: {
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
-        if (group && group.memberIds.includes(creator.id)) {
+        if (
+          group &&
+          (group.memberIds.includes(creator.id) || group.anyoneCanJoin)
+        ) {
           setSelectedGroup(group)
           setShowGroupSelector(false)
         }
@@ -240,7 +243,7 @@ export function NewContract(props: {
         isFree: false,
       })
       if (result && selectedGroup) {
-        await setContractGroupLinks(selectedGroup, result.id, creator.id)
+        await addContractToGroup(selectedGroup, result.id, creator.id)
       }
 
       await router.push(contractPath(result as Contract))

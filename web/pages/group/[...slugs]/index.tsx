@@ -555,7 +555,7 @@ function AddContractButton(props: { group: Group; user: User }) {
     Promise.all(
       contracts.map(async (contract) => {
         setLoading(true)
-        await addContractToGroup(group, contract, user.id)
+        await addContractToGroup(group, contract.id, user.id)
       })
     ).then(() => {
       setLoading(false)
