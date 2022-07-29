@@ -120,7 +120,7 @@ export function useQueryAndSortParams(options?: {
     // If there's no sort option, then set the one from localstorage
     if (router.isReady && !sort && shouldLoadFromStorage) {
       const localSort = localStorage.getItem(MARKETS_SORT) as Sort
-      if (localSort) {
+      if (localSort && localSort !== defaultSort) {
         // Use replace to not break navigating back.
         router.replace(
           { query: { ...router.query, s: localSort } },
