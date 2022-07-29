@@ -115,7 +115,8 @@ export function ContractCard(props: {
               {question}
             </p>
 
-            {outcomeType === 'FREE_RESPONSE' &&
+            {(outcomeType === 'FREE_RESPONSE' ||
+              outcomeType === 'MULTIPLE_CHOICE') &&
               (resolution ? (
                 <FreeResponseOutcomeLabel
                   contract={contract}
@@ -158,7 +159,8 @@ export function ContractCard(props: {
                 />
               )}
 
-              {outcomeType === 'FREE_RESPONSE' && (
+              {(outcomeType === 'FREE_RESPONSE' ||
+                outcomeType === 'MULTIPLE_CHOICE') && (
                 <FreeResponseResolutionOrChance
                   className="self-end text-gray-600"
                   contract={contract}
@@ -210,7 +212,7 @@ export function BinaryResolutionOrChance(props: {
 }
 
 function FreeResponseTopAnswer(props: {
-  contract: FreeResponseContract
+  contract: FreeResponseContract | MultipleChoiceContract
   truncate: 'short' | 'long' | 'none'
   className?: string
 }) {
