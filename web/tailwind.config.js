@@ -19,10 +19,6 @@ module.exports = {
         'world-trading': "url('/world-trading-background.webp')",
       },
       colors: {
-        // primary: '#4338CA',
-        // 'primary-dark': '#1F1F6D',
-        // secondary: '#E97176',
-        // 'secondary-dark': '#6060C6',
         'greyscale-1': '#FBFBFF',
         'greyscale-2': '#E7E7F4',
         'greyscale-3': '#D8D8EB',
