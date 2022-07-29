@@ -40,6 +40,7 @@ export type User = {
   referredByContractId?: string
   referredByGroupId?: string
   lastPingTime?: number
+  showWelcome: boolean
 }
 
 export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
