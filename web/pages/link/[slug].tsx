@@ -10,7 +10,7 @@ import { firebaseLogin, getUser } from 'web/lib/firebase/users'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { User } from 'common/lib/user'
+import { User } from 'common/user'
 import { Manalink } from 'common/manalink'
 
 export default function ClaimPage() {
