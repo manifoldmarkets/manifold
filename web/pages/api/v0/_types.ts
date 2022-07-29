@@ -40,6 +40,8 @@ export type LiteMarket = {
   resolution?: string
   resolutionTime?: number
   resolutionProbability?: number
+
+  lastUpdatedTime?: number
 }
 
 export type ApiAnswer = Answer & {
@@ -90,6 +92,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
     resolutionProbability,
+    lastUpdatedTime,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -129,6 +132,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
     resolutionProbability,
+    lastUpdatedTime,
     min,
     max,
     isLogScale,

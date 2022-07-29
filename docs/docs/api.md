@@ -140,6 +140,8 @@ Requires no authorization.
     resolutionTime?: number
     resolution?: string
     resolutionProbability?: number // Used for BINARY markets resolved to MKT
+
+    lastUpdatedTime?: number
   }
   ```
 
