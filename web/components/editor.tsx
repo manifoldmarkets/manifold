@@ -24,12 +24,17 @@ import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
-import { CodeIcon, PhotographIcon } from '@heroicons/react/solid'
+import {
+  CodeIcon,
+  PhotographIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/solid'
 import { Modal } from './layout/modal'
 import { Col } from './layout/col'
 import { Button } from './button'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
+import { MarketModal } from './editor/market-modal'
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
@@ -123,6 +128,7 @@ export function TextEditor(props: {
 }) {
   const { editor, upload } = props
   const [iframeOpen, setIframeOpen] = useState(false)
+  const [marketOpen, setMarketOpen] = useState(false)
 
   return (
     <>
@@ -157,16 +163,15 @@ export function TextEditor(props: {
         {/* Toolbar, with buttons for image and embeds */}
         <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
           <div className="flex items-center space-x-5">
-            <div className="flex items-center">
+            <div className="tooltip flex items-center" data-tip="Add image">
               <FileUploadButton
                 onFiles={upload.mutate}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
               >
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
-                <span className="sr-only">Upload an image</span>
               </FileUploadButton>
             </div>
-            <div className="flex items-center">
+            <div className="tooltip flex items-center" data-tip="Add embed">
               <button
                 type="button"
                 onClick={() => setIframeOpen(true)}
@@ -178,7 +183,23 @@ export function TextEditor(props: {
                   setOpen={setIframeOpen}
                 />
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
-                <span className="sr-only">Embed an iframe</span>
+              </button>
+            </div>
+            <div className="tooltip flex items-center" data-tip="Add market">
+              <button
+                type="button"
+                onClick={() => setMarketOpen(true)}
+                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
+              >
+                <MarketModal
+                  editor={editor}
+                  open={marketOpen}
+                  setOpen={setMarketOpen}
+                />
+                <PresentationChartLineIcon
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
               </button>
             </div>
           </div>
@@ -269,7 +290,7 @@ const useUploadMutation = (editor: Editor | null) =>
     }
   )
 
-function RichContent(props: { content: JSONContent | string }) {
+export function RichContent(props: { content: JSONContent | string }) {
   const { content } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },

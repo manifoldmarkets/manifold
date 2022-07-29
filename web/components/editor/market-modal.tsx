@@ -1,0 +1,93 @@
+import { Editor } from '@tiptap/react'
+import { Contract } from 'common/contract'
+import { useState } from 'react'
+import { Button } from '../button'
+import { ContractSearch } from '../contract-search'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { LoadingIndicator } from '../loading-indicator'
+import { embedCode } from '../share-embed-button'
+
+export function MarketModal(props: {
+  editor: Editor | null
+  open: boolean
+  setOpen: (open: boolean) => void
+}) {
+  const { editor, open, setOpen } = props
+
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [loading, setLoading] = useState(false)
+
+  async function addContract(contract: Contract) {
+    if (contracts.map((c) => c.id).includes(contract.id)) {
+      setContracts(contracts.filter((c) => c.id !== contract.id))
+    } else setContracts([...contracts, contract])
+  }
+
+  async function doneAddingContracts() {
+    setLoading(true)
+    if (editor) {
+      const e = editor.chain()
+      for (const contract of contracts) {
+        console.log('embedding', embedCode(contract))
+        e.insertContent(embedCode(contract))
+      }
+      e.run()
+    }
+    setLoading(false)
+    setOpen(false)
+    setContracts([])
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
+      <Col className={' w-full gap-4 rounded-md bg-white'}>
+        <Col className="p-8 pb-0">
+          <div className={'text-xl text-indigo-700'}>Embed a market</div>
+
+          <Col className={'w-full '}>
+            {!loading ? (
+              <Row className={'justify-end gap-4'}>
+                {contracts.length > 0 && (
+                  <Button onClick={doneAddingContracts} color={'indigo'}>
+                    Embed {contracts.length} question
+                    {contracts.length > 1 && 's'}
+                  </Button>
+                )}
+                <Button
+                  onClick={() => {
+                    setContracts([])
+                  }}
+                  color={'gray'}
+                >
+                  Cancel
+                </Button>
+              </Row>
+            ) : (
+              <Row className={'justify-center'}>
+                <LoadingIndicator />
+              </Row>
+            )}
+          </Col>
+        </Col>
+
+        <div className={'overflow-y-scroll sm:px-8'}>
+          <ContractSearch
+            hideOrderSelector={true}
+            onContractClick={addContract}
+            overrideGridClassName={
+              'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
+            }
+            showPlaceHolder={true}
+            cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
+            highlightOptions={{
+              contractIds: contracts.map((c) => c.id),
+              highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
+            }}
+          />
+        </div>
+      </Col>
+    </Modal>
+  )
+}

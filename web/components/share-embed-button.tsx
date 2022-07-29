@@ -9,13 +9,11 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
 
-function copyEmbedCode(contract: Contract) {
+export function embedCode(contract: Contract) {
   const title = contract.question
   const src = `https://${DOMAIN}/embed${contractPath(contract)}`
 
-  const embedCode = `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
-
-  copyToClipboard(embedCode)
+  return `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
 }
 
 export function ShareEmbedButton(props: {
@@ -29,7 +27,7 @@ export function ShareEmbedButton(props: {
       as="div"
       className="relative z-10 flex-shrink-0"
       onMouseUp={() => {
-        copyEmbedCode(contract)
+        copyToClipboard(embedCode(contract))
         track('copy embed code')
       }}
     >
