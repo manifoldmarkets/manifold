@@ -2,12 +2,10 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
-import { changeUserInfo } from 'web/lib/firebase/api'
 import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { Subtitle } from '../subtitle'
 import { Title } from '../title'
 
 export default function Welcome() {

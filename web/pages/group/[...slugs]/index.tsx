@@ -51,7 +51,6 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Button } from 'web/components/button'
 
-const manifundGroupNames = ['Cause Exploration Prize']
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -244,113 +243,48 @@ export default function GroupPage(props: {
     },
   ]
 
-  const manifundTabs = [
-    {
-      title: 'Chat',
-      content: chatTab,
-      href: groupPath(group.slug, GROUP_CHAT_SLUG),
-    },
-    {
-      title: 'Markets',
-      content: questionsTab,
-      href: groupPath(group.slug, 'markets'),
-    },
-    {
-      title: 'Leaderboards',
-      content: leaderboard,
-      href: groupPath(group.slug, 'leaderboards'),
-    },
-    {
-      title: 'About',
-      content: aboutTab,
-      href: groupPath(group.slug, 'about'),
-    },
-  ]
   const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
 
-  if (manifundGroupNames.includes(group.name)) {
-    return (
-      <Page
-        rightSidebar={showChatSidebar ? chatTab : undefined}
-        rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
-        className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
-      >
-        <SEO
-          title={group.name}
-          description={`Created by ${creator.name}. ${group.about}`}
-          url={groupPath(group.slug)}
-        />
-        <Col className="px-3">
-          <Row className={'items-center justify-between gap-4'}>
-            <div className={'sm:mb-1'}>
-              <div
-                className={'line-clamp-1 my-2 text-2xl text-indigo-700 sm:my-3'}
-              >
-                {group.name}
-              </div>
-              <div className={'hidden sm:block'}>
-                <Linkify text={group.about} />
-              </div>
+  return (
+    <Page
+      rightSidebar={showChatSidebar ? chatTab : undefined}
+      rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
+      className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
+    >
+      <SEO
+        title={group.name}
+        description={`Created by ${creator.name}. ${group.about}`}
+        url={groupPath(group.slug)}
+      />
+      <Col className="px-3">
+        <Row className={'items-center justify-between gap-4'}>
+          <div className={'sm:mb-1'}>
+            <div
+              className={'line-clamp-1 my-2 text-2xl text-indigo-700 sm:my-3'}
+            >
+              {group.name}
             </div>
-            <div className="mt-2">
-              <JoinOrAddQuestionsButtons
-                group={group}
-                user={user}
-                isMember={!!isMember}
-              />
+            <div className={'hidden sm:block'}>
+              <Linkify text={group.about} />
             </div>
-          </Row>
-        </Col>
-        <Tabs
-          currentPageForAnalytics={groupPath(group.slug)}
-          className={'mb-0 sm:mb-2'}
-          defaultIndex={tabIndex > 0 ? tabIndex : 0}
-          tabs={tabs}
-        />
-      </Page>
-    )
-  } else {
-    return (
-      <Page
-        rightSidebar={showChatSidebar ? chatTab : undefined}
-        rightSidebarClassName={showChatSidebar ? '!top-0' : ''}
-        className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
-      >
-        <SEO
-          title={group.name}
-          description={`Created by ${creator.name}. ${group.about}`}
-          url={groupPath(group.slug)}
-        />
-        <Col className="px-3">
-          <Row className={'items-center justify-between gap-4'}>
-            <div className={'sm:mb-1'}>
-              <div
-                className={'line-clamp-1 my-2 text-2xl text-indigo-700 sm:my-3'}
-              >
-                {group.name}
-              </div>
-              <div className={'hidden sm:block'}>
-                <Linkify text={group.about} />
-              </div>
-            </div>
-            <div className="mt-2">
-              <JoinOrAddQuestionsButtons
-                group={group}
-                user={user}
-                isMember={!!isMember}
-              />
-            </div>
-          </Row>
-        </Col>
-        <Tabs
-          currentPageForAnalytics={groupPath(group.slug)}
-          className={'mb-0 sm:mb-2'}
-          defaultIndex={tabIndex > 0 ? tabIndex : 0}
-          tabs={tabs}
-        />
-      </Page>
-    )
-  }
+          </div>
+          <div className="mt-2">
+            <JoinOrAddQuestionsButtons
+              group={group}
+              user={user}
+              isMember={!!isMember}
+            />
+          </div>
+        </Row>
+      </Col>
+      <Tabs
+        currentPageForAnalytics={groupPath(group.slug)}
+        className={'mb-0 sm:mb-2'}
+        defaultIndex={tabIndex > 0 ? tabIndex : 0}
+        tabs={tabs}
+      />
+    </Page>
+  )
 }
 
 function JoinOrAddQuestionsButtons(props: {
