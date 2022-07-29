@@ -86,8 +86,9 @@ export function useQueryAndSortParams(options?: {
   }
 
   const setSort = (sort: Sort | undefined) => {
-    router.query.s = sort
-    router.push(router, undefined, { shallow: true })
+    router.replace({ query: { ...router.query, s: sort } }, undefined, {
+      shallow: true,
+    })
     if (shouldLoadFromStorage) {
       localStorage.setItem(MARKETS_SORT, sort || '')
     }
@@ -103,12 +104,9 @@ export function useQueryAndSortParams(options?: {
   const pushQuery = useMemo(
     () =>
       debounce((query: string | undefined) => {
-        if (query) {
-          router.query.q = query
-        } else {
-          delete router.query.q
-        }
-        router.replace(router, undefined, { shallow: true })
+        router.replace({ query: { ...router.query, q: query } }, undefined, {
+          shallow: true,
+        })
       }, 100),
     [router]
   )
@@ -123,9 +121,12 @@ export function useQueryAndSortParams(options?: {
     if (router.isReady && !sort && shouldLoadFromStorage) {
       const localSort = localStorage.getItem(MARKETS_SORT) as Sort
       if (localSort) {
-        router.query.s = localSort
         // Use replace to not break navigating back.
-        router.replace(router, undefined, { shallow: true })
+        router.replace(
+          { query: { ...router.query, s: localSort } },
+          undefined,
+          { shallow: true }
+        )
       }
     }
   })
