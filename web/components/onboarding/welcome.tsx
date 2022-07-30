@@ -12,10 +12,10 @@ export default function Welcome() {
   const user = useUser()
   const [open, setOpen] = useState(true)
   const [page, setPage] = useState(0)
-  const totalpages = 4
+  const TOTAL_PAGES = 4
 
   function increasePage() {
-    if (page < totalpages - 1) {
+    if (page < TOTAL_PAGES - 1) {
       setPage(page + 1)
     }
   }
@@ -27,14 +27,12 @@ export default function Welcome() {
   }
 
   async function setUserHasSeenWelcome() {
-    // await changeUserInfo({ showWelcome: false })
     if (user) {
-      console.log('setuserwelcome called')
-      await updateUser(user.id, { ['showWelcome']: false })
+      await updateUser(user.id, { ['shouldShowWelcome']: false })
     }
   }
 
-  if (!user || !user.showWelcome) {
+  if (!user || !user.shouldShowWelcome) {
     return <></>
   } else
     return (
@@ -60,11 +58,11 @@ export default function Welcome() {
                 )}
                 onClick={decreasePage}
               />
-              <PageIndicator page={page} totalpages={totalpages} />
+              <PageIndicator page={page} totalpages={TOTAL_PAGES} />
               <ChevronRightIcon
                 className={clsx(
                   'h-10 w-10 text-indigo-500 hover:text-indigo-600',
-                  page === totalpages - 1 ? 'disabled invisible' : ''
+                  page === TOTAL_PAGES - 1 ? 'disabled invisible' : ''
                 )}
                 onClick={increasePage}
               />
