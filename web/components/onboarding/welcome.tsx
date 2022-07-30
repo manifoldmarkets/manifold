@@ -41,7 +41,6 @@ export default function Welcome() {
         setOpen={(newOpen) => {
           setUserHasSeenWelcome()
           setOpen(newOpen)
-          console.log('show welcome is now')
         }}
       >
         <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
