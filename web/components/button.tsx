@@ -39,8 +39,10 @@ export function Button(props: {
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
         color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
-        color === 'gray' && 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-        color === 'gray-white' && 'bg-white text-gray-500 hover:bg-gray-200',
+        color === 'gray' &&
+          'bg-greyscale-1 text-greyscale-7 hover:bg-greyscale-2',
+        color === 'gray-white' &&
+          'text-greyscale-6 hover:bg-greyscale-2 bg-white',
         className
       )}
       disabled={disabled}

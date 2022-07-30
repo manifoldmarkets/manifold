@@ -77,6 +77,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     followerCountCached: 0,
     followedCategories: DEFAULT_CATEGORIES,
+    shouldShowWelcome: true,
   }
 
   await firestore.collection('users').doc(auth.uid).create(user)
