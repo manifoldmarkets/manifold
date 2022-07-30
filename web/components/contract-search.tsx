@@ -28,6 +28,7 @@ const searchClient = algoliasearch(
 )
 
 const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
+const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 
 const sortOptions = [
   { label: 'Newest', value: 'newest' },
@@ -116,19 +117,22 @@ export function ContractSearch(props: {
     track('select search category', { category: pill ?? 'all' })
   }
 
+  const additionalFilters = [
+    additionalFilter?.creatorId
+      ? `creatorId:${additionalFilter.creatorId}`
+      : '',
+    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+    additionalFilter?.groupSlug
+      ? `groupLinks.slug:${additionalFilter.groupSlug}`
+      : '',
+  ]
   let facetFilters = query
-    ? []
+    ? additionalFilters
     : [
+        ...additionalFilters,
         filter === 'open' ? 'isResolved:false' : '',
         filter === 'closed' ? 'isResolved:false' : '',
         filter === 'resolved' ? 'isResolved:true' : '',
-        additionalFilter?.creatorId
-          ? `creatorId:${additionalFilter.creatorId}`
-          : '',
-        additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-        additionalFilter?.groupSlug
-          ? `groupLinks.slug:${additionalFilter.groupSlug}`
-          : '',
         pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
           ? `groupLinks.slug:${pillFilter}`
           : '',
@@ -162,6 +166,10 @@ export function ContractSearch(props: {
 
   const indexName = `${indexPrefix}contracts-${sort}`
   const index = useMemo(() => searchClient.initIndex(indexName), [indexName])
+  const searchIndex = useMemo(
+    () => searchClient.initIndex(searchIndexName),
+    [searchIndexName]
+  )
 
   const [page, setPage] = useState(0)
   const [numPages, setNumPages] = useState(1)
@@ -171,7 +179,9 @@ export function ContractSearch(props: {
 
   useEffect(() => {
     let wasMostRecentQuery = true
-    index
+    const algoliaIndex = query ? searchIndex : index
+
+    algoliaIndex
       .search(query, {
         facetFilters,
         numericFilters,
@@ -198,7 +208,7 @@ export function ContractSearch(props: {
     }
     // Note numeric filters are unique based on current time, so can't compare
     // them by value.
-  }, [query, page, index, JSON.stringify(facetFilters), filter])
+  }, [query, page, index, searchIndex, JSON.stringify(facetFilters), filter])
 
   const loadMore = () => {
     if (page >= numPages - 1) return
@@ -269,7 +279,7 @@ export function ContractSearch(props: {
             <option value="all">All</option>
           </select>
         )}
-        {!hideOrderSelector && (
+        {!hideOrderSelector && !query && (
           <select
             className="select select-bordered"
             value={sort}
