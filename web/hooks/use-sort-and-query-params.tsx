@@ -104,7 +104,9 @@ export function useQueryAndSortParams(options?: {
   const pushQuery = useMemo(
     () =>
       debounce((query: string | undefined) => {
-        router.replace({ query: { ...router.query, q: query } }, undefined, {
+        const queryObj = { ...router.query, q: query || undefined }
+        if (!query) delete queryObj.q
+        router.replace({ query: queryObj }, undefined, {
           shallow: true,
         })
       }, 100),
