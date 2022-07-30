@@ -116,45 +116,49 @@ export function ContractSearch(props: {
     track('select search category', { category: pill ?? 'all' })
   }
 
-  let facetFilters = [
-    filter === 'open' ? 'isResolved:false' : '',
-    filter === 'closed' ? 'isResolved:false' : '',
-    filter === 'resolved' ? 'isResolved:true' : '',
-    additionalFilter?.creatorId
-      ? `creatorId:${additionalFilter.creatorId}`
-      : '',
-    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-    additionalFilter?.groupSlug
-      ? `groupLinks.slug:${additionalFilter.groupSlug}`
-      : '',
-    pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
-      ? `groupLinks.slug:${pillFilter}`
-      : '',
-    pillFilter === 'personal'
-      ? // Show contracts in groups that the user is a member of
-        memberGroupSlugs
-          .map((slug) => `groupLinks.slug:${slug}`)
-          // Show contracts created by users the user follows
-          .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
-          // Show contracts bet on by users the user follows
-          .concat(
-            follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
-          )
-      : '',
-    // Subtract contracts you bet on from For you.
-    pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
-    pillFilter === 'your-bets' && user
-      ? // Show contracts bet on by the user
-        `uniqueBettorIds:${user.id}`
-      : '',
-  ].filter((f) => f)
+  let facetFilters = query
+    ? []
+    : [
+        filter === 'open' ? 'isResolved:false' : '',
+        filter === 'closed' ? 'isResolved:false' : '',
+        filter === 'resolved' ? 'isResolved:true' : '',
+        additionalFilter?.creatorId
+          ? `creatorId:${additionalFilter.creatorId}`
+          : '',
+        additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+        additionalFilter?.groupSlug
+          ? `groupLinks.slug:${additionalFilter.groupSlug}`
+          : '',
+        pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
+          ? `groupLinks.slug:${pillFilter}`
+          : '',
+        pillFilter === 'personal'
+          ? // Show contracts in groups that the user is a member of
+            memberGroupSlugs
+              .map((slug) => `groupLinks.slug:${slug}`)
+              // Show contracts created by users the user follows
+              .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
+              // Show contracts bet on by users the user follows
+              .concat(
+                follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
+              )
+          : '',
+        // Subtract contracts you bet on from For you.
+        pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
+        pillFilter === 'your-bets' && user
+          ? // Show contracts bet on by the user
+            `uniqueBettorIds:${user.id}`
+          : '',
+      ].filter((f) => f)
   // Hack to make Algolia work.
   facetFilters = ['', ...facetFilters]
 
-  const numericFilters = [
-    filter === 'open' ? `closeTime > ${Date.now()}` : '',
-    filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-  ].filter((f) => f)
+  const numericFilters = query
+    ? []
+    : [
+        filter === 'open' ? `closeTime > ${Date.now()}` : '',
+        filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+      ].filter((f) => f)
 
   const indexName = `${indexPrefix}contracts-${sort}`
   const index = useMemo(() => searchClient.initIndex(indexName), [indexName])
@@ -253,16 +257,18 @@ export function ContractSearch(props: {
           placeholder={showPlaceHolder ? `Search ${filter} markets` : ''}
           className="input input-bordered w-full"
         />
-        <select
-          className="select select-bordered"
-          value={filter}
-          onChange={(e) => selectFilter(e.target.value as filter)}
-        >
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="resolved">Resolved</option>
-          <option value="all">All</option>
-        </select>
+        {!query && (
+          <select
+            className="select select-bordered"
+            value={filter}
+            onChange={(e) => selectFilter(e.target.value as filter)}
+          >
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All</option>
+          </select>
+        )}
         {!hideOrderSelector && (
           <select
             className="select select-bordered"
