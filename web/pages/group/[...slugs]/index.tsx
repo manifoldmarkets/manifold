@@ -242,6 +242,7 @@ export default function GroupPage(props: {
       href: groupPath(group.slug, 'about'),
     },
   ]
+
   const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
 
   return (
