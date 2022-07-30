@@ -7,6 +7,7 @@ import {
   BinaryContract,
   Contract,
   FreeResponseContract,
+  MultipleChoiceContract,
   resolution,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
@@ -77,7 +78,7 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function FreeResponseOutcomeLabel(props: {
-  contract: FreeResponseContract
+  contract: FreeResponseContract | MultipleChoiceContract
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string

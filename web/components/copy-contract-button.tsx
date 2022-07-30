@@ -49,6 +49,10 @@ function duplicateContractHref(contract: Contract) {
     params.initValue = getMappedValue(contract)(contract.initialProbability)
   }
 
+  if (contract.groupLinks && contract.groupLinks.length > 0) {
+    params.groupId = contract.groupLinks[0].groupId
+  }
+
   return (
     `/create?` +
     Object.entries(params)

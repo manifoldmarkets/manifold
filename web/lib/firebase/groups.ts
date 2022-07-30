@@ -129,56 +129,61 @@ export async function addContractToGroup(
   contract: Contract,
   userId: string
 ) {
-  if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) return // already in that group
+  if (!contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
+    const newGroupLinks = [
+      ...(contract.groupLinks ?? []),
+      {
+        groupId: group.id,
+        createdTime: Date.now(),
+        slug: group.slug,
+        userId,
+        name: group.name,
+      } as GroupLink,
+    ]
 
-  const newGroupLinks = [
-    ...(contract.groupLinks ?? []),
-    {
-      groupId: group.id,
-      createdTime: Date.now(),
-      slug: group.slug,
-      userId,
-      name: group.name,
-    } as GroupLink,
-  ]
-
-  await updateContract(contract.id, {
-    groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
-    groupLinks: newGroupLinks,
-  })
-  return await updateGroup(group, {
-    contractIds: uniq([...group.contractIds, contract.id]),
-  })
-    .then(() => group)
-    .catch((err) => {
-      console.error('error adding contract to group', err)
-      return err
+    await updateContract(contract.id, {
+      groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
+      groupLinks: newGroupLinks,
     })
+  }
+  if (!group.contractIds.includes(contract.id)) {
+    return await updateGroup(group, {
+      contractIds: uniq([...group.contractIds, contract.id]),
+    })
+      .then(() => group)
+      .catch((err) => {
+        console.error('error adding contract to group', err)
+        return err
+      })
+  }
 }
 
 export async function removeContractFromGroup(
   group: Group,
   contract: Contract
 ) {
-  if (!contract.groupLinks?.map((l) => l.groupId).includes(group.id)) return // not in that group
-
-  const newGroupLinks = contract.groupLinks?.filter(
-    (link) => link.slug !== group.slug
-  )
-  await updateContract(contract.id, {
-    groupSlugs:
-      contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
-    groupLinks: newGroupLinks ?? [],
-  })
-  const newContractIds = group.contractIds.filter((id) => id !== contract.id)
-  return await updateGroup(group, {
-    contractIds: uniq(newContractIds),
-  })
-    .then(() => group)
-    .catch((err) => {
-      console.error('error removing contract from group', err)
-      return err
+  if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
+    const newGroupLinks = contract.groupLinks?.filter(
+      (link) => link.slug !== group.slug
+    )
+    await updateContract(contract.id, {
+      groupSlugs:
+        contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
+      groupLinks: newGroupLinks ?? [],
     })
+  }
+
+  if (group.contractIds.includes(contract.id)) {
+    const newContractIds = group.contractIds.filter((id) => id !== contract.id)
+    return await updateGroup(group, {
+      contractIds: uniq(newContractIds),
+    })
+      .then(() => group)
+      .catch((err) => {
+        console.error('error removing contract from group', err)
+        return err
+      })
+  }
 }
 
 export async function setContractGroupLinks(
@@ -187,6 +192,7 @@ export async function setContractGroupLinks(
   userId: string
 ) {
   await updateContract(contractId, {
+    groupSlugs: [group.slug],
     groupLinks: [
       {
         groupId: group.id,

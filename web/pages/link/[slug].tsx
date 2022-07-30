@@ -1,14 +1,17 @@
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { claimManalink } from 'web/lib/firebase/api'
 import { useManalink } from 'web/lib/firebase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin } from 'web/lib/firebase/users'
+import { firebaseLogin, getUser } from 'web/lib/firebase/users'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/button'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { User } from 'common/user'
+import { Manalink } from 'common/manalink'
 
 export default function ClaimPage() {
   const user = useUser()
@@ -17,6 +20,8 @@ export default function ClaimPage() {
   const manalink = useManalink(slug)
   const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
+
+  useReferral(user, manalink)
 
   if (!manalink) {
     return <></>
@@ -75,4 +80,14 @@ export default function ClaimPage() {
       </div>
     </>
   )
+}
+
+const useReferral = (user: User | undefined | null, manalink?: Manalink) => {
+  const [creator, setCreator] = useState<User | undefined>(undefined)
+
+  useEffect(() => {
+    if (manalink?.fromId) getUser(manalink.fromId).then(setCreator)
+  }, [manalink])
+
+  useSaveReferral(user, { defaultReferrer: creator?.username })
 }

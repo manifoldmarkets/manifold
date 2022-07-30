@@ -41,6 +41,8 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
       ? 'YES / NO'
       : outcomeType === 'FREE_RESPONSE'
       ? 'Free response'
+      : outcomeType === 'MULTIPLE_CHOICE'
+      ? 'Multiple choice'
       : 'Numeric'
 
   return (

@@ -49,6 +49,7 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { Button } from 'web/components/button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -541,10 +542,26 @@ function GroupLeaderboards(props: {
 function AddContractButton(props: { group: Group; user: User }) {
   const { group, user } = props
   const [open, setOpen] = useState(false)
+  const [contracts, setContracts] = useState<Contract[]>([])
+  const [loading, setLoading] = useState(false)
 
   async function addContractToCurrentGroup(contract: Contract) {
-    await addContractToGroup(group, contract, user.id)
-    setOpen(false)
+    if (contracts.map((c) => c.id).includes(contract.id)) {
+      setContracts(contracts.filter((c) => c.id !== contract.id))
+    } else setContracts([...contracts, contract])
+  }
+
+  async function doneAddingContracts() {
+    Promise.all(
+      contracts.map(async (contract) => {
+        setLoading(true)
+        await addContractToGroup(group, contract, user.id)
+      })
+    ).then(() => {
+      setLoading(false)
+      setOpen(false)
+      setContracts([])
+    })
   }
 
   return (
@@ -558,37 +575,66 @@ function AddContractButton(props: { group: Group; user: User }) {
         </button>
       </div>
 
-      <Modal open={open} setOpen={setOpen} className={'sm:p-0'}>
-        <Col
-          className={
-            'max-h-[60vh] min-h-[60vh] w-full gap-4 rounded-md bg-white'
-          }
-        >
+      <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
+        <Col className={' w-full gap-4 rounded-md bg-white'}>
           <Col className="p-8 pb-0">
             <div className={'text-xl text-indigo-700'}>
               Add a question to your group
             </div>
 
-            <Col className="items-center">
-              <CreateQuestionButton
-                user={user}
-                overrideText={'New question'}
-                className={'w-48 flex-shrink-0 '}
-                query={`?groupId=${group.id}`}
-              />
+            {contracts.length === 0 ? (
+              <Col className="items-center justify-center">
+                <CreateQuestionButton
+                  user={user}
+                  overrideText={'New question'}
+                  className={'w-48 flex-shrink-0 '}
+                  query={`?groupId=${group.id}`}
+                />
 
-              <div className={'mt-2 text-lg text-indigo-700'}>or</div>
-            </Col>
+                <div className={'mt-1 text-lg text-gray-600'}>
+                  (or select old questions)
+                </div>
+              </Col>
+            ) : (
+              <Col className={'w-full '}>
+                {!loading ? (
+                  <Row className={'justify-end gap-4'}>
+                    <Button onClick={doneAddingContracts} color={'indigo'}>
+                      Add {contracts.length} question
+                      {contracts.length > 1 && 's'}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setContracts([])
+                      }}
+                      color={'gray'}
+                    >
+                      Cancel
+                    </Button>
+                  </Row>
+                ) : (
+                  <Row className={'justify-center'}>
+                    <LoadingIndicator />
+                  </Row>
+                )}
+              </Col>
+            )}
           </Col>
 
           <div className={'overflow-y-scroll sm:px-8'}>
             <ContractSearch
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
-              overrideGridClassName={'flex grid-cols-1 flex-col gap-3 p-1'}
+              overrideGridClassName={
+                'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
+              }
               showPlaceHolder={true}
-              hideQuickBet={true}
+              cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
               additionalFilter={{ excludeContractIds: group.contractIds }}
+              highlightOptions={{
+                contractIds: contracts.map((c) => c.id),
+                highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
+              }}
             />
           </div>
         </Col>

@@ -20,6 +20,7 @@ import { Text } from '@tiptap/extension-text'
 // other tiptap extensions
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
+import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
 
 export function parseTags(text: string) {
@@ -81,9 +82,9 @@ export const exhibitExts = [
 
   Image,
   Link,
+  Mention,
   Iframe,
 ]
-// export const exhibitExts = [StarterKit as unknown as Extension, Image]
 
 export function richTextToString(text?: JSONContent) {
   return !text ? '' : generateText(text, exhibitExts)

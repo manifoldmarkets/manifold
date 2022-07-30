@@ -42,6 +42,8 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
+import { PlayMoneyDisclaimer } from './play-money-disclaimer'
+import { AlertBox } from './alert-box'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -72,6 +74,7 @@ export function BetPanel(props: {
         <QuickOrLimitBet
           isLimitOrder={isLimitOrder}
           setIsLimitOrder={setIsLimitOrder}
+          hideToggle={!user}
         />
         <BuyPanel
           hidden={isLimitOrder}
@@ -85,9 +88,13 @@ export function BetPanel(props: {
           user={user}
           unfilledBets={unfilledBets}
         />
+
         <SignUpPrompt />
+
+        {!user && <PlayMoneyDisclaimer />}
       </Col>
-      {unfilledBets.length > 0 && (
+
+      {user && unfilledBets.length > 0 && (
         <LimitBets className="mt-4" contract={contract} bets={unfilledBets} />
       )}
     </Col>
@@ -124,6 +131,7 @@ export function SimpleBetPanel(props: {
         <QuickOrLimitBet
           isLimitOrder={isLimitOrder}
           setIsLimitOrder={setIsLimitOrder}
+          hideToggle={!user}
         />
         <BuyPanel
           hidden={isLimitOrder}
@@ -140,7 +148,10 @@ export function SimpleBetPanel(props: {
           unfilledBets={unfilledBets}
           onBuySuccess={onBetSuccess}
         />
+
         <SignUpPrompt />
+
+        {!user && <PlayMoneyDisclaimer />}
       </Col>
 
       {unfilledBets.length > 0 && (
@@ -254,6 +265,8 @@ function BuyPanel(props: {
 
   const format = getFormattedMappedValue(contract)
 
+  const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <div className="my-3 text-left text-sm text-gray-500">
@@ -277,6 +290,22 @@ function BuyPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
       />
+
+      {(betAmount ?? 0) > 10 &&
+      bankrollFraction >= 0.5 &&
+      bankrollFraction <= 1 ? (
+        <AlertBox
+          title="Whoa, there!"
+          text={`You might not want to spend ${formatPercent(
+            bankrollFraction
+          )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
+            user?.balance ?? 0
+          )}`}
+        />
+      ) : (
+        ''
+      )}
+
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">
@@ -688,32 +717,35 @@ function LimitOrderPanel(props: {
 function QuickOrLimitBet(props: {
   isLimitOrder: boolean
   setIsLimitOrder: (isLimitOrder: boolean) => void
+  hideToggle?: boolean
 }) {
-  const { isLimitOrder, setIsLimitOrder } = props
+  const { isLimitOrder, setIsLimitOrder, hideToggle } = props
 
   return (
     <Row className="align-center mb-4 justify-between">
       <div className="text-4xl">Bet</div>
-      <Row className="mt-1 items-center gap-2">
-        <PillButton
-          selected={!isLimitOrder}
-          onSelect={() => {
-            setIsLimitOrder(false)
-            track('select quick order')
-          }}
-        >
-          Quick
-        </PillButton>
-        <PillButton
-          selected={isLimitOrder}
-          onSelect={() => {
-            setIsLimitOrder(true)
-            track('select limit order')
-          }}
-        >
-          Limit
-        </PillButton>
-      </Row>
+      {!hideToggle && (
+        <Row className="mt-1 items-center gap-2">
+          <PillButton
+            selected={!isLimitOrder}
+            onSelect={() => {
+              setIsLimitOrder(false)
+              track('select quick order')
+            }}
+          >
+            Quick
+          </PillButton>
+          <PillButton
+            selected={isLimitOrder}
+            onSelect={() => {
+              setIsLimitOrder(true)
+              track('select limit order')
+            }}
+          >
+            Limit
+          </PillButton>
+        </Row>
+      )}
     </Row>
   )
 }
@@ -739,7 +771,9 @@ export function SellPanel(props: {
   const betDisabled = isSubmitting || !amount || error
 
   // Sell all shares if remaining shares would be < 1
-  const sellQuantity = amount === Math.floor(shares) ? shares : amount
+  const isSellingAllShares = amount === Math.floor(shares)
+
+  const sellQuantity = isSellingAllShares ? shares : amount
 
   async function submitSell() {
     if (!user || !amount) return
@@ -748,7 +782,7 @@ export function SellPanel(props: {
     setIsSubmitting(true)
 
     await sellShares({
-      shares: sellQuantity,
+      shares: isSellingAllShares ? undefined : amount,
       outcome: sharesOutcome,
       contractId: contract.id,
     })

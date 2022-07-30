@@ -5,14 +5,14 @@ import { groupBy, sortBy, sumBy } from 'lodash'
 import { memo } from 'react'
 
 import { Bet } from 'common/bet'
-import { FreeResponseContract } from 'common/contract'
+import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 const NUM_LINES = 6
 
 export const AnswersGraph = memo(function AnswersGraph(props: {
-  contract: FreeResponseContract
+  contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
   height?: number
 }) {
@@ -178,15 +178,22 @@ function formatTime(
   return d.format(format)
 }
 
-const computeProbsByOutcome = (bets: Bet[], contract: FreeResponseContract) => {
-  const { totalBets } = contract
+const computeProbsByOutcome = (
+  bets: Bet[],
+  contract: FreeResponseContract | MultipleChoiceContract
+) => {
+  const { totalBets, outcomeType } = contract
 
   const betsByOutcome = groupBy(bets, (bet) => bet.outcome)
   const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
     const maxProb = Math.max(
       ...betsByOutcome[outcome].map((bet) => bet.probAfter)
     )
-    return outcome !== '0' && maxProb > 0.02 && totalBets[outcome] > 0.000000001
+    return (
+      (outcome !== '0' || outcomeType === 'MULTIPLE_CHOICE') &&
+      maxProb > 0.02 &&
+      totalBets[outcome] > 0.000000001
+    )
   })
 
   const trackedOutcomes = sortBy(

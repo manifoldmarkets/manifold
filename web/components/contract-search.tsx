@@ -3,7 +3,10 @@ import algoliasearch from 'algoliasearch/lite'
 
 import { Contract } from 'common/contract'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
-import { ContractsGrid } from './contract/contracts-list'
+import {
+  ContractHighlightOptions,
+  ContractsGrid,
+} from './contract/contracts-list'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useState } from 'react'
 import { Spacer } from './layout/spacer'
@@ -52,11 +55,15 @@ export function ContractSearch(props: {
     excludeContractIds?: string[]
     groupSlug?: string
   }
+  highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   showPlaceHolder?: boolean
   hideOrderSelector?: boolean
   overrideGridClassName?: string
-  hideQuickBet?: boolean
+  cardHideOptions?: {
+    hideGroupLink?: boolean
+    hideQuickBet?: boolean
+  }
 }) {
   const {
     querySortOptions,
@@ -65,7 +72,8 @@ export function ContractSearch(props: {
     overrideGridClassName,
     hideOrderSelector,
     showPlaceHolder,
-    hideQuickBet,
+    cardHideOptions,
+    highlightOptions,
   } = props
 
   const user = useUser()
@@ -327,7 +335,8 @@ export function ContractSearch(props: {
           showTime={showTime}
           onContractClick={onContractClick}
           overrideGridClassName={overrideGridClassName}
-          hideQuickBet={hideQuickBet}
+          highlightOptions={highlightOptions}
+          cardHideOptions={cardHideOptions}
         />
       )}
     </Col>

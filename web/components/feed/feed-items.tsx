@@ -36,14 +36,18 @@ import {
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { CPMMBinaryContract, NumericContract } from 'common/contract'
 import { FeedLiquidity } from './feed-liquidity'
+import { SignUpPrompt } from '../sign-up-prompt'
+import { User } from 'common/user'
+import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 
 export function FeedItems(props: {
   contract: Contract
   items: ActivityItem[]
   className?: string
   betRowClassName?: string
+  user: User | null | undefined
 }) {
-  const { contract, items, className, betRowClassName } = props
+  const { contract, items, className, betRowClassName, user } = props
   const { outcomeType } = contract
 
   const [elem, setElem] = useState<HTMLElement | null>(null)
@@ -67,11 +71,20 @@ export function FeedItems(props: {
           </div>
         ))}
       </div>
-      {outcomeType === 'BINARY' && tradingAllowed(contract) && (
-        <BetRow
-          contract={contract as CPMMBinaryContract}
-          className={clsx('mb-2', betRowClassName)}
-        />
+
+      {!user ? (
+        <Col className="mt-4 max-w-sm items-center xl:hidden">
+          <SignUpPrompt />
+          <PlayMoneyDisclaimer />
+        </Col>
+      ) : (
+        outcomeType === 'BINARY' &&
+        tradingAllowed(contract) && (
+          <BetRow
+            contract={contract as CPMMBinaryContract}
+            className={clsx('mb-2', betRowClassName)}
+          />
+        )
       )}
     </div>
   )

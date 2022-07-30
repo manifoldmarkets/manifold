@@ -16,7 +16,7 @@ import { redeemShares } from './redeem-shares'
 
 const bodySchema = z.object({
   contractId: z.string(),
-  shares: z.number(),
+  shares: z.number().optional(), // leave it out to sell all shares
   outcome: z.enum(['YES', 'NO']),
 })
 
@@ -49,11 +49,12 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
 
     const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
     const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
+    const sharesToSell = shares ?? maxShares
 
-    if (!floatingLesserEqual(shares, maxShares))
+    if (!floatingLesserEqual(sharesToSell, maxShares))
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
-    const soldShares = Math.min(shares, maxShares)
+    const soldShares = Math.min(sharesToSell, maxShares)
 
     const unfilledBetsSnap = await transaction.get(
       getUnfilledBetsQuery(contractDoc)
