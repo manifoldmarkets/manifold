@@ -53,7 +53,7 @@ export default function Welcome() {
             <Row className="place-content-between">
               <ChevronLeftIcon
                 className={clsx(
-                  'h-10 w-10 text-gray-400',
+                  'h-10 w-10 text-gray-400 hover:text-gray-500',
                   page === 0 ? 'disabled invisible' : ''
                 )}
                 onClick={decreasePage}
