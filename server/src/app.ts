@@ -9,12 +9,13 @@ import crypto from "crypto";
 import cors from "cors";
 
 import * as ManifoldAPI from "common/manifold-defs";
+import * as Manifold from "./manifold-api";
 import { FullBet } from "common/transaction";
 import * as Packet from "common/packet-ids";
 import TwitchBot from "./twitch-bot";
 import { getParamsFromURL } from "common/utils-node";
 import { TWITCH_APP_CLIENT_SECRET, TWTICH_APP_CLIENT_ID } from "common/secrets";
-import { InsufficientBalanceException, UserNotRegisteredException } from "./exceptions";
+import { UserNotRegisteredException } from "./exceptions";
 import log from "./logger";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
@@ -131,36 +132,33 @@ export default class App {
         });
     }
 
-    loadUser(userId: string) {
-        if (this.pendingFetches[userId]) {
-            return;
-        }
-        this.pendingFetches[userId] = userId;
-        fetch(`${APIBase}user/by-id/${userId}`)
-            .then((r) => <Promise<ManifoldAPI.LiteUser>>r.json())
-            .then((user) => {
-                log.info(`Loaded user ${user.name}.`);
-                delete this.pendingFetches[userId];
-                this.userIdToNameMap[user.id] = user.name;
+    async loadUser(userId: string) {
+        if (this.pendingFetches[userId]) return;
 
-                const betsToRemove = [];
-                for (const bet of this.pendingBets) {
-                    if (user.id == bet.userId) {
-                        const fullBet: FullBet = {
-                            ...bet,
-                            username: user.name,
-                        };
-                        this.addBet(fullBet);
-                        betsToRemove.push(bet);
-                    }
+        this.pendingFetches[userId] = userId;
+        try {
+            const user = await Manifold.getUserByID(userId);
+            log.info(`Loaded user ${user.name}.`);
+            delete this.pendingFetches[userId];
+            this.userIdToNameMap[user.id] = user.name;
+
+            const betsToRemove = [];
+            for (const bet of this.pendingBets) {
+                if (user.id == bet.userId) {
+                    const fullBet: FullBet = {
+                        ...bet,
+                        username: user.name,
+                    };
+                    this.addBet(fullBet);
+                    betsToRemove.push(bet);
                 }
-                this.pendingBets = this.pendingBets.filter((e) => {
-                    return betsToRemove.indexOf(e) < 0;
-                });
-            })
-            .catch((e) => {
-                log.trace(e);
+            }
+            this.pendingBets = this.pendingBets.filter((e) => {
+                return betsToRemove.indexOf(e) < 0;
             });
+        } catch (e) {
+            log.trace(e);
+        }
     }
 
     addBet(bet: FullBet) {
@@ -185,9 +183,7 @@ export default class App {
 
     async getUserBalance(twitchUsername: string): Promise<number> {
         const user = this.getUserForTwitchUsername(twitchUsername);
-        const response = await fetch(`${APIBase}user/${user.manifoldUsername}`);
-        const data = <ManifoldAPI.LiteUser>await response.json();
-        return data.balance;
+        return (await Manifold.getUserByManifoldUsername(user.manifoldUsername)).balance;
     }
 
     async getCurrentUserStake_shares(manifoldUsername: string): Promise<{ shares: number; outcome: "YES" | "NO" }> {
@@ -212,133 +208,26 @@ export default class App {
         this.placeBet(twitchUsername, Math.floor(balance), yes);
     }
 
-    async sellAllShares(twitchUsername: string) {
+    async sellAllShares(twitchUsername: string): Promise<void> {
         const user = this.getUserForTwitchUsername(twitchUsername);
-        const APIKey = user.APIKey;
-
         const stake = await this.getCurrentUserStake_shares(user.manifoldUsername);
-        if (Math.abs(stake.shares) < 1) {
-            return;
-        }
-
-        const requestData = {
-            outcome: stake.outcome,
-        };
-
-        const response = await fetch(`${APIBase}market/${"litD59HFH1eUx5sAGCNL"}/sell`, {
-            //!!! Not using current market info
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Key ${APIKey}`,
-            },
-            body: JSON.stringify(requestData),
-        });
-        if (response.status !== 200) {
-            const error = <{ message: string }>await response.json();
-            throw new Error(error.message);
-        }
+        if (Math.abs(stake.shares) < 1) return;
+        Manifold.sellShares("litD59HFH1eUx5sAGCNL", user.APIKey, stake.outcome); //!!! Market ID
     }
 
-    public async createBinaryMarket(twitchUsername: string, question: string, description: string, initialProb_percent: number) {
+    public async createBinaryMarket(twitchUsername: string, question: string, description: string, initialProb_percent: number): Promise<ManifoldAPI.LiteMarket> {
         const user = this.getUserForTwitchUsername(twitchUsername);
-
-        const outcomeType: "BINARY" | "FREE_RESPONSE" | "NUMERIC" = "BINARY";
-        const descriptionObject = {
-            type: "doc",
-            content: [
-                ...(description
-                    ? [
-                          {
-                              type: "paragraph",
-                              content: [
-                                  {
-                                      type: "text",
-                                      text: question,
-                                  },
-                              ],
-                          },
-                      ]
-                    : []),
-            ],
-        };
-        const closeTime = Date.now() + 1e12; // Arbitrarily long time in the future
-
-        const requestData = {
-            outcomeType: outcomeType,
-            question: question,
-            description: descriptionObject, // WARNING: Contrary to the API docs, this is NOT an optional parameter
-            closeTime: closeTime,
-            initialProb: initialProb_percent,
-        };
-
-        // The following API call is undocumented so will probably break when they change the backend sigh
-        const response = await fetch(`${APIBase}market`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Key ${user.APIKey}`,
-            },
-            body: JSON.stringify(requestData),
-        });
-        const data = <{ message: string }>await response.json();
-        if (response.status != 200) {
-            if (data.message == "Balance must be at least 100.") {
-                throw new InsufficientBalanceException();
-            }
-            throw new Error(JSON.stringify(data));
-        }
-        log.info(data); //!!!
+        return Manifold.createBinaryMarket(user.APIKey, question, description, initialProb_percent);
     }
 
     public async resolveBinaryMarket(twitchUsername: string, outcome: ManifoldAPI.ResolutionOutcome) {
         const user = this.getUserForTwitchUsername(twitchUsername);
-
-        const marketId = "CRPnvTZa4WydcicY7gLr"; //!!! Not using current market info
-        const requestData = {
-            outcome: outcome,
-            // probabilityInt: ,
-        };
-
-        const response = await fetch(`${APIBase}market/${marketId}/resolve`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Key ${user.APIKey}`,
-            },
-            body: JSON.stringify(requestData),
-        });
-        if (response.status != 200) {
-            const data = <{ message: string }>await response.json();
-            throw new Error(JSON.stringify(data));
-        }
+        return Manifold.resolveBinaryMarket("mxnNNHwtJbVscKGVyJrD", user.APIKey, outcome); //!!! Market ID
     }
 
-    async placeBet(twitchUsername: string, amount: number, yes: boolean) {
+    public async placeBet(twitchUsername: string, amount: number, yes: boolean) {
         const user = this.getUserForTwitchUsername(twitchUsername);
-        const APIKey = user.APIKey;
-
-        const requestData = {
-            amount: amount,
-            contractId: "litD59HFH1eUx5sAGCNL", //!!! Not using current market info
-            outcome: yes ? "YES" : "NO",
-        };
-
-        const response = await fetch(`${APIBase}bet`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Key ${APIKey}`,
-            },
-            body: JSON.stringify(requestData),
-        });
-        if (response.status != 200) {
-            const data = <{ message: string }>await response.json();
-            if (data.message == "Insufficient balance.") {
-                throw new InsufficientBalanceException();
-            }
-            throw new Error(JSON.stringify(data));
-        }
+        return Manifold.placeBet("litD59HFH1eUx5sAGCNL", user.APIKey, amount, yes ? "YES" : "NO"); //!!! Not using current market info
     }
 
     launch() {
@@ -411,7 +300,7 @@ export default class App {
             }
         });
 
-        this.app.get("/registerchanneltwitch", (request, response) => {
+        this.app.get("/registerchanneltwitch", async (request, response) => {
             const params = getParamsFromURL(request.url);
             const code = params["code"];
 
@@ -422,7 +311,7 @@ export default class App {
 
             const queryString = `client_id=${TWTICH_APP_CLIENT_ID}&client_secret=${TWITCH_APP_CLIENT_SECRET}&code=${code}&grant_type=${grant_type}&redirect_uri=${redirect_uri}`;
 
-            const f = async () => {
+            try {
                 let raw = await fetch(`https://id.twitch.tv/oauth2/token?${queryString}`, {
                     method: "POST",
                 });
@@ -446,16 +335,12 @@ export default class App {
                 log.info(`Authorized Twitch user ${twitchLogin}`);
 
                 this.bot.joinChannel(twitchLogin);
-            };
-            f()
-                .then(() => {
-                    // response.json({ message: "Successfully registered bot." });
-                    response.send("<html><head><script>close();</script></head><html>");
-                })
-                .catch((e) => {
-                    log.trace(e);
-                    response.status(400).json({ error: e.message, message: "Failed to register bot." });
-                });
+                // response.json({ message: "Successfully registered bot." });
+                response.send("<html><head><script>close();</script></head><html>");
+            } catch (e) {
+                log.trace(e);
+                response.status(400).json({ error: e.message, message: "Failed to register bot." });
+            }
         });
 
         this.app.post("/linkInit", async (request, response) => {
@@ -463,9 +348,7 @@ export default class App {
                 const body = request.body;
                 const manifoldUsername = body.manifoldUsername;
                 const apiKey = body.apiKey;
-                if (!manifoldUsername || !apiKey) {
-                    throw new Error("manifoldUsername and apiKey parameters are required.");
-                }
+                if (!manifoldUsername || !apiKey) throw new Error("manifoldUsername and apiKey parameters are required.");
 
                 const authResponse = await fetch(`${APIBase}bet`, {
                     method: "POST",
@@ -562,8 +445,9 @@ export default class App {
         });
 
         const server = this.app.listen(9172, () => {
-            const host = (<AddressInfo>server.address()).address;
-            const port = (<AddressInfo>server.address()).port;
+            const addressInfo = <AddressInfo>server.address();
+            const host = addressInfo.address;
+            const port = addressInfo.port;
             log.info("Twitch bot webserver listening at http://%s:%s", host, port);
         });
     }

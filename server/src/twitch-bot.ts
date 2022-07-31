@@ -2,7 +2,7 @@ import { ChatUserstate, Client } from "tmi.js";
 import App from "./app";
 import fs from "fs";
 import { InsufficientBalanceException, UserNotRegisteredException } from "./exceptions";
-import { ResolutionOutcome } from "common/manifold-defs";
+import { ResolutionOutcome, LiteMarket } from "common/manifold-defs";
 import log from "./logger";
 
 // const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
@@ -19,6 +19,7 @@ const MSG_HELP = () => `Check out the full list of commands and how to play here
 const MSG_RESOLVED = (outcome: ResolutionOutcome) => `The market has resolved to ${outcome}! The top 10 bettors are name (+#), name2…`; //!!! Needs some work
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
 const MSG_MARKET_CREATED = (username: string, question: string) => `${username}'s market '${question}' has been created!`;
+const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
 
 export default class TwitchBot {
     private readonly app: App;
@@ -36,10 +37,11 @@ export default class TwitchBot {
                 client.say(channel, MSG_HELP());
             },
             bet: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                if (args.length < 1) {
-                    return;
-                }
+                if (args.length < 1) return;
                 let arg = args[0].toLocaleLowerCase();
+                if (args.length >= 2) {
+                    arg += args[1].toLocaleLowerCase();
+                }
                 let yes: boolean;
                 if (arg.startsWith("yes")) {
                     yes = true;
@@ -71,14 +73,13 @@ export default class TwitchBot {
                     if (e instanceof UserNotRegisteredException) {
                         client.say(channel, MSG_SIGNUP(username));
                     } else {
+                        client.say(channel, MSG_COMMAND_FAILED(username, e.message));
                         log.trace(e);
                     }
                 });
             },
             allin: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                if (args.length < 1) {
-                    return;
-                }
+                if (args.length < 1) return;
                 const arg = args[0].toLocaleLowerCase();
                 let yes: boolean;
                 if (arg == "yes") {
@@ -92,58 +93,80 @@ export default class TwitchBot {
                     if (e instanceof UserNotRegisteredException) {
                         client.say(channel, MSG_SIGNUP(username));
                     } else {
+                        client.say(channel, MSG_COMMAND_FAILED(username, e.message));
                         log.trace(e);
                     }
                 });
             },
             balance: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                app.getUserBalance(username).then((balance) => {
-                    client.say(channel, MSG_BALANCE(username, balance));
-                }).catch(e => {
-                    if (e instanceof UserNotRegisteredException) {
-                        client.say(channel, MSG_SIGNUP(username));
-                    } else {
-                        log.trace(e);
-                    }
-                });
+                app.getUserBalance(username)
+                    .then((balance) => {
+                        client.say(channel, MSG_BALANCE(username, balance));
+                    })
+                    .catch((e) => {
+                        if (e instanceof UserNotRegisteredException) {
+                            client.say(channel, MSG_SIGNUP(username));
+                        } else {
+                            client.say(channel, MSG_COMMAND_FAILED(username, e.message));
+                            log.trace(e);
+                        }
+                    });
             },
             signup: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
                 client.say(channel, MSG_SIGNUP(username));
             },
             // Moderator commands:
             create: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                if (!this.isAllowedAdminCommand(tags) || args.length < 1) {
+                if (!this.isAllowedAdminCommand(tags)) {
+                    log.warn(`User ${username} tried to use create without permission.`);
                     return;
                 }
+                if (args.length < 1) return;
                 let question = "";
                 for (const arg of args) {
                     question += arg + " ";
                 }
                 question = question.trim();
 
-                app.createBinaryMarket(username, question, null, 50).then(() => {
-                    client.say(channel, MSG_MARKET_CREATED(username, question));
-                }).catch(e => {
-                    if (e instanceof InsufficientBalanceException) {
-                        app.getUserBalance(username).then(balance => {
-                            client.say(channel, MSG_NOT_ENOUGH_MANA_CREATE_MARKET(username, balance));
-                        })
-                    } else {
-                        log.trace(e);
-                    }
-                });
+                app.createBinaryMarket(username, question, null, 50)
+                    .then((market: LiteMarket) => {
+                        console.log("Market ID: " + market.id);
+                        client.say(channel, MSG_MARKET_CREATED(username, question));
+                    })
+                    .catch((e) => {
+                        if (e instanceof InsufficientBalanceException) {
+                            app.getUserBalance(username).then((balance) => {
+                                client.say(channel, MSG_NOT_ENOUGH_MANA_CREATE_MARKET(username, balance));
+                            });
+                        } else {
+                            client.say(channel, MSG_COMMAND_FAILED(username, e.message));
+                            log.trace(e);
+                        }
+                    });
             },
             resolve: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                if (!this.isAllowedAdminCommand(tags) || args.length < 1) {
+                if (!this.isAllowedAdminCommand(tags)) {
+                    log.warn(`User ${username} tried to use resolve without permission.`);
                     return;
                 }
-                const outcome: ResolutionOutcome = ResolutionOutcome[args[0].toLocaleUpperCase()];
-                if (!outcome || outcome) {
+                if (args.length < 1) return;
+                const resolutionString = args[0].toLocaleUpperCase();
+                let outcome: ResolutionOutcome = ResolutionOutcome[resolutionString];
+                if (resolutionString == "NA") {
+                    outcome = ResolutionOutcome.CANCEL;
+                }
+                if (!outcome || outcome == ResolutionOutcome.PROB) {
+                    log.info("Resolve command failed due to outcome: " + outcome);
                     return;
                 }
-                app.resolveBinaryMarket(username, outcome); //!!!
-
-                this.client.say(channel, MSG_RESOLVED(outcome));
+                app.resolveBinaryMarket(username, outcome)
+                    .then(() => {
+                        this.client.say(channel, MSG_RESOLVED(outcome));
+                    })
+                    .catch((e) => {
+                        client.say(channel, MSG_COMMAND_FAILED(username, e.message));
+                        log.trace(e);
+                    }); //!!!
             },
         };
 
@@ -162,8 +185,6 @@ export default class TwitchBot {
 
         this.client.on("message", (channel, tags, message, self) => {
             if (self) return; // Ignore echoed messages.
-
-            // message = message.toLocaleLowerCase();
 
             const groups = message.match(regexpCommand);
 
@@ -231,7 +252,7 @@ export default class TwitchBot {
 
                 this.saveRegisteredChannelListToFile();
             })
-            .catch(e => log.trace(e));
+            .catch((e) => log.trace(e));
     }
 
     public leaveChannel(channelName: string) {
