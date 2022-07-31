@@ -1,17 +1,15 @@
 {
   "name": "server",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
-  "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --config nodemon.json | npx pino-pretty -t \"SYS:yyyy-mm-dd HH:MM\" -i hostname,pid",
     "lint": "eslint src --ext ts"
   },
-  "author": "Phil Bladen",
-  "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.18.1",
     "moment": "^2.29.4",
     "node-fetch": "^3.2.7",

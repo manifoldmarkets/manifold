@@ -10,7 +10,7 @@ const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/); // Support for
 
 const BOT_USERNAME = "manifoldbot";
 
-const signupLink = "manifold.markets/signup"; //!!!
+const signupLink = "http://localhost:3000/profile"; //!!!
 
 const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) => `Sorry ${username}, you don't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a market LUL`;
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;

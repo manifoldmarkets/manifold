@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import http from "http";
 import fs from "fs";
 import crypto from "crypto";
+import cors from "cors";
 
 import * as ManifoldAPI from "common/manifold-defs";
 import { FullBet } from "common/transaction";
@@ -46,6 +47,7 @@ export default class App {
 
     constructor() {
         this.app = express();
+        this.app.use(cors());
         this.app.use(express.json());
 
         this.bot = new TwitchBot(this);
@@ -57,7 +59,7 @@ export default class App {
             socket.emit(Packet.SELECT_MARKET, this.selectedMarketSlug);
             socket.emit(Packet.ADD_BETS, this.latestBets);
         });
-        server.listen(3000, () => {
+        server.listen(31452, () => {
             const address = <AddressInfo>server.address();
             log.info(`Websocket listening on ${address.address}:${address.port}`);
         });
@@ -171,7 +173,7 @@ export default class App {
         log.info(`${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
-    getUserForTwitchUsername(twitchUsername: string): { manifoldUsername: string; APIKey: string } {
+    getUserForTwitchUsername(twitchUsername: string): User {
         twitchUsername = twitchUsername.toLocaleLowerCase();
         for (const user of this.userList) {
             if (user.twitchLogin == twitchUsername) {
@@ -480,7 +482,7 @@ export default class App {
                     apiKey: apiKey,
                 };
 
-                response.json({ message: "Success.", token: sessionToken});
+                response.json({ message: "Success.", token: sessionToken });
             } catch (e) {
                 response.status(400).json({ error: "Bad request", message: e.message });
             }
@@ -535,8 +537,16 @@ export default class App {
                     twitchLogin: twitchLogin,
                     manifoldUsername: sessionData.manifoldUsername,
                     APIKey: sessionData.apiKey,
+                };
+                for (;;) {
+                    try {
+                        const existingUser = this.getUserForTwitchUsername(twitchLogin);
+                        this.userList.splice(this.userList.indexOf(existingUser), 1);
+                        log.info("Removed existing user " + existingUser.manifoldUsername);
+                    } catch (e) {
+                        break;
+                    }
                 }
-                log.info(this.userList);
                 this.userList.push(user);
                 this.saveUsersToFile();
             };
@@ -550,41 +560,6 @@ export default class App {
                     response.status(400).json({ error: e.message, message: "Failed to link accounts." });
                 });
         });
-
-        // this.app.get("/link", (request, response) => {
-        //     const ps = getParamsFromURL(request.url);
-        //     const musername = ps["m"];
-        //     const apikey = ps["a"];
-        //     if (!musername || !apikey) {
-        //         response.status(400).json({ msg: "Bad request. Parameters m and a required." });
-        //         return;
-        //     }
-        //     tusername = tusername.toLocaleLowerCase(); // Twitch usernames are all lowercase. This is a temporary solution until Twitch auth supported.
-        //     log.info("Got link request: " + `${tusername}, ${musername}, ${apikey}`);
-
-        //     fetch(`${APIBase}bet`, {
-        //         method: "POST",
-        //         headers: {
-        //             Authorization: `Key ${apikey}`,
-        //         },
-        //     })
-        //         .then((r) => {
-        //             log.info("Status: " + r.status);
-        //             if (r.status != 403) {
-        //                 const user: User = {
-        //                     twitchLogin: tusername,
-        //                     manifoldUsername: musername,
-        //                     APIKey: apikey,
-        //                 }
-        //                 this.userList.push(user);
-        //                 this.saveUsersToFile();
-        //             }
-        //             return r.json();
-        //         })
-        //         .then((r) => {
-        //             log.info(r);
-        //         });
-        // });
 
         const server = this.app.listen(9172, () => {
             const host = (<AddressInfo>server.address()).address;

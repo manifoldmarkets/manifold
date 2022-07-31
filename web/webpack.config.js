@@ -29,7 +29,7 @@ const config = {
                 },
             },
             "/socket.io": {
-                target: "http://localhost:3000",
+                target: "http://localhost:31452",
             },
         },
     },
