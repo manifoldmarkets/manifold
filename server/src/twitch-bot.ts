@@ -36,7 +36,7 @@ export default class TwitchBot {
             help: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
                 client.say(channel, MSG_HELP());
             },
-            bet: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+            bet: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => { // Handle bet commands in opposing order i.e. bet 50 yes
                 if (args.length < 1) return;
                 let arg = args[0].toLocaleLowerCase();
                 if (args.length >= 2) {
@@ -194,7 +194,7 @@ export default class TwitchBot {
             const command: string = groups[1].toLocaleLowerCase();
             const args: string[] = groups[2]?.split(" ") || [];
 
-            const commandObject = commands[command as keyof typeof commands];
+            const commandObject = commands[command as keyof typeof commands]; //!!! Use display name
             if (!commandObject) {
                 return;
             }

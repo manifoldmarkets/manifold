@@ -10,6 +10,7 @@ import cors from "cors";
 
 import * as ManifoldAPI from "common/manifold-defs";
 import * as Manifold from "./manifold-api";
+import * as Twitch from "./twitch-api";
 import { FullBet } from "common/transaction";
 import * as Packet from "common/packet-ids";
 import TwitchBot from "./twitch-bot";
@@ -303,39 +304,11 @@ export default class App {
         this.app.get("/registerchanneltwitch", async (request, response) => {
             const params = getParamsFromURL(request.url);
             const code = params["code"];
-
-            log.info("Got a Twitch link request: " + code);
-
-            const grant_type = "authorization_code";
-            const redirect_uri = "http://localhost:9172/registerchanneltwitch";
-
-            const queryString = `client_id=${TWTICH_APP_CLIENT_ID}&client_secret=${TWITCH_APP_CLIENT_SECRET}&code=${code}&grant_type=${grant_type}&redirect_uri=${redirect_uri}`;
-
+            log.info(`Got a Twitch link request: ${code}`);
             try {
-                let raw = await fetch(`https://id.twitch.tv/oauth2/token?${queryString}`, {
-                    method: "POST",
-                });
-                let json = await raw.json();
-
-                const accessToken = json["access_token"];
-                if (!accessToken) {
-                    log.error(json);
-                    throw new Error("Failed to fetch access token.");
-                }
-
-                raw = await fetch("https://api.twitch.tv/helix/users", {
-                    headers: {
-                        "client-id": TWTICH_APP_CLIENT_ID,
-                        authorization: `Bearer ${accessToken}`,
-                    },
-                });
-                json = await raw.json();
-
-                const twitchLogin = json["data"][0]["login"];
-                log.info(`Authorized Twitch user ${twitchLogin}`);
-
-                this.bot.joinChannel(twitchLogin);
-                // response.json({ message: "Successfully registered bot." });
+                const twitchUser: Twitch.TwitchUser = await Twitch.getTwitchDetailsFromLinkCode(code);
+                log.info(`Authorized Twitch user ${twitchUser.display_name}`);
+                this.bot.joinChannel(twitchUser.login);
                 response.send("<html><head><script>close();</script></head><html>");
             } catch (e) {
                 log.trace(e);
@@ -350,15 +323,8 @@ export default class App {
                 const apiKey = body.apiKey;
                 if (!manifoldUsername || !apiKey) throw new Error("manifoldUsername and apiKey parameters are required.");
 
-                const authResponse = await fetch(`${APIBase}bet`, {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Key ${apiKey}`,
-                    },
-                });
-                if (authResponse.status == 403) {
-                    throw new Error("Failed to validate Manifold details.");
-                }
+                if (!(await Manifold.verifyAPIKey(apiKey))) throw new Error("API key invalid.");
+
                 const sessionToken = crypto.randomBytes(24).toString("hex");
                 this.linksInProgress[sessionToken] = {
                     manifoldUsername: manifoldUsername,
@@ -371,49 +337,22 @@ export default class App {
             }
         });
 
-        this.app.get("/linkAccount", (request, response) => {
+        this.app.get("/linkAccount", async (request, response) => {
             const params = getParamsFromURL(request.url);
             const sessionToken = params["state"];
-            console.log(sessionToken);
-            if (!sessionToken || !this.linksInProgress[sessionToken]) {
+            const sessionData = this.linksInProgress[sessionToken];
+            if (!sessionToken || !sessionData) {
                 response.status(400).json({ error: "Bad request", message: "Invalid session token." });
                 return;
             }
 
-            const sessionData = this.linksInProgress[sessionToken];
             delete this.linksInProgress[sessionToken];
-            // response.json(sessionData);
 
             const code = params["code"];
-
             log.info("Got a Twitch link request: " + code);
-
-            const grant_type = "authorization_code";
-            const redirect_uri = "http://localhost:9172/registerchanneltwitch";
-
-            const queryString = `client_id=${TWTICH_APP_CLIENT_ID}&client_secret=${TWITCH_APP_CLIENT_SECRET}&code=${code}&grant_type=${grant_type}&redirect_uri=${redirect_uri}`;
-
-            const f = async () => {
-                let raw = await fetch(`https://id.twitch.tv/oauth2/token?${queryString}`, {
-                    method: "POST",
-                });
-                let json = await raw.json();
-
-                const accessToken = json["access_token"];
-                if (!accessToken) {
-                    log.error(json);
-                    throw new Error("Failed to fetch access token.");
-                }
-
-                raw = await fetch("https://api.twitch.tv/helix/users", {
-                    headers: {
-                        "client-id": TWTICH_APP_CLIENT_ID,
-                        authorization: `Bearer ${accessToken}`,
-                    },
-                });
-                json = await raw.json();
-
-                const twitchLogin = json["data"][0]["login"];
+            try {
+                const twitchUser = await Twitch.getTwitchDetailsFromLinkCode(code);
+                const twitchLogin = twitchUser.login;
                 log.info(`Authorized Twitch user ${twitchLogin}`);
 
                 const user: User = {
@@ -425,23 +364,18 @@ export default class App {
                     try {
                         const existingUser = this.getUserForTwitchUsername(twitchLogin);
                         this.userList.splice(this.userList.indexOf(existingUser), 1);
-                        log.info("Removed existing user " + existingUser.manifoldUsername);
+                        log.info("Replaced existing user " + existingUser.twitchLogin);
                     } catch (e) {
                         break;
                     }
                 }
                 this.userList.push(user);
                 this.saveUsersToFile();
-            };
-            f()
-                .then(() => {
-                    // response.json({ message: "Successfully registered bot." });
-                    response.send("<html><head><script>close();</script></head><html>");
-                })
-                .catch((e) => {
-                    log.trace(e);
-                    response.status(400).json({ error: e.message, message: "Failed to link accounts." });
-                });
+                response.send("<html><head><script>close();</script></head><html>");
+            } catch (e) {
+                log.trace(e);
+                response.status(400).json({ error: e.message, message: "Failed to link accounts." });
+            }
         });
 
         const server = this.app.listen(9172, () => {

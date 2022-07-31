@@ -66,6 +66,13 @@ a, button {
     cursor: pointer;
 }
 
+a {
+    --tw-gradient-from: #6366f1;
+    --tw-gradient-to: #3b82f6;
+    --tw-gradient-stops: var(--tw-gradient-from),var(--tw-gradient-to);
+    background-image: linear-gradient(to right,var(--tw-gradient-stops));
+}
+
 button {
     user-select: none;
     transition: all 0.1s ease;
