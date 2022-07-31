@@ -28,9 +28,29 @@ input {
     border-color: hsla(var(--bc)/var(--tw-border-opacity,1))!important;
     border-radius: 10px;
 
-    margin: 1em;
+    font-family: "Readex Pro", sans-serif;
+    font-size: 0.3em;
+
+    margin: 0em;
+
+    color: #555;
+    &::placeholder {
+        color: #ccc;
+    }
 
     transition: all 0.2s ease-in-out;
+
+    text-align: center;
+
+    user-select: none;
+
+    &:not(:last-child) {
+        margin-right: 1em;
+    }
+
+    &:focus {
+        outline: none;
+    }
 }
 
 a, button {
@@ -41,13 +61,30 @@ a, button {
     color: white;
     font-weight: 800;
     font-size: 15px;
-    --tw-gradient-from: #6366f1;
-    --tw-gradient-to: #3b82f6;
-    --tw-gradient-stops: var(--tw-gradient-from),var(--tw-gradient-to);
-    background-image: linear-gradient(to right,var(--tw-gradient-stops));
 
     border-radius: 8px;
     cursor: pointer;
+}
+
+button {
+    user-select: none;
+    transition: all 0.1s ease;
+
+    background-color: #ddd;
+
+    &:not(:disabled) {
+        --tw-gradient-from: #6366f1;
+        --tw-gradient-to: #3b82f6;
+        --tw-gradient-stops: var(--tw-gradient-from),var(--tw-gradient-to);
+        background-image: linear-gradient(to right,var(--tw-gradient-stops));
+
+        &:hover {
+            transform: scale(1.05);
+        }
+        &:active {
+            transform: scale(1.03);
+        }
+    }
 }
 
 a {

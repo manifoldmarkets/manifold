@@ -102,6 +102,13 @@
         totalPnLCached: number;
         creatorVolumeCached: number;
     };
+
+    export enum ResolutionOutcome {
+        YES = "YES",
+        NO = "NO",
+        PROB = "MKT",
+        CANCEL = "CANCEL",
+    }
 // }
 
 // export default Manifold;
