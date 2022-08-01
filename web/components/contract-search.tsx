@@ -32,7 +32,7 @@ const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 
 const sortOptions = [
   { label: 'Newest', value: 'newest' },
-  { label: 'Most popular', value: 'score' },
+  { label: 'Trending', value: 'score' },
   { label: 'Most traded', value: 'most-traded' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Last updated', value: 'last-updated' },
