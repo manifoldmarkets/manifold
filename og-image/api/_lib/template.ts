@@ -149,18 +149,18 @@ export function getHtml(parsedReq: ParsedRequest) {
       <div class="flex flex-row justify-between gap-12 pt-36">
         <div class="text-indigo-700 text-6xl leading-tight">
         <span class="text-gray-900">
-          ${challengeAmount ? 'CHALLENGE BET:' : ''}
+          ${challengeAmount ? 'I challenge you:\n' : ''}
         </span>
           ${truncatedQuestion}
         </div>
         <div class="flex flex-col text-primary">
-          <div class="text-8xl">${
+          <div class="text-7xl">${
             challengeAmount ? 'M$' + challengeAmount : probability
           }</div>
           
         <div class="flex flex-col items-center justify-center">
            <div class="text-4xl">${challengeOutcome ? 'on' : ''}</div>
-           <div class="text-6xl ">${challengeOutcome ?? ''}</div>
+           <div class="text-7xl ">${challengeOutcome ?? ''}</div>
           </div> 
           <div class="text-4xl ${hideNonChallengeElements}">${
     probability !== '' ? 'chance' : ''
