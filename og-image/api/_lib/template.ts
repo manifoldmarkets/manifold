@@ -128,7 +128,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         </div>
       </div>
 
-      <!-- Mantic logo -->
+      <!-- Manifold logo -->
       <div class="absolute right-24 top-8">
         <a class="flex flex-row gap-3" href="/"
           ><img
@@ -151,7 +151,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         </div>
         <div class="flex flex-col text-primary">
           <div class="text-8xl">${
-            challengeAmount ? challengeAmount : probability
+            challengeAmount ? 'M$' + challengeAmount : probability
           }</div>
            <div class="text-5xl">${
              challengeOutcome ? 'on' + challengeOutcome : ''
