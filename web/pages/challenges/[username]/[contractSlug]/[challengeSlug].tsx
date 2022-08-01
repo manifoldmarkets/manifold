@@ -101,9 +101,9 @@ export default function ChallengePage(props: {
   const ogCardProps = getOpenGraphProps(contract)
 
   ogCardProps.creatorUsername = challenge.creatorUsername
+  ogCardProps.creatorName = challenge.creatorName
   ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
   ogCardProps.question = 'CHALLENGED:' + contract.question
-  ogCardProps.probability = ''
 
   return (
     <Page>

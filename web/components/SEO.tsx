@@ -10,6 +10,11 @@ export type OgCardProps = {
   creatorAvatarUrl?: string
 }
 
+type ChallengeCardProps = {
+  challengeAmount: string
+  challengeOutcome: string
+}
+
 function buildCardUrl(props: OgCardProps, challengeProps?: ChallengeCardProps) {
   const probabilityParam =
     props.probability === undefined
@@ -35,10 +40,6 @@ function buildCardUrl(props: OgCardProps, challengeProps?: ChallengeCardProps) {
     `&creatorUsername=${encodeURIComponent(props.creatorUsername)}` +
     challengeUrlParams
   )
-}
-type ChallengeCardProps = {
-  challengeAmount: string
-  challengeOutcome: string
 }
 
 export function SEO(props: {

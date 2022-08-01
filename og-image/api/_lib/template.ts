@@ -156,7 +156,9 @@ export function getHtml(parsedReq: ParsedRequest) {
            <div class="text-5xl">${
              challengeOutcome !== '' ? 'on' + challengeOutcome : ''
            }</div>
-          <div class="text-4xl">${probability !== '' ? 'chance' : ''}</div>
+          <div class="text-4xl">${
+            challengeAmount !== '' && probability !== '' ? 'chance' : ''
+          }</div>
         </div>
       </div>
 
