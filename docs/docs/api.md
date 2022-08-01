@@ -46,6 +46,24 @@ Gets a user by their unique ID. Many other API endpoints return this as the `use
 
 Requires no authorization.
 
+### `GET /v0/groups`
+
+Gets all groups, in no particular order.
+
+Requires no authorization.
+
+### `GET /v0/groups/[slug]`
+
+Gets a group by its slug.
+
+Requires no authorization.
+
+### `GET /v0/groups/by-id/[id]`
+
+Gets a group by its unique ID.
+
+Requires no authorization.
+
 ### `GET /v0/markets`
 
 Lists all markets, ordered by creation date descending.
