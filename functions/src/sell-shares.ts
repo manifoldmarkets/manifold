@@ -1,4 +1,4 @@
-import { sumBy, uniq } from 'lodash'
+import { mapValues, groupBy, sumBy, uniq } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
@@ -17,7 +17,7 @@ import { redeemShares } from './redeem-shares'
 const bodySchema = z.object({
   contractId: z.string(),
   shares: z.number().optional(), // leave it out to sell all shares
-  outcome: z.enum(['YES', 'NO']),
+  outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
 })
 
 export const sellshares = newEndpoint({}, async (req, auth) => {
@@ -46,9 +46,28 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       throw new APIError(400, 'Trading is closed.')
 
     const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+    const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
+    const sharesByOutcome = mapValues(betsByOutcome, (bets) =>
+      sumBy(bets, (b) => b.shares)
+    )
 
-    const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
-    const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
+    let chosenOutcome: 'YES' | 'NO'
+    if (outcome != null) {
+      chosenOutcome = outcome
+    } else {
+      const nonzeroShares = Object.entries(sharesByOutcome).filter(
+        ([_k, v]) => v
+      )
+      if (nonzeroShares.length > 1) {
+        throw new APIError(
+          400,
+          `You own multiple kinds of shares, but did not specify which to sell.`
+        )
+      }
+      chosenOutcome = nonzeroShares[0][0] as 'YES' | 'NO'
+    }
+
+    const maxShares = sharesByOutcome[chosenOutcome]
     const sharesToSell = shares ?? maxShares
 
     if (!floatingLesserEqual(sharesToSell, maxShares))
@@ -63,7 +82,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
 
     const { newBet, newPool, newP, fees, makers } = getCpmmSellBetInfo(
       soldShares,
-      outcome,
+      chosenOutcome,
       contract,
       prevLoanAmount,
       unfilledBets
