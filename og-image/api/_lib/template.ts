@@ -94,7 +94,7 @@ export function getHtml(parsedReq: ParsedRequest) {
     challengeAmount,
     challengeOutcome,
   } = parsedReq
-  const MAX_QUESTION_CHARS = 100
+  const MAX_QUESTION_CHARS = challengeAmount ? 85 : 100
   const truncatedQuestion =
     question.length > MAX_QUESTION_CHARS
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
@@ -147,11 +147,11 @@ export function getHtml(parsedReq: ParsedRequest) {
       </div>
 
       <div class="flex flex-row justify-between gap-12 pt-36">
-        <div class="text-indigo-700 text-6xl leading-tight">
-        <span class="text-gray-900">
-          ${challengeAmount ? 'Bet against me on:' : ''}
-        </span>
-          ${truncatedQuestion}
+        <div class="flex flex-col text-gray-900 text-6xl">
+          ${challengeAmount ? '⚔️️' + ' Bet against me ' + '⚔️️' : ''}
+          <div class="text-indigo-700 leading-tight">
+            ${truncatedQuestion}
+          </div>
         </div>
         <div class="flex flex-col text-primary">
           <div class="text-8xl">${

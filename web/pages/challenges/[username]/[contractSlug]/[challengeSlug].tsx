@@ -137,18 +137,22 @@ export default function ChallengePage(props: {
 }
 
 const userRow = (challenger: User) => (
-  <Row className={'mb-2 w-full items-center justify-center gap-2'}>
-    <Avatar
-      size={12}
-      avatarUrl={challenger.avatarUrl}
-      username={challenger.username}
-    />
-    <UserLink
-      className={'text-2xl'}
-      name={challenger.name}
-      username={challenger.username}
-    />
-  </Row>
+  <div className="flex flex-col text-gray-900">
+    ${'⚔️️' + ' Bet against me ' + '⚔️️'}
+    <div>{'Will there be a new doctrowho sad'}</div>
+  </div>
+  // <Row className={'mb-2 w-full items-center justify-center gap-2'}>
+  //   <Avatar
+  //     size={12}
+  //     avatarUrl={challenger.avatarUrl}
+  //     username={challenger.username}
+  //   />
+  //   <UserLink
+  //     className={'text-2xl'}
+  //     name={challenger.name}
+  //     username={challenger.username}
+  //   />
+  // </Row>
 )
 
 function ClosedChallengeContent(props: {
