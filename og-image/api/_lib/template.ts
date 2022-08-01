@@ -147,10 +147,10 @@ export function getHtml(parsedReq: ParsedRequest) {
       </div>
 
       <div class="flex flex-row justify-between gap-12 pt-36">
-        <div class="text-gray-900 text-6xl leading-tight">
-          ${challengeAmount ? 'CHALLENGE BET:' : ''}
-        </div>          
         <div class="text-indigo-700 text-6xl leading-tight">
+        <span class="text-gray-900">
+          ${challengeAmount ? 'CHALLENGE BET:' : ''}
+        </span>
           ${truncatedQuestion}
         </div>
         <div class="flex flex-col text-primary">
