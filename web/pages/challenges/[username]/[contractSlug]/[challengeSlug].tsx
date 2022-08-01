@@ -103,7 +103,6 @@ export default function ChallengePage(props: {
   ogCardProps.creatorUsername = challenge.creatorUsername
   ogCardProps.creatorName = challenge.creatorName
   ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
-  ogCardProps.question = 'CHALLENGED:' + contract.question
 
   return (
     <Page>

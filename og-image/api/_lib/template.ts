@@ -100,6 +100,7 @@ export function getHtml(parsedReq: ParsedRequest) {
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
       : question
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
+  const hideNonChallengeElements = challengeAmount !== '' ? 'hidden' : ''
   return `<!DOCTYPE html>
 <html>
     <head>
@@ -146,24 +147,29 @@ export function getHtml(parsedReq: ParsedRequest) {
       </div>
 
       <div class="flex flex-row justify-between gap-12 pt-36">
+        <div class="text-gray-900 text-6xl leading-tight">
+          ${challengeAmount ? 'CHALLENGE BET:' : ''}
+        </div>          
         <div class="text-indigo-700 text-6xl leading-tight">
           ${truncatedQuestion}
         </div>
         <div class="flex flex-col text-primary">
           <div class="text-8xl">${
-            challengeAmount !== '' ? 'M$' + challengeAmount : probability
+            challengeAmount ? 'M$' + challengeAmount : probability
           }</div>
-           <div class="text-5xl">${
-             challengeOutcome !== '' ? 'on' + challengeOutcome : ''
-           }</div>
-          <div class="text-4xl">${
-            challengeAmount !== '' && probability !== '' ? 'chance' : ''
-          }</div>
+          
+        <div class="flex flex-col items-center justify-center">
+           <div class="text-4xl">${challengeOutcome ? 'on' : ''}</div>
+           <div class="text-6xl ">${challengeOutcome ?? ''}</div>
+          </div> 
+          <div class="text-4xl ${hideNonChallengeElements}">${
+    probability !== '' ? 'chance' : ''
+  }</div>
         </div>
       </div>
 
       <!-- Metadata -->
-      <div class="absolute bottom-16">
+      <div class="absolute bottom-16 ${hideNonChallengeElements}">
         <div class="text-gray-500 text-3xl">
           ${metadata}
         </div>
