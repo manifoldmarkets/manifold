@@ -10,7 +10,7 @@ export type OgCardProps = {
   creatorAvatarUrl?: string
 }
 
-function buildCardUrl(props: OgCardProps) {
+function buildCardUrl(props: OgCardProps, challengeProps?: ChallengeCardProps) {
   const probabilityParam =
     props.probability === undefined
       ? ''
@@ -20,6 +20,10 @@ function buildCardUrl(props: OgCardProps) {
       ? ''
       : `&creatorAvatarUrl=${encodeURIComponent(props.creatorAvatarUrl ?? '')}`
 
+  const challengeUrlParams = challengeProps
+    ? `&challengeAmount=${challengeProps.challengeAmount}&challengeOutcome=${challengeProps.challengeOutcome}`
+    : ''
+
   // URL encode each of the props, then add them as query params
   return (
     `https://manifold-og-image.vercel.app/m.png` +
@@ -28,8 +32,13 @@ function buildCardUrl(props: OgCardProps) {
     `&metadata=${encodeURIComponent(props.metadata)}` +
     `&creatorName=${encodeURIComponent(props.creatorName)}` +
     creatorAvatarUrlParam +
-    `&creatorUsername=${encodeURIComponent(props.creatorUsername)}`
+    `&creatorUsername=${encodeURIComponent(props.creatorUsername)}` +
+    challengeUrlParams
   )
+}
+type ChallengeCardProps = {
+  challengeAmount: string
+  challengeOutcome: string
 }
 
 export function SEO(props: {
@@ -38,8 +47,10 @@ export function SEO(props: {
   url?: string
   children?: ReactNode
   ogCardProps?: OgCardProps
+  challengeCardProps?: ChallengeCardProps
 }) {
-  const { title, description, url, children, ogCardProps } = props
+  const { title, description, url, children, ogCardProps, challengeCardProps } =
+    props
 
   return (
     <Head>
@@ -71,13 +82,13 @@ export function SEO(props: {
         <>
           <meta
             property="og:image"
-            content={buildCardUrl(ogCardProps)}
+            content={buildCardUrl(ogCardProps, challengeCardProps)}
             key="image1"
           />
           <meta name="twitter:card" content="summary_large_image" key="card" />
           <meta
             name="twitter:image"
-            content={buildCardUrl(ogCardProps)}
+            content={buildCardUrl(ogCardProps, challengeCardProps)}
             key="image2"
           />
         </>

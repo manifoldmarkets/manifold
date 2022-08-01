@@ -155,7 +155,7 @@ export function ContractPageContent(
   const ogCardProps = getOpenGraphProps(contract)
 
   useSaveReferral(user, {
-    defaultReferrer: contract.creatorUsername,
+    defaultReferrerUsername: contract.creatorUsername,
     contractId: contract.id,
   })
 

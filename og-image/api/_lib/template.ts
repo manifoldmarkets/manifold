@@ -91,6 +91,8 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorName,
     creatorUsername,
     creatorAvatarUrl,
+    challengeAmount,
+    challengeOutcome,
   } = parsedReq
   const MAX_QUESTION_CHARS = 100
   const truncatedQuestion =
@@ -148,7 +150,12 @@ export function getHtml(parsedReq: ParsedRequest) {
           ${truncatedQuestion}
         </div>
         <div class="flex flex-col text-primary">
-          <div class="text-8xl">${probability}</div>
+          <div class="text-8xl">${
+            challengeAmount ? challengeAmount : probability
+          }</div>
+           <div class="text-5xl">${
+             challengeOutcome ? 'on' + challengeOutcome : ''
+           }</div>
           <div class="text-4xl">${probability !== '' ? 'chance' : ''}</div>
         </div>
       </div>

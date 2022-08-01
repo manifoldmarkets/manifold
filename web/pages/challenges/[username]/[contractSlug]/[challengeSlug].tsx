@@ -40,6 +40,7 @@ import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
 import { SEO } from 'web/components/SEO'
 import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 import Custom404 from 'web/pages/404'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -92,15 +93,17 @@ export default function ChallengePage(props: {
     useChallenge(props.challengeSlug, contract?.id) ?? props.challenge
   const { user, bets } = props
   const currentUser = useUser()
+  useSaveReferral(currentUser, {
+    defaultReferrerUsername: challenge?.creatorUsername,
+  })
 
   if (!contract || !challenge) return <Custom404 />
   const ogCardProps = getOpenGraphProps(contract)
 
   ogCardProps.creatorUsername = challenge.creatorUsername
   ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
-  ogCardProps.question = 'I challenge you to a bet: ' + contract.question
-  ogCardProps.probability =
-    formatMoney(challenge.creatorAmount) + ' on ' + challenge.creatorOutcome
+  ogCardProps.question = 'CHALLENGED:' + contract.question
+  ogCardProps.probability = ''
 
   return (
     <Page>
@@ -109,6 +112,10 @@ export default function ChallengePage(props: {
         description={ogCardProps.description}
         url={getChallengeUrl(challenge).replace('https://', '')}
         ogCardProps={ogCardProps}
+        challengeCardProps={{
+          challengeOutcome: challenge.creatorOutcome,
+          challengeAmount: challenge.creatorAmount + '',
+        }}
       />
       {challenge.acceptances.length >= challenge.maxUses ? (
         <ClosedChallengeContent

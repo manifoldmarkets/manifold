@@ -6,7 +6,7 @@ import { User, writeReferralInfo } from 'web/lib/firebase/users'
 export const useSaveReferral = (
   user?: User | null,
   options?: {
-    defaultReferrer?: string
+    defaultReferrerUsername?: string
     contractId?: string
     groupId?: string
   }
@@ -18,7 +18,7 @@ export const useSaveReferral = (
       referrer?: string
     }
 
-    const actualReferrer = referrer || options?.defaultReferrer
+    const actualReferrer = referrer || options?.defaultReferrerUsername
 
     if (!user && router.isReady && actualReferrer) {
       writeReferralInfo(actualReferrer, options?.contractId, options?.groupId)
