@@ -1,4 +1,5 @@
 import * as ManifoldAPI from "common/manifold-defs";
+import { Response } from "node-fetch";
 import * as Manifold from "./manifold-api";
 
 export default class User {
@@ -21,8 +22,8 @@ export default class User {
         return Manifold.getUsersStakeInMarket_shares(marketSlug, this.manifoldUsername);
     }
 
-    public async allIn(marketID: string, yes: boolean) {
-        this.placeBet(marketID, Math.floor(await this.getBalance()), yes);
+    public async allIn(marketID: string, yes: boolean): Promise<Response> {
+        return this.placeBet(marketID, Math.floor(await this.getBalance()), yes);
     }
 
     async sellAllShares(marketID: string, marketSlug: string): Promise<void> {
@@ -39,7 +40,7 @@ export default class User {
         return Manifold.resolveBinaryMarket(marketID, this.APIKey, outcome);
     }
 
-    public async placeBet(marketID: string, amount: number, yes: boolean) {
+    public async placeBet(marketID: string, amount: number, yes: boolean): Promise<Response> {
         return Manifold.placeBet(marketID, this.APIKey, amount, yes ? "YES" : "NO");
     }
 }

@@ -1,6 +1,5 @@
 import express, { Express } from "express";
 import { AddressInfo } from "net";
-import fetch from "node-fetch";
 import moment from "moment";
 import { Server } from "socket.io";
 import http from "http";
@@ -8,7 +7,6 @@ import fs from "fs";
 import crypto from "crypto";
 import cors from "cors";
 
-import * as ManifoldAPI from "common/manifold-defs";
 import * as Manifold from "./manifold-api";
 import * as Twitch from "./twitch-api";
 import { FullBet } from "common/transaction";
@@ -18,8 +16,7 @@ import { getParamsFromURL } from "common/utils-node";
 import { UserNotRegisteredException } from "./exceptions";
 import log from "./logger";
 import User from "./user";
-
-const APIBase = "https://dev.manifold.markets/api/v0/";
+import { Market } from "./market";
 
 const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
 
@@ -34,11 +31,10 @@ export default class App {
 
     private linksInProgress: { [sessionToken: string]: { manifoldUsername: string; apiKey: string } } = {};
 
-    selectedMarketSlug = "";
+    selectedMarket: Market = null;
 
-    selectedMarketMap: { [twitchChannel: string]: { marketID: string } } = {};
+    // selectedMarketMap: { [twitchChannel: string]: { marketID: string } } = {};
 
-    pendingBets: ManifoldAPI.Bet[] = [];
     pendingFetches = {};
 
     userIdToNameMap: Record<string, string> = {};
@@ -54,7 +50,7 @@ export default class App {
         this.io = new Server(server);
         this.io.on("connection", (socket) => {
             socket.emit(Packet.CLEAR);
-            socket.emit(Packet.SELECT_MARKET, this.selectedMarketSlug);
+            socket.emit(Packet.SELECT_MARKET, this.selectedMarket?.slug);
             socket.emit(Packet.ADD_BETS, this.latestBets);
         });
         server.listen(31452, () => {
@@ -86,10 +82,15 @@ export default class App {
         this.selectMarket("this-is-a-local-market");
     }
 
-    private selectMarket(slug: string) {
-        this.selectedMarketSlug = slug;
+    public getMarketForTwitchChannel(channel: string) {
+        return this.selectedMarket; //!!!
+    }
 
-        this.io.emit(Packet.SELECT_MARKET, this.selectedMarketSlug);
+    private async selectMarket(slug: string) {
+        const marketData = await Manifold.getMarketBySlug(slug);
+        const market = new Market(this, marketData, slug);
+        this.selectedMarket = market;
+        this.io.emit(Packet.SELECT_MARKET, market.slug);
     }
 
     private loadUsersFromFile() {
@@ -140,7 +141,7 @@ export default class App {
             this.userIdToNameMap[user.id] = user.name;
 
             const betsToRemove = [];
-            for (const bet of this.pendingBets) {
+            for (const bet of this.selectedMarket.pendingBets) {
                 if (user.id == bet.userId) {
                     const fullBet: FullBet = {
                         ...bet,
@@ -150,7 +151,7 @@ export default class App {
                     betsToRemove.push(bet);
                 }
             }
-            this.pendingBets = this.pendingBets.filter((e) => {
+            this.selectedMarket.pendingBets = this.selectedMarket.pendingBets.filter((e) => {
                 return betsToRemove.indexOf(e) < 0;
             });
         } catch (e) {
@@ -171,67 +172,13 @@ export default class App {
     getUserForTwitchUsername(twitchUsername: string): User {
         twitchUsername = twitchUsername.toLocaleLowerCase();
         for (const user of this.userList) {
-            if (user.twitchLogin == twitchUsername) {
-                return user;
-            }
+            if (user.twitchLogin == twitchUsername) return user;
         }
         throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
     }
 
     launch() {
         this.bot.connect();
-
-        let latestLoadedBetId: string = null;
-        const pollLatestMarketBets = (numBetsToLoad = 10) => {
-            const marketSlug = "this-is-a-local-market"; //will-elon-musk-buy-twitter-this-yea
-
-            fetch(`${APIBase}bets?market=${marketSlug}&limit=${numBetsToLoad}`)
-                .then((r) => <Promise<ManifoldAPI.Bet[]>>r.json())
-                .then((bets) => {
-                    if (bets.length == 0) {
-                        return;
-                    }
-
-                    const newBets: ManifoldAPI.Bet[] = [];
-
-                    let foundPreviouslyLoadedBet = latestLoadedBetId == null;
-                    for (const bet of bets) {
-                        try {
-                            if (bet.id == latestLoadedBetId) {
-                                foundPreviouslyLoadedBet = true;
-                                break;
-                            }
-
-                            newBets.push(bet);
-                        } catch (e) {
-                            // Empty
-                        }
-                    }
-                    newBets.reverse();
-                    for (const bet of newBets) {
-                        const username = this.userIdToNameMap[bet.userId];
-                        if (!bet.isRedemption) {
-                            if (!username) {
-                                this.loadUser(bet.userId);
-                                this.pendingBets.push(bet);
-                            } else {
-                                const fullBet: FullBet = {
-                                    ...bet,
-                                    username: username,
-                                };
-                                this.addBet(fullBet);
-                            }
-                        }
-                    }
-                    if (!foundPreviouslyLoadedBet) {
-                        log.info("Failed to find previously loaded bet. Expanding search...");
-                        pollLatestMarketBets(10); //!!! Need to test
-                    }
-                    latestLoadedBetId = bets[0].id;
-                })
-                .catch((e) => log.trace(e));
-        };
-        setInterval(pollLatestMarketBets, 1000);
 
         this.app.get("/unregisterchannel", (request, response) => {
             const params = getParamsFromURL(request.url);
