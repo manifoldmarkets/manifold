@@ -1,10 +1,17 @@
 import * as ManifoldAPI from "common/manifold-defs";
 import * as Manifold from "./manifold-api";
 
-export default class User2 {
+export default class User {
     twitchLogin: string;
+    twitchDisplayName: string;
     manifoldUsername: string;
     APIKey: string;
+
+    constructor(twitchLogin: string, manifoldUsername: string, APIKey: string) {
+        this.twitchLogin = twitchLogin;
+        this.manifoldUsername = manifoldUsername;
+        this.APIKey = APIKey;
+    }
 
     public async getBalance(): Promise<number> {
         return (await Manifold.getUserByManifoldUsername(this.manifoldUsername)).balance;
@@ -14,8 +21,8 @@ export default class User2 {
         return Manifold.getUsersStakeInMarket_shares(marketSlug, this.manifoldUsername);
     }
 
-    public async allIn(twitchUsername: string, yes: boolean) {
-        this.placeBet(twitchUsername, Math.floor(await this.getBalance()), yes);
+    public async allIn(marketID: string, yes: boolean) {
+        this.placeBet(marketID, Math.floor(await this.getBalance()), yes);
     }
 
     async sellAllShares(marketID: string, marketSlug: string): Promise<void> {

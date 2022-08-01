@@ -15,19 +15,13 @@ import { FullBet } from "common/transaction";
 import * as Packet from "common/packet-ids";
 import TwitchBot from "./twitch-bot";
 import { getParamsFromURL } from "common/utils-node";
-import { TWITCH_APP_CLIENT_SECRET, TWTICH_APP_CLIENT_ID } from "common/secrets";
 import { UserNotRegisteredException } from "./exceptions";
 import log from "./logger";
+import User from "./user";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
 const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
-
-class User {
-    twitchLogin: string;
-    manifoldUsername: string;
-    APIKey: string;
-}
 
 export default class App {
     private readonly app: Express;
@@ -41,6 +35,8 @@ export default class App {
     private linksInProgress: { [sessionToken: string]: { manifoldUsername: string; apiKey: string } } = {};
 
     selectedMarketSlug = "";
+
+    selectedMarketMap: { [twitchChannel: string]: { marketID: string } } = {};
 
     pendingBets: ManifoldAPI.Bet[] = [];
     pendingFetches = {};
@@ -102,17 +98,17 @@ export default class App {
         if (rawDataString.length > 0) {
             const data = JSON.parse(rawDataString);
             if (data.version === USER_FILE_GUID) {
-                this.userList = data.userData;
+                const users = data.userData;
+                for (const u of users) {
+                    const user = new User(u.twitchLogin, u.manifoldUsername, u.APIKey);
+                    this.userList.push(user);
+                }
             } else if (data.version === "5d7b6761-0719-4819-a9b9-4dd600f45369") {
                 log.warn("Loading out of date user data file.");
                 const users = data.userData;
                 for (const twitchName in users) {
                     const userData = users[twitchName];
-                    const user: User = {
-                        twitchLogin: twitchName,
-                        manifoldUsername: userData.manifoldUsername,
-                        APIKey: userData.APIKey,
-                    };
+                    const user = new User(twitchName, userData.manifoldUsername, userData.APIKey);
                     this.userList.push(user);
                 }
             } else {
@@ -180,55 +176,6 @@ export default class App {
             }
         }
         throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
-    }
-
-    async getUserBalance(twitchUsername: string): Promise<number> {
-        const user = this.getUserForTwitchUsername(twitchUsername);
-        return (await Manifold.getUserByManifoldUsername(user.manifoldUsername)).balance;
-    }
-
-    async getCurrentUserStake_shares(manifoldUsername: string): Promise<{ shares: number; outcome: "YES" | "NO" }> {
-        const market = "this-is-a-local-market"; //!!!
-        return fetch(`${APIBase}bets?market=${market}&username=${manifoldUsername}`)
-            .then((r) => <Promise<ManifoldAPI.Bet[]>>r.json())
-            .then((bets) => {
-                let total = 0;
-                for (const bet of bets) {
-                    if (bet.outcome == "YES") {
-                        total += bet.shares;
-                    } else {
-                        total -= bet.shares;
-                    }
-                }
-                return { shares: Math.abs(total), outcome: total > 0 ? "YES" : "NO" };
-            });
-    }
-
-    async allIn(twitchUsername: string, yes: boolean) {
-        const balance = await this.getUserBalance(twitchUsername);
-        this.placeBet(twitchUsername, Math.floor(balance), yes);
-    }
-
-    async sellAllShares(twitchUsername: string): Promise<void> {
-        const user = this.getUserForTwitchUsername(twitchUsername);
-        const stake = await this.getCurrentUserStake_shares(user.manifoldUsername);
-        if (Math.abs(stake.shares) < 1) return;
-        Manifold.sellShares("litD59HFH1eUx5sAGCNL", user.APIKey, stake.outcome); //!!! Market ID
-    }
-
-    public async createBinaryMarket(twitchUsername: string, question: string, description: string, initialProb_percent: number): Promise<ManifoldAPI.LiteMarket> {
-        const user = this.getUserForTwitchUsername(twitchUsername);
-        return Manifold.createBinaryMarket(user.APIKey, question, description, initialProb_percent);
-    }
-
-    public async resolveBinaryMarket(twitchUsername: string, outcome: ManifoldAPI.ResolutionOutcome) {
-        const user = this.getUserForTwitchUsername(twitchUsername);
-        return Manifold.resolveBinaryMarket("mxnNNHwtJbVscKGVyJrD", user.APIKey, outcome); //!!! Market ID
-    }
-
-    public async placeBet(twitchUsername: string, amount: number, yes: boolean) {
-        const user = this.getUserForTwitchUsername(twitchUsername);
-        return Manifold.placeBet("litD59HFH1eUx5sAGCNL", user.APIKey, amount, yes ? "YES" : "NO"); //!!! Not using current market info
     }
 
     launch() {
@@ -320,15 +267,14 @@ export default class App {
             try {
                 const body = request.body;
                 const manifoldUsername = body.manifoldUsername;
-                const apiKey = body.apiKey;
-                if (!manifoldUsername || !apiKey) throw new Error("manifoldUsername and apiKey parameters are required.");
-
-                if (!(await Manifold.verifyAPIKey(apiKey))) throw new Error("API key invalid.");
+                const APIKey = body.apiKey;
+                if (!manifoldUsername || !APIKey) throw new Error("manifoldUsername and apiKey parameters are required.");
+                if (!(await Manifold.verifyAPIKey(APIKey))) throw new Error("API key invalid.");
 
                 const sessionToken = crypto.randomBytes(24).toString("hex");
                 this.linksInProgress[sessionToken] = {
                     manifoldUsername: manifoldUsername,
-                    apiKey: apiKey,
+                    apiKey: APIKey,
                 };
 
                 response.json({ message: "Success.", token: sessionToken });
@@ -355,11 +301,7 @@ export default class App {
                 const twitchLogin = twitchUser.login;
                 log.info(`Authorized Twitch user ${twitchLogin}`);
 
-                const user: User = {
-                    twitchLogin: twitchLogin,
-                    manifoldUsername: sessionData.manifoldUsername,
-                    APIKey: sessionData.apiKey,
-                };
+                const user = new User(twitchLogin, sessionData.manifoldUsername, sessionData.apiKey);
                 for (;;) {
                     try {
                         const existingUser = this.getUserForTwitchUsername(twitchLogin);

@@ -4,6 +4,7 @@ import fs from "fs";
 import { InsufficientBalanceException, UserNotRegisteredException } from "./exceptions";
 import { ResolutionOutcome, LiteMarket } from "common/manifold-defs";
 import log from "./logger";
+import User from "./user";
 
 // const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?(\S*)?/);
 const regexpCommand = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/); // Support for multi-argument commands
@@ -21,6 +22,9 @@ const MSG_BALANCE = (username: string, balance: number) => `${username} currentl
 const MSG_MARKET_CREATED = (username: string, question: string) => `${username}'s market '${question}' has been created!`;
 const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
 
+const dummyMarketID = "litD59HFH1eUx5sAGCNL"; //!!! REMOVE
+const dummyMarketSlug = "this-is-a-local-market"; //!!! REMOVE
+
 export default class TwitchBot {
     private readonly app: App;
 
@@ -29,14 +33,21 @@ export default class TwitchBot {
     constructor(app: App) {
         this.app = app;
 
-        const commands: { [k: string]: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => void } = {
+        const basicCommands: { [k: string]: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => void } = {
             commands: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
                 client.say(channel, MSG_HELP());
             },
             help: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
                 client.say(channel, MSG_HELP());
             },
-            bet: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => { // Handle bet commands in opposing order i.e. bet 50 yes
+            signup: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+                client.say(channel, MSG_SIGNUP(username));
+            },
+        };
+
+        const userCommands: { [k: string]: (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => void } = {
+            bet: async (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+                // Handle bet commands in opposing order i.e. bet 50 yes
                 if (args.length < 1) return;
                 let arg = args[0].toLocaleLowerCase();
                 if (args.length >= 2) {
@@ -58,27 +69,20 @@ export default class TwitchBot {
                     return;
                 }
 
-                app.placeBet(username, value, yes).catch((e) => {
-                    if (e instanceof UserNotRegisteredException) {
-                        client.say(channel, MSG_SIGNUP(username));
-                    } else if (e instanceof InsufficientBalanceException) {
-                        client.say(channel, MSG_NOT_ENOUGH_MANA_PLACE_BET(username));
+                try {
+                    await user.placeBet(dummyMarketID, value, yes);
+                } catch (e) {
+                    if (e instanceof InsufficientBalanceException) {
+                        client.say(channel, MSG_NOT_ENOUGH_MANA_PLACE_BET(user.twitchDisplayName));
                     } else {
-                        log.trace(e);
+                        throw e;
                     }
-                });
+                }
             },
-            sell: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                app.sellAllShares(username).catch((e) => {
-                    if (e instanceof UserNotRegisteredException) {
-                        client.say(channel, MSG_SIGNUP(username));
-                    } else {
-                        client.say(channel, MSG_COMMAND_FAILED(username, e.message));
-                        log.trace(e);
-                    }
-                });
+            sell: async (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+                await user.sellAllShares(dummyMarketID, dummyMarketSlug);
             },
-            allin: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+            allin: async (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
                 if (args.length < 1) return;
                 const arg = args[0].toLocaleLowerCase();
                 let yes: boolean;
@@ -89,36 +93,18 @@ export default class TwitchBot {
                 } else {
                     return;
                 }
-                app.allIn(username, yes).catch((e) => {
-                    if (e instanceof UserNotRegisteredException) {
-                        client.say(channel, MSG_SIGNUP(username));
-                    } else {
-                        client.say(channel, MSG_COMMAND_FAILED(username, e.message));
-                        log.trace(e);
-                    }
-                });
+                await user.allIn(dummyMarketID, yes);
             },
-            balance: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                app.getUserBalance(username)
-                    .then((balance) => {
-                        client.say(channel, MSG_BALANCE(username, balance));
-                    })
-                    .catch((e) => {
-                        if (e instanceof UserNotRegisteredException) {
-                            client.say(channel, MSG_SIGNUP(username));
-                        } else {
-                            client.say(channel, MSG_COMMAND_FAILED(username, e.message));
-                            log.trace(e);
-                        }
-                    });
+            balance: async (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+                const balance = await user.getBalance();
+                client.say(channel, MSG_BALANCE(user.twitchDisplayName, balance));
             },
-            signup: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
-                client.say(channel, MSG_SIGNUP(username));
-            },
-            // Moderator commands:
-            create: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+        };
+
+        const modUserCommands: { [k: string]: (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => void } = {
+            create: (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
                 if (!this.isAllowedAdminCommand(tags)) {
-                    log.warn(`User ${username} tried to use create without permission.`);
+                    log.warn(`User ${user.twitchDisplayName} tried to use create without permission.`);
                     return;
                 }
                 if (args.length < 1) return;
@@ -128,25 +114,25 @@ export default class TwitchBot {
                 }
                 question = question.trim();
 
-                app.createBinaryMarket(username, question, null, 50)
+                user.createBinaryMarket(question, null, 50)
                     .then((market: LiteMarket) => {
                         console.log("Market ID: " + market.id);
-                        client.say(channel, MSG_MARKET_CREATED(username, question));
+                        client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question));
                     })
                     .catch((e) => {
                         if (e instanceof InsufficientBalanceException) {
-                            app.getUserBalance(username).then((balance) => {
-                                client.say(channel, MSG_NOT_ENOUGH_MANA_CREATE_MARKET(username, balance));
+                            user.getBalance().then((balance) => {
+                                client.say(channel, MSG_NOT_ENOUGH_MANA_CREATE_MARKET(user.twitchDisplayName, balance));
                             });
                         } else {
-                            client.say(channel, MSG_COMMAND_FAILED(username, e.message));
+                            client.say(channel, MSG_COMMAND_FAILED(user.twitchDisplayName, e.message));
                             log.trace(e);
                         }
                     });
             },
-            resolve: (username: string, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
+            resolve: (user: User, tags: ChatUserstate, args: string[], client: Client, channel: string) => {
                 if (!this.isAllowedAdminCommand(tags)) {
-                    log.warn(`User ${username} tried to use resolve without permission.`);
+                    log.warn(`User ${user.twitchDisplayName} tried to use resolve without permission.`);
                     return;
                 }
                 if (args.length < 1) return;
@@ -159,14 +145,14 @@ export default class TwitchBot {
                     log.info("Resolve command failed due to outcome: " + outcome);
                     return;
                 }
-                app.resolveBinaryMarket(username, outcome)
+                user.resolveBinaryMarket(dummyMarketID, outcome)
                     .then(() => {
                         this.client.say(channel, MSG_RESOLVED(outcome));
                     })
                     .catch((e) => {
-                        client.say(channel, MSG_COMMAND_FAILED(username, e.message));
+                        client.say(channel, MSG_COMMAND_FAILED(user.twitchDisplayName, e.message));
                         log.trace(e);
-                    }); //!!!
+                    });
             },
         };
 
@@ -187,20 +173,31 @@ export default class TwitchBot {
             if (self) return; // Ignore echoed messages.
 
             const groups = message.match(regexpCommand);
-
             if (!groups) return;
             if (groups.length < 2) return;
 
-            const command: string = groups[1].toLocaleLowerCase();
+            const commandString: string = groups[1].toLocaleLowerCase();
             const args: string[] = groups[2]?.split(" ") || [];
 
-            const commandObject = commands[command as keyof typeof commands]; //!!! Use display name
-            if (!commandObject) {
-                return;
-            }
-
-            if (tags.username) {
-                commandObject(tags.username, tags, args, this.client, channel);
+            if (basicCommands[commandString]) {
+                basicCommands[commandString](tags.username, tags, args, this.client, channel);
+            } else {
+                try {
+                    const user = this.app.getUserForTwitchUsername(tags.username);
+                    user.twitchDisplayName = tags["display-name"];
+                    if (userCommands[commandString]) {
+                        userCommands[commandString](user, tags, args, this.client, channel);
+                    } else if (modUserCommands[commandString]) {
+                        modUserCommands[commandString](user, tags, args, this.client, channel);
+                    }
+                } catch (e) {
+                    if (e instanceof UserNotRegisteredException) {
+                        this.client.say(channel, MSG_SIGNUP(tags["display-name"]));
+                    } else {
+                        this.client.say(channel, MSG_COMMAND_FAILED(tags["display-name"], e.message));
+                        log.trace(e);
+                    }
+                }
             }
         });
     }
