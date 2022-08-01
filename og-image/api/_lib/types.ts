@@ -18,6 +18,6 @@ export interface ParsedRequest {
   creatorName: string
   creatorUsername: string
   creatorAvatarUrl: string
-  challengeAmount: string | undefined
-  challengeOutcome: string | undefined
+  challengeAmount: string
+  challengeOutcome: string
 }

@@ -151,10 +151,10 @@ export function getHtml(parsedReq: ParsedRequest) {
         </div>
         <div class="flex flex-col text-primary">
           <div class="text-8xl">${
-            challengeAmount ? 'M$' + challengeAmount : probability
+            challengeAmount !== '' ? 'M$' + challengeAmount : probability
           }</div>
            <div class="text-5xl">${
-             challengeOutcome ? 'on' + challengeOutcome : ''
+             challengeOutcome !== '' ? 'on' + challengeOutcome : ''
            }</div>
           <div class="text-4xl">${probability !== '' ? 'chance' : ''}</div>
         </div>

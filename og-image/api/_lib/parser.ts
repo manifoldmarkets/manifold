@@ -71,8 +71,8 @@ export function parseRequest(req: IncomingMessage) {
     creatorName: getString(creatorName) || 'Manifold Markets',
     creatorUsername: getString(creatorUsername) || 'ManifoldMarkets',
     creatorAvatarUrl: getString(creatorAvatarUrl) || '',
-    challengeAmount: getString(challengeAmount),
-    challengeOutcome: getString(challengeOutcome),
+    challengeAmount: getString(challengeAmount) || '',
+    challengeOutcome: getString(challengeOutcome) || '',
   }
   parsedRequest.images = getDefaultImages(parsedRequest.images)
   return parsedRequest
