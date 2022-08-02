@@ -15,6 +15,8 @@ import {
   listenForValue,
   listenForValues,
 } from './utils'
+import { Contract } from 'common/contract'
+import { updateContract } from 'web/lib/firebase/contracts'
 
 export const groups = coll<Group>('groups')
 
@@ -131,14 +133,29 @@ export async function leaveGroup(group: Group, userId: string): Promise<void> {
 
 export async function addContractToGroup(
   group: Group,
-  contractId: string,
+  contract: Contract,
   userId: string
 ) {
   if (!canModifyGroupContracts(group, userId)) return
+  const newGroupLinks = [
+    ...(contract.groupLinks ?? []),
+    {
+      groupId: group.id,
+      createdTime: Date.now(),
+      slug: group.slug,
+      userId,
+      name: group.name,
+    } as GroupLink,
+  ]
+  // It's good to update the contract first, so the on-update-group trigger doesn't re-add them
+  await updateContract(contract.id, {
+    groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
+    groupLinks: newGroupLinks,
+  })
 
-  if (!group.contractIds.includes(contractId)) {
+  if (!group.contractIds.includes(contract.id)) {
     return await updateGroup(group, {
-      contractIds: uniq([...group.contractIds, contractId]),
+      contractIds: uniq([...group.contractIds, contract.id]),
     })
       .then(() => group)
       .catch((err) => {
@@ -150,13 +167,24 @@ export async function addContractToGroup(
 
 export async function removeContractFromGroup(
   group: Group,
-  contractId: string,
+  contract: Contract,
   userId: string
 ) {
   if (!canModifyGroupContracts(group, userId)) return
 
-  if (group.contractIds.includes(contractId)) {
-    const newContractIds = group.contractIds.filter((id) => id !== contractId)
+  if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
+    const newGroupLinks = contract.groupLinks?.filter(
+      (link) => link.slug !== group.slug
+    )
+    await updateContract(contract.id, {
+      groupSlugs:
+        contract.groupSlugs?.filter((slug) => slug !== group.slug) ?? [],
+      groupLinks: newGroupLinks ?? [],
+    })
+  }
+
+  if (group.contractIds.includes(contract.id)) {
+    const newContractIds = group.contractIds.filter((id) => id !== contract.id)
     return await updateGroup(group, {
       contractIds: uniq(newContractIds),
     })

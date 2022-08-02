@@ -38,7 +38,7 @@ export function ContractGroupsList(props: {
               ignoreGroupIds: groupLinks.map((g) => g.groupId),
             }}
             setSelectedGroup={(group) =>
-              group && addContractToGroup(group, contract.id, user.id)
+              group && addContractToGroup(group, contract, user.id)
             }
             selectedGroup={undefined}
             creator={user}
@@ -62,9 +62,7 @@ export function ContractGroupsList(props: {
             <Button
               color={'gray-white'}
               size={'xs'}
-              onClick={() =>
-                removeContractFromGroup(group, contract.id, user.id)
-              }
+              onClick={() => removeContractFromGroup(group, contract, user.id)}
             >
               <XIcon className="h-4 w-4 text-gray-500" />
             </Button>
