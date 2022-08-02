@@ -83,7 +83,7 @@ export default class TwitchBot {
             buy: betCommandHandler,
             bet: betCommandHandler,
             sell: async (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => {
-                await user.sellAllShares(market.data.id, market.slug);
+                await user.sellAllShares(market.data.id);
             },
             allin: async (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => {
                 if (args.length < 1) return;
