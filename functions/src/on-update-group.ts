@@ -1,9 +1,8 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { Group, GroupLink } from '../../common/group'
-import { getContract, log } from './utils'
+import { Group } from '../../common/group'
+import { getContract } from './utils'
 import { uniq } from 'lodash'
-import { removeUndefinedProps } from '../../common/util/object'
 const firestore = admin.firestore()
 
 export const onUpdateGroup = functions.firestore
@@ -30,41 +29,6 @@ export const onUpdateGroup = functions.firestore
       .doc(group.id)
       .update({ mostRecentActivityTime: Date.now() })
   })
-
-export async function createGroupLinks(
-  group: Group,
-  contractIds: string[],
-  userId?: string
-) {
-  for (const contractId of contractIds) {
-    const contract = await getContract(contractId)
-    if (!contract?.groupSlugs?.includes(group.slug)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
-        })
-    }
-    if (!contract?.groupLinks?.map((gl) => gl.groupId).includes(group.id)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupLinks: [
-            removeUndefinedProps({
-              groupId: group.id,
-              name: group.name,
-              slug: group.slug,
-              userId,
-              createdTime: Date.now(),
-            }) as GroupLink,
-            ...(contract?.groupLinks ?? []),
-          ],
-        })
-    }
-  }
-}
 
 export async function removeGroupLinks(group: Group, contractIds: string[]) {
   for (const contractId of contractIds) {

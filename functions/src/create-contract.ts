@@ -14,7 +14,7 @@ import {
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser } from './utils'
+import { chargeUser, getContract } from './utils'
 import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
@@ -28,12 +28,11 @@ import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
-import { Group, MAX_ID_LENGTH } from '../../common/group'
+import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
-import { createGroupLinks } from './on-update-group'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -290,4 +289,39 @@ export async function getContractFromSlug(slug: string) {
     .get()
 
   return snap.empty ? undefined : (snap.docs[0].data() as Contract)
+}
+
+async function createGroupLinks(
+  group: Group,
+  contractIds: string[],
+  userId: string
+) {
+  for (const contractId of contractIds) {
+    const contract = await getContract(contractId)
+    if (!contract?.groupSlugs?.includes(group.slug)) {
+      await firestore
+        .collection('contracts')
+        .doc(contractId)
+        .update({
+          groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
+        })
+    }
+    if (!contract?.groupLinks?.map((gl) => gl.groupId).includes(group.id)) {
+      await firestore
+        .collection('contracts')
+        .doc(contractId)
+        .update({
+          groupLinks: [
+            {
+              groupId: group.id,
+              name: group.name,
+              slug: group.slug,
+              userId,
+              createdTime: Date.now(),
+            } as GroupLink,
+            ...(contract?.groupLinks ?? []),
+          ],
+        })
+    }
+  }
 }
