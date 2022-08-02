@@ -2,17 +2,20 @@ import React from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
+import { Button } from './button'
 
-export function SignUpPrompt(props: { label?: string }) {
-  const { label } = props
+export function SignUpPrompt(props: { label?: string; className?: string }) {
+  const { label, className } = props
   const user = useUser()
 
   return user === null ? (
-    <button
-      className="btn flex-1 whitespace-nowrap border-none bg-gradient-to-r from-indigo-500 to-blue-500 px-10 text-lg font-medium normal-case hover:from-indigo-600 hover:to-blue-600"
+    <Button
       onClick={withTracking(firebaseLogin, 'sign up to bet')}
+      className={className}
+      size="lg"
+      color="gradient"
     >
       {label ?? 'Sign up to bet!'}
-    </button>
+    </Button>
   ) : null
 }

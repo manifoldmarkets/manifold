@@ -28,7 +28,7 @@ export function AcceptChallengeButton(props: {
     setErrorText('')
   }, [open])
 
-  if (!user) return <SignUpPrompt label={'Sign up to accept this challenge'} />
+  if (!user) return <SignUpPrompt label="Accept this bet" className="mt-4" />
 
   const iAcceptChallenge = () => {
     setLoading(true)
