@@ -26,10 +26,10 @@ export default class User {
         return this.placeBet(marketID, Math.floor(await this.getBalance()), yes);
     }
 
-    async sellAllShares(marketID: string, marketSlug: string): Promise<void> {
+    async sellAllShares(marketID: string, marketSlug: string): Promise<Response> {
         const stake = await this.getStakeInMarket_shares(marketSlug);
-        if (Math.abs(stake.shares) < 1) return;
-        Manifold.sellShares(marketID, this.APIKey, stake.outcome);
+        // if (Math.abs(stake.shares) < 1) return;
+        return Manifold.sellShares(marketID, this.APIKey, stake.outcome);
     }
 
     public async createBinaryMarket(question: string, description: string, initialProb_percent: number): Promise<ManifoldAPI.LiteMarket> {

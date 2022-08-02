@@ -42,43 +42,46 @@ export default class TwitchBot {
             },
         };
 
-        const userCommands: { [k: string]: (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => Promise<void> } = {
-            bet: async (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => {
-                if (args.length < 1) return;
-                let arg = args[0].toLocaleLowerCase();
-                if (args.length >= 2) {
-                    arg += args[1].toLocaleLowerCase();
-                }
-                let yes: boolean;
-                if (arg.startsWith("yes")) {
-                    yes = true;
-                    arg = arg.substring(3);
-                } else if (arg.endsWith("yes")) {
-                    yes = true;
-                    arg = arg.substring(0, arg.length - 3);
-                } else if (arg.startsWith("no")) {
-                    yes = false;
-                    arg = arg.substring(2);
-                } else if (arg.endsWith("no")) {
-                    yes = false;
-                    arg = arg.substring(0, arg.length - 2);
+        const betCommandHandler = async (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => {
+            if (args.length < 1) return;
+            let arg = args[0].toLocaleLowerCase();
+            if (args.length >= 2) {
+                arg += args[1].toLocaleLowerCase();
+            }
+            let yes: boolean;
+            if (arg.startsWith("yes")) {
+                yes = true;
+                arg = arg.substring(3);
+            } else if (arg.endsWith("yes")) {
+                yes = true;
+                arg = arg.substring(0, arg.length - 3);
+            } else if (arg.startsWith("no")) {
+                yes = false;
+                arg = arg.substring(2);
+            } else if (arg.endsWith("no")) {
+                yes = false;
+                arg = arg.substring(0, arg.length - 2);
+            } else {
+                return;
+            }
+
+            const value = Number.parseInt(arg);
+            if (isNaN(value)) return;
+
+            try {
+                await user.placeBet(market.data.id, value, yes);
+            } catch (e) {
+                if (e instanceof InsufficientBalanceException) {
+                    this.client.say(channel, MSG_NOT_ENOUGH_MANA_PLACE_BET(user.twitchDisplayName));
                 } else {
-                    return;
+                    throw e;
                 }
-
-                const value = Number.parseInt(arg);
-                if (isNaN(value)) return;
-
-                try {
-                    await user.placeBet(market.data.id, value, yes);
-                } catch (e) {
-                    if (e instanceof InsufficientBalanceException) {
-                        this.client.say(channel, MSG_NOT_ENOUGH_MANA_PLACE_BET(user.twitchDisplayName));
-                    } else {
-                        throw e;
-                    }
-                }
-            },
+            }
+        };
+        
+        const userCommands: { [k: string]: (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => Promise<void> } = {
+            buy: betCommandHandler,
+            bet: betCommandHandler,
             sell: async (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => {
                 await user.sellAllShares(market.data.id, market.slug);
             },

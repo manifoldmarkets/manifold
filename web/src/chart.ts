@@ -178,7 +178,7 @@ export default class Chart {
                     }
                     ctx.stroke();
                     ctx.lineTo(graphWidth_px, graphHeight_px);
-                    ctx.lineTo(0, graphHeight_px);
+                    ctx.lineTo(((this.data[0].x - minX) / (maxX - minX)) * graphWidth_px, graphHeight_px);
                     ctx.fill();
                 }
                 ctx.restore();

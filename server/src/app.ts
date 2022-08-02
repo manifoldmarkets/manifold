@@ -79,7 +79,7 @@ export default class App {
 
         this.loadUsersFromFile();
 
-        this.selectMarket("this-is-a-local-market");
+        this.selectMarket("phils-6th-market");
     }
 
     public getMarketForTwitchChannel(channel: string) {

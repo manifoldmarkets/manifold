@@ -201,7 +201,7 @@ class Application {
         nameDiv.innerHTML = name + (isTruncated ? "..." : "");
         //
         t.querySelector(".amount").innerHTML = betAmountMagnitude.toFixed(0);
-        t.querySelector(".boughtSold").innerHTML = positiveBet ? "YES" : "NO";
+        t.querySelector(".boughtSold").innerHTML = (bet.amount < 0 ? "sold " : "") + (positiveBet ? "YES" : "NO");
         t.querySelector(".color").classList.add(positiveBet? "green" : "red");
 
         const response = document.createElement("p");
