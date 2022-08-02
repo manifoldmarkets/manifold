@@ -1,5 +1,6 @@
 import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
+
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -79,4 +80,7 @@ export function claimManalink(params: any) {
 
 export function createGroup(params: any) {
   return call(getFunctionUrl('creategroup'), 'POST', params)
+}
+export function convertmana(params: any) {
+  return call(getFunctionUrl('convertmana'), 'POST', params)
 }
