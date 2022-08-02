@@ -599,12 +599,12 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
 
 ### `POST /v0/market/[marketId]/sell`
 
-Sells some quantity of shares in a market on behalf of the authorized user.
+Sells some quantity of shares in a binary market on behalf of the authorized user.
 
 Parameters:
 
-- `outcome`: Required. One of `YES`, `NO`, or a `number` indicating the numeric
-  bucket ID, depending on the market type.
+- `outcome`: Optional. One of `YES`, or `NO`. If you leave it off, and you only
+  own one kind of shares, you will sell that kind of shares.
 - `shares`: Optional. The amount of shares to sell of the outcome given
   above. If not provided, all the shares you own will be sold.
 
