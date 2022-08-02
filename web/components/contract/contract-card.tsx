@@ -30,7 +30,7 @@ import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
-import { formatNumericProbability } from 'common/pseudo-numeric'
+import { formatNumericProbability, getMappedValue } from 'common/pseudo-numeric'
 
 export function ContractCard(props: {
   contract: Contract
@@ -317,6 +317,12 @@ export function PseudoNumericResolutionOrExpectation(props: {
   const { resolution, resolutionValue, resolutionProbability } = contract
   const textColor = `text-blue-400`
 
+  const value = resolution
+    ? resolutionValue
+      ? resolutionValue
+      : getMappedValue(contract)(resolutionProbability ?? 0)
+    : getMappedValue(contract)(getProbability(contract))
+
   return (
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
       {resolution ? (
@@ -326,20 +332,21 @@ export function PseudoNumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <div className="text-blue-400">
-              {resolutionValue
-                ? formatLargeNumber(resolutionValue)
-                : formatNumericProbability(
-                    resolutionProbability ?? 0,
-                    contract
-                  )}
+            <div
+              className={clsx('tooltip', textColor)}
+              data-tip={value.toFixed(2)}
+            >
+              {formatLargeNumber(value)}
             </div>
           )}
         </>
       ) : (
         <>
-          <div className={clsx('text-3xl', textColor)}>
-            {formatNumericProbability(getProbability(contract), contract)}
+          <div
+            className={clsx('tooltip text-3xl', textColor)}
+            data-tip={value.toFixed(2)}
+          >
+            {formatLargeNumber(value)}
           </div>
           <div className={clsx('text-base', textColor)}>expected</div>
         </>
