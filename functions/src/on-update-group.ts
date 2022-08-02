@@ -78,8 +78,9 @@ export async function removeGroupLinks(group: Group, contractIds: string[]) {
             []),
         ]),
         groupLinks: [
-          contract?.groupLinks?.filter((link) => link.groupId !== group.id) ??
-            [],
+          ...(contract?.groupLinks?.filter(
+            (link) => link.groupId !== group.id
+          ) ?? []),
         ],
       })
   }
