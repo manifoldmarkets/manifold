@@ -5,6 +5,7 @@ import {
   listenForGroup,
   listenForGroups,
   listenForMemberGroups,
+  listenForOpenGroups,
   listGroups,
 } from 'web/lib/firebase/groups'
 import { getUser, getUsers } from 'web/lib/firebase/users'
@@ -27,6 +28,16 @@ export const useGroups = () => {
 
   useEffect(() => {
     return listenForGroups(setGroups)
+  }, [])
+
+  return groups
+}
+
+export const useOpenGroups = () => {
+  const [groups, setGroups] = useState<Group[]>([])
+
+  useEffect(() => {
+    return listenForOpenGroups(setGroups)
   }, [])
 
   return groups
