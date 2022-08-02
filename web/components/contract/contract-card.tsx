@@ -30,7 +30,7 @@ import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
-import { formatNumericProbability, getMappedValue } from 'common/pseudo-numeric'
+import { getMappedValue } from 'common/pseudo-numeric'
 
 export function ContractCard(props: {
   contract: Contract
