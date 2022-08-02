@@ -18,7 +18,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -27,7 +27,6 @@ import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Spacer } from '../layout/spacer'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
-import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { PrivateUser } from 'common/user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
@@ -293,25 +292,6 @@ function GroupsList(props: {
     },
     memberItems.length > 0 ? memberItems.length : undefined
   )
-
-  // Set notification as seen if our current page is equal to the isSeenOnHref property
-  useEffect(() => {
-    const currentPageWithoutQuery = currentPage.split('?')[0]
-    const currentPageGroupSlug = currentPageWithoutQuery.split('/')[2]
-    preferredNotifications.forEach((notification) => {
-      if (
-        notification.isSeenOnHref === currentPage ||
-        // Old chat style group chat notif was just /group/slug
-        (notification.isSeenOnHref &&
-          currentPageWithoutQuery.includes(notification.isSeenOnHref)) ||
-        // They're on the home page, so if they've a chat notif, they're seeing the chat
-        (notification.isSeenOnHref?.endsWith(GROUP_CHAT_SLUG) &&
-          currentPageWithoutQuery.endsWith(currentPageGroupSlug))
-      ) {
-        setNotificationsAsSeen([notification])
-      }
-    })
-  }, [currentPage, preferredNotifications])
 
   const { height } = useWindowSize()
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
