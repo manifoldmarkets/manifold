@@ -18,6 +18,7 @@ import {
   groupPayoutsByUser,
   Payout,
 } from '../../common/payouts'
+import { isAdmin } from '../../common/envs/constants'
 import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 import { APIError, newEndpoint, validate } from './api'
@@ -69,8 +70,6 @@ const opts = { secrets: ['MAILGUN_KEY'] }
 
 export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
-  const userId = auth.uid
-
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()
   if (!contractSnap.exists)
@@ -83,7 +82,7 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     req.body
   )
 
-  if (creatorId !== userId)
+  if (creatorId !== auth.uid && !isAdmin(auth.uid))
     throw new APIError(403, 'User is not creator of contract')
 
   if (contract.resolution) throw new APIError(400, 'Contract already resolved')
