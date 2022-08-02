@@ -5,25 +5,19 @@ import React, { useEffect, memo, useState, useMemo } from 'react'
 import { Avatar } from 'web/components/avatar'
 import { Group } from 'common/group'
 import { Comment, createCommentOnGroup } from 'web/lib/firebase/comments'
-import {
-  CommentInputTextArea,
-  TruncatedComment,
-} from 'web/components/feed/feed-comments'
+import { CommentInputTextArea } from 'web/components/feed/feed-comments'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
-
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { UserLink } from 'web/components/user-page'
-
-import { groupPath } from 'web/lib/firebase/groups'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { Tipper } from 'web/components/tipper'
 import { sum } from 'lodash'
 import { formatMoney } from 'common/util/format'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { useTextEditor } from '../editor'
+import { Content, useTextEditor } from 'web/components/editor'
 
 export function GroupChat(props: {
   messages: Comment[]
@@ -222,15 +216,11 @@ const GroupMessage = memo(function GroupMessage_(props: {
           elementId={id}
         />
       </Row>
-      <Row className={'text-black'}>
+      <div className="mt-2 text-black">
         {comments.map((comment) => (
-          <TruncatedComment
-            comment={comment.content} // TODO: || comment.text
-            moreHref={groupPath(group.slug)}
-            shouldTruncate={false}
-          />
+          <Content content={comment.content || comment.text} />
         ))}
-      </Row>
+      </div>
       <Row>
         {!isCreatorsComment && onReplyClick && (
           <button

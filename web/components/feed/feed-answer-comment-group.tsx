@@ -154,7 +154,6 @@ export function FeedAnswerCommentGroup(props: {
         commentsList={commentsList}
         betsByUserId={betsByUserId}
         smallAvatar={true}
-        truncate={false}
         bets={bets}
         tips={tips}
         scrollAndOpenReplyInput={scrollAndOpenReplyInput}

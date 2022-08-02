@@ -13,13 +13,11 @@ import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import {
   createCommentOnContract,
   MAX_COMMENT_LENGTH,
 } from 'web/lib/firebase/comments'
-import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
@@ -38,18 +36,9 @@ export function FeedCommentThread(props: {
   tips: CommentTipMap
   parentComment: Comment
   bets: Bet[]
-  truncate?: boolean
   smallAvatar?: boolean
 }) {
-  const {
-    contract,
-    comments,
-    bets,
-    tips,
-    truncate,
-    smallAvatar,
-    parentComment,
-  } = props
+  const { contract, comments, bets, tips, smallAvatar, parentComment } = props
   const [showReply, setShowReply] = useState(false)
   const [replyToUsername, setReplyToUsername] = useState('')
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
@@ -78,7 +67,6 @@ export function FeedCommentThread(props: {
         betsByUserId={betsByUserId}
         tips={tips}
         smallAvatar={smallAvatar}
-        truncate={truncate}
         bets={bets}
         scrollAndOpenReplyInput={scrollAndOpenReplyInput}
       />
@@ -117,14 +105,12 @@ export function CommentRepliesList(props: {
   bets: Bet[]
   treatFirstIndexEqually?: boolean
   smallAvatar?: boolean
-  truncate?: boolean
 }) {
   const {
     contract,
     commentsList,
     betsByUserId,
     tips,
-    truncate,
     smallAvatar,
     bets,
     scrollAndOpenReplyInput,
@@ -164,7 +150,6 @@ export function CommentRepliesList(props: {
                 : undefined
             }
             smallAvatar={smallAvatar}
-            truncate={truncate}
           />
         </div>
       ))}
@@ -178,7 +163,6 @@ export function FeedComment(props: {
   tips: CommentTips
   betsBySameUser: Bet[]
   probAtCreatedTime?: number
-  truncate?: boolean
   smallAvatar?: boolean
   onReplyClick?: (comment: Comment) => void
 }) {
@@ -188,7 +172,6 @@ export function FeedComment(props: {
     tips,
     betsBySameUser,
     probAtCreatedTime,
-    truncate,
     onReplyClick,
   } = props
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
@@ -273,11 +256,9 @@ export function FeedComment(props: {
             elementId={comment.id}
           />
         </div>
-        <TruncatedComment
-          comment={content || text}
-          moreHref={contractPath(contract)}
-          shouldTruncate={truncate}
-        />
+        <div className="mt-2 text-[15px] text-gray-700">
+          <Content content={content || text} />
+        </div>
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
@@ -525,32 +506,6 @@ export function CommentInputTextArea(props: {
         )}
       </Row>
     </>
-  )
-}
-
-export function TruncatedComment(props: {
-  comment: JSONContent
-  moreHref: string
-  shouldTruncate?: boolean
-}) {
-  const { comment, moreHref, shouldTruncate } = props
-  let truncated = comment
-
-  // TODO: Keep descriptions to at most 80 words (~400 characters)
-  const MAX_CHARS = 400
-
-  return (
-    <div
-      className="mt-2 whitespace-pre-line break-words text-gray-700"
-      style={{ fontSize: 15 }}
-    >
-      <Content content={comment} />
-      {truncated != comment && (
-        <SiteLink href={moreHref} className="text-indigo-700">
-          ... (show more)
-        </SiteLink>
-      )}
-    </div>
   )
 }
 
