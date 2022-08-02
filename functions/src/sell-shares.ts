@@ -9,7 +9,7 @@ import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { getValues, log } from './utils'
 import { Bet } from '../../common/bet'
-import { floatingLesserEqual } from '../../common/util/math'
+import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsQuery, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { redeemShares } from './redeem-shares'
@@ -56,8 +56,11 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       chosenOutcome = outcome
     } else {
       const nonzeroShares = Object.entries(sharesByOutcome).filter(
-        ([_k, v]) => v
+        ([_k, v]) => !floatingEqual(0, v)
       )
+      if (nonzeroShares.length == 0) {
+        throw new APIError(400, "You don't own any shares in this market.")
+      }
       if (nonzeroShares.length > 1) {
         throw new APIError(
           400,
