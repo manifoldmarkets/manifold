@@ -44,6 +44,7 @@ import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
+import { getcurrentuser } from './get-current-user'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -66,6 +67,7 @@ const resolveMarketFunction = toCloudFunction(resolvemarket)
 const unsubscribeFunction = toCloudFunction(unsubscribe)
 const stripeWebhookFunction = toCloudFunction(stripewebhook)
 const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
+const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 
 export {
   healthFunction as health,
@@ -86,4 +88,5 @@ export {
   unsubscribeFunction as unsubscribe,
   stripeWebhookFunction as stripewebhook,
   createCheckoutSessionFunction as createcheckoutsession,
+  getCurrentUserFunction as getcurrentuser,
 }
