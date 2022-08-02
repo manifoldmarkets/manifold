@@ -22,8 +22,10 @@ export function parseRequest(req: IncomingMessage) {
     creatorAvatarUrl,
 
     // Challenge attributes:
-    challengeAmount,
-    challengeOutcome,
+    challengerAmount,
+    challengerOutcome,
+    creatorAmount,
+    creatorOutcome,
   } = query || {}
 
   if (Array.isArray(fontSize)) {
@@ -71,8 +73,10 @@ export function parseRequest(req: IncomingMessage) {
     creatorName: getString(creatorName) || 'Manifold Markets',
     creatorUsername: getString(creatorUsername) || 'ManifoldMarkets',
     creatorAvatarUrl: getString(creatorAvatarUrl) || '',
-    challengeAmount: getString(challengeAmount) || '',
-    challengeOutcome: getString(challengeOutcome) || '',
+    challengerAmount: getString(challengerAmount) || '',
+    challengerOutcome: getString(challengerOutcome) || '',
+    creatorAmount: getString(creatorAmount) || '',
+    creatorOutcome: getString(creatorOutcome) || '',
   }
   parsedRequest.images = getDefaultImages(parsedRequest.images)
   return parsedRequest

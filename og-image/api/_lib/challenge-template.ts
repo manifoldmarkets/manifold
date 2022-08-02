@@ -81,18 +81,20 @@ function getCss(theme: string, fontSize: string) {
     `
 }
 
-export function getHtml(parsedReq: ParsedRequest) {
+export function getChallengeHtml(parsedReq: ParsedRequest) {
   const {
     theme,
     fontSize,
     question,
-    probability,
-    metadata,
     creatorName,
-    creatorUsername,
+    // creatorUsername,
     creatorAvatarUrl,
+    challengerAmount,
+    challengerOutcome,
+    creatorAmount,
+    creatorOutcome,
   } = parsedReq
-  const MAX_QUESTION_CHARS = 100
+  const MAX_QUESTION_CHARS = 85
   const truncatedQuestion =
     question.length > MAX_QUESTION_CHARS
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
@@ -111,54 +113,72 @@ export function getHtml(parsedReq: ParsedRequest) {
     </style>
   <body>
     <div class="px-24">
-      <!-- Profile image -->
-      <div class="absolute left-24 top-8">
-        <div class="flex flex-row align-bottom gap-6">
-          <img
-            class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAvatar}"
-            src="${creatorAvatarUrl}"
-            alt=""
-          />
-          <div class="flex flex-col gap-2">
-            <p class="text-gray-900 text-3xl">${creatorName}</p>
-            <p class="text-gray-500 text-3xl">@${creatorUsername}</p>
-          </div>
-        </div>
-      </div>
+     
 
-      <!-- Manifold logo -->
-      <div class="absolute right-24 top-8">
-        <a class="flex flex-row gap-3" href="/"
-          ><img
-            class="sm:h-12 sm:w-12"
-            src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.png"
-            width="40"
-            height="40"
-          />
-          <div
-            class="hidden sm:flex font-major-mono lowercase mt-1 sm:text-3xl md:whitespace-nowrap"
-          >
-            Manifold Markets
-          </div></a
-        >
-      </div>
-
-      <div class="flex flex-row justify-between gap-12 pt-36">
-        <div class="text-indigo-700 text-6xl leading-tight">
+      <div class="flex flex-col justify-between gap-16 pt-2">
+        <div class="flex flex-col text-indigo-700 mt-4 text-5xl leading-tight text-center">
           ${truncatedQuestion}
         </div>
-        <div class="flex flex-col text-primary">
-          <div class="text-8xl">${probability}</div>
-          <div class="text-4xl">${probability !== '' ? 'chance' : ''}</div>
-        </div>
+        <div class="flex flex-row grid grid-cols-3">
+        <div class="flex flex-col justify-center items-center ${
+          creatorOutcome === 'YES' ? 'text-primary' : 'text-red-500'
+        }">
+          <div class="flex flex-row align-bottom gap-6">
+            <img
+              class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAvatar}"
+              src="${creatorAvatarUrl}"
+              alt=""
+            />
+            <div class="flex flex-col gap-2 items-center justify-center">
+            <p class="text-gray-900 text-4xl">${creatorName}</p>
+          </div>
+        </div> 
+          <div class="text-6xl mt-8">${'M$' + creatorAmount}</div>
+          <div class="text-3xl">${'on'}</div>
+          <div class="text-6xl ">${creatorOutcome}</div>
       </div>
+        <div class="flex flex-col text-gray-900 text-6xl mt-8 text-center">
+        ⚔️
+        </div>
+      <div class="flex flex-col justify-center items-center ${
+        challengerOutcome === 'YES' ? 'text-primary' : 'text-red-500'
+      }">
+        <div class="flex flex-row align-bottom gap-6 mr-20">
+            <img
+              class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAvatar}"
+              src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
+              alt=""
+            />
+            <div class="flex flex-col gap-2 items-center justify-center">
+            <p class="text-gray-900 text-4xl">You</p>
 
-      <!-- Metadata -->
-      <div class="absolute bottom-16">
-        <div class="text-gray-500 text-3xl">
-          ${metadata}
+          </div>
+        </div> 
+          <div class="text-6xl mt-8">${'M$' + challengerAmount}</div>
+          <div class="text-3xl">${'on'}</div>
+          <div class="text-6xl ">${challengerOutcome}</div>
+      </div>
+      </div>
+        
         </div>
       </div>
+    <!-- Manifold logo -->
+    <div class="flex flex-row justify-center mt-14 ">
+      <a class="flex flex-row gap-3" href="/">
+      <img
+        class="sm:h-12 sm:w-12"
+        src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.png"
+        width="40"
+        height="40"
+        alt=''
+      />
+      <div
+        class="hidden sm:flex font-major-mono lowercase mt-1 sm:text-3xl md:whitespace-nowrap"
+        >
+        Manifold Markets
+      </div></a>
+    </div>
+     
     </div>
   </body>
 </html>`
