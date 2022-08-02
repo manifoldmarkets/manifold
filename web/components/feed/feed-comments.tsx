@@ -461,10 +461,38 @@ export function CommentInputTextArea(props: {
     isSubmitting,
     replyToUsername,
   } = props
-  const { width } = useWindowSize()
+  const isMobile = (useWindowSize().width ?? 0) < 768 // TODO: base off input device (keybord vs touch)
+
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
+
+  const submit = () => {
+    submitComment(presetId)
+    editor?.commands?.clearContent()
+  }
+
+  useEffect(() => {
+    editor?.setOptions({
+      editorProps: {
+        handleKeyDown: (view, event) => {
+          if (
+            event.key === 'Enter' &&
+            !event.shiftKey &&
+            (!isMobile || event.ctrlKey || event.metaKey) &&
+            // mention list is closed
+            !(view.state as any).mention$.active
+          ) {
+            submit()
+            event.preventDefault()
+            return true
+          }
+          return false
+        },
+      },
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor])
 
   // TODO: make at mention show up at beginning
   return (
@@ -479,10 +507,7 @@ export function CommentInputTextArea(props: {
                 (!editor || editor.isEmpty) &&
                   'pointer-events-none text-gray-500'
               )}
-              onClick={() => {
-                submitComment(presetId)
-                editor?.commands.clearContent()
-              }}
+              onClick={submit}
             >
               <PaperAirplaneIcon
                 className={'m-0 min-w-[22px] rotate-90 p-0 '}
