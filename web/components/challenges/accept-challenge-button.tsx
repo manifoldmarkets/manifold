@@ -117,12 +117,12 @@ export function AcceptChallengeButton(props: {
 
       {challenge.creatorId != user.id && (
         <Button
-          color={'indigo'}
-          size={'xl'}
+          color="gradient"
+          size="2xl"
           onClick={() => setOpen(true)}
           className={clsx('whitespace-nowrap')}
         >
-          I accept this challenge
+          Accept bet
         </Button>
       )}
     </>

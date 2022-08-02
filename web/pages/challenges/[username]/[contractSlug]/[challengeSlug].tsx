@@ -1,3 +1,6 @@
+import React, { useEffect, useState } from 'react'
+import Confetti from 'react-confetti'
+
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import {
   Contract,
@@ -10,28 +13,24 @@ import { Col } from 'web/components/layout/col'
 import { SiteLink } from 'web/components/site-link'
 import { Spacer } from 'web/components/layout/spacer'
 import { Row } from 'web/components/layout/row'
-
 import { Challenge } from 'common/challenge'
 import {
   getChallenge,
   getChallengeUrl,
   useChallenge,
 } from 'web/lib/firebase/challenges'
-import { getPortfolioHistory, getUserByUsername } from 'web/lib/firebase/users'
-import { PortfolioMetrics, User } from 'common/user'
+import { getUserByUsername } from 'web/lib/firebase/users'
+import { User } from 'common/user'
 import { Page } from 'web/components/page'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { AcceptChallengeButton } from 'web/components/challenges/accept-challenge-button'
 import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
-import React, { useEffect, useState } from 'react'
 import { BinaryOutcomeLabel } from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
-import { last } from 'lodash'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
-import Confetti from 'react-confetti'
 import {
   BinaryResolutionOrChance,
   PseudoNumericResolutionOrExpectation,
@@ -41,8 +40,11 @@ import { SEO } from 'web/components/SEO'
 import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 import Custom404 from 'web/pages/404'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { BinaryContract } from 'common/contract'
+import { Title } from 'web/components/title'
 
 export const getStaticProps = fromPropz(getStaticPropz)
+
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
 }) {
@@ -73,7 +75,7 @@ export async function getStaticPaths() {
 }
 
 export default function ChallengePage(props: {
-  contract: Contract | null
+  contract: BinaryContract | null
   user: User
   slug: string
   bets: Bet[]
@@ -88,18 +90,22 @@ export default function ChallengePage(props: {
     challenge: null,
     slug: '',
   }
-  const contract = useContractWithPreload(props.contract) ?? props.contract
+  const contract = (useContractWithPreload(props.contract) ??
+    props.contract) as BinaryContract
+
   const challenge =
     useChallenge(props.challengeSlug, contract?.id) ?? props.challenge
+
   const { user, bets } = props
   const currentUser = useUser()
+
   useSaveReferral(currentUser, {
     defaultReferrerUsername: challenge?.creatorUsername,
   })
 
   if (!contract || !challenge) return <Custom404 />
-  const ogCardProps = getOpenGraphProps(contract)
 
+  const ogCardProps = getOpenGraphProps(contract)
   ogCardProps.creatorUsername = challenge.creatorUsername
   ogCardProps.creatorName = challenge.creatorName
   ogCardProps.creatorAvatarUrl = challenge.creatorAvatarUrl
@@ -152,7 +158,7 @@ const userRow = (challenger: User) => (
 )
 
 function ClosedChallengeContent(props: {
-  contract: Contract
+  contract: BinaryContract
   challenge: Challenge
   creator: User
   bets: Bet[]
@@ -323,13 +329,13 @@ function ChallengeContract(props: { contract: Contract; bets: Bet[] }) {
 }
 
 function OpenChallengeContent(props: {
-  contract: Contract
+  contract: BinaryContract
   challenge: Challenge
   creator: User
   user: User | null | undefined
   bets: Bet[]
 }) {
-  const { contract, challenge, creator, user, bets } = props
+  const { contract, challenge, creator, user } = props
   const { question } = contract
   const {
     creatorAmount,
@@ -339,120 +345,44 @@ function OpenChallengeContent(props: {
     yourOutcome,
   } = challenge
 
-  const [creatorPortfolioHistory, setUsersCreatorPortfolioHistory] = useState<
-    PortfolioMetrics[]
-  >([])
-  const [portfolioHistory, setUsersPortfolioHistory] = useState<
-    PortfolioMetrics[]
-  >([])
-  useEffect(() => {
-    getPortfolioHistory(creator.id).then(setUsersCreatorPortfolioHistory)
-    if (user) getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
-  }, [creator.id, user])
-
   const href = `https://${DOMAIN}${contractPath(contract)}`
-  const { width, height } = useWindowSize()
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  const bottomBarHeight = (width ?? 0) < 1024 ? 58 : 0
-  const remainingHeight =
-    (height ?? 0) - (containerRef?.offsetTop ?? 0) - bottomBarHeight
 
-  const isBinary = contract.outcomeType === 'BINARY'
-  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const yourCost =
     ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
 
-  const userColumn = (
-    challenger: User | null | undefined,
-    portfolioHistory: PortfolioMetrics[],
-    outcome: string,
-    amount: number
-  ) => {
-    const lastPortfolioMetrics = last(portfolioHistory)
-    const prob =
-      (outcome === creatorOutcome
-        ? creatorOutcomeProb
-        : 1 - creatorOutcomeProb) * 100
+  const title = `${creator.name} is challenging you to bet`
 
-    return (
-      <Col className="w-full items-start justify-center gap-1">
-        {challenger ? (
-          userRow(challenger)
-        ) : (
-          <Row className={'mb-2 w-full items-center justify-center gap-2'}>
-            <Avatar size={12} avatarUrl={undefined} username={undefined} />
-            <span className={'text-2xl'}>Your name here</span>
-          </Row>
-        )}
-        <Row className={'w-full items-center justify-center'}>
-          <span className={'text-lg'}>
-            is betting {formatMoney(amount)}
-            {' on '}
-            <BinaryOutcomeLabel outcome={outcome as any} /> at{' '}
-            {Math.round(prob)}%
-          </span>
-        </Row>
-        {/*// It could be fun to show each user's portfolio history here*/}
-        {/*// Also show how many challenges they've won*/}
-        {/*<Row className={'mt-4 hidden w-full items-center sm:block'}>*/}
-        {/*  <PortfolioValueSection*/}
-        {/*    disableSelector={true}*/}
-        {/*    portfolioHistory={portfolioHistory}*/}
-        {/*  />*/}
-        {/*</Row>*/}
-        <Row className={'w-full'}>
-          <Col className={'w-full items-center justify-center'}>
-            <div className="text-sm text-gray-500">Portfolio value</div>
-
-            {challenger
-              ? formatMoney(
-                  (lastPortfolioMetrics?.balance ?? 0) +
-                    (lastPortfolioMetrics?.investmentValue ?? 0)
-                )
-              : 'xxxx'}
-          </Col>
-        </Row>
-      </Col>
-    )
-  }
   return (
-    <>
-      <Col
-        ref={setContainerRef}
-        style={{ height: remainingHeight }}
-        className=" relative w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8"
-      >
-        {(isBinary || isPseudoNumeric) && (
-          <div
-            className={`absolute top-52 flex h-[${
-              remainingHeight / 2
-            }] w-full flex-row opacity-40`}
-          >
-            <ContractProbGraph contract={contract} bets={bets} height={400} />
-          </div>
-        )}
-        <Row className="px-3 pb-4 text-xl text-indigo-700 md:text-2xl">
+    <Col className="items-center">
+      <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
+        <Title className="!mt-0" text={`⚔️ ${title} ⚔️`} />
+
+        <Row className="my-4 justify-center px-8 pb-4 text-lg sm:text-xl">
           <SiteLink href={href}>{question}</SiteLink>
         </Row>
+
         <Col
           className={
-            'h-full max-h-[50vh] w-full content-between justify-between gap-1  py-10 sm:flex-row'
+            'h-full max-h-[50vh] w-full content-between justify-between gap-1 sm:flex-row'
           }
         >
-          {userColumn(
-            creator,
-            creatorPortfolioHistory,
-            creatorOutcome,
-            creatorAmount
-          )}
-          <Col className="items-center justify-center py-4 text-4xl">VS</Col>
-          {userColumn(
-            user?.id === creatorId ? undefined : user,
-            portfolioHistory,
-            yourOutcome,
-            yourCost
-          )}
+          <UserBetColumn
+            challenger={creator}
+            outcome={creatorOutcome}
+            amount={creatorAmount}
+          />
+
+          <Col className="items-center justify-center py-8 text-2xl sm:text-4xl">
+            VS
+          </Col>
+
+          <UserBetColumn
+            challenger={user?.id === creatorId ? undefined : user}
+            outcome={yourOutcome}
+            amount={yourCost}
+          />
         </Col>
+
         <Spacer h={3} />
 
         <Row className="my-4 w-full items-center justify-center">
@@ -463,6 +393,39 @@ function OpenChallengeContent(props: {
           />
         </Row>
       </Col>
-    </>
+    </Col>
+  )
+}
+
+function UserBetColumn(props: {
+  challenger: User | null | undefined
+  outcome: string
+  amount: number
+}) {
+  const { challenger, outcome, amount } = props
+
+  return (
+    <Col className="w-full items-start justify-center gap-1">
+      {challenger ? (
+        userRow(challenger)
+      ) : (
+        <Row className={'mb-2 w-full items-center justify-center gap-2'}>
+          <Avatar size={12} avatarUrl={undefined} username={undefined} />
+          <span className={'text-2xl'}>You</span>
+        </Row>
+      )}
+      <Row className={'w-full items-center justify-center'}>
+        <span className={'text-lg'}>{challenger ? 'is' : 'are'} betting </span>
+      </Row>
+      <Row className={'w-full items-center justify-center'}>
+        <span className={'text-lg'}>
+          <span className="bold text-2xl">{formatMoney(amount)}</span>
+          {' on '}
+          <span className="bold text-2xl">
+            <BinaryOutcomeLabel outcome={outcome as any} />
+          </span>{' '}
+        </span>
+      </Row>
+    </Col>
   )
 }
