@@ -23,4 +23,6 @@ export interface ParsedRequest {
   challengerOutcome: string
   creatorAmount: string
   creatorOutcome: string
+  acceptedName: string
+  acceptedAvatarUrl: string
 }

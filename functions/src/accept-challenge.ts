@@ -9,8 +9,8 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { Acceptance, Challenge } from '../../common/challenge'
 import { CandidateBet } from '../../common/new-bet'
 import { createChallengeAcceptedNotification } from './create-notification'
-import { noFees } from 'common/fees'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { noFees } from '../../common/fees'
+import { formatMoney, formatPercent } from '../../common/util/format'
 
 const bodySchema = z.object({
   contractId: z.string(),

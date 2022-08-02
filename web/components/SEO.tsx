@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import Head from 'next/head'
+import { Challenge } from 'common/challenge'
 
 export type OgCardProps = {
   question: string
@@ -10,12 +11,19 @@ export type OgCardProps = {
   creatorAvatarUrl?: string
 }
 
-type ChallengeCardProps = {
-  challengeAmount: string
-  challengeOutcome: string
-}
-
-function buildCardUrl(props: OgCardProps, challengeProps?: ChallengeCardProps) {
+function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
+  const {
+    creatorAmount,
+    acceptances,
+    creatorOutcomeProb,
+    creatorOutcome,
+    yourOutcome,
+  } = challenge || {}
+  const { userName, userAvatarUrl } = acceptances?.[0] ?? {}
+  const challengeAmount =
+    creatorOutcomeProb &&
+    creatorAmount &&
+    Math.round(((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount)
   const probabilityParam =
     props.probability === undefined
       ? ''
@@ -25,8 +33,10 @@ function buildCardUrl(props: OgCardProps, challengeProps?: ChallengeCardProps) {
       ? ''
       : `&creatorAvatarUrl=${encodeURIComponent(props.creatorAvatarUrl ?? '')}`
 
-  const challengeUrlParams = challengeProps
-    ? `&challengeAmount=${challengeProps.challengeAmount}&challengeOutcome=${challengeProps.challengeOutcome}`
+  const challengeUrlParams = challenge
+    ? `&creatorAmount=${creatorAmount}&creatorOutcome=${creatorOutcome}` +
+      `&challengerAmount=${challengeAmount}&challengerOutcome=${yourOutcome}` +
+      `&acceptedName=${userName ?? ''}&acceptedAvatarUrl=${userAvatarUrl ?? ''}`
     : ''
 
   // URL encode each of the props, then add them as query params
@@ -48,10 +58,9 @@ export function SEO(props: {
   url?: string
   children?: ReactNode
   ogCardProps?: OgCardProps
-  challengeCardProps?: ChallengeCardProps
+  challenge?: Challenge
 }) {
-  const { title, description, url, children, ogCardProps, challengeCardProps } =
-    props
+  const { title, description, url, children, ogCardProps, challenge } = props
 
   return (
     <Head>
@@ -83,13 +92,13 @@ export function SEO(props: {
         <>
           <meta
             property="og:image"
-            content={buildCardUrl(ogCardProps, challengeCardProps)}
+            content={buildCardUrl(ogCardProps, challenge)}
             key="image1"
           />
           <meta name="twitter:card" content="summary_large_image" key="card" />
           <meta
             name="twitter:image"
-            content={buildCardUrl(ogCardProps, challengeCardProps)}
+            content={buildCardUrl(ogCardProps, challenge)}
             key="image2"
           />
         </>

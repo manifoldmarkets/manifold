@@ -87,12 +87,13 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
     fontSize,
     question,
     creatorName,
-    // creatorUsername,
     creatorAvatarUrl,
     challengerAmount,
     challengerOutcome,
     creatorAmount,
     creatorOutcome,
+    acceptedName,
+    acceptedAvatarUrl,
   } = parsedReq
   const MAX_QUESTION_CHARS = 85
   const truncatedQuestion =
@@ -100,6 +101,8 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
       : question
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
+  const hideAcceptedAvatar = acceptedAvatarUrl ? '' : 'hidden'
+  const accepted = acceptedName !== ''
   return `<!DOCTYPE html>
 <html>
     <head>
@@ -131,29 +134,40 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
             />
             <div class="flex flex-col gap-2 items-center justify-center">
             <p class="text-gray-900 text-4xl">${creatorName}</p>
-          </div>
+            </div>
         </div> 
           <div class="text-6xl mt-8">${'M$' + creatorAmount}</div>
           <div class="text-3xl">${'on'}</div>
           <div class="text-6xl ">${creatorOutcome}</div>
       </div>
         <div class="flex flex-col text-gray-900 text-6xl mt-8 text-center">
-        ⚔️
+        VS
         </div>
       <div class="flex flex-col justify-center items-center ${
         challengerOutcome === 'YES' ? 'text-primary' : 'text-red-500'
       }">
-        <div class="flex flex-row align-bottom gap-6 mr-20">
+        <div class="flex flex-row align-bottom gap-6 mr-24 ${
+          accepted ? 'hidden' : ''
+        }">
             <img
-              class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAvatar}"
+              class="h-24 w-24 rounded-full bg-white flex items-center justify-center "
               src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
               alt=""
             />
             <div class="flex flex-col gap-2 items-center justify-center">
             <p class="text-gray-900 text-4xl">You</p>
-
-          </div>
-        </div> 
+            </div>
+        </div>
+        <div class="flex flex-row align-bottom gap-6">
+            <img
+              class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAcceptedAvatar}"
+              src="${acceptedAvatarUrl}"
+              alt=""
+            />
+            <div class="flex flex-col gap-2 items-center justify-center">
+            <p class="text-gray-900 text-4xl">${acceptedName}</p>
+            </div>
+        </div>  
           <div class="text-6xl mt-8">${'M$' + challengerAmount}</div>
           <div class="text-3xl">${'on'}</div>
           <div class="text-6xl ">${challengerOutcome}</div>

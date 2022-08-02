@@ -26,6 +26,8 @@ export function parseRequest(req: IncomingMessage) {
     challengerOutcome,
     creatorAmount,
     creatorOutcome,
+    acceptedName,
+    acceptedAvatarUrl,
   } = query || {}
 
   if (Array.isArray(fontSize)) {
@@ -77,6 +79,8 @@ export function parseRequest(req: IncomingMessage) {
     challengerOutcome: getString(challengerOutcome) || '',
     creatorAmount: getString(creatorAmount) || '',
     creatorOutcome: getString(creatorOutcome) || '',
+    acceptedName: getString(acceptedName) || '',
+    acceptedAvatarUrl: getString(acceptedAvatarUrl) || '',
   }
   parsedRequest.images = getDefaultImages(parsedRequest.images)
   return parsedRequest

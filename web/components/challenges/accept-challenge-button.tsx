@@ -40,6 +40,8 @@ export function AcceptChallengeButton(props: {
     acceptChallenge({
       contractId: contract.id,
       challengeSlug: challenge.slug,
+      outcomeType: contract.outcomeType,
+      closeTime: contract.closeTime,
     })
       .then((r) => {
         console.log('accepted challenge. Result:', r)
