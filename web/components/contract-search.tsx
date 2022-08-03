@@ -107,7 +107,7 @@ export function ContractSearch(props: {
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
   )
-  const pillsEnabled = !additionalFilter
+  const pillsEnabled = !additionalFilter && !query
 
   const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
 
@@ -126,7 +126,7 @@ export function ContractSearch(props: {
       ? `groupLinks.slug:${additionalFilter.groupSlug}`
       : '',
   ]
-  let facetFilters = query
+  const facetFilters = query
     ? additionalFilters
     : [
         ...additionalFilters,
@@ -154,8 +154,6 @@ export function ContractSearch(props: {
             `uniqueBettorIds:${user.id}`
           : '',
       ].filter((f) => f)
-  // Hack to make Algolia work.
-  facetFilters = ['', ...facetFilters]
 
   const numericFilters = query
     ? []
