@@ -1,4 +1,4 @@
-// Run with `npx ts-node src/scripts/scrape-ftx.ts`
+// Run with `npx ts-node src/scripts/grants/scrape-ftx.ts`
 
 import * as cheerio from 'cheerio'
 import * as fs from 'fs'
@@ -61,7 +61,11 @@ async function scrapeFtx() {
           )}, description: '${strip(grant.description)}' },`
       ),
   ]
-  fs.writeFileSync('ftx-grants.csv', csvLines.join('\n'))
+  console.log(csvLines.join('\n'))
+  fs.writeFileSync(
+    '../web/lib/util/ftx-grants.ts',
+    'export const grants = [\n' + csvLines.join('\n') + '\n]'
+  )
 }
 
 if (require.main === module) {
