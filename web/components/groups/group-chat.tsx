@@ -73,9 +73,10 @@ export function GroupChat(props: {
   }, [scrollToMessageRef])
 
   useEffect(() => {
-    if (!isSubmitting)
-      scrollToBottomRef?.scrollTo({ top: scrollToBottomRef?.scrollHeight || 0 })
-  }, [scrollToBottomRef, isSubmitting])
+    if (scrollToBottomRef)
+      scrollToBottomRef.scrollTo({ top: scrollToBottomRef.scrollHeight || 0 })
+    // Must also listen to groupedMessages as they update the height of the messaging window
+  }, [scrollToBottomRef, groupedMessages])
 
   useEffect(() => {
     const elementInUrl = router.asPath.split('#')[1]
