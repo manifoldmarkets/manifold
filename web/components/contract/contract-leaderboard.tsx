@@ -107,7 +107,6 @@ export function ContractTopTrades(props: {
               comment={commentsById[topCommentId]}
               tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
-              truncate={false}
               smallAvatar={false}
             />
           </div>

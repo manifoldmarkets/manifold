@@ -10,6 +10,7 @@ import { User } from 'common/user'
 import { Col } from './layout/col'
 import { Linkify } from './linkify'
 import { groupBy } from 'lodash'
+import { Content } from './editor'
 
 export function UserCommentsList(props: {
   user: User
@@ -50,7 +51,8 @@ export function UserCommentsList(props: {
 
 function ProfileComment(props: { comment: Comment; className?: string }) {
   const { comment, className } = props
-  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
+  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
+    comment
   // TODO: find and attach relevant bets by comment betId at some point
   return (
     <Row className={className}>
@@ -64,7 +66,7 @@ function ProfileComment(props: { comment: Comment; className?: string }) {
           />{' '}
           <RelativeTimestamp time={createdTime} />
         </p>
-        <Linkify text={text} />
+        <Content content={content || text} />
       </div>
     </Row>
   )

@@ -41,14 +41,16 @@ export function useTextEditor(props: {
   max?: number
   defaultValue?: Content
   disabled?: boolean
+  simple?: boolean
 }) {
-  const { placeholder, max, defaultValue = '', disabled } = props
+  const { placeholder, max, defaultValue = '', disabled, simple } = props
 
   const users = useUsers()
 
   const editorClass = clsx(
     proseClass,
-    'min-h-[6em] resize-none outline-none border-none pt-3 px-4 focus:ring-0'
+    !simple && 'min-h-[6em]',
+    'resize-none outline-none border-none pt-3 px-4 focus:ring-0'
   )
 
   const editor = useEditor(
@@ -56,7 +58,8 @@ export function useTextEditor(props: {
       editorProps: { attributes: { class: editorClass } },
       extensions: [
         StarterKit.configure({
-          heading: { levels: [1, 2, 3] },
+          heading: simple ? false : { levels: [1, 2, 3] },
+          horizontalRule: simple ? false : {},
         }),
         Placeholder.configure({
           placeholder,
