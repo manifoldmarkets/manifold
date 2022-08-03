@@ -51,7 +51,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Button } from 'web/components/button'
 import { SubmissionSearch } from 'web/components/submission-search'
-import { ContestChat } from 'web/components/contest/contest-chat'
+import { ContestChat } from 'web/components/contests/contest-chat'
 import { contestPath } from 'web/lib/firebase/contests'
 
 export const getStaticProps = fromPropz(getStaticPropz)
