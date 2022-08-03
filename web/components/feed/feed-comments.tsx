@@ -447,6 +447,7 @@ export function CommentInputTextArea(props: {
   upload: any
   submitComment: (id?: string) => void
   isSubmitting: boolean
+  submitOnEnter?: boolean
   presetId?: string
 }) {
   const {
@@ -456,6 +457,7 @@ export function CommentInputTextArea(props: {
     submitComment,
     presetId,
     isSubmitting,
+    submitOnEnter,
     replyToUser,
   } = props
   const isMobile = (useWindowSize().width ?? 0) < 768 // TODO: base off input device (keybord vs touch)
@@ -478,6 +480,7 @@ export function CommentInputTextArea(props: {
       editorProps: {
         handleKeyDown: (view, event) => {
           if (
+            submitOnEnter &&
             event.key === 'Enter' &&
             !event.shiftKey &&
             (!isMobile || event.ctrlKey || event.metaKey) &&
