@@ -1,4 +1,9 @@
 import { useState } from 'react'
+
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
+dayjs.extend(customParseFormat)
+
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -16,12 +21,10 @@ import { UserLink } from 'web/components/user-page'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
-import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/pagination'
 import { Manalink } from 'common/manalink'
-dayjs.extend(customParseFormat)
+import { REFERRAL_AMOUNT } from 'common/user'
 
 const LINKS_PER_PAGE = 24
 export const getServerSideProps = redirectIfLoggedOut('/')
@@ -64,8 +67,10 @@ export default function LinkPage() {
           )}
         </Row>
         <p>
-          You can use manalinks to send mana to other people, even if they
-          don&apos;t yet have a Manifold account.
+          You can use manalinks to send mana (M$) to other people, even if they
+          don&apos;t yet have a Manifold account. Manalinks are also eligible
+          for the referral bonus. Invite a new user to Manifold and get M$
+          {REFERRAL_AMOUNT} if they sign up!
         </p>
         <Subtitle text="Your Manalinks" />
         <ManalinksDisplay

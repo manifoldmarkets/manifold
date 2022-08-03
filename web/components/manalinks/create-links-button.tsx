@@ -12,6 +12,7 @@ import dayjs from 'dayjs'
 import { Button } from '../button'
 import { getManalinkUrl } from 'web/pages/links'
 import { DuplicateIcon } from '@heroicons/react/outline'
+import { QRCode } from '../qr-code'
 
 export function CreateLinksButton(props: {
   user: User
@@ -97,6 +98,8 @@ function CreateManalinkForm(props: {
       }
     })
   }
+
+  const url = getManalinkUrl(highlightedSlug)
 
   return (
     <>
@@ -199,17 +202,17 @@ function CreateManalinkForm(props: {
               copyPressed ? 'bg-indigo-50 text-indigo-500 transition-none' : ''
             )}
           >
-            <div className="w-full select-text truncate">
-              {getManalinkUrl(highlightedSlug)}
-            </div>
+            <div className="w-full select-text truncate">{url}</div>
             <DuplicateIcon
               onClick={() => {
-                navigator.clipboard.writeText(getManalinkUrl(highlightedSlug))
+                navigator.clipboard.writeText(url)
                 setCopyPressed(true)
               }}
               className="my-auto ml-2 h-5 w-5 cursor-pointer transition hover:opacity-50"
             />
           </Row>
+
+          <QRCode url={url} className="self-center" />
         </>
       )}
     </>

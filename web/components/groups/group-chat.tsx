@@ -1,6 +1,6 @@
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import React, { useEffect, memo, useState, useMemo } from 'react'
 import { Avatar } from 'web/components/avatar'
 import { Group } from 'common/group'
@@ -18,6 +18,9 @@ import { sum } from 'lodash'
 import { formatMoney } from 'common/util/format'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Content, useTextEditor } from 'web/components/editor'
+import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
+import { ChatIcon, ChevronDownIcon } from '@heroicons/react/outline'
+import { setNotificationsAsSeen } from 'web/pages/notifications'
 
 export function GroupChat(props: {
   messages: Comment[]
@@ -40,6 +43,13 @@ export function GroupChat(props: {
 
   const router = useRouter()
   const isMember = user && group.memberIds.includes(user?.id)
+
+  const { width, height } = useWindowSize()
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+  // Subtract bottom bar when it's showing (less than lg screen)
+  const bottomBarHeight = (width ?? 0) < 1024 ? 58 : 0
+  const remainingHeight =
+    (height ?? 0) - (containerRef?.offsetTop ?? 0) - bottomBarHeight
 
   // array of groups, where each group is an array of messages that are displayed as one
   const groupedMessages = useMemo(() => {
@@ -68,9 +78,10 @@ export function GroupChat(props: {
   }, [scrollToMessageRef])
 
   useEffect(() => {
-    if (!isSubmitting)
-      scrollToBottomRef?.scrollTo({ top: scrollToBottomRef?.scrollHeight || 0 })
-  }, [scrollToBottomRef, isSubmitting])
+    if (scrollToBottomRef)
+      scrollToBottomRef.scrollTo({ top: scrollToBottomRef.scrollHeight || 0 })
+    // Must also listen to groupedMessages as they update the height of the messaging window
+  }, [scrollToBottomRef, groupedMessages])
 
   useEffect(() => {
     const elementInUrl = router.asPath.split('#')[1]
@@ -78,6 +89,11 @@ export function GroupChat(props: {
       setScrollToMessageId(elementInUrl)
     }
   }, [messages, router.asPath])
+
+  useEffect(() => {
+    // is mobile?
+    if (inputRef && width && width > 720) inputRef.focus()
+  }, [inputRef, width])
 
   function onReplyClick(comment: Comment) {
     setReplyToUser({ id: comment.userId, username: comment.userUsername })
@@ -99,15 +115,6 @@ export function GroupChat(props: {
   function focusInput() {
     editor?.commands.focus()
   }
-
-  const { width, height } = useWindowSize()
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  // Subtract bottom bar when it's showing (less than lg screen)
-  const bottomBarHeight = (width ?? 0) < 1024 ? 58 : 0
-  const remainingHeight =
-    (height ?? window.innerHeight) -
-    (containerRef?.offsetTop ?? 0) -
-    bottomBarHeight
 
   return (
     <Col ref={setContainerRef} style={{ height: remainingHeight }}>
@@ -168,6 +175,117 @@ export function GroupChat(props: {
         </div>
       )}
     </Col>
+  )
+}
+
+export function GroupChatInBubble(props: {
+  messages: Comment[]
+  user: User | null | undefined
+  privateUser: PrivateUser | null | undefined
+  group: Group
+  tips: CommentTipMap
+}) {
+  const { messages, user, group, tips, privateUser } = props
+  const [shouldShowChat, setShouldShowChat] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const groupsWithChatEmphasis = [
+      'welcome',
+      'bugs',
+      'manifold-features-25bad7c7792e',
+      'updates',
+    ]
+    if (
+      router.asPath.includes('/chat') ||
+      groupsWithChatEmphasis.includes(
+        router.asPath.split('/group/')[1].split('/')[0]
+      )
+    ) {
+      setShouldShowChat(true)
+    }
+    // Leave chat open between groups if user is using chat?
+    else {
+      setShouldShowChat(false)
+    }
+  }, [router.asPath])
+
+  return (
+    <Col
+      className={clsx(
+        'fixed right-0 bottom-[0px] h-screen w-full sm:bottom-[20px] sm:right-20 sm:w-2/3 md:w-1/2 lg:right-24 lg:w-1/3 xl:right-32 xl:w-1/4',
+        shouldShowChat ? 'z-10 bg-white p-2' : ''
+      )}
+    >
+      {shouldShowChat && (
+        <GroupChat messages={messages} user={user} group={group} tips={tips} />
+      )}
+      <button
+        type="button"
+        className={clsx(
+          'fixed right-1 inline-flex items-center rounded-full border md:right-2 lg:right-5 xl:right-10' +
+            ' border-transparent p-3 text-white shadow-sm lg:p-4' +
+            ' focus:outline-none focus:ring-2  focus:ring-offset-2 ' +
+            ' bottom-[70px] ',
+          shouldShowChat
+            ? 'bottom-auto top-2 bg-gray-600 hover:bg-gray-400 focus:ring-gray-500 sm:bottom-[70px] sm:top-auto '
+            : ' bg-indigo-600  hover:bg-indigo-700 focus:ring-indigo-500'
+        )}
+        onClick={() => {
+          // router.push('/chat')
+          setShouldShowChat(!shouldShowChat)
+          track('mobile group chat button')
+        }}
+      >
+        {!shouldShowChat ? (
+          <ChatIcon className="h-10 w-10" aria-hidden="true" />
+        ) : (
+          <ChevronDownIcon className={'h-10 w-10'} aria-hidden={'true'} />
+        )}
+        {privateUser && (
+          <GroupChatNotificationsIcon
+            group={group}
+            privateUser={privateUser}
+            shouldSetAsSeen={shouldShowChat}
+          />
+        )}
+      </button>
+    </Col>
+  )
+}
+
+function GroupChatNotificationsIcon(props: {
+  group: Group
+  privateUser: PrivateUser
+  shouldSetAsSeen: boolean
+}) {
+  const { privateUser, group, shouldSetAsSeen } = props
+  const preferredNotificationsForThisGroup = useUnseenPreferredNotifications(
+    privateUser,
+    {
+      customHref: `/group/${group.slug}`,
+    }
+  )
+  useEffect(() => {
+    preferredNotificationsForThisGroup.forEach((notification) => {
+      if (
+        (shouldSetAsSeen && notification.isSeenOnHref?.includes('chat')) ||
+        // old style chat notif that simply ended with the group slug
+        notification.isSeenOnHref?.endsWith(group.slug)
+      ) {
+        setNotificationsAsSeen([notification])
+      }
+    })
+  }, [group.slug, preferredNotificationsForThisGroup, shouldSetAsSeen])
+
+  return (
+    <div
+      className={
+        preferredNotificationsForThisGroup.length > 0 && !shouldSetAsSeen
+          ? 'absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-white bg-red-500'
+          : 'hidden'
+      }
+    ></div>
   )
 }
 

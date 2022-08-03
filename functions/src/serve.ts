@@ -25,6 +25,7 @@ import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
+import { getcurrentuser } from './get-current-user'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -62,6 +63,7 @@ addJsonEndpointRoute('/creategroup', creategroup)
 addJsonEndpointRoute('/resolvemarket', resolvemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)
 addJsonEndpointRoute('/createcheckoutsession', createcheckoutsession)
+addJsonEndpointRoute('/getcurrentuser', getcurrentuser)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 
 app.listen(PORT)

@@ -10,6 +10,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 
 - [CivicDashboard](https://civicdash.org/dashboard) - Uses Manifold to for tracked solutions for the SF city government
 - [Research.Bet](https://research.bet/) - Prediction market for scientific papers, using Manifold
+- [WagerWith.me](https://www.wagerwith.me/) — Bet with your friends, with full Manifold integration to bet with M$.
 
 ## API / Dev
 
@@ -21,3 +22,4 @@ A list of community-created projects built on, or related to, Manifold Markets.
 ## Bots
 
 - [@manifold@botsin.space](https://botsin.space/@manifold) - Posts new Manifold markets to Mastodon
+- [James' Bot](https://github.com/manifoldmarkets/market-maker) — Simple trading bot that makes markets

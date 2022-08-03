@@ -82,12 +82,21 @@ export async function createCommentOnGroup(
 function getCommentsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'comments')
 }
+
 function getCommentsOnGroupCollection(groupId: string) {
   return collection(db, 'groups', groupId, 'comments')
 }
 
 export async function listAllComments(contractId: string) {
   const comments = await getValues<Comment>(getCommentsCollection(contractId))
+  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+  return comments
+}
+
+export async function listAllCommentsOnGroup(groupId: string) {
+  const comments = await getValues<Comment>(
+    getCommentsOnGroupCollection(groupId)
+  )
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
   return comments
 }
