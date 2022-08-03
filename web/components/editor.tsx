@@ -50,7 +50,7 @@ export function useTextEditor(props: {
   const editorClass = clsx(
     proseClass,
     !simple && 'min-h-[6em]',
-    'resize-none outline-none border-none pt-3 px-4 focus:ring-0'
+    'outline-none pt-2 px-4'
   )
 
   const editor = useEditor(
@@ -123,8 +123,9 @@ function isValidIframe(text: string) {
 export function TextEditor(props: {
   editor: Editor | null
   upload: ReturnType<typeof useUploadMutation>
+  children?: React.ReactNode // additional toolbar buttons
 }) {
-  const { editor, upload } = props
+  const { editor, upload, children } = props
   const [iframeOpen, setIframeOpen] = useState(false)
 
   return (
@@ -146,20 +147,10 @@ export function TextEditor(props: {
             images!
           </FloatingMenu>
         )}
-        <div className="overflow-hidden rounded-lg border border-gray-300 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+        <div className="rounded-lg border border-gray-300 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
           <EditorContent editor={editor} />
-          {/* Spacer element to match the height of the toolbar */}
-          <div className="py-2" aria-hidden="true">
-            {/* Matches height of button in toolbar (1px border + 36px content height) */}
-            <div className="py-px">
-              <div className="h-9" />
-            </div>
-          </div>
-        </div>
-
-        {/* Toolbar, with buttons for image and embeds */}
-        <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
-          <div className="flex items-center space-x-5">
+          {/* Toolbar, with buttons for images and embeds */}
+          <div className="flex h-9 items-center gap-5 pl-4 pr-1">
             <div className="flex items-center">
               <FileUploadButton
                 onFiles={upload.mutate}
@@ -184,6 +175,8 @@ export function TextEditor(props: {
                 <span className="sr-only">Embed an iframe</span>
               </button>
             </div>
+            <div className="ml-auto" />
+            {children}
           </div>
         </div>
       </div>

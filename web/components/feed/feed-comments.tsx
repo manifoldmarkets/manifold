@@ -505,29 +505,23 @@ export function CommentInputTextArea(props: {
 
   return (
     <>
-      <Row className="gap-1.5 text-gray-700">
-        <TextEditor editor={editor} upload={upload} />
-        <Col className={clsx('relative justify-end')}>
+      <div>
+        <TextEditor editor={editor} upload={upload}>
           {user && !isSubmitting && (
             <button
-              className={clsx(
-                'btn btn-ghost btn-sm absolute right-2 bottom-2 flex-row pl-2 capitalize',
-                (!editor || editor.isEmpty) &&
-                  'pointer-events-none text-gray-500'
-              )}
+              className="btn btn-ghost btn-sm px-2 disabled:bg-inherit disabled:text-gray-300"
+              disabled={!editor || editor.isEmpty}
               onClick={submit}
             >
-              <PaperAirplaneIcon
-                className={'m-0 min-w-[22px] rotate-90 p-0 '}
-                height={25}
-              />
+              <PaperAirplaneIcon className="m-0 h-[25px] min-w-[22px] rotate-90 p-0" />
             </button>
           )}
+
           {isSubmitting && (
             <LoadingIndicator spinnerClassName={'border-gray-500'} />
           )}
-        </Col>
-      </Row>
+        </TextEditor>
+      </div>
       <Row>
         {!user && (
           <button
