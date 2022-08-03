@@ -201,7 +201,7 @@ export function GroupChatInBubble(props: {
   return (
     <Col
       className={clsx(
-        'fixed right-0 bottom-[20px] h-screen w-full sm:right-28 sm:bottom-[20px] sm:w-2/3 md:w-1/2 lg:w-1/3 xl:w-1/4',
+        'fixed right-0 bottom-[20px] h-screen w-full sm:bottom-[20px] sm:w-2/3 md:right-20 md:w-1/2 lg:right-28 lg:w-1/3 xl:w-1/4',
         shouldShowChat ? 'z-10 bg-white p-2' : ''
       )}
     >
@@ -211,10 +211,10 @@ export function GroupChatInBubble(props: {
       <button
         type="button"
         className={clsx(
-          'fixed right-3 inline-flex items-center rounded-full border' +
-            ' border-transparent p-3 text-white shadow-sm' +
+          'fixed right-1 inline-flex items-center rounded-full border md:right-2 lg:right-5 xl:right-10' +
+            ' border-transparent p-3 text-white shadow-sm lg:p-4' +
             ' focus:outline-none focus:ring-2  focus:ring-offset-2 ' +
-            ' bottom-[70px] lg:right-10',
+            ' bottom-[70px] ',
           shouldShowChat
             ? 'bottom-auto top-2 bg-gray-600 hover:bg-gray-400 focus:ring-gray-500 sm:bottom-[70px] sm:top-auto '
             : ' bg-indigo-600  hover:bg-indigo-700 focus:ring-indigo-500'
