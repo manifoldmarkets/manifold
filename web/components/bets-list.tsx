@@ -352,7 +352,7 @@ function ContractBets(props: {
               <LimitOrderTable
                 contract={contract}
                 limitBets={limitBets}
-                isYou={true}
+                isYou={isYourBets}
               />
             </div>
           )}
