@@ -1,6 +1,7 @@
-import * as ManifoldAPI from "common/manifold-defs";
 import fetch, { Response } from "node-fetch";
-import { ForbiddenException, InsufficientBalanceException } from "./exceptions";
+
+import * as ManifoldAPI from "common/manifold-defs";
+import { ForbiddenException, InsufficientBalanceException } from "common/exceptions";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -26,12 +27,22 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
     return r;
 }
 
+async function get(url: string): Promise<Response> {
+    const r = await fetch(url);
+    if (r.status != 200) {
+        const error = <{ error: string }>await r.json();
+        const errorMessage = error.error;
+        throw new Error(errorMessage);
+    }
+    return r;
+} 
+
 export async function getUserByID(userID: string): Promise<ManifoldAPI.LiteUser> {
-    return <Promise<ManifoldAPI.LiteUser>>(await fetch(`${APIBase}user/by-id/${userID}`)).json();
+    return <Promise<ManifoldAPI.LiteUser>>(await get(`${APIBase}user/by-id/${userID}`)).json();
 }
 
 export async function getUserByManifoldUsername(manifoldUsername: string): Promise<ManifoldAPI.LiteUser> {
-    return <Promise<ManifoldAPI.LiteUser>>(await fetch(`${APIBase}user/${manifoldUsername}`)).json();
+    return <Promise<ManifoldAPI.LiteUser>>(await get(`${APIBase}user/${manifoldUsername}`)).json();
 }
 
 /**
@@ -112,9 +123,13 @@ export async function verifyAPIKey(APIKey: string): Promise<boolean> {
 }
 
 export async function getLatestMarketBets(marketSlug: string, numBetsToLoad?: number): Promise<ManifoldAPI.Bet[]> {
-    return <Promise<ManifoldAPI.Bet[]>>(await fetch(`${APIBase}bets?market=${marketSlug}${numBetsToLoad ? `&limit=${numBetsToLoad}` : ""}`)).json();
+    return <Promise<ManifoldAPI.Bet[]>>(await get(`${APIBase}bets?market=${marketSlug}${numBetsToLoad ? `&limit=${numBetsToLoad}` : ""}`)).json();
 }
 
 export async function getMarketBySlug(marketSlug: string): Promise<ManifoldAPI.LiteMarket> {
-    return <Promise<ManifoldAPI.LiteMarket>>(await fetch(`${APIBase}slug/${marketSlug}`)).json();
+    return <Promise<ManifoldAPI.LiteMarket>>(await get(`${APIBase}slug/${marketSlug}`)).json();
+}
+
+export async function getMarketByID(marketID: string): Promise<ManifoldAPI.LiteMarket> {
+    return <Promise<ManifoldAPI.LiteMarket>>(await get(`${APIBase}market/${marketID}`)).json();
 }

@@ -41,6 +41,9 @@
         resolutionTime?: number;
         resolution?: string;
         resolutionProbability?: number; // Used for BINARY markets resolved to MKT
+
+        // PJB:
+        bets: Bet[];
     };
 
     // // A complete market, along with bets, comments, and answers (for free response markets)

@@ -7,13 +7,13 @@ import fs from "fs";
 import crypto from "crypto";
 import cors from "cors";
 
+import * as Packet from "common/packet-ids";
+import { UserNotRegisteredException } from "common/exceptions";
+import { getParamsFromURL } from "common/utils-node";
+
 import * as Manifold from "./manifold-api";
 import * as Twitch from "./twitch-api";
-import { FullBet } from "common/transaction";
-import * as Packet from "common/packet-ids";
 import TwitchBot from "./twitch-bot";
-import { getParamsFromURL } from "common/utils-node";
-import { UserNotRegisteredException } from "./exceptions";
 import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
@@ -22,22 +22,14 @@ const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
 
 export default class App {
     private readonly app: Express;
-    private readonly latestBets: FullBet[] = [];
     private readonly io: Server;
-
-    private bot: TwitchBot;
+    readonly bot: TwitchBot;
 
     private userList: User[] = [];
 
     private linksInProgress: { [sessionToken: string]: { manifoldUsername: string; apiKey: string } } = {};
 
-    selectedMarket: Market = null;
-
-    // selectedMarketMap: { [twitchChannel: string]: { marketID: string } } = {};
-
-    pendingFetches = {};
-
-    userIdToNameMap: Record<string, string> = {};
+    selectedMarketMap: { [twitchChannel: string]: Market } = {};
 
     constructor() {
         this.app = express();
@@ -50,8 +42,11 @@ export default class App {
         this.io = new Server(server);
         this.io.on("connection", (socket) => {
             socket.emit(Packet.CLEAR);
-            socket.emit(Packet.SELECT_MARKET, this.selectedMarket?.slug);
-            socket.emit(Packet.ADD_BETS, this.latestBets);
+            // if (this.selectedMarket) {
+            //     socket.emit(Packet.SELECT_MARKET, this.selectedMarket.getSlug());
+            //     socket.emit(Packet.ADD_BETS, this.latestBets);
+            // }
+            //!!! Need some linking method
         });
         server.listen(31452, () => {
             const address = <AddressInfo>server.address();
@@ -78,19 +73,28 @@ export default class App {
         });
 
         this.loadUsersFromFile();
-
-        this.selectMarket("phils-6th-market");
     }
 
     public getMarketForTwitchChannel(channel: string) {
-        return this.selectedMarket; //!!!
+        return this.selectedMarketMap[channel]; //!!!
     }
 
-    private async selectMarket(slug: string) {
-        const marketData = await Manifold.getMarketBySlug(slug);
-        const market = new Market(this, marketData, slug);
-        this.selectedMarket = market;
-        this.io.emit(Packet.SELECT_MARKET, market.slug);
+    public getChannelForMarketID(marketID: string) {
+        for (const channel of Object.keys(this.selectedMarketMap)) {
+            const market = this.selectedMarketMap[channel];
+            if (market.data.id == marketID) return channel;
+        }
+        return null;
+    }
+
+    public async selectMarket(channel: string, id: string) {
+        const marketData = await Manifold.getMarketByID(id);
+        const market = new Market(this, marketData);
+        this.selectedMarketMap[channel] = market;
+
+        // this.io.emit(Packet.CLEAR);
+        // this.io.emit(Packet.SELECT_MARKET, market.getSlug());
+        //!!!
     }
 
     private loadUsersFromFile() {
@@ -128,45 +132,6 @@ export default class App {
                 log.trace(err);
             }
         });
-    }
-
-    async loadUser(userId: string) {
-        if (this.pendingFetches[userId]) return;
-
-        this.pendingFetches[userId] = userId;
-        try {
-            const user = await Manifold.getUserByID(userId);
-            log.info(`Loaded user ${user.name}.`);
-            delete this.pendingFetches[userId];
-            this.userIdToNameMap[user.id] = user.name;
-
-            const betsToRemove = [];
-            for (const bet of this.selectedMarket.pendingBets) {
-                if (user.id == bet.userId) {
-                    const fullBet: FullBet = {
-                        ...bet,
-                        username: user.name,
-                    };
-                    this.addBet(fullBet);
-                    betsToRemove.push(bet);
-                }
-            }
-            this.selectedMarket.pendingBets = this.selectedMarket.pendingBets.filter((e) => {
-                return betsToRemove.indexOf(e) < 0;
-            });
-        } catch (e) {
-            log.trace(e);
-        }
-    }
-
-    addBet(bet: FullBet) {
-        if (this.latestBets.length >= 3) {
-            this.latestBets.shift();
-        }
-        this.latestBets.push(bet);
-        this.io.emit(Packet.ADD_BETS, [bet]);
-
-        log.info(`${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
     getUserForTwitchUsername(twitchUsername: string): User {

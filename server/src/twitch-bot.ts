@@ -1,11 +1,14 @@
 import { ChatUserstate, Client } from "tmi.js";
-import App from "./app";
 import fs from "fs";
-import { InsufficientBalanceException, UserNotRegisteredException } from "./exceptions";
-import { ResolutionOutcome } from "common/manifold-defs";
+
+import { LiteUser, ResolutionOutcome } from "common/manifold-defs";
+import { InsufficientBalanceException, UserNotRegisteredException } from "common/exceptions";
+
+import App from "./app";
 import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
+import * as Manifold from "./manifold-api";
 
 const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
@@ -17,10 +20,21 @@ const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) =>
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${SIGNUP_LINK}!`;
 const MSG_HELP = () => `Check out the full list of commands and how to play here: ${SIGNUP_LINK}`;
-const MSG_RESOLVED = (outcome: ResolutionOutcome) => `The market has resolved to ${outcome}! The top 10 bettors are name (+#), name2…`; //!!! Needs some work
+const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) => {
+    //!!! Limit list length to 10;
+    let message = `The market has resolved to ${outcome}! The top 10 bettors are`;
+    for (const winner of winners) {
+        message += ` ${winner.user.name} (${winner.profit > 0 && "+"}${winner.profit.toFixed(0)}),`; //!!! Use Twitch usernames
+    }
+    if (message.endsWith(",")) {
+        message = message.substring(0, message.length - 1);
+    }
+    return message;
+};
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
 const MSG_MARKET_CREATED = (username: string, question: string) => `${username}'s market '${question}' has been created!`;
 const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
+const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
 
 export default class TwitchBot {
     private readonly app: App;
@@ -106,10 +120,6 @@ export default class TwitchBot {
 
         const modUserCommands: { [k: string]: (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => Promise<void> } = {
             create: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
-                if (!this.isAllowedAdminCommand(tags)) {
-                    log.warn(`User ${user.twitchDisplayName} tried to use create without permission.`);
-                    return;
-                }
                 if (args.length < 1) return;
                 let question = "";
                 for (const arg of args) {
@@ -120,6 +130,7 @@ export default class TwitchBot {
                 try {
                     const market = await user.createBinaryMarket(question, null, 50);
                     log.info("Created market ID: " + market.id);
+                    this.app.selectMarket(channel, market.id);
                     this.client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question));
                 } catch (e) {
                     if (e instanceof InsufficientBalanceException) {
@@ -130,10 +141,6 @@ export default class TwitchBot {
                 }
             },
             resolve: async (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => {
-                if (!this.isAllowedAdminCommand(tags)) {
-                    log.warn(`User ${user.twitchDisplayName} tried to use resolve without permission.`);
-                    return;
-                }
                 if (args.length < 1) return;
                 const resolutionString = args[0].toLocaleUpperCase();
                 let outcome: ResolutionOutcome = ResolutionOutcome[resolutionString];
@@ -145,8 +152,11 @@ export default class TwitchBot {
                     return;
                 }
                 await user.resolveBinaryMarket(market.data.id, outcome);
-                this.client.say(channel, MSG_RESOLVED(outcome));
             },
+            select: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
+                if (args.length < 1) return;
+                this.app.selectMarket(channel, (await Manifold.getMarketBySlug(args[0])).id);
+            }
         };
 
         this.client = new Client({
@@ -173,26 +183,37 @@ export default class TwitchBot {
             let args: string[] = groups[2]?.split(" ") || [];
             args = args.filter((value: string) => value.length > 0);
 
+            const userDisplayName = tags["display-name"];
+
             try {
                 if (basicCommands[commandString]) {
                     basicCommands[commandString](tags.username, tags, args, channel);
                 } else {
                     try {
                         const market = app.getMarketForTwitchChannel(channel);
+                        if (!market && commandString !== "select") {
+                            this.client.say(channel, MSG_NO_MARKET_SELECTED(userDisplayName));
+                            return;
+                        }
+
                         const user = this.app.getUserForTwitchUsername(tags.username);
-                        user.twitchDisplayName = tags["display-name"];
+                        user.twitchDisplayName = userDisplayName;
                         if (userCommands[commandString]) {
                             await userCommands[commandString](user, tags, args, channel, market);
                         } else if (modUserCommands[commandString]) {
+                            if (!this.isAllowedAdminCommand(tags)) {
+                                log.warn(`User ${user.twitchDisplayName} tried to use create without permission.`);
+                                return;
+                            }
                             await modUserCommands[commandString](user, tags, args, channel, market);
                         }
                     } catch (e) {
-                        if (e instanceof UserNotRegisteredException) this.client.say(channel, MSG_SIGNUP(tags["display-name"]));
+                        if (e instanceof UserNotRegisteredException) this.client.say(channel, MSG_SIGNUP(userDisplayName));
                         throw e;
                     }
                 }
             } catch (e) {
-                this.client.say(channel, MSG_COMMAND_FAILED(tags["display-name"], e.message));
+                this.client.say(channel, MSG_COMMAND_FAILED(userDisplayName, e.message));
                 log.trace(e);
             }
         });
@@ -205,6 +226,10 @@ export default class TwitchBot {
         if (tags.badges.moderator || tags.badges.admin || tags.badges.global_mod || tags.badges.broadcaster) {
             return true;
         }
+    }
+
+    public resolveMarket(channel, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
+        this.client.say(channel, MSG_RESOLVED(outcome, winners));
     }
 
     public connect() {

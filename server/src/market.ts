@@ -1,30 +1,190 @@
-import { LiteMarket, Bet } from "common/manifold-defs";
+import { LiteMarket, Bet, LiteUser, ResolutionOutcome } from "common/manifold-defs";
 import { FullBet } from "common/transaction";
 import App from "./app";
 import log from "./logger";
 import * as Manifold from "./manifold-api";
+import moment from "moment";
+import lodash from "lodash";
+const { keyBy, mapValues, sumBy, groupBy } = lodash;
 
 export class Market {
     private readonly app: App;
-
-    data: LiteMarket;
-    slug: string;
-
+    private readonly bets: FullBet[] = [];
     private latestLoadedBetId: string = null;
 
+    data: LiteMarket;
     pendingBets: Bet[] = [];
+    pendingFetches = {};
+    userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
 
-    constructor(app: App, data: LiteMarket, slug: string) {
+    constructor(app: App, data: LiteMarket) {
         this.app = app;
         this.data = data;
-        this.slug = slug;
 
-        setInterval(() => this.pollBets(), 1000);
+        for (const bet of this.data.bets) {
+            const fullBet: FullBet = {
+                ...bet,
+                username: "Bob", //!!!
+            };
+            this.bets.push(fullBet);
+        }
+
+        const pollTask = async () => {
+            let continuePolling = true;
+            try {
+                this.pollBets();
+                if (await this.detectResolution()) {
+                    continuePolling = false;
+                    console.log("Market resolved!");
+                    const winners = await this.calculateWinners();
+
+                    const dummyUser = <LiteUser>{name:"Bob"}; //!!! REMOVE
+                    winners.push({user: dummyUser, profit: 1});
+
+                    const channel = this.app.getChannelForMarketID(this.data.id);
+                    this.app.bot.resolveMarket(channel, this.data.resolution == "YES" ? ResolutionOutcome.YES : ResolutionOutcome.NO, winners); //!!! Proper outcomes
+                }
+            } finally {
+                if (continuePolling) {
+                    setTimeout(pollTask, 1000);
+                }
+            }
+        };
+        setTimeout(pollTask, 1000);
+    }
+
+    calculateFixedPayout(contract: LiteMarket, bet: Bet, outcome: string) {
+        if (outcome === "CANCEL") return this.calculateFixedCancelPayout(bet);
+        if (outcome === "MKT") return this.calculateFixedMktPayout(contract, bet);
+
+        return this.calculateStandardFixedPayout(bet, outcome);
+    }
+
+    calculateFixedCancelPayout(bet: Bet) {
+        return bet.amount;
+    }
+
+    calculateStandardFixedPayout(bet: Bet, outcome: string) {
+        const { outcome: betOutcome, shares } = bet;
+        if (betOutcome !== outcome) return 0;
+        return shares;
+    }
+
+    getProbability(contract: LiteMarket) {
+        if (contract.mechanism === "cpmm-1") {
+            return this.getCpmmProbability(contract.pool, contract.p);
+        }
+        throw new Error("DPM probability not supported.");
+    }
+
+    getCpmmProbability(pool: { [outcome: string]: number }, p: number) {
+        const { YES, NO } = pool;
+        return (p * NO) / ((1 - p) * YES + p * NO);
+    }
+
+    calculateFixedMktPayout(contract: LiteMarket, bet: Bet) {
+        const { resolutionProbability } = contract;
+        const p = resolutionProbability !== undefined ? resolutionProbability : this.getProbability(contract);
+
+        const { outcome, shares } = bet;
+
+        const betP = outcome === "YES" ? p : 1 - p;
+
+        return betP * shares;
+    }
+
+    resolvedPayout(contract: LiteMarket, bet: Bet) {
+        const outcome = contract.resolution;
+        if (!outcome) throw new Error("Contract not resolved");
+
+        if (contract.mechanism === "cpmm-1" && (contract.outcomeType === "BINARY" || contract.outcomeType === "PSEUDO_NUMERIC")) {
+            return this.calculateFixedPayout(contract, bet, outcome);
+        }
+        throw new Error("DPM payout not supported."); //this.calculateDpmPayout(contract, bet, outcome);
+    }
+
+    async calculateWinners(): Promise<{ user: LiteUser; profit: number }[]> {
+        const bets = this.data.bets;
+
+        // If 'id2' is the sale of 'id1', both are logged with (id2 - id1) of profit
+        // Otherwise, we record the profit at resolution time
+        const profitById: Record<string, number> = {};
+        const betsById = keyBy(bets, "id");
+        for (const bet of bets) {
+            if (bet.sale) {
+                const originalBet = betsById[bet.sale.betId];
+                const profit = bet.sale.amount - originalBet.amount;
+                profitById[bet.id] = profit;
+                profitById[originalBet.id] = profit;
+            } else {
+                profitById[bet.id] = this.resolvedPayout(this.data, bet) - bet.amount;
+            }
+        }
+
+        const openBets = bets.filter((bet) => !bet.isSold && !bet.sale);
+        const betsByUser = groupBy(openBets, "userId");
+        const userProfits = mapValues(betsByUser, (bets) => sumBy(bets, (bet) => this.resolvedPayout(this.data, bet) - bet.amount));
+
+        const userObjectProfits: { user: LiteUser; profit: number }[] = [];
+
+        for (const userID of Object.keys(userProfits)) {
+            const user = await Manifold.getUserByID(userID);
+            userObjectProfits.push({ user: user, profit: userProfits[userID] });
+        }
+        return userObjectProfits;
+    }
+
+    /**
+     * @deprecated The market ID should be used instead of the slug wherever possible
+     */
+    public getSlug() {
+        const url = this.data.url;
+        const slug = url.substring(url.lastIndexOf("/") + 1);
+        return slug;
+    }
+
+    private addBet(bet: FullBet) {
+        if (this.bets.length >= 3) {
+            this.bets.shift();
+        }
+        this.bets.push(bet);
+        // this.io.emit(Packet.ADD_BETS, [bet]); //!!!
+
+        log.info(`${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
+    }
+
+    private async loadUser(userId: string) {
+        if (this.pendingFetches[userId]) return;
+
+        this.pendingFetches[userId] = userId;
+        try {
+            const user = await Manifold.getUserByID(userId);
+            log.info(`Loaded user ${user.name}.`);
+            delete this.pendingFetches[userId];
+            this.userIdToNameMap[user.id] = user.name;
+
+            const betsToRemove = [];
+            for (const bet of this.pendingBets) {
+                if (user.id == bet.userId) {
+                    const fullBet: FullBet = {
+                        ...bet,
+                        username: user.name,
+                    };
+                    this.addBet(fullBet);
+                    betsToRemove.push(bet);
+                }
+            }
+            this.pendingBets = this.pendingBets.filter((e) => {
+                return betsToRemove.indexOf(e) < 0;
+            });
+        } catch (e) {
+            log.trace(e);
+        }
     }
 
     async pollBets(numBetsToLoad = 10) {
         try {
-            const bets = await Manifold.getLatestMarketBets(this.slug, numBetsToLoad);
+            const bets = await Manifold.getLatestMarketBets(this.getSlug(), numBetsToLoad);
             if (bets.length == 0) return;
 
             const newBets: Bet[] = [];
@@ -44,17 +204,17 @@ export class Market {
             }
             newBets.reverse();
             for (const bet of newBets) {
-                const username = this.app.userIdToNameMap[bet.userId];
+                const username = this.userIdToNameMap[bet.userId];
                 if (!bet.isRedemption) {
                     if (!username) {
-                        this.app.loadUser(bet.userId);
+                        this.loadUser(bet.userId);
                         this.pendingBets.push(bet);
                     } else {
                         const fullBet: FullBet = {
                             ...bet,
                             username: username,
                         };
-                        this.app.addBet(fullBet);
+                        this.addBet(fullBet);
                     }
                 }
             }
@@ -66,5 +226,10 @@ export class Market {
         } catch (e) {
             log.trace(e);
         }
+    }
+
+    async detectResolution() {
+        this.data = await Manifold.getMarketByID(this.data.id);
+        return this.data.isResolved;
     }
 }

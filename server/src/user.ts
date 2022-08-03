@@ -27,7 +27,7 @@ export default class User {
     }
 
     async sellAllShares(marketID: string): Promise<Response> {
-        return Manifold.sellShares(marketID, this.APIKey, "YES");
+        return Manifold.sellShares(marketID, this.APIKey);
     }
 
     public async createBinaryMarket(question: string, description: string, initialProb_percent: number): Promise<ManifoldAPI.LiteMarket> {
