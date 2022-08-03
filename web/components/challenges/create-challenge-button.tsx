@@ -119,7 +119,6 @@ function CreateChallengeForm(props: {
           <Title className="!mt-2" text="Challenge a friend to bet " />
           {/*<Row className="label ">How much?</Row>*/}
           <div className="mt-2 flex flex-col flex-wrap gap-x-5 gap-y-2">
-            <div>Question:</div>
             <div className="mb-4 italic">{contract.question}</div>
 
             <div>You are betting:</div>
@@ -223,7 +222,7 @@ function CreateChallengeForm(props: {
                 isCreating ? 'disabled' : ''
               )}
             >
-              Create
+              Continue
             </Button>
           </Row>
           <Row className={'text-error'}>{error} </Row>
