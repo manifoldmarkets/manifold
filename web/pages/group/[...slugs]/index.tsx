@@ -199,16 +199,6 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const chatTab = (
-    <Col className="">
-      {messages ? (
-        <GroupChat messages={messages} user={user} group={group} tips={tips} />
-      ) : (
-        <LoadingIndicator />
-      )}
-    </Col>
-  )
-
   const questionsTab = (
     <ContractSearch
       querySortOptions={{
