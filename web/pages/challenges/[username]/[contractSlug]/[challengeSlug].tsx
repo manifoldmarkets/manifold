@@ -2,11 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Confetti from 'react-confetti'
 
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import {
-  Contract,
-  contractPath,
-  getContractFromSlug,
-} from 'web/lib/firebase/contracts'
+import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { DOMAIN } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
@@ -31,11 +27,6 @@ import { formatMoney } from 'common/util/format'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
-import {
-  BinaryResolutionOrChance,
-  PseudoNumericResolutionOrExpectation,
-} from 'web/components/contract/contract-card'
-import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
 import { SEO } from 'web/components/SEO'
 import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 import Custom404 from 'web/pages/404'
@@ -124,7 +115,6 @@ export default function ChallengePage(props: {
           contract={contract}
           challenge={challenge}
           creator={user}
-          bets={bets}
         />
       ) : (
         <OpenChallengeContent
@@ -139,29 +129,13 @@ export default function ChallengePage(props: {
   )
 }
 
-const userRow = (challenger: User) => (
-  <Row className={'mb-2 w-full items-center justify-center gap-2'}>
-    <Avatar
-      size={12}
-      avatarUrl={challenger.avatarUrl}
-      username={challenger.username}
-    />
-    <UserLink
-      className={'text-2xl'}
-      name={challenger.name}
-      username={challenger.username}
-    />
-  </Row>
-)
-
 function ClosedChallengeContent(props: {
   contract: BinaryContract
   challenge: Challenge
   creator: User
-  bets: Bet[]
 }) {
-  const { contract, challenge, creator, bets } = props
-  const { resolution } = contract
+  const { contract, challenge, creator } = props
+  const { resolution, question } = contract
   const {
     acceptances,
     creatorAmount,
@@ -171,6 +145,7 @@ function ClosedChallengeContent(props: {
   } = challenge
 
   const user = useUserById(acceptances[0].userId)
+
   const [showConfetti, setShowConfetti] = useState(false)
   const { width, height } = useWindowSize()
   useEffect(() => {
@@ -178,62 +153,22 @@ function ClosedChallengeContent(props: {
     if (acceptances[0].createdTime > Date.now() - 1000 * 60)
       setShowConfetti(true)
   }, [acceptances])
+
   const creatorWon = resolution === creatorOutcome
-  const amountWon = creatorWon ? acceptances[0].amount : creatorAmount
+  // const amountWon = creatorWon ? acceptances[0].amount : creatorAmount
   const yourCost =
     ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
 
+  const href = `https://${DOMAIN}${contractPath(contract)}`
+
   if (!user) return <LoadingIndicator />
 
-  const userWonCol = (user: User, amount: number) => (
-    <Col className="w-full items-start justify-center gap-1 p-4">
-      <Row className={'mb-2 w-full items-center justify-center gap-2'}>
-        <span className={'mx-2 text-3xl'}>🥇</span>
-        <Avatar size={12} avatarUrl={user.avatarUrl} username={user.username} />
-        <UserLink
-          className={'text-2xl'}
-          name={user.name}
-          username={user.username}
-        />
-        <span className={'mx-2 text-3xl'}>🥇</span>
-      </Row>
-      <Row className={'w-full items-center justify-center'}>
-        <span className={'text-lg'}>
-          WON <span className={'text-primary'}>{formatMoney(amount)}</span>
-        </span>
-      </Row>
-    </Col>
-  )
+  const winner = (creatorWon ? creator : user).name
 
-  const userLostCol = (challenger: User, amount: number) => (
-    <Col className="w-full items-start justify-center gap-1">
-      {userRow(challenger)}
-      <Row className={'w-full items-center justify-center'}>
-        <span className={'text-lg'}>
-          LOST <span className={'text-red-500'}>{formatMoney(amount)}</span>
-        </span>
-      </Row>
-    </Col>
-  )
+  const title = resolution
+    ? `🥇 ${winner} wins the bet 🥇`
+    : `⚔️ Challenge accepted ⚔️`
 
-  const userCol = (
-    challenger: User,
-    outcome: string,
-    prob: number,
-    amount: number
-  ) => (
-    <Col className="w-full items-start justify-center gap-1">
-      {userRow(challenger)}
-      <Row className={'w-full items-center justify-center'}>
-        <span className={'text-lg'}>
-          is betting {formatMoney(amount)}
-          {' on '}
-          <BinaryOutcomeLabel outcome={outcome as any} /> at{' '}
-          {Math.round(prob * 100)}%
-        </span>
-      </Row>
-    </Col>
-  )
   return (
     <>
       {showConfetti && (
@@ -252,76 +187,43 @@ function ClosedChallengeContent(props: {
         />
       )}
       <Col className=" w-full rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:items-center sm:justify-center sm:px-2 md:px-6 md:py-8">
-        {!resolution && (
-          <Row
-            className={
-              'items-center justify-center gap-2 text-xl text-gray-600'
-            }
-          >
-            <span className={'text-xl'}>⚔️️</span>
-            Challenge Accepted
-            <span className={'text-xl'}>⚔️️</span>
-          </Row>
-        )}
-        {resolution == 'YES' || resolution == 'NO' ? (
-          <Col
-            className={
-              'max-h-[60vh] w-full content-between justify-between gap-1'
-            }
-          >
-            <Row className={'mt-4 w-full'}>
-              {userWonCol(creatorWon ? creator : user, amountWon)}
-            </Row>
-            <Row className={'mt-4'}>
-              {userLostCol(creatorWon ? user : creator, amountWon)}
-            </Row>
-          </Col>
-        ) : (
-          <Col
-            className={
-              'h-full w-full content-between justify-between gap-1  py-10 sm:flex-row'
-            }
-          >
-            {userCol(
-              creator,
-              creatorOutcome,
-              creatorOutcomeProb,
-              creatorAmount
-            )}
-            <Col className="items-center justify-center py-4 text-xl">VS</Col>
-            {userCol(user, yourOutcome, 1 - creatorOutcomeProb, yourCost)}
-          </Col>
-        )}
-        <Spacer h={3} />
-        <ChallengeContract contract={contract} bets={bets} />
-      </Col>
-    </>
-  )
-}
+        <Title className="!mt-0" text={title} />
 
-function ChallengeContract(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
-  const { question } = contract
-  const href = `https://${DOMAIN}${contractPath(contract)}`
-
-  const isBinary = contract.outcomeType === 'BINARY'
-  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  return (
-    <Col className="mt-5 w-full flex-1 bg-white px-10">
-      <div className="relative flex flex-col pt-2">
-        <Row className="justify-between px-3 text-xl text-indigo-700 md:text-2xl">
+        <Row className="my-4 justify-center px-8 pb-4 text-lg sm:text-xl">
           <SiteLink href={href}>{question}</SiteLink>
-          {isBinary && <BinaryResolutionOrChance contract={contract} />}
-          {isPseudoNumeric && (
-            <PseudoNumericResolutionOrExpectation contract={contract} />
-          )}
         </Row>
 
-        {(isBinary || isPseudoNumeric) && (
-          <ContractProbGraph contract={contract} bets={bets} height={400} />
-        )}
-      </div>
-    </Col>
+        <Col
+          className={
+            'h-full max-h-[50vh] w-full content-between justify-between gap-1 sm:flex-row'
+          }
+        >
+          <UserBetColumn
+            challenger={creator}
+            outcome={creatorOutcome}
+            amount={creatorAmount}
+            isResolved={!!resolution}
+          />
+
+          <Col className="items-center justify-center py-8 text-2xl sm:text-4xl">
+            VS
+          </Col>
+
+          <UserBetColumn
+            challenger={user?.id === creator.id ? undefined : user}
+            outcome={yourOutcome}
+            amount={yourCost}
+            isResolved={!!resolution}
+          />
+        </Col>
+
+        <Spacer h={3} />
+
+        {/* <Row className="mt-8 items-center">
+          <span className='mr-4'>Share</span> <CopyLinkButton url={window.location.href} />
+        </Row> */}
+      </Col>
+    </>
   )
 }
 
@@ -342,11 +244,10 @@ function OpenChallengeContent(props: {
     yourOutcome,
   } = challenge
 
-  const href = `https://${DOMAIN}${contractPath(contract)}`
-
   const yourCost =
     ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
 
+  const href = `https://${DOMAIN}${contractPath(contract)}`
   const title = `${creator.name} is challenging you to bet`
 
   return (
@@ -394,12 +295,28 @@ function OpenChallengeContent(props: {
   )
 }
 
+const userRow = (challenger: User) => (
+  <Row className={'mb-2 w-full items-center justify-center gap-2'}>
+    <Avatar
+      size={12}
+      avatarUrl={challenger.avatarUrl}
+      username={challenger.username}
+    />
+    <UserLink
+      className={'text-2xl'}
+      name={challenger.name}
+      username={challenger.username}
+    />
+  </Row>
+)
+
 function UserBetColumn(props: {
   challenger: User | null | undefined
   outcome: string
   amount: number
+  isResolved?: boolean
 }) {
-  const { challenger, outcome, amount } = props
+  const { challenger, outcome, amount, isResolved } = props
 
   return (
     <Col className="w-full items-start justify-center gap-1">
@@ -412,7 +329,9 @@ function UserBetColumn(props: {
         </Row>
       )}
       <Row className={'w-full items-center justify-center'}>
-        <span className={'text-lg'}>{challenger ? 'is' : 'are'} betting </span>
+        <span className={'text-lg'}>
+          {isResolved ? 'had bet' : challenger ? 'is betting' : 'are betting'}
+        </span>
       </Row>
       <Row className={'w-full items-center justify-center'}>
         <span className={'text-lg'}>
