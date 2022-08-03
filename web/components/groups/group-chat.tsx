@@ -50,8 +50,9 @@ export function GroupChat(props: {
   const { width, height } = useWindowSize()
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   // Subtract bottom bar when it's showing (less than lg screen)
-  // const bottomBarHeight = (width ?? 0) < 1024 ? 58 : 0
-  const remainingHeight = (height ?? 0) - (containerRef?.offsetTop ?? 0)
+  const bottomBarHeight = (width ?? 0) < 1024 ? 58 : 0
+  const remainingHeight =
+    (height ?? 0) - (containerRef?.offsetTop ?? 0) - bottomBarHeight
 
   useMemo(() => {
     // Group messages with createdTime within 2 minutes of each other.
