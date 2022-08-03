@@ -322,23 +322,21 @@ function GroupsList(props: {
         ref={setContainerRef}
       >
         {memberItems.map((item) => (
-          <Link
+          <a
             href={
               item.href +
               (notifIsForThisItem(item.href) ? '/' + GROUP_CHAT_SLUG : '')
             }
-            key={item.href}
+            key={item.name}
+            onClick={trackCallback('sidebar: ' + item.name)}
+            className={clsx(
+              'cursor-pointer truncate',
+              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+              notifIsForThisItem(item.href) && 'font-bold'
+            )}
           >
-            <span
-              className={clsx(
-                'cursor-pointer truncate',
-                'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                notifIsForThisItem(item.href) && 'font-bold'
-              )}
-            >
-              {item.name}
-            </span>
-          </Link>
+            {item.name}
+          </a>
         ))}
       </div>
     </>
