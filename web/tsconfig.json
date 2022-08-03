@@ -1,15 +1,35 @@
 {
-    "compilerOptions": {
-        "target": "es6",
-        "module": "ES6",
-        "moduleResolution": "node",
-        "noResolve": false,
-        "noImplicitAny": false,
-        "sourceMap": true,
-        "baseUrl": ".",
-        "preserveConstEnums": true,
-        "allowSyntheticDefaultImports": true,
-        "lib": ["dom", "es6", "WebWorker"]
-    },
-    "include": ["src/**/*", "../common/**/*"]
+  "compilerOptions": {
+    "target": "es6",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noResolve": false,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "preserveConstEnums": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": [
+      "dom",
+      "es6",
+      "WebWorker"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "incremental": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve"
+  },
+  "include": [
+    "src/**/*",
+    "../common/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
