@@ -9,15 +9,3 @@ export const CONTEST_DATA = {
 }
 
 export const CONTEST_SLUGS = Object.keys(CONTEST_DATA)
-
-export function contestPath(
-  contestSlug: string,
-  subpath?:
-    | 'edit'
-    | 'markets'
-    | 'about'
-    | typeof GROUP_CHAT_SLUG
-    | 'leaderboards'
-) {
-  return `/contest/${contestSlug}${subpath ? `/${subpath}` : ''}`
-}

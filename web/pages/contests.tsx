@@ -50,14 +50,13 @@ export default function Contests(props: {
   const contests = (useGroups() ?? props.groups).filter((group) =>
     CONTEST_SLUGS.includes(group.slug)
   )
-  //const contests = groups.filter((group) => CONTEST_SLUGS.includes(group.slug))
-  console.log(contests)
   const user = useUser()
-  const memberGroupIds = useMemberGroupIds(user) || []
 
   // useEffect(() => {
   //   // Load User object for creator of new Groups.
-  //   const newGroups = groups.filter(({ creatorId }) => !creatorsDict[creatorId])
+  //   const newGroups = contests.filter(
+  //     ({ creatorId }) => !creatorsDict[creatorId]
+  //   )
   //   if (newGroups.length > 0) {
   //     Promise.all(newGroups.map(({ creatorId }) => getUser(creatorId))).then(
   //       (newUsers) => {
@@ -68,7 +67,7 @@ export default function Contests(props: {
   //       }
   //     )
   //   }
-  // }, [creatorsDict, groups])
+  // }, [creatorsDict, contests])
 
   const [query, setQuery] = useState('')
 
@@ -83,21 +82,6 @@ export default function Contests(props: {
       g.name,
       g.about || '',
       creatorsDict[g.creatorId].username
-    )
-  )
-
-  const matchesOrderedByRecentActivity = sortBy(contests, [
-    (contest) =>
-      -1 *
-      (contest.mostRecentChatActivityTime ??
-        contest.mostRecentContractAddedTime ??
-        contest.mostRecentActivityTime),
-  ]).filter((c) =>
-    searchInAny(
-      query,
-      c.name,
-      c.about || '',
-      creatorsDict[c.creatorId].username
     )
   )
 
@@ -162,41 +146,5 @@ export function ContestCard(props: { contest: Group }) {
         <div className="text-sm text-gray-500">{contest.about}</div>
       </Row>
     </Col>
-  )
-}
-
-function GroupMembersList(props: { group: Group }) {
-  const { group } = props
-  const maxMembersToShow = 3
-  const members = useMembers(group, maxMembersToShow).filter(
-    (m) => m.id !== group.creatorId
-  )
-  if (group.memberIds.length === 1) return <div />
-  return (
-    <div className="text-neutral flex flex-wrap gap-1">
-      <span className={'text-gray-500'}>Other members</span>
-      {members.slice(0, maxMembersToShow).map((member, i) => (
-        <div key={member.id} className={'flex-shrink'}>
-          <UserLink name={member.name} username={member.username} />
-          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
-        </div>
-      ))}
-      {group.memberIds.length > maxMembersToShow && (
-        <span> & {group.memberIds.length - maxMembersToShow} more</span>
-      )}
-    </div>
-  )
-}
-
-export function GroupLinkItem(props: { group: Group; className?: string }) {
-  const { group, className } = props
-
-  return (
-    <SiteLink
-      href={groupPath(group.slug)}
-      className={clsx('z-10 truncate', className)}
-    >
-      {group.name}
-    </SiteLink>
   )
 }

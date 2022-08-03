@@ -51,17 +51,19 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Button } from 'web/components/button'
 import { SubmissionSearch } from 'web/components/submission-search'
+import { ContestChat } from 'web/components/contest/contest-chat'
+import { contestPath } from 'web/lib/firebase/contests'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
-  const group = await getGroupBySlug(slugs[0])
-  const members = group && (await listMembers(group))
-  const creatorPromise = group ? getUser(group.creatorId) : null
+  const contest = await getGroupBySlug(slugs[0])
+  const members = contest && (await listMembers(contest))
+  const creatorPromise = contest ? getUser(contest.creatorId) : null
 
   const contracts =
-    (group && (await listContractsByGroupSlug(group.slug))) ?? []
+    (contest && (await listContractsByGroupSlug(contest.slug))) ?? []
 
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
@@ -80,7 +82,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   return {
     props: {
-      group,
+      contest,
       members,
       creator,
       traderScores,
@@ -108,16 +110,16 @@ function toTopUsers(userScores: { [userId: string]: number }, users: User[]) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [
+const contestSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
-  'markets',
+  'submissions',
   'leaderboards',
   'about',
 ] as const
 
-export default function GroupPage(props: {
-  group: Group | null
+export default function ContestPage(props: {
+  contest: Group | null
   members: User[]
   creator: User
   traderScores: { [userId: string]: number }
@@ -126,7 +128,7 @@ export default function GroupPage(props: {
   topCreators: User[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
-    group: null,
+    contest: null,
     members: [],
     creator: null,
     traderScores: {},
@@ -145,35 +147,35 @@ export default function GroupPage(props: {
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
-  const page = slugs?.[1] as typeof groupSubpages[number]
+  const page = slugs?.[1] as typeof contestSubpages[number]
 
-  const group = useGroup(props.group?.id) ?? props.group
-  const tips = useTipTxns({ groupId: group?.id })
+  const contest = useGroup(props.contest?.id) ?? props.contest
+  const tips = useTipTxns({ groupId: contest?.id })
 
-  const messages = useCommentsOnGroup(group?.id)
+  const messages = useCommentsOnGroup(contest?.id)
 
   const user = useUser()
 
   useSaveReferral(user, {
     defaultReferrer: creator.username,
-    groupId: group?.id,
+    groupId: contest?.id,
   })
 
   const { width } = useWindowSize()
-  const chatDisabled = !group || group.chatDisabled
+  const chatDisabled = !contest || contest.chatDisabled
   const showChatSidebar = !chatDisabled && (width ?? 1280) >= 1280
   const showChatTab = !chatDisabled && !showChatSidebar
 
-  if (group === null || !groupSubpages.includes(page) || slugs[2]) {
+  if (contest === null || !contestSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
-  const { memberIds } = group
-  const isCreator = user && group && user.id === group.creatorId
+  const { memberIds } = contest
+  const isCreator = user && contest && user.id === contest.creatorId
   const isMember = user && memberIds.includes(user.id)
 
   const leaderboard = (
     <Col>
-      <GroupLeaderboards
+      <ContestLeaderboards
         traderScores={traderScores}
         creatorScores={creatorScores}
         topTraders={topTraders}
@@ -186,20 +188,19 @@ export default function GroupPage(props: {
 
   const aboutTab = (
     <Col>
-      <GroupOverview
-        group={group}
-        creator={creator}
-        isCreator={!!isCreator}
-        user={user}
-        members={members}
-      />
+      <ContestOverview contest={contest} />
     </Col>
   )
 
   const chatTab = (
     <Col className="">
       {messages ? (
-        <GroupChat messages={messages} user={user} group={group} tips={tips} />
+        <ContestChat
+          messages={messages}
+          user={user}
+          contest={contest}
+          tips={tips}
+        />
       ) : (
         <LoadingIndicator />
       )}
@@ -213,7 +214,7 @@ export default function GroupPage(props: {
         defaultSort: getSavedSort() ?? 'newest',
         defaultFilter: 'open',
       }}
-      additionalFilter={{ groupSlug: group.slug }}
+      additionalFilter={{ groupSlug: contest.slug }}
     />
   )
 
@@ -224,23 +225,23 @@ export default function GroupPage(props: {
           {
             title: 'Chat',
             content: chatTab,
-            href: groupPath(group.slug, GROUP_CHAT_SLUG),
+            href: contestPath(contest.slug, GROUP_CHAT_SLUG),
           },
         ]),
     {
-      title: 'Markets',
+      title: 'Submissions',
       content: questionsTab,
-      href: groupPath(group.slug, 'markets'),
+      href: contestPath(contest.slug, 'submissions'),
     },
     {
       title: 'Leaderboards',
       content: leaderboard,
-      href: groupPath(group.slug, 'leaderboards'),
+      href: contestPath(contest.slug, 'leaderboards'),
     },
     {
       title: 'About',
       content: aboutTab,
-      href: groupPath(group.slug, 'about'),
+      href: contestPath(contest.slug, 'about'),
     },
   ]
 
@@ -253,9 +254,9 @@ export default function GroupPage(props: {
       className={showChatSidebar ? '!max-w-7xl !pb-0' : ''}
     >
       <SEO
-        title={group.name}
-        description={`Created by ${creator.name}. ${group.about}`}
-        url={groupPath(group.slug)}
+        title={contest.name}
+        description={`Created by ${creator.name}. ${contest.about}`}
+        url={contestPath(contest.slug)}
       />
       <Col className="px-3">
         <Row className={'items-center justify-between gap-4'}>
@@ -263,16 +264,16 @@ export default function GroupPage(props: {
             <div
               className={'line-clamp-1 my-2 text-2xl text-indigo-700 sm:my-3'}
             >
-              {group.name}
+              {contest.name}
             </div>
             <div className={'hidden sm:block'}>
-              <Linkify text={group.about} />
+              <Linkify text={contest.about} />
             </div>
           </div>
         </Row>
       </Col>
       <Tabs
-        currentPageForAnalytics={groupPath(group.slug)}
+        currentPageForAnalytics={contestPath(contest.slug)}
         className={'mb-0 sm:mb-2'}
         defaultIndex={tabIndex > 0 ? tabIndex : 0}
         tabs={tabs}
@@ -281,167 +282,17 @@ export default function GroupPage(props: {
   )
 }
 
-function JoinOrAddQuestionsButtons(props: {
-  group: Group
-  user: User | null | undefined
-  isMember: boolean
-}) {
-  const { group, user, isMember } = props
-  return user && isMember ? (
-    <Row className={'mt-0 justify-end'}>
-      <AddContractButton group={group} user={user} />
-    </Row>
-  ) : group.anyoneCanJoin ? (
-    <JoinGroupButton group={group} user={user} />
-  ) : null
-}
-
-function GroupOverview(props: {
-  group: Group
-  creator: User
-  user: User | null | undefined
-  isCreator: boolean
-  members: User[]
-}) {
-  const { group, creator, isCreator, user, members } = props
-  const anyoneCanJoinChoices: { [key: string]: string } = {
-    Closed: 'false',
-    Open: 'true',
-  }
-  const [anyoneCanJoin, setAnyoneCanJoin] = useState(group.anyoneCanJoin)
-  function updateAnyoneCanJoin(newVal: boolean) {
-    if (group.anyoneCanJoin == newVal || !isCreator) return
-    setAnyoneCanJoin(newVal)
-    toast.promise(updateGroup(group, { ...group, anyoneCanJoin: newVal }), {
-      loading: 'Updating group...',
-      success: 'Updated group!',
-      error: "Couldn't update group",
-    })
-  }
-
-  const postFix = user ? '?referrer=' + user.username : ''
-  const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
-    group.slug
-  )}${postFix}`
+function ContestOverview(props: { contest: Group }) {
+  const { contest } = props
 
   return (
     <>
       <Col className="gap-2 rounded-b bg-white p-2">
-        <Row className={'flex-wrap justify-between'}>
-          <div className={'inline-flex items-center'}>
-            <div className="mr-1 text-gray-500">Created by</div>
-            <UserLink
-              className="text-neutral"
-              name={creator.name}
-              username={creator.username}
-            />
-          </div>
-          {isCreator ? (
-            <EditGroupButton className={'ml-1'} group={group} />
-          ) : (
-            user &&
-            group.memberIds.includes(user?.id) && (
-              <Row>
-                <JoinOrLeaveGroupButton group={group} />
-              </Row>
-            )
-          )}
-        </Row>
         <div className={'block sm:hidden'}>
-          <Linkify text={group.about} />
+          <Linkify text={contest.about} />
         </div>
-        <Row className={'items-center gap-1'}>
-          <span className={'text-gray-500'}>Membership</span>
-          {user && user.id === creator.id ? (
-            <ChoicesToggleGroup
-              currentChoice={anyoneCanJoin.toString()}
-              choicesMap={anyoneCanJoinChoices}
-              setChoice={(choice) =>
-                updateAnyoneCanJoin(choice.toString() === 'true')
-              }
-              toggleClassName={'h-10'}
-              className={'ml-2'}
-            />
-          ) : (
-            <span className={'text-gray-700'}>
-              {anyoneCanJoin ? 'Open' : 'Closed'}
-            </span>
-          )}
-        </Row>
-
-        {anyoneCanJoin && user && (
-          <Col className="my-4 px-2">
-            <div className="text-lg">Invite</div>
-            <div className={'mb-2 text-gray-500'}>
-              Invite a friend to this group and get M${REFERRAL_AMOUNT} if they
-              sign up!
-            </div>
-
-            <CopyLinkButton
-              url={shareUrl}
-              tracking="copy group share link"
-              buttonClassName="btn-md rounded-l-none"
-              toastClassName={'-left-28 mt-1'}
-            />
-          </Col>
-        )}
-
-        <Col className={'mt-2'}>
-          <div className="mb-2 text-lg">Members</div>
-          <GroupMemberSearch members={members} group={group} />
-        </Col>
       </Col>
     </>
-  )
-}
-
-function SearchBar(props: { setQuery: (query: string) => void }) {
-  const { setQuery } = props
-  const debouncedQuery = debounce(setQuery, 50)
-  return (
-    <div className={'relative'}>
-      <SearchIcon className={'absolute left-5 top-3.5 h-5 w-5 text-gray-500'} />
-      <input
-        type="text"
-        onChange={(e) => debouncedQuery(e.target.value)}
-        placeholder="Find a member"
-        className="input input-bordered mb-4 w-full pl-12"
-      />
-    </div>
-  )
-}
-
-function GroupMemberSearch(props: { members: User[]; group: Group }) {
-  const [query, setQuery] = useState('')
-  const { group } = props
-  let { members } = props
-
-  // Use static members on load, but also listen to member changes:
-  const listenToMembers = useMembers(group)
-  if (listenToMembers) {
-    members = listenToMembers
-  }
-
-  // TODO use find-active-contracts to sort by?
-  const matches = sortBy(members, [(member) => member.name]).filter((m) =>
-    searchInAny(query, m.name, m.username)
-  )
-  const matchLimit = 25
-
-  return (
-    <div>
-      <SearchBar setQuery={setQuery} />
-      <Col className={'gap-2'}>
-        {matches.length > 0 && (
-          <FollowList userIds={matches.slice(0, matchLimit).map((m) => m.id)} />
-        )}
-        {matches.length > 25 && (
-          <div className={'text-center'}>
-            And {matches.length - matchLimit} more...
-          </div>
-        )}
-      </Col>
-    </div>
   )
 }
 
@@ -467,7 +318,7 @@ function SortedLeaderboard(props: {
   )
 }
 
-function GroupLeaderboards(props: {
+function ContestLeaderboards(props: {
   traderScores: { [userId: string]: number }
   creatorScores: { [userId: string]: number }
   topTraders: User[]
@@ -531,135 +382,5 @@ function GroupLeaderboards(props: {
         )}
       </div>
     </Col>
-  )
-}
-
-function AddContractButton(props: { group: Group; user: User }) {
-  const { group, user } = props
-  const [open, setOpen] = useState(false)
-  const [contracts, setContracts] = useState<Contract[]>([])
-  const [loading, setLoading] = useState(false)
-
-  async function addContractToCurrentGroup(contract: Contract) {
-    if (contracts.map((c) => c.id).includes(contract.id)) {
-      setContracts(contracts.filter((c) => c.id !== contract.id))
-    } else setContracts([...contracts, contract])
-  }
-
-  async function doneAddingContracts() {
-    Promise.all(
-      contracts.map(async (contract) => {
-        setLoading(true)
-        await addContractToGroup(group, contract, user.id)
-      })
-    ).then(() => {
-      setLoading(false)
-      setOpen(false)
-      setContracts([])
-    })
-  }
-
-  return (
-    <>
-      <div className={'flex justify-center'}>
-        <button
-          className={clsx('btn btn-sm btn-outline')}
-          onClick={() => setOpen(true)}
-        >
-          <PlusSmIcon className="h-6 w-6" aria-hidden="true" /> question
-        </button>
-      </div>
-
-      <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
-        <Col className={' w-full gap-4 rounded-md bg-white'}>
-          <Col className="p-8 pb-0">
-            <div className={'text-xl text-indigo-700'}>
-              Add a question to your group
-            </div>
-
-            {contracts.length === 0 ? (
-              <Col className="items-center justify-center">
-                <CreateQuestionButton
-                  user={user}
-                  overrideText={'New question'}
-                  className={'w-48 flex-shrink-0 '}
-                  query={`?groupId=${group.id}`}
-                />
-
-                <div className={'mt-1 text-lg text-gray-600'}>
-                  (or select old questions)
-                </div>
-              </Col>
-            ) : (
-              <Col className={'w-full '}>
-                {!loading ? (
-                  <Row className={'justify-end gap-4'}>
-                    <Button onClick={doneAddingContracts} color={'indigo'}>
-                      Add {contracts.length} question
-                      {contracts.length > 1 && 's'}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setContracts([])
-                      }}
-                      color={'gray'}
-                    >
-                      Cancel
-                    </Button>
-                  </Row>
-                ) : (
-                  <Row className={'justify-center'}>
-                    <LoadingIndicator />
-                  </Row>
-                )}
-              </Col>
-            )}
-          </Col>
-
-          <div className={'overflow-y-scroll sm:px-8'}>
-            <SubmissionSearch
-              hideOrderSelector={true}
-              onContractClick={addContractToCurrentGroup}
-              overrideGridClassName={
-                'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
-              }
-              showPlaceHolder={true}
-              cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
-              additionalFilter={{ excludeContractIds: group.contractIds }}
-              highlightOptions={{
-                contractIds: contracts.map((c) => c.id),
-                highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
-              }}
-            />
-          </div>
-        </Col>
-      </Modal>
-    </>
-  )
-}
-
-function JoinGroupButton(props: {
-  group: Group
-  user: User | null | undefined
-}) {
-  const { group, user } = props
-  function addUserToGroup() {
-    if (user && !group.memberIds.includes(user.id)) {
-      toast.promise(joinGroup(group, user.id), {
-        loading: 'Joining group...',
-        success: 'Joined group!',
-        error: "Couldn't join group, try again?",
-      })
-    }
-  }
-  return (
-    <div>
-      <button
-        onClick={user ? addUserToGroup : firebaseLogin}
-        className={'btn-md btn-outline btn whitespace-nowrap normal-case'}
-      >
-        {user ? 'Join group' : 'Login to join group'}
-      </button>
-    </div>
   )
 }
