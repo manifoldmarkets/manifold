@@ -213,7 +213,7 @@ export function GroupChatInBubble(props: {
   return (
     <Col
       className={clsx(
-        'fixed right-0 bottom-[20px] h-screen w-full sm:bottom-[20px] sm:right-20 sm:w-2/3 md:w-1/2 lg:right-24 lg:w-1/3 xl:right-32 xl:w-1/4',
+        'fixed right-0 bottom-[0px] h-screen w-full sm:bottom-[20px] sm:right-20 sm:w-2/3 md:w-1/2 lg:right-24 lg:w-1/3 xl:right-32 xl:w-1/4',
         shouldShowChat ? 'z-10 bg-white p-2' : ''
       )}
     >
