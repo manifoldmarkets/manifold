@@ -503,6 +503,20 @@ Parameters:
   answer. For numeric markets, this is a string representing the target bucket,
   and an additional `value` parameter is required which is a number representing
   the target value. (Bet on numeric markets at your own peril.)
+- `limitProb`: Optional. A number between `0.001` and `0.999` inclusive representing
+  the limit probability for your bet (i.e. 0.1% to 99.9% — multiply by 100 for the
+  probability percentage).
+  The bet will execute immediately in the direction of `outcome`, but not beyond this
+  specified limit. If not all the bet is filled, the bet will remain as an open offer
+  that can later be matched against an opposite direction bet.
+  - For example, if the current market probability is `50%`:
+    - A `M$10` bet on `YES` with `limitProb=0.4` would not be filled until the market
+      probability moves down to `40%` and someone bets `M$15` of `NO` to match your
+      bet odds.
+    - A `M$100` bet on `YES` with `limitProb=0.6` would fill partially or completely
+      depending on current unfilled limit bets and the AMM's liquidity. Any remaining
+      portion of the bet not filled would remain to be matched against in the future.
+  - An unfilled limit order bet can be cancelled using the cancel API.
 
 Example request:
 
@@ -639,7 +653,7 @@ Requires no authorization.
 
 - Example request
   ```
-  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&market=will-california-abolish-daylight-sa
+  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&market=will-i-be-able-to-place-a-limit-ord
   ```
 - Response type: A `Bet[]`.
 
@@ -647,31 +661,60 @@ Requires no authorization.
 
   ```json
   [
+    // Limit bet, partially filled.
     {
-      "probAfter": 0.44418877319153904,
-      "shares": -645.8346334931828,
+      "isFilled": false,
+      "amount": 15.596681605353808,
+      "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
+      "contractId": "Tz5dA01GkK5QKiQfZeDL",
+      "probBefore": 0.5730753474948571,
+      "isCancelled": false,
       "outcome": "YES",
-      "contractId": "tgB1XmvFXZNhjr3xMNLp",
-      "sale": {
-        "betId": "RcOtarI3d1DUUTjiE0rx",
-        "amount": 474.9999999999998
-      },
-      "createdTime": 1644602886293,
-      "userId": "94YYTk1AFWfbWMpfYcvnnwI1veP2",
-      "probBefore": 0.7229189477449224,
-      "id": "x9eNmCaqQeXW8AgJ8Zmp",
-      "amount": -499.9999999999998
+      "fees": { "creatorFee": 0, "liquidityFee": 0, "platformFee": 0 },
+      "shares": 31.193363210707616,
+      "limitProb": 0.5,
+      "id": "yXB8lVbs86TKkhWA1FVi",
+      "loanAmount": 0,
+      "orderAmount": 100,
+      "probAfter": 0.5730753474948571,
+      "createdTime": 1659482775970,
+      "fills": [
+        {
+          "timestamp": 1659483249648,
+          "matchedBetId": "MfrMd5HTiGASDXzqibr7",
+          "amount": 15.596681605353808,
+          "shares": 31.193363210707616
+        }
+      ]
     },
+    // Normal bet (no limitProb specified).
     {
-      "probAfter": 0.9901970375647697,
-      "contractId": "zdeaYVAfHlo9jKzWh57J",
-      "outcome": "YES",
-      "amount": 1,
-      "id": "8PqxKYwXCcLYoXy2m2Nm",
-      "shares": 1.0049875638533763,
-      "userId": "94YYTk1AFWfbWMpfYcvnnwI1veP2",
-      "probBefore": 0.9900000000000001,
-      "createdTime": 1644705818872
+      "shares": 17.350459904608414,
+      "probBefore": 0.5304358279113885,
+      "isFilled": true,
+      "probAfter": 0.5730753474948571,
+      "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
+      "amount": 10,
+      "contractId": "Tz5dA01GkK5QKiQfZeDL",
+      "id": "1LPJHNz5oAX4K6YtJlP1",
+      "fees": {
+        "platformFee": 0,
+        "liquidityFee": 0,
+        "creatorFee": 0.4251333951457593
+      },
+      "isCancelled": false,
+      "loanAmount": 0,
+      "orderAmount": 10,
+      "fills": [
+        {
+          "amount": 10,
+          "matchedBetId": null,
+          "shares": 17.350459904608414,
+          "timestamp": 1659482757271
+        }
+      ],
+      "createdTime": 1659482757271,
+      "outcome": "YES"
     }
   ]
   ```
