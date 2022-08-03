@@ -1,7 +1,12 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import { DuplicateIcon } from '@heroicons/react/outline'
+import {
+  AdjustmentsIcon,
+  CogIcon,
+  DuplicateIcon,
+  PencilIcon,
+} from '@heroicons/react/outline'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -80,11 +85,10 @@ function CreateChallengeForm(props: {
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [error, setError] = useState<string>('')
+  const [editingAcceptorAmount, setEditingAcceptorAmount] = useState(false)
   const defaultExpire = 'week'
 
   const defaultMessage = `${user.name} is challenging you to a bet! Do you think ${contract.question}`
-
-  const prob = Math.round(getOutcomeProbability(contract, 'YES') * 100) / 100 // round to whole percentage
 
   const [challengeInfo, setChallengeInfo] = useState<challengeInfo>({
     expiresTime: dayjs().add(2, defaultExpire).valueOf(),
@@ -96,10 +100,6 @@ function CreateChallengeForm(props: {
   useEffect(() => {
     setError('')
   }, [challengeInfo])
-
-  const p = challengeInfo.outcome === 'YES' ? prob : 1 - prob
-
-  const friendCost = ((1 - p) / p) * challengeInfo.amount
 
   return (
     <>
@@ -117,7 +117,6 @@ function CreateChallengeForm(props: {
           }}
         >
           <Title className="!mt-2" text="Challenge a friend to bet " />
-          {/*<Row className="label ">How much?</Row>*/}
           <div className="mt-2 flex flex-col flex-wrap gap-x-5 gap-y-2">
             {/*<div>Question:</div>*/}
             {/*<div className="mb-4 italic">{contract.question}</div>*/}
@@ -136,7 +135,13 @@ function CreateChallengeForm(props: {
                     value={challengeInfo.amount}
                     onChange={(e) =>
                       setChallengeInfo((m: challengeInfo) => {
-                        return { ...m, amount: parseInt(e.target.value) }
+                        return {
+                          ...m,
+                          amount: parseInt(e.target.value),
+                          acceptorAmount: editingAcceptorAmount
+                            ? m.acceptorAmount
+                            : parseInt(e.target.value),
+                        }
                       })
                     }
                   />
@@ -162,11 +167,55 @@ function CreateChallengeForm(props: {
               </Col>
             </Row>
             <Spacer h={2} />
-            <div>They will bet:</div>
-            <div>
-              <span className="bold">{formatMoney(friendCost)}</span> on{' '}
-              {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
-            </div>
+            <Row className={'items-center'}>They will bet:</Row>
+            <Row className={'items-center gap-2'}>
+              <div className={'ml-1 min-w-[90px]'}>
+                {editingAcceptorAmount ? (
+                  <Col>
+                    <div className="relative">
+                      <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
+                        M$
+                      </span>
+                      <input
+                        className="input input-bordered w-40 pl-10"
+                        type="number"
+                        min={1}
+                        value={challengeInfo.acceptorAmount}
+                        onChange={(e) =>
+                          setChallengeInfo((m: challengeInfo) => {
+                            return {
+                              ...m,
+                              acceptorAmount: parseInt(e.target.value),
+                            }
+                          })
+                        }
+                      />
+                    </div>
+                  </Col>
+                ) : (
+                  <span className="font-bold">
+                    {formatMoney(challengeInfo.acceptorAmount)}
+                  </span>
+                )}
+              </div>
+              <Row className={'items-center gap-3'}>
+                on
+                {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
+                {!editingAcceptorAmount && (
+                  <Button
+                    color={'gray'}
+                    onClick={() =>
+                      setEditingAcceptorAmount(!editingAcceptorAmount)
+                    }
+                    className={
+                      'flex flex-row gap-2 !bg-transparent py-1 hover:!bg-gray-100'
+                    }
+                  >
+                    Edit
+                  </Button>
+                )}
+              </Row>
+            </Row>
           </div>
           <Row className={'justify-end'}>
             <Button

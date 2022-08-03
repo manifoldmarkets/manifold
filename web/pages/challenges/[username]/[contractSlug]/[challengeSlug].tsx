@@ -140,7 +140,6 @@ function ClosedChallengeContent(props: {
     acceptances,
     creatorAmount,
     creatorOutcome,
-    creatorOutcomeProb,
     acceptorOutcome,
     acceptorAmount,
   } = challenge
@@ -156,7 +155,6 @@ function ClosedChallengeContent(props: {
   }, [acceptances])
 
   const creatorWon = resolution === creatorOutcome
-  const amountWon = creatorWon ? acceptorAmount : creatorAmount
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 

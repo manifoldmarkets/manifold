@@ -64,6 +64,8 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     const contract = anyContract as CPMMBinaryContract
     const shares = (1 / creatorOutcomeProb) * creatorAmount
     const createdTime = Date.now()
+    const probOfYes =
+      creatorOutcome === 'YES' ? creatorOutcomeProb : 1 - creatorOutcomeProb
 
     log(
       'Creating challenge bet for',
@@ -80,12 +82,12 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     const yourNewBet: CandidateBet = removeUndefinedProps({
       orderAmount: acceptorAmount,
       amount: acceptorAmount,
-      shares: shares,
+      shares,
       isCancelled: false,
       contractId: contract.id,
       outcome: acceptorOutcome,
-      probBefore: creatorOutcomeProb,
-      probAfter: creatorOutcomeProb,
+      probBefore: probOfYes,
+      probAfter: probOfYes,
       loanAmount: 0,
       createdTime,
       fees: noFees,
@@ -103,12 +105,12 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     const creatorNewBet: CandidateBet = removeUndefinedProps({
       orderAmount: creatorAmount,
       amount: creatorAmount,
-      shares: shares,
+      shares,
       isCancelled: false,
       contractId: contract.id,
       outcome: creatorOutcome,
-      probBefore: creatorOutcomeProb,
-      probAfter: creatorOutcomeProb,
+      probBefore: probOfYes,
+      probAfter: probOfYes,
       loanAmount: 0,
       createdTime,
       fees: noFees,

@@ -52,21 +52,19 @@ export async function createChallenge(data: {
   if (creatorAmount <= 0 || isNaN(creatorAmount) || !isFinite(creatorAmount))
     return null
 
-  const prob = 1 / (acceptorAmount / creatorAmount + 1)
-
   const challenge: Challenge = {
     slug,
     creatorId: creator.id,
     creatorUsername: creator.username,
     creatorName: creator.name,
     creatorAvatarUrl: creator.avatarUrl,
-    creatorAmount: creatorAmount,
+    creatorAmount,
+    creatorOutcome: outcome.toString(),
+    creatorOutcomeProb: creatorAmount / (creatorAmount + acceptorAmount),
+    acceptorOutcome: outcome === 'YES' ? 'NO' : 'YES',
+    acceptorAmount,
     contractSlug: contract.slug,
     contractId: contract.id,
-    creatorOutcome: outcome.toString(),
-    acceptorOutcome: outcome === 'YES' ? 'NO' : 'YES',
-    creatorOutcomeProb: prob,
-    acceptorAmount,
     createdTime: Date.now(),
     expiresTime,
     maxUses: 1,
