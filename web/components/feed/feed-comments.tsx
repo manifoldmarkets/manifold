@@ -40,7 +40,8 @@ export function FeedCommentThread(props: {
 }) {
   const { contract, comments, bets, tips, smallAvatar, parentComment } = props
   const [showReply, setShowReply] = useState(false)
-  const [replyToUsername, setReplyToUsername] = useState('')
+  const [replyToUser, setReplyToUser] =
+    useState<{ id: string; username: string }>()
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const user = useUser()
   const commentsList = comments.filter(
@@ -50,9 +51,8 @@ export function FeedCommentThread(props: {
   commentsList.unshift(parentComment)
 
   function scrollAndOpenReplyInput(comment: Comment) {
-    setReplyToUsername(comment.userUsername)
+    setReplyToUser({ id: comment.userId, username: comment.userUsername })
     setShowReply(true)
-    //TODO focus
   }
 
   return (
@@ -83,12 +83,9 @@ export function FeedCommentThread(props: {
               (c) => c.userId === user?.id
             )}
             parentCommentId={parentComment.id}
-            replyToUsername={replyToUsername}
+            replyToUser={replyToUser}
             parentAnswerOutcome={comments[0].answerOutcome}
-            onSubmitComment={() => {
-              setShowReply(false)
-              setReplyToUsername('')
-            }}
+            onSubmitComment={() => setShowReply(false)}
           />
         </Col>
       )}
@@ -323,7 +320,7 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: Comment[]
-  replyToUsername?: string
+  replyToUser?: { id: string; username: string }
   // Reply to a free response answer
   parentAnswerOutcome?: string
   // Reply to another comment
@@ -336,7 +333,7 @@ export function CommentInput(props: {
     commentsByCurrentUser,
     parentAnswerOutcome,
     parentCommentId,
-    replyToUsername,
+    replyToUser,
     onSubmitComment,
   } = props
   const user = useUser()
@@ -430,7 +427,7 @@ export function CommentInput(props: {
             <CommentInputTextArea
               editor={editor}
               upload={upload}
-              replyToUsername={replyToUsername ?? ''}
+              replyToUser={replyToUser}
               user={user}
               submitComment={submitComment}
               isSubmitting={isSubmitting}
@@ -445,7 +442,7 @@ export function CommentInput(props: {
 
 export function CommentInputTextArea(props: {
   user: User | undefined | null
-  replyToUsername: string
+  replyToUser?: { id: string; username: string }
   editor: Editor | null
   upload: any
   submitComment: (id?: string) => void
@@ -459,7 +456,7 @@ export function CommentInputTextArea(props: {
     submitComment,
     presetId,
     isSubmitting,
-    replyToUsername,
+    replyToUser,
   } = props
   const isMobile = (useWindowSize().width ?? 0) < 768 // TODO: base off input device (keybord vs touch)
 
@@ -473,7 +470,11 @@ export function CommentInputTextArea(props: {
   }
 
   useEffect(() => {
-    editor?.setOptions({
+    if (!editor) {
+      return
+    }
+    // submit on Enter key
+    editor.setOptions({
       editorProps: {
         handleKeyDown: (view, event) => {
           if (
@@ -491,10 +492,17 @@ export function CommentInputTextArea(props: {
         },
       },
     })
+    // insert at mention
+    if (replyToUser) {
+      editor.commands.insertContentAt(0, {
+        type: 'mention',
+        attrs: { label: replyToUser.username, id: replyToUser.id },
+      })
+      editor.commands.focus()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
 
-  // TODO: make at mention show up at beginning
   return (
     <>
       <Row className="gap-1.5 text-gray-700">

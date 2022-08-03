@@ -36,7 +36,7 @@ export function GroupChat(props: {
   const [scrollToMessageId, setScrollToMessageId] = useState('')
   const [scrollToMessageRef, setScrollToMessageRef] =
     useState<HTMLDivElement | null>(null)
-  const [replyToUsername, setReplyToUsername] = useState('')
+  const [replyToUser, setReplyToUser] = useState<any>()
 
   const router = useRouter()
   const isMember = user && group.memberIds.includes(user?.id)
@@ -80,7 +80,7 @@ export function GroupChat(props: {
   }, [messages, router.asPath])
 
   function onReplyClick(comment: Comment) {
-    setReplyToUsername(comment.userUsername)
+    setReplyToUser({ id: comment.userId, username: comment.userUsername })
   }
 
   async function submitMessage() {
@@ -93,7 +93,7 @@ export function GroupChat(props: {
     await createCommentOnGroup(group.id, editor.getJSON(), user)
     editor.commands.clearContent()
     setIsSubmitting(false)
-    setReplyToUsername('')
+    setReplyToUser(undefined)
     focusInput()
   }
   function focusInput() {
@@ -159,7 +159,7 @@ export function GroupChat(props: {
               editor={editor}
               upload={upload}
               user={user}
-              replyToUsername={replyToUsername}
+              replyToUser={replyToUser}
               submitComment={submitMessage}
               isSubmitting={isSubmitting}
             />

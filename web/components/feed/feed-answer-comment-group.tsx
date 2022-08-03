@@ -31,9 +31,9 @@ export function FeedAnswerCommentGroup(props: {
   const { answer, contract, comments, tips, bets, user } = props
   const { username, avatarUrl, name, text } = answer
 
-  const [replyToUsername, setReplyToUsername] = useState('')
+  const [replyToUser, setReplyToUser] =
+    useState<Pick<User, 'id' | 'username'>>()
   const [showReply, setShowReply] = useState(false)
-  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
 
@@ -70,9 +70,15 @@ export function FeedAnswerCommentGroup(props: {
 
   const scrollAndOpenReplyInput = useEvent(
     (comment?: Comment, answer?: Answer) => {
-      setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
+      setReplyToUser(
+        comment ?? answer
+          ? {
+              id: comment?.userId ?? (answer as Answer).userId,
+              username: comment?.userUsername ?? (answer as Answer).username,
+            }
+          : undefined
+      )
       setShowReply(true)
-      // TODO: focus
     }
   )
 
@@ -88,10 +94,6 @@ export function FeedAnswerCommentGroup(props: {
     // Even if we pass memoized bets this still runs on every render, which we don't want
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betsByCurrentUser.length, user, answer.number])
-
-  useEffect(() => {
-    if (showReply && inputRef) inputRef.focus()
-  }, [inputRef, showReply])
 
   useEffect(() => {
     if (router.asPath.endsWith(`#${answerElementId}`)) {
@@ -171,11 +173,8 @@ export function FeedAnswerCommentGroup(props: {
             betsByCurrentUser={betsByCurrentUser}
             commentsByCurrentUser={commentsByCurrentUser}
             parentAnswerOutcome={answer.number.toString()}
-            replyToUsername={replyToUsername}
-            onSubmitComment={() => {
-              setShowReply(false)
-              setReplyToUsername('')
-            }}
+            replyToUser={replyToUser}
+            onSubmitComment={() => setShowReply(false)}
           />
         </div>
       )}
