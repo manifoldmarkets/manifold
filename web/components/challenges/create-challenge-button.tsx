@@ -23,7 +23,7 @@ type challengeInfo = {
   expiresTime: number | null
   message: string
   outcome: 'YES' | 'NO' | number
-  prob: number
+  acceptorAmount: number
 }
 export function CreateChallengeButton(props: {
   user: User | null | undefined
@@ -45,10 +45,10 @@ export function CreateChallengeButton(props: {
               onCreate={async (newChallenge) => {
                 const challenge = await createChallenge({
                   creator: user,
-                  amount: newChallenge.amount,
+                  creatorAmount: newChallenge.amount,
                   expiresTime: newChallenge.expiresTime,
                   message: newChallenge.message,
-                  prob: newChallenge.prob / 100,
+                  acceptorAmount: newChallenge.acceptorAmount,
                   outcome: newChallenge.outcome,
                   contract: contract,
                 })
@@ -90,7 +90,7 @@ function CreateChallengeForm(props: {
     expiresTime: dayjs().add(2, defaultExpire).valueOf(),
     outcome: 'YES',
     amount: 100,
-    prob: prob * 100,
+    acceptorAmount: 100,
     message: defaultMessage,
   })
   useEffect(() => {
@@ -119,7 +119,8 @@ function CreateChallengeForm(props: {
           <Title className="!mt-2" text="Challenge a friend to bet " />
           {/*<Row className="label ">How much?</Row>*/}
           <div className="mt-2 flex flex-col flex-wrap gap-x-5 gap-y-2">
-            <div className="mb-4 italic">{contract.question}</div>
+            {/*<div>Question:</div>*/}
+            {/*<div className="mb-4 italic">{contract.question}</div>*/}
 
             <div>You are betting:</div>
             <Row className={'form-control w-full justify-start gap-4'}>
@@ -166,52 +167,6 @@ function CreateChallengeForm(props: {
               <span className="bold">{formatMoney(friendCost)}</span> on{' '}
               {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
             </div>
-            {/*<div className="form-control flex flex-row gap-8">*/}
-            {/*  /!*<Col className={'mt-9 justify-center'}>at</Col>*!/*/}
-            {/*  <Col>*/}
-            {/*    <label className="label ">At</label>*/}
-            {/*    <div className="relative">*/}
-            {/*      <input*/}
-            {/*        className="input input-bordered max-w-[5rem]"*/}
-            {/*        type="number"*/}
-            {/*        min={1}*/}
-            {/*        max={100}*/}
-            {/*        value={challengeInfo.prob}*/}
-            {/*        onChange={(e) =>*/}
-            {/*          setChallengeInfo((m: challengeInfo) => {*/}
-            {/*            return {*/}
-            {/*              ...m,*/}
-            {/*              prob: parseFloat(e.target.value),*/}
-            {/*            }*/}
-            {/*          })*/}
-            {/*        }*/}
-            {/*      />*/}
-            {/*      <span className="absolute top-3.5 -right-5 text-sm text-gray-600">*/}
-            {/*        %*/}
-            {/*      </span>*/}
-            {/*    </div>*/}
-            {/*  </Col>*/}
-            {/*</div>*/}
-
-            {/*<div className="form-control w-full">*/}
-            {/*  <label className="label">Message</label>*/}
-            {/*  <Textarea*/}
-            {/*    placeholder={defaultMessage}*/}
-            {/*    className="input input-bordered resize-none"*/}
-            {/*    autoFocus*/}
-            {/*    value={*/}
-            {/*      challengeInfo.message !== defaultMessage*/}
-            {/*        ? challengeInfo.message*/}
-            {/*        : ''*/}
-            {/*    }*/}
-            {/*    rows={2}*/}
-            {/*    onChange={(e) =>*/}
-            {/*      setChallengeInfo((m: challengeInfo) => {*/}
-            {/*        return { ...m, message: e.target.value }*/}
-            {/*      })*/}
-            {/*    }*/}
-            {/*  />*/}
-            {/*</div>*/}
           </div>
           <Row className={'justify-end'}>
             <Button

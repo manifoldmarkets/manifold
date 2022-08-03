@@ -17,7 +17,7 @@ function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
     acceptances,
     creatorOutcomeProb,
     creatorOutcome,
-    yourOutcome,
+    acceptorOutcome,
   } = challenge || {}
   const { userName, userAvatarUrl } = acceptances?.[0] ?? {}
   const challengeAmount =
@@ -35,7 +35,7 @@ function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
 
   const challengeUrlParams = challenge
     ? `&creatorAmount=${creatorAmount}&creatorOutcome=${creatorOutcome}` +
-      `&challengerAmount=${challengeAmount}&challengerOutcome=${yourOutcome}` +
+      `&challengerAmount=${challengeAmount}&challengerOutcome=${acceptorOutcome}` +
       `&acceptedName=${userName ?? ''}&acceptedAvatarUrl=${userAvatarUrl ?? ''}`
     : ''
 

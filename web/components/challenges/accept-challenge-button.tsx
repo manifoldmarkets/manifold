@@ -21,9 +21,8 @@ export function AcceptChallengeButton(props: {
   const [open, setOpen] = useState(false)
   const [errorText, setErrorText] = useState('')
   const [loading, setLoading] = useState(false)
-  const { creatorOutcomeProb, creatorAmount } = challenge
-  const yourCost =
-    ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
+  const { acceptorAmount } = challenge
+
   useEffect(() => {
     setErrorText('')
   }, [open])
@@ -69,7 +68,9 @@ export function AcceptChallengeButton(props: {
             <Col className="w-full items-center justify-start gap-2">
               <Row className={'w-full justify-start gap-20'}>
                 <span className={'min-w-[4rem] font-bold'}>Cost to you:</span>{' '}
-                <span className={'text-red-500'}>{formatMoney(yourCost)}</span>
+                <span className={'text-red-500'}>
+                  {formatMoney(acceptorAmount)}
+                </span>
               </Row>
               {/*<Row className={'w-full justify-start gap-8'}>*/}
               {/*  <span className={'min-w-[4rem] font-bold'}>Probability:</span>{' '}*/}

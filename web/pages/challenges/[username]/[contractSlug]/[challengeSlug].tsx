@@ -141,7 +141,8 @@ function ClosedChallengeContent(props: {
     creatorAmount,
     creatorOutcome,
     creatorOutcomeProb,
-    yourOutcome,
+    acceptorOutcome,
+    acceptorAmount,
   } = challenge
 
   const user = useUserById(acceptances[0].userId)
@@ -155,9 +156,7 @@ function ClosedChallengeContent(props: {
   }, [acceptances])
 
   const creatorWon = resolution === creatorOutcome
-  // const amountWon = creatorWon ? acceptances[0].amount : creatorAmount
-  const yourCost =
-    ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
+  const amountWon = creatorWon ? acceptorAmount : creatorAmount
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
@@ -211,8 +210,8 @@ function ClosedChallengeContent(props: {
 
           <UserBetColumn
             challenger={user?.id === creator.id ? undefined : user}
-            outcome={yourOutcome}
-            amount={yourCost}
+            outcome={acceptorOutcome}
+            amount={acceptorAmount}
             isResolved={!!resolution}
           />
         </Col>
@@ -240,14 +239,12 @@ function OpenChallengeContent(props: {
     creatorAmount,
     creatorId,
     creatorOutcome,
-    creatorOutcomeProb,
-    yourOutcome,
+    acceptorAmount,
+    acceptorOutcome,
   } = challenge
 
-  const yourCost =
-    ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
-
   const href = `https://${DOMAIN}${contractPath(contract)}`
+
   const title = `${creator.name} is challenging you to bet`
 
   return (
@@ -276,8 +273,8 @@ function OpenChallengeContent(props: {
 
           <UserBetColumn
             challenger={user?.id === creatorId ? undefined : user}
-            outcome={yourOutcome}
-            amount={yourCost}
+            outcome={acceptorOutcome}
+            amount={acceptorAmount}
           />
         </Col>
 

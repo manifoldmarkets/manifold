@@ -25,14 +25,21 @@ export function getChallengeUrl(challenge: Challenge) {
 export async function createChallenge(data: {
   creator: User
   outcome: 'YES' | 'NO' | number
-  prob: number
   contract: Contract
-  amount: number
+  creatorAmount: number
+  acceptorAmount: number
   expiresTime: number | null
   message: string
 }) {
-  const { creator, amount, expiresTime, message, prob, contract, outcome } =
-    data
+  const {
+    creator,
+    creatorAmount,
+    expiresTime,
+    message,
+    contract,
+    outcome,
+    acceptorAmount,
+  } = data
 
   // At 100 IDs per hour, using this alphabet and 8 chars, there's a 1% chance of collision in 2 years
   // See https://zelark.github.io/nano-id-cc/
@@ -42,7 +49,10 @@ export async function createChallenge(data: {
   )
   const slug = nanoid()
 
-  if (amount <= 0 || isNaN(amount) || !isFinite(amount)) return null
+  if (creatorAmount <= 0 || isNaN(creatorAmount) || !isFinite(creatorAmount))
+    return null
+
+  const prob = 1 / (acceptorAmount / creatorAmount + 1)
 
   const challenge: Challenge = {
     slug,
@@ -50,12 +60,13 @@ export async function createChallenge(data: {
     creatorUsername: creator.username,
     creatorName: creator.name,
     creatorAvatarUrl: creator.avatarUrl,
-    creatorAmount: amount,
+    creatorAmount: creatorAmount,
     contractSlug: contract.slug,
     contractId: contract.id,
     creatorOutcome: outcome.toString(),
-    yourOutcome: outcome === 'YES' ? 'NO' : 'YES',
+    acceptorOutcome: outcome === 'YES' ? 'NO' : 'YES',
     creatorOutcomeProb: prob,
+    acceptorAmount,
     createdTime: Date.now(),
     expiresTime,
     maxUses: 1,

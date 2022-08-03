@@ -50,13 +50,15 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     if (!creatorSnap.exists) throw new APIError(400, 'User not found.')
     const creator = creatorSnap.data() as User
 
-    const { creatorAmount, yourOutcome, creatorOutcome, creatorOutcomeProb } =
-      challenge
+    const {
+      creatorAmount,
+      acceptorOutcome,
+      creatorOutcome,
+      creatorOutcomeProb,
+      acceptorAmount,
+    } = challenge
 
-    const yourCost =
-      ((1 - creatorOutcomeProb) / creatorOutcomeProb) * creatorAmount
-
-    if (user.balance < yourCost)
+    if (user.balance < acceptorAmount)
       throw new APIError(400, 'Insufficient balance.')
 
     const contract = anyContract as CPMMBinaryContract
@@ -67,21 +69,21 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       'Creating challenge bet for',
       user.username,
       shares,
-      yourOutcome,
+      acceptorOutcome,
       'shares',
       'at',
       formatPercent(creatorOutcomeProb),
       'for',
-      formatMoney(yourCost)
+      formatMoney(acceptorAmount)
     )
 
     const yourNewBet: CandidateBet = removeUndefinedProps({
-      orderAmount: yourCost,
-      amount: yourCost,
+      orderAmount: acceptorAmount,
+      amount: acceptorAmount,
       shares: shares,
       isCancelled: false,
       contractId: contract.id,
-      outcome: yourOutcome,
+      outcome: acceptorOutcome,
       probBefore: creatorOutcomeProb,
       probAfter: creatorOutcomeProb,
       loanAmount: 0,
@@ -134,7 +136,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
             userId: user.id,
             betId: yourNewBetDoc.id,
             createdTime,
-            amount: yourCost,
+            amount: acceptorAmount,
             userUsername: user.username,
             userName: user.name,
             userAvatarUrl: user.avatarUrl,
@@ -147,7 +149,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       user,
       creator,
       challenge,
-      yourCost,
+      acceptorAmount,
       contract
     )
     log('Done, sent notification.')

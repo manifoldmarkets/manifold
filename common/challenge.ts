@@ -19,7 +19,8 @@ export type Challenge = {
   creatorOutcome: string
 
   // Different than the creator
-  yourOutcome: string
+  acceptorOutcome: string
+  acceptorAmount: number
 
   // The probability the challenger thinks
   creatorOutcomeProb: number
@@ -50,9 +51,6 @@ export type Acceptance = {
   userUsername: string
   userName: string
   userAvatarUrl: string
-
-  // The amount acceptor put up
-  amount: number
 
   // The ID of the successful bet that tracks the money moved
   betId: string
