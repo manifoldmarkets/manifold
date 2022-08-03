@@ -73,6 +73,7 @@ export default function Leaderboards(_props: {
   const LeaderboardWithPeriod = (period: Period) => {
     const { topTraders } = props[period]
 
+
     return (
       <>
         <Col className="mx-4 items-center gap-10 lg:flex-row">

@@ -210,14 +210,20 @@ export async function listAllUsers() {
   return docs.map((doc) => doc.data())
 }
 
-export function getTopTraders(period: Period) {
+export async function getTopTraders(period: Period) {
   const topTraders = query(
     users,
     orderBy('profitCached.' + period, 'desc'),
-    limit(20)
+    limit(21)
   )
 
-  return getValues<User>(topTraders)
+  const topUsers = await getValues<User>(topTraders)
+  return topUsers
+    .filter(
+      (user) =>
+        user.username !== 'SalemCenter' && user.username !== 'RichardHanania'
+    )
+    .slice(0, 20)
 }
 
 export function getTopCreators(period: Period) {
