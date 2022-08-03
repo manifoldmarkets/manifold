@@ -36,7 +36,7 @@ export function FeedBet(props: {
   const isSelf = user?.id === userId
 
   return (
-    <Row className={'flex w-full gap-2 pt-3'}>
+    <Row className={'flex w-full items-center gap-2 pt-3'}>
       {isSelf ? (
         <Avatar
           className={clsx(smallAvatar && 'ml-1')}
@@ -60,7 +60,7 @@ export function FeedBet(props: {
         isSelf={isSelf}
         bettor={bettor}
         hideOutcome={hideOutcome}
-        className="min-w-0 flex-1 py-1.5"
+        className="flex-1"
       />
     </Row>
   )
