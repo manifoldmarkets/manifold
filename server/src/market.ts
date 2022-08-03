@@ -35,11 +35,7 @@ export class Market {
                 this.pollBets();
                 if (await this.detectResolution()) {
                     continuePolling = false;
-                    console.log("Market resolved!");
                     const winners = await this.calculateWinners();
-
-                    const dummyUser = <LiteUser>{name:"Bob"}; //!!! REMOVE
-                    winners.push({user: dummyUser, profit: 1});
 
                     const channel = this.app.getChannelForMarketID(this.data.id);
                     this.app.bot.resolveMarket(channel, this.data.resolution == "YES" ? ResolutionOutcome.YES : ResolutionOutcome.NO, winners); //!!! Proper outcomes

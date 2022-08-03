@@ -21,9 +21,10 @@ const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, 
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${SIGNUP_LINK}!`;
 const MSG_HELP = () => `Check out the full list of commands and how to play here: ${SIGNUP_LINK}`;
 const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) => {
-    //!!! Limit list length to 10;
-    let message = `The market has resolved to ${outcome}! The top 10 bettors are`;
-    for (const winner of winners) {
+    const maxWinners = 10;
+    let message = `The market has resolved to ${outcome}! The top ${maxWinners} bettors are`;
+    for (let index = 0; index < Math.min(winners.length, maxWinners); index++) {
+        const winner = winners[index];
         message += ` ${winner.user.name} (${winner.profit > 0 && "+"}${winner.profit.toFixed(0)}),`; //!!! Use Twitch usernames
     }
     if (message.endsWith(",")) {
