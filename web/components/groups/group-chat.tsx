@@ -189,13 +189,24 @@ export function GroupChatInBubble(props: {
   const router = useRouter()
 
   useEffect(() => {
-    if (router.asPath.includes('/chat')) {
+    const groupsWithChatEmphasis = [
+      'welcome',
+      'bugs',
+      'manifold-features-25bad7c7792e',
+      'updates',
+    ]
+    if (
+      router.asPath.includes('/chat') ||
+      groupsWithChatEmphasis.includes(
+        router.asPath.split('/group/')[1].split('/')[0]
+      )
+    ) {
       setShouldShowChat(true)
     }
     // Leave chat open between groups if user is using chat?
-    // else {
-    //   setShouldShowChat(false)
-    // }
+    else {
+      setShouldShowChat(false)
+    }
   }, [router.asPath])
 
   return (
