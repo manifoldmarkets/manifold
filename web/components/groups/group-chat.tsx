@@ -25,6 +25,7 @@ import { formatMoney } from 'common/util/format'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { ChatIcon, ChevronDownIcon } from '@heroicons/react/outline'
+import { setNotificationsAsSeen } from 'web/pages/notifications'
 
 export function GroupChat(props: {
   messages: Comment[]
@@ -83,6 +84,10 @@ export function GroupChat(props: {
     }
   }, [messages, router.asPath])
 
+  useEffect(() => {
+    if (inputRef) inputRef.focus()
+  }, [inputRef])
+
   function onReplyClick(comment: Comment) {
     setReplyToUsername(comment.userUsername)
   }
@@ -98,9 +103,6 @@ export function GroupChat(props: {
     setMessageText('')
     setIsSubmitting(false)
     setReplyToUsername('')
-    inputRef?.focus()
-  }
-  function focusInput() {
     inputRef?.focus()
   }
 
@@ -140,7 +142,7 @@ export function GroupChat(props: {
             No messages yet. Why not{isMember ? ` ` : ' join and '}
             <button
               className={'cursor-pointer font-bold text-gray-700'}
-              onClick={() => focusInput()}
+              onClick={() => inputRef?.focus()}
             >
               add one?
             </button>
@@ -184,6 +186,17 @@ export function GroupChatInBubble(props: {
 }) {
   const { messages, user, group, tips, privateUser } = props
   const [shouldShowChat, setShouldShowChat] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (router.asPath.includes('/chat')) {
+      setShouldShowChat(true)
+    }
+    // Leave chat open between groups if user is using chat?
+    // else {
+    //   setShouldShowChat(false)
+    // }
+  }, [router.asPath])
 
   return (
     <Col
@@ -217,8 +230,12 @@ export function GroupChatInBubble(props: {
         ) : (
           <ChevronDownIcon className={'h-10 w-10'} aria-hidden={'true'} />
         )}
-        {privateUser && !shouldShowChat && (
-          <GroupChatNotificationsIcon group={group} privateUser={privateUser} />
+        {privateUser && (
+          <GroupChatNotificationsIcon
+            group={group}
+            privateUser={privateUser}
+            setAsSeen={shouldShowChat}
+          />
         )}
       </button>
     </Col>
@@ -228,36 +245,34 @@ export function GroupChatInBubble(props: {
 function GroupChatNotificationsIcon(props: {
   group: Group
   privateUser: PrivateUser
+  setAsSeen: boolean
 }) {
-  // const { privateUser, group } = props
-  // const router = useRouter()
-  // const preferredNotifications = useUnseenPreferredNotifications(privateUser, {
-  //   customHref: '/group/',
-  // })
-  // TODO: set notifications to seen when user clicks on chat
-  // // Set notification as seen if our current page is equal to the isSeenOnHref property
-  // useEffect(() => {
-  //   const currentPageWithoutQuery = currentPage.split('?')[0]
-  //   const currentPageGroupSlug = currentPageWithoutQuery.split('/')[2]
-  //   preferredNotifications.forEach((notification) => {
-  //     if (
-  //       notification.isSeenOnHref === currentPage ||
-  //       // Old chat style group chat notif was just /group/slug
-  //       (notification.isSeenOnHref &&
-  //         currentPageWithoutQuery.includes(notification.isSeenOnHref)) ||
-  //       // They're on the home page, so if they've a chat notif, they're seeing the chat
-  //       (notification.isSeenOnHref?.endsWith(GROUP_CHAT_SLUG) &&
-  //         currentPageWithoutQuery.endsWith(currentPageGroupSlug))
-  //     ) {
-  //       setNotificationsAsSeen([notification])
-  //     }
-  //   })
-  // }, [currentPage, preferredNotifications])
+  const { privateUser, group, setAsSeen } = props
+  const preferredNotificationsForThisGroup = useUnseenPreferredNotifications(
+    privateUser,
+    {
+      customHref: `/group/${group.slug}`,
+    }
+  )
+  // Set notification as seen if our current page is equal to the isSeenOnHref property
+  useEffect(() => {
+    preferredNotificationsForThisGroup.forEach((notification) => {
+      if (
+        (setAsSeen && notification.isSeenOnHref?.includes('chat')) ||
+        // old style chat notif that simply ended with the group slug
+        notification.isSeenOnHref?.endsWith(group.slug)
+      ) {
+        setNotificationsAsSeen([notification])
+      }
+    })
+  }, [group.slug, preferredNotificationsForThisGroup, setAsSeen])
 
   return (
     <div
       className={
-        'absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-white bg-red-500'
+        preferredNotificationsForThisGroup.length > 0 && !setAsSeen
+          ? 'absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-white bg-red-500'
+          : 'hidden'
       }
     ></div>
   )
