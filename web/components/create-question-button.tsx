@@ -3,7 +3,6 @@ import { useRouter } from 'next/router'
 import clsx from 'clsx'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import React from 'react'
-import { Button } from './button'
 
 export const createButtonStyle =
   'border-w-0 mx-auto mt-4 -ml-1 w-full rounded-md bg-gradient-to-r py-2.5 text-base font-semibold text-white shadow-sm lg:-ml-0 h-11'

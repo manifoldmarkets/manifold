@@ -1,12 +1,7 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import {
-  AdjustmentsIcon,
-  CogIcon,
-  DuplicateIcon,
-  PencilIcon,
-} from '@heroicons/react/outline'
+import { DuplicateIcon } from '@heroicons/react/outline'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -18,7 +13,6 @@ import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { BinaryContract } from 'common/contract'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { SiteLink } from 'web/components/site-link'
-import { getOutcomeProbability } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
 import { Spacer } from '../layout/spacer'
 import { NoLabel, YesLabel } from '../outcome-label'
