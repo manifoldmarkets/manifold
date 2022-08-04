@@ -6,7 +6,15 @@ export function Button(props: {
   onClick?: () => void
   children?: ReactNode
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-  color?: 'green' | 'red' | 'blue' | 'indigo' | 'yellow' | 'gray' | 'gradient'
+  color?:
+    | 'green'
+    | 'red'
+    | 'blue'
+    | 'indigo'
+    | 'yellow'
+    | 'gray'
+    | 'gradient'
+    | 'gray-white'
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
 }) {
@@ -43,6 +51,8 @@ export function Button(props: {
         color === 'gray' && 'bg-gray-100 text-gray-600 hover:bg-gray-200',
         color === 'gradient' &&
           'bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+        color === 'gray-white' &&
+          'text-greyscale-6 hover:bg-greyscale-2 bg-white',
         className
       )}
       disabled={disabled}

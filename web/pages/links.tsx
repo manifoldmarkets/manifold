@@ -1,4 +1,9 @@
 import { useState } from 'react'
+
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
+dayjs.extend(customParseFormat)
+
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -16,11 +21,10 @@ import { UserLink } from 'web/components/user-page'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
-import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/pagination'
-dayjs.extend(customParseFormat)
+import { Manalink } from 'common/manalink'
+import { REFERRAL_AMOUNT } from 'common/user'
 
 const LINKS_PER_PAGE = 24
 export const getServerSideProps = redirectIfLoggedOut('/')
@@ -39,10 +43,6 @@ export default function LinkPage() {
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
       (l.expiresTime == null || l.expiresTime > Date.now())
   )
-  const [page, setPage] = useState(0)
-  const start = page * LINKS_PER_PAGE
-  const end = start + LINKS_PER_PAGE
-  const displayedLinks = unclaimedLinks.slice(start, end)
 
   if (user == null) {
     return null
@@ -67,19 +67,49 @@ export default function LinkPage() {
           )}
         </Row>
         <p>
-          You can use manalinks to send mana to other people, even if they
-          don&apos;t yet have a Manifold account.
+          You can use manalinks to send mana (M$) to other people, even if they
+          don&apos;t yet have a Manifold account. Manalinks are also eligible
+          for the referral bonus. Invite a new user to Manifold and get M$
+          {REFERRAL_AMOUNT} if they sign up!
         </p>
         <Subtitle text="Your Manalinks" />
+        <ManalinksDisplay
+          unclaimedLinks={unclaimedLinks}
+          highlightedSlug={highlightedSlug}
+        />
+      </Col>
+    </Page>
+  )
+}
+
+function ManalinksDisplay(props: {
+  unclaimedLinks: Manalink[]
+  highlightedSlug: string
+}) {
+  const { unclaimedLinks, highlightedSlug } = props
+  const [page, setPage] = useState(0)
+  const start = page * LINKS_PER_PAGE
+  const end = start + LINKS_PER_PAGE
+  const displayedLinks = unclaimedLinks.slice(start, end)
+
+  if (unclaimedLinks.length === 0) {
+    return (
+      <p className="text-gray-500">
+        You don't have any unclaimed manalinks. Send some more to spread the
+        wealth!
+      </p>
+    )
+  } else {
+    return (
+      <>
         <Col className="grid w-full gap-4 md:grid-cols-2">
-          {displayedLinks.map((link) => {
-            return (
-              <ManalinkCardFromView
-                link={link}
-                highlightedSlug={highlightedSlug}
-              />
-            )
-          })}
+          {displayedLinks.map((link) => (
+            <ManalinkCardFromView
+              key={link.slug + link.createdTime}
+              link={link}
+              highlightedSlug={highlightedSlug}
+            />
+          ))}
         </Col>
         <Pagination
           page={page}
@@ -89,9 +119,9 @@ export default function LinkPage() {
           className="mt-4 bg-transparent"
           scrollToTop
         />
-      </Col>
-    </Page>
-  )
+      </>
+    )
+  }
 }
 
 // TODO: either utilize this or get rid of it

@@ -1,15 +1,18 @@
+import { useState } from 'react'
 import clsx from 'clsx'
+import { QrcodeIcon } from '@heroicons/react/outline'
+import { DotsHorizontalIcon } from '@heroicons/react/solid'
+
 import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
-import { useState } from 'react'
 import { ShareIconButton } from './share-icon-button'
-import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import { contractDetailsButtonClassName } from './contract/contract-info-dialog'
 import { useUserById } from 'web/hooks/use-user'
 import getManalinkUrl from 'web/get-manalink-url'
+
 export type ManalinkInfo = {
   expiresTime: number | null
   maxUses: number | null
@@ -27,10 +30,10 @@ export function ManalinkCard(props: {
   const { expiresTime, maxUses, uses, amount, message } = info
   return (
     <Col>
-      <div
+      <Col
         className={clsx(
           className,
-          'min-h-20 group flex flex-col rounded-xl bg-gradient-to-br shadow-lg transition-all',
+          'min-h-20 group rounded-lg bg-gradient-to-br drop-shadow-sm transition-all',
           getManalinkGradient(info.amount)
         )}
       >
@@ -54,20 +57,18 @@ export function ManalinkCard(props: {
           )}
           src="/logo-white.svg"
         />
-        <Row className="rounded-b-xl bg-white p-4">
-          <Col>
-            <div
-              className={clsx(
-                'mb-1 text-xl text-indigo-500',
-                getManalinkAmountColor(amount)
-              )}
-            >
-              {formatMoney(amount)}
-            </div>
-            <div>{message}</div>
-          </Col>
+        <Row className="rounded-b-lg bg-white p-4">
+          <div
+            className={clsx(
+              'mb-1 text-xl text-indigo-500',
+              getManalinkAmountColor(amount)
+            )}
+          >
+            {formatMoney(amount)}
+          </div>
         </Row>
-      </div>
+      </Col>
+      <div className="text-md mt-2 mb-4 text-gray-500">{message}</div>
     </Col>
   )
 }
@@ -79,48 +80,50 @@ export function ManalinkCardFromView(props: {
 }) {
   const { className, link, highlightedSlug } = props
   const { message, amount, expiresTime, maxUses, claims } = link
-  const [details, setDetails] = useState(false)
-
+  const [showDetails, setShowDetails] = useState(false)
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${200}x${200}&data=${getManalinkUrl(
+    link.slug
+  )}`
   return (
-    <Col
-      className={clsx(
-        'group z-10 rounded-lg drop-shadow-sm transition-all hover:drop-shadow-lg',
-        className,
-        link.slug === highlightedSlug ? 'animate-pulse' : ''
-      )}
-    >
-      <div
+    <Col>
+      <Col
         className={clsx(
-          'relative flex flex-col rounded-t-lg bg-gradient-to-br transition-all',
-          getManalinkGradient(link.amount)
+          'group z-10 rounded-lg drop-shadow-sm transition-all hover:drop-shadow-lg',
+          className,
+          link.slug === highlightedSlug ? 'shadow-md shadow-indigo-400' : ''
         )}
-        onClick={() => setDetails(!details)}
       >
-        {details && (
-          <ClaimsList
-            className="absolute h-full w-full bg-white opacity-90"
-            link={link}
+        <Col
+          className={clsx(
+            'relative rounded-t-lg bg-gradient-to-br transition-all',
+            getManalinkGradient(link.amount)
+          )}
+          onClick={() => setShowDetails(!showDetails)}
+        >
+          {showDetails && (
+            <ClaimsList
+              className="absolute h-full w-full bg-white opacity-90"
+              link={link}
+            />
+          )}
+          <Col className="mx-4 mt-2 -mb-4 text-right text-xs text-gray-100">
+            <div>
+              {maxUses != null
+                ? `${maxUses - claims.length}/${maxUses} uses left`
+                : `Unlimited use`}
+            </div>
+            <div>
+              {expiresTime != null
+                ? `Expires ${fromNow(expiresTime)}`
+                : 'Never expires'}
+            </div>
+          </Col>
+          <img
+            className={clsx('my-auto block w-1/3 select-none self-center py-3')}
+            src="/logo-white.svg"
           />
-        )}
-        <Col className="mx-4 mt-2 -mb-4 text-right text-xs text-gray-100">
-          <div>
-            {maxUses != null
-              ? `${maxUses - claims.length}/${maxUses} uses left`
-              : `Unlimited use`}
-          </div>
-          <div>
-            {expiresTime != null
-              ? `Expires ${fromNow(expiresTime)}`
-              : 'Never expires'}
-          </div>
         </Col>
-        <img
-          className={clsx('my-auto block w-1/3 select-none self-center py-3')}
-          src="/logo-white.svg"
-        />
-      </div>
-      <Col className="w-full rounded-b-lg bg-white px-4 py-2 text-lg">
-        <Row className="relative gap-1">
+        <Row className="relative w-full gap-1 rounded-b-lg bg-white px-4 py-2 text-lg">
           <div
             className={clsx(
               'my-auto mb-1 w-full',
@@ -129,6 +132,14 @@ export function ManalinkCardFromView(props: {
           >
             {formatMoney(amount)}
           </div>
+
+          <button
+            onClick={() => (window.location.href = qrUrl)}
+            className={clsx(contractDetailsButtonClassName)}
+          >
+            <QrcodeIcon className="h-6 w-6" />
+          </button>
+
           <ShareIconButton
             toastClassName={'-left-48 min-w-[250%]'}
             buttonClassName={'transition-colors'}
@@ -138,10 +149,10 @@ export function ManalinkCardFromView(props: {
             copyPayload={getManalinkUrl(link.slug)}
           />
           <button
-            onClick={() => setDetails(!details)}
+            onClick={() => setShowDetails(!showDetails)}
             className={clsx(
               contractDetailsButtonClassName,
-              details
+              showDetails
                 ? 'bg-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-600'
                 : ''
             )}
@@ -149,8 +160,10 @@ export function ManalinkCardFromView(props: {
             <DotsHorizontalIcon className="h-[24px] w-5" />
           </button>
         </Row>
-        <div className="my-2 text-xs md:text-sm">{message || '\n\n'}</div>
       </Col>
+      <div className="mt-2 mb-4 text-xs text-gray-500 md:text-sm">
+        {message || ''}
+      </div>
     </Col>
   )
 }

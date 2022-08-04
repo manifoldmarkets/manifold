@@ -8,9 +8,7 @@ import { BetPanel } from 'web/components/bet-panel'
 import { Col } from 'web/components/layout/col'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { listUsers, User } from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
@@ -29,10 +27,8 @@ import { formatMoney } from 'common/util/format'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import Confetti from 'react-confetti'
-import { NumericBetPanel } from '../../components/numeric-bet-panel'
-import { NumericResolutionPanel } from '../../components/numeric-resolution-panel'
-import { FeedComment } from 'web/components/feed/feed-comments'
-import { FeedBet } from 'web/components/feed/feed-bets'
+import { NumericBetPanel } from 'web/components/numeric-bet-panel'
+import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
@@ -43,6 +39,11 @@ import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
+import { User } from 'common/user'
+import { listUsers } from 'web/lib/firebase/users'
+import { FeedComment } from 'web/components/feed/feed-comments'
+import { Title } from 'web/components/title'
+import { FeedBet } from 'web/components/feed/feed-bets'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -219,7 +220,8 @@ export function ContractPageContent(
           />
         )}
 
-        {outcomeType === 'FREE_RESPONSE' && (
+        {(outcomeType === 'FREE_RESPONSE' ||
+          outcomeType === 'MULTIPLE_CHOICE') && (
           <>
             <Spacer h={4} />
             <AnswersPanel contract={contract} />

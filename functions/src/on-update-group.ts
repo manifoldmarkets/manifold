@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { Group } from '../../common/group'
+import { getContract } from './utils'
+import { uniq } from 'lodash'
 const firestore = admin.firestore()
 
 export const onUpdateGroup = functions.firestore
@@ -9,7 +11,7 @@ export const onUpdateGroup = functions.firestore
     const prevGroup = change.before.data() as Group
     const group = change.after.data() as Group
 
-    // ignore the update we just made
+    // Ignore the activity update we just made
     if (prevGroup.mostRecentActivityTime !== group.mostRecentActivityTime)
       return
 
@@ -27,3 +29,23 @@ export const onUpdateGroup = functions.firestore
       .doc(group.id)
       .update({ mostRecentActivityTime: Date.now() })
   })
+
+export async function removeGroupLinks(group: Group, contractIds: string[]) {
+  for (const contractId of contractIds) {
+    const contract = await getContract(contractId)
+    await firestore
+      .collection('contracts')
+      .doc(contractId)
+      .update({
+        groupSlugs: uniq([
+          ...(contract?.groupSlugs?.filter((slug) => slug !== group.slug) ??
+            []),
+        ]),
+        groupLinks: [
+          ...(contract?.groupLinks?.filter(
+            (link) => link.groupId !== group.id
+          ) ?? []),
+        ],
+      })
+  }
+}

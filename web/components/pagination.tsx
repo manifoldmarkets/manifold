@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { Spacer } from './layout/spacer'
 
 export function Pagination(props: {
   page: number
@@ -22,6 +23,8 @@ export function Pagination(props: {
   } = props
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
+
+  if (maxPage === 0) return <Spacer h={4} />
 
   return (
     <nav

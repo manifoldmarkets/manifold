@@ -89,7 +89,8 @@ export const ContractOverview = (props: {
             {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
         ) : (
-          outcomeType === 'FREE_RESPONSE' &&
+          (outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') &&
           resolution && (
             <FreeResponseResolutionOrChance
               contract={contract}
@@ -114,7 +115,8 @@ export const ContractOverview = (props: {
       {(isBinary || isPseudoNumeric) && (
         <ContractProbGraph contract={contract} bets={bets} />
       )}{' '}
-      {outcomeType === 'FREE_RESPONSE' && (
+      {(outcomeType === 'FREE_RESPONSE' ||
+        outcomeType === 'MULTIPLE_CHOICE') && (
         <AnswersGraph contract={contract} bets={bets} />
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}

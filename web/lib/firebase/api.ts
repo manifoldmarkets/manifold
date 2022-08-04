@@ -84,3 +84,7 @@ export function createGroup(params: any) {
 export function acceptChallenge(params: any) {
   return call(getFunctionUrl('acceptchallenge'), 'POST', params)
 }
+
+export function getCurrentUser(params: any) {
+  return call(getFunctionUrl('getcurrentuser'), 'GET', params)
+}

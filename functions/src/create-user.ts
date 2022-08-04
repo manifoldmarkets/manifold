@@ -63,10 +63,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
   const deviceUsedBefore =
     !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
 
-  const ipCount = req.ip ? await numberUsersWithIp(req.ip) : 0
-
-  const balance =
-    deviceUsedBefore || ipCount > 2 ? SUS_STARTING_BALANCE : STARTING_BALANCE
+  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
 
   const user: User = {
     id: auth.uid,
@@ -80,6 +77,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     followerCountCached: 0,
     followedCategories: DEFAULT_CATEGORIES,
+    shouldShowWelcome: true,
   }
 
   await firestore.collection('users').doc(auth.uid).create(user)
@@ -113,7 +111,7 @@ const isPrivateUserWithDeviceToken = async (deviceToken: string) => {
   return !snap.empty
 }
 
-const numberUsersWithIp = async (ipAddress: string) => {
+export const numberUsersWithIp = async (ipAddress: string) => {
   const snap = await firestore
     .collection('private-users')
     .where('initialIpAddress', '==', ipAddress)
@@ -159,7 +157,7 @@ const addUserToDefaultGroups = async (user: User) => {
         id: welcomeCommentDoc.id,
         groupId: group.id,
         userId: manifoldAccount,
-        text: `Welcome, ${user.name} (@${user.username})!`,
+        text: `Welcome, @${user.username} aka ${user.name}!`,
         createdTime: Date.now(),
         userName: 'Manifold Markets',
         userUsername: MANIFOLD_USERNAME,

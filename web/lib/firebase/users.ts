@@ -96,22 +96,25 @@ const CACHED_REFERRAL_GROUP_ID_KEY = 'CACHED_REFERRAL_GROUP_KEY'
 
 export function writeReferralInfo(
   defaultReferrerUsername: string,
-  contractId?: string,
-  referralUsername?: string,
-  groupId?: string
+  otherOptions?: {
+    contractId?: string
+    overwriteReferralUsername?: string
+    groupId?: string
+  }
 ) {
   const local = safeLocalStorage()
   const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
+  const { contractId, overwriteReferralUsername, groupId } = otherOptions || {}
   // Write the first referral username we see.
   if (!cachedReferralUser)
     local?.setItem(
       CACHED_REFERRAL_USERNAME_KEY,
-      referralUsername || defaultReferrerUsername
+      overwriteReferralUsername || defaultReferrerUsername
     )
 
   // If an explicit referral query is passed, overwrite the cached referral username.
-  if (referralUsername)
-    local?.setItem(CACHED_REFERRAL_USERNAME_KEY, referralUsername)
+  if (overwriteReferralUsername)
+    local?.setItem(CACHED_REFERRAL_USERNAME_KEY, overwriteReferralUsername)
 
   // Always write the most recent explicit group invite query value
   if (groupId) local?.setItem(CACHED_REFERRAL_GROUP_ID_KEY, groupId)
@@ -179,7 +182,7 @@ export async function firebaseLogin() {
 }
 
 export async function firebaseLogout() {
-  auth.signOut()
+  await auth.signOut()
 }
 
 const storage = getStorage(app)

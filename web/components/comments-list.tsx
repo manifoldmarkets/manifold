@@ -17,58 +17,55 @@ export function UserCommentsList(props: {
   contractsById: { [id: string]: Contract }
 }) {
   const { comments, contractsById } = props
-  const commentsByContract = groupBy(comments, 'contractId')
 
-  const contractCommentPairs = Object.entries(commentsByContract)
-    .map(
-      ([contractId, comments]) => [contractsById[contractId], comments] as const
-    )
-    .filter(([contract]) => contract)
+  // we don't show comments in groups here atm, just comments on contracts
+  const contractComments = comments.filter((c) => c.contractId)
+  const commentsByContract = groupBy(contractComments, 'contractId')
 
   return (
     <Col className={'bg-white'}>
-      {contractCommentPairs.map(([contract, comments]) => (
-        <div key={contract.id} className={'border-width-1 border-b p-5'}>
-          <div className={'mb-2 text-sm text-indigo-700'}>
-            <SiteLink href={contractPath(contract)}>
+      {Object.entries(commentsByContract).map(([contractId, comments]) => {
+        const contract = contractsById[contractId]
+        return (
+          <div key={contractId} className={'border-width-1 border-b p-5'}>
+            <SiteLink
+              className={'mb-2 block text-sm text-indigo-700'}
+              href={contractPath(contract)}
+            >
               {contract.question}
             </SiteLink>
+            {comments.map((comment) => (
+              <ProfileComment
+                key={comment.id}
+                comment={comment}
+                className="relative flex items-start space-x-3 pb-6"
+              />
+            ))}
           </div>
-          {comments.map((comment) => (
-            <div key={comment.id} className={'relative pb-6'}>
-              <div className="relative flex items-start space-x-3">
-                <ProfileComment comment={comment} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
+        )
+      })}
     </Col>
   )
 }
 
-function ProfileComment(props: { comment: Comment }) {
-  const { comment } = props
+function ProfileComment(props: { comment: Comment; className?: string }) {
+  const { comment, className } = props
   const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
   // TODO: find and attach relevant bets by comment betId at some point
   return (
-    <div>
-      <Row className={'gap-4'}>
-        <Avatar username={userUsername} avatarUrl={userAvatarUrl} />
-        <div className="min-w-0 flex-1">
-          <div>
-            <p className="mt-0.5 text-sm text-gray-500">
-              <UserLink
-                className="text-gray-500"
-                username={userUsername}
-                name={userName}
-              />{' '}
-              <RelativeTimestamp time={createdTime} />
-            </p>
-          </div>
-          <Linkify text={text} />
-        </div>
-      </Row>
-    </div>
+    <Row className={className}>
+      <Avatar username={userUsername} avatarUrl={userAvatarUrl} />
+      <div className="min-w-0 flex-1">
+        <p className="mt-0.5 text-sm text-gray-500">
+          <UserLink
+            className="text-gray-500"
+            username={userUsername}
+            name={userName}
+          />{' '}
+          <RelativeTimestamp time={createdTime} />
+        </p>
+        <Linkify text={text} />
+      </div>
+    </Row>
   )
 }

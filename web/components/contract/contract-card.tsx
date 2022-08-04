@@ -5,9 +5,10 @@ import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
-  Contract,
   BinaryContract,
+  Contract,
   FreeResponseContract,
+  MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
@@ -24,12 +25,12 @@ import {
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import { QuickBet, ProbBar, getColor } from './quick-bet'
+import { getColor, ProbBar, QuickBet } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
-import { formatNumericProbability } from 'common/pseudo-numeric'
+import { getMappedValue } from 'common/pseudo-numeric'
 
 export function ContractCard(props: {
   contract: Contract
@@ -38,8 +39,16 @@ export function ContractCard(props: {
   className?: string
   onClick?: () => void
   hideQuickBet?: boolean
+  hideGroupLink?: boolean
 }) {
-  const { showHotVolume, showTime, className, onClick, hideQuickBet } = props
+  const {
+    showHotVolume,
+    showTime,
+    className,
+    onClick,
+    hideQuickBet,
+    hideGroupLink,
+  } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
   const { resolution } = contract
@@ -106,7 +115,8 @@ export function ContractCard(props: {
               {question}
             </p>
 
-            {outcomeType === 'FREE_RESPONSE' &&
+            {(outcomeType === 'FREE_RESPONSE' ||
+              outcomeType === 'MULTIPLE_CHOICE') &&
               (resolution ? (
                 <FreeResponseOutcomeLabel
                   contract={contract}
@@ -121,6 +131,7 @@ export function ContractCard(props: {
               contract={contract}
               showHotVolume={showHotVolume}
               showTime={showTime}
+              hideGroupLink={hideGroupLink}
             />
           </Col>
           {showQuickBet ? (
@@ -148,7 +159,8 @@ export function ContractCard(props: {
                 />
               )}
 
-              {outcomeType === 'FREE_RESPONSE' && (
+              {(outcomeType === 'FREE_RESPONSE' ||
+                outcomeType === 'MULTIPLE_CHOICE') && (
                 <FreeResponseResolutionOrChance
                   className="self-end text-gray-600"
                   contract={contract}
@@ -200,7 +212,7 @@ export function BinaryResolutionOrChance(props: {
 }
 
 function FreeResponseTopAnswer(props: {
-  contract: FreeResponseContract
+  contract: FreeResponseContract | MultipleChoiceContract
   truncate: 'short' | 'long' | 'none'
   className?: string
 }) {
@@ -218,7 +230,7 @@ function FreeResponseTopAnswer(props: {
 }
 
 export function FreeResponseResolutionOrChance(props: {
-  contract: FreeResponseContract
+  contract: FreeResponseContract | MultipleChoiceContract
   truncate: 'short' | 'long' | 'none'
   className?: string
 }) {
@@ -305,6 +317,12 @@ export function PseudoNumericResolutionOrExpectation(props: {
   const { resolution, resolutionValue, resolutionProbability } = contract
   const textColor = `text-blue-400`
 
+  const value = resolution
+    ? resolutionValue
+      ? resolutionValue
+      : getMappedValue(contract)(resolutionProbability ?? 0)
+    : getMappedValue(contract)(getProbability(contract))
+
   return (
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
       {resolution ? (
@@ -314,20 +332,21 @@ export function PseudoNumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <div className="text-blue-400">
-              {resolutionValue
-                ? formatLargeNumber(resolutionValue)
-                : formatNumericProbability(
-                    resolutionProbability ?? 0,
-                    contract
-                  )}
+            <div
+              className={clsx('tooltip', textColor)}
+              data-tip={value.toFixed(2)}
+            >
+              {formatLargeNumber(value)}
             </div>
           )}
         </>
       ) : (
         <>
-          <div className={clsx('text-3xl', textColor)}>
-            {formatNumericProbability(getProbability(contract), contract)}
+          <div
+            className={clsx('tooltip text-3xl', textColor)}
+            data-tip={value.toFixed(2)}
+          >
+            {formatLargeNumber(value)}
           </div>
           <div className={clsx('text-base', textColor)}>expected</div>
         </>

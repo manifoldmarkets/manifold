@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from 'common/answer'
-import { FreeResponseContract } from 'common/contract'
+import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { APIError, placeBet } from 'web/lib/firebase/api'
@@ -29,7 +29,7 @@ import { isIOS } from 'web/lib/util/device'
 
 export function AnswerBetPanel(props: {
   answer: Answer
-  contract: FreeResponseContract
+  contract: FreeResponseContract | MultipleChoiceContract
   closePanel: () => void
   className?: string
   isModal?: boolean
