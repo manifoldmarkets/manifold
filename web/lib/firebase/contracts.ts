@@ -35,6 +35,13 @@ export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
+export function contractPathWithoutContract(
+  creatorUsername: string,
+  slug: string
+) {
+  return `/${creatorUsername}/${slug}`
+}
+
 export function homeContractPath(contract: Contract) {
   return `/home?c=${contract.slug}`
 }

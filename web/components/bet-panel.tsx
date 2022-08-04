@@ -16,8 +16,7 @@ import {
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
-import { APIError, placeBet } from 'web/lib/firebase/api'
-import { sellShares } from 'web/lib/firebase/api'
+import { APIError, placeBet, sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import {
@@ -351,7 +350,7 @@ function BuyPanel(props: {
       {user && (
         <button
           className={clsx(
-            'btn flex-1',
+            'btn mb-2 flex-1',
             betDisabled
               ? 'btn-disabled'
               : outcome === 'YES'
