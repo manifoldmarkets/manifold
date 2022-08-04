@@ -125,7 +125,56 @@ export default function ChallengePage(props: {
           bets={bets}
         />
       )}
+
+      <FAQ />
     </Page>
+  )
+}
+
+function FAQ() {
+  const [toggleWhatIsThis, setToggleWhatIsThis] = useState(false)
+  const [toggleWhatIsMana, setToggleWhatIsMana] = useState(false)
+  return (
+    <Col className={'items-center gap-4 p-2 md:items-start md:p-6'}>
+      <Row className={'text-xl text-indigo-700'}>FAQ</Row>
+      <Row className={'text-lg text-indigo-700'}>
+        <span
+          className={'mx-2 cursor-pointer'}
+          onClick={() => setToggleWhatIsThis(!toggleWhatIsThis)}
+        >
+          {toggleWhatIsThis ? '-' : '+'}
+          What is this?
+        </span>
+      </Row>
+      {toggleWhatIsThis && (
+        <Row className={'mx-4'}>
+          <span>
+            This is a challenge bet, or a bet offered from one person to another
+            that is only realized if both parties agree. You can agree to the
+            challenge (if it's open) or create your own from a market page. See
+            more markets{' '}
+            <SiteLink className={'font-bold'} href={'/home'}>
+              here.
+            </SiteLink>
+          </span>
+        </Row>
+      )}
+      <Row className={'text-lg text-indigo-700'}>
+        <span
+          className={'mx-2 cursor-pointer'}
+          onClick={() => setToggleWhatIsMana(!toggleWhatIsMana)}
+        >
+          {toggleWhatIsMana ? '-' : '+'}
+          What is M$?
+        </span>
+      </Row>
+      {toggleWhatIsMana && (
+        <Row className={'mx-4'}>
+          Mana (M$) is the play-money used by our platform to keep track of your
+          bets. It's completely free for you and your friends to get started!
+        </Row>
+      )}
+    </Col>
   )
 }
 
@@ -244,8 +293,8 @@ function OpenChallengeContent(props: {
 
   return (
     <Col className="items-center">
-      <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-        <Title className="!mt-0" text={`⚔️ ${title} ⚔️`} />
+      <Col className="h-full items-center justify-center rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
+        <Title className="!mt-0 !mb-2 sm:!mb-6" text={`⚔️ ${title} ⚔️`} />
 
         <Row className="my-4 justify-center px-8 pb-4 text-lg sm:text-xl">
           <SiteLink href={href}>{question}</SiteLink>
@@ -262,7 +311,7 @@ function OpenChallengeContent(props: {
             amount={creatorAmount}
           />
 
-          <Col className="items-center justify-center py-8 text-2xl sm:text-4xl">
+          <Col className="items-center justify-center py-4 text-2xl sm:py-8 sm:text-4xl">
             VS
           </Col>
 
@@ -274,7 +323,7 @@ function OpenChallengeContent(props: {
         </Col>
 
         <Spacer h={3} />
-        <Row className={'my-4 text-gray-500'}>
+        <Row className={'my-4 text-center text-gray-500'}>
           <span>
             {`${creator.name} will bet ${formatMoney(
               creatorAmount
