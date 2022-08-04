@@ -211,10 +211,6 @@ function ClosedChallengeContent(props: {
 
   const winner = (creatorWon ? creator : user).name
 
-  const title = resolution
-    ? `🥇 ${winner} wins the bet 🥇`
-    : `⚔️ Challenge accepted ⚔️`
-
   return (
     <>
       {showConfetti && (
@@ -233,10 +229,13 @@ function ClosedChallengeContent(props: {
         />
       )}
       <Col className=" w-full items-center justify-center rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8 ">
-        <Title className="!mt-0" text={title} />
-        <Row className="my-4 justify-center px-8 pb-4 text-lg sm:text-xl">
-          <SiteLink href={href}>{question}</SiteLink>
-        </Row>
+        {resolution ? (
+          <Title className="!mt-0" text={`🥇 ${winner} wins the bet 🥇`} />
+        ) : (
+          <SiteLink href={href} className={'mb-8'}>
+            <span className="text-3xl text-indigo-700">{question}</span>
+          </SiteLink>
+        )}
         <Col
           className={'w-full content-between justify-between gap-1 sm:flex-row'}
         >
@@ -287,16 +286,12 @@ function OpenChallengeContent(props: {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
-  const title = `${creator.name} is challenging you to bet`
-
   return (
     <Col className="items-center">
       <Col className="h-full items-center justify-center rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-        <Title className="!mt-0 !mb-2 sm:!mb-6" text={`⚔️ ${title} ⚔️`} />
-
-        <Row className="my-4 justify-center px-8 pb-4 text-lg sm:text-xl">
-          <SiteLink href={href}>{question}</SiteLink>
-        </Row>
+        <SiteLink href={href} className={'mb-8'}>
+          <span className="text-3xl text-indigo-700">{question}</span>
+        </SiteLink>
 
         <Col
           className={
