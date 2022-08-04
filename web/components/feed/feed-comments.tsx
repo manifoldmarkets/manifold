@@ -444,7 +444,7 @@ export function CommentInputTextArea(props: {
   user: User | undefined | null
   replyToUser?: { id: string; username: string }
   editor: Editor | null
-  upload: any
+  upload: Parameters<typeof TextEditor>[0]['upload']
   submitComment: (id?: string) => void
   isSubmitting: boolean
   submitOnEnter?: boolean
