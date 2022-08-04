@@ -8,8 +8,8 @@ import { RelativeTimestamp } from './relative-timestamp'
 import { UserLink } from './user-page'
 import { User } from 'common/user'
 import { Col } from './layout/col'
+import { Linkify } from './linkify'
 import { groupBy } from 'lodash'
-import { Content } from './editor'
 
 export function UserCommentsList(props: {
   user: User
@@ -50,8 +50,7 @@ export function UserCommentsList(props: {
 
 function ProfileComment(props: { comment: Comment; className?: string }) {
   const { comment, className } = props
-  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
-    comment
+  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
   // TODO: find and attach relevant bets by comment betId at some point
   return (
     <Row className={className}>
@@ -65,7 +64,7 @@ function ProfileComment(props: { comment: Comment; className?: string }) {
           />{' '}
           <RelativeTimestamp time={createdTime} />
         </p>
-        <Content content={content || text} />
+        <Linkify text={text} />
       </div>
     </Row>
   )
