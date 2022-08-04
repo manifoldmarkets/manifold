@@ -93,7 +93,8 @@ export function GroupChat(props: {
   useEffect(() => {
     // is mobile?
     if (width && width > 720) focusInput()
-  }, [width, focusInput])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width])
 
   function onReplyClick(comment: Comment) {
     setReplyToUser({ id: comment.userId, username: comment.userUsername })
