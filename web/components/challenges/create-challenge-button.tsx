@@ -146,7 +146,7 @@ function CreateChallengeForm(props: {
               <span className={''}>on</span>
               {challengeInfo.outcome === 'YES' ? <YesLabel /> : <NoLabel />}
             </Row>
-            <Row className={'max-w-xs justify-end'}>
+            <Row className={'mt-3 max-w-xs justify-end'}>
               <Button
                 color={'gradient'}
                 className={'opacity-80'}
