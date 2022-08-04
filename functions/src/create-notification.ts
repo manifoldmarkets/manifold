@@ -7,7 +7,7 @@ import {
 } from '../../common/notification'
 import { User } from '../../common/user'
 import { Contract } from '../../common/contract'
-import { getValues } from './utils'
+import { getUserByUsername, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
@@ -17,7 +17,6 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 import { Challenge } from '../../common/challenge'
-import { richTextToString } from 'common/util/parse'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -156,6 +155,17 @@ export const createNotification = async (
       }
   }
 
+  /** @deprecated parse from rich text instead */
+  const parseMentions = async (source: string) => {
+    const mentions = source.match(/@\w+/g)
+    if (!mentions) return []
+    return Promise.all(
+      mentions.map(
+        async (username) => (await getUserByUsername(username.slice(1)))?.id
+      )
+    )
+  }
+
   const notifyTaggedUsers = (
     userToReasonTexts: user_to_reason_texts,
     userIds: (string | undefined)[]
@@ -291,7 +301,8 @@ export const createNotification = async (
       if (sourceType === 'comment') {
         if (recipients?.[0] && relatedSourceType)
           notifyRepliedUser(userToReasonTexts, recipients[0], relatedSourceType)
-        if (sourceText) notifyTaggedUsers(userToReasonTexts, recipients ?? [])
+        if (sourceText)
+          notifyTaggedUsers(userToReasonTexts, await parseMentions(sourceText))
       }
       await notifyContractCreator(userToReasonTexts, sourceContract)
       await notifyOtherAnswerersOnContract(userToReasonTexts, sourceContract)
@@ -416,7 +427,7 @@ export const createGroupCommentNotification = async (
     sourceUserName: fromUser.name,
     sourceUserUsername: fromUser.username,
     sourceUserAvatarUrl: fromUser.avatarUrl,
-    sourceText: richTextToString(comment.content),
+    sourceText: comment.text,
     sourceSlug,
     sourceTitle: `${group.name}`,
     isSeenOnHref: sourceSlug,
