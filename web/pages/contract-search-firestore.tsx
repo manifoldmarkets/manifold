@@ -102,7 +102,7 @@ export default function ContractSearchFirestore(props: {
         >
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
-          <option value="score">Most popular</option>
+          <option value="score">Trending</option>
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>

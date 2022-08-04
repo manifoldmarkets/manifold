@@ -80,3 +80,7 @@ export function claimManalink(params: any) {
 export function createGroup(params: any) {
   return call(getFunctionUrl('creategroup'), 'POST', params)
 }
+
+export function getCurrentUser(params: any) {
+  return call(getFunctionUrl('getcurrentuser'), 'GET', params)
+}

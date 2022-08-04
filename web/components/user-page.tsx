@@ -214,6 +214,10 @@ export function UserPage(props: { user: User; currentUser?: User }) {
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
+            {currentUser &&
+              ['ian', 'Austin', 'SG', 'JamesGrugett'].includes(
+                currentUser.username
+              ) && <ReferralsButton user={user} />}
             <GroupsButton user={user} />
           </Row>
 

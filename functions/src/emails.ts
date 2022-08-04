@@ -165,7 +165,6 @@ export const sendWelcomeEmail = async (
   )
 }
 
-// TODO: use manalinks to give out M$500
 export const sendOneWeekBonusEmail = async (
   user: User,
   privateUser: PrivateUser
@@ -185,12 +184,12 @@ export const sendOneWeekBonusEmail = async (
 
   await sendTemplateEmail(
     privateUser.email,
-    'Manifold one week anniversary gift',
+    'Manifold Markets one week anniversary gift',
     'one-week',
     {
       name: firstName,
       unsubscribeLink,
-      manalink: '', // TODO
+      manalink: 'https://manifold.markets/link/lj4JbBvE',
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
