@@ -135,7 +135,7 @@ function FAQ() {
   const [toggleWhatIsThis, setToggleWhatIsThis] = useState(false)
   const [toggleWhatIsMana, setToggleWhatIsMana] = useState(false)
   return (
-    <Col className={'items-center gap-4 p-2 md:items-start md:p-6'}>
+    <Col className={'items-center gap-4 p-2 md:p-6 lg:items-start'}>
       <Row className={'text-xl text-indigo-700'}>FAQ</Row>
       <Row className={'text-lg text-indigo-700'}>
         <span
