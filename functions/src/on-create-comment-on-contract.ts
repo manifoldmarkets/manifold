@@ -68,9 +68,10 @@ export const onCreateCommentOnContract = functions
       ? 'answer'
       : undefined
 
-    const relatedUserId = comment.replyToCommentId
+    const repliedUserId = comment.replyToCommentId
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
+    const recipients = repliedUserId ? [repliedUserId] : []
 
     await createNotification(
       comment.id,
@@ -79,7 +80,7 @@ export const onCreateCommentOnContract = functions
       commentCreator,
       eventId,
       comment.text,
-      { contract, relatedSourceType, relatedUserId }
+      { contract, relatedSourceType, recipients }
     )
 
     const recipientUserIds = uniq([
