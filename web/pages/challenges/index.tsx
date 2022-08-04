@@ -39,8 +39,12 @@ const amountClass = columnClass + ' max-w-[75px] font-bold'
 
 export default function ChallengesListPage() {
   const user = useUser()
-  const userChallenges = useUserChallenges(user?.id ?? '')
   const challenges = useAcceptedChallenges()
+  const userChallenges = useUserChallenges(user?.id)
+    .concat(
+      user ? challenges.filter((c) => c.acceptances[0].userId === user.id) : []
+    )
+    .sort((a, b) => b.createdTime - a.createdTime)
 
   const userTab = user
     ? [

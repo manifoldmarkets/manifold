@@ -134,11 +134,11 @@ export function listenForUserChallenges(
   return listenForValues<Challenge>(listUserChallenges(fromId), setLinks)
 }
 
-export const useUserChallenges = (fromId: string) => {
+export const useUserChallenges = (fromId?: string) => {
   const [links, setLinks] = useState<Challenge[]>([])
 
   useEffect(() => {
-    return listenForUserChallenges(fromId, setLinks)
+    if (fromId) return listenForUserChallenges(fromId, setLinks)
   }, [fromId])
 
   return links
