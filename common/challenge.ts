@@ -27,6 +27,8 @@ export type Challenge = {
 
   contractId: string
   contractSlug: string
+  contractQuestion: string
+  contractCreatorUsername: string
 
   createdTime: number
   // If null, the link is valid forever

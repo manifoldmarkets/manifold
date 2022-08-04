@@ -65,6 +65,8 @@ export async function createChallenge(data: {
     acceptorAmount,
     contractSlug: contract.slug,
     contractId: contract.id,
+    contractQuestion: contract.question,
+    contractCreatorUsername: contract.creatorUsername,
     createdTime: Date.now(),
     expiresTime,
     maxUses: 1,
