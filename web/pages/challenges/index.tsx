@@ -38,6 +38,22 @@ export default function LinkPage() {
   const userChallenges = useUserChallenges(user?.id ?? '')
   const challenges = useAcceptedChallenges()
 
+  const userTab = user
+    ? [
+        {
+          content: <YourChallengesTable links={userChallenges} />,
+          title: 'Your Challenges',
+        },
+      ]
+    : []
+
+  const publicTab = [
+    {
+      content: <PublicChallengesTable links={challenges} />,
+      title: 'Public Challenges',
+    },
+  ]
+
   return (
     <Page>
       <SEO
@@ -45,26 +61,14 @@ export default function LinkPage() {
         description="Challenge your friends to a bet!"
         url="/send"
       />
+
       <Col className="w-full px-8">
         <Row className="items-center justify-between">
           <Title text="Challenges" />
         </Row>
         <p>Find or create a question to challenge someone to a bet.</p>
-        <Tabs
-          tabs={[
-            {
-              content: <PublicChallengesTable links={challenges} />,
-              title: 'Public Challenges',
-            },
-          ].concat(
-            user
-              ? {
-                  content: <YourChallengesTable links={userChallenges} />,
-                  title: 'Your Challenges',
-                }
-              : []
-          )}
-        />
+
+        <Tabs tabs={[...userTab, ...publicTab]} />
       </Col>
     </Page>
   )
