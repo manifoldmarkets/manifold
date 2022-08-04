@@ -14,7 +14,7 @@ import {
   cleanDisplayName,
   cleanUsername,
 } from '../../common/util/clean-username'
-import { sendWelcomeEmail } from './emails'
+import { sendOneWeekBonusEmail, sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
 import {
   CATEGORIES_GROUP_SLUG_POSTFIX,
@@ -95,8 +95,9 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)
 
-  await sendWelcomeEmail(user, privateUser)
   await addUserToDefaultGroups(user)
+  await sendWelcomeEmail(user, privateUser)
+  await sendOneWeekBonusEmail(user, privateUser)
   await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
   return user

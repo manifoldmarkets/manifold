@@ -1,3 +1,5 @@
+import * as dayjs from 'dayjs'
+
 import { DOMAIN } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
@@ -165,7 +167,6 @@ export const sendWelcomeEmail = async (
   )
 }
 
-// TODO: use manalinks to give out M$500
 export const sendOneWeekBonusEmail = async (
   user: User,
   privateUser: PrivateUser
@@ -183,6 +184,8 @@ export const sendOneWeekBonusEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
+  const oneWeek = dayjs().add(1, 'week').toString()
+
   await sendTemplateEmail(
     privateUser.email,
     'Manifold one week anniversary gift',
@@ -190,10 +193,11 @@ export const sendOneWeekBonusEmail = async (
     {
       name: firstName,
       unsubscribeLink,
-      manalink: '', // TODO
+      manalink: 'https://manifold.markets/link/lj4JbBvE',
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
+      'o:deliverytime': oneWeek,
     }
   )
 }
