@@ -81,7 +81,14 @@ function YourChallengesTable(props: { links: Challenge[] }) {
         <thead className="bg-gray-50 text-left text-sm font-semibold text-gray-900">
           <tr>
             <th className={amountClass}>Amount</th>
-            <th className={columnClass}>Link</th>
+            <th
+              className={clsx(
+                columnClass,
+                'text-center sm:pl-10 sm:text-start'
+              )}
+            >
+              Link
+            </th>
             <th className={columnClass}>Accepted By</th>
           </tr>
         </thead>
@@ -109,7 +116,12 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
           {formatMoney(challenge.creatorAmount)}
         </SiteLink>
       </td>
-      <td className={clsx(columnClass, 'items-center sm:max-w-[200px]')}>
+      <td
+        className={clsx(
+          columnClass,
+          'm:max-w-[200px] text-center sm:text-start'
+        )}
+      >
         <Button
           color={'gray-white'}
           onClick={() => {
