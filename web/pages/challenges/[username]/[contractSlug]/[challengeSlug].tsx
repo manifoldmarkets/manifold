@@ -232,8 +232,8 @@ function ClosedChallengeContent(props: {
         {resolution ? (
           <>
             <Title className="!mt-0" text={`🥇 ${winner} wins the bet 🥇`} />
-            <SiteLink href={href} className={'mb-8'}>
-              <span className="text-xl ">{question}</span>
+            <SiteLink href={href} className={'mb-8 text-xl'}>
+              {question}
             </SiteLink>
           </>
         ) : (

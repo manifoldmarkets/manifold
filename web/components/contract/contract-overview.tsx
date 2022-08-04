@@ -19,15 +19,12 @@ import { AnswersGraph } from '../answers/answers-graph'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
-import { ShareMarketButton } from '../share-market-button'
 import { NumericGraph } from './numeric-graph'
 import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
 import React from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { getChallengeUrl } from 'web/lib/firebase/challenges'
 import toast from 'react-hot-toast'
-import { ClipboardCopyIcon, LinkIcon } from '@heroicons/react/outline'
-import { Button } from 'web/components/button'
+import { LinkIcon } from '@heroicons/react/outline'
 
 export const ContractOverview = (props: {
   contract: Contract
