@@ -59,3 +59,5 @@ export type Acceptance = {
 
   createdTime: number
 }
+
+export const CHALLENGES_ENABLED = true

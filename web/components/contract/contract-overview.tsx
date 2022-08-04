@@ -25,6 +25,7 @@ import React from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
 import { LinkIcon } from '@heroicons/react/outline'
+import { CHALLENGES_ENABLED } from 'common/challenge'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -39,7 +40,7 @@ export const ContractOverview = (props: {
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const showChallenge = user && isBinary && !resolution
+  const showChallenge = user && isBinary && !resolution && CHALLENGES_ENABLED
 
   return (
     <Col className={clsx('mb-6', className)}>

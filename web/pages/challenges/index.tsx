@@ -32,7 +32,7 @@ dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'
 const amountClass = columnClass + ' max-w-[75px] font-bold'
 
-export default function LinkPage() {
+export default function ChallengesListPage() {
   const user = useUser()
   const userChallenges = useUserChallenges(user?.id ?? '')
   const challenges = useAcceptedChallenges()
