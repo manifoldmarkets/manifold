@@ -27,6 +27,11 @@ import { Button } from 'web/components/button'
 import { ClipboardCopyIcon, QrcodeIcon } from '@heroicons/react/outline'
 import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
+<<<<<<< HEAD
+=======
+import { Modal } from 'web/components/layout/modal'
+import { QRCode } from 'web/components/qr-code'
+>>>>>>> 798253f8 (Challenge Bets (#679))
 
 dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'
@@ -107,11 +112,16 @@ function YourChallengesTable(props: { links: Challenge[] }) {
 function YourLinkSummaryRow(props: { challenge: Challenge }) {
   const { challenge } = props
   const { acceptances } = challenge
+<<<<<<< HEAD
 
+=======
+  const [open, setOpen] = React.useState(false)
+>>>>>>> 798253f8 (Challenge Bets (#679))
   const className = clsx(
     'whitespace-nowrap text-sm hover:cursor-pointer text-gray-500 hover:bg-sky-50 bg-white'
   )
   return (
+<<<<<<< HEAD
     <tr id={challenge.slug} key={challenge.slug} className={className}>
       <td className={amountClass}>
         <SiteLink href={getChallengeUrl(challenge)}>
@@ -180,6 +190,87 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
         </Row>
       </td>
     </tr>
+=======
+    <>
+      <Modal open={open} setOpen={setOpen} size={'sm'}>
+        <Col
+          className={
+            'items-center justify-center gap-4 rounded-md bg-white p-8 py-8 '
+          }
+        >
+          <span className={'mb-4  text-center text-xl text-indigo-700'}>
+            Have your friend scan this to accept the challenge!
+          </span>
+          <QRCode url={getChallengeUrl(challenge)} />
+        </Col>
+      </Modal>
+      <tr id={challenge.slug} key={challenge.slug} className={className}>
+        <td className={amountClass}>
+          <SiteLink href={getChallengeUrl(challenge)}>
+            {formatMoney(challenge.creatorAmount)}
+          </SiteLink>
+        </td>
+        <td
+          className={clsx(
+            columnClass,
+            'text-center sm:max-w-[200px] sm:text-start'
+          )}
+        >
+          <Row className="items-center gap-2">
+            <Button
+              color="gray-white"
+              size="xs"
+              onClick={() => {
+                copyToClipboard(getChallengeUrl(challenge))
+                toast('Link copied to clipboard!')
+              }}
+            >
+              <ClipboardCopyIcon className={'h-5 w-5 sm:h-4 sm:w-4'} />
+            </Button>
+            <Button
+              color="gray-white"
+              size="xs"
+              onClick={() => {
+                setOpen(true)
+              }}
+            >
+              <QrcodeIcon className="h-5 w-5 sm:h-4 sm:w-4" />
+            </Button>
+            <SiteLink
+              href={getChallengeUrl(challenge)}
+              className={'mx-1 mb-1 hidden sm:inline-block'}
+            >
+              {`...${challenge.contractSlug}/${challenge.slug}`}
+            </SiteLink>
+          </Row>
+        </td>
+
+        <td className={columnClass}>
+          <Row className={'items-center justify-start gap-1'}>
+            {acceptances.length > 0 ? (
+              <>
+                <Avatar
+                  username={acceptances[0].userUsername}
+                  avatarUrl={acceptances[0].userAvatarUrl}
+                  size={'sm'}
+                />
+                <UserLink
+                  name={acceptances[0].userName}
+                  username={acceptances[0].userUsername}
+                />
+              </>
+            ) : (
+              <span>
+                No one -
+                {challenge.expiresTime &&
+                  ` (expires ${fromNow(challenge.expiresTime)})`}
+              </span>
+            )}
+          </Row>
+        </td>
+      </tr>
+    </>
+>>>>>>> 798253f8 (Challenge Bets (#679))
   )
 }
 
