@@ -1,4 +1,4 @@
-import { tradingAllowed } from 'web/lib/firebase/contracts'
+import { contractUrl, tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
@@ -23,6 +23,11 @@ import { ShareMarketButton } from '../share-market-button'
 import { NumericGraph } from './numeric-graph'
 import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
 import React from 'react'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { getChallengeUrl } from 'web/lib/firebase/challenges'
+import toast from 'react-hot-toast'
+import { ClipboardCopyIcon, LinkIcon } from '@heroicons/react/outline'
+import { Button } from 'web/components/button'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -126,20 +131,41 @@ export const ContractOverview = (props: {
         contract={contract}
         isCreator={isCreator}
       />
-      <Col className="mx-4 mt-4 justify-around sm:flex-row">
+      {/*<Row className="mx-4 mt-4 hidden justify-around sm:block">*/}
+      {/*  {showChallenge && (*/}
+      {/*    <Col className="gap-3">*/}
+      {/*      <div className="text-lg">⚔️ Challenge a friend ⚔️</div>*/}
+      {/*      <CreateChallengeButton user={user} contract={contract} />*/}
+      {/*    </Col>*/}
+      {/*  )}*/}
+      {/*  {isCreator && (*/}
+      {/*    <Col className="gap-3">*/}
+      {/*      <div className="text-lg">Share your market</div>*/}
+      {/*      <ShareMarketButton contract={contract} />*/}
+      {/*    </Col>*/}
+      {/*  )}*/}
+      {/*</Row>*/}
+      <Row className="mx-4 mt-6 block justify-around">
         {showChallenge && (
           <Col className="gap-3">
-            <div className="text-lg">⚔️ Challenge a friend ⚔️</div>
             <CreateChallengeButton user={user} contract={contract} />
           </Col>
         )}
         {isCreator && (
           <Col className="gap-3">
-            <div className="text-lg">Share your market</div>
-            <ShareMarketButton contract={contract} />
+            <button
+              onClick={() => {
+                copyToClipboard(contractUrl(contract))
+                toast('Link copied to clipboard!')
+              }}
+              className={'btn btn-outline mb-4 whitespace-nowrap normal-case'}
+            >
+              <LinkIcon className={'mr-2 h-5 w-5'} />
+              Share market
+            </button>
           </Col>
         )}
-      </Col>
+      </Row>
     </Col>
   )
 }

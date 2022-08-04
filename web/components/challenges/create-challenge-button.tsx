@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
-import { DuplicateIcon } from '@heroicons/react/outline'
+import React, { useEffect, useState } from 'react'
+import { LinkIcon, SwitchVerticalIcon } from '@heroicons/react/outline'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -11,12 +11,12 @@ import { Modal } from 'web/components/layout/modal'
 import { Button } from '../button'
 import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { BinaryContract } from 'common/contract'
-import { CopyLinkButton } from 'web/components/copy-link-button'
 import { SiteLink } from 'web/components/site-link'
 import { formatMoney } from 'common/util/format'
-import { Spacer } from '../layout/spacer'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { QRCode } from '../qr-code'
+import { copyToClipboard } from 'web/lib/util/copy'
+import toast from 'react-hot-toast'
 
 type challengeInfo = {
   amount: number
@@ -31,11 +31,11 @@ export function CreateChallengeButton(props: {
 }) {
   const { user, contract } = props
   const [open, setOpen] = useState(false)
-  const [highlightedSlug, setHighlightedSlug] = useState('')
+  const [challengeSlug, setChallengeSlug] = useState('')
 
   return (
     <>
-      <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)}>
+      <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)} size={'sm'}>
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {/*// add a sign up to challenge button?*/}
           {user && (
@@ -52,9 +52,9 @@ export function CreateChallengeButton(props: {
                   outcome: newChallenge.outcome,
                   contract: contract,
                 })
-                challenge && setHighlightedSlug(getChallengeUrl(challenge))
+                challenge && setChallengeSlug(getChallengeUrl(challenge))
               }}
-              highlightedSlug={highlightedSlug}
+              challengeSlug={challengeSlug}
             />
           )}
         </Col>
@@ -62,9 +62,9 @@ export function CreateChallengeButton(props: {
 
       <button
         onClick={() => setOpen(true)}
-        className="btn btn-outline mb-4 max-w-xs"
+        className="btn btn-outline mb-4 max-w-xs whitespace-nowrap normal-case"
       >
-        Challenge ️
+        Challenge a friend
       </button>
     </>
   )
@@ -74,9 +74,9 @@ function CreateChallengeForm(props: {
   user: User
   contract: BinaryContract
   onCreate: (m: challengeInfo) => Promise<void>
-  highlightedSlug: string
+  challengeSlug: string
 }) {
-  const { user, onCreate, contract, highlightedSlug } = props
+  const { user, onCreate, contract, challengeSlug } = props
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [error, setError] = useState<string>('')
@@ -112,19 +112,20 @@ function CreateChallengeForm(props: {
           }}
         >
           <Title className="!mt-2" text="Challenge a friend to bet " />
-          <div className="mt-2 flex flex-col flex-wrap gap-x-5 gap-y-2">
-            {/*<div>Question:</div>*/}
-            {/*<div className="mb-4 italic">{contract.question}</div>*/}
-
-            <div>You are betting:</div>
-            <Row className={'form-control w-full justify-start gap-4'}>
+          <div className="mt-2 flex flex-col flex-wrap justify-center gap-x-5 gap-y-2">
+            <div>You'll bet:</div>
+            <Row
+              className={
+                'form-control w-full max-w-xs items-center justify-between gap-4 pr-3'
+              }
+            >
               <Col>
                 <div className="relative">
                   <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
                     M$
                   </span>
                   <input
-                    className="input input-bordered w-40 pl-10"
+                    className="input input-bordered w-32 pl-10"
                     type="number"
                     min={1}
                     value={challengeInfo.amount}
@@ -142,29 +143,28 @@ function CreateChallengeForm(props: {
                   />
                 </div>
               </Col>
-              <Col className={'mt-3 ml-1 text-gray-600'}>on</Col>
-              <Col>
-                <select
-                  className="form-select h-12 rounded-lg border-gray-300"
-                  value={challengeInfo.outcome}
-                  onChange={(e) =>
-                    setChallengeInfo((m: challengeInfo) => {
-                      return {
-                        ...m,
-                        outcome: e.target.value as 'YES' | 'NO',
-                      }
-                    })
-                  }
-                >
-                  <option value="YES">YES</option>
-                  <option value="NO">NO</option>
-                </select>
-              </Col>
+              <span className={''}>on</span>
+              {challengeInfo.outcome === 'YES' ? <YesLabel /> : <NoLabel />}
             </Row>
-            <Spacer h={2} />
-            <Row className={'items-center'}>They will bet:</Row>
-            <Row className={'items-center gap-2'}>
-              <div className={'ml-1 min-w-[90px]'}>
+            <Row className={'max-w-xs justify-end'}>
+              <Button
+                color={'gradient'}
+                className={'opacity-80'}
+                onClick={() =>
+                  setChallengeInfo((m: challengeInfo) => {
+                    return {
+                      ...m,
+                      outcome: m.outcome === 'YES' ? 'NO' : 'YES',
+                    }
+                  })
+                }
+              >
+                <SwitchVerticalIcon className={'h-4 w-4'} />
+              </Button>
+            </Row>
+            <Row className={'items-center'}>If they bet:</Row>
+            <Row className={'max-w-xs items-center justify-between gap-4 pr-3'}>
+              <div className={'w-32 sm:mr-1'}>
                 {editingAcceptorAmount ? (
                   <Col>
                     <div className="relative">
@@ -172,7 +172,7 @@ function CreateChallengeForm(props: {
                         M$
                       </span>
                       <input
-                        className="input input-bordered w-40 pl-10"
+                        className="input input-bordered w-32 pl-10"
                         type="number"
                         min={1}
                         value={challengeInfo.acceptorAmount}
@@ -188,36 +188,34 @@ function CreateChallengeForm(props: {
                     </div>
                   </Col>
                 ) : (
-                  <span className="font-bold">
+                  <span className="ml-1 font-bold">
                     {formatMoney(challengeInfo.acceptorAmount)}
                   </span>
                 )}
               </div>
-              <Row className={'items-center gap-3'}>
-                on
-                {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
-                {!editingAcceptorAmount && (
-                  <Button
-                    color={'gray'}
-                    onClick={() =>
-                      setEditingAcceptorAmount(!editingAcceptorAmount)
-                    }
-                    className={
-                      'flex flex-row gap-2 !bg-transparent py-1 hover:!bg-gray-100'
-                    }
-                  >
-                    Edit
-                  </Button>
-                )}
-              </Row>
+              <span>on</span>
+              {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
             </Row>
           </div>
-          <Row className={'justify-end'}>
+          <Row
+            className={clsx(
+              'mt-8',
+              !editingAcceptorAmount ? 'justify-between' : 'justify-end'
+            )}
+          >
+            {!editingAcceptorAmount && (
+              <Button
+                color={'gray-white'}
+                onClick={() => setEditingAcceptorAmount(!editingAcceptorAmount)}
+              >
+                Edit
+              </Button>
+            )}
             <Button
               type="submit"
               color={'indigo'}
               className={clsx(
-                'mt-8 whitespace-nowrap drop-shadow-md',
+                'whitespace-nowrap drop-shadow-md',
                 isCreating ? 'disabled' : ''
               )}
             >
@@ -232,16 +230,18 @@ function CreateChallengeForm(props: {
           <Title className="!my-0" text="Challenge Created!" />
 
           <div>Share the challenge using the link.</div>
-          <CopyLinkButton
-            url={highlightedSlug}
-            buttonClassName="btn-md rounded-l-none"
-            displayUrl={
-              '...challenges/' + highlightedSlug.split('/challenges/')[1]
-            }
-            toastClassName={'-left-40 -top-20 mt-1'}
-            icon={DuplicateIcon}
-          />
-          <QRCode url={highlightedSlug} className="self-center" />
+          <button
+            onClick={() => {
+              copyToClipboard(challengeSlug)
+              toast('Link copied to clipboard!')
+            }}
+            className={'btn btn-outline mb-4 whitespace-nowrap normal-case'}
+          >
+            <LinkIcon className={'mr-2 h-5 w-5'} />
+            Copy link
+          </button>
+
+          <QRCode url={challengeSlug} className="self-center" />
           <Row className={'gap-1 text-gray-500'}>
             See your other
             <SiteLink className={'underline'} href={'/challenges'}>
