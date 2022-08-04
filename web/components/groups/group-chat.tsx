@@ -302,7 +302,7 @@ const GroupMessage = memo(function GroupMessage_(props: {
   const first = comments[0]
   const { id, userUsername, userName, userAvatarUrl, createdTime } = first
 
-  const isCreatorsComment = user && comments[0].userId === user.id
+  const isCreatorsComment = user && first.userId === user.id
   return (
     <Col
       ref={setRef}

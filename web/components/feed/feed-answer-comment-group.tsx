@@ -71,11 +71,10 @@ export function FeedAnswerCommentGroup(props: {
   const scrollAndOpenReplyInput = useEvent(
     (comment?: Comment, answer?: Answer) => {
       setReplyToUser(
-        comment ?? answer
-          ? {
-              id: comment?.userId ?? (answer as Answer).userId,
-              username: comment?.userUsername ?? (answer as Answer).username,
-            }
+        comment
+          ? { id: comment.userId, username: comment.userUsername }
+          : answer
+          ? { id: answer.userId, username: answer.username }
           : undefined
       )
       setShowReply(true)
