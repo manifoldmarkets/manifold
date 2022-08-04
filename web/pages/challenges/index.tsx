@@ -24,9 +24,10 @@ import { Avatar } from 'web/components/avatar'
 import Router from 'next/router'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
 import { Button } from 'web/components/button'
-import { ClipboardCopyIcon } from '@heroicons/react/outline'
+import { ClipboardCopyIcon, QrcodeIcon } from '@heroicons/react/outline'
 import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
+import { contractDetailsButtonClassName } from 'web/components/contract/contract-info-dialog'
 
 dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'
@@ -120,21 +121,36 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
           'text-center sm:max-w-[200px] sm:text-start'
         )}
       >
-        <Button
-          color={'gray-white'}
-          onClick={() => {
-            copyToClipboard(getChallengeUrl(challenge))
-            toast('Link copied to clipboard!')
-          }}
-        >
-          <ClipboardCopyIcon className={'h-5 w-5 sm:h-4 sm:w-4'} />
-        </Button>
-        <SiteLink
-          href={getChallengeUrl(challenge)}
-          className={'mx-1 mb-1 hidden sm:inline-block'}
-        >
-          {`...${challenge.contractSlug}/${challenge.slug}`}
-        </SiteLink>
+        <Row className="items-center">
+          <Button
+            color="gray-white"
+            size="xs"
+            onClick={() => {
+              copyToClipboard(getChallengeUrl(challenge))
+              toast('Link copied to clipboard!')
+            }}
+          >
+            <ClipboardCopyIcon className={'h-5 w-5 sm:h-4 sm:w-4'} />
+          </Button>
+          <Button
+            color="gray-white"
+            size="xs"
+            onClick={() => {
+              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${200}x${200}&data=${getChallengeUrl(
+                challenge
+              )}`
+              window.location.href = qrUrl
+            }}
+          >
+            <QrcodeIcon className="h-5 w-5 sm:h-4 sm:w-4" />
+          </Button>
+          <SiteLink
+            href={getChallengeUrl(challenge)}
+            className={'mx-1 mb-1 hidden sm:inline-block'}
+          >
+            {`...${challenge.contractSlug}/${challenge.slug}`}
+          </SiteLink>
+        </Row>
       </td>
 
       <td className={columnClass}>

@@ -16,6 +16,7 @@ import { SiteLink } from 'web/components/site-link'
 import { formatMoney } from 'common/util/format'
 import { Spacer } from '../layout/spacer'
 import { NoLabel, YesLabel } from '../outcome-label'
+import { QRCode } from '../qr-code'
 
 type challengeInfo = {
   amount: number
@@ -240,6 +241,7 @@ function CreateChallengeForm(props: {
             toastClassName={'-left-40 -top-20 mt-1'}
             icon={DuplicateIcon}
           />
+          <QRCode url={highlightedSlug} className="self-center" />
           <Row className={'gap-1 text-gray-500'}>
             See your other
             <SiteLink className={'underline'} href={'/challenges'}>
