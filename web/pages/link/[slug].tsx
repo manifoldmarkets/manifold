@@ -91,5 +91,5 @@ const useReferral = (user: User | undefined | null, manalink?: Manalink) => {
     if (manalink?.fromId) getUser(manalink.fromId).then(setCreator)
   }, [manalink])
 
-  useSaveReferral(user, { defaultReferrer: creator?.username })
+  useSaveReferral(user, { defaultReferrerUsername: creator?.username })
 }

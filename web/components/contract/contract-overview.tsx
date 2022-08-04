@@ -1,4 +1,4 @@
-import { tradingAllowed } from 'web/lib/firebase/contracts'
+import { contractUrl, tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
@@ -8,8 +8,8 @@ import { Linkify } from '../linkify'
 import clsx from 'clsx'
 
 import {
-  FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
+  FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
@@ -19,8 +19,13 @@ import { AnswersGraph } from '../answers/answers-graph'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
-import { ShareMarket } from '../share-market'
 import { NumericGraph } from './numeric-graph'
+import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
+import React from 'react'
+import { copyToClipboard } from 'web/lib/util/copy'
+import toast from 'react-hot-toast'
+import { LinkIcon } from '@heroicons/react/outline'
+import { CHALLENGES_ENABLED } from 'common/challenge'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -32,8 +37,10 @@ export const ContractOverview = (props: {
 
   const user = useUser()
   const isCreator = user?.id === creatorId
+
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const showChallenge = user && isBinary && !resolution && CHALLENGES_ENABLED
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -116,13 +123,47 @@ export const ContractOverview = (props: {
         <AnswersGraph contract={contract} bets={bets} />
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
-      {(contract.description || isCreator) && <Spacer h={6} />}
-      {isCreator && <ShareMarket className="px-2" contract={contract} />}
+      {/* {(contract.description || isCreator) && <Spacer h={6} />} */}
       <ContractDescription
         className="px-2"
         contract={contract}
         isCreator={isCreator}
       />
+      {/*<Row className="mx-4 mt-4 hidden justify-around sm:block">*/}
+      {/*  {showChallenge && (*/}
+      {/*    <Col className="gap-3">*/}
+      {/*      <div className="text-lg">⚔️ Challenge a friend ⚔️</div>*/}
+      {/*      <CreateChallengeButton user={user} contract={contract} />*/}
+      {/*    </Col>*/}
+      {/*  )}*/}
+      {/*  {isCreator && (*/}
+      {/*    <Col className="gap-3">*/}
+      {/*      <div className="text-lg">Share your market</div>*/}
+      {/*      <ShareMarketButton contract={contract} />*/}
+      {/*    </Col>*/}
+      {/*  )}*/}
+      {/*</Row>*/}
+      <Row className="mx-4 mt-6 block justify-around">
+        {showChallenge && (
+          <Col className="gap-3">
+            <CreateChallengeButton user={user} contract={contract} />
+          </Col>
+        )}
+        {isCreator && (
+          <Col className="gap-3">
+            <button
+              onClick={() => {
+                copyToClipboard(contractUrl(contract))
+                toast('Link copied to clipboard!')
+              }}
+              className={'btn btn-outline mb-4 whitespace-nowrap normal-case'}
+            >
+              <LinkIcon className={'mr-2 h-5 w-5'} />
+              Share market
+            </button>
+          </Col>
+        )}
+      </Row>
     </Col>
   )
 }
