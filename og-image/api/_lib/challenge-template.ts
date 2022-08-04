@@ -181,7 +181,7 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
         </div>
       </div>
     <!-- Manifold logo -->
-    <div class="flex flex-row justify-center mt-20 ">
+    <div class="flex flex-row justify-center absolute bottom-4 left-[24rem]">
       <a class="flex flex-row gap-3" href="/">
       <img
         class="sm:h-12 sm:w-12"
