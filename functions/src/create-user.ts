@@ -1,5 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { uniq } from 'lodash'
+
 import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USERNAME,
@@ -14,7 +16,7 @@ import {
   cleanDisplayName,
   cleanUsername,
 } from '../../common/util/clean-username'
-import { sendOneWeekBonusEmail, sendWelcomeEmail } from './emails'
+import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
 import {
   CATEGORIES_GROUP_SLUG_POSTFIX,
@@ -24,7 +26,6 @@ import {
 import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
 import { Group, NEW_USER_GROUP_SLUGS } from '../../common/group'
-import { uniq } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -97,7 +98,6 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
 
   await addUserToDefaultGroups(user)
   await sendWelcomeEmail(user, privateUser)
-  await sendOneWeekBonusEmail(user, privateUser)
   await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
   return user

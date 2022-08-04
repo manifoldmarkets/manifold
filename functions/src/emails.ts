@@ -1,5 +1,3 @@
-import * as dayjs from 'dayjs'
-
 import { DOMAIN } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
@@ -184,11 +182,9 @@ export const sendOneWeekBonusEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  const oneWeek = dayjs().add(1, 'week').toString()
-
   await sendTemplateEmail(
     privateUser.email,
-    'Manifold one week anniversary gift',
+    'Manifold Markets one week anniversary gift',
     'one-week',
     {
       name: firstName,
@@ -197,7 +193,6 @@ export const sendOneWeekBonusEmail = async (
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
-      'o:deliverytime': oneWeek,
     }
   )
 }
