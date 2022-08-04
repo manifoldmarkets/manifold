@@ -28,7 +28,7 @@ import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Content, TextEditor, useTextEditor } from '../editor'
-import { Editor, JSONContent } from '@tiptap/react'
+import { Editor } from '@tiptap/react'
 
 export function FeedCommentThread(props: {
   contract: Contract

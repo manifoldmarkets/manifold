@@ -8,7 +8,6 @@ import { RelativeTimestamp } from './relative-timestamp'
 import { UserLink } from './user-page'
 import { User } from 'common/user'
 import { Col } from './layout/col'
-import { Linkify } from './linkify'
 import { groupBy } from 'lodash'
 import { Content } from './editor'
 

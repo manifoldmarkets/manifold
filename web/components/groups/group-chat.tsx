@@ -92,8 +92,8 @@ export function GroupChat(props: {
 
   useEffect(() => {
     // is mobile?
-    if (inputRef && width && width > 720) inputRef.focus()
-  }, [inputRef, width])
+    if (width && width > 720) focusInput()
+  }, [width, focusInput])
 
   function onReplyClick(comment: Comment) {
     setReplyToUser({ id: comment.userId, username: comment.userUsername })
