@@ -232,15 +232,13 @@ function ClosedChallengeContent(props: {
           numberOfPieces={200}
         />
       )}
-      <Col className=" w-full items-center justify-center rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+      <Col className=" w-full items-center justify-center rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8 ">
         <Title className="!mt-0" text={title} />
         <Row className="my-4 justify-center px-8 pb-4 text-lg sm:text-xl">
           <SiteLink href={href}>{question}</SiteLink>
         </Row>
         <Col
-          className={
-            'h-full max-h-[50vh] w-full content-between justify-between gap-1 sm:flex-row'
-          }
+          className={'w-full content-between justify-between gap-1 sm:flex-row'}
         >
           <UserBetColumn
             challenger={creator}
@@ -378,13 +376,17 @@ function UserBetColumn(props: {
         userCol(challenger)
       ) : (
         <Col className={'mb-2 w-full items-center justify-center gap-2'}>
-          <Avatar size={24} avatarUrl={undefined} username={undefined} />
           <span className={'text-2xl'}>You</span>
+          <Avatar
+            className={'h-[7.25rem] w-[7.25rem]'}
+            avatarUrl={undefined}
+            username={undefined}
+          />
         </Col>
       )}
       <Row className={'w-full items-center justify-center'}>
         <span className={'text-lg'}>
-          {isResolved ? 'had bet' : challenger ? '' : 'are betting'}
+          {isResolved ? 'had bet' : challenger ? '' : ''}
         </span>
       </Row>
       <Row className={'w-full items-center justify-center'}>
