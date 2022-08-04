@@ -27,7 +27,6 @@ import { Button } from 'web/components/button'
 import { ClipboardCopyIcon, QrcodeIcon } from '@heroicons/react/outline'
 import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
-import { contractDetailsButtonClassName } from 'web/components/contract/contract-info-dialog'
 
 dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'
