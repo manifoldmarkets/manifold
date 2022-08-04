@@ -91,6 +91,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       loanAmount: 0,
       createdTime,
       fees: noFees,
+      challengeSlug: challenge.slug,
     })
 
     const yourNewBetDoc = contractDoc.collection('bets').doc()
@@ -114,6 +115,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
       loanAmount: 0,
       createdTime,
       fees: noFees,
+      challengeSlug: challenge.slug,
     })
     const creatorBetDoc = contractDoc.collection('bets').doc()
     trans.create(creatorBetDoc, {

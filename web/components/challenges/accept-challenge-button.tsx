@@ -21,7 +21,7 @@ export function AcceptChallengeButton(props: {
   const [open, setOpen] = useState(false)
   const [errorText, setErrorText] = useState('')
   const [loading, setLoading] = useState(false)
-  const { acceptorAmount } = challenge
+  const { acceptorAmount, creatorAmount } = challenge
 
   useEffect(() => {
     setErrorText('')
@@ -72,13 +72,6 @@ export function AcceptChallengeButton(props: {
                   {formatMoney(acceptorAmount)}
                 </span>
               </Row>
-              {/*<Row className={'w-full justify-start gap-8'}>*/}
-              {/*  <span className={'min-w-[4rem] font-bold'}>Probability:</span>{' '}*/}
-              {/*  <span className={'ml-[3px]'}>*/}
-              {/*    {' '}*/}
-              {/*    {Math.round(yourProb * 100) + '%'}*/}
-              {/*  </span>*/}
-              {/*</Row>*/}
               <Col className={'w-full items-center justify-start'}>
                 <Row className={'w-full justify-start gap-10'}>
                   <span className={'min-w-[4rem] font-bold'}>
@@ -86,9 +79,8 @@ export function AcceptChallengeButton(props: {
                   </span>{' '}
                   <Row className={'items-center justify-center'}>
                     <span className={'text-primary'}>
-                      {formatMoney(challenge.creatorAmount)}
+                      {formatMoney(creatorAmount + acceptorAmount)}
                     </span>
-                    {/*<InfoTooltip text={"If you're right"} />*/}
                   </Row>
                 </Row>
               </Col>

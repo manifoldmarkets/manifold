@@ -211,7 +211,10 @@ export function ContractPageContent(
           </button>
         )}
 
-        <ContractOverview contract={contract} bets={bets} />
+        <ContractOverview
+          contract={contract}
+          bets={bets.filter((b) => !b.challengeSlug)}
+        />
 
         {isNumeric && (
           <AlertBox

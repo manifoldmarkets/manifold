@@ -10,11 +10,14 @@ import { UsersIcon } from '@heroicons/react/solid'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import React, { Fragment } from 'react'
+import React, { Fragment, useEffect } from 'react'
 import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
 import { UserLink } from '../user-page'
 import { formatNumericProbability } from 'common/pseudo-numeric'
+import { SiteLink } from 'web/components/site-link'
+import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
+import { Challenge } from 'common/challenge'
 
 export function FeedBet(props: {
   contract: Contract
@@ -79,7 +82,15 @@ export function BetStatusText(props: {
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
-  const { amount, outcome, createdTime } = bet
+  const { amount, outcome, createdTime, challengeSlug } = bet
+  const [challenge, setChallenge] = React.useState<Challenge>()
+  useEffect(() => {
+    if (challengeSlug) {
+      getChallenge(challengeSlug, contract.id).then((c) => {
+        setChallenge(c)
+      })
+    }
+  }, [challengeSlug, contract.id])
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const outOfTotalAmount =
@@ -133,6 +144,14 @@ export function BetStatusText(props: {
           {fromProb === toProb
             ? `at ${fromProb}`
             : `from ${fromProb} to ${toProb}`}
+          {challengeSlug && (
+            <SiteLink
+              href={challenge ? getChallengeUrl(challenge) : ''}
+              className={'mx-1'}
+            >
+              [challenge]
+            </SiteLink>
+          )}
         </>
       )}
       <RelativeTimestamp time={createdTime} />
