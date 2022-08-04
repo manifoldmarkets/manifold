@@ -26,7 +26,10 @@ export function ContractActivity(props: {
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const comments = props.comments
-  const updatedBets = useBets(contract.id)
+  const updatedBets = useBets(contract.id, {
+    filterChallenges: false,
+    filterRedemptions: true,
+  })
   const bets = (updatedBets ?? props.bets).filter(
     (bet) => !bet.isRedemption && bet.amount !== 0
   )

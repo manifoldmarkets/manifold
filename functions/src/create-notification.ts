@@ -16,6 +16,7 @@ import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
+import { Challenge } from '../../common/challenge'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -478,3 +479,35 @@ export const createReferralNotification = async (
 }
 
 const groupPath = (groupSlug: string) => `/group/${groupSlug}`
+
+export const createChallengeAcceptedNotification = async (
+  challenger: User,
+  challengeCreator: User,
+  challenge: Challenge,
+  acceptedAmount: number,
+  contract: Contract
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${challengeCreator.id}/notifications`)
+    .doc()
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: challengeCreator.id,
+    reason: 'challenge_accepted',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: challenge.slug,
+    sourceType: 'challenge',
+    sourceUpdateType: 'updated',
+    sourceUserName: challenger.name,
+    sourceUserUsername: challenger.username,
+    sourceUserAvatarUrl: challenger.avatarUrl,
+    sourceText: acceptedAmount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    sourceSlug: `/challenges/${challengeCreator.username}/${challenge.contractSlug}/${challenge.slug}`,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}

@@ -26,6 +26,7 @@ export type Bet = {
   isAnte?: boolean
   isLiquidityProvision?: boolean
   isRedemption?: boolean
+  challengeSlug?: string
 } & Partial<LimitProps>
 
 export type NumericBet = Bet & {

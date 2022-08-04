@@ -126,7 +126,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         </div>
       </div>
 
-      <!-- Mantic logo -->
+      <!-- Manifold logo -->
       <div class="absolute right-24 top-8">
         <a class="flex flex-row gap-3" href="/"
           ><img

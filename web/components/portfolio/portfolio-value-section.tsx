@@ -10,8 +10,9 @@ import { PortfolioValueGraph } from './portfolio-value-graph'
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     portfolioHistory: PortfolioMetrics[]
+    disableSelector?: boolean
   }) {
-    const { portfolioHistory } = props
+    const { portfolioHistory, disableSelector } = props
     const lastPortfolioMetrics = last(portfolioHistory)
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('allTime')
 
@@ -30,7 +31,9 @@ export const PortfolioValueSection = memo(
       <div>
         <Row className="gap-8">
           <div className="mb-4 w-full">
-            <Col>
+            <Col
+              className={disableSelector ? 'items-center justify-center' : ''}
+            >
               <div className="text-sm text-gray-500">Portfolio value</div>
               <div className="text-lg">
                 {formatMoney(
@@ -40,16 +43,18 @@ export const PortfolioValueSection = memo(
               </div>
             </Col>
           </div>
-          <select
-            className="select select-bordered self-start"
-            onChange={(e) => {
-              setPortfolioPeriod(e.target.value as Period)
-            }}
-          >
-            <option value="allTime">{allTimeLabel}</option>
-            <option value="weekly">7 days</option>
-            <option value="daily">24 hours</option>
-          </select>
+          {!disableSelector && (
+            <select
+              className="select select-bordered self-start"
+              onChange={(e) => {
+                setPortfolioPeriod(e.target.value as Period)
+              }}
+            >
+              <option value="allTime">{allTimeLabel}</option>
+              <option value="weekly">7 days</option>
+              <option value="daily">24 hours</option>
+            </select>
+          )}
         </Row>
         <PortfolioValueGraph
           portfolioHistory={portfolioHistory}
