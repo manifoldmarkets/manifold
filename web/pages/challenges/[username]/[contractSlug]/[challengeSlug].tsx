@@ -230,7 +230,12 @@ function ClosedChallengeContent(props: {
       )}
       <Col className=" w-full items-center justify-center rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8 ">
         {resolution ? (
-          <Title className="!mt-0" text={`🥇 ${winner} wins the bet 🥇`} />
+          <>
+            <Title className="!mt-0" text={`🥇 ${winner} wins the bet 🥇`} />
+            <SiteLink href={href} className={'mb-8'}>
+              <span className="text-xl ">{question}</span>
+            </SiteLink>
+          </>
         ) : (
           <SiteLink href={href} className={'mb-8'}>
             <span className="text-3xl text-indigo-700">{question}</span>
