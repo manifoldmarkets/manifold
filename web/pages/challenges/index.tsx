@@ -23,8 +23,6 @@ import { UserLink } from 'web/components/user-page'
 import { Avatar } from 'web/components/avatar'
 import Router from 'next/router'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
-import { CopyLinkButton } from 'web/components/copy-link-button'
-import { ShareIconButton } from 'web/components/share-icon-button'
 import { Button } from 'web/components/button'
 import { ClipboardCopyIcon } from '@heroicons/react/outline'
 import { copyToClipboard } from 'web/lib/util/copy'
@@ -119,7 +117,7 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
       <td
         className={clsx(
           columnClass,
-          'm:max-w-[200px] text-center sm:text-start'
+          'text-center sm:max-w-[200px] sm:text-start'
         )}
       >
         <Button
