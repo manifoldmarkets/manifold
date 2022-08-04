@@ -23,6 +23,12 @@ import { UserLink } from 'web/components/user-page'
 import { Avatar } from 'web/components/avatar'
 import Router from 'next/router'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
+import { CopyLinkButton } from 'web/components/copy-link-button'
+import { ShareIconButton } from 'web/components/share-icon-button'
+import { Button } from 'web/components/button'
+import { ClipboardCopyIcon } from '@heroicons/react/outline'
+import { copyToClipboard } from 'web/lib/util/copy'
+import toast from 'react-hot-toast'
 
 dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'
@@ -103,11 +109,21 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
           {formatMoney(challenge.creatorAmount)}
         </SiteLink>
       </td>
-      <td className={clsx(columnClass, 'sm:max-w-[150px] lg:max-w-[200px]')}>
-        <SiteLink href={getChallengeUrl(challenge)}>
-          {getChallengeUrl(challenge)
-            .replace(`https://manifold.markets/challenges/`, '...')
-            .replace('http://localhost:3000/challenges', '...')}
+      <td className={clsx(columnClass, 'items-center sm:max-w-[200px]')}>
+        <Button
+          color={'gray-white'}
+          onClick={() => {
+            copyToClipboard(getChallengeUrl(challenge))
+            toast('Link copied to clipboard!')
+          }}
+        >
+          <ClipboardCopyIcon className={'h-5 w-5 sm:h-4 sm:w-4'} />
+        </Button>
+        <SiteLink
+          href={getChallengeUrl(challenge)}
+          className={'mx-1 mb-1 hidden sm:inline-block'}
+        >
+          {`...${challenge.contractSlug}/${challenge.slug}`}
         </SiteLink>
       </td>
 
