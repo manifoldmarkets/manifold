@@ -13,22 +13,25 @@ import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
+import { contractPath } from 'web/lib/firebase/contracts'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import {
   createCommentOnContract,
   MAX_COMMENT_LENGTH,
 } from 'web/lib/firebase/comments'
+import Textarea from 'react-expanding-textarea'
+import { Linkify } from 'web/components/linkify'
+import { SiteLink } from 'web/components/site-link'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { track } from 'web/lib/service/analytics'
+import { useEvent } from 'web/hooks/use-event'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { Content, TextEditor, useTextEditor } from '../editor'
-import { Editor } from '@tiptap/react'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -36,12 +39,20 @@ export function FeedCommentThread(props: {
   tips: CommentTipMap
   parentComment: Comment
   bets: Bet[]
+  truncate?: boolean
   smallAvatar?: boolean
 }) {
-  const { contract, comments, bets, tips, smallAvatar, parentComment } = props
+  const {
+    contract,
+    comments,
+    bets,
+    tips,
+    truncate,
+    smallAvatar,
+    parentComment,
+  } = props
   const [showReply, setShowReply] = useState(false)
-  const [replyToUser, setReplyToUser] =
-    useState<{ id: string; username: string }>()
+  const [replyToUsername, setReplyToUsername] = useState('')
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const user = useUser()
   const commentsList = comments.filter(
@@ -49,12 +60,15 @@ export function FeedCommentThread(props: {
       parentComment.id && comment.replyToCommentId === parentComment.id
   )
   commentsList.unshift(parentComment)
-
+  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
   function scrollAndOpenReplyInput(comment: Comment) {
-    setReplyToUser({ id: comment.userId, username: comment.userUsername })
+    setReplyToUsername(comment.userUsername)
     setShowReply(true)
+    inputRef?.focus()
   }
-
+  useEffect(() => {
+    if (showReply && inputRef) inputRef.focus()
+  }, [inputRef, showReply])
   return (
     <Col className={'w-full gap-3 pr-1'}>
       <span
@@ -67,6 +81,7 @@ export function FeedCommentThread(props: {
         betsByUserId={betsByUserId}
         tips={tips}
         smallAvatar={smallAvatar}
+        truncate={truncate}
         bets={bets}
         scrollAndOpenReplyInput={scrollAndOpenReplyInput}
       />
@@ -83,9 +98,13 @@ export function FeedCommentThread(props: {
               (c) => c.userId === user?.id
             )}
             parentCommentId={parentComment.id}
-            replyToUser={replyToUser}
+            replyToUsername={replyToUsername}
             parentAnswerOutcome={comments[0].answerOutcome}
-            onSubmitComment={() => setShowReply(false)}
+            setRef={setInputRef}
+            onSubmitComment={() => {
+              setShowReply(false)
+              setReplyToUsername('')
+            }}
           />
         </Col>
       )}
@@ -102,12 +121,14 @@ export function CommentRepliesList(props: {
   bets: Bet[]
   treatFirstIndexEqually?: boolean
   smallAvatar?: boolean
+  truncate?: boolean
 }) {
   const {
     contract,
     commentsList,
     betsByUserId,
     tips,
+    truncate,
     smallAvatar,
     bets,
     scrollAndOpenReplyInput,
@@ -147,6 +168,7 @@ export function CommentRepliesList(props: {
                 : undefined
             }
             smallAvatar={smallAvatar}
+            truncate={truncate}
           />
         </div>
       ))}
@@ -160,6 +182,7 @@ export function FeedComment(props: {
   tips: CommentTips
   betsBySameUser: Bet[]
   probAtCreatedTime?: number
+  truncate?: boolean
   smallAvatar?: boolean
   onReplyClick?: (comment: Comment) => void
 }) {
@@ -169,10 +192,10 @@ export function FeedComment(props: {
     tips,
     betsBySameUser,
     probAtCreatedTime,
+    truncate,
     onReplyClick,
   } = props
-  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
-    comment
+  const { text, userUsername, userName, userAvatarUrl, createdTime } = comment
   let betOutcome: string | undefined,
     bought: string | undefined,
     money: string | undefined
@@ -253,9 +276,11 @@ export function FeedComment(props: {
             elementId={comment.id}
           />
         </div>
-        <div className="mt-2 text-[15px] text-gray-700">
-          <Content content={content || text} />
-        </div>
+        <TruncatedComment
+          comment={text}
+          moreHref={contractPath(contract)}
+          shouldTruncate={truncate}
+        />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
@@ -320,7 +345,8 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: Comment[]
-  replyToUser?: { id: string; username: string }
+  replyToUsername?: string
+  setRef?: (ref: HTMLTextAreaElement) => void
   // Reply to a free response answer
   parentAnswerOutcome?: string
   // Reply to another comment
@@ -333,18 +359,12 @@ export function CommentInput(props: {
     commentsByCurrentUser,
     parentAnswerOutcome,
     parentCommentId,
-    replyToUser,
+    replyToUsername,
     onSubmitComment,
+    setRef,
   } = props
   const user = useUser()
-  const { editor, upload } = useTextEditor({
-    simple: true,
-    max: MAX_COMMENT_LENGTH,
-    placeholder:
-      !!parentCommentId || !!parentAnswerOutcome
-        ? 'Write a reply...'
-        : 'Write a comment...',
-  })
+  const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const mostRecentCommentableBet = getMostRecentCommentableBet(
@@ -360,17 +380,18 @@ export function CommentInput(props: {
       track('sign in to comment')
       return await firebaseLogin()
     }
-    if (!editor || editor.isEmpty || isSubmitting) return
+    if (!comment || isSubmitting) return
     setIsSubmitting(true)
     await createCommentOnContract(
       contract.id,
-      editor.getJSON(),
+      comment,
       user,
       betId,
       parentAnswerOutcome,
       parentCommentId
     )
     onSubmitComment?.()
+    setComment('')
     setIsSubmitting(false)
   }
 
@@ -425,12 +446,14 @@ export function CommentInput(props: {
                 )}
             </div>
             <CommentInputTextArea
-              editor={editor}
-              upload={upload}
-              replyToUser={replyToUser}
+              commentText={comment}
+              setComment={setComment}
+              isReply={!!parentCommentId || !!parentAnswerOutcome}
+              replyToUsername={replyToUsername ?? ''}
               user={user}
               submitComment={submitComment}
               isSubmitting={isSubmitting}
+              setRef={setRef}
               presetId={id}
             />
           </div>
@@ -442,89 +465,94 @@ export function CommentInput(props: {
 
 export function CommentInputTextArea(props: {
   user: User | undefined | null
-  replyToUser?: { id: string; username: string }
-  editor: Editor | null
-  upload: Parameters<typeof TextEditor>[0]['upload']
+  isReply: boolean
+  replyToUsername: string
+  commentText: string
+  setComment: (text: string) => void
   submitComment: (id?: string) => void
   isSubmitting: boolean
-  submitOnEnter?: boolean
+  setRef?: (ref: HTMLTextAreaElement) => void
   presetId?: string
+  enterToSubmitOnDesktop?: boolean
 }) {
   const {
+    isReply,
+    setRef,
     user,
-    editor,
-    upload,
+    commentText,
+    setComment,
     submitComment,
     presetId,
     isSubmitting,
-    submitOnEnter,
-    replyToUser,
+    replyToUsername,
+    enterToSubmitOnDesktop,
   } = props
-  const isMobile = (useWindowSize().width ?? 0) < 768 // TODO: base off input device (keybord vs touch)
-
+  const { width } = useWindowSize()
+  const memoizedSetComment = useEvent(setComment)
   useEffect(() => {
-    editor?.setEditable(!isSubmitting)
-  }, [isSubmitting, editor])
-
-  const submit = () => {
-    submitComment(presetId)
-    editor?.commands?.clearContent()
-  }
-
-  useEffect(() => {
-    if (!editor) {
-      return
-    }
-    // submit on Enter key
-    editor.setOptions({
-      editorProps: {
-        handleKeyDown: (view, event) => {
-          if (
-            submitOnEnter &&
-            event.key === 'Enter' &&
-            !event.shiftKey &&
-            (!isMobile || event.ctrlKey || event.metaKey) &&
-            // mention list is closed
-            !(view.state as any).mention$.active
-          ) {
-            submit()
-            event.preventDefault()
-            return true
-          }
-          return false
-        },
-      },
-    })
-    // insert at mention
-    if (replyToUser) {
-      editor.commands.insertContentAt(0, {
-        type: 'mention',
-        attrs: { label: replyToUser.username, id: replyToUser.id },
-      })
-      editor.commands.focus()
-    }
+    if (!replyToUsername || !user || replyToUsername === user.username) return
+    const replacement = `@${replyToUsername} `
+    memoizedSetComment(replacement + commentText.replace(replacement, ''))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor])
-
+  }, [user, replyToUsername, memoizedSetComment])
   return (
     <>
-      <div>
-        <TextEditor editor={editor} upload={upload}>
+      <Row className="gap-1.5 text-gray-700">
+        <Textarea
+          ref={setRef}
+          value={commentText}
+          onChange={(e) => setComment(e.target.value)}
+          className={clsx('textarea textarea-bordered w-full resize-none')}
+          // Make room for floating submit button.
+          style={{ paddingRight: 48 }}
+          placeholder={
+            isReply
+              ? 'Write a reply... '
+              : enterToSubmitOnDesktop
+              ? 'Send a message'
+              : 'Write a comment...'
+          }
+          autoFocus={false}
+          maxLength={MAX_COMMENT_LENGTH}
+          disabled={isSubmitting}
+          onKeyDown={(e) => {
+            if (
+              (enterToSubmitOnDesktop &&
+                e.key === 'Enter' &&
+                !e.shiftKey &&
+                width &&
+                width > 768) ||
+              (e.key === 'Enter' && (e.ctrlKey || e.metaKey))
+            ) {
+              e.preventDefault()
+              submitComment(presetId)
+              e.currentTarget.blur()
+            }
+          }}
+        />
+
+        <Col className={clsx('relative justify-end')}>
           {user && !isSubmitting && (
             <button
-              className="btn btn-ghost btn-sm px-2 disabled:bg-inherit disabled:text-gray-300"
-              disabled={!editor || editor.isEmpty}
-              onClick={submit}
+              className={clsx(
+                'btn btn-ghost btn-sm absolute right-2 bottom-2 flex-row pl-2 capitalize',
+                !commentText && 'pointer-events-none text-gray-500'
+              )}
+              onClick={() => {
+                submitComment(presetId)
+              }}
             >
-              <PaperAirplaneIcon className="m-0 h-[25px] min-w-[22px] rotate-90 p-0" />
+              <PaperAirplaneIcon
+                className={'m-0 min-w-[22px] rotate-90 p-0 '}
+                height={25}
+              />
             </button>
           )}
-
           {isSubmitting && (
             <LoadingIndicator spinnerClassName={'border-gray-500'} />
           )}
-        </TextEditor>
-      </div>
+        </Col>
+      </Row>
       <Row>
         {!user && (
           <button
@@ -536,6 +564,38 @@ export function CommentInputTextArea(props: {
         )}
       </Row>
     </>
+  )
+}
+
+export function TruncatedComment(props: {
+  comment: string
+  moreHref: string
+  shouldTruncate?: boolean
+}) {
+  const { comment, moreHref, shouldTruncate } = props
+  let truncated = comment
+
+  // Keep descriptions to at most 400 characters
+  const MAX_CHARS = 400
+  if (shouldTruncate && truncated.length > MAX_CHARS) {
+    truncated = truncated.slice(0, MAX_CHARS)
+    // Make sure to end on a space
+    const i = truncated.lastIndexOf(' ')
+    truncated = truncated.slice(0, i)
+  }
+
+  return (
+    <div
+      className="mt-2 whitespace-pre-line break-words text-gray-700"
+      style={{ fontSize: 15 }}
+    >
+      <Linkify text={truncated} />
+      {truncated != comment && (
+        <SiteLink href={moreHref} className="text-indigo-700">
+          ... (show more)
+        </SiteLink>
+      )}
+    </div>
   )
 }
 

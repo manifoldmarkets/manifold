@@ -14,7 +14,6 @@ import { User } from 'common/user'
 import { Comment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { track } from '@amplitude/analytics-browser'
-import { JSONContent } from '@tiptap/react'
 
 export type { Comment }
 
@@ -22,7 +21,7 @@ export const MAX_COMMENT_LENGTH = 10000
 
 export async function createCommentOnContract(
   contractId: string,
-  content: JSONContent,
+  text: string,
   commenter: User,
   betId?: string,
   answerOutcome?: string,
@@ -35,7 +34,7 @@ export async function createCommentOnContract(
     id: ref.id,
     contractId,
     userId: commenter.id,
-    content: content,
+    text: text.slice(0, MAX_COMMENT_LENGTH),
     createdTime: Date.now(),
     userName: commenter.name,
     userUsername: commenter.username,
@@ -54,7 +53,7 @@ export async function createCommentOnContract(
 }
 export async function createCommentOnGroup(
   groupId: string,
-  content: JSONContent,
+  text: string,
   user: User,
   replyToCommentId?: string
 ) {
@@ -63,7 +62,7 @@ export async function createCommentOnGroup(
     id: ref.id,
     groupId,
     userId: user.id,
-    content: content,
+    text: text.slice(0, MAX_COMMENT_LENGTH),
     createdTime: Date.now(),
     userName: user.name,
     userUsername: user.username,
