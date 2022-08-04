@@ -31,6 +31,7 @@
     "@tiptap/extension-link": "2.0.0-beta.43",
     "@tiptap/extension-mention": "2.0.0-beta.102",
     "@tiptap/starter-kit": "2.0.0-beta.190",
+    "dayjs": "1.11.4",
     "cors": "2.8.5",
     "express": "4.18.1",
     "firebase-admin": "10.0.0",
