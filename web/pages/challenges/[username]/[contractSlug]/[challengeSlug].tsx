@@ -185,11 +185,9 @@ function ClosedChallengeContent(props: {
       )}
       <Col className=" w-full items-center justify-center rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <Title className="!mt-0" text={title} />
-
         <Row className="my-4 justify-center px-8 pb-4 text-lg sm:text-xl">
           <SiteLink href={href}>{question}</SiteLink>
         </Row>
-
         <Col
           className={
             'h-full max-h-[50vh] w-full content-between justify-between gap-1 sm:flex-row'
@@ -213,7 +211,6 @@ function ClosedChallengeContent(props: {
             isResolved={!!resolution}
           />
         </Col>
-
         <Spacer h={3} />
 
         {/* <Row className="mt-8 items-center">
@@ -277,6 +274,19 @@ function OpenChallengeContent(props: {
         </Col>
 
         <Spacer h={3} />
+        <Row className={'my-4 text-gray-500'}>
+          <span>
+            {`${creator.name} will bet ${formatMoney(
+              creatorAmount
+            )} on ${creatorOutcome} if you bet ${formatMoney(
+              acceptorAmount
+            )} on ${acceptorOutcome}. Whoever is right will get `}
+            <span className="mr-1 font-bold ">
+              {formatMoney(creatorAmount + acceptorAmount)}
+            </span>
+            total.
+          </span>
+        </Row>
 
         <Row className="my-4 w-full items-center justify-center">
           <AcceptChallengeButton
@@ -290,19 +300,19 @@ function OpenChallengeContent(props: {
   )
 }
 
-const userRow = (challenger: User) => (
-  <Row className={'mb-2 w-full items-center justify-center gap-2'}>
-    <Avatar
-      size={12}
-      avatarUrl={challenger.avatarUrl}
-      username={challenger.username}
-    />
+const userCol = (challenger: User) => (
+  <Col className={'mb-2 w-full items-center justify-center gap-2'}>
     <UserLink
       className={'text-2xl'}
       name={challenger.name}
       username={challenger.username}
     />
-  </Row>
+    <Avatar
+      size={24}
+      avatarUrl={challenger.avatarUrl}
+      username={challenger.username}
+    />
+  </Col>
 )
 
 function UserBetColumn(props: {
@@ -316,16 +326,16 @@ function UserBetColumn(props: {
   return (
     <Col className="w-full items-start justify-center gap-1">
       {challenger ? (
-        userRow(challenger)
+        userCol(challenger)
       ) : (
-        <Row className={'mb-2 w-full items-center justify-center gap-2'}>
-          <Avatar size={12} avatarUrl={undefined} username={undefined} />
+        <Col className={'mb-2 w-full items-center justify-center gap-2'}>
+          <Avatar size={24} avatarUrl={undefined} username={undefined} />
           <span className={'text-2xl'}>You</span>
-        </Row>
+        </Col>
       )}
       <Row className={'w-full items-center justify-center'}>
         <span className={'text-lg'}>
-          {isResolved ? 'had bet' : challenger ? 'is betting' : 'are betting'}
+          {isResolved ? 'had bet' : challenger ? '' : 'are betting'}
         </span>
       </Row>
       <Row className={'w-full items-center justify-center'}>
