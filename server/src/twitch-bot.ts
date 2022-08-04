@@ -21,11 +21,12 @@ const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, 
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${SIGNUP_LINK}!`;
 const MSG_HELP = () => `Check out the full list of commands and how to play here: ${SIGNUP_LINK}`;
 const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) => {
+    // winners.reverse();
     const maxWinners = 10;
     let message = `The market has resolved to ${outcome}! The top ${maxWinners} bettors are`;
     for (let index = 0; index < Math.min(winners.length, maxWinners); index++) {
         const winner = winners[index];
-        message += ` ${winner.user.name} (${winner.profit > 0 && "+"}${winner.profit.toFixed(0)}),`; //!!! Use Twitch usernames
+        message += ` ${winner.user.name} (${winner.profit > 0 ? "+" : ""}${winner.profit.toFixed(0)}),`; //!!! Use Twitch usernames
     }
     if (message.endsWith(",")) {
         message = message.substring(0, message.length - 1);
@@ -192,7 +193,7 @@ export default class TwitchBot {
                 } else {
                     try {
                         const market = app.getMarketForTwitchChannel(channel);
-                        if (!market && commandString !== "select") {
+                        if (!market && commandString !== "select" && commandString !== "balance" && commandString !== "create") {
                             this.client.say(channel, MSG_NO_MARKET_SELECTED(userDisplayName));
                             return;
                         }
@@ -210,7 +211,7 @@ export default class TwitchBot {
                         }
                     } catch (e) {
                         if (e instanceof UserNotRegisteredException) this.client.say(channel, MSG_SIGNUP(userDisplayName));
-                        throw e;
+                        else throw e;
                     }
                 }
             } catch (e) {

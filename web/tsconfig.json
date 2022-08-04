@@ -1,22 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es5",
     "module": "esnext",
     "moduleResolution": "node",
-    "noResolve": false,
-    "noImplicitAny": false,
-    "sourceMap": true,
-    "baseUrl": ".",
-    "preserveConstEnums": true,
-    "allowSyntheticDefaultImports": true,
-    "lib": [
-      "dom",
-      "es6",
-      "WebWorker"
-    ],
+    "baseUrl": "../",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "incremental": true,
@@ -26,7 +17,9 @@
     "jsx": "preserve"
   },
   "include": [
-    "src/**/*",
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
     "../common/**/*"
   ],
   "exclude": [

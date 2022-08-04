@@ -1,6 +1,7 @@
 import * as React from "react";
+// import 'tailwindcss/tailwind.css'
 import Head from "next/head";
-import "../styles/globals.css";
+import "../styles/globals.scss";
 
 // This default export is required in a new `pages/_app.js` file.
 export default function MyApp({ Component, pageProps }) {

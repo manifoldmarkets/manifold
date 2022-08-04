@@ -42,10 +42,13 @@ export default class App {
         this.io = new Server(server);
         this.io.on("connection", (socket) => {
             socket.emit(Packet.CLEAR);
-            // if (this.selectedMarket) {
-            //     socket.emit(Packet.SELECT_MARKET, this.selectedMarket.getSlug());
-            //     socket.emit(Packet.ADD_BETS, this.latestBets);
-            // }
+
+            const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
+
+            if (mkt) {
+                socket.emit(Packet.SELECT_MARKET, mkt.getSlug());
+                socket.emit(Packet.ADD_BETS, mkt.bets);
+            }
             //!!! Need some linking method
         });
         server.listen(31452, () => {

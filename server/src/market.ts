@@ -9,7 +9,7 @@ const { keyBy, mapValues, sumBy, groupBy } = lodash;
 
 export class Market {
     private readonly app: App;
-    private readonly bets: FullBet[] = [];
+    readonly bets: FullBet[] = [];
     private latestLoadedBetId: string = null;
 
     data: LiteMarket;
@@ -40,6 +40,8 @@ export class Market {
                     const channel = this.app.getChannelForMarketID(this.data.id);
                     this.app.bot.resolveMarket(channel, this.data.resolution == "YES" ? ResolutionOutcome.YES : ResolutionOutcome.NO, winners); //!!! Proper outcomes
                 }
+            } catch (e) {
+                log.trace(e);
             } finally {
                 if (continuePolling) {
                     setTimeout(pollTask, 1000);
