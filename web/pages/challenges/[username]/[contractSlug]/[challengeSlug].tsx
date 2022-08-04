@@ -300,7 +300,7 @@ function OpenChallengeContent(props: {
 
         <Col
           className={
-            'h-full max-h-[50vh] w-full content-between justify-between gap-1 sm:flex-row'
+            ' w-full content-between justify-between gap-1 sm:flex-row'
           }
         >
           <UserBetColumn
