@@ -95,7 +95,7 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
     acceptedName,
     acceptedAvatarUrl,
   } = parsedReq
-  const MAX_QUESTION_CHARS = 85
+  const MAX_QUESTION_CHARS = 78
   const truncatedQuestion =
     question.length > MAX_QUESTION_CHARS
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
@@ -126,58 +126,62 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
         <div class="flex flex-col justify-center items-center ${
           creatorOutcome === 'YES' ? 'text-primary' : 'text-red-500'
         }">
-          <div class="flex flex-row align-bottom gap-6">
+        
+<!--      Creator user column-->
+          <div class="flex flex-col align-bottom gap-6 items-center justify-center">
+            <p class="text-gray-900 text-4xl">${creatorName}</p>
             <img
-              class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAvatar}"
+              class="h-36 w-36 rounded-full bg-white flex items-center justify-center ${hideAvatar}"
               src="${creatorAvatarUrl}"
               alt=""
             />
-            <div class="flex flex-col gap-2 items-center justify-center">
-            <p class="text-gray-900 text-4xl">${creatorName}</p>
-            </div>
-        </div> 
-          <div class="text-6xl mt-8">${'M$' + creatorAmount}</div>
-          <div class="text-3xl">${'on'}</div>
-          <div class="text-6xl ">${creatorOutcome}</div>
+        </div>
+        <div class="flex flex-row justify-center items-center gap-3 mt-6"> 
+          <div class="text-5xl">${'M$' + creatorAmount}</div>
+          <div class="text-4xl">${'on'}</div>
+          <div class="text-5xl ">${creatorOutcome}</div>
+        </div>
       </div>
+      
+<!--      VS-->
         <div class="flex flex-col text-gray-900 text-6xl mt-8 text-center">
         VS
         </div>
       <div class="flex flex-col justify-center items-center ${
         challengerOutcome === 'YES' ? 'text-primary' : 'text-red-500'
       }">
-        <div class="flex flex-row align-bottom gap-6 mr-24 ${
-          accepted ? 'hidden' : ''
-        }">
+
+<!--     Unaccepted user column-->
+          <div class="flex flex-col align-bottom gap-6 items-center justify-center
+              ${accepted ? 'hidden' : ''}">
+            <p class="text-gray-900 text-4xl">You</p>
             <img
-              class="h-24 w-24 rounded-full bg-white flex items-center justify-center "
+              class="h-36 w-36 rounded-full bg-white flex items-center justify-center "
               src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
               alt=""
             />
-            <div class="flex flex-col gap-2 items-center justify-center">
-            <p class="text-gray-900 text-4xl">You</p>
-            </div>
         </div>
-        <div class="flex flex-row align-bottom gap-6">
+<!--    Accepted user column-->
+          <div class="flex flex-col align-bottom gap-6 items-center justify-center">
+            <p class="text-gray-900 text-4xl">${acceptedName}</p>
             <img
-              class="h-24 w-24 rounded-full bg-white flex items-center justify-center ${hideAcceptedAvatar}"
+              class="h-36 w-36 rounded-full bg-white flex items-center justify-center ${hideAcceptedAvatar}"
               src="${acceptedAvatarUrl}"
               alt=""
             />
-            <div class="flex flex-col gap-2 items-center justify-center">
-            <p class="text-gray-900 text-4xl">${acceptedName}</p>
-            </div>
         </div>  
-          <div class="text-6xl mt-8">${'M$' + challengerAmount}</div>
-          <div class="text-3xl">${'on'}</div>
-          <div class="text-6xl ">${challengerOutcome}</div>
+        <div class="flex flex-row justify-center items-center gap-3 mt-6"> 
+          <div class="text-5xl">${'M$' + challengerAmount}</div>
+          <div class="text-4xl">${'on'}</div>
+          <div class="text-5xl ">${challengerOutcome}</div>
+          </div>
       </div>
       </div>
         
         </div>
       </div>
     <!-- Manifold logo -->
-    <div class="flex flex-row justify-center mt-14 ">
+    <div class="flex flex-row justify-center mt-20 ">
       <a class="flex flex-row gap-3" href="/">
       <img
         class="sm:h-12 sm:w-12"
