@@ -1,15 +1,22 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
+import { GroupLink } from 'common/group'
 
 export type AnyMechanism = DPM | CPMM
-export type AnyOutcomeType = Binary | PseudoNumeric | FreeResponse | Numeric
+export type AnyOutcomeType =
+  | Binary
+  | MultipleChoice
+  | PseudoNumeric
+  | FreeResponse
+  | Numeric
 export type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
   | (DPM & Binary)
   | (DPM & FreeResponse)
   | (DPM & Numeric)
+  | (DPM & MultipleChoice)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -46,14 +53,17 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   collectedFees: Fees
 
   groupSlugs?: string[]
+  groupLinks?: GroupLink[]
   uniqueBettorIds?: string[]
   uniqueBettorCount?: number
+  popularityScore?: number
 } & T
 
 export type BinaryContract = Contract & Binary
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
+export type MultipleChoiceContract = Contract & MultipleChoice
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type DPMBinaryContract = BinaryContract & DPM
@@ -101,6 +111,13 @@ export type FreeResponse = {
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
+export type MultipleChoice = {
+  outcomeType: 'MULTIPLE_CHOICE'
+  answers: Answer[]
+  resolution?: string | 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+}
+
 export type Numeric = {
   outcomeType: 'NUMERIC'
   bucketCount: number
@@ -115,6 +132,7 @@ export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
 export const OUTCOME_TYPES = [
   'BINARY',
+  'MULTIPLE_CHOICE',
   'FREE_RESPONSE',
   'PSEUDO_NUMERIC',
   'NUMERIC',

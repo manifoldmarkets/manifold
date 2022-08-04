@@ -8,13 +8,13 @@ export const onCreateLiquidityProvision = functions.firestore
   .onCreate(async (change, context) => {
     const liquidity = change.data() as LiquidityProvision
     const { eventId } = context
-    const contract = await getContract(liquidity.contractId)
-
-    if (!contract)
-      throw new Error('Could not find contract corresponding with liquidity')
 
     // Ignore Manifold Markets liquidity for now - users see a notification for free market liquidity provision
     if (liquidity.userId === 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2') return
+
+    const contract = await getContract(liquidity.contractId)
+    if (!contract)
+      throw new Error('Could not find contract corresponding with liquidity')
 
     const liquidityProvider = await getUser(liquidity.userId)
     if (!liquidityProvider) throw new Error('Could not find liquidity provider')
@@ -26,6 +26,6 @@ export const onCreateLiquidityProvision = functions.firestore
       liquidityProvider,
       eventId,
       liquidity.amount.toString(),
-      contract
+      { contract }
     )
   })

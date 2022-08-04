@@ -1,32 +1,28 @@
 import { useState, useEffect } from 'react'
 import { PrivateUser, User } from 'common/user'
-import {
-  listenForAllUsers,
-  listenForPrivateUsers,
-} from 'web/lib/firebase/users'
 import { groupBy, sortBy, difference } from 'lodash'
 import { getContractsOfUserBets } from 'web/lib/firebase/bets'
 import { useFollows } from './use-follows'
 import { useUser } from './use-user'
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
+import { DocumentData } from 'firebase/firestore'
+import { users, privateUsers } from 'web/lib/firebase/users'
 
 export const useUsers = () => {
-  const [users, setUsers] = useState<User[]>([])
-
-  useEffect(() => {
-    listenForAllUsers(setUsers)
-  }, [])
-
-  return users
+  const result = useFirestoreQueryData<DocumentData, User[]>(['users'], users, {
+    subscribe: true,
+    includeMetadataChanges: true,
+  })
+  return result.data ?? []
 }
 
 export const usePrivateUsers = () => {
-  const [users, setUsers] = useState<PrivateUser[]>([])
-
-  useEffect(() => {
-    listenForPrivateUsers(setUsers)
-  }, [])
-
-  return users
+  const result = useFirestoreQueryData<DocumentData, PrivateUser[]>(
+    ['private users'],
+    privateUsers,
+    { subscribe: true, includeMetadataChanges: true }
+  )
+  return result.data || []
 }
 
 export const useDiscoverUsers = (userId: string | null | undefined) => {

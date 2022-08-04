@@ -38,13 +38,15 @@ export type User = {
 
   referredByUserId?: string
   referredByContractId?: string
+  referredByGroupId?: string
   lastPingTime?: number
+  shouldShowWelcome?: boolean
 }
 
 export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 10
-export const REFERRAL_AMOUNT = 500
+export const REFERRAL_AMOUNT = ENV_CONFIG.referralBonus ?? 500
 
 export type PrivateUser = {
   id: string // same as User.id

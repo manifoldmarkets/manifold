@@ -1,17 +1,17 @@
 import dayjs from 'dayjs'
 import {
-  doc,
-  setDoc,
-  deleteDoc,
-  where,
   collection,
-  query,
-  getDocs,
-  orderBy,
+  deleteDoc,
+  doc,
   getDoc,
-  updateDoc,
+  getDocs,
   limit,
+  orderBy,
+  query,
+  setDoc,
   startAfter,
+  updateDoc,
+  where,
 } from 'firebase/firestore'
 import { sortBy, sum } from 'lodash'
 

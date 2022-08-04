@@ -9,22 +9,33 @@ import {
 import clsx from 'clsx'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { useState } from 'react'
-import { useMemberGroups } from 'web/hooks/use-group'
+import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
 
 export function GroupSelector(props: {
-  selectedGroup?: Group
+  selectedGroup: Group | undefined
   setSelectedGroup: (group: Group) => void
   creator: User | null | undefined
-  showSelector?: boolean
+  options: {
+    showSelector: boolean
+    showLabel: boolean
+    ignoreGroupIds?: string[]
+  }
 }) {
-  const { selectedGroup, setSelectedGroup, creator, showSelector } = props
+  const { selectedGroup, setSelectedGroup, creator, options } = props
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
-
+  const { showSelector, showLabel, ignoreGroupIds } = options
   const [query, setQuery] = useState('')
-  const memberGroups = useMemberGroups(creator?.id) ?? []
-  const filteredGroups = memberGroups.filter((group) =>
+  const openGroups = useOpenGroups()
+  const availableGroups = openGroups
+    .concat(
+      (useMemberGroups(creator?.id) ?? []).filter(
+        (g) => !openGroups.map((og) => og.id).includes(g.id)
+      )
+    )
+    .filter((group) => !ignoreGroupIds?.includes(group.id))
+  const filteredGroups = availableGroups.filter((group) =>
     searchInAny(query, group.name)
   )
 
@@ -53,19 +64,20 @@ export function GroupSelector(props: {
         nullable={true}
         className={'text-sm'}
       >
-        {({ open }) => (
+        {() => (
           <>
-            {!open && setQuery('')}
-            <Combobox.Label className="label justify-start gap-2 text-base">
-              Add to Group
-              <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
-            </Combobox.Label>
+            {showLabel && (
+              <Combobox.Label className="label justify-start gap-2 text-base">
+                Add to Group
+                <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
+              </Combobox.Label>
+            )}
             <div className="relative mt-2">
               <Combobox.Input
-                className="w-full rounded-md border border-gray-300 bg-white p-3 pl-4 pr-20 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 "
+                className="w-60 rounded-md border border-gray-300 bg-white p-3 pl-4 pr-20 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 "
                 onChange={(event) => setQuery(event.target.value)}
                 displayValue={(group: Group) => group && group.name}
-                placeholder={'None'}
+                placeholder={'E.g. Science, Politics'}
               />
               <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
                 <SelectorIcon

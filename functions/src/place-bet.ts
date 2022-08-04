@@ -96,7 +96,10 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           limitProb,
           unfilledBets
         )
-      } else if (outcomeType == 'FREE_RESPONSE' && mechanism == 'dpm-2') {
+      } else if (
+        (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
+        mechanism == 'dpm-2'
+      ) {
         const { outcome } = validate(freeResponseSchema, req.body)
         const answerDoc = contractDoc.collection('answers').doc(outcome)
         const answerSnap = await trans.get(answerDoc)

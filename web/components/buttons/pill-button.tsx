@@ -13,10 +13,10 @@ export function PillButton(props: {
   return (
     <button
       className={clsx(
-        'cursor-pointer select-none rounded-full',
+        'cursor-pointer select-none whitespace-nowrap rounded-full',
         selected
-          ? ['text-white', color ?? 'bg-gray-700']
-          : 'bg-gray-100 hover:bg-gray-200',
+          ? ['text-white', color ?? 'bg-greyscale-6']
+          : 'bg-greyscale-2 hover:bg-greyscale-3',
         big ? 'px-8 py-2' : 'px-3 py-1.5 text-sm'
       )}
       onClick={onSelect}

@@ -9,6 +9,9 @@ import { useContracts } from 'web/hooks/use-contracts'
 import { mapKeys } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 function avatarHtml(avatarUrl: string) {
   return `<img

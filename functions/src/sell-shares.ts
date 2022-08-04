@@ -1,4 +1,4 @@
-import { sumBy, uniq } from 'lodash'
+import { mapValues, groupBy, sumBy, uniq } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
@@ -9,15 +9,15 @@ import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { getValues, log } from './utils'
 import { Bet } from '../../common/bet'
-import { floatingLesserEqual } from '../../common/util/math'
+import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsQuery, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { redeemShares } from './redeem-shares'
 
 const bodySchema = z.object({
   contractId: z.string(),
-  shares: z.number(),
-  outcome: z.enum(['YES', 'NO']),
+  shares: z.number().optional(), // leave it out to sell all shares
+  outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
 })
 
 export const sellshares = newEndpoint({}, async (req, auth) => {
@@ -46,14 +46,37 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       throw new APIError(400, 'Trading is closed.')
 
     const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+    const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
+    const sharesByOutcome = mapValues(betsByOutcome, (bets) =>
+      sumBy(bets, (b) => b.shares)
+    )
 
-    const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
-    const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
+    let chosenOutcome: 'YES' | 'NO'
+    if (outcome != null) {
+      chosenOutcome = outcome
+    } else {
+      const nonzeroShares = Object.entries(sharesByOutcome).filter(
+        ([_k, v]) => !floatingEqual(0, v)
+      )
+      if (nonzeroShares.length == 0) {
+        throw new APIError(400, "You don't own any shares in this market.")
+      }
+      if (nonzeroShares.length > 1) {
+        throw new APIError(
+          400,
+          `You own multiple kinds of shares, but did not specify which to sell.`
+        )
+      }
+      chosenOutcome = nonzeroShares[0][0] as 'YES' | 'NO'
+    }
 
-    if (!floatingLesserEqual(shares, maxShares))
+    const maxShares = sharesByOutcome[chosenOutcome]
+    const sharesToSell = shares ?? maxShares
+
+    if (!floatingLesserEqual(sharesToSell, maxShares))
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
-    const soldShares = Math.min(shares, maxShares)
+    const soldShares = Math.min(sharesToSell, maxShares)
 
     const unfilledBetsSnap = await transaction.get(
       getUnfilledBetsQuery(contractDoc)
@@ -62,7 +85,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
 
     const { newBet, newPool, newP, fees, makers } = getCpmmSellBetInfo(
       soldShares,
-      outcome,
+      chosenOutcome,
       contract,
       prevLoanAmount,
       unfilledBets

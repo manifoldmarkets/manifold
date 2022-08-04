@@ -2,11 +2,12 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { REFERRAL_AMOUNT, User } from '../../common/user'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
-import { createNotification } from './create-notification'
+import { createReferralNotification } from './create-notification'
 import { ReferralTxn } from '../../common/txn'
 import { Contract } from '../../common/contract'
 import { LimitBet } from 'common/bet'
 import { QuerySnapshot } from 'firebase-admin/firestore'
+import { Group } from 'common/group'
 const firestore = admin.firestore()
 
 export const onUpdateUser = functions.firestore
@@ -54,6 +55,17 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
     }
     console.log(`referredByContract: ${referredByContract}`)
 
+    let referredByGroup: Group | undefined = undefined
+    if (user.referredByGroupId) {
+      const referredByGroupDoc = firestore.doc(
+        `groups/${user.referredByGroupId}`
+      )
+      referredByGroup = await transaction
+        .get(referredByGroupDoc)
+        .then((snap) => snap.data() as Group)
+    }
+    console.log(`referredByGroup: ${referredByGroup}`)
+
     const txns = (
       await firestore
         .collection('txns')
@@ -91,8 +103,8 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
     }
 
-    const txnDoc = await firestore.collection(`txns/`).doc(txn.id)
-    await transaction.set(txnDoc, txn)
+    const txnDoc = firestore.collection(`txns/`).doc(txn.id)
+    transaction.set(txnDoc, txn)
     console.log('created referral with txn id:', txn.id)
     // We're currently not subtracting M$ from the house, not sure if we want to for accounting purposes.
     transaction.update(referredByUserDoc, {
@@ -100,18 +112,13 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
       totalDeposits: referredByUser.totalDeposits + REFERRAL_AMOUNT,
     })
 
-    await createNotification(
-      user.id,
-      'user',
-      'updated',
+    await createReferralNotification(
+      referredByUser,
       user,
       eventId,
       txn.amount.toString(),
       referredByContract,
-      'user',
-      referredByUser.id,
-      referredByContract?.slug,
-      referredByContract?.question
+      referredByGroup
     )
   })
 }

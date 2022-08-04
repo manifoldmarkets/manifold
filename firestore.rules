@@ -22,11 +22,11 @@ service cloud.firestore {
       allow read;
       allow update: if resource.data.id == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'referredByContractId', 'lastPingTime']);
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome']);
       // User referral rules
       allow update: if resource.data.id == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['referredByUserId'])
+                          .hasOnly(['referredByUserId', 'referredByContractId', 'referredByGroupId'])
                           // only one referral allowed per user
                           && !("referredByUserId" in resource.data)
                           // user can't refer themselves
@@ -74,9 +74,9 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs']);
+                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks']);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['description', 'closeTime'])
+                                                                 .hasOnly(['description', 'closeTime', 'question'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
           match /comments/{commentId} {

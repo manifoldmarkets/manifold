@@ -29,12 +29,22 @@ export const createNotification = async (
   sourceUser: User,
   idempotencyKey: string,
   sourceText: string,
-  sourceContract?: Contract,
-  relatedSourceType?: notification_source_types,
-  relatedUserId?: string,
-  sourceSlug?: string,
-  sourceTitle?: string
+  miscData?: {
+    contract?: Contract
+    relatedSourceType?: notification_source_types
+    relatedUserId?: string
+    slug?: string
+    title?: string
+  }
 ) => {
+  const {
+    contract: sourceContract,
+    relatedSourceType,
+    relatedUserId,
+    slug,
+    title,
+  } = miscData ?? {}
+
   const shouldGetNotification = (
     userId: string,
     userToReasonTexts: user_to_reason_texts
@@ -70,8 +80,8 @@ export const createNotification = async (
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
           sourceContractTitle: sourceContract?.question,
           sourceContractSlug: sourceContract?.slug,
-          sourceSlug: sourceSlug ? sourceSlug : sourceContract?.slug,
-          sourceTitle: sourceTitle ? sourceTitle : sourceContract?.question,
+          sourceSlug: slug ? slug : sourceContract?.slug,
+          sourceTitle: title ? title : sourceContract?.question,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       })
@@ -253,20 +263,6 @@ export const createNotification = async (
       }
   }
 
-  const notifyUserReceivedReferralBonus = async (
-    userToReasonTexts: user_to_reason_texts,
-    relatedUserId: string
-  ) => {
-    if (shouldGetNotification(relatedUserId, userToReasonTexts))
-      userToReasonTexts[relatedUserId] = {
-        // If the referrer is the market creator, just tell them they joined to bet on their market
-        reason:
-          sourceContract?.creatorId === relatedUserId
-            ? 'user_joined_to_bet_on_your_market'
-            : 'you_referred_user',
-      }
-  }
-
   const notifyContractCreatorOfUniqueBettorsBonus = async (
     userToReasonTexts: user_to_reason_texts,
     userId: string
@@ -284,8 +280,6 @@ export const createNotification = async (
     } else if (sourceType === 'group' && relatedUserId) {
       if (sourceUpdateType === 'created')
         await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
-    } else if (sourceType === 'user' && relatedUserId) {
-      await notifyUserReceivedReferralBonus(userToReasonTexts, relatedUserId)
     }
 
     // The following functions need sourceContract to be defined.
@@ -411,6 +405,7 @@ export const createGroupCommentNotification = async (
   group: Group,
   idempotencyKey: string
 ) => {
+  if (toUserId === fromUser.id) return
   const notificationRef = firestore
     .collection(`/users/${toUserId}/notifications`)
     .doc(idempotencyKey)
@@ -434,3 +429,52 @@ export const createGroupCommentNotification = async (
   }
   await notificationRef.set(removeUndefinedProps(notification))
 }
+
+export const createReferralNotification = async (
+  toUser: User,
+  referredUser: User,
+  idempotencyKey: string,
+  bonusAmount: string,
+  referredByContract?: Contract,
+  referredByGroup?: Group
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: referredByGroup
+      ? 'user_joined_from_your_group_invite'
+      : referredByContract?.creatorId === toUser.id
+      ? 'user_joined_to_bet_on_your_market'
+      : 'you_referred_user',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: referredUser.id,
+    sourceType: 'user',
+    sourceUpdateType: 'updated',
+    sourceContractId: referredByContract?.id,
+    sourceUserName: referredUser.name,
+    sourceUserUsername: referredUser.username,
+    sourceUserAvatarUrl: referredUser.avatarUrl,
+    sourceText: bonusAmount,
+    // Only pass the contract referral details if they weren't referred to a group
+    sourceContractCreatorUsername: !referredByGroup
+      ? referredByContract?.creatorUsername
+      : undefined,
+    sourceContractTitle: !referredByGroup
+      ? referredByContract?.question
+      : undefined,
+    sourceContractSlug: !referredByGroup ? referredByContract?.slug : undefined,
+    sourceSlug: referredByGroup
+      ? groupPath(referredByGroup.slug)
+      : referredByContract?.slug,
+    sourceTitle: referredByGroup
+      ? referredByGroup.name
+      : referredByContract?.question,
+  }
+  await notificationRef.set(removeUndefinedProps(notification))
+}
+
+const groupPath = (groupSlug: string) => `/group/${groupSlug}`

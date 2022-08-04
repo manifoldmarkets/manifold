@@ -8,7 +8,7 @@ export function TextButton(props: {
   const { onClick, children, className } = props
 
   return (
-    <div
+    <span
       className={clsx(
         className,
         'cursor-pointer gap-2 hover:underline hover:decoration-indigo-400 hover:decoration-2 focus:underline focus:decoration-indigo-400 focus:decoration-2'
@@ -17,6 +17,6 @@ export function TextButton(props: {
       onClick={onClick}
     >
       {children}
-    </div>
+    </span>
   )
 }

@@ -2,33 +2,37 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import {
-  CPMMBinaryContract,
   Contract,
+  CPMMBinaryContract,
   FreeResponseContract,
   MAX_QUESTION_LENGTH,
   MAX_TAG_LENGTH,
+  MultipleChoiceContract,
   NumericContract,
   OUTCOME_TYPES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser } from './utils'
+import { chargeUser, getContract } from './utils'
 import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
   FIXED_ANTE,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
+  getMultipleChoiceAntes,
   getNumericAnte,
 } from '../../common/antes'
-import { getNoneAnswer } from '../../common/answer'
+import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
-import { Group, MAX_ID_LENGTH } from '../../common/group'
+import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
+import { uniq, zip } from 'lodash'
+import { Bet } from '../../common/bet'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -79,11 +83,15 @@ const numericSchema = z.object({
   isLogScale: z.boolean().optional(),
 })
 
+const multipleChoiceSchema = z.object({
+  answers: z.string().trim().min(1).array().min(2),
+})
+
 export const createmarket = newEndpoint({}, async (req, auth) => {
   const { question, description, tags, closeTime, outcomeType, groupId } =
     validate(bodySchema, req.body)
 
-  let min, max, initialProb, isLogScale
+  let min, max, initialProb, isLogScale, answers
 
   if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
     let initialValue
@@ -97,10 +105,20 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
 
     if (initialProb < 1 || initialProb > 99)
-      throw new APIError(400, 'Invalid initial value.')
+      if (outcomeType === 'PSEUDO_NUMERIC')
+        throw new APIError(
+          400,
+          `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
+        )
+      else throw new APIError(400, 'Invalid initial probability.')
   }
+
   if (outcomeType === 'BINARY') {
     ;({ initialProb } = validate(binarySchema, req.body))
+  }
+
+  if (outcomeType === 'MULTIPLE_CHOICE') {
+    ;({ answers } = validate(multipleChoiceSchema, req.body))
   }
 
   const userDoc = await firestore.collection('users').doc(auth.uid).get()
@@ -117,27 +135,6 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
 
   const slug = await getSlug(question)
   const contractRef = firestore.collection('contracts').doc()
-
-  let group = null
-  if (groupId) {
-    const groupDocRef = await firestore.collection('groups').doc(groupId)
-    const groupDoc = await groupDocRef.get()
-    if (!groupDoc.exists) {
-      throw new APIError(400, 'No group exists with the given group ID.')
-    }
-
-    group = groupDoc.data() as Group
-    if (!group.memberIds.includes(user.id)) {
-      throw new APIError(
-        400,
-        'User must be a member of the group to add markets to it.'
-      )
-    }
-    if (!group.contractIds.includes(contractRef.id))
-      await groupDocRef.update({
-        contractIds: [...group.contractIds, contractRef.id],
-      })
-  }
 
   console.log(
     'creating contract for',
@@ -162,12 +159,40 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     NUMERIC_BUCKET_COUNT,
     min ?? 0,
     max ?? 0,
-    isLogScale ?? false
+    isLogScale ?? false,
+    answers ?? []
   )
 
   if (ante) await chargeUser(user.id, ante, true)
 
   await contractRef.create(contract)
+
+  let group = null
+  if (groupId) {
+    const groupDocRef = firestore.collection('groups').doc(groupId)
+    const groupDoc = await groupDocRef.get()
+    if (!groupDoc.exists) {
+      throw new APIError(400, 'No group exists with the given group ID.')
+    }
+
+    group = groupDoc.data() as Group
+    if (
+      !group.memberIds.includes(user.id) &&
+      !group.anyoneCanJoin &&
+      group.creatorId !== user.id
+    ) {
+      throw new APIError(
+        400,
+        'User must be a member/creator of the group or group must be open to add markets to it.'
+      )
+    }
+    if (!group.contractIds.includes(contractRef.id)) {
+      await createGroupLinks(group, [contractRef.id], auth.uid)
+      await groupDocRef.update({
+        contractIds: uniq([...group.contractIds, contractRef.id]),
+      })
+    }
+  }
 
   const providerId = user.id
 
@@ -184,6 +209,31 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     )
 
     await liquidityDoc.set(lp)
+  } else if (outcomeType === 'MULTIPLE_CHOICE') {
+    const betCol = firestore.collection(`contracts/${contract.id}/bets`)
+    const betDocs = (answers ?? []).map(() => betCol.doc())
+
+    const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
+    const answerDocs = (answers ?? []).map((_, i) =>
+      answerCol.doc(i.toString())
+    )
+
+    const { bets, answerObjects } = getMultipleChoiceAntes(
+      user,
+      contract as MultipleChoiceContract,
+      answers ?? [],
+      betDocs.map((bd) => bd.id)
+    )
+
+    await Promise.all(
+      zip(bets, betDocs).map(([bet, doc]) => doc?.create(bet as Bet))
+    )
+    await Promise.all(
+      zip(answerObjects, answerDocs).map(([answer, doc]) =>
+        doc?.create(answer as Answer)
+      )
+    )
+    await contractRef.update({ answers: answerObjects })
   } else if (outcomeType === 'FREE_RESPONSE') {
     const noneAnswerDoc = firestore
       .collection(`contracts/${contract.id}/answers`)
@@ -239,4 +289,39 @@ export async function getContractFromSlug(slug: string) {
     .get()
 
   return snap.empty ? undefined : (snap.docs[0].data() as Contract)
+}
+
+async function createGroupLinks(
+  group: Group,
+  contractIds: string[],
+  userId: string
+) {
+  for (const contractId of contractIds) {
+    const contract = await getContract(contractId)
+    if (!contract?.groupSlugs?.includes(group.slug)) {
+      await firestore
+        .collection('contracts')
+        .doc(contractId)
+        .update({
+          groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
+        })
+    }
+    if (!contract?.groupLinks?.map((gl) => gl.groupId).includes(group.id)) {
+      await firestore
+        .collection('contracts')
+        .doc(contractId)
+        .update({
+          groupLinks: [
+            {
+              groupId: group.id,
+              name: group.name,
+              slug: group.slug,
+              userId,
+              createdTime: Date.now(),
+            } as GroupLink,
+            ...(contract?.groupLinks ?? []),
+          ],
+        })
+    }
+  }
 }
