@@ -16,6 +16,7 @@ import { getContractBetMetrics } from '../../common/calculate'
 import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
+import { Challenge } from '../../common/challenge'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -32,7 +33,7 @@ export const createNotification = async (
   miscData?: {
     contract?: Contract
     relatedSourceType?: notification_source_types
-    relatedUserId?: string
+    recipients?: string[]
     slug?: string
     title?: string
   }
@@ -40,7 +41,7 @@ export const createNotification = async (
   const {
     contract: sourceContract,
     relatedSourceType,
-    relatedUserId,
+    recipients,
     slug,
     title,
   } = miscData ?? {}
@@ -127,7 +128,7 @@ export const createNotification = async (
     })
   }
 
-  const notifyRepliedUsers = async (
+  const notifyRepliedUser = (
     userToReasonTexts: user_to_reason_texts,
     relatedUserId: string,
     relatedSourceType: notification_source_types
@@ -144,7 +145,7 @@ export const createNotification = async (
     }
   }
 
-  const notifyFollowedUser = async (
+  const notifyFollowedUser = (
     userToReasonTexts: user_to_reason_texts,
     followedUserId: string
   ) => {
@@ -154,21 +155,24 @@ export const createNotification = async (
       }
   }
 
-  const notifyTaggedUsers = async (
-    userToReasonTexts: user_to_reason_texts,
-    sourceText: string
-  ) => {
-    const taggedUsers = sourceText.match(/@\w+/g)
-    if (!taggedUsers) return
-    // await all get tagged users:
-    const users = await Promise.all(
-      taggedUsers.map(async (username) => {
-        return await getUserByUsername(username.slice(1))
-      })
+  /** @deprecated parse from rich text instead */
+  const parseMentions = async (source: string) => {
+    const mentions = source.match(/@\w+/g)
+    if (!mentions) return []
+    return Promise.all(
+      mentions.map(
+        async (username) => (await getUserByUsername(username.slice(1)))?.id
+      )
     )
-    users.forEach((taggedUser) => {
-      if (taggedUser && shouldGetNotification(taggedUser.id, userToReasonTexts))
-        userToReasonTexts[taggedUser.id] = {
+  }
+
+  const notifyTaggedUsers = (
+    userToReasonTexts: user_to_reason_texts,
+    userIds: (string | undefined)[]
+  ) => {
+    userIds.forEach((id) => {
+      if (id && shouldGetNotification(id, userToReasonTexts))
+        userToReasonTexts[id] = {
           reason: 'tagged_user',
         }
     })
@@ -253,7 +257,7 @@ export const createNotification = async (
     })
   }
 
-  const notifyUserAddedToGroup = async (
+  const notifyUserAddedToGroup = (
     userToReasonTexts: user_to_reason_texts,
     relatedUserId: string
   ) => {
@@ -275,11 +279,14 @@ export const createNotification = async (
   const getUsersToNotify = async () => {
     const userToReasonTexts: user_to_reason_texts = {}
     // The following functions modify the userToReasonTexts object in place.
-    if (sourceType === 'follow' && relatedUserId) {
-      await notifyFollowedUser(userToReasonTexts, relatedUserId)
-    } else if (sourceType === 'group' && relatedUserId) {
-      if (sourceUpdateType === 'created')
-        await notifyUserAddedToGroup(userToReasonTexts, relatedUserId)
+    if (sourceType === 'follow' && recipients?.[0]) {
+      notifyFollowedUser(userToReasonTexts, recipients[0])
+    } else if (
+      sourceType === 'group' &&
+      sourceUpdateType === 'created' &&
+      recipients
+    ) {
+      recipients.forEach((r) => notifyUserAddedToGroup(userToReasonTexts, r))
     }
 
     // The following functions need sourceContract to be defined.
@@ -292,13 +299,10 @@ export const createNotification = async (
         (sourceUpdateType === 'updated' || sourceUpdateType === 'resolved'))
     ) {
       if (sourceType === 'comment') {
-        if (relatedUserId && relatedSourceType)
-          await notifyRepliedUsers(
-            userToReasonTexts,
-            relatedUserId,
-            relatedSourceType
-          )
-        if (sourceText) await notifyTaggedUsers(userToReasonTexts, sourceText)
+        if (recipients?.[0] && relatedSourceType)
+          notifyRepliedUser(userToReasonTexts, recipients[0], relatedSourceType)
+        if (sourceText)
+          notifyTaggedUsers(userToReasonTexts, await parseMentions(sourceText))
       }
       await notifyContractCreator(userToReasonTexts, sourceContract)
       await notifyOtherAnswerersOnContract(userToReasonTexts, sourceContract)
@@ -307,6 +311,7 @@ export const createNotification = async (
       await notifyOtherCommentersOnContract(userToReasonTexts, sourceContract)
     } else if (sourceType === 'contract' && sourceUpdateType === 'created') {
       await notifyUsersFollowers(userToReasonTexts)
+      notifyTaggedUsers(userToReasonTexts, recipients ?? [])
     } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
       await notifyContractCreator(userToReasonTexts, sourceContract, {
         force: true,
@@ -478,3 +483,35 @@ export const createReferralNotification = async (
 }
 
 const groupPath = (groupSlug: string) => `/group/${groupSlug}`
+
+export const createChallengeAcceptedNotification = async (
+  challenger: User,
+  challengeCreator: User,
+  challenge: Challenge,
+  acceptedAmount: number,
+  contract: Contract
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${challengeCreator.id}/notifications`)
+    .doc()
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: challengeCreator.id,
+    reason: 'challenge_accepted',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: challenge.slug,
+    sourceType: 'challenge',
+    sourceUpdateType: 'updated',
+    sourceUserName: challenger.name,
+    sourceUserUsername: challenger.username,
+    sourceUserAvatarUrl: challenger.avatarUrl,
+    sourceText: acceptedAmount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    sourceSlug: `/challenges/${challengeCreator.username}/${challenge.contractSlug}/${challenge.slug}`,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}

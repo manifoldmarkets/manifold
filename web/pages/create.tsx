@@ -19,7 +19,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup, setContractGroupLinks } from 'web/lib/firebase/groups'
+import { canModifyGroupContracts, getGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -32,6 +32,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
+import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -127,10 +128,12 @@ export function NewContract(props: {
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
 
+  const [answers, setAnswers] = useState<string[]>([]) // for multiple choice
+
   useEffect(() => {
     if (groupId && creator)
       getGroup(groupId).then((group) => {
-        if (group && group.memberIds.includes(creator.id)) {
+        if (group && canModifyGroupContracts(group, creator.id)) {
           setSelectedGroup(group)
           setShowGroupSelector(false)
         }
@@ -171,6 +174,10 @@ export function NewContract(props: {
   // get days from today until the end of this year:
   const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
 
+  const isValidMultipleChoice = answers.every(
+    (answer) => answer.trim().length > 0
+  )
+
   const isValid =
     (outcomeType === 'BINARY' ? initialProb >= 5 && initialProb <= 95 : true) &&
     question.length > 0 &&
@@ -189,7 +196,13 @@ export function NewContract(props: {
         min < max &&
         max - min > 0.01 &&
         min < initialValue &&
-        initialValue < max))
+        initialValue < max)) &&
+    (outcomeType !== 'MULTIPLE_CHOICE' || isValidMultipleChoice)
+
+  const [errorText, setErrorText] = useState<string>('')
+  useEffect(() => {
+    setErrorText('')
+  }, [isValid])
 
   const descriptionPlaceholder =
     outcomeType === 'BINARY'
@@ -227,6 +240,7 @@ export function NewContract(props: {
           max,
           initialValue,
           isLogScale,
+          answers,
           groupId: selectedGroup?.id,
         })
       )
@@ -236,13 +250,12 @@ export function NewContract(props: {
         selectedGroup: selectedGroup?.id,
         isFree: false,
       })
-      if (result && selectedGroup) {
-        await setContractGroupLinks(selectedGroup, result.id, creator.id)
-      }
-
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
+      setErrorText(
+        (e as any).details || (e as any).message || 'Error creating contract'
+      )
       setIsSubmitting(false)
     }
   }
@@ -262,10 +275,11 @@ export function NewContract(props: {
               'Users can submit their own answers to this market.'
             )
           else setMarketInfoText('')
-          setOutcomeType(choice as 'BINARY' | 'FREE_RESPONSE')
+          setOutcomeType(choice as outcomeType)
         }}
         choicesMap={{
           'Yes / No': 'BINARY',
+          'Multiple choice': 'MULTIPLE_CHOICE',
           'Free response': 'FREE_RESPONSE',
           Numeric: 'PSEUDO_NUMERIC',
         }}
@@ -279,6 +293,10 @@ export function NewContract(props: {
       )}
 
       <Spacer h={6} />
+
+      {outcomeType === 'MULTIPLE_CHOICE' && (
+        <MultipleChoiceAnswers setAnswers={setAnswers} />
+      )}
 
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>
@@ -424,7 +442,7 @@ export function NewContract(props: {
       </div>
 
       <Spacer h={6} />
-
+      <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
         <div className="form-control mb-1 items-start">
           <label className="label mb-1 gap-2">
@@ -460,6 +478,8 @@ export function NewContract(props: {
           {isSubmitting ? 'Creating...' : 'Create question'}
         </button>
       </Row>
+
+      <Spacer h={6} />
     </div>
   )
 }

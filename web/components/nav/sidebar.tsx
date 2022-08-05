@@ -17,11 +17,12 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React from 'react'
 import { ENV_CONFIG, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import React from 'react'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Spacer } from '../layout/spacer'
+import { CHALLENGES_ENABLED } from 'common/challenge'
 
 const logout = async () => {
   // log out, and then reload the page, in case SSR wants to boot them out
@@ -59,25 +60,50 @@ function getMoreNavigation(user?: User | null) {
   }
 
   if (!user) {
-    return [
-      { name: 'Charity', href: '/charity' },
-      { name: 'Blog', href: 'https://news.manifold.markets' },
-      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-      { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-    ]
+    if (CHALLENGES_ENABLED)
+      return [
+        { name: 'Challenges', href: '/challenges' },
+        { name: 'Charity', href: '/charity' },
+        { name: 'Blog', href: 'https://news.manifold.markets' },
+        { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+        { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+      ]
+    else
+      return [
+        { name: 'Charity', href: '/charity' },
+        { name: 'Blog', href: 'https://news.manifold.markets' },
+        { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+        { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
+      ]
   }
 
-  return [
-    { name: 'Referrals', href: '/referrals' },
-    { name: 'Charity', href: '/charity' },
-    { name: 'Send M$', href: '/links' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    {
-      name: 'Sign out',
-      href: '#',
-      onClick: logout,
-    },
-  ]
+  if (CHALLENGES_ENABLED)
+    return [
+      { name: 'Challenges', href: '/challenges' },
+      { name: 'Referrals', href: '/referrals' },
+      { name: 'Charity', href: '/charity' },
+      { name: 'Send M$', href: '/links' },
+      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+      { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
+      {
+        name: 'Sign out',
+        href: '#',
+        onClick: logout,
+      },
+    ]
+  else
+    return [
+      { name: 'Referrals', href: '/referrals' },
+      { name: 'Charity', href: '/charity' },
+      { name: 'Send M$', href: '/links' },
+      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+      { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
+      {
+        name: 'Sign out',
+        href: '#',
+        onClick: logout,
+      },
+    ]
 }
 
 const signedOutNavigation = [
@@ -109,6 +135,14 @@ function getMoreMobileNav() {
   return [
     ...(IS_PRIVATE_MANIFOLD
       ? []
+      : CHALLENGES_ENABLED
+      ? [
+          { name: 'Challenges', href: '/challenges' },
+          { name: 'Referrals', href: '/referrals' },
+          { name: 'Charity', href: '/charity' },
+          { name: 'Send M$', href: '/links' },
+          { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+        ]
       : [
           { name: 'Referrals', href: '/referrals' },
           { name: 'Charity', href: '/charity' },

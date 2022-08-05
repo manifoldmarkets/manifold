@@ -67,10 +67,17 @@ const useContractPage = () => {
         if (!username || !contractSlug) setContract(undefined)
         else {
           // Show contract if route is to a contract: '/[username]/[contractSlug]'.
-          getContractFromSlug(contractSlug).then(setContract)
+          getContractFromSlug(contractSlug).then((contract) => {
+            const path = location.pathname.split('/').slice(1)
+            const [_username, contractSlug] = path
+            // Make sure we're still on the same contract.
+            if (contract?.slug === contractSlug) setContract(contract)
+          })
         }
       }
     }
+
+    addEventListener('popstate', updateContract)
 
     const { pushState, replaceState } = window.history
 
@@ -87,6 +94,7 @@ const useContractPage = () => {
     }
 
     return () => {
+      removeEventListener('popstate', updateContract)
       window.history.pushState = pushState
       window.history.replaceState = replaceState
     }

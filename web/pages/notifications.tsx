@@ -726,18 +726,14 @@ function NotificationItem(props: {
   )
 }
 
-export const setNotificationsAsSeen = (notifications: Notification[]) => {
-  notifications.forEach((notification) => {
-    if (!notification.isSeen)
-      updateDoc(
-        doc(db, `users/${notification.userId}/notifications/`, notification.id),
-        {
-          isSeen: true,
-          viewTime: new Date(),
-        }
-      )
-  })
-  return notifications
+export const setNotificationsAsSeen = async (notifications: Notification[]) => {
+  const unseenNotifications = notifications.filter((n) => !n.isSeen)
+  return await Promise.all(
+    unseenNotifications.map((n) => {
+      const notificationDoc = doc(db, `users/${n.userId}/notifications/`, n.id)
+      return updateDoc(notificationDoc, { isSeen: true, viewTime: new Date() })
+    })
+  )
 }
 
 function QuestionOrGroupLink(props: {
@@ -815,6 +811,7 @@ function getSourceUrl(notification: Notification) {
   if (sourceType === 'tip' && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
   if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
+  if (sourceType === 'challenge') return `${sourceSlug}`
   if (sourceContractCreatorUsername && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
       sourceId ?? '',
@@ -917,6 +914,15 @@ function NotificationTextLabel(props: {
         <span>of your limit order was filled</span>
       </>
     )
+  } else if (sourceType === 'challenge' && sourceText) {
+    return (
+      <>
+        <span> for </span>
+        <span className="text-primary">
+          {formatMoney(parseInt(sourceText))}
+        </span>
+      </>
+    )
   }
   return (
     <div className={className ? className : 'line-clamp-4 whitespace-pre-line'}>
@@ -957,7 +963,7 @@ function getReasonForShowingNotification(
       reasonText = 'followed you'
       break
     case 'liquidity':
-      reasonText = 'added liquidity to your question'
+      reasonText = 'added a subsidy to your question'
       break
     case 'group':
       reasonText = 'added you to the group'
@@ -970,6 +976,9 @@ function getReasonForShowingNotification(
       break
     case 'bet':
       reasonText = 'bet against you'
+      break
+    case 'challenge':
+      reasonText = 'accepted your challenge'
       break
     default:
       reasonText = ''

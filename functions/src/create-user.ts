@@ -1,5 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { uniq } from 'lodash'
+
 import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USERNAME,
@@ -24,7 +26,6 @@ import {
 import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
 import { Group, NEW_USER_GROUP_SLUGS } from '../../common/group'
-import { uniq } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -63,10 +64,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
   const deviceUsedBefore =
     !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
 
-  const ipCount = req.ip ? await numberUsersWithIp(req.ip) : 0
-
-  const balance =
-    deviceUsedBefore || ipCount > 2 ? SUS_STARTING_BALANCE : STARTING_BALANCE
+  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
 
   const user: User = {
     id: auth.uid,
@@ -80,6 +78,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
     followerCountCached: 0,
     followedCategories: DEFAULT_CATEGORIES,
+    shouldShowWelcome: true,
   }
 
   await firestore.collection('users').doc(auth.uid).create(user)
@@ -95,8 +94,8 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)
 
-  await sendWelcomeEmail(user, privateUser)
   await addUserToDefaultGroups(user)
+  await sendWelcomeEmail(user, privateUser)
   await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
   return user
@@ -113,7 +112,7 @@ const isPrivateUserWithDeviceToken = async (deviceToken: string) => {
   return !snap.empty
 }
 
-const numberUsersWithIp = async (ipAddress: string) => {
+export const numberUsersWithIp = async (ipAddress: string) => {
   const snap = await firestore
     .collection('private-users')
     .where('initialIpAddress', '==', ipAddress)

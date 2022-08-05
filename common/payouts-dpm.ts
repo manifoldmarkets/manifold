@@ -2,7 +2,11 @@ import { sum, groupBy, sumBy, mapValues } from 'lodash'
 
 import { Bet, NumericBet } from './bet'
 import { deductDpmFees, getDpmProbability } from './calculate-dpm'
-import { DPMContract, FreeResponseContract } from './contract'
+import {
+  DPMContract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from './contract'
 import { DPM_CREATOR_FEE, DPM_FEES, DPM_PLATFORM_FEE } from './fees'
 import { addObjects } from './util/object'
 
@@ -180,7 +184,7 @@ export const getDpmMktPayouts = (
 
 export const getPayoutsMultiOutcome = (
   resolutions: { [outcome: string]: number },
-  contract: FreeResponseContract,
+  contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
 ) => {
   const poolTotal = sum(Object.values(contract.pool))

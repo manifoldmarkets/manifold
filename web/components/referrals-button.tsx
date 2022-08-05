@@ -5,13 +5,13 @@ import { prefetchUsers, useUserById } from 'web/hooks/use-user'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
-import { TextButton } from './text-button'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-page'
 import { useReferrals } from 'web/hooks/use-referrals'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { getUser, updateUser } from 'web/lib/firebase/users'
+import { TextButton } from 'web/components/text-button'
 
 export function ReferralsButton(props: { user: User; currentUser?: User }) {
   const { user, currentUser } = props
@@ -24,7 +24,6 @@ export function ReferralsButton(props: { user: User; currentUser?: User }) {
         <span className="font-semibold">{referralIds?.length ?? ''}</span>{' '}
         Referrals
       </TextButton>
-
       <ReferralsDialog
         user={user}
         referralIds={referralIds ?? []}

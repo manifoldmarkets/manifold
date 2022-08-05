@@ -12,7 +12,9 @@ export class APIError extends Error {
 }
 
 export function getFunctionUrl(name: string) {
-  if (process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
+  if (process.env.NEXT_PUBLIC_FUNCTIONS_URL) {
+    return `${process.env.NEXT_PUBLIC_FUNCTIONS_URL}/${name}`
+  } else if (process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     const { projectId, region } = ENV_CONFIG.firebaseConfig
     return `http://localhost:5001/${projectId}/${region}/${name}`
   } else {
