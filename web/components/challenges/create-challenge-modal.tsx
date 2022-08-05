@@ -123,7 +123,15 @@ function CreateChallengeForm(props: {
           onSubmit={(e) => {
             e.preventDefault()
             if (user.balance < challengeInfo.amount) {
-              setError('You do not have enough mana to create this challenge')
+              setError("You don't have enough mana to create this challenge")
+              return
+            }
+            if (!contract && user.balance < FIXED_ANTE + challengeInfo.amount) {
+              setError(
+                `You don't have enough mana to create this challenge and market. You need ${formatMoney(
+                  FIXED_ANTE + challengeInfo.amount
+                )}`
+              )
               return
             }
             setIsCreating(true)
