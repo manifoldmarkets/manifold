@@ -47,7 +47,7 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
 
     const creatorDoc = firestore.doc(`users/${challenge.creatorId}`)
     const creatorSnap = await trans.get(creatorDoc)
-    if (!creatorSnap.exists) throw new APIError(400, 'User not found.')
+    if (!creatorSnap.exists) throw new APIError(400, 'Creator not found.')
     const creator = creatorSnap.data() as User
 
     const {
@@ -60,6 +60,9 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
 
     if (user.balance < acceptorAmount)
       throw new APIError(400, 'Insufficient balance.')
+
+    if (creator.balance < creatorAmount)
+      throw new APIError(400, 'Creator has insufficient balance.')
 
     const contract = anyContract as CPMMBinaryContract
     const shares = (1 / creatorOutcomeProb) * creatorAmount
