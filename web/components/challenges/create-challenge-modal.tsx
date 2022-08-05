@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import React, { useEffect, useState } from 'react'
 import { LinkIcon, SwitchVerticalIcon } from '@heroicons/react/outline'
+import toast from 'react-hot-toast'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -16,7 +17,6 @@ import { formatMoney } from 'common/util/format'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { QRCode } from '../qr-code'
 import { copyToClipboard } from 'web/lib/util/copy'
-import toast from 'react-hot-toast'
 
 type challengeInfo = {
   amount: number
@@ -25,48 +25,41 @@ type challengeInfo = {
   outcome: 'YES' | 'NO' | number
   acceptorAmount: number
 }
-export function CreateChallengeButton(props: {
+
+export function CreateChallengeModal(props: {
   user: User | null | undefined
   contract: BinaryContract
+  isOpen: boolean
+  setOpen: (open: boolean) => void
 }) {
-  const { user, contract } = props
-  const [open, setOpen] = useState(false)
+  const { user, contract, isOpen, setOpen } = props
   const [challengeSlug, setChallengeSlug] = useState('')
 
   return (
-    <>
-      <Modal open={open} setOpen={(newOpen) => setOpen(newOpen)} size={'sm'}>
-        <Col className="gap-4 rounded-md bg-white px-8 py-6">
-          {/*// add a sign up to challenge button?*/}
-          {user && (
-            <CreateChallengeForm
-              user={user}
-              contract={contract}
-              onCreate={async (newChallenge) => {
-                const challenge = await createChallenge({
-                  creator: user,
-                  creatorAmount: newChallenge.amount,
-                  expiresTime: newChallenge.expiresTime,
-                  message: newChallenge.message,
-                  acceptorAmount: newChallenge.acceptorAmount,
-                  outcome: newChallenge.outcome,
-                  contract: contract,
-                })
-                challenge && setChallengeSlug(getChallengeUrl(challenge))
-              }}
-              challengeSlug={challengeSlug}
-            />
-          )}
-        </Col>
-      </Modal>
-
-      <button
-        onClick={() => setOpen(true)}
-        className="btn btn-outline mb-4 max-w-xs whitespace-nowrap normal-case"
-      >
-        Challenge a friend
-      </button>
-    </>
+    <Modal open={isOpen} setOpen={setOpen} size={'sm'}>
+      <Col className="gap-4 rounded-md bg-white px-8 py-6">
+        {/*// add a sign up to challenge button?*/}
+        {user && (
+          <CreateChallengeForm
+            user={user}
+            contract={contract}
+            onCreate={async (newChallenge) => {
+              const challenge = await createChallenge({
+                creator: user,
+                creatorAmount: newChallenge.amount,
+                expiresTime: newChallenge.expiresTime,
+                message: newChallenge.message,
+                acceptorAmount: newChallenge.acceptorAmount,
+                outcome: newChallenge.outcome,
+                contract: contract,
+              })
+              challenge && setChallengeSlug(getChallengeUrl(challenge))
+            }}
+            challengeSlug={challengeSlug}
+          />
+        )}
+      </Col>
+    </Modal>
   )
 }
 
