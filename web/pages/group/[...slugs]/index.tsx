@@ -160,7 +160,7 @@ export default function GroupPage(props: {
   const privateUser = usePrivateUser(user?.id)
 
   useSaveReferral(user, {
-    defaultReferrerUsername: creator.username,
+    defaultReferrerUsername: creator?.username,
     groupId: group?.id,
   })
 

@@ -28,6 +28,7 @@ import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Checkbox } from 'web/components/checkbox'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
@@ -61,6 +62,16 @@ export default function Create() {
   }, [params.q])
 
   const creator = useUser()
+  useEffect(() => {
+    if (creator === null) router.push('/')
+    if (
+      ENV_CONFIG.whitelistCreators &&
+      !ENV_CONFIG.whitelistCreators?.includes(creator?.username ?? '')
+    ) {
+      router.push('/')
+    }
+  }, [creator, router])
+
   if (!router.isReady || !creator) return <div />
 
   return (
@@ -448,12 +459,6 @@ export function NewContract(props: {
           {ante > balance && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
               <span className="mr-2 text-red-500">Insufficient balance</span>
-              <button
-                className="btn btn-xs btn-primary"
-                onClick={() => (window.location.href = '/add-funds')}
-              >
-                Get M$
-              </button>
             </div>
           )}
         </div>

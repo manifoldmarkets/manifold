@@ -20,9 +20,7 @@ import { quadraticMatches } from 'common/quadratic-funding'
 import { Txn } from 'common/txn'
 import { useTracking } from 'web/hooks/use-tracking'
 import { searchInAny } from 'common/util/parse'
-import { getUser } from 'web/lib/firebase/users'
 import { SiteLink } from 'web/components/site-link'
-import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
@@ -37,7 +35,6 @@ export async function getStaticProps() {
   ])
   const matches = quadraticMatches(txns, totalRaised)
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
-  const mostRecentDonor = await getUser(txns[txns.length - 1].fromId)
 
   return {
     props: {
@@ -46,7 +43,6 @@ export async function getStaticProps() {
       matches,
       txns,
       numDonors,
-      mostRecentDonor,
     },
     revalidate: 60,
   }
@@ -90,9 +86,8 @@ export default function Charity(props: {
   matches: { [charityId: string]: number }
   txns: Txn[]
   numDonors: number
-  mostRecentDonor: User
 }) {
-  const { totalRaised, charities, matches, numDonors, mostRecentDonor } = props
+  const { totalRaised, charities, matches, numDonors } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
@@ -149,8 +144,8 @@ export default function Charity(props: {
               },
               {
                 name: 'Most recent donor',
-                stat: mostRecentDonor.name ?? 'Nobody',
-                url: `/${mostRecentDonor.username}`,
+                stat: 'Nobody',
+                url: `/`,
               },
             ]}
           />

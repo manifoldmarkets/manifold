@@ -4,7 +4,6 @@ import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
-import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 export function AmountInput(props: {
@@ -61,16 +60,7 @@ export function AmountInput(props: {
 
       {error && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
-          {error === 'Insufficient balance' ? (
-            <>
-              Not enough funds.
-              <span className="ml-1 text-indigo-500">
-                <SiteLink href="/add-funds">Buy more?</SiteLink>
-              </span>
-            </>
-          ) : (
-            error
-          )}
+          {error === 'Insufficient balance' ? <>Not enough funds.</> : error}
         </div>
       )}
     </Col>

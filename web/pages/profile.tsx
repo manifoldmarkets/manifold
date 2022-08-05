@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
 
-import { AddFundsButton } from 'web/components/add-funds-button'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
@@ -240,7 +239,6 @@ export default function ProfilePage() {
             <label className="label">Balance</label>
             <Row className="ml-1 items-start gap-4 text-gray-500">
               {formatMoney(user?.balance || 0)}
-              <AddFundsButton />
             </Row>
           </div>
 

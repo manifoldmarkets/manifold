@@ -2,6 +2,7 @@ import { escapeRegExp } from 'lodash'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
+import { SALEM_CENTER_CONFIG } from './salemcenter'
 
 export const ENV = process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 
@@ -9,6 +10,7 @@ const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,
+  SALEM_CENTER: SALEM_CENTER_CONFIG,
 }
 
 export const ENV_CONFIG = CONFIGS[ENV]

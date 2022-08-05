@@ -70,10 +70,9 @@ export default function Leaderboards(_props: {
     fetchProps().then((props) => setProps(props))
   }, [])
 
-  const { topFollowed } = props
-
   const LeaderboardWithPeriod = (period: Period) => {
-    const { topTraders, topCreators } = props[period]
+    const { topTraders } = props[period]
+
 
     return (
       <>
@@ -88,35 +87,7 @@ export default function Leaderboards(_props: {
               },
             ]}
           />
-
-          <Leaderboard
-            title="🏅 Top creators"
-            users={topCreators}
-            columns={[
-              {
-                header: 'Total bet',
-                renderCell: (user) =>
-                  formatMoney(user.creatorVolumeCached[period]),
-              },
-            ]}
-          />
         </Col>
-        {period === 'allTime' ? (
-          <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-1/2 lg:flex-row">
-            <Leaderboard
-              title="🏅 Top followed"
-              users={topFollowed}
-              columns={[
-                {
-                  header: 'Total followers',
-                  renderCell: (user) => user.followerCountCached,
-                },
-              ]}
-            />
-          </Col>
-        ) : (
-          <></>
-        )}
       </>
     )
   }
