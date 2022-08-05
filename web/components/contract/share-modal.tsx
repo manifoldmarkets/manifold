@@ -1,6 +1,5 @@
 import { LinkIcon } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
-import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 import { contractPath } from 'web/lib/firebase/contracts'
@@ -25,9 +24,7 @@ export function ShareModal(props: {
 }) {
   const { contract, user, isOpen, setOpen } = props
 
-  const linkIcon = (
-    <LinkIcon className={clsx('mr-2 h-[24px] w-5')} aria-hidden="true" />
-  )
+  const linkIcon = <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
 
   const copyPayload = `https://${ENV_CONFIG.domain}${contractPath(contract)}${
     user?.username && contract.creatorUsername !== user?.username
