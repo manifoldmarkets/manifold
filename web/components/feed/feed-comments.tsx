@@ -495,13 +495,17 @@ export function CommentInputTextArea(props: {
         },
       },
     })
-    // insert at mention
+    // insert at mention and focus
     if (replyToUser) {
-      editor.commands.insertContentAt(0, {
-        type: 'mention',
-        attrs: { label: replyToUser.username, id: replyToUser.id },
-      })
-      editor.commands.focus()
+      editor
+        .chain()
+        .setContent({
+          type: 'mention',
+          attrs: { label: replyToUser.username, id: replyToUser.id },
+        })
+        .insertContent(' ')
+        .focus()
+        .run()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
