@@ -5,7 +5,7 @@ export function Button(props: {
   className?: string
   onClick?: () => void
   children?: ReactNode
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  size?: '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   color?:
     | 'green'
     | 'red'
@@ -29,6 +29,7 @@ export function Button(props: {
   } = props
 
   const sizeClasses = {
+    '2xs': 'px-2 py-1 text-xs',
     xs: 'px-2.5 py-1.5 text-sm',
     sm: 'px-3 py-2 text-sm',
     md: 'px-4 py-2 text-sm',

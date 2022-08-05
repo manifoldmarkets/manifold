@@ -17,6 +17,8 @@ import { formatMoney } from 'common/util/format'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { QRCode } from '../qr-code'
 import { copyToClipboard } from 'web/lib/util/copy'
+import { AmountInput } from '../amount-input'
+import { getProbability } from 'common/calculate'
 
 type challengeInfo = {
   amount: number
@@ -36,7 +38,7 @@ export function CreateChallengeModal(props: {
   const [challengeSlug, setChallengeSlug] = useState('')
 
   return (
-    <Modal open={isOpen} setOpen={setOpen} size={'sm'}>
+    <Modal open={isOpen} setOpen={setOpen}>
       <Col className="gap-4 rounded-md bg-white px-8 py-6">
         {/*// add a sign up to challenge button?*/}
         {user && (
@@ -104,7 +106,13 @@ function CreateChallengeForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!mt-2" text="Challenge a friend to bet " />
+          <Title className="!mt-2" text="Challenge bet " />
+
+          <div className="mb-8">
+            Challenge a friend to bet on{' '}
+            <span className="underline">{contract.question}</span>
+          </div>
+
           <div className="mt-2 flex flex-col flex-wrap justify-center gap-x-5 gap-y-2">
             <div>You'll bet:</div>
             <Row
@@ -112,37 +120,29 @@ function CreateChallengeForm(props: {
                 'form-control w-full max-w-xs items-center justify-between gap-4 pr-3'
               }
             >
-              <Col>
-                <div className="relative">
-                  <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
-                    M$
-                  </span>
-                  <input
-                    className="input input-bordered w-32 pl-10"
-                    type="number"
-                    min={1}
-                    value={challengeInfo.amount}
-                    onChange={(e) =>
-                      setChallengeInfo((m: challengeInfo) => {
-                        return {
-                          ...m,
-                          amount: parseInt(e.target.value),
-                          acceptorAmount: editingAcceptorAmount
-                            ? m.acceptorAmount
-                            : parseInt(e.target.value),
-                        }
-                      })
+              <AmountInput
+                amount={challengeInfo.amount || undefined}
+                onChange={(newAmount) =>
+                  setChallengeInfo((m: challengeInfo) => {
+                    return {
+                      ...m,
+                      amount: newAmount ?? 0,
+                      acceptorAmount: editingAcceptorAmount
+                        ? m.acceptorAmount
+                        : newAmount ?? 0,
                     }
-                  />
-                </div>
-              </Col>
+                  })
+                }
+                error={undefined}
+                label={'M$'}
+                inputClassName="w-24"
+              />
               <span className={''}>on</span>
               {challengeInfo.outcome === 'YES' ? <YesLabel /> : <NoLabel />}
             </Row>
             <Row className={'mt-3 max-w-xs justify-end'}>
               <Button
-                color={'gradient'}
-                className={'opacity-80'}
+                color={'gray-white'}
                 onClick={() =>
                   setChallengeInfo((m: challengeInfo) => {
                     return {
@@ -152,67 +152,70 @@ function CreateChallengeForm(props: {
                   })
                 }
               >
-                <SwitchVerticalIcon className={'h-4 w-4'} />
+                <SwitchVerticalIcon className={'h-6 w-6'} />
               </Button>
             </Row>
             <Row className={'items-center'}>If they bet:</Row>
             <Row className={'max-w-xs items-center justify-between gap-4 pr-3'}>
               <div className={'w-32 sm:mr-1'}>
-                {editingAcceptorAmount ? (
-                  <Col>
-                    <div className="relative">
-                      <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
-                        M$
-                      </span>
-                      <input
-                        className="input input-bordered w-32 pl-10"
-                        type="number"
-                        min={1}
-                        value={challengeInfo.acceptorAmount}
-                        onChange={(e) =>
-                          setChallengeInfo((m: challengeInfo) => {
-                            return {
-                              ...m,
-                              acceptorAmount: parseInt(e.target.value),
-                            }
-                          })
-                        }
-                      />
-                    </div>
-                  </Col>
-                ) : (
-                  <span className="ml-1 font-bold">
-                    {formatMoney(challengeInfo.acceptorAmount)}
-                  </span>
-                )}
+                <AmountInput
+                  amount={challengeInfo.acceptorAmount || undefined}
+                  onChange={(newAmount) => {
+                    setEditingAcceptorAmount(true)
+
+                    setChallengeInfo((m: challengeInfo) => {
+                      return {
+                        ...m,
+                        acceptorAmount: newAmount ?? 0,
+                      }
+                    })
+                  }}
+                  error={undefined}
+                  label={'M$'}
+                  inputClassName="w-24"
+                />
               </div>
               <span>on</span>
               {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
             </Row>
           </div>
-          <Row
-            className={clsx(
-              'mt-8',
-              !editingAcceptorAmount ? 'justify-between' : 'justify-end'
-            )}
+          <Button
+            size="2xs"
+            color="gray"
+            onClick={() => {
+              setEditingAcceptorAmount(true)
+
+              const p = getProbability(contract)
+              const prob = challengeInfo.outcome === 'YES' ? p : 1 - p
+              const { amount } = challengeInfo
+              const acceptorAmount = Math.round(amount / prob - amount)
+              setChallengeInfo({ ...challengeInfo, acceptorAmount })
+            }}
           >
-            {!editingAcceptorAmount && (
-              <Button
-                color={'gray-white'}
-                onClick={() => setEditingAcceptorAmount(!editingAcceptorAmount)}
-              >
-                Edit
-              </Button>
-            )}
+            Use market odds
+          </Button>
+
+          <div className="mt-8">
+            If the challenge is accepted, whoever is right will earn{' '}
+            <span className="font-semibold">
+              {formatMoney(
+                challengeInfo.acceptorAmount + challengeInfo.amount || 0
+              )}
+            </span>{' '}
+            in total.
+          </div>
+
+          <Row className="mt-8 items-center">
             <Button
               type="submit"
-              color={'indigo'}
+              color={'gradient'}
+              size="xl"
               className={clsx(
                 'whitespace-nowrap drop-shadow-md',
                 isCreating ? 'disabled' : ''
               )}
             >
-              Continue
+              Create challenge bet
             </Button>
           </Row>
           <Row className={'text-error'}>{error} </Row>
