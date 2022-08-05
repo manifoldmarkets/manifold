@@ -120,6 +120,18 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
   )
   return (
     <>
+      <Modal open={open} setOpen={setOpen} size={'sm'}>
+        <Col
+          className={
+            'items-center justify-center gap-4 rounded-md bg-white p-8 py-8 '
+          }
+        >
+          <span className={'mb-4  text-center text-xl text-indigo-700'}>
+            Have your friend scan this to accept the challenge!
+          </span>
+          <QRCode url={getChallengeUrl(challenge)} />
+        </Col>
+      </Modal>
       <tr id={challenge.slug} key={challenge.slug} className={className}>
         <td className={amountClass}>
           <SiteLink href={getChallengeUrl(challenge)}>
@@ -132,7 +144,7 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
             'text-center sm:max-w-[200px] sm:text-start'
           )}
         >
-          <Row className="items-center">
+          <Row className="items-center gap-2">
             <Button
               color="gray-white"
               size="xs"
@@ -147,10 +159,7 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
               color="gray-white"
               size="xs"
               onClick={() => {
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${200}x${200}&data=${getChallengeUrl(
-                  challenge
-                )}`
-                window.location.href = qrUrl
+                setOpen(true)
               }}
             >
               <QrcodeIcon className="h-5 w-5 sm:h-4 sm:w-4" />
@@ -188,85 +197,6 @@ function YourLinkSummaryRow(props: { challenge: Challenge }) {
           </Row>
         </td>
       </tr>
-      <>
-        <Modal open={open} setOpen={setOpen} size={'sm'}>
-          <Col
-            className={
-              'items-center justify-center gap-4 rounded-md bg-white p-8 py-8 '
-            }
-          >
-            <span className={'mb-4  text-center text-xl text-indigo-700'}>
-              Have your friend scan this to accept the challenge!
-            </span>
-            <QRCode url={getChallengeUrl(challenge)} />
-          </Col>
-        </Modal>
-        <tr id={challenge.slug} key={challenge.slug} className={className}>
-          <td className={amountClass}>
-            <SiteLink href={getChallengeUrl(challenge)}>
-              {formatMoney(challenge.creatorAmount)}
-            </SiteLink>
-          </td>
-          <td
-            className={clsx(
-              columnClass,
-              'text-center sm:max-w-[200px] sm:text-start'
-            )}
-          >
-            <Row className="items-center gap-2">
-              <Button
-                color="gray-white"
-                size="xs"
-                onClick={() => {
-                  copyToClipboard(getChallengeUrl(challenge))
-                  toast('Link copied to clipboard!')
-                }}
-              >
-                <ClipboardCopyIcon className={'h-5 w-5 sm:h-4 sm:w-4'} />
-              </Button>
-              <Button
-                color="gray-white"
-                size="xs"
-                onClick={() => {
-                  setOpen(true)
-                }}
-              >
-                <QrcodeIcon className="h-5 w-5 sm:h-4 sm:w-4" />
-              </Button>
-              <SiteLink
-                href={getChallengeUrl(challenge)}
-                className={'mx-1 mb-1 hidden sm:inline-block'}
-              >
-                {`...${challenge.contractSlug}/${challenge.slug}`}
-              </SiteLink>
-            </Row>
-          </td>
-
-          <td className={columnClass}>
-            <Row className={'items-center justify-start gap-1'}>
-              {acceptances.length > 0 ? (
-                <>
-                  <Avatar
-                    username={acceptances[0].userUsername}
-                    avatarUrl={acceptances[0].userAvatarUrl}
-                    size={'sm'}
-                  />
-                  <UserLink
-                    name={acceptances[0].userName}
-                    username={acceptances[0].userUsername}
-                  />
-                </>
-              ) : (
-                <span>
-                  No one -
-                  {challenge.expiresTime &&
-                    ` (expires ${fromNow(challenge.expiresTime)})`}
-                </span>
-              )}
-            </Row>
-          </td>
-        </tr>
-      </>
     </>
   )
 }

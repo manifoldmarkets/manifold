@@ -1,9 +1,7 @@
 import React from 'react'
 import clsx from 'clsx'
-import toast from 'react-hot-toast'
-import { LinkIcon } from '@heroicons/react/outline'
 
-import { contractUrl, tradingAllowed } from 'web/lib/firebase/contracts'
+import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
@@ -24,8 +22,6 @@ import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 import { ShareRow } from './share-row'
-import { CreateChallengeButton } from 'web/components/challenges/create-challenge-button'
-import { copyToClipboard } from 'web/lib/util/copy'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 
 export const ContractOverview = (props: {
@@ -41,7 +37,6 @@ export const ContractOverview = (props: {
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const showChallenge = user && isBinary && !resolution && CHALLENGES_ENABLED
 
   return (
     <Col className={clsx('mb-6', className)}>
