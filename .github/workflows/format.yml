@@ -12,8 +12,6 @@ env:
   FORCE_COLOR: 3
   NEXT_TELEMETRY_DISABLED: 1
 
-permissions: write-all
-
 jobs:
   prettify:
     name: Auto-prettify
@@ -23,6 +21,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.FORMATTER_ACCESS_TOKEN }}
       - name: Restore cached node_modules
         uses: actions/cache@v2
         with:
