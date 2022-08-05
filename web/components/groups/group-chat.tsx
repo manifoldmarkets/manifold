@@ -24,7 +24,7 @@ import { sum } from 'lodash'
 import { formatMoney } from 'common/util/format'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
-import { ChatIcon, ChevronDownIcon } from '@heroicons/react/outline'
+import { ChatIcon, ChevronDownIcon, UsersIcon } from '@heroicons/react/outline'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 
 export function GroupChat(props: {
@@ -239,7 +239,7 @@ export function GroupChatInBubble(props: {
         }}
       >
         {!shouldShowChat ? (
-          <ChatIcon className="h-10 w-10" aria-hidden="true" />
+          <UsersIcon className="h-10 w-10" aria-hidden="true" />
         ) : (
           <ChevronDownIcon className={'h-10 w-10'} aria-hidden={'true'} />
         )}
