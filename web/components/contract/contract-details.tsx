@@ -5,13 +5,13 @@ import {
   TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
+
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
 import {
   Contract,
   contractMetrics,
-  contractPath,
   updateContract,
 } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
@@ -24,11 +24,9 @@ import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 import { UserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
-import { ShareIconButton } from 'web/components/share-icon-button'
 import { useUser } from 'web/hooks/use-user'
 import { Editor } from '@tiptap/react'
 import { exhibitExts } from 'common/util/parse'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -228,14 +226,6 @@ export function ContractDetails(props: {
 
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
-      <ShareIconButton
-        copyPayload={`https://${ENV_CONFIG.domain}${contractPath(contract)}${
-          user?.username && contract.creatorUsername !== user?.username
-            ? '?referrer=' + user?.username
-            : ''
-        }`}
-        toastClassName={'sm:-left-40 -left-24 min-w-[250%]'}
-      />
 
       {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
     </Row>

@@ -113,6 +113,7 @@ function YourChallengesTable(props: { links: Challenge[] }) {
 function YourLinkSummaryRow(props: { challenge: Challenge }) {
   const { challenge } = props
   const { acceptances } = challenge
+
   const [open, setOpen] = React.useState(false)
   const className = clsx(
     'whitespace-nowrap text-sm hover:cursor-pointer text-gray-500 hover:bg-sky-50 bg-white'
