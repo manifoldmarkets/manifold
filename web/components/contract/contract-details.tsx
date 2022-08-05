@@ -145,6 +145,15 @@ export function ContractDetails(props: {
   const user = useUser()
   const [open, setOpen] = useState(false)
 
+  const groupInfo = (
+    <Row>
+      <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+      <span className={'line-clamp-1'}>
+        {groupToDisplay ? groupToDisplay.name : 'No group'}
+      </span>
+    </Row>
+  )
+
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -166,19 +175,18 @@ export function ContractDetails(props: {
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
       <Row>
-        <Button
-          size={'xs'}
-          className={'max-w-[200px]'}
-          color={'gray-white'}
-          onClick={() => setOpen(!open)}
-        >
-          <Row>
-            <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-            <span className={'line-clamp-1'}>
-              {groupToDisplay ? groupToDisplay.name : 'No group'}
-            </span>
-          </Row>
-        </Button>
+        {disabled ? (
+          groupInfo
+        ) : (
+          <Button
+            size={'xs'}
+            className={'max-w-[200px]'}
+            color={'gray-white'}
+            onClick={() => setOpen(!open)}
+          >
+            {groupInfo}
+          </Button>
+        )}
       </Row>
       <Modal open={open} setOpen={setOpen} size={'md'}>
         <Col
