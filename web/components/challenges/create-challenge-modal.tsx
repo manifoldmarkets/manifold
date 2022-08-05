@@ -19,6 +19,7 @@ import { QRCode } from '../qr-code'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { AmountInput } from '../amount-input'
 import { getProbability } from 'common/calculate'
+import { track } from 'web/lib/service/analytics'
 
 type challengeInfo = {
   amount: number
@@ -55,7 +56,14 @@ export function CreateChallengeModal(props: {
                 outcome: newChallenge.outcome,
                 contract: contract,
               })
-              challenge && setChallengeSlug(getChallengeUrl(challenge))
+              if (challenge) {
+                setChallengeSlug(getChallengeUrl(challenge))
+                track('challenge created', {
+                  creator: user.username,
+                  amount: newChallenge.amount,
+                  contractId: contract.id,
+                })
+              }
             }}
             challengeSlug={challengeSlug}
           />

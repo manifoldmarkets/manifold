@@ -9,6 +9,7 @@ import { CreateChallengeModal } from '../challenges/create-challenge-modal'
 import { User } from 'common/user'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { ShareModal } from './share-modal'
+import { withTracking } from 'web/lib/service/analytics'
 
 export function ShareRow(props: {
   contract: Contract
@@ -47,7 +48,10 @@ export function ShareRow(props: {
         <Button
           size="lg"
           color="gray-white"
-          onClick={() => setIsOpen(true)}
+          onClick={withTracking(
+            () => setIsOpen(true),
+            'click challenge button'
+          )}
           className="animate-bounce"
         >
           ⚔️ Challenge
