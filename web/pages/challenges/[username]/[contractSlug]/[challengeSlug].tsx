@@ -92,6 +92,7 @@ export default function ChallengePage(props: {
 
   useSaveReferral(currentUser, {
     defaultReferrerUsername: challenge?.creatorUsername,
+    contractId: challenge?.contractId,
   })
 
   if (!contract || !challenge) return <Custom404 />
@@ -171,7 +172,8 @@ function FAQ() {
       {toggleWhatIsMana && (
         <Row className={'mx-4'}>
           Mana (M$) is the play-money used by our platform to keep track of your
-          bets. It's completely free for you and your friends to get started!
+          bets. It's completely free to get started, and you can donate your
+          winnings to charity!
         </Row>
       )}
     </Col>
