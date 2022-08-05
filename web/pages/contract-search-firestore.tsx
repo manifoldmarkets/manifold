@@ -20,6 +20,8 @@ export default function ContractSearchFirestore(props: {
   additionalFilter?: {
     creatorId?: string
     tag?: string
+    excludeContractIds?: string[]
+    groupSlug?: string
   }
 }) {
   const contracts = useContracts()
@@ -63,7 +65,7 @@ export default function ContractSearchFirestore(props: {
   }
 
   if (additionalFilter) {
-    const { creatorId, tag } = additionalFilter
+    const { creatorId, tag, groupSlug, excludeContractIds } = additionalFilter
 
     if (creatorId) {
       matches = matches.filter((c) => c.creatorId === creatorId)
@@ -73,6 +75,14 @@ export default function ContractSearchFirestore(props: {
       matches = matches.filter((c) =>
         c.lowercaseTags.includes(tag.toLowerCase())
       )
+    }
+
+    if (groupSlug) {
+      matches = matches.filter((c) => c.groupSlugs?.includes(groupSlug))
+    }
+
+    if (excludeContractIds) {
+      matches = matches.filter((c) => !excludeContractIds.includes(c.id))
     }
   }
 
