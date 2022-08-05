@@ -14,6 +14,7 @@ export interface ParsedRequest {
   // Attributes for Manifold card:
   question: string
   probability: string
+  numericValue: string
   metadata: string
   creatorName: string
   creatorUsername: string

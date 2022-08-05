@@ -9,6 +9,7 @@ export type OgCardProps = {
   creatorName: string
   creatorUsername: string
   creatorAvatarUrl?: string
+  numericValue?: string
 }
 
 function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
@@ -25,6 +26,12 @@ function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
     props.probability === undefined
       ? ''
       : `&probability=${encodeURIComponent(props.probability ?? '')}`
+
+  const numericValueParam =
+    props.numericValue === undefined
+      ? ''
+      : `&numericValue=${encodeURIComponent(props.numericValue ?? '')}`
+
   const creatorAvatarUrlParam =
     props.creatorAvatarUrl === undefined
       ? ''
@@ -41,6 +48,7 @@ function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
     `https://manifold-og-image.vercel.app/m.png` +
     `?question=${encodeURIComponent(props.question)}` +
     probabilityParam +
+    numericValueParam +
     `&metadata=${encodeURIComponent(props.metadata)}` +
     `&creatorName=${encodeURIComponent(props.creatorName)}` +
     creatorAvatarUrlParam +
