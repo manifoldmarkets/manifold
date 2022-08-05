@@ -32,39 +32,32 @@ document.location.search.split('&').forEach((pair) => {
   }
 })
 
-let firstFetch = fetch('jsons/' + whichGuesser + page + '.json')
+let firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
 
 function putIntoMapAndFetch(data) {
   putIntoMap(data.data)
-  if (data.has_more) {
-    page += 1
-    window.setTimeout(() =>
-      fetchToResponse(fetch('jsons/' + whichGuesser + page + '.json'))
+  for (const [key, value] of Object.entries(allData)) {
+    nameList.push(key)
+    probList.push(
+      value.length + (probList.length === 0 ? 0 : probList[probList.length - 1])
     )
-  } else {
-    for (const [key, value] of Object.entries(allData)) {
-      nameList.push(key)
-      probList.push(
-        value.length +
-          (probList.length === 0 ? 0 : probList[probList.length - 1])
-      )
-      unseenTotal = total
-    }
-    window.console.log(allData)
-    window.console.log(total)
-    window.console.log(probList)
-    window.console.log(nameList)
-    if (whichGuesser === 'counterspell') {
-      document.getElementById('guess-type').innerText = 'Counterspell Guesser'
-    } else if (whichGuesser === 'burn') {
-      document.getElementById('guess-type').innerText = 'Match With Hot Singles'
-    } else if (whichGuesser === 'beast') {
-      document.getElementById('guess-type').innerText =
-        'Finding Fantastic Beasts'
-    }
-    setUpNewGame()
+    unseenTotal = total
   }
+  window.console.log(allData)
+  window.console.log(total)
+  window.console.log(probList)
+  window.console.log(nameList)
+  if (whichGuesser === 'counterspell') {
+    document.getElementById('guess-type').innerText = 'Counterspell Guesser'
+  } else if (whichGuesser === 'burn') {
+    document.getElementById('guess-type').innerText = 'Match With Hot Singles'
+  } else if (whichGuesser === 'beast') {
+    document.getElementById('guess-type').innerText = 'Finding Fantastic Beasts'
+  } else if (whichGuesser === 'basic') {
+    document.getElementById('guess-type').innerText = 'Basic B****'
+  }
+  setUpNewGame()
 }
 
 function getKSamples() {
@@ -134,11 +127,17 @@ function determineIfSkip(card) {
     }
   }
   if (firstPrint) {
-    if (
-      card.reprint === true ||
-      (card.frame_effects && card.frame_effects.includes('showcase'))
-    ) {
-      return true
+    if (whichGuesser == 'basic') {
+      if (card.set_type !== 'expansion') {
+        return true
+      }
+    } else {
+      if (
+        card.reprint === true ||
+        (card.frame_effects && card.frame_effects.includes('showcase'))
+      ) {
+        return true
+      }
     }
   }
   // reskinned card names show in art crop
@@ -163,10 +162,6 @@ function putIntoMap(data) {
     let normalImg = ''
     if (card.image_uris.normal) {
       normalImg = card.image_uris.normal
-    } else if (card.image_uris.large) {
-      normalImg = card.image_uris.large
-    } else if (card.image_uris.small) {
-      normalImg = card.image_uris.small
     } else {
       continue
     }
