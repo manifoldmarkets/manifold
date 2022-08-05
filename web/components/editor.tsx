@@ -137,14 +137,7 @@ export function TextEditor(props: {
             editor={editor}
             className={clsx(proseClass, '-ml-2 mr-2 w-full text-slate-300 ')}
           >
-            Type <em>*markdown*</em>. Paste or{' '}
-            <FileUploadButton
-              className="link text-blue-300"
-              onFiles={upload.mutate}
-            >
-              upload
-            </FileUploadButton>{' '}
-            images!
+            Type <em>*markdown*</em>
           </FloatingMenu>
         )}
         <div className="rounded-lg border border-gray-300 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
