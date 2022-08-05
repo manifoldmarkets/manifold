@@ -11,7 +11,7 @@ import { User } from 'common/user'
 import { Modal } from 'web/components/layout/modal'
 import { Button } from '../button'
 import { createChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, MAX_QUESTION_LENGTH } from 'common/contract'
 import { SiteLink } from 'web/components/site-link'
 import { formatMoney } from 'common/util/format'
 import { NoLabel, YesLabel } from '../outcome-label'
@@ -19,23 +19,31 @@ import { QRCode } from '../qr-code'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { AmountInput } from '../amount-input'
 import { getProbability } from 'common/calculate'
+import { createMarket } from 'web/lib/firebase/api'
+import { removeUndefinedProps } from 'common/util/object'
+import { FIXED_ANTE } from 'common/antes'
+import Textarea from 'react-expanding-textarea'
+import { useTextEditor } from 'web/components/editor'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 type challengeInfo = {
   amount: number
   expiresTime: number | null
-  message: string
   outcome: 'YES' | 'NO' | number
   acceptorAmount: number
+  question: string
 }
 
 export function CreateChallengeModal(props: {
   user: User | null | undefined
-  contract: BinaryContract
   isOpen: boolean
   setOpen: (open: boolean) => void
+  contract?: BinaryContract
 }) {
   const { user, contract, isOpen, setOpen } = props
   const [challengeSlug, setChallengeSlug] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { editor } = useTextEditor({ placeholder: '' })
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
@@ -45,17 +53,35 @@ export function CreateChallengeModal(props: {
           <CreateChallengeForm
             user={user}
             contract={contract}
+            loading={loading}
             onCreate={async (newChallenge) => {
-              const challenge = await createChallenge({
-                creator: user,
-                creatorAmount: newChallenge.amount,
-                expiresTime: newChallenge.expiresTime,
-                message: newChallenge.message,
-                acceptorAmount: newChallenge.acceptorAmount,
-                outcome: newChallenge.outcome,
-                contract: contract,
-              })
-              challenge && setChallengeSlug(getChallengeUrl(challenge))
+              setLoading(true)
+              try {
+                const challengeContract = contract
+                  ? contract
+                  : await createMarket(
+                      removeUndefinedProps({
+                        question: newChallenge.question,
+                        outcomeType: 'BINARY',
+                        initialProb: 50,
+                        description: editor?.getJSON(),
+                        ante: FIXED_ANTE,
+                        closeTime: dayjs().add(30, 'day').valueOf(),
+                      })
+                    )
+                const challenge = await createChallenge({
+                  creator: user,
+                  creatorAmount: newChallenge.amount,
+                  expiresTime: newChallenge.expiresTime,
+                  acceptorAmount: newChallenge.acceptorAmount,
+                  outcome: newChallenge.outcome,
+                  contract: challengeContract as BinaryContract,
+                })
+                challenge && setChallengeSlug(getChallengeUrl(challenge))
+              } catch (e) {
+                console.error("couldn't create market/challenge:", e)
+              }
+              setLoading(false)
             }}
             challengeSlug={challengeSlug}
           />
@@ -67,25 +93,24 @@ export function CreateChallengeModal(props: {
 
 function CreateChallengeForm(props: {
   user: User
-  contract: BinaryContract
   onCreate: (m: challengeInfo) => Promise<void>
   challengeSlug: string
+  loading: boolean
+  contract?: BinaryContract
 }) {
-  const { user, onCreate, contract, challengeSlug } = props
+  const { user, onCreate, contract, challengeSlug, loading } = props
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [error, setError] = useState<string>('')
   const [editingAcceptorAmount, setEditingAcceptorAmount] = useState(false)
   const defaultExpire = 'week'
 
-  const defaultMessage = `${user.name} is challenging you to a bet! Do you think ${contract.question}`
-
   const [challengeInfo, setChallengeInfo] = useState<challengeInfo>({
     expiresTime: dayjs().add(2, defaultExpire).valueOf(),
     outcome: 'YES',
     amount: 100,
     acceptorAmount: 100,
-    message: defaultMessage,
+    question: contract ? contract.question : '',
   })
   useEffect(() => {
     setError('')
@@ -110,7 +135,23 @@ function CreateChallengeForm(props: {
 
           <div className="mb-8">
             Challenge a friend to bet on{' '}
-            <span className="underline">{contract.question}</span>
+            {contract ? (
+              <span className="underline">{contract.question}</span>
+            ) : (
+              <Textarea
+                placeholder="e.g. Will a Democrat be the next president?"
+                className="input input-bordered mt-1 w-full resize-none"
+                autoFocus={true}
+                maxLength={MAX_QUESTION_LENGTH}
+                value={challengeInfo.question}
+                onChange={(e) =>
+                  setChallengeInfo({
+                    ...challengeInfo,
+                    question: e.target.value,
+                  })
+                }
+              />
+            )}
           </div>
 
           <div className="mt-2 flex flex-col flex-wrap justify-center gap-x-5 gap-y-2">
@@ -179,22 +220,23 @@ function CreateChallengeForm(props: {
               {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
             </Row>
           </div>
-          <Button
-            size="2xs"
-            color="gray"
-            onClick={() => {
-              setEditingAcceptorAmount(true)
+          {contract && (
+            <Button
+              size="2xs"
+              color="gray"
+              onClick={() => {
+                setEditingAcceptorAmount(true)
 
-              const p = getProbability(contract)
-              const prob = challengeInfo.outcome === 'YES' ? p : 1 - p
-              const { amount } = challengeInfo
-              const acceptorAmount = Math.round(amount / prob - amount)
-              setChallengeInfo({ ...challengeInfo, acceptorAmount })
-            }}
-          >
-            Use market odds
-          </Button>
-
+                const p = getProbability(contract)
+                const prob = challengeInfo.outcome === 'YES' ? p : 1 - p
+                const { amount } = challengeInfo
+                const acceptorAmount = Math.round(amount / prob - amount)
+                setChallengeInfo({ ...challengeInfo, acceptorAmount })
+              }}
+            >
+              Use market odds
+            </Button>
+          )}
           <div className="mt-8">
             If the challenge is accepted, whoever is right will earn{' '}
             <span className="font-semibold">
@@ -202,7 +244,18 @@ function CreateChallengeForm(props: {
                 challengeInfo.acceptorAmount + challengeInfo.amount || 0
               )}
             </span>{' '}
-            in total.
+            in total.{' '}
+            <span>
+              {!contract && (
+                <span>
+                  You'll be charged an additional{' '}
+                  <span className={'font-semibold'}>
+                    {formatMoney(FIXED_ANTE)}
+                  </span>{' '}
+                  to create the underlying market
+                </span>
+              )}
+            </span>
           </div>
 
           <Row className="mt-8 items-center">
@@ -210,10 +263,8 @@ function CreateChallengeForm(props: {
               type="submit"
               color={'gradient'}
               size="xl"
-              className={clsx(
-                'whitespace-nowrap drop-shadow-md',
-                isCreating ? 'disabled' : ''
-              )}
+              disabled={isCreating || challengeInfo.question === ''}
+              className={clsx('whitespace-nowrap drop-shadow-md')}
             >
               Create challenge bet
             </Button>
@@ -221,7 +272,12 @@ function CreateChallengeForm(props: {
           <Row className={'text-error'}>{error} </Row>
         </form>
       )}
-      {finishedCreating && (
+      {loading && (
+        <Col className={'h-56 w-full items-center justify-center'}>
+          <LoadingIndicator />
+        </Col>
+      )}
+      {finishedCreating && !loading && (
         <>
           <Title className="!my-0" text="Challenge Created!" />
 
