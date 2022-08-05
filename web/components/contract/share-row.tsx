@@ -44,7 +44,12 @@ export function ShareRow(props: {
       </Button>
 
       {showChallenge && (
-        <Button size="lg" color="gray-white" onClick={() => setIsOpen(true)}>
+        <Button
+          size="lg"
+          color="gray-white"
+          onClick={() => setIsOpen(true)}
+          className="animate-bounce"
+        >
           ⚔️ Challenge
           <CreateChallengeModal
             isOpen={isOpen}
