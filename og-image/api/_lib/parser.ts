@@ -16,6 +16,7 @@ export function parseRequest(req: IncomingMessage) {
     // Attributes for Manifold card:
     question,
     probability,
+    numericValue,
     metadata,
     creatorName,
     creatorUsername,
@@ -71,6 +72,7 @@ export function parseRequest(req: IncomingMessage) {
     question:
       getString(question) || 'Will you create a prediction market on Manifold?',
     probability: getString(probability),
+    numericValue: getString(numericValue) || '',
     metadata: getString(metadata) || 'Jan 1 &nbsp;•&nbsp; M$ 123 pool',
     creatorName: getString(creatorName) || 'Manifold Markets',
     creatorUsername: getString(creatorUsername) || 'ManifoldMarkets',
