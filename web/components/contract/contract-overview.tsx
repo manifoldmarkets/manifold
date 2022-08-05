@@ -22,7 +22,6 @@ import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 import { ShareRow } from './share-row'
-import { CHALLENGES_ENABLED } from 'common/challenge'
 
 export const ContractOverview = (props: {
   contract: Contract
