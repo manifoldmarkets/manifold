@@ -24,7 +24,7 @@ import { sum } from 'lodash'
 import { formatMoney } from 'common/util/format'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
-import { ChatIcon, ChevronDownIcon, UsersIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, UsersIcon } from '@heroicons/react/outline'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 
 export function GroupChat(props: {
