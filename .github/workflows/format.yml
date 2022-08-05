@@ -12,6 +12,9 @@ env:
   FORCE_COLOR: 3
   NEXT_TELEMETRY_DISABLED: 1
 
+permissions:
+  contents: write
+
 jobs:
   prettify:
     name: Auto-prettify
