@@ -4,7 +4,7 @@ import { Contract } from 'common/contract'
 
 import { Spacer } from './layout/spacer'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { ContractsGrid } from './contract/contracts-list'
+import { ContractsGrid } from './contract/contracts-grid'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { withTracking } from 'web/lib/service/analytics'

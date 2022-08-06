@@ -6,7 +6,7 @@ import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import {
   ContractHighlightOptions,
   ContractsGrid,
-} from './contract/contracts-list'
+} from './contract/contracts-grid'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useState } from 'react'
 import { Spacer } from './layout/spacer'
