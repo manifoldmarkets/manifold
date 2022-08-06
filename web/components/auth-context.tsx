@@ -1,4 +1,4 @@
-import { createContext, useEffect } from 'react'
+import { ReactNode, createContext, useEffect } from 'react'
 import { User } from 'common/user'
 import { onIdTokenChanged } from 'firebase/auth'
 import {
@@ -28,11 +28,11 @@ const ensureDeviceToken = () => {
   return deviceToken
 }
 
-export const AuthContext = createContext<AuthUser>(null)
+export const AuthContext = createContext<AuthUser>(undefined)
 
-export function AuthProvider({ children }: any) {
-  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(undefined)
-
+export function AuthProvider(props: { children: ReactNode; user?: AuthUser }) {
+  const { children, user } = props
+  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(user)
   useEffect(() => {
     const cachedUser = localStorage.getItem(CACHED_USER_KEY)
     setAuthUser(cachedUser && JSON.parse(cachedUser))
