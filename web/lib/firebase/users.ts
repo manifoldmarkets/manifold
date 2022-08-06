@@ -52,6 +52,11 @@ export async function getUser(userId: string) {
   return (await getDoc(doc(users, userId))).data()!
 }
 
+export async function getPrivateUser(userId: string) {
+  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+  return (await getDoc(doc(users, userId))).data()!
+}
+
 export async function getUserByUsername(username: string) {
   // Find a user whose username matches the given username, or null if no such user exists.
   const q = query(users, where('username', '==', username), limit(1))

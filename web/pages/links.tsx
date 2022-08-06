@@ -11,10 +11,11 @@ import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { Subtitle } from 'web/components/subtitle'
-import { useUser } from 'web/hooks/use-user'
+import { getUser } from 'web/lib/firebase/users'
 import { useUserManalinks } from 'web/lib/firebase/manalinks'
 import { useUserById } from 'web/hooks/use-user'
 import { ManalinkTxn } from 'common/txn'
+import { User } from 'common/user'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
@@ -27,15 +28,19 @@ import { Manalink } from 'common/manalink'
 import { REFERRAL_AMOUNT } from 'common/user'
 
 const LINKS_PER_PAGE = 24
-export const getServerSideProps = redirectIfLoggedOut('/')
+
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  const user = await getUser(creds.user.uid)
+  return { props: { user } }
+})
 
 export function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
-export default function LinkPage() {
-  const user = useUser()
-  const links = useUserManalinks(user?.id ?? '')
+export default function LinkPage(props: { user: User }) {
+  const { user } = props
+  const links = useUserManalinks(user.id ?? '')
   // const manalinkTxns = useManalinkTxns(user?.id ?? '')
   const [highlightedSlug, setHighlightedSlug] = useState('')
   const unclaimedLinks = links.filter(
@@ -43,10 +48,6 @@ export default function LinkPage() {
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
       (l.expiresTime == null || l.expiresTime > Date.now())
   )
-
-  if (user == null) {
-    return null
-  }
 
   return (
     <Page>
