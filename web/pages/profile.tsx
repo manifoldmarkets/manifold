@@ -207,7 +207,12 @@ export default function ProfilePage(props: {
               ['discordHandle', 'Discord'],
             ] as const
           ).map(([field, label]) => (
-            <EditUserField user={user} field={field} label={label} />
+            <EditUserField
+              key={field}
+              user={user}
+              field={field}
+              label={label}
+            />
           ))}
 
           <div>
