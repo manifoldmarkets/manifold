@@ -3,7 +3,6 @@ import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { ContractsGrid } from 'web/components/contract/contracts-list'
-import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useContracts } from 'web/hooks/use-contracts'
 import {
   Sort,
@@ -118,16 +117,12 @@ export default function ContractSearchFirestore(props: {
           <option value="close-date">Closing soon</option>
         </select>
       </div>
-      {contracts === undefined ? (
-        <LoadingIndicator />
-      ) : (
-        <ContractsGrid
-          contracts={matches}
-          loadMore={() => {}}
-          hasMore={false}
-          showTime={showTime}
-        />
-      )}
+      <ContractsGrid
+        contracts={matches}
+        loadMore={() => {}}
+        hasMore={false}
+        showTime={showTime}
+      />
     </div>
   )
 }

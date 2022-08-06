@@ -343,7 +343,7 @@ export function ContractSearch(props: {
         <>You're not following anyone, nor in any of your own groups yet.</>
       ) : (
         <ContractsGrid
-          contracts={contracts}
+          contracts={hitsByPage[0] === undefined ? undefined : contracts}
           loadMore={loadMore}
           hasMore={true}
           showTime={showTime}

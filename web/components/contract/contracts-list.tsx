@@ -8,6 +8,7 @@ import { ContractSearch } from '../contract-search'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
+import { LoadingIndicator } from '../loading-indicator'
 
 export type ContractHighlightOptions = {
   contractIds?: string[]
@@ -15,7 +16,7 @@ export type ContractHighlightOptions = {
 }
 
 export function ContractsGrid(props: {
-  contracts: Contract[]
+  contracts: Contract[] | undefined
   loadMore: () => void
   hasMore: boolean
   showTime?: ShowTime
@@ -48,6 +49,10 @@ export function ContractsGrid(props: {
       loadMore()
     }
   }, [isBottomVisible, hasMore, loadMore])
+
+  if (contracts === undefined) {
+    return <LoadingIndicator />
+  }
 
   if (contracts.length === 0) {
     return (
