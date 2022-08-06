@@ -33,6 +33,7 @@ import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
+import { appendToEditor } from '../editor/utils'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -282,12 +283,10 @@ function EditableCloseDate(props: {
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
       const editor = new Editor({ content, extensions: exhibitExts })
-      editor
-        .chain()
-        .focus('end')
-        .insertContent('<br /><br />')
-        .insertContent(`Close date updated to ${formattedCloseDate}`)
-        .run()
+      appendToEditor(
+        editor,
+        `<br><p>Close date updated to ${formattedCloseDate}</p>`
+      )
 
       updateContract(contract.id, {
         closeTime: newCloseTime,
