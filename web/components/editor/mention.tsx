@@ -11,7 +11,7 @@ const name = 'mention-component'
 
 const MentionComponent = (props: any) => {
   return (
-    <NodeViewWrapper className={clsx(name, 'not-prose inline text-indigo-700')}>
+    <NodeViewWrapper className={clsx(name, 'not-prose text-indigo-700')}>
       <Linkify text={'@' + props.node.attrs.label} />
     </NodeViewWrapper>
   )
@@ -25,5 +25,6 @@ const MentionComponent = (props: any) => {
 export const DisplayMention = Mention.extend({
   parseHTML: () => [{ tag: name }],
   renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
-  addNodeView: () => ReactNodeViewRenderer(MentionComponent),
+  addNodeView: () =>
+    ReactNodeViewRenderer(MentionComponent, { className: 'inline-block' }),
 })
