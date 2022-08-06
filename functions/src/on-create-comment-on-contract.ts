@@ -7,7 +7,7 @@ import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { createNotification } from './create-notification'
-import { parseMentions, richTextToString } from 'common/util/parse'
+import { parseMentions, richTextToString } from '../../common/util/parse'
 
 const firestore = admin.firestore()
 

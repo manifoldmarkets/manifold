@@ -17,7 +17,7 @@ import { formatNumericProbability } from '../../common/pseudo-numeric'
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 import { getFunctionUrl } from '../../common/api'
-import { richTextToString } from 'common/util/parse'
+import { richTextToString } from '../../common/util/parse'
 
 const UNSUBSCRIBE_ENDPOINT = getFunctionUrl('unsubscribe')
 

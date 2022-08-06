@@ -17,7 +17,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 import { Challenge } from '../../common/challenge'
-import { richTextToString } from 'common/util/parse'
+import { richTextToString } from '../../common/util/parse'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
