@@ -7,7 +7,13 @@ import {
   writeResponseError,
 } from './api'
 
-const opts = { method: 'GET', minInstances: 1 }
+const opts = {
+  method: 'GET',
+  minInstances: 1,
+  concurrency: 100,
+  memory: '2GiB',
+  cpu: 1,
+} as const
 
 export const getcustomtoken: EndpointDefinition = {
   opts,
