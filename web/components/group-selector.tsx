@@ -18,11 +18,11 @@ async function fetchGroups(): Promise<Group[]> {
 }
 
 export const useMemberGroups = (
+    setMemberGroups: (groups: Group[]) => void,
     userId: string | null | undefined,
     options?: { withChatEnabled: boolean },
     sort?: { by: "mostRecentChatActivityTime" | "mostRecentContractAddedTime" }
 ) => {
-    const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
     useEffect(() => {
         if (userId) {
             fetchGroups().then((groups) => {
@@ -38,7 +38,7 @@ export const useMemberGroups = (
         //     sort
         // );
     }, [options?.withChatEnabled, sort?.by, userId]);
-    return memberGroups;
+    // return memberGroups;
 };
 
 export function GroupSelector(props: {
@@ -48,20 +48,27 @@ export function GroupSelector(props: {
     options: {
         showSelector: boolean;
         showLabel: boolean;
-        ignoreGroupIds?: string[];
     };
 }) {
+    const [isRefreshingGroups, setIsRefreshingGroups] = useState<boolean>(false);
+    const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
+
     const { selectedGroup, setSelectedGroup, creator, options } = props;
-    const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false);
-    const { showSelector, showLabel, ignoreGroupIds } = options;
+    const { showSelector } = options;
     const [query, setQuery] = useState("");
-    const memberGroups = (useMemberGroups(creator?.id) ?? []).filter(
-        (group) => !ignoreGroupIds?.includes(group.id)
-    );
-    const filteredGroups = memberGroups.filter((group) => {
+    useMemberGroups(setMemberGroups, creator?.id);
+    const filteredGroups = memberGroups?.filter((group) => {
         // searchInAny(query, group.name)
         return group.name.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) >= 0;
-    });
+    }) || [];
+
+    const onRefresh = () => {
+        console.clear();
+        setIsRefreshingGroups(true);
+        fetchGroups().then((groups) => {
+            setMemberGroups(groups);
+        }).finally(() => setIsRefreshingGroups(false));
+    };
 
     if (!showSelector || !creator) {
         return (
@@ -78,7 +85,7 @@ export function GroupSelector(props: {
         );
     }
     return (
-        <div className="form-control items-start">
+        <div className="flex flex-row justify-center">
             <Combobox
                 as="div"
                 value={selectedGroup}
@@ -89,10 +96,10 @@ export function GroupSelector(props: {
                 {() => (
                     <>
                         {/* {showLabel && <Combobox.Label className="label justify-start gap-2 text-base">Select group</Combobox.Label>} */}
-                        <div className="flex pjb-ig" style={{}}>
+                        <div className="flex pjb-ig grow" style={{...isRefreshingGroups && {pointerEvents: "none"}}}>
                             <div className="relative flex w-full justify-items-stretch">
                                 <Combobox.Input
-                                    className="w-full border rounded-md border-gray-300 bg-white pl-4 pr-20 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 "
+                                    className="w-full border rounded-md border-gray-300 bg-white pl-4 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     onChange={(event) => setQuery(event.target.value)}
                                     displayValue={(group: Group) => group && group.name}
                                     placeholder={"E.g. Science, Politics"}
@@ -105,8 +112,7 @@ export function GroupSelector(props: {
                                 </Combobox.Button>
 
                                 <Combobox.Options
-                                    static={isCreatingNewGroup}
-                                    className="absolute z-10 mt-12 max-h-96 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                    className="absolute z-10 mt-[3.2rem] max-h-96 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                                 >
                                     {filteredGroups.map((group: Group) => (
                                         <Combobox.Option
@@ -153,10 +159,10 @@ export function GroupSelector(props: {
                                 </Combobox.Options>
                             </div>
                             <button
-                                className="btn btn-primary btn-square p-2 rounded-md"
-                                onClick={undefined}
+                                className={clsx("btn btn-primary btn-square p-2 rounded-md", isRefreshingGroups ? "loading" : "")}
+                                onClick={onRefresh}
                             >
-                                <RefreshIcon />
+                                {!isRefreshingGroups && (<RefreshIcon />)}
                             </button>
                         </div>
                     </>
