@@ -2,19 +2,24 @@ import { PROJECT_ID } from 'common/envs/constants'
 import { setCookie, getCookies } from '../util/cookie'
 import { IncomingMessage, ServerResponse } from 'http'
 
+const ONE_HOUR_SECS = 60 * 60
+const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 const TOKEN_KINDS = ['refresh', 'id', 'custom'] as const
-type TokenKind = typeof TOKEN_KINDS[number]
+const TOKEN_AGES = {
+  id: ONE_HOUR_SECS,
+  refresh: ONE_HOUR_SECS,
+  custom: TEN_YEARS_SECS,
+} as const
+export type TokenKind = typeof TOKEN_KINDS[number]
 
 const getAuthCookieName = (kind: TokenKind) => {
   const suffix = `${PROJECT_ID}_${kind}`.toUpperCase().replace(/-/g, '_')
   return `FIREBASE_TOKEN_${suffix}`
 }
 
-const ID_COOKIE_NAME = getAuthCookieName('id')
-const REFRESH_COOKIE_NAME = getAuthCookieName('refresh')
-const CUSTOM_COOKIE_NAME = getAuthCookieName('custom')
-const ONE_HOUR_SECS = 60 * 60
-const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
+const COOKIE_NAMES = Object.fromEntries(
+  TOKEN_KINDS.map((k) => [k, getAuthCookieName(k)])
+) as Record<TokenKind, string>
 
 const getCookieDataIsomorphic = (req?: IncomingMessage) => {
   if (req != null) {
@@ -42,44 +47,28 @@ const setCookieDataIsomorphic = (cookies: string[], res?: ServerResponse) => {
   }
 }
 
-export const getAuthCookies = (req?: IncomingMessage) => {
+export const getTokensFromCookies = (req?: IncomingMessage) => {
   const cookies = getCookies(getCookieDataIsomorphic(req))
-  return {
-    idToken: cookies[ID_COOKIE_NAME] as string | undefined,
-    refreshToken: cookies[REFRESH_COOKIE_NAME] as string | undefined,
-    customToken: cookies[CUSTOM_COOKIE_NAME] as string | undefined,
-  }
+  return Object.fromEntries(
+    TOKEN_KINDS.map((k) => [k, cookies[COOKIE_NAMES[k]]])
+  ) as Partial<Record<TokenKind, string>>
 }
 
-export const setAuthCookies = (
-  idToken?: string,
-  refreshToken?: string,
-  customToken?: string,
+export const setTokenCookies = (
+  cookies: Partial<Record<TokenKind, string | undefined>>,
   res?: ServerResponse
 ) => {
-  const idMaxAge = idToken != null ? ONE_HOUR_SECS : 0
-  const idCookie = setCookie(ID_COOKIE_NAME, idToken ?? '', [
-    ['path', '/'],
-    ['max-age', idMaxAge.toString()],
-    ['samesite', 'lax'],
-    ['secure'],
-  ])
-  const customMaxAge = customToken != null ? ONE_HOUR_SECS : 0
-  const customCookie = setCookie(CUSTOM_COOKIE_NAME, customToken ?? '', [
-    ['path', '/'],
-    ['max-age', customMaxAge.toString()],
-    ['samesite', 'lax'],
-    ['secure'],
-  ])
-  const refreshMaxAge = refreshToken != null ? TEN_YEARS_SECS : 0
-  const refreshCookie = setCookie(REFRESH_COOKIE_NAME, refreshToken ?? '', [
-    ['path', '/'],
-    ['max-age', refreshMaxAge.toString()],
-    ['samesite', 'lax'],
-    ['secure'],
-  ])
-  setCookieDataIsomorphic([idCookie, refreshCookie, customCookie], res)
+  const data = TOKEN_KINDS.filter((k) => k in cookies).map((k) => {
+    const maxAge = cookies[k] ? TOKEN_AGES[k as TokenKind] : 0
+    return setCookie(COOKIE_NAMES[k], cookies[k] ?? '', [
+      ['path', '/'],
+      ['max-age', maxAge.toString()],
+      ['samesite', 'lax'],
+      ['secure'],
+    ])
+  })
+  setCookieDataIsomorphic(data, res)
 }
 
-export const deleteAuthCookies = (res?: ServerResponse) =>
-  setAuthCookies(undefined, undefined, undefined, res)
+export const deleteTokenCookies = (res?: ServerResponse) =>
+  setTokenCookies({ id: undefined, refresh: undefined, custom: undefined }, res)

@@ -3,7 +3,11 @@ import { IncomingMessage, ServerResponse } from 'http'
 import { FIREBASE_CONFIG, PROJECT_ID } from 'common/envs/constants'
 import { getFunctionUrl } from 'common/api'
 import { UserCredential } from 'firebase/auth'
-import { getAuthCookies, setAuthCookies, deleteAuthCookies } from './auth'
+import {
+  getTokensFromCookies,
+  setTokenCookies,
+  deleteTokenCookies,
+} from './auth'
 import {
   GetServerSideProps,
   GetServerSidePropsContext,
@@ -70,28 +74,28 @@ type RequestContext = {
 const authAndRefreshTokens = async (ctx: RequestContext) => {
   const adminAuth = (await ensureApp()).auth()
   const clientAuth = getAuth(clientApp)
-  let { idToken, refreshToken, customToken } = getAuthCookies(ctx.req)
+  let { id, refresh, custom } = getTokensFromCookies(ctx.req)
 
   // step 0: if you have no refresh token you are logged out
-  if (refreshToken == null) {
+  if (refresh == null) {
     return undefined
   }
 
   // step 1: given a valid refresh token, ensure a valid ID token
-  if (idToken != null) {
+  if (id != null) {
     // if they have an ID token, throw it out if it's invalid/expired
     try {
-      await adminAuth.verifyIdToken(idToken)
+      await adminAuth.verifyIdToken(id)
     } catch {
-      idToken = undefined
+      id = undefined
     }
   }
-  if (idToken == null) {
+  if (id == null) {
     // ask for a new one from google using the refresh token
     try {
-      const resp = await requestFirebaseIdToken(refreshToken)
-      idToken = resp.id_token
-      refreshToken = resp.refresh_token
+      const resp = await requestFirebaseIdToken(refresh)
+      id = resp.id_token
+      refresh = resp.refresh_token
     } catch (e) {
       // big unexpected problem -- functionally, they are not logged in
       console.error(e)
@@ -101,29 +105,29 @@ const authAndRefreshTokens = async (ctx: RequestContext) => {
 
   // step 2: given a valid ID token, ensure a valid custom token, and sign in
   // to the client SDK with the custom token
-  if (customToken != null) {
+  if (custom != null) {
     // sign in with this token, or throw it out if it's invalid/expired
     try {
       return {
-        creds: await signInWithCustomToken(clientAuth, customToken),
-        idToken,
-        refreshToken,
-        customToken,
+        creds: await signInWithCustomToken(clientAuth, custom),
+        id,
+        refresh,
+        custom,
       }
     } catch {
-      customToken = undefined
+      custom = undefined
     }
   }
-  if (customToken == null) {
+  if (custom == null) {
     // ask for a new one from our cloud functions using the ID token, then sign in
     try {
-      const resp = await requestManifoldCustomToken(idToken)
-      customToken = resp.token
+      const resp = await requestManifoldCustomToken(id)
+      custom = resp.token
       return {
-        creds: await signInWithCustomToken(clientAuth, customToken),
-        idToken,
-        refreshToken,
-        customToken,
+        creds: await signInWithCustomToken(clientAuth, custom),
+        id,
+        refresh,
+        custom,
       }
     } catch (e) {
       // big unexpected problem -- functionally, they are not logged in
@@ -138,10 +142,9 @@ export const authenticateOnServer = async (ctx: RequestContext) => {
   const creds = tokens?.creds
   try {
     if (tokens == null) {
-      deleteAuthCookies(ctx.res)
+      deleteTokenCookies(ctx.res)
     } else {
-      const { idToken, refreshToken, customToken } = tokens
-      setAuthCookies(idToken, refreshToken, customToken, ctx.res)
+      setTokenCookies(tokens, ctx.res)
     }
   } catch (e) {
     // definitely not supposed to happen, but let's be maximally robust
