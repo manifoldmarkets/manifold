@@ -40,10 +40,7 @@ import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { safeLocalStorage } from 'web/lib/util/local'
-import {
-  getServerAuthenticatedUid,
-  redirectIfLoggedOut,
-} from 'web/lib/firebase/server-auth'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 
@@ -51,12 +48,8 @@ export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (ctx) => {
-  const uid = await getServerAuthenticatedUid(ctx)
-  if (!uid) {
-    return { props: { user: null } }
-  }
-  const user = await getUser(uid)
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  const user = await getUser(creds.user.uid)
   return { props: { user } }
 })
 

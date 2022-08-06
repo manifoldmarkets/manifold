@@ -7,7 +7,7 @@ import {
   getUser,
   setCachedReferralInfoForUser,
 } from 'web/lib/firebase/users'
-import { deleteAuthCookies, setAuthCookies } from 'web/lib/firebase/auth'
+import { deleteTokenCookies, setTokenCookies } from 'web/lib/firebase/auth'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
@@ -41,7 +41,10 @@ export function AuthProvider({ children }: any) {
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
       if (fbUser) {
-        setAuthCookies(await fbUser.getIdToken(), fbUser.refreshToken)
+        setTokenCookies({
+          id: await fbUser.getIdToken(),
+          refresh: fbUser.refreshToken,
+        })
         let user = await getUser(fbUser.uid)
         if (!user) {
           const deviceToken = ensureDeviceToken()
@@ -54,7 +57,7 @@ export function AuthProvider({ children }: any) {
         setCachedReferralInfoForUser(user)
       } else {
         // User logged out; reset to null
-        deleteAuthCookies()
+        deleteTokenCookies()
         setAuthUser(null)
         localStorage.removeItem(CACHED_USER_KEY)
       }
