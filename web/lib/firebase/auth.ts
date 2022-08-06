@@ -16,9 +16,34 @@ const CUSTOM_COOKIE_NAME = getAuthCookieName('custom')
 const ONE_HOUR_SECS = 60 * 60
 const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
-export const getAuthCookies = (request?: IncomingMessage) => {
-  const data = request != null ? request.headers.cookie ?? '' : document.cookie
-  const cookies = getCookies(data)
+const getCookieDataIsomorphic = (req?: IncomingMessage) => {
+  if (req != null) {
+    return req.headers.cookie ?? ''
+  } else if (document != null) {
+    return document.cookie
+  } else {
+    throw new Error(
+      'Neither request nor document is available; no way to get cookies.'
+    )
+  }
+}
+
+const setCookieDataIsomorphic = (cookies: string[], res?: ServerResponse) => {
+  if (res != null) {
+    res.setHeader('Set-Cookie', cookies)
+  } else if (document != null) {
+    for (const ck of cookies) {
+      document.cookie = ck
+    }
+  } else {
+    throw new Error(
+      'Neither response nor document is available; no way to set cookies.'
+    )
+  }
+}
+
+export const getAuthCookies = (req?: IncomingMessage) => {
+  const cookies = getCookies(getCookieDataIsomorphic(req))
   return {
     idToken: cookies[ID_COOKIE_NAME] as string | undefined,
     refreshToken: cookies[REFRESH_COOKIE_NAME] as string | undefined,
@@ -30,7 +55,7 @@ export const setAuthCookies = (
   idToken?: string,
   refreshToken?: string,
   customToken?: string,
-  response?: ServerResponse
+  res?: ServerResponse
 ) => {
   const idMaxAge = idToken != null ? ONE_HOUR_SECS : 0
   const idCookie = setCookie(ID_COOKIE_NAME, idToken ?? '', [
@@ -53,13 +78,8 @@ export const setAuthCookies = (
     ['samesite', 'lax'],
     ['secure'],
   ])
-  if (response != null) {
-    response.setHeader('Set-Cookie', [idCookie, refreshCookie, customCookie])
-  } else {
-    document.cookie = idCookie
-    document.cookie = refreshCookie
-    document.cookie = customCookie
-  }
+  setCookieDataIsomorphic([idCookie, refreshCookie, customCookie], res)
 }
 
-export const deleteAuthCookies = () => setAuthCookies()
+export const deleteAuthCookies = (res?: ServerResponse) =>
+  setAuthCookies(undefined, undefined, undefined, res)

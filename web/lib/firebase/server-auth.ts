@@ -135,14 +135,19 @@ const authAndRefreshTokens = async (ctx: RequestContext) => {
 
 export const authenticateOnServer = async (ctx: RequestContext) => {
   const tokens = await authAndRefreshTokens(ctx)
-  if (tokens == null) {
-    deleteAuthCookies()
-    return undefined
-  } else {
-    const { creds, idToken, refreshToken, customToken } = tokens
-    setAuthCookies(idToken, refreshToken, customToken, ctx.res)
-    return creds
+  const creds = tokens?.creds
+  try {
+    if (tokens == null) {
+      deleteAuthCookies(ctx.res)
+    } else {
+      const { idToken, refreshToken, customToken } = tokens
+      setAuthCookies(idToken, refreshToken, customToken, ctx.res)
+    }
+  } catch (e) {
+    // definitely not supposed to happen, but let's be maximally robust
+    console.error(e)
   }
+  return creds
 }
 
 // note that we might want to define these types more generically if we want better
