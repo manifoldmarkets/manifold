@@ -32,12 +32,24 @@ function UsersTable() {
   // For each user, set their email from the PrivateUser
   const fullUsers = users
     .map((user) => {
-      return { email: privateUsersById[user.id]?.email, ...user }
+      return {
+        email: privateUsersById[user.id]?.email,
+        profit: user.profitCached.allTime,
+        ...user,
+      }
     })
     .sort((a, b) => b.createdTime - a.createdTime)
 
   function exportCsv() {
-    const csv = fullUsers.map((u) => [u.email, u.name].join(', ')).join('\n')
+    const lines = [['Email', 'Name', 'Balance', 'Profit']].concat(
+      fullUsers.map((u) => [
+        u.email ?? '',
+        u.name,
+        Math.round(u.balance).toString(),
+        Math.round(u.profitCached.allTime).toString(),
+      ])
+    )
+    const csv = lines.map((line) => line.join(', ')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -88,6 +100,11 @@ function UsersTable() {
           {
             id: 'balance',
             name: 'Balance',
+            formatter: (cell) => (cell as number).toFixed(0),
+          },
+          {
+            id: 'profit',
+            name: 'profit',
             formatter: (cell) => (cell as number).toFixed(0),
           },
           {
