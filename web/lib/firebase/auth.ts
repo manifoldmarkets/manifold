@@ -7,8 +7,8 @@ const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 const TOKEN_KINDS = ['refresh', 'id', 'custom'] as const
 const TOKEN_AGES = {
   id: ONE_HOUR_SECS,
-  refresh: ONE_HOUR_SECS,
-  custom: TEN_YEARS_SECS,
+  refresh: TEN_YEARS_SECS,
+  custom: ONE_HOUR_SECS,
 } as const
 export type TokenKind = typeof TOKEN_KINDS[number]
 
