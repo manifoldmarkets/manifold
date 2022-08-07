@@ -10,7 +10,8 @@ service cloud.firestore {
         'akrolsmir@gmail.com',
         'jahooma@gmail.com',
         'taowell@gmail.com',
-        'manticmarkets@gmail.com'
+        'manticmarkets@gmail.com',
+        'richardh0828@gmail.com',
       ]
     }
 
