@@ -273,25 +273,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         </Col>
 
         <Spacer h={5} />
-        {currentUser?.id === user.id && (
-          <Row
-            className={
-              'w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
-            }
-          >
-            <span>
-              Refer a friend and earn {formatMoney(500)} when they sign up! You
-              have <ReferralsButton user={user} currentUser={currentUser} />
-            </span>
-            <ShareIconButton
-              copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
-              toastClassName={'sm:-left-40 -left-40 min-w-[250%]'}
-              buttonClassName={'h-10 w-10'}
-              iconClassName={'h-8 w-8 text-indigo-700'}
-            />
-          </Row>
-        )}
-        <Spacer h={5} />
 
         {usersContracts !== 'loading' && contractsById && usersComments ? (
           <QueryUncontrolledTabs
