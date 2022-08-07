@@ -27,9 +27,7 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   return { props: { hotContracts } }
 })
 
-export default function Home(props: { hotContracts: Contract[] }) {
-  const { hotContracts } = props
-
+export default function Home(_props: { hotContracts: Contract[] }) {
   useSaveReferral()
 
   const user = useUser()
@@ -53,7 +51,7 @@ export default function Home(props: { hotContracts: Contract[] }) {
       </div>
       <Col className="items-center">
         <Col className="max-w-3xl">
-          <LandingPagePanel hotContracts={hotContracts ?? []} />
+          <LandingPagePanel />
           {/* <p className="mt-6 text-gray-500">
             View{' '}
             <SiteLink href="/markets" className="font-bold text-gray-700">
