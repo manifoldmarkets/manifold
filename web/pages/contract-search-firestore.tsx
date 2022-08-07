@@ -27,7 +27,7 @@ export default function ContractSearchFirestore(props: {
   const { querySortOptions, additionalFilter } = props
 
   const { initialSort, initialQuery } = useInitialQueryAndSort(querySortOptions)
-  const [sort, setSort] = useState(initialSort || 'newest')
+  const [sort, setSort] = useState(initialSort ?? 'score')
   const [query, setQuery] = useState(initialQuery)
 
   let matches = (contracts ?? []).filter((c) =>
@@ -48,11 +48,7 @@ export default function ContractSearchFirestore(props: {
     matches.sort((a, b) => a.createdTime - b.createdTime)
   } else if (sort === 'close-date') {
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
-    matches = sortBy(
-      matches,
-      (contract) =>
-        (sort === 'close-date' ? -1 : 1) * (contract.closeTime ?? Infinity)
-    )
+    matches = sortBy(matches, (contract) => contract.closeTime ?? Infinity)
   } else if (sort === 'most-traded') {
     matches.sort((a, b) => b.volume - a.volume)
   } else if (sort === 'score') {
@@ -109,9 +105,8 @@ export default function ContractSearchFirestore(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
         >
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
           <option value="score">Trending</option>
+          <option value="newest">Newest</option>
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
