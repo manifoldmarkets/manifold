@@ -1,4 +1,4 @@
-import { defaults, debounce } from 'lodash'
+import { debounce } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { DEFAULT_SORT } from 'web/components/contract-search'
@@ -22,53 +22,6 @@ export function getSavedSort() {
     return localStorage.getItem(MARKETS_SORT) as Sort | null
   } else {
     return null
-  }
-}
-
-export function useInitialQueryAndSort(options?: {
-  defaultSort: Sort
-  shouldLoadFromStorage?: boolean
-}) {
-  const { defaultSort, shouldLoadFromStorage } = defaults(options, {
-    defaultSort: DEFAULT_SORT,
-    shouldLoadFromStorage: true,
-  })
-  const router = useRouter()
-
-  const [initialSort, setInitialSort] = useState<Sort | undefined>(undefined)
-  const [initialQuery, setInitialQuery] = useState('')
-
-  useEffect(() => {
-    // If there's no sort option, then set the one from localstorage
-    if (router.isReady) {
-      const { s: sort, q: query } = router.query as {
-        q?: string
-        s?: Sort
-      }
-
-      setInitialQuery(query ?? '')
-
-      if (!sort && shouldLoadFromStorage) {
-        console.log('ready loading from storage ', sort ?? defaultSort)
-        const localSort = getSavedSort()
-        if (localSort) {
-          // Use replace to not break navigating back.
-          router.replace(
-            { query: { ...router.query, s: localSort } },
-            undefined,
-            { shallow: true }
-          )
-        }
-        setInitialSort(localSort ?? defaultSort)
-      } else {
-        setInitialSort(sort ?? defaultSort)
-      }
-    }
-  }, [defaultSort, router.isReady, shouldLoadFromStorage])
-
-  return {
-    initialSort,
-    initialQuery,
   }
 }
 
