@@ -6,6 +6,9 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { SEO } from 'web/components/SEO'
+import { useUser } from 'web/hooks/use-user'
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   // These hardcoded markets will be shown in the frontpage for signed-out users:
@@ -28,6 +31,15 @@ export default function Home(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
 
   useSaveReferral()
+
+  const user = useUser()
+  const router = useRouter()
+  useEffect(() => {
+    if (user) {
+      // Redirect to the /home page if the user is logged in.
+      router.push('/home')
+    }
+  }, [user, router])
 
   return (
     <Page>
