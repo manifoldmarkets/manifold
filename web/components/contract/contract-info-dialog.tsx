@@ -13,12 +13,16 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../title'
 import { InfoTooltip } from '../info-tooltip'
+import { useUser } from 'web/hooks/use-user'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
 
 export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
+
+  const user = useUser()
 
   const [open, setOpen] = useState(false)
 
@@ -124,9 +128,11 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
             </tbody>
           </table>
 
-          {contract.mechanism === 'cpmm-1' && !contract.resolution && (
-            <LiquidityPanel contract={contract} />
-          )}
+          {contract.mechanism === 'cpmm-1' &&
+            !contract.resolution &&
+            ENV_CONFIG.whitelistCreators?.includes(user?.username ?? '') && (
+              <LiquidityPanel contract={contract} />
+            )}
         </Col>
       </Modal>
     </>
