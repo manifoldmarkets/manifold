@@ -12,13 +12,12 @@ const firestore = admin.firestore()
 
 export const onUpdateUser = functions.firestore
   .document('users/{userId}')
-  .onUpdate(async (change, context) => {
+  .onUpdate(async (change, _context) => {
     const prevUser = change.before.data() as User
     const user = change.after.data() as User
-    const { eventId } = context
 
     if (prevUser.referredByUserId !== user.referredByUserId) {
-      await handleUserUpdatedReferral(user, eventId)
+      // await handleUserUpdatedReferral(user, eventId)
     }
 
     if (user.balance <= 0) {
@@ -26,7 +25,7 @@ export const onUpdateUser = functions.firestore
     }
   })
 
-async function handleUserUpdatedReferral(user: User, eventId: string) {
+async function _handleUserUpdatedReferral(user: User, eventId: string) {
   // Only create a referral txn if the user has a referredByUserId
   if (!user.referredByUserId) {
     console.log(`Not set: referredByUserId ${user.referredByUserId}`)
