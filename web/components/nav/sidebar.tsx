@@ -111,11 +111,17 @@ const signedOutNavigation = [
   { name: 'Explore', href: '/markets', icon: SearchIcon },
 ]
 
-const signedOutMobileNavigation = [
-  { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
-  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
-]
+const signedOutMobileNavigation = IS_PRIVATE_MANIFOLD
+  ? [{ name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon }]
+  : [
+      { name: 'Charity', href: '/charity', icon: HeartIcon },
+      { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+      {
+        name: 'Discord',
+        href: 'https://discord.gg/eHQBNBqXuh',
+        icon: ChatIcon,
+      },
+    ]
 
 const signedInMobileNavigation = [
   { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
