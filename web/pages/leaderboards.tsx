@@ -103,7 +103,7 @@ export default function Leaderboards(_props: {
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Tabs
         currentPageForAnalytics={'leaderboards'}
-        defaultIndex={1}
+        defaultIndex={0}
         tabs={[
           {
             title: 'All Time',
@@ -114,14 +114,14 @@ export default function Leaderboards(_props: {
           //   title: 'Monthly',
           //   content: LeaderboardWithPeriod('monthly'),
           // },
-          {
-            title: 'Weekly',
-            content: LeaderboardWithPeriod('weekly'),
-          },
-          {
-            title: 'Daily',
-            content: LeaderboardWithPeriod('daily'),
-          },
+          // {
+          //   title: 'Weekly',
+          //   content: LeaderboardWithPeriod('weekly'),
+          // },
+          // {
+          //   title: 'Daily',
+          //   content: LeaderboardWithPeriod('daily'),
+          // },
         ]}
       />
     </Page>
