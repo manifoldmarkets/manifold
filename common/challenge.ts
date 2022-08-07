@@ -1,3 +1,5 @@
+import { IS_PRIVATE_MANIFOLD } from './envs/constants'
+
 export type Challenge = {
   // The link to send: https://manifold.markets/challenges/username/market-slug/{slug}
   // Also functions as the unique id for the link.
@@ -60,4 +62,4 @@ export type Acceptance = {
   createdTime: number
 }
 
-export const CHALLENGES_ENABLED = true
+export const CHALLENGES_ENABLED = !IS_PRIVATE_MANIFOLD
