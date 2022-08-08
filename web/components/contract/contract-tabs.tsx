@@ -10,6 +10,13 @@ import { Col } from '../layout/col'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { useComments } from 'web/hooks/use-comments'
+import { getUser } from 'web/lib/firebase/users'
+import dayjs from 'dayjs'
+import { Avatar } from 'web/components/avatar'
+import { Grid, _ } from 'gridjs-react'
+import 'gridjs/dist/theme/mermaid.css'
+import { useState, useEffect } from 'react'
+import { maxBy } from 'lodash'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -93,6 +100,73 @@ export function ContractTabs(props: {
     </div>
   )
 
+  const [users, setUsers] = useState({} as {[key: string]: User})
+  const [asked, setAsked] = useState({} as {[key: string]: boolean})
+  useEffect(() => {
+    bets.map((bet) => {
+      if (!asked[bet.userId]) {
+        getUser(bet.userId).then((user) => {
+          setUsers({ ...users, [bet.userId]: user })
+        })
+        setAsked({ ...asked, [bet.userId]: true })
+      }
+    })
+  }, [bets])
+
+  const formatUser = (bettorId:string) => {
+    const bettor = users[bettorId]
+    return _(<div className="flex">
+      <Avatar username={bettor?.username} avatarUrl={bettor?.avatarUrl} size="sm" />
+      {bettor?.username}
+    </div>)
+  }
+
+  const gridjsbets = bets.map((bet) => ({...bet, ['username']: users[bet.userId]?.username}))
+  const gridjsbetcolumns = [
+    {name: "User", id: "userId", formatter:formatUser},
+    {name: "bought", id: "shares", formatter: (i:number) => i.toFixed(0)},
+    {name: "of", id: "outcome"},
+    {name: "for", id: "amount", formatter: (i:number) => "M$"+i.toFixed(0)},
+    ...(bets[0]?.orderAmount ?
+      [{name: "out of", id: "orderAmount", formatter: (i:number) => i ? "M$"+i.toFixed(0) : ""}] : []),
+    {name: "from", id: "probBefore", formatter: (p:number) => (100*p).toFixed(0)+"%"},
+    {name: "to", id: "probAfter", formatter: (p:number) => (100*p).toFixed(0)+"%"},
+    {name: "on", id: "createdTime", formatter: (t:number) => dayjs(t).format('YY/MM/DD,hh:mm:ss')},
+  ]
+
+  const gridjsstyle = {
+    table: {
+      border: '3px solid #ccc',
+      'text-align': 'center',
+    },
+    th: {
+      'background-color': 'rgba(0, 0, 0, 0.1)',
+      color: '#000',
+      'border-bottom': '3px solid #ccc',
+      'padding': '0',
+    },
+    td: {
+      'padding': '0',
+    }
+  }
+
+  const userpositions = {} as {[key: string]: any}
+  bets.forEach((bet) => {
+    const {id, position, mana} = userpositions[bet.userId] || {id: bet.userId, position: {}, mana: 0}
+    position[bet.outcome] = (position[bet.outcome] || 0) + bet.shares
+    userpositions[bet.userId] = {id:id, position:position, mana:(mana + bet.amount)}
+  })
+  const gridjsusers = Object.values(userpositions).map((row:any) => ({...row, ['username']: users[row.userId]?.username}))
+
+  const argmax = (obj:{[key:string]:number}) => maxBy(Object.keys(obj), (k:string) => obj[k])
+
+  const gridjsusercolumns = [
+    {name: "User", id: "id", formatter:formatUser},
+    {name: "is down", id: "mana", formatter: (i:number) => "M$"+i.toFixed(0)},
+    {name: "and holds", id: "position", formatter: (p:{[key: string]: number}) => p[argmax(p) ?? ""].toFixed(0)},
+    {name: "of", id: "position", formatter: (p:{[key: string]: number}) => argmax(p)},
+  ]
+
   return (
     <Tabs
       currentPageForAnalytics={'contract'}
@@ -102,7 +176,10 @@ export function ContractTabs(props: {
           content: commentActivity,
           badge: `${comments.length}`,
         },
-        { title: 'Bets', content: betActivity, badge: `${visibleBets.length}` },
+        { title: 'Bet feed', content: betActivity, badge: `${visibleBets.length}` },
+        { title: 'Bet table', content: <Grid data={gridjsbets} search sort columns={gridjsbetcolumns} style={gridjsstyle} resizable/>},
+        { title: 'Users', content: <Grid data={Object.values(gridjsusers)} search sort columns={gridjsusercolumns} style={gridjsstyle} resizable/>},
+
         ...(!user || !userBets?.length
           ? []
           : [{ title: 'Your bets', content: yourTrades }]),
