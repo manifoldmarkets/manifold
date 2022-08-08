@@ -52,7 +52,6 @@ export function ShareRow(props: {
             () => setIsOpen(true),
             'click challenge button'
           )}
-          className="animate-bounce"
         >
           ⚔️ Challenge
           <CreateChallengeModal
