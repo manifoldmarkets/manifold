@@ -51,6 +51,7 @@ function getNavigation() {
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
     return [
+      { name: 'Manifold Markets', href: 'https://manifold.markets' },
       {
         name: 'Sign out',
         href: '#',
@@ -140,7 +141,7 @@ const signedInMobileNavigation = [
 function getMoreMobileNav() {
   return [
     ...(IS_PRIVATE_MANIFOLD
-      ? []
+      ? [{ name: 'Manifold Markets', href: 'https://manifold.markets' }]
       : CHALLENGES_ENABLED
       ? [
           { name: 'Challenges', href: '/challenges' },
