@@ -31,6 +31,10 @@ export const contracts = coll<Contract>('contracts')
 
 export type { Contract }
 
+export function submissionPath(submission: Contract, contestSlug: string) {
+  return `/contest/${contestSlug}/${submission.slug}`
+}
+
 export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }

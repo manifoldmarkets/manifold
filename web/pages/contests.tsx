@@ -19,7 +19,7 @@ import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { UserLink } from 'web/components/user-page'
 import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
-import { CONTEST_SLUGS, CONTEST_DATA } from 'common/contest'
+import { CONTEST_SLUGS, contest_data } from 'common/contest'
 import { contestPath } from 'web/lib/firebase/contests'
 
 export async function getStaticProps() {

@@ -2,7 +2,11 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
-import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import {
+  contractPath,
+  getBinaryProbPercent,
+  submissionPath,
+} from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
   BinaryContract,
@@ -36,6 +40,15 @@ import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { Title } from '../title'
+import { contest_data } from 'common/contest'
+import { default as causeExploration } from 'web/lib/util/contests/causeExploration.json'
+
+//this is super gross, need to figure out how to not hardcode this
+function getSubmissionData(contestSlug: string) {
+  if (contestSlug === 'cause-exploration-prize') {
+    return causeExploration
+  }
+}
 
 export function SubmissionCard(props: {
   contract: Contract
@@ -45,6 +58,7 @@ export function SubmissionCard(props: {
   onClick?: () => void
   hideQuickBet?: boolean
   hideGroupLink?: boolean
+  contestSlug: string
 }) {
   const {
     showHotVolume,
@@ -53,6 +67,7 @@ export function SubmissionCard(props: {
     onClick,
     hideQuickBet,
     hideGroupLink,
+    contestSlug,
   } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
@@ -69,115 +84,70 @@ export function SubmissionCard(props: {
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
     !hideQuickBet
 
+  const submissionData = getSubmissionData(contract.slug)
+  console.log(submissionData)
+
   return (
-    <div>
-      <Col
+    <Col className="rounded-lg shadow-md hover:shadow-xl">
+      {/* <Col
         className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
+          'relative gap-3 py-4 pl-6 pr-5 shadow-md hover:cursor-pointer',
           className
         )}
-      >
-        <Row>
-          <Col className="relative flex-1 gap-3 pr-1">
-            <div
-              className={clsx(
-                'peer absolute -left-6 -top-4 -bottom-4 right-0 z-10'
-              )}
-            >
-              {onClick ? (
-                <a
-                  className="absolute top-0 left-0 right-0 bottom-0"
-                  href={contractPath(contract)}
-                  onClick={(e) => {
-                    // Let the browser handle the link click (opens in new tab).
-                    if (e.ctrlKey || e.metaKey) return
-
-                    e.preventDefault()
-                    track('click market card', {
-                      slug: contract.slug,
-                      contractId: contract.id,
-                    })
-                    onClick()
-                  }}
-                />
-              ) : (
-                <Link href={contractPath(contract)}>
-                  <a
-                    onClick={trackCallback('click market card', {
-                      slug: contract.slug,
-                      contractId: contract.id,
-                    })}
-                    className="absolute top-0 left-0 right-0 bottom-0"
-                  />
-                </Link>
-              )}
-            </div>
-            {/* <AvatarDetails contract={contract} /> */}
-            <p
-              className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
-              style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-            >
-              {question}
-            </p>
-
-            {(outcomeType === 'FREE_RESPONSE' ||
-              outcomeType === 'MULTIPLE_CHOICE') &&
-              (resolution ? (
-                <FreeResponseOutcomeLabel
-                  contract={contract}
-                  resolution={resolution}
-                  truncate={'long'}
-                />
-              ) : (
-                <FreeResponseTopAnswer contract={contract} truncate="long" />
-              ))}
-
-            <MiscDetails
-              contract={contract}
-              showHotVolume={showHotVolume}
-              showTime={showTime}
-              hideGroupLink={hideGroupLink}
-            />
-          </Col>
-          {showQuickBet ? (
-            <QuickBet contract={contract} user={user} />
-          ) : (
-            <Col className="m-auto pl-2">
-              {outcomeType === 'BINARY' && (
-                <BinaryResolutionOrChance
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {outcomeType === 'PSEUDO_NUMERIC' && (
-                <PseudoNumericResolutionOrExpectation
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {outcomeType === 'NUMERIC' && (
-                <NumericResolutionOrExpectation
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {(outcomeType === 'FREE_RESPONSE' ||
-                outcomeType === 'MULTIPLE_CHOICE') && (
-                <FreeResponseResolutionOrChance
-                  className="self-end text-gray-600"
-                  contract={contract}
-                  truncate="long"
-                />
-              )}
-              <ProbBar contract={contract} />
-            </Col>
+      > */}
+      <Col className="relative flex-1 gap-3 bg-white py-4 pl-6 pr-5">
+        <div
+          className={clsx(
+            'peer absolute -left-6 -top-4 -bottom-4 right-0 z-10'
           )}
+        >
+          {onClick ? (
+            <a
+              className="absolute top-0 left-0 right-0 bottom-0"
+              href={submissionPath(contract, contestSlug)}
+              onClick={(e) => {
+                // Let the browser handle the link click (opens in new tab).
+                if (e.ctrlKey || e.metaKey) return
+
+                e.preventDefault()
+                track('click market card', {
+                  contestSlug: contestSlug,
+                  submissionSlug: contract.slug,
+                })
+                onClick()
+              }}
+            />
+          ) : (
+            <Link href={submissionPath(contract, contestSlug)}>
+              <a
+                onClick={trackCallback('click market card', {
+                  contestSlug: contestSlug,
+                  submissionSlug: contract.slug,
+                })}
+                className="absolute top-0 left-0 right-0 bottom-0"
+              />
+            </Link>
+          )}
+        </div>
+        <p
+          className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
+          style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+        >
+          {question}
+        </p>
+        <Row className="text-greyscale-5 text-sm">
+          {submissionData?.filter((entry) => entry.title === contract.question)}
         </Row>
       </Col>
-    </div>
+      <Row className="bg-greyscale-1 text-greyscale-5 rounded-b-lg py-4 pl-6 pr-5 text-xs">
+        <Col>
+          chance of winning a prize
+          <div className="text-greyscale-7 text-lg font-semibold">
+            {getBinaryProbPercent(contract)}
+          </div>
+        </Col>
+      </Row>
+    </Col>
   )
 }
 
@@ -252,14 +222,6 @@ export function FreeResponseResolutionOrChance(props: {
           <div className={clsx('text-base text-gray-500 sm:hidden')}>
             Resolved
           </div>
-          {(resolution === 'CANCEL' || resolution === 'MKT') && (
-            <FreeResponseOutcomeLabel
-              contract={contract}
-              resolution={resolution}
-              truncate={truncate}
-              answerClassName="text-3xl uppercase text-blue-500"
-            />
-          )}
         </>
       ) : (
         topAnswer && (

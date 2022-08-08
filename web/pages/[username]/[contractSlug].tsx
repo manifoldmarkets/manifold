@@ -217,15 +217,6 @@ export function ContractPageContent(
           />
         )}
 
-        {(outcomeType === 'FREE_RESPONSE' ||
-          outcomeType === 'MULTIPLE_CHOICE') && (
-          <>
-            <Spacer h={4} />
-            <AnswersPanel contract={contract} />
-            <Spacer h={4} />
-          </>
-        )}
-
         {isNumeric && allowTrade && (
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}

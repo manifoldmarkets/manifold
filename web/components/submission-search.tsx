@@ -23,6 +23,17 @@ import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
 import SubmissionSearchFirestore from 'web/pages/submission-search-firestore'
 import { SubmissionsGrid } from './submission/submission-list'
+import { contest_data } from 'common/contest'
+
+// All contest scraping data imports
+import { default as causeExploration } from 'web/lib/util/contests/causeExploration.json'
+import { getGroupBySlug } from 'web/lib/firebase/groups'
+import { getContractFromId } from 'web/lib/firebase/contracts'
+import { contractTextDetails } from './contract/contract-details'
+import { createMarket } from 'web/lib/firebase/api'
+import { removeUndefinedProps } from 'common/util/object'
+import dayjs from 'dayjs'
+import { useRouter } from 'next/router'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -52,11 +63,11 @@ export function SubmissionSearch(props: {
     defaultFilter?: filter
     shouldLoadFromStorage?: boolean
   }
-  additionalFilter?: {
+  additionalFilter: {
     creatorId?: string
     tag?: string
     excludeContractIds?: string[]
-    groupSlug?: string
+    contestSlug: string
   }
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
@@ -80,25 +91,7 @@ export function SubmissionSearch(props: {
   } = props
 
   const user = useUser()
-  const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
-    (group) => !NEW_USER_GROUP_SLUGS.includes(group.slug)
-  )
-  const memberGroupSlugs =
-    memberGroups.length > 0
-      ? memberGroups.map((g) => g.slug)
-      : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
-
-  const memberPillGroups = sortBy(
-    memberGroups.filter((group) => group.contractIds.length > 0),
-    (group) => group.contractIds.length
-  ).reverse()
-
-  const defaultPillGroups = DEFAULT_CATEGORY_GROUPS as Group[]
-
-  const pillGroups =
-    memberPillGroups.length > 0 ? memberPillGroups : defaultPillGroups
-
-  const follows = useFollows(user?.id)
+  const router = useRouter()
 
   const { shouldLoadFromStorage, defaultSort } = querySortOptions ?? {}
   const { query, setQuery, sort, setSort } = useQueryAndSortParams({
@@ -109,25 +102,13 @@ export function SubmissionSearch(props: {
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
   )
-  const pillsEnabled = !additionalFilter
-
-  const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
-
-  const selectPill = (pill: string | undefined) => () => {
-    setPillFilter(pill)
-    setPage(0)
-    track('select search category', { category: pill ?? 'all' })
-  }
 
   const additionalFilters = [
-    additionalFilter?.creatorId
-      ? `creatorId:${additionalFilter.creatorId}`
-      : '',
-    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-    additionalFilter?.groupSlug
-      ? `groupLinks.slug:${additionalFilter.groupSlug}`
+    additionalFilter?.contestSlug
+      ? `groupLinks.slug:${additionalFilter.contestSlug}`
       : '',
   ]
+
   let facetFilters = query
     ? additionalFilters
     : [
@@ -135,26 +116,6 @@ export function SubmissionSearch(props: {
         filter === 'open' ? 'isResolved:false' : '',
         filter === 'closed' ? 'isResolved:false' : '',
         filter === 'resolved' ? 'isResolved:true' : '',
-        pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
-          ? `groupLinks.slug:${pillFilter}`
-          : '',
-        pillFilter === 'personal'
-          ? // Show contracts in groups that the user is a member of
-            memberGroupSlugs
-              .map((slug) => `groupLinks.slug:${slug}`)
-              // Show contracts created by users the user follows
-              .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
-              // Show contracts bet on by users the user follows
-              .concat(
-                follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
-              )
-          : '',
-        // Subtract contracts you bet on from For you.
-        pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
-        pillFilter === 'your-bets' && user
-          ? // Show contracts bet on by the user
-            `uniqueBettorIds:${user.id}`
-          : '',
       ].filter((f) => f)
   // Hack to make Algolia work.
   facetFilters = ['', ...facetFilters]
@@ -250,6 +211,45 @@ export function SubmissionSearch(props: {
     track('select sort', { sort: newSort })
   }
 
+  const contestSlug = additionalFilter?.contestSlug
+
+  // Getting all submissions in a group and seeing if there's any new ones from the last scraping
+  // if so, creates new submission
+
+  async function syncSubmissions() {
+    let scrapedTitles = causeExploration.map((entry) => entry.title)
+    if (contestSlug) {
+      let group = await getGroupBySlug(contestSlug).catch((err) => {
+        return err
+      })
+
+      let questions: string[] = await Promise.all(
+        group.contractIds.map(async (contractId: string) => {
+          return (await getContractFromId(contractId))?.question
+        })
+      )
+
+      scrapedTitles.map(async (title) => {
+        if (!questions.includes(title)) {
+          // INGA/TODO: I don't know how to create a market, we should also be creating these markets under some like manifold account so that users aren't creating markets on their own when the backend updates. Pls help
+          // await createMarket(
+          //   removeUndefinedProps({
+          //     title,
+          //     outcomeType: 'BINARY',
+          //     initialProb: 50,
+          //     groupId: group.id,
+          //     closeTime: dayjs(
+          //       contest_data[contestSlug].closeTime
+          //     ).valueOf(),
+          //   })
+          // )
+        }
+      })
+    }
+  }
+
+  syncSubmissions()
+
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return (
       <SubmissionSearchFirestore
@@ -296,67 +296,18 @@ export function SubmissionSearch(props: {
         )}
       </Row>
 
-      <Spacer h={3} />
-
-      {pillsEnabled && (
-        <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
-          <PillButton
-            key={'all'}
-            selected={pillFilter === undefined}
-            onSelect={selectPill(undefined)}
-          >
-            All
-          </PillButton>
-          <PillButton
-            key={'personal'}
-            selected={pillFilter === 'personal'}
-            onSelect={selectPill('personal')}
-          >
-            {user ? 'For you' : 'Featured'}
-          </PillButton>
-
-          {user && (
-            <PillButton
-              key={'your-bets'}
-              selected={pillFilter === 'your-bets'}
-              onSelect={selectPill('your-bets')}
-            >
-              Your bets
-            </PillButton>
-          )}
-
-          {pillGroups.map(({ name, slug }) => {
-            return (
-              <PillButton
-                key={slug}
-                selected={pillFilter === slug}
-                onSelect={selectPill(slug)}
-              >
-                {name}
-              </PillButton>
-            )
-          })}
-        </Row>
-      )}
-
-      <Spacer h={3} />
-
-      {filter === 'personal' &&
-      (follows ?? []).length === 0 &&
-      memberGroupSlugs.length === 0 ? (
-        <>You're not following anyone, nor in any of your own groups yet.</>
-      ) : (
-        <SubmissionsGrid
-          contracts={contracts}
-          loadMore={loadMore}
-          hasMore={true}
-          showTime={showTime}
-          onContractClick={onContractClick}
-          overrideGridClassName={overrideGridClassName}
-          highlightOptions={highlightOptions}
-          cardHideOptions={cardHideOptions}
-        />
-      )}
+      <Spacer h={4} />
+      <SubmissionsGrid
+        contracts={contracts}
+        loadMore={loadMore}
+        hasMore={true}
+        showTime={showTime}
+        onContractClick={onContractClick}
+        overrideGridClassName={overrideGridClassName}
+        highlightOptions={highlightOptions}
+        cardHideOptions={cardHideOptions}
+        contestSlug={contestSlug}
+      />
     </Col>
   )
 }

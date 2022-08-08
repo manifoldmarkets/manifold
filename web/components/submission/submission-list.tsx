@@ -28,6 +28,7 @@ export function SubmissionsGrid(props: {
     hideGroupLink?: boolean
   }
   highlightOptions?: ContractHighlightOptions
+  contestSlug: string
 }) {
   const {
     contracts,
@@ -38,7 +39,9 @@ export function SubmissionsGrid(props: {
     overrideGridClassName,
     cardHideOptions,
     highlightOptions,
+    contestSlug,
   } = props
+
   const { hideQuickBet, hideGroupLink } = cardHideOptions || {}
 
   const { contractIds, highlightClassName } = highlightOptions || {}
@@ -86,27 +89,11 @@ export function SubmissionsGrid(props: {
                 ? highlightClassName
                 : undefined
             }
+            contestSlug={contestSlug}
           />
         ))}
       </ul>
       <div ref={setElem} className="relative -top-96 h-1" />
     </Col>
-  )
-}
-
-export function CreatorContractsList(props: { creator: User }) {
-  const { creator } = props
-
-  return (
-    <SubmissionSearch
-      querySortOptions={{
-        defaultSort: 'newest',
-        defaultFilter: 'all',
-        shouldLoadFromStorage: false,
-      }}
-      additionalFilter={{
-        creatorId: creator.id,
-      }}
-    />
   )
 }

@@ -207,14 +207,14 @@ export default function ContestPage(props: {
     </Col>
   )
 
-  const questionsTab = (
+  const submissionsTab = (
     <SubmissionSearch
       querySortOptions={{
         shouldLoadFromStorage: true,
         defaultSort: getSavedSort() ?? 'newest',
         defaultFilter: 'open',
       }}
-      additionalFilter={{ groupSlug: contest.slug }}
+      additionalFilter={{ contestSlug: contest.slug }}
     />
   )
 
@@ -230,7 +230,7 @@ export default function ContestPage(props: {
         ]),
     {
       title: 'Submissions',
-      content: questionsTab,
+      content: submissionsTab,
       href: contestPath(contest.slug, 'submissions'),
     },
     {
