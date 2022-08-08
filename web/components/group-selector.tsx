@@ -112,7 +112,7 @@ export function GroupSelector(props: {
                                 </Combobox.Button>
 
                                 <Combobox.Options
-                                    className="absolute z-10 mt-[3.2rem] max-h-96 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                    className="absolute z-50 mt-[3.2rem] max-h-96 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                                 >
                                     {filteredGroups.map((group: Group) => (
                                         <Combobox.Option
