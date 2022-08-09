@@ -16,7 +16,7 @@ import { Avatar } from 'web/components/avatar'
 import { Grid, _ } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { useState, useEffect, useRef } from 'react'
-import { maxBy, uniq } from 'lodash'
+import { maxBy } from 'lodash'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -104,9 +104,11 @@ export function ContractTabs(props: {
   const asked = useRef(new Set<string>())
 
   useEffect(() => {
-    uniq(bets.map((bet:Bet) => bet.userId)).filter((uid) => !asked.current.has(uid)).forEach((uid) => {
-      asked.current.add(uid)
-      getUser(uid).then((u) => setUsers((users) => ({...users, [uid]: u})))
+    bets.forEach(({ userId }) => {
+      if (!asked.current.has(userId)) {
+        asked.current.add(userId)
+        getUser(userId).then((u) => setUsers((us) => ({...us, [userId]: u})))
+      }
     })
   }, [bets])
 
@@ -131,21 +133,7 @@ export function ContractTabs(props: {
     {name: "on", id: "createdTime", formatter: (t:number) => dayjs(t).format('YY/MM/DD,hh:mm:ss')},
   ]
 
-  const gridjsstyle = {
-    table: {
-      border: '3px solid #ccc',
-      'text-align': 'center',
-    },
-    th: {
-      'background-color': 'rgba(0, 0, 0, 0.1)',
-      color: '#000',
-      'border-bottom': '3px solid #ccc',
-      'padding': '0',
-    },
-    td: {
-      'padding': '0',
-    }
-  }
+  const gridjsstyle = {th: {padding: 0}, td: {padding: 0}}
 
   const userpositions = {} as {[key: string]: any}
   bets.forEach((bet) => {
