@@ -3,7 +3,6 @@ import Placeholder from '@tiptap/extension-placeholder'
 import {
   useEditor,
   EditorContent,
-  FloatingMenu,
   JSONContent,
   Content,
   Editor,
@@ -138,14 +137,6 @@ export function TextEditor(props: {
     <>
       {/* hide placeholder when focused */}
       <div className="relative w-full [&:focus-within_p.is-empty]:before:content-none">
-        {editor && (
-          <FloatingMenu
-            editor={editor}
-            className={clsx(proseClass, '-ml-2 mr-2 w-full text-slate-300 ')}
-          >
-            Type <em>*markdown*</em>
-          </FloatingMenu>
-        )}
         <div className="rounded-lg border border-gray-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
