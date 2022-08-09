@@ -92,6 +92,7 @@ export default function ContractPage(props: {
     slug: '',
   }
 
+  const user = useUser()
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
@@ -103,7 +104,7 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  return <ContractPageContent {...{ ...props, contract }} />
+  return <ContractPageContent {...{ ...props, contract, user }} />
 }
 
 export function ContractPageSidebar(props: {
@@ -144,9 +145,12 @@ export function ContractPageSidebar(props: {
 }
 
 export function ContractPageContent(
-  props: Parameters<typeof ContractPage>[0] & { contract: Contract }
+  props: Parameters<typeof ContractPage>[0] & {
+    contract: Contract
+    user?: User | null
+  }
 ) {
-  const { backToHome, comments } = props
+  const { backToHome, comments, user } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
 
@@ -163,8 +167,6 @@ export function ContractPageContent(
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
   const tips = useTipTxns({ contractId: contract.id })
-
-  const user = useUser()
 
   const { width, height } = useWindowSize()
 
