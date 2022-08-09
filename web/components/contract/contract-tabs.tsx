@@ -120,7 +120,7 @@ export function ContractTabs(props: {
     </div>)
   }
 
-  const gridjsbets = bets.map((bet) => ({...bet, ['username']: users[bet.userId]?.username}))
+  const gridjsbets = bets.map((bet) => ({...bet, username: users[bet.userId]?.username}))
   const gridjsbetcolumns = [
     {name: "User", id: "userId", formatter:formatUser},
     {name: "bought", id: "shares", formatter: (i:number) => i.toFixed(0)},
@@ -136,16 +136,16 @@ export function ContractTabs(props: {
   const gridjsstyle = {th: {padding: 0}, td: {padding: 0}}
 
   const userpositions = {} as {[key: string]: any}
-  bets.forEach((bet) => {
-    const {id, position, mana} = userpositions[bet.userId] || {id: bet.userId, position: {}, mana: 0}
-    position[bet.outcome] = (position[bet.outcome] || 0) + bet.shares
-    userpositions[bet.userId] = {id:id, position:position, mana:(mana + bet.amount)}
+  bets.forEach(({ userId, outcome, shares, amount }) => {
+    const {id, position, mana} = userpositions[userId] || {id: userId, position: {}, mana: 0}
+    position[outcome] = (position[outcome] || 0) + shares
+    userpositions[userId] = {id:id, position:position, mana:(mana + amount)}
   })
   const argmax = (obj:{[key:string]:number}) => maxBy(Object.keys(obj), (k:string) => obj[k])
-  const gridjsusers = Object.values(userpositions)
-    .map((row:any) => ({...row, ['topout']: argmax(row.position)}))
-    .map((row:any) => ({...row, ['topshr']: row.position[row.topout]}))
-    .map((row:any) => ({...row, ['username']: users[row.userId]?.username}))
+  const gridjsusers = Object.values(userpositions).map((row:any) => ({...row
+    , topout: argmax(row.position)
+    , topshr: row.position[argmax(row.position) || ""]
+    , username: users[row.userId]?.username}))
 
   const gridjsusercolumns = [
     {name: "User", id: "id", formatter:formatUser},
