@@ -64,7 +64,7 @@ export function useTextEditor(props: {
         Placeholder.configure({
           placeholder,
           emptyEditorClass:
-            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0',
+            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
         }),
         CharacterCount.configure({ limit: max }),
         Image,
@@ -168,7 +168,14 @@ export function TextEditor(props: {
                 <span className="sr-only">Embed an iframe</span>
               </button>
             </div>
-            <div className="ml-auto" />
+            {/* Spacer that also focuses editor on click */}
+            <div
+              className="grow cursor-text self-stretch"
+              onMouseDown={() =>
+                editor?.chain().focus('end').createParagraphNear().run()
+              }
+              aria-hidden
+            />
             {children}
           </div>
         </div>
