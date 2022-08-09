@@ -11,13 +11,11 @@ import {
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
-import { Mention } from '@tiptap/extension-mention'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
-import { exhibitExts } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 import { useUsers } from 'web/hooks/use-users'
@@ -30,6 +28,18 @@ import { Col } from './layout/col'
 import { Button } from './button'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
+
+const DisplayImage = Image.configure({
+  HTMLAttributes: {
+    class: 'max-h-60',
+  },
+})
+
+const DisplayLink = Link.configure({
+  HTMLAttributes: {
+    class: clsx('no-underline !text-indigo-700', linkClass),
+  },
+})
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
@@ -67,12 +77,8 @@ export function useTextEditor(props: {
             'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
         }),
         CharacterCount.configure({ limit: max }),
-        Image,
-        Link.configure({
-          HTMLAttributes: {
-            class: clsx('no-underline !text-indigo-700', linkClass),
-          },
-        }),
+        simple ? DisplayImage : Image,
+        DisplayLink,
         DisplayMention.configure({
           suggestion: mentionSuggestion(users),
         }),
@@ -265,14 +271,19 @@ const useUploadMutation = (editor: Editor | null) =>
     }
   )
 
-function RichContent(props: { content: JSONContent | string }) {
-  const { content } = props
+function RichContent(props: {
+  content: JSONContent | string
+  smallImage?: boolean
+}) {
+  const { content, smallImage } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
     extensions: [
-      // replace tiptap's Mention with ours, to add style and link
-      ...exhibitExts.filter((ex) => ex.name !== Mention.name),
+      StarterKit,
+      smallImage ? DisplayImage : Image,
+      DisplayLink,
       DisplayMention,
+      Iframe,
     ],
     content,
     editable: false,
@@ -283,13 +294,16 @@ function RichContent(props: { content: JSONContent | string }) {
 }
 
 // backwards compatibility: we used to store content as strings
-export function Content(props: { content: JSONContent | string }) {
+export function Content(props: {
+  content: JSONContent | string
+  smallImage?: boolean
+}) {
   const { content } = props
   return typeof content === 'string' ? (
     <div className="whitespace-pre-line font-light leading-relaxed">
       <Linkify text={content} />
     </div>
   ) : (
-    <RichContent content={content} />
+    <RichContent {...props} />
   )
 }

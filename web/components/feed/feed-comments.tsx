@@ -254,7 +254,7 @@ export function FeedComment(props: {
           />
         </div>
         <div className="mt-2 text-[15px] text-gray-700">
-          <Content content={content || text} />
+          <Content content={content || text} smallImage />
         </div>
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           <Tipper comment={comment} tips={tips ?? {}} />
