@@ -8,7 +8,6 @@ import {
   Period,
   User,
 } from 'web/lib/firebase/users'
-import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/title'
 import { Tabs } from 'web/components/layout/tabs'
@@ -25,12 +24,20 @@ export async function getStaticProps() {
 }
 
 const fetchProps = async () => {
-  const [allTime, monthly, weekly, daily] = await Promise.all([
-    queryLeaderboardUsers('allTime'),
-    queryLeaderboardUsers('monthly'),
-    queryLeaderboardUsers('weekly'),
-    queryLeaderboardUsers('daily'),
-  ])
+  const [allTime, monthly, weekly, daily] = (
+    await Promise.all([
+      queryLeaderboardUsers('allTime'),
+      queryLeaderboardUsers('monthly'),
+      queryLeaderboardUsers('weekly'),
+      queryLeaderboardUsers('daily'),
+    ])
+  ).map((leaderboard) => {
+    // Hide profit for now.
+    leaderboard.topTraders.forEach((user) => {
+      user.profitCached.allTime = 0
+    })
+    return leaderboard
+  })
   const topFollowed = await getTopFollowed()
 
   return {
@@ -73,19 +80,21 @@ export default function Leaderboards(_props: {
   const LeaderboardWithPeriod = (period: Period) => {
     const { topTraders } = props[period]
 
-
     return (
       <>
-        <Col className="mx-4 items-center gap-10 lg:flex-row">
+        <Col className="mx-4 max-w-sm items-center gap-10 lg:flex-row">
           <Leaderboard
             title="🏅 Top traders"
             users={topTraders}
-            columns={[
-              {
-                header: 'Total profit',
-                renderCell: (user) => formatMoney(user.profitCached[period]),
-              },
-            ]}
+            columns={
+              [
+                // Hide profit for now.
+                // {
+                //   header: 'Total profit',
+                //   renderCell: (user) => formatMoney(user.profitCached[period]),
+                // },
+              ]
+            }
           />
         </Col>
       </>
