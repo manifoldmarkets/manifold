@@ -34,7 +34,7 @@ export function ConfirmationButton(props: {
 
     return (
         <>
-            <Modal open={open} setOpen={updateOpen} size="lg">
+            <Modal open={open} setOpen={updateOpen} size="md">
                 <Col className="gap-4 rounded-md bg-white px-8 py-6">
                     {children}
                     <Row className="flex justify-between items-center gap-4">

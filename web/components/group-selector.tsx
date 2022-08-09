@@ -8,12 +8,8 @@ import { LiteUser } from "common/manifold-defs";
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
 async function fetchGroups(): Promise<Group[]> {
-    // return [];
     const r = await fetch(`${APIBase}groups`);
     const groups = await r.json();
-    for (const group of groups) {
-        console.log(group.name)
-    }
     return groups;
 }
 
@@ -45,16 +41,11 @@ export function GroupSelector(props: {
     selectedGroup: Group | undefined;
     setSelectedGroup: (group: Group) => void;
     creator: LiteUser | null | undefined;
-    options: {
-        showSelector: boolean;
-        showLabel: boolean;
-    };
 }) {
     const [isRefreshingGroups, setIsRefreshingGroups] = useState<boolean>(false);
     const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
 
-    const { selectedGroup, setSelectedGroup, creator, options } = props;
-    const { showSelector } = options;
+    const { selectedGroup, setSelectedGroup, creator } = props;
     const [query, setQuery] = useState("");
     useMemberGroups(setMemberGroups, creator?.id);
     const filteredGroups = memberGroups?.filter((group) => {
@@ -62,28 +53,13 @@ export function GroupSelector(props: {
         return group.name.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) >= 0;
     }) || [];
 
-    const onRefresh = () => {
-        console.clear();
+    const onRefreshClicked = () => {
         setIsRefreshingGroups(true);
         fetchGroups().then((groups) => {
             setMemberGroups(groups);
         }).finally(() => setIsRefreshingGroups(false));
     };
 
-    if (!showSelector || !creator) {
-        return (
-            <>
-                <div className={"label justify-start"}>
-                    In Group:
-                    {selectedGroup ? (
-                        <span className=" ml-1.5 text-indigo-600">{selectedGroup?.name}</span>
-                    ) : (
-                        <span className=" ml-1.5 text-sm text-gray-600">(None)</span>
-                    )}
-                </div>
-            </>
-        );
-    }
     return (
         <div className="flex flex-row justify-center">
             <Combobox
@@ -95,10 +71,10 @@ export function GroupSelector(props: {
             >
                 {() => (
                     <>
-                        {/* {showLabel && <Combobox.Label className="label justify-start gap-2 text-base">Select group</Combobox.Label>} */}
                         <div className="flex pjb-ig grow" style={{...isRefreshingGroups && {pointerEvents: "none"}}}>
                             <div className="relative flex w-full justify-items-stretch">
                                 <Combobox.Input
+                                    spellCheck="false"
                                     className="w-full border rounded-md border-gray-300 bg-white pl-4 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     onChange={(event) => setQuery(event.target.value)}
                                     displayValue={(group: Group) => group && group.name}
@@ -160,7 +136,7 @@ export function GroupSelector(props: {
                             </div>
                             <button
                                 className={clsx("btn btn-primary btn-square p-2 rounded-md", isRefreshingGroups ? "loading" : "")}
-                                onClick={onRefresh}
+                                onClick={onRefreshClicked}
                             >
                                 {!isRefreshingGroups && (<RefreshIcon />)}
                             </button>
