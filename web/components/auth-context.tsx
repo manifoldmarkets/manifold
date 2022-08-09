@@ -37,9 +37,11 @@ export function AuthProvider(props: {
   const { children, serverUser } = props
   const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
   useEffect(() => {
-    const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-    setAuthUser(cachedUser && JSON.parse(cachedUser))
-  }, [setAuthUser])
+    if (serverUser === undefined) {
+      const cachedUser = localStorage.getItem(CACHED_USER_KEY)
+      setAuthUser(cachedUser && JSON.parse(cachedUser))
+    }
+  }, [setAuthUser, serverUser])
 
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
