@@ -91,6 +91,7 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorName,
     creatorUsername,
     creatorAvatarUrl,
+    numericValue,
   } = parsedReq
   const MAX_QUESTION_CHARS = 100
   const truncatedQuestion =
@@ -126,7 +127,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         </div>
       </div>
 
-      <!-- Mantic logo -->
+      <!-- Manifold logo -->
       <div class="absolute right-24 top-8">
         <a class="flex flex-row gap-3" href="/"
           ><img
@@ -150,6 +151,12 @@ export function getHtml(parsedReq: ParsedRequest) {
         <div class="flex flex-col text-primary">
           <div class="text-8xl">${probability}</div>
           <div class="text-4xl">${probability !== '' ? 'chance' : ''}</div>
+          <span class='text-blue-500 text-center'> 
+           <div class="text-8xl ">${
+             numericValue !== '' && probability === '' ? numericValue : ''
+           }</div>
+          <div class="text-4xl">${numericValue !== '' ? 'expected' : ''}</div>
+          </span>
         </div>
       </div>
 

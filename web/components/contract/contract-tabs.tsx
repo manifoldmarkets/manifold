@@ -23,6 +23,9 @@ export function ContractTabs(props: {
   const { outcomeType } = contract
 
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
+  const visibleBets = bets.filter(
+    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
+  )
 
   // Load comments here, so the badge count will be correct
   const updatedComments = useComments(contract.id)
@@ -99,7 +102,7 @@ export function ContractTabs(props: {
           content: commentActivity,
           badge: `${comments.length}`,
         },
-        { title: 'Bets', content: betActivity, badge: `${bets.length}` },
+        { title: 'Bets', content: betActivity, badge: `${visibleBets.length}` },
         ...(!user || !userBets?.length
           ? []
           : [{ title: 'Your bets', content: yourTrades }]),

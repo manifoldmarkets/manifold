@@ -1,13 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { uniq } from 'lodash'
-
+import { compact, uniq } from 'lodash'
 import { getContract, getUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { createNotification } from './create-notification'
+import { parseMentions, richTextToString } from '../../common/util/parse'
 
 const firestore = admin.firestore()
 
@@ -68,9 +68,13 @@ export const onCreateCommentOnContract = functions
       ? 'answer'
       : undefined
 
-    const relatedUserId = comment.replyToCommentId
+    const repliedUserId = comment.replyToCommentId
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
+
+    const recipients = uniq(
+      compact([...parseMentions(comment.content), repliedUserId])
+    )
 
     await createNotification(
       comment.id,
@@ -78,8 +82,8 @@ export const onCreateCommentOnContract = functions
       'created',
       commentCreator,
       eventId,
-      comment.text,
-      { contract, relatedSourceType, relatedUserId }
+      richTextToString(comment.content),
+      { contract, relatedSourceType, recipients }
     )
 
     const recipientUserIds = uniq([

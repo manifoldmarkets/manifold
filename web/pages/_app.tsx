@@ -6,6 +6,7 @@ import Script from 'next/script'
 import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider } from 'web/components/auth-context'
+import Welcome from 'web/components/onboarding/welcome'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -78,9 +79,9 @@ function MyApp({ Component, pageProps }: AppProps) {
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
       </Head>
-
-      <AuthProvider>
+      <AuthProvider serverUser={pageProps.user}>
         <QueryClientProvider client={queryClient}>
+          <Welcome {...pageProps} />
           <Component {...pageProps} />
         </QueryClientProvider>
       </AuthProvider>

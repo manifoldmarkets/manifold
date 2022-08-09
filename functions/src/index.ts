@@ -27,6 +27,25 @@ export * from './on-delete-group'
 export * from './score-contracts'
 
 // v2
+export * from './health'
+export * from './transact'
+export * from './change-user-info'
+export * from './create-user'
+export * from './create-answer'
+export * from './place-bet'
+export * from './cancel-bet'
+export * from './sell-bet'
+export * from './sell-shares'
+export * from './claim-manalink'
+export * from './create-contract'
+export * from './add-liquidity'
+export * from './withdraw-liquidity'
+export * from './create-group'
+export * from './resolve-market'
+export * from './unsubscribe'
+export * from './stripe'
+export * from './mana-bonus-email'
+
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
@@ -44,6 +63,9 @@ import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
+import { getcurrentuser } from './get-current-user'
+import { acceptchallenge } from './accept-challenge'
+import { getcustomtoken } from './get-custom-token'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -66,6 +88,9 @@ const resolveMarketFunction = toCloudFunction(resolvemarket)
 const unsubscribeFunction = toCloudFunction(unsubscribe)
 const stripeWebhookFunction = toCloudFunction(stripewebhook)
 const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
+const getCurrentUserFunction = toCloudFunction(getcurrentuser)
+const acceptChallenge = toCloudFunction(acceptchallenge)
+const getCustomTokenFunction = toCloudFunction(getcustomtoken)
 
 export {
   healthFunction as health,
@@ -86,4 +111,7 @@ export {
   unsubscribeFunction as unsubscribe,
   stripeWebhookFunction as stripewebhook,
   createCheckoutSessionFunction as createcheckoutsession,
+  getCurrentUserFunction as getcurrentuser,
+  acceptChallenge as acceptchallenge,
+  getCustomTokenFunction as getcustomtoken,
 }

@@ -16,10 +16,19 @@ export function parseRequest(req: IncomingMessage) {
     // Attributes for Manifold card:
     question,
     probability,
+    numericValue,
     metadata,
     creatorName,
     creatorUsername,
     creatorAvatarUrl,
+
+    // Challenge attributes:
+    challengerAmount,
+    challengerOutcome,
+    creatorAmount,
+    creatorOutcome,
+    acceptedName,
+    acceptedAvatarUrl,
   } = query || {}
 
   if (Array.isArray(fontSize)) {
@@ -63,10 +72,17 @@ export function parseRequest(req: IncomingMessage) {
     question:
       getString(question) || 'Will you create a prediction market on Manifold?',
     probability: getString(probability),
+    numericValue: getString(numericValue) || '',
     metadata: getString(metadata) || 'Jan 1 &nbsp;•&nbsp; M$ 123 pool',
     creatorName: getString(creatorName) || 'Manifold Markets',
     creatorUsername: getString(creatorUsername) || 'ManifoldMarkets',
     creatorAvatarUrl: getString(creatorAvatarUrl) || '',
+    challengerAmount: getString(challengerAmount) || '',
+    challengerOutcome: getString(challengerOutcome) || '',
+    creatorAmount: getString(creatorAmount) || '',
+    creatorOutcome: getString(creatorOutcome) || '',
+    acceptedName: getString(acceptedName) || '',
+    acceptedAvatarUrl: getString(acceptedAvatarUrl) || '',
   }
   parsedRequest.images = getDefaultImages(parsedRequest.images)
   return parsedRequest

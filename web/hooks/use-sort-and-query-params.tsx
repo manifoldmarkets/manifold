@@ -1,8 +1,6 @@
-import { defaults, debounce } from 'lodash'
+import { debounce } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchBox } from 'react-instantsearch-hooks-web'
-import { track } from 'web/lib/service/analytics'
 import { DEFAULT_SORT } from 'web/components/contract-search'
 
 const MARKETS_SORT = 'markets_sort'
@@ -27,98 +25,71 @@ export function getSavedSort() {
   }
 }
 
-export function useInitialQueryAndSort(options?: {
-  defaultSort: Sort
+export function useQueryAndSortParams(options?: {
+  defaultSort?: Sort
   shouldLoadFromStorage?: boolean
 }) {
-  const { defaultSort, shouldLoadFromStorage } = defaults(options, {
-    defaultSort: DEFAULT_SORT,
-    shouldLoadFromStorage: true,
-  })
+  const { defaultSort = DEFAULT_SORT, shouldLoadFromStorage = true } =
+    options ?? {}
   const router = useRouter()
 
-  const [initialSort, setInitialSort] = useState<Sort | undefined>(undefined)
-  const [initialQuery, setInitialQuery] = useState('')
-
-  useEffect(() => {
-    // If there's no sort option, then set the one from localstorage
-    if (router.isReady) {
-      const { s: sort, q: query } = router.query as {
-        q?: string
-        s?: Sort
-      }
-
-      setInitialQuery(query ?? '')
-
-      if (!sort && shouldLoadFromStorage) {
-        console.log('ready loading from storage ', sort ?? defaultSort)
-        const localSort = getSavedSort()
-        if (localSort) {
-          // Use replace to not break navigating back.
-          router.replace(
-            { query: { ...router.query, s: localSort } },
-            undefined,
-            { shallow: true }
-          )
-        }
-        setInitialSort(localSort ?? defaultSort)
-      } else {
-        setInitialSort(sort ?? defaultSort)
-      }
-    }
-  }, [defaultSort, router.isReady, shouldLoadFromStorage])
-
-  return {
-    initialSort,
-    initialQuery,
+  const { s: sort, q: query } = router.query as {
+    q?: string
+    s?: Sort
   }
-}
-
-export function useUpdateQueryAndSort(props: {
-  shouldLoadFromStorage: boolean
-}) {
-  const { shouldLoadFromStorage } = props
-  const router = useRouter()
 
   const setSort = (sort: Sort | undefined) => {
-    if (sort !== router.query.s) {
-      router.query.s = sort
-      router.replace({ query: { ...router.query, s: sort } }, undefined, {
-        shallow: true,
-      })
-      if (shouldLoadFromStorage) {
-        localStorage.setItem(MARKETS_SORT, sort || '')
-      }
+    router.replace({ query: { ...router.query, s: sort } }, undefined, {
+      shallow: true,
+    })
+    if (shouldLoadFromStorage) {
+      localStorage.setItem(MARKETS_SORT, sort || '')
     }
   }
 
-  const { query, refine } = useSearchBox()
+  const [queryState, setQueryState] = useState(query)
+
+  useEffect(() => {
+    setQueryState(query)
+  }, [query])
 
   // Debounce router query update.
   const pushQuery = useMemo(
     () =>
       debounce((query: string | undefined) => {
-        if (query) {
-          router.query.q = query
-        } else {
-          delete router.query.q
-        }
-        router.replace({ query: router.query }, undefined, {
+        const queryObj = { ...router.query, q: query }
+        if (!query) delete queryObj.q
+        router.replace({ query: queryObj }, undefined, {
           shallow: true,
         })
-        track('search', { query })
-      }, 500),
+      }, 100),
     [router]
   )
 
   const setQuery = (query: string | undefined) => {
-    refine(query ?? '')
+    setQueryState(query)
     pushQuery(query)
   }
 
+  useEffect(() => {
+    // If there's no sort option, then set the one from localstorage
+    if (router.isReady && !sort && shouldLoadFromStorage) {
+      const localSort = localStorage.getItem(MARKETS_SORT) as Sort
+      if (localSort && localSort !== defaultSort) {
+        // Use replace to not break navigating back.
+        router.replace(
+          { query: { ...router.query, s: localSort } },
+          undefined,
+          { shallow: true }
+        )
+      }
+    }
+  })
+
   return {
+    sort: sort ?? defaultSort,
+    query: queryState ?? '',
     setSort,
     setQuery,
-    query,
   }
 }

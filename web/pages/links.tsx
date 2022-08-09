@@ -1,4 +1,9 @@
 import { useState } from 'react'
+
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
+dayjs.extend(customParseFormat)
+
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -6,33 +11,36 @@ import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { Subtitle } from 'web/components/subtitle'
-import { useUser } from 'web/hooks/use-user'
+import { getUser } from 'web/lib/firebase/users'
 import { useUserManalinks } from 'web/lib/firebase/manalinks'
 import { useUserById } from 'web/hooks/use-user'
 import { ManalinkTxn } from 'common/txn'
+import { User } from 'common/user'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
-import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/pagination'
 import { Manalink } from 'common/manalink'
-dayjs.extend(customParseFormat)
+import { REFERRAL_AMOUNT } from 'common/user'
 
 const LINKS_PER_PAGE = 24
-export const getServerSideProps = redirectIfLoggedOut('/')
+
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  const user = await getUser(creds.user.uid)
+  return { props: { user } }
+})
 
 export function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
-export default function LinkPage() {
-  const user = useUser()
-  const links = useUserManalinks(user?.id ?? '')
+export default function LinkPage(props: { user: User }) {
+  const { user } = props
+  const links = useUserManalinks(user.id ?? '')
   // const manalinkTxns = useManalinkTxns(user?.id ?? '')
   const [highlightedSlug, setHighlightedSlug] = useState('')
   const unclaimedLinks = links.filter(
@@ -40,10 +48,6 @@ export default function LinkPage() {
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
       (l.expiresTime == null || l.expiresTime > Date.now())
   )
-
-  if (user == null) {
-    return null
-  }
 
   return (
     <Page>
@@ -64,8 +68,10 @@ export default function LinkPage() {
           )}
         </Row>
         <p>
-          You can use manalinks to send mana to other people, even if they
-          don&apos;t yet have a Manifold account.
+          You can use manalinks to send mana (M$) to other people, even if they
+          don&apos;t yet have a Manifold account. Manalinks are also eligible
+          for the referral bonus. Invite a new user to Manifold and get M$
+          {REFERRAL_AMOUNT} if they sign up!
         </p>
         <Subtitle text="Your Manalinks" />
         <ManalinksDisplay

@@ -78,6 +78,19 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
   }
 }
 
+export const writeResponseError = (e: unknown, res: Response) => {
+  if (e instanceof APIError) {
+    const output: { [k: string]: unknown } = { message: e.message }
+    if (e.details != null) {
+      output.details = e.details
+    }
+    res.status(e.code).json(output)
+  } else {
+    error(e)
+    res.status(500).json({ message: 'An unknown error occurred.' })
+  }
+}
+
 export const zTimestamp = () => {
   return z.preprocess((arg) => {
     return typeof arg == 'number' ? new Date(arg) : undefined
@@ -131,16 +144,7 @@ export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
         const authedUser = await lookupUser(await parseCredentials(req))
         res.status(200).json(await fn(req, authedUser))
       } catch (e) {
-        if (e instanceof APIError) {
-          const output: { [k: string]: unknown } = { message: e.message }
-          if (e.details != null) {
-            output.details = e.details
-          }
-          res.status(e.code).json(output)
-        } else {
-          error(e)
-          res.status(500).json({ message: 'An unknown error occurred.' })
-        }
+        writeResponseError(e, res)
       }
     },
   } as EndpointDefinition

@@ -17,6 +17,7 @@ import { formatNumericProbability } from '../../common/pseudo-numeric'
 import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 import { getFunctionUrl } from '../../common/api'
+import { richTextToString } from '../../common/util/parse'
 
 const UNSUBSCRIBE_ENDPOINT = getFunctionUrl('unsubscribe')
 
@@ -165,7 +166,6 @@ export const sendWelcomeEmail = async (
   )
 }
 
-// TODO: use manalinks to give out M$500
 export const sendOneWeekBonusEmail = async (
   user: User,
   privateUser: PrivateUser
@@ -185,12 +185,12 @@ export const sendOneWeekBonusEmail = async (
 
   await sendTemplateEmail(
     privateUser.email,
-    'Manifold one week anniversary gift',
+    'Manifold Markets one week anniversary gift',
     'one-week',
     {
       name: firstName,
       unsubscribeLink,
-      manalink: '', // TODO
+      manalink: 'https://manifold.markets/link/lj4JbBvE',
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
@@ -292,7 +292,8 @@ export const sendNewCommentEmail = async (
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
-  const { text } = comment
+  const { content } = comment
+  const text = richTextToString(content)
 
   let betDescription = ''
   if (bet) {

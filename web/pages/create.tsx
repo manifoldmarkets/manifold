@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
-import { useUser } from 'web/hooks/use-user'
+import { getUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
 import { FIXED_ANTE } from 'common/antes'
@@ -19,7 +19,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup, setContractGroupLinks } from 'web/lib/firebase/groups'
+import { canModifyGroupContracts, getGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -33,7 +33,10 @@ import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 
-export const getServerSideProps = redirectIfLoggedOut('/')
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  const user = await getUser(creds.user.uid)
+  return { props: { user } }
+})
 
 type NewQuestionParams = {
   groupId?: string
@@ -49,8 +52,9 @@ type NewQuestionParams = {
   initValue?: string
 }
 
-export default function Create() {
+export default function Create(props: { user: User }) {
   useTracking('view create page')
+  const { user } = props
   const router = useRouter()
   const params = router.query as NewQuestionParams
   // TODO: Not sure why Question is pulled out as its own component;
@@ -60,8 +64,7 @@ export default function Create() {
     setQuestion(params.q ?? '')
   }, [params.q])
 
-  const creator = useUser()
-  if (!router.isReady || !creator) return <div />
+  if (!router.isReady) return <div />
 
   return (
     <Page>
@@ -93,7 +96,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract question={question} params={params} creator={creator} />
+          <NewContract question={question} params={params} creator={user} />
         </div>
       </div>
     </Page>
@@ -102,7 +105,7 @@ export default function Create() {
 
 // Allow user to create a new contract
 export function NewContract(props: {
-  creator?: User | null
+  creator: User
   question: string
   params?: NewQuestionParams
 }) {
@@ -120,14 +123,14 @@ export function NewContract(props: {
   const [answers, setAnswers] = useState<string[]>([]) // for multiple choice
 
   useEffect(() => {
-    if (groupId && creator)
+    if (groupId)
       getGroup(groupId).then((group) => {
-        if (group && group.memberIds.includes(creator.id)) {
+        if (group && canModifyGroupContracts(group, creator.id)) {
           setSelectedGroup(group)
           setShowGroupSelector(false)
         }
       })
-  }, [creator, groupId])
+  }, [creator.id, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
   // If params.closeTime is set, extract out the specified date and time
@@ -152,7 +155,7 @@ export function NewContract(props: {
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
 
-  const balance = creator?.balance || 0
+  const balance = creator.balance || 0
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -214,7 +217,7 @@ export function NewContract(props: {
 
   async function submit() {
     // TODO: Tell users why their contract is invalid
-    if (!creator || !isValid) return
+    if (!isValid) return
     setIsSubmitting(true)
     try {
       const result = await createMarket(
@@ -239,10 +242,6 @@ export function NewContract(props: {
         selectedGroup: selectedGroup?.id,
         isFree: false,
       })
-      if (result && selectedGroup) {
-        await setContractGroupLinks(selectedGroup, result.id, creator.id)
-      }
-
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
@@ -252,8 +251,6 @@ export function NewContract(props: {
       setIsSubmitting(false)
     }
   }
-
-  if (!creator) return <></>
 
   return (
     <div>

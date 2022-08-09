@@ -1,13 +1,11 @@
 import { Answer } from 'common/answer'
 import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
-import { useState } from 'react'
-import { ContractsGrid } from 'web/components/contract/contracts-list'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useContracts } from 'web/hooks/use-contracts'
 import {
   Sort,
-  useInitialQueryAndSort,
+  useQueryAndSortParams,
 } from 'web/hooks/use-sort-and-query-params'
 
 const MAX_CONTRACTS_RENDERED = 100
@@ -20,14 +18,15 @@ export default function ContractSearchFirestore(props: {
   additionalFilter?: {
     creatorId?: string
     tag?: string
+    excludeContractIds?: string[]
+    groupSlug?: string
   }
 }) {
   const contracts = useContracts()
   const { querySortOptions, additionalFilter } = props
 
-  const { initialSort, initialQuery } = useInitialQueryAndSort(querySortOptions)
-  const [sort, setSort] = useState(initialSort || 'newest')
-  const [query, setQuery] = useState(initialQuery)
+  const { query, setQuery, sort, setSort } =
+    useQueryAndSortParams(querySortOptions)
 
   let matches = (contracts ?? []).filter((c) =>
     searchInAny(
@@ -47,11 +46,7 @@ export default function ContractSearchFirestore(props: {
     matches.sort((a, b) => a.createdTime - b.createdTime)
   } else if (sort === 'close-date') {
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
-    matches = sortBy(
-      matches,
-      (contract) =>
-        (sort === 'close-date' ? -1 : 1) * (contract.closeTime ?? Infinity)
-    )
+    matches = sortBy(matches, (contract) => contract.closeTime ?? Infinity)
   } else if (sort === 'most-traded') {
     matches.sort((a, b) => b.volume - a.volume)
   } else if (sort === 'score') {
@@ -63,7 +58,7 @@ export default function ContractSearchFirestore(props: {
   }
 
   if (additionalFilter) {
-    const { creatorId, tag } = additionalFilter
+    const { creatorId, tag, groupSlug, excludeContractIds } = additionalFilter
 
     if (creatorId) {
       matches = matches.filter((c) => c.creatorId === creatorId)
@@ -73,6 +68,14 @@ export default function ContractSearchFirestore(props: {
       matches = matches.filter((c) =>
         c.lowercaseTags.includes(tag.toLowerCase())
       )
+    }
+
+    if (groupSlug) {
+      matches = matches.filter((c) => c.groupSlugs?.includes(groupSlug))
+    }
+
+    if (excludeContractIds) {
+      matches = matches.filter((c) => !excludeContractIds.includes(c.id))
     }
   }
 
@@ -100,24 +103,19 @@ export default function ContractSearchFirestore(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
         >
+          <option value="score">Trending</option>
           <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
-          <option value="score">Most popular</option>
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
         </select>
       </div>
-      {contracts === undefined ? (
-        <LoadingIndicator />
-      ) : (
-        <ContractsGrid
-          contracts={matches}
-          loadMore={() => {}}
-          hasMore={false}
-          showTime={showTime}
-        />
-      )}
+      <ContractsGrid
+        contracts={matches}
+        loadMore={() => {}}
+        hasMore={false}
+        showTime={showTime}
+      />
     </div>
   )
 }

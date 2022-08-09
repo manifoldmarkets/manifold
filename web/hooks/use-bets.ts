@@ -9,12 +9,27 @@ import {
 } from 'web/lib/firebase/bets'
 import { LimitBet } from 'common/bet'
 
-export const useBets = (contractId: string) => {
+export const useBets = (
+  contractId: string,
+  options?: { filterChallenges: boolean; filterRedemptions: boolean }
+) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
-
+  const filterChallenges = !!options?.filterChallenges
+  const filterRedemptions = !!options?.filterRedemptions
   useEffect(() => {
-    if (contractId) return listenForBets(contractId, setBets)
-  }, [contractId])
+    if (contractId)
+      return listenForBets(contractId, (bets) => {
+        if (filterChallenges || filterRedemptions)
+          setBets(
+            bets.filter(
+              (bet) =>
+                (filterChallenges ? !bet.challengeSlug : true) &&
+                (filterRedemptions ? !bet.isRedemption : true)
+            )
+          )
+        else setBets(bets)
+      })
+  }, [contractId, filterChallenges, filterRedemptions])
 
   return bets
 }

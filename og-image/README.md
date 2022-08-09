@@ -1,31 +1,34 @@
+# Installing
+1. `yarn install` 
+2. `yarn start`
+3. `Y` to `Set up and develop “~path/to/the/repo/manifold”? [Y/n]`
+4. `Manifold Markets` to `Which scope should contain your project? [Y/n] `
+5. `Y` to `Link to existing project? [Y/n] `
+6. `opengraph-image` to `What’s the name of your existing project?` 
+  
 # Quickstart
 
-1. To get started: `yarn install`
-2. To test locally: `yarn start`
+1. To test locally: `yarn start`
    The local image preview is broken for some reason; but the service works.
    E.g. try `http://localhost:3000/manifold.png`
-3. To deploy: push to Github
+2. To deploy: push to Github
+- note: (Not `dev` because that's reserved for Vercel)
+- note2: (Or `cd .. && vercel --prod`, I think)
 
-For more info, see Contributing.md
-
-- note2: You may have to configure Vercel the first time:
-
-  ```
-  $ yarn start
-  yarn run v1.22.10
-  $ cd .. && vercel dev
-  Vercel CLI 23.1.2 dev (beta) — https://vercel.com/feedback
-  ? Set up and develop “~/Code/mantic”? [Y/n] y
-  ? Which scope should contain your project? Mantic Markets
-  ? Found project “mantic/mantic”. Link to it? [Y/n] n
-  ? Link to different existing project? [Y/n] y
-  ? What’s the name of your existing project? manifold-og-image
-  ```
-
-- note2: (Not `dev` because that's reserved for Vercel)
-- note3: (Or `cd .. && vercel --prod`, I think)
-
+For more info, see Contributing.md  
 (Everything below is from the original repo)
+
+# Development
+- Code of interest is contained in the `api/_lib` directory, i.e. `template.ts` is the page that renders the UI.
+- Edit `parseRequest(req: IncomingMessage)` in `parser.ts` to add/edit query parameters.
+- Note: When testing a remote branch on vercel, the og-image previews that apps load will point to 
+`https://manifold-og-image.vercel.app/m.png?question=etc.`, (see relevant code in `SEO.tsx`) and not your remote branch.
+You have to find your opengraph-image branch's url and replace the part before `m.png` with it.
+  - You can also preview the image locally, e.g. `http://localhost:3000/m.png?question=etc.`
+  - Every time you change the template code you'll have to change the query parameter slightly as the image will likely be cached.
+- You can find your remote branch's opengraph-image url by click `Visit Preview` on Github:
+![](../../../../../Desktop/Screen Shot 2022-08-01 at 2.56.42 PM.png)
+
 
 # [Open Graph Image as a Service](https://og-image.vercel.app)
 

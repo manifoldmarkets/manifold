@@ -1,4 +1,4 @@
-import { createContext, useEffect } from 'react'
+import { ReactNode, createContext, useEffect } from 'react'
 import { User } from 'common/user'
 import { onIdTokenChanged } from 'firebase/auth'
 import {
@@ -7,7 +7,7 @@ import {
   getUser,
   setCachedReferralInfoForUser,
 } from 'web/lib/firebase/users'
-import { deleteAuthCookies, setAuthCookies } from 'web/lib/firebase/auth'
+import { deleteTokenCookies, setTokenCookies } from 'web/lib/firebase/auth'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
@@ -28,20 +28,28 @@ const ensureDeviceToken = () => {
   return deviceToken
 }
 
-export const AuthContext = createContext<AuthUser>(null)
+export const AuthContext = createContext<AuthUser>(undefined)
 
-export function AuthProvider({ children }: any) {
-  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(undefined)
-
+export function AuthProvider(props: {
+  children: ReactNode
+  serverUser?: AuthUser
+}) {
+  const { children, serverUser } = props
+  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
   useEffect(() => {
-    const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-    setAuthUser(cachedUser && JSON.parse(cachedUser))
-  }, [setAuthUser])
+    if (serverUser === undefined) {
+      const cachedUser = localStorage.getItem(CACHED_USER_KEY)
+      setAuthUser(cachedUser && JSON.parse(cachedUser))
+    }
+  }, [setAuthUser, serverUser])
 
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
       if (fbUser) {
-        setAuthCookies(await fbUser.getIdToken(), fbUser.refreshToken)
+        setTokenCookies({
+          id: await fbUser.getIdToken(),
+          refresh: fbUser.refreshToken,
+        })
         let user = await getUser(fbUser.uid)
         if (!user) {
           const deviceToken = ensureDeviceToken()
@@ -54,7 +62,7 @@ export function AuthProvider({ children }: any) {
         setCachedReferralInfoForUser(user)
       } else {
         // User logged out; reset to null
-        deleteAuthCookies()
+        deleteTokenCookies()
         setAuthUser(null)
         localStorage.removeItem(CACHED_USER_KEY)
       }

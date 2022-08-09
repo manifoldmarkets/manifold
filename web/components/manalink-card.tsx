@@ -1,15 +1,18 @@
+import { useState } from 'react'
 import clsx from 'clsx'
+import { QrcodeIcon } from '@heroicons/react/outline'
+import { DotsHorizontalIcon } from '@heroicons/react/solid'
+
 import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
-import { useState } from 'react'
 import { ShareIconButton } from './share-icon-button'
-import { DotsHorizontalIcon } from '@heroicons/react/solid'
 import { contractDetailsButtonClassName } from './contract/contract-info-dialog'
 import { useUserById } from 'web/hooks/use-user'
 import getManalinkUrl from 'web/get-manalink-url'
+
 export type ManalinkInfo = {
   expiresTime: number | null
   maxUses: number | null
@@ -78,7 +81,9 @@ export function ManalinkCardFromView(props: {
   const { className, link, highlightedSlug } = props
   const { message, amount, expiresTime, maxUses, claims } = link
   const [showDetails, setShowDetails] = useState(false)
-
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${200}x${200}&data=${getManalinkUrl(
+    link.slug
+  )}`
   return (
     <Col>
       <Col
@@ -127,6 +132,14 @@ export function ManalinkCardFromView(props: {
           >
             {formatMoney(amount)}
           </div>
+
+          <button
+            onClick={() => (window.location.href = qrUrl)}
+            className={clsx(contractDetailsButtonClassName)}
+          >
+            <QrcodeIcon className="h-6 w-6" />
+          </button>
+
           <ShareIconButton
             toastClassName={'-left-48 min-w-[250%]'}
             buttonClassName={'transition-colors'}

@@ -12,7 +12,7 @@ import {
   unfollow,
   User,
 } from 'web/lib/firebase/users'
-import { CreatorContractsList } from './contract/contracts-list'
+import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './page'
 import { SiteLink } from './site-link'

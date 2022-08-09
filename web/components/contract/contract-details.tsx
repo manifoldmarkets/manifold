@@ -5,13 +5,13 @@ import {
   TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
+
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
 import {
   Contract,
   contractMetrics,
-  contractPath,
   updateContract,
 } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
@@ -24,17 +24,16 @@ import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 import { UserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
-import { ShareIconButton } from 'web/components/share-icon-button'
 import { useUser } from 'web/hooks/use-user'
 import { Editor } from '@tiptap/react'
 import { exhibitExts } from 'common/util/parse'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
+import { appendToEditor } from '../editor/utils'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -147,6 +146,15 @@ export function ContractDetails(props: {
   const user = useUser()
   const [open, setOpen] = useState(false)
 
+  const groupInfo = (
+    <Row>
+      <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+      <span className={'line-clamp-1'}>
+        {groupToDisplay ? groupToDisplay.name : 'No group'}
+      </span>
+    </Row>
+  )
+
   return (
     <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
       <Row className="items-center gap-2">
@@ -168,19 +176,18 @@ export function ContractDetails(props: {
         {!disabled && <UserFollowButton userId={creatorId} small />}
       </Row>
       <Row>
-        <Button
-          size={'xs'}
-          className={'max-w-[200px]'}
-          color={'gray-white'}
-          onClick={() => setOpen(!open)}
-        >
-          <Row>
-            <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-            <span className={'line-clamp-1'}>
-              {groupToDisplay ? groupToDisplay.name : 'No group'}
-            </span>
-          </Row>
-        </Button>
+        {disabled ? (
+          groupInfo
+        ) : (
+          <Button
+            size={'xs'}
+            className={'max-w-[200px]'}
+            color={'gray-white'}
+            onClick={() => setOpen(!open)}
+          >
+            {groupInfo}
+          </Button>
+        )}
       </Row>
       <Modal open={open} setOpen={setOpen} size={'md'}>
         <Col
@@ -228,14 +235,6 @@ export function ContractDetails(props: {
 
         <div className="whitespace-nowrap">{volumeLabel}</div>
       </Row>
-      <ShareIconButton
-        copyPayload={`https://${ENV_CONFIG.domain}${contractPath(contract)}${
-          user?.username && contract.creatorUsername !== user?.username
-            ? '?referrer=' + user?.username
-            : ''
-        }`}
-        toastClassName={'sm:-left-40 -left-24 min-w-[250%]'}
-      />
 
       {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
     </Row>
@@ -284,12 +283,10 @@ function EditableCloseDate(props: {
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
       const editor = new Editor({ content, extensions: exhibitExts })
-      editor
-        .chain()
-        .focus('end')
-        .insertContent('<br /><br />')
-        .insertContent(`Close date updated to ${formattedCloseDate}`)
-        .run()
+      appendToEditor(
+        editor,
+        `<br><p>Close date updated to ${formattedCloseDate}</p>`
+      )
 
       updateContract(contract.id, {
         closeTime: newCloseTime,

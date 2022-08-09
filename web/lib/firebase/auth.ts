@@ -2,53 +2,73 @@ import { PROJECT_ID } from 'common/envs/constants'
 import { setCookie, getCookies } from '../util/cookie'
 import { IncomingMessage, ServerResponse } from 'http'
 
-const TOKEN_KINDS = ['refresh', 'id'] as const
-type TokenKind = typeof TOKEN_KINDS[number]
+const ONE_HOUR_SECS = 60 * 60
+const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
+const TOKEN_KINDS = ['refresh', 'id', 'custom'] as const
+const TOKEN_AGES = {
+  id: ONE_HOUR_SECS,
+  refresh: TEN_YEARS_SECS,
+  custom: ONE_HOUR_SECS,
+} as const
+export type TokenKind = typeof TOKEN_KINDS[number]
 
 const getAuthCookieName = (kind: TokenKind) => {
   const suffix = `${PROJECT_ID}_${kind}`.toUpperCase().replace(/-/g, '_')
   return `FIREBASE_TOKEN_${suffix}`
 }
 
-const ID_COOKIE_NAME = getAuthCookieName('id')
-const REFRESH_COOKIE_NAME = getAuthCookieName('refresh')
+const COOKIE_NAMES = Object.fromEntries(
+  TOKEN_KINDS.map((k) => [k, getAuthCookieName(k)])
+) as Record<TokenKind, string>
 
-export const getAuthCookies = (request?: IncomingMessage) => {
-  const data = request != null ? request.headers.cookie ?? '' : document.cookie
-  const cookies = getCookies(data)
-  return {
-    idToken: cookies[ID_COOKIE_NAME] as string | undefined,
-    refreshToken: cookies[REFRESH_COOKIE_NAME] as string | undefined,
-  }
-}
-
-export const setAuthCookies = (
-  idToken?: string,
-  refreshToken?: string,
-  response?: ServerResponse
-) => {
-  // these tokens last an hour
-  const idMaxAge = idToken != null ? 60 * 60 : 0
-  const idCookie = setCookie(ID_COOKIE_NAME, idToken ?? '', [
-    ['path', '/'],
-    ['max-age', idMaxAge.toString()],
-    ['samesite', 'lax'],
-    ['secure'],
-  ])
-  // these tokens don't expire
-  const refreshMaxAge = refreshToken != null ? 60 * 60 * 24 * 365 * 10 : 0
-  const refreshCookie = setCookie(REFRESH_COOKIE_NAME, refreshToken ?? '', [
-    ['path', '/'],
-    ['max-age', refreshMaxAge.toString()],
-    ['samesite', 'lax'],
-    ['secure'],
-  ])
-  if (response != null) {
-    response.setHeader('Set-Cookie', [idCookie, refreshCookie])
+const getCookieDataIsomorphic = (req?: IncomingMessage) => {
+  if (req != null) {
+    return req.headers.cookie ?? ''
+  } else if (document != null) {
+    return document.cookie
   } else {
-    document.cookie = idCookie
-    document.cookie = refreshCookie
+    throw new Error(
+      'Neither request nor document is available; no way to get cookies.'
+    )
   }
 }
 
-export const deleteAuthCookies = () => setAuthCookies()
+const setCookieDataIsomorphic = (cookies: string[], res?: ServerResponse) => {
+  if (res != null) {
+    res.setHeader('Set-Cookie', cookies)
+  } else if (document != null) {
+    for (const ck of cookies) {
+      document.cookie = ck
+    }
+  } else {
+    throw new Error(
+      'Neither response nor document is available; no way to set cookies.'
+    )
+  }
+}
+
+export const getTokensFromCookies = (req?: IncomingMessage) => {
+  const cookies = getCookies(getCookieDataIsomorphic(req))
+  return Object.fromEntries(
+    TOKEN_KINDS.map((k) => [k, cookies[COOKIE_NAMES[k]]])
+  ) as Partial<Record<TokenKind, string>>
+}
+
+export const setTokenCookies = (
+  cookies: Partial<Record<TokenKind, string | undefined>>,
+  res?: ServerResponse
+) => {
+  const data = TOKEN_KINDS.filter((k) => k in cookies).map((k) => {
+    const maxAge = cookies[k] ? TOKEN_AGES[k as TokenKind] : 0
+    return setCookie(COOKIE_NAMES[k], cookies[k] ?? '', [
+      ['path', '/'],
+      ['max-age', maxAge.toString()],
+      ['samesite', 'lax'],
+      ['secure'],
+    ])
+  })
+  setCookieDataIsomorphic(data, res)
+}
+
+export const deleteTokenCookies = (res?: ServerResponse) =>
+  setTokenCookies({ id: undefined, refresh: undefined, custom: undefined }, res)
