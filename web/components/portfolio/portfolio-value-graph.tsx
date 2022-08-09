@@ -61,7 +61,8 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
           min: Math.min(...points.map((p) => p.y)),
         }}
         gridYValues={numYTickValues}
-        curve="monotoneX"
+        curve="stepAfter"
+        enablePoints={false}
         colors={{ datum: 'color' }}
         axisBottom={{
           tickValues: numXTickValues,
