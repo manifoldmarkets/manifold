@@ -9,6 +9,7 @@ import { REFERRAL_AMOUNT } from 'common/user'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoBox } from 'web/components/info-box'
+import { QRCode } from 'web/components/qr-code'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -49,6 +50,8 @@ export default function ReferralsPage() {
             buttonClassName="btn-md rounded-l-none"
             toastClassName={'-left-28 mt-1'}
           />
+
+          <QRCode url={url} className="mt-4 self-center" />
 
           <InfoBox
             title="FYI"
