@@ -15,7 +15,7 @@ import dayjs from 'dayjs'
 import { Avatar } from 'web/components/avatar'
 import { Grid, _ } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { maxBy, uniq } from 'lodash'
 
 export function ContractTabs(props: {
@@ -101,12 +101,12 @@ export function ContractTabs(props: {
   )
 
   const [users, setUsers] = useState({} as {[key: string]: User})
-  const [asked, _setAsked] = useState(new Set<string>())
+  const asked = useRef(new Set<string>())
 
   useEffect(() => {
-    uniq(bets.map((bet:Bet) => bet.userId)).filter((uid) => !asked.has(uid)).forEach((uid) => {
+    uniq(bets.map((bet:Bet) => bet.userId)).filter((uid) => !asked.current.has(uid)).forEach((uid) => {
       console.log("adding",uid)
-      asked.add(uid)
+      asked.current.add(uid)
       getUser(uid).then((u) => setUsers((users) => ({...users, [uid]: u})))
     })
   }, [bets])
