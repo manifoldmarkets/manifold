@@ -1,4 +1,5 @@
 import * as mailgun from 'mailgun-js'
+import { tryOrLogError } from './utils'
 
 const initMailgun = () => {
   const apiKey = process.env.MAILGUN_KEY as string
@@ -18,9 +19,11 @@ export const sendTextEmail = async (
     // Don't rewrite urls in plaintext emails
     'o:tracking-clicks': 'htmlonly',
   }
-  const mg = initMailgun()
-  const result = await mg.messages().send(data)
-  console.log('Sent text email', to, subject)
+  const mg = initMailgun().messages()
+  const result = await tryOrLogError(mg.send(data))
+  if (result != null) {
+    console.log('Sent text email', to, subject)
+  }
   return result
 }
 
@@ -39,8 +42,10 @@ export const sendTemplateEmail = async (
     template: templateId,
     'h:X-Mailgun-Variables': JSON.stringify(templateData),
   }
-  const mg = initMailgun()
-  const result = await mg.messages().send(data)
-  console.log('Sent template email', templateId, to, subject)
+  const mg = initMailgun().messages()
+  const result = await tryOrLogError(mg.send(data))
+  if (result != null) {
+    console.log('Sent template email', templateId, to, subject)
+  }
   return result
 }
