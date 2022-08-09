@@ -59,11 +59,7 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
         <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
         Trending markets
       </Row>
-      <ContractsGrid
-        contracts={hotContracts?.slice(0, 10) || []}
-        loadMore={() => {}}
-        hasMore={false}
-      />
+      <ContractsGrid contracts={hotContracts?.slice(0, 10) || []} />
     </>
   )
 }
