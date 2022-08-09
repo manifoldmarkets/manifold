@@ -16,7 +16,6 @@ import {
   cleanDisplayName,
   cleanUsername,
 } from '../../common/util/clean-username'
-import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
 import {
   CATEGORIES_GROUP_SLUG_POSTFIX,
@@ -94,8 +93,8 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)
 
-  await addUserToDefaultGroups(user)
-  await sendWelcomeEmail(user, privateUser)
+  // await addUserToDefaultGroups(user)
+  // await sendWelcomeEmail(user, privateUser)
   await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
   return user
@@ -121,7 +120,7 @@ export const numberUsersWithIp = async (ipAddress: string) => {
   return snap.docs.length
 }
 
-const addUserToDefaultGroups = async (user: User) => {
+const _addUserToDefaultGroups = async (user: User) => {
   for (const category of Object.values(DEFAULT_CATEGORIES)) {
     const slug = category.toLowerCase() + CATEGORIES_GROUP_SLUG_POSTFIX
     const groups = await getValues<Group>(
