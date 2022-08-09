@@ -16,7 +16,7 @@ import { Avatar } from 'web/components/avatar'
 import { Grid, _ } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { useState, useEffect } from 'react'
-import { maxBy } from 'lodash'
+import { maxBy, uniq } from 'lodash'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -101,15 +101,13 @@ export function ContractTabs(props: {
   )
 
   const [users, setUsers] = useState({} as {[key: string]: User})
-  const [asked, setAsked] = useState({} as {[key: string]: boolean})
+  const [asked, _setAsked] = useState(new Set<string>())
+
   useEffect(() => {
-    bets.map((bet) => {
-      if (!asked[bet.userId]) {
-        getUser(bet.userId).then((user) => {
-          setUsers({ ...users, [bet.userId]: user })
-        })
-        setAsked({ ...asked, [bet.userId]: true })
-      }
+    uniq(bets.map((bet:Bet) => bet.userId)).filter((uid) => !asked.has(uid)).forEach((uid) => {
+      console.log("adding",uid)
+      asked.add(uid)
+      getUser(uid).then((u) => setUsers((users) => ({...users, [uid]: u})))
     })
   }, [bets])
 
