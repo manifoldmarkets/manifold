@@ -30,9 +30,12 @@ const ensureDeviceToken = () => {
 
 export const AuthContext = createContext<AuthUser>(undefined)
 
-export function AuthProvider(props: { children: ReactNode; user?: AuthUser }) {
-  const { children, user } = props
-  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(user)
+export function AuthProvider(props: {
+  children: ReactNode
+  serverUser?: AuthUser
+}) {
+  const { children, serverUser } = props
+  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
   useEffect(() => {
     const cachedUser = localStorage.getItem(CACHED_USER_KEY)
     setAuthUser(cachedUser && JSON.parse(cachedUser))
