@@ -39,9 +39,6 @@ import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { filterDefined } from 'common/util/array'
 import { useUserBets } from 'web/hooks/use-user-bets'
 import { ReferralsButton } from 'web/components/referrals-button'
-import { formatMoney } from 'common/util/format'
-import { ShareIconButton } from 'web/components/share-icon-button'
-import { ENV_CONFIG } from 'common/envs/constants'
 
 export function UserLink(props: {
   name: string
@@ -122,7 +119,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 
   const yourFollows = useFollows(currentUser?.id)
   const isFollowing = yourFollows?.includes(user.id)
-  const profit = user.profitCached.allTime
 
   const onFollow = () => {
     if (!currentUser) return
@@ -187,17 +183,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
       <Col className="mx-4 -mt-6">
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
-        <span className="text-gray-500">
-          <span
-            className={clsx(
-              'text-md',
-              profit >= 0 ? 'text-green-600' : 'text-red-400'
-            )}
-          >
-            {formatMoney(profit)}
-          </span>{' '}
-          profit
-        </span>
 
         <Spacer h={4} />
 
@@ -303,23 +288,29 @@ export function UserPage(props: { user: User; currentUser?: User }) {
                   </span>
                 ),
               },
-              {
-                title: 'Bets',
-                content: (
-                  <div>
-                    <PortfolioValueSection
-                      portfolioHistory={portfolioHistory}
-                    />
-                    <BetsList
-                      user={user}
-                      bets={userBets}
-                      hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
-                      contractsById={contractsById}
-                    />
-                  </div>
-                ),
-                tabIcon: <span className="px-0.5 font-bold">{betCount}</span>,
-              },
+              ...(isCurrentUser
+                ? [
+                    {
+                      title: 'Bets',
+                      content: (
+                        <div>
+                          <PortfolioValueSection
+                            portfolioHistory={portfolioHistory}
+                          />
+                          <BetsList
+                            user={user}
+                            bets={userBets}
+                            hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
+                            contractsById={contractsById}
+                          />
+                        </div>
+                      ),
+                      tabIcon: (
+                        <span className="px-0.5 font-bold">{betCount}</span>
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
         ) : (

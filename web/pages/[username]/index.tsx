@@ -13,6 +13,8 @@ export async function getStaticPropz(props: { params: { username: string } }) {
   const { username } = props.params
   const user = await getUserByUsername(username)
 
+  if (user) user.profitCached.allTime = 0
+
   return {
     props: {
       user,
