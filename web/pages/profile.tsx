@@ -1,25 +1,35 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
 
 import { AddFundsButton } from 'web/components/add-funds-button'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { User } from 'common/user'
-import { updateUser, updatePrivateUser } from 'web/lib/firebase/users'
+import { User, PrivateUser } from 'common/user'
+import {
+  getUser,
+  getPrivateUser,
+  updateUser,
+  updatePrivateUser,
+} from 'web/lib/firebase/users'
 import { defaultBannerUrl } from 'web/components/user-page'
 import { SiteLink } from 'web/components/site-link'
 import Textarea from 'react-expanding-textarea'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
-export const getServerSideProps = redirectIfLoggedOut('/')
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  const [user, privateUser] = await Promise.all([
+    getUser(creds.user.uid),
+    getPrivateUser(creds.user.uid),
+  ])
+  return { props: { user, privateUser } }
+})
 
 function EditUserField(props: {
   user: User
@@ -58,64 +68,45 @@ function EditUserField(props: {
   )
 }
 
-export default function ProfilePage() {
-  const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
-
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '')
+export default function ProfilePage(props: {
+  user: User
+  privateUser: PrivateUser
+}) {
+  const { user, privateUser } = props
+  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
-  const [name, setName] = useState(user?.name || '')
-  const [username, setUsername] = useState(user?.username || '')
-  const [apiKey, setApiKey] = useState(privateUser?.apiKey || '')
-
-  useEffect(() => {
-    if (user) {
-      setAvatarUrl(user.avatarUrl || '')
-      setName(user.name || '')
-      setUsername(user.username || '')
-    }
-  }, [user])
-
-  useEffect(() => {
-    if (privateUser) {
-      setApiKey(privateUser.apiKey || '')
-    }
-  }, [privateUser])
+  const [name, setName] = useState(user.name)
+  const [username, setUsername] = useState(user.username)
+  const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
 
   const updateDisplayName = async () => {
     const newName = cleanDisplayName(name)
-
     if (newName) {
       setName(newName)
-      await changeUserInfo({ name: newName }).catch((_) =>
-        setName(user?.name || '')
-      )
+      await changeUserInfo({ name: newName }).catch((_) => setName(user.name))
     } else {
-      setName(user?.name || '')
+      setName(user.name)
     }
   }
 
   const updateUsername = async () => {
     const newUsername = cleanUsername(username)
-
     if (newUsername) {
       setUsername(newUsername)
       await changeUserInfo({ username: newUsername }).catch((_) =>
-        setUsername(user?.username || '')
+        setUsername(user.username)
       )
     } else {
-      setUsername(user?.username || '')
+      setUsername(user.username)
     }
   }
 
   const updateApiKey = async (e: React.MouseEvent) => {
     const newApiKey = crypto.randomUUID()
-    if (user?.id != null) {
-      setApiKey(newApiKey)
-      await updatePrivateUser(user.id, { apiKey: newApiKey }).catch(() => {
-        setApiKey(privateUser?.apiKey || '')
-      })
-    }
+    setApiKey(newApiKey)
+    await updatePrivateUser(user.id, { apiKey: newApiKey }).catch(() => {
+      setApiKey(privateUser.apiKey || '')
+    })
     e.preventDefault()
   }
 
@@ -124,7 +115,7 @@ export default function ProfilePage() {
 
     setAvatarLoading(true)
 
-    await uploadImage(user?.username || 'default', file)
+    await uploadImage(user.username, file)
       .then(async (url) => {
         await changeUserInfo({ avatarUrl: url })
         setAvatarUrl(url)
@@ -132,12 +123,8 @@ export default function ProfilePage() {
       })
       .catch(() => {
         setAvatarLoading(false)
-        setAvatarUrl(user?.avatarUrl || '')
+        setAvatarUrl(user.avatarUrl || '')
       })
-  }
-
-  if (user == null) {
-    return <></>
   }
 
   return (
@@ -147,7 +134,7 @@ export default function ProfilePage() {
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="justify-between">
           <Title className="!mt-0" text="Edit Profile" />
-          <SiteLink className="btn btn-primary" href={`/${user?.username}`}>
+          <SiteLink className="btn btn-primary" href={`/${user.username}`}>
             Done
           </SiteLink>
         </Row>
@@ -192,54 +179,53 @@ export default function ProfilePage() {
             />
           </div>
 
-          {user && (
-            <>
-              {/* TODO: Allow users with M$ 2000 of assets to set custom banners */}
-              {/* <EditUserField
+          {/* TODO: Allow users with M$ 2000 of assets to set custom banners */}
+          {/* <EditUserField
                 user={user}
                 field="bannerUrl"
                 label="Banner Url"
                 isEditing={isEditing}
               /> */}
-              <label className="label">
-                Banner image{' '}
-                <span className="text-sm text-gray-400">
-                  Not editable for now
-                </span>
-              </label>
-              <div
-                className="h-32 w-full bg-cover bg-center sm:h-40"
-                style={{
-                  backgroundImage: `url(${
-                    user.bannerUrl || defaultBannerUrl(user.id)
-                  })`,
-                }}
-              />
+          <label className="label">
+            Banner image{' '}
+            <span className="text-sm text-gray-400">Not editable for now</span>
+          </label>
+          <div
+            className="h-32 w-full bg-cover bg-center sm:h-40"
+            style={{
+              backgroundImage: `url(${
+                user.bannerUrl || defaultBannerUrl(user.id)
+              })`,
+            }}
+          />
 
-              {(
-                [
-                  ['bio', 'Bio'],
-                  ['website', 'Website URL'],
-                  ['twitterHandle', 'Twitter'],
-                  ['discordHandle', 'Discord'],
-                ] as const
-              ).map(([field, label]) => (
-                <EditUserField user={user} field={field} label={label} />
-              ))}
-            </>
-          )}
+          {(
+            [
+              ['bio', 'Bio'],
+              ['website', 'Website URL'],
+              ['twitterHandle', 'Twitter'],
+              ['discordHandle', 'Discord'],
+            ] as const
+          ).map(([field, label]) => (
+            <EditUserField
+              key={field}
+              user={user}
+              field={field}
+              label={label}
+            />
+          ))}
 
           <div>
             <label className="label">Email</label>
             <div className="ml-1 text-gray-500">
-              {privateUser?.email ?? '\u00a0'}
+              {privateUser.email ?? '\u00a0'}
             </div>
           </div>
 
           <div>
             <label className="label">Balance</label>
             <Row className="ml-1 items-start gap-4 text-gray-500">
-              {formatMoney(user?.balance || 0)}
+              {formatMoney(user.balance)}
               <AddFundsButton />
             </Row>
           </div>

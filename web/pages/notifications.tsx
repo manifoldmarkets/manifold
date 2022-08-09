@@ -1,5 +1,4 @@
 import { Tabs } from 'web/components/layout/tabs'
-import { usePrivateUser } from 'web/hooks/use-user'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
@@ -13,9 +12,8 @@ import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USERNAME,
   PrivateUser,
-  User,
 } from 'common/user'
-import { getUser } from 'web/lib/firebase/users'
+import { getPrivateUser } from 'web/lib/firebase/users'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
@@ -35,7 +33,6 @@ import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
 import { groupBy, sum, uniq } from 'lodash'
-import Custom404 from 'web/pages/404'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -49,13 +46,12 @@ const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  const user = await getUser(creds.user.uid)
-  return { props: { user } }
+  const privateUser = await getPrivateUser(creds.user.uid)
+  return { props: { privateUser } }
 })
 
-export default function Notifications(props: { user: User }) {
-  const { user } = props
-  const privateUser = usePrivateUser(user?.id)
+export default function Notifications(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
   const local = safeLocalStorage()
   let localNotifications = [] as Notification[]
   const localSavedNotificationGroups = local?.getItem('notification-groups')
@@ -67,7 +63,6 @@ export default function Notifications(props: { user: User }) {
       .flat()
   }
 
-  if (!user) return <Custom404 />
   return (
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
@@ -81,17 +76,11 @@ export default function Notifications(props: { user: User }) {
             tabs={[
               {
                 title: 'Notifications',
-                content: privateUser ? (
+                content: (
                   <NotificationsList
                     privateUser={privateUser}
                     cachedNotifications={localNotifications}
                   />
-                ) : (
-                  <div className={'min-h-[100vh]'}>
-                    <RenderNotificationGroups
-                      notificationGroups={localNotificationGroups}
-                    />
-                  </div>
                 ),
               },
               {
