@@ -394,8 +394,8 @@ export function CommentInput(props: {
           />
         </div>
         <div className={'min-w-0 flex-1'}>
-          <div className="pl-0.5 text-sm text-gray-500">
-            <div className={'mb-1'}>
+          <div className="pl-0.5 text-sm">
+            <div className="mb-1 text-gray-500">
               {mostRecentCommentableBet && (
                 <BetStatusText
                   contract={contract}
