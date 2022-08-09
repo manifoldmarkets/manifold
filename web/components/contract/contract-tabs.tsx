@@ -105,7 +105,6 @@ export function ContractTabs(props: {
 
   useEffect(() => {
     uniq(bets.map((bet:Bet) => bet.userId)).filter((uid) => !asked.current.has(uid)).forEach((uid) => {
-      console.log("adding",uid)
       asked.current.add(uid)
       getUser(uid).then((u) => setUsers((users) => ({...users, [uid]: u})))
     })
