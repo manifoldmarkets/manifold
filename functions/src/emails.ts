@@ -74,9 +74,8 @@ export const sendMarketResolutionEmail = async (
 
   // Modify template here:
   // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved/initial
-  // Mailgun username: james@mantic.markets
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     subject,
     'market-resolved',
@@ -152,7 +151,7 @@ export const sendWelcomeEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Welcome to Manifold Markets!',
     'welcome',
@@ -183,7 +182,7 @@ export const sendOneWeekBonusEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Manifold Markets one week anniversary gift',
     'one-week',
@@ -215,7 +214,7 @@ export const sendThankYouEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Thanks for your Manifold purchase',
     'thank-you',
@@ -250,7 +249,7 @@ export const sendMarketCloseEmail = async (
   const emailType = 'market-resolve'
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Your market has closed',
     'market-close',
@@ -309,7 +308,7 @@ export const sendNewCommentEmail = async (
   if (contract.outcomeType === 'FREE_RESPONSE' && answerId && answerText) {
     const answerNumber = `#${answerId}`
 
-    await sendTemplateEmail(
+    return await sendTemplateEmail(
       privateUser.email,
       subject,
       'market-answer-comment',
@@ -332,7 +331,7 @@ export const sendNewCommentEmail = async (
         bet.outcome
       )}`
     }
-    await sendTemplateEmail(
+    return await sendTemplateEmail(
       privateUser.email,
       subject,
       'market-comment',
@@ -377,7 +376,7 @@ export const sendNewAnswerEmail = async (
   const subject = `New answer on ${question}`
   const from = `${name} <info@manifold.markets>`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     subject,
     'market-answer',
