@@ -345,7 +345,6 @@ export function ContractSearch(props: {
         <ContractsGrid
           contracts={hitsByPage[0] === undefined ? undefined : contracts}
           loadMore={loadMore}
-          hasMore={true}
           showTime={showTime}
           onContractClick={onContractClick}
           overrideGridClassName={overrideGridClassName}

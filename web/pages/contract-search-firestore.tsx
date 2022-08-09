@@ -110,12 +110,7 @@ export default function ContractSearchFirestore(props: {
           <option value="close-date">Closing soon</option>
         </select>
       </div>
-      <ContractsGrid
-        contracts={matches}
-        loadMore={() => {}}
-        hasMore={false}
-        showTime={showTime}
-      />
+      <ContractsGrid contracts={matches} showTime={showTime} />
     </div>
   )
 }

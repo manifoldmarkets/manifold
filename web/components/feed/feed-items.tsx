@@ -1,5 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import React, { useState } from 'react'
+import React, { useCallback } from 'react'
 import {
   BanIcon,
   CheckIcon,
@@ -22,9 +22,9 @@ import { UserLink } from '../user-page'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
-import { useSaveSeenContract } from 'web/hooks/use-seen-contracts'
+import { pushSeenContract } from 'web/lib/firebase/seen-contracts'
 import { useUser } from 'web/hooks/use-user'
-import { trackClick } from 'web/lib/firebase/tracking'
+import { trackClick, trackView } from 'web/lib/firebase/tracking'
 import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { RelativeTimestamp } from '../relative-timestamp'
@@ -39,6 +39,7 @@ import { FeedLiquidity } from './feed-liquidity'
 import { SignUpPrompt } from '../sign-up-prompt'
 import { User } from 'common/user'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
+import { VisibilityObserver } from '../visibility-observer'
 
 export function FeedItems(props: {
   contract: Contract
@@ -50,11 +51,19 @@ export function FeedItems(props: {
   const { contract, items, className, betRowClassName, user } = props
   const { outcomeType } = contract
 
-  const [elem, setElem] = useState<HTMLElement | null>(null)
-  useSaveSeenContract(elem, contract)
+  const onVisibilityUpdated = useCallback(
+    (visible) => {
+      if (visible && user) {
+        pushSeenContract(contract.id)
+        trackView(user.id, contract.id)
+      }
+    },
+    [contract.id, user]
+  )
 
   return (
-    <div className={clsx('flow-root', className)} ref={setElem}>
+    <div className={clsx('flow-root', className)}>
+      <VisibilityObserver onVisibilityUpdated={onVisibilityUpdated} />
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
           <div key={item.id} className={'relative pb-4'}>
