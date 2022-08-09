@@ -2,6 +2,7 @@
 import algoliasearch from 'algoliasearch/lite'
 
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
 import {
   ContractHighlightOptions,
@@ -11,7 +12,6 @@ import { Row } from './layout/row'
 import { useEffect, useMemo, useState } from 'react'
 import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
@@ -45,6 +45,7 @@ export const DEFAULT_SORT = 'score'
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
+  user: User | null | undefined
   querySortOptions?: {
     defaultSort: Sort
     defaultFilter?: filter
@@ -67,6 +68,7 @@ export function ContractSearch(props: {
   }
 }) {
   const {
+    user,
     querySortOptions,
     additionalFilter,
     onContractClick,
@@ -77,7 +79,6 @@ export function ContractSearch(props: {
     highlightOptions,
   } = props
 
-  const user = useUser()
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
     (group) => !NEW_USER_GROUP_SLUGS.includes(group.slug)
   )

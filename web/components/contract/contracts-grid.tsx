@@ -97,11 +97,15 @@ export function ContractsGrid(props: {
   )
 }
 
-export function CreatorContractsList(props: { creator: User }) {
-  const { creator } = props
+export function CreatorContractsList(props: {
+  user: User | null | undefined
+  creator: User
+}) {
+  const { user, creator } = props
 
   return (
     <ContractSearch
+      user={user}
       querySortOptions={{
         defaultSort: 'newest',
         defaultFilter: 'all',

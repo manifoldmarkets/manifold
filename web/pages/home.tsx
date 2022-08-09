@@ -7,16 +7,22 @@ import { Col } from 'web/components/layout/col'
 import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ContractSearch, DEFAULT_SORT } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { getUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 
-export const getServerSideProps = redirectIfLoggedOut('/')
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  const user = await getUser(creds.user.uid)
+  return { props: { user } }
+})
 
-const Home = () => {
+const Home = (props: { user: User }) => {
+  const { user } = props
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
@@ -29,6 +35,7 @@ const Home = () => {
       <Page suspend={!!contract}>
         <Col className="mx-auto w-full p-2">
           <ContractSearch
+            user={user}
             querySortOptions={{
               shouldLoadFromStorage: true,
               defaultSort: getSavedSort() ?? DEFAULT_SORT,
@@ -56,6 +63,7 @@ const Home = () => {
       {contract && (
         <ContractPageContent
           contract={contract}
+          user={user}
           username={contract.creatorUsername}
           slug={contract.slug}
           bets={[]}
