@@ -14,21 +14,22 @@ export const useBets = (
   options?: { filterChallenges: boolean; filterRedemptions: boolean }
 ) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
-
+  const filterChallenges = !!options?.filterChallenges
+  const filterRedemptions = !!options?.filterRedemptions
   useEffect(() => {
     if (contractId)
       return listenForBets(contractId, (bets) => {
-        if (options)
+        if (filterChallenges || filterRedemptions)
           setBets(
             bets.filter(
               (bet) =>
-                (options.filterChallenges ? !bet.challengeSlug : true) &&
-                (options.filterRedemptions ? !bet.isRedemption : true)
+                (filterChallenges ? !bet.challengeSlug : true) &&
+                (filterRedemptions ? !bet.isRedemption : true)
             )
           )
         else setBets(bets)
       })
-  }, [contractId, options])
+  }, [contractId, filterChallenges, filterRedemptions])
 
   return bets
 }
