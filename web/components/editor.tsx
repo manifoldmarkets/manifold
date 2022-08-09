@@ -32,7 +32,7 @@ import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 
 const proseClass = clsx(
-  'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
+  'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
   'font-light prose-a:font-light prose-blockquote:font-light'
 )
 
