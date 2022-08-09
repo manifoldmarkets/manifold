@@ -153,15 +153,17 @@ export function ContractTabs(props: {
     position[bet.outcome] = (position[bet.outcome] || 0) + bet.shares
     userpositions[bet.userId] = {id:id, position:position, mana:(mana + bet.amount)}
   })
-  const gridjsusers = Object.values(userpositions).map((row:any) => ({...row, ['username']: users[row.userId]?.username}))
-
   const argmax = (obj:{[key:string]:number}) => maxBy(Object.keys(obj), (k:string) => obj[k])
+  const gridjsusers = Object.values(userpositions)
+    .map((row:any) => ({...row, ['topout']: argmax(row.position)}))
+    .map((row:any) => ({...row, ['topshr']: row.position[row.topout]}))
+    .map((row:any) => ({...row, ['username']: users[row.userId]?.username}))
 
   const gridjsusercolumns = [
     {name: "User", id: "id", formatter:formatUser},
     {name: "is down", id: "mana", formatter: (i:number) => "M$"+i.toFixed(0)},
-    {name: "and holds", id: "position", formatter: (p:{[key: string]: number}) => p[argmax(p) ?? ""].toFixed(0)},
-    {name: "of", id: "position", formatter: (p:{[key: string]: number}) => argmax(p)},
+    {name: "and holds", id: "topshr", formatter: (i:number) => i.toFixed(0)},
+    {name: "of", id: "topout"},
   ]
 
   return (
