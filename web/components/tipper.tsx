@@ -37,7 +37,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
 
   // declare debounced function only on first render
   const [saveTip] = useState(() =>
-    debounce(async (user: User, change: number) => {
+    debounce(async (user: User, comment: Comment, change: number) => {
       if (change === 0) {
         return
       }
@@ -73,7 +73,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
 
   const addTip = (delta: number) => {
     setLocalTip(localTip + delta)
-    me && saveTip(me, localTip - savedTip + delta)
+    me && saveTip(me, comment, localTip - savedTip + delta)
   }
 
   const canDown = me && localTip > savedTip
