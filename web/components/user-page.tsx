@@ -300,7 +300,9 @@ export function UserPage(props: { user: User; currentUser?: User }) {
             tabs={[
               {
                 title: 'Markets',
-                content: <CreatorContractsList creator={user} />,
+                content: (
+                  <CreatorContractsList user={currentUser} creator={user} />
+                ),
                 tabIcon: (
                   <span className="px-0.5 font-bold">
                     {usersContracts.length}

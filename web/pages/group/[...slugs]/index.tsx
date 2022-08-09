@@ -201,6 +201,7 @@ export default function GroupPage(props: {
 
   const questionsTab = (
     <ContractSearch
+      user={user}
       querySortOptions={{
         shouldLoadFromStorage: true,
         defaultSort: getSavedSort() ?? 'newest',
@@ -614,6 +615,7 @@ function AddContractButton(props: { group: Group; user: User }) {
 
           <div className={'overflow-y-scroll sm:px-8'}>
             <ContractSearch
+              user={user}
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
               overrideGridClassName={
