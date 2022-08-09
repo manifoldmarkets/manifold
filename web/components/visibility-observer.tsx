@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
+import { useEvent } from '../hooks/use-event'
 
 export function VisibilityObserver(props: {
   className?: string
   onVisibilityUpdated: (visible: boolean) => void
 }) {
-  const { className, onVisibilityUpdated } = props
+  const { className } = props
   const [elem, setElem] = useState<HTMLElement | null>(null)
+  const onVisibilityUpdated = useEvent(props.onVisibilityUpdated)
 
   useEffect(() => {
     const hasIOSupport = !!window.IntersectionObserver
