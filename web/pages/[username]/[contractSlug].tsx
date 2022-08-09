@@ -106,6 +106,43 @@ export default function ContractPage(props: {
   return <ContractPageContent {...{ ...props, contract }} />
 }
 
+export function ContractPageSidebar(props: {
+  user: User | null | undefined
+  contract: Contract
+}) {
+  const { contract, user } = props
+  const { creatorId, isResolved, outcomeType } = contract
+
+  const isCreator = user?.id === creatorId
+  const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isNumeric = outcomeType === 'NUMERIC'
+  const allowTrade = tradingAllowed(contract)
+  const allowResolve = !isResolved && isCreator && !!user
+  const hasSidePanel =
+    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
+
+  return hasSidePanel ? (
+    <Col className="gap-4">
+      {allowTrade &&
+        (isNumeric ? (
+          <NumericBetPanel className="hidden xl:flex" contract={contract} />
+        ) : (
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
+        ))}
+      {allowResolve &&
+        (isNumeric || isPseudoNumeric ? (
+          <NumericResolutionPanel creator={user} contract={contract} />
+        ) : (
+          <ResolutionPanel creator={user} contract={contract} />
+        ))}
+    </Col>
+  ) : null
+}
+
 export function ContractPageContent(
   props: Parameters<typeof ContractPage>[0] & { contract: Contract }
 ) {
@@ -142,16 +179,9 @@ export function ContractPageContent(
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
 
-  const { creatorId, isResolved, question, outcomeType } = contract
+  const { isResolved, question, outcomeType } = contract
 
-  const isCreator = user?.id === creatorId
-  const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
-  const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel =
-    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
 
@@ -160,26 +190,7 @@ export function ContractPageContent(
     contractId: contract.id,
   })
 
-  const rightSidebar = hasSidePanel ? (
-    <Col className="gap-4">
-      {allowTrade &&
-        (isNumeric ? (
-          <NumericBetPanel className="hidden xl:flex" contract={contract} />
-        ) : (
-          <BetPanel
-            className="hidden xl:flex"
-            contract={contract as CPMMBinaryContract}
-          />
-        ))}
-      {allowResolve &&
-        (isNumeric || isPseudoNumeric ? (
-          <NumericResolutionPanel creator={user} contract={contract} />
-        ) : (
-          <ResolutionPanel creator={user} contract={contract} />
-        ))}
-    </Col>
-  ) : null
-
+  const rightSidebar = <ContractPageSidebar user={user} contract={contract} />
   return (
     <Page rightSidebar={rightSidebar}>
       {showConfetti && (
@@ -216,7 +227,7 @@ export function ContractPageContent(
           bets={bets.filter((b) => !b.challengeSlug)}
         />
 
-        {isNumeric && (
+        {outcomeType === 'NUMERIC' && (
           <AlertBox
             title="Warning"
             text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
@@ -232,7 +243,7 @@ export function ContractPageContent(
           </>
         )}
 
-        {isNumeric && allowTrade && (
+        {outcomeType === 'NUMERIC' && allowTrade && (
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 
