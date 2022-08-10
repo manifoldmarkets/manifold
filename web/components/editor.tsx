@@ -125,6 +125,13 @@ function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
 
+function isValidUrl(text: string) {
+  // Conjured by Codex, not sure if it's actually good
+  return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(
+    text
+  )
+}
+
 export function TextEditor(props: {
   editor: Editor | null
   upload: ReturnType<typeof useUploadMutation>
@@ -191,8 +198,9 @@ function IframeModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { editor, open, setOpen } = props
-  const [embedCode, setEmbedCode] = useState('')
-  const valid = isValidIframe(embedCode)
+  const [input, setInput] = useState('')
+  const valid = isValidIframe(input) || isValidUrl(input)
+  const embedCode = isValidIframe(input) ? input : `<iframe src="${input}" />`
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -209,8 +217,8 @@ function IframeModal(props: {
           id="embed"
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           placeholder='e.g. <iframe src="..."></iframe>'
-          value={embedCode}
-          onChange={(e) => setEmbedCode(e.target.value)}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
         />
 
         {/* Preview the embed if it's valid */}
@@ -222,7 +230,7 @@ function IframeModal(props: {
             onClick={() => {
               if (editor && valid) {
                 editor.chain().insertContent(embedCode).run()
-                setEmbedCode('')
+                setInput('')
                 setOpen(false)
               }
             }}
@@ -232,7 +240,7 @@ function IframeModal(props: {
           <Button
             color="gray"
             onClick={() => {
-              setEmbedCode('')
+              setInput('')
               setOpen(false)
             }}
           >
