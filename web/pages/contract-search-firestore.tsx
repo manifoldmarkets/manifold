@@ -4,6 +4,7 @@ import { sortBy } from 'lodash'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useContracts } from 'web/hooks/use-contracts'
 import {
+  QuerySortOptions,
   Sort,
   useQueryAndSortParams,
 } from 'web/hooks/use-sort-and-query-params'
@@ -11,10 +12,7 @@ import {
 const MAX_CONTRACTS_RENDERED = 100
 
 export default function ContractSearchFirestore(props: {
-  querySortOptions?: {
-    defaultSort: Sort
-    shouldLoadFromStorage?: boolean
-  }
+  querySortOptions?: QuerySortOptions
   additionalFilter?: {
     creatorId?: string
     tag?: string

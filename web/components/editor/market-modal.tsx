@@ -76,6 +76,7 @@ export function MarketModal(props: {
             }
             showPlaceHolder
             cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
+            querySortOptions={{ disableQueryString: true }}
             highlightOptions={{
               contractIds: contracts.map((c) => c.id),
               highlightClassName:

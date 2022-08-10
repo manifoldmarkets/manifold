@@ -2,7 +2,11 @@
 import algoliasearch from 'algoliasearch/lite'
 
 import { Contract } from 'common/contract'
-import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
+import {
+  QuerySortOptions,
+  Sort,
+  useQueryAndSortParams,
+} from '../hooks/use-sort-and-query-params'
 import {
   ContractHighlightOptions,
   ContractsGrid,
@@ -45,11 +49,7 @@ export const DEFAULT_SORT = 'score'
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
-  querySortOptions?: {
-    defaultSort: Sort
-    defaultFilter?: filter
-    shouldLoadFromStorage?: boolean
-  }
+  querySortOptions?: { defaultFilter?: filter } & QuerySortOptions
   additionalFilter?: {
     creatorId?: string
     tag?: string
@@ -100,11 +100,8 @@ export function ContractSearch(props: {
 
   const follows = useFollows(user?.id)
 
-  const { shouldLoadFromStorage, defaultSort } = querySortOptions ?? {}
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
-    defaultSort,
-    shouldLoadFromStorage,
-  })
+  const { query, setQuery, sort, setSort } =
+    useQueryAndSortParams(querySortOptions)
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
