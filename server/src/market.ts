@@ -7,7 +7,10 @@ import moment from "moment";
 import lodash from "lodash";
 import { Socket } from "socket.io";
 import { ADD_BETS } from "common/packet-ids";
+import { PacketResolved } from "common/packets";
 const { keyBy, mapValues, sumBy, groupBy } = lodash;
+import * as Packet from "common/packet-ids";
+import _ from "lodash";
 
 export class Market {
     private readonly app: App;
@@ -41,11 +44,39 @@ export class Market {
             try {
                 this.pollBets();
                 if (await this.detectResolution()) {
+                    this.data = await Manifold.getFullMarketByID(this.data.id);
+
                     continuePolling = false;
                     const winners = await this.calculateWinners();
 
                     const channel = this.app.getChannelForMarketID(this.data.id);
                     this.app.bot.resolveMarket(channel, this.data.resolution == "YES" ? ResolutionOutcome.YES : ResolutionOutcome.NO, winners); //!!! Proper outcomes
+
+                    const uniqueTraderCount = _(this.data.bets).groupBy("userId").size();
+
+                    type Result = { displayName: string; profit: number };
+                    const topWinners: Result[] = [];
+                    const topLosers: Result[] = [];
+                    for (const winner of winners) {
+                        if (winner.profit > 0) {
+                            topWinners.push({ displayName: winner.user.name, profit: winner.profit });
+                        } else {
+                            topLosers.push({ displayName: winner.user.name, profit: winner.profit });
+                        }
+                    }
+                    const sortFunction = (a: Result, b: Result) => Math.abs(a.profit) > Math.abs(b.profit) ? 1 : -1;
+                    topWinners.sort(sortFunction);
+                    topLosers.sort(sortFunction);
+
+                    const resolveData: PacketResolved = {
+                        outcome: this.data.resolution === "YES" ? "YES" : this.data.resolution === "NO" ? "NO" : "NA", //!!! Proper outcomes
+                        uniqueTraders: uniqueTraderCount,
+                        topWinners: topWinners,
+                        topLosers: topLosers,
+                    };
+                    for (const packet of this.overlaySockets) {
+                        packet.emit(Packet.RESOLVE, resolveData); //!!!
+                    }
                 }
             } catch (e) {
                 log.trace(e);
@@ -156,12 +187,17 @@ export class Market {
         // this.io.emit(Packet.ADD_BETS, [bet]); //!!!
 
         for (const socket of this.overlaySockets) {
-            if (!socket.disconnected) { //!!!
+            if (!socket.disconnected) {
+                //!!!
                 socket.emit(ADD_BETS, [bet]);
             }
         }
 
-        log.info(`${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
+        log.info(
+            `${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(
+                bet.createdTime
+            ).fromNow()}`
+        );
     }
 
     private async loadUser(userId: string) {
@@ -175,7 +211,8 @@ export class Market {
             this.userIdToNameMap[user.id] = user.name;
 
             const betsToRemove = [];
-            while (this.pendingBets.length) { //!!! This incorrectly re-orders the bets
+            while (this.pendingBets.length) {
+                //!!! This incorrectly re-orders the bets
                 const bet = this.pendingBets[0];
                 if (user.id == bet.userId) {
                     const fullBet: FullBet = {

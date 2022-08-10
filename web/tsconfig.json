@@ -26,8 +26,6 @@
     "**/*.ts",
     "**/*.tsx",
     "../common/**/*.ts",
-    // "src/*",
-    // "styles/**/*"
   ],
   "exclude": [
     "node_modules"

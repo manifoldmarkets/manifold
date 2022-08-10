@@ -16,7 +16,6 @@ import io, { Socket } from "socket.io-client";
 import { SELECT_MARKET_ID } from "common/packet-ids";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
-const dummyUser: LiteUser = { id: "asdasdfgdsef" } as LiteUser;
 
 async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
     const r = await fetch(`${APIBase}markets`);
@@ -76,11 +75,24 @@ export default () => {
         }
     }, [selectedGroup]);
 
+    // const onRefresh = async () => {
+    //     if (selectedGroup) {
+    //         setLoadingContracts(true);
+    //         fetchMarketsInGroup(selectedGroup)
+    //             .then((markets) => {
+    //                 setContracts(markets);
+    //             })
+    //             .finally(() => {
+    //                 setTimeout(() => setLoadingContracts(false), 0);
+    //             });
+    //     }
+    // };
+
     return (
         <div className="flex justify-center">
             <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
                 <div className="p-2">
-                    <GroupSelector selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} creator={dummyUser} />
+                    <GroupSelector selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} />
                     <div className="w-full flex justify-center">
                         <ConfirmationButton
                             openModalBtn={{

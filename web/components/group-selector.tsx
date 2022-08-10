@@ -3,7 +3,6 @@ import { Combobox } from "@headlessui/react";
 import { CheckIcon, RefreshIcon, SelectorIcon } from "@heroicons/react/outline";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { LiteUser } from "common/manifold-defs";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -15,36 +14,25 @@ async function fetchGroups(): Promise<Group[]> {
 
 export const useMemberGroups = (
     setMemberGroups: (groups: Group[]) => void,
-    userId: string | null | undefined,
     options?: { withChatEnabled: boolean },
     sort?: { by: "mostRecentChatActivityTime" | "mostRecentContractAddedTime" }
 ) => {
     useEffect(() => {
-        if (userId) {
-            fetchGroups().then((groups) => {
-                setMemberGroups(groups);
-            });
-        }
-        // return listenForMemberGroups(
-        //     userId,
-        //     (groups) => {
-        //         if (options?.withChatEnabled) return setMemberGroups(filterDefined(groups.filter((group) => group.chatDisabled !== true)));
-        //         return setMemberGroups(groups);
-        //     },
-        //     sort
-        // );
-    }, [options?.withChatEnabled, sort?.by, userId]);
+        fetchGroups().then((groups) => {
+            setMemberGroups(groups);
+        });
+    }, [options?.withChatEnabled, sort?.by]);
     // return memberGroups;
 };
 
-export function GroupSelector(props: { selectedGroup: Group | undefined; setSelectedGroup: (group: Group) => void; creator: LiteUser | null | undefined }) {
-    const { selectedGroup, setSelectedGroup, creator } = props;
+export function GroupSelector(props: { selectedGroup: Group | undefined; setSelectedGroup: (group: Group) => void, onRefresh?: () => void }) {
+    const { selectedGroup, setSelectedGroup, onRefresh } = props;
 
     const [isRefreshingGroups, setIsRefreshingGroups] = useState<boolean>(false);
     const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
     const [query, setQuery] = useState("");
 
-    useMemberGroups(setMemberGroups, creator?.id);
+    useMemberGroups(setMemberGroups);
     const filteredGroups =
         memberGroups?.filter((group) => {
             return group.name.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) >= 0;
@@ -55,6 +43,13 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; setSele
         fetchGroups()
             .then((groups) => {
                 setMemberGroups(groups);
+                for (const g of groups) {
+                    if (g.id === selectedGroup?.id) {
+                        setSelectedGroup(g);
+                        break;
+                    }
+                }
+                onRefresh?.();
             })
             .finally(() => setIsRefreshingGroups(false));
     };

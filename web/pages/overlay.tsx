@@ -261,28 +261,8 @@ enum Page {
     RESOLVED_GRAPH,
 }
 
-function useInterval(callback, delay) {
-    const savedCallback = useRef();
-
-    // Remember the latest callback.
-    useEffect(() => {
-        savedCallback.current = callback;
-    }, [callback]);
-
-    // Set up the interval.
-    useEffect(() => {
-        function tick() {
-            (savedCallback.current as () => void)();
-        }
-        if (delay !== null) {
-            let id = setInterval(tick, delay);
-            return () => clearInterval(id);
-        }
-    }, [delay]);
-}
-
 export default () => {
-    const [page, setPage] = useState<Page>(Page.RESOLVED_TRADERS);
+    const [page, setPage] = useState<Page>(Page.MAIN);
     const [resolvedData, setResolvedData] = useState<PacketResolved | undefined>(undefined);
 
     useEffect(() => {
@@ -290,6 +270,10 @@ export default () => {
         app.socket.on(Packet.RESOLVE, (packet: PacketResolved) => {
             setResolvedData(packet);
             console.log(packet);
+        });
+        app.socket.on(Packet.CLEAR, () => {
+            setResolvedData(undefined);
+            console.log("Cleared");
         });
     }, []);
 
@@ -314,17 +298,6 @@ export default () => {
             return () => clearInterval(interval);
         }
     }, [resolvedData]);
-
-    // useInterval(() => {
-    //     if (!isResolved) return;
-    //     setPage((page) => {
-    //         switch (page) {
-    //             case Page.RESOLVED_RESULT: return Page.RESOLVED_TRADERS;
-    //             case Page.RESOLVED_TRADERS: return Page.RESOLVED_GRAPH;
-    //             case Page.RESOLVED_GRAPH: return Page.RESOLVED_RESULT;
-    //         }
-    //     });
-    // }, 3000);
 
     return (
         <>
@@ -433,16 +406,28 @@ export default () => {
                                 </Row>
                                 <Col className="items-center text-1xl">
                                     <div>{resolvedData.uniqueTraders} unique</div>
-                                    <div>traders!</div>
+                                    <div>trader{resolvedData.uniqueTraders > 1 ? "s" : ""}!</div>
                                 </Col>
                             </Row>
                             <Col className="grow mt-5 text-xl">
                                 <div className="text-green-400">Top Winners:</div>
-                                <div className="font-normal">SirSalty (+M$100), Phil (+80), plebian69 (+20), ...</div>
+                                <div className="font-normal">
+                                    {resolvedData.topWinners.map((winner, index) => (
+                                        <div className="inline">
+                                            {winner.displayName} (+M${Math.round(winner.profit)}){index < resolvedData.topWinners.length - 1 ? ", " : ""}
+                                        </div>
+                                    ))}
+                                </div>
                             </Col>
                             <Col className="grow text-xl">
                                 <div className="text-red-500">Top Losers:</div>
-                                <div className="font-normal">xXM0MSlayerXx (-M$666)</div>
+                                <div className="font-normal">
+                                    {resolvedData.topLosers.map((loser, index) => (
+                                        <div className="inline">
+                                            {loser.displayName} (+M${Math.round(loser.profit)}){index < resolvedData.topLosers.length - 1 ? ", " : ""}
+                                        </div>
+                                    ))}
+                                </div>
                             </Col>
                         </Col>
                     </Transition>

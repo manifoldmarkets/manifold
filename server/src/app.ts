@@ -30,7 +30,9 @@ export default class App {
 
     private linksInProgress: { [sessionToken: string]: { manifoldUsername: string; apiKey: string } } = {};
 
-    selectedMarketMap: { [twitchChannel: string]: Market } = {};
+    // selectedMarketMap: { [twitchChannel: string]: Market } = {};
+
+    selectedMarket: Market = undefined;
 
     constructor() {
         this.app = express();
@@ -44,13 +46,13 @@ export default class App {
         this.io.on("connection", (socket) => {
             socket.emit(Packet.CLEAR);
 
-            const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
+            // const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
 
-            if (mkt) {
-                socket.emit(Packet.SELECT_MARKET_ID, mkt.data.id);
-                socket.emit(Packet.ADD_BETS, mkt.bets);
+            if (this.selectedMarket) {
+                socket.emit(Packet.SELECT_MARKET_ID, this.selectedMarket.data.id);
+                socket.emit(Packet.ADD_BETS, this.selectedMarket.bets);
 
-                mkt.overlaySockets.push(socket);
+                this.selectedMarket.overlaySockets.push(socket);
             }
             //!!! Need some linking method
 
@@ -68,14 +70,6 @@ export default class App {
                         }
                         this.io.emit(Packet.ADD_BETS, market.bets);
                         log.info("Pushed market socket");
-
-                        const resolveData: PacketResolved = {
-                            outcome: "NA",
-                            uniqueTraders: 55,
-                            topWinners: [{displayName: "Phil", profit: 10}, {displayName: "ajyBore1", profit: 4}],
-                            topLosers: [{displayName: "xAlan5x", profit: -49}, {displayName: "junq", profit: -4}]
-                        };
-                        this.io.emit(Packet.RESOLVE, resolveData);//!!!
                     }, 2000); //!!! This is horrible
                 }
             });
@@ -111,15 +105,17 @@ export default class App {
     }
 
     public getMarketForTwitchChannel(channel: string) {
-        return this.selectedMarketMap[channel]; //!!!
+        return this.selectedMarket;
+        // return this.selectedMarketMap[channel]; //!!!
     }
 
     public getChannelForMarketID(marketID: string) {
-        for (const channel of Object.keys(this.selectedMarketMap)) {
-            const market = this.selectedMarketMap[channel];
-            if (market.data.id == marketID) return channel;
-        }
-        return null;
+        return "#philbladen";//!!!
+        // for (const channel of Object.keys(this.selectedMarketMap)) {
+        //     const market = this.selectedMarketMap[channel];
+        //     if (market.data.id == marketID) return channel;
+        // }
+        // return null;
     }
 
     public async selectMarket(channel: string, id: string): Promise<Market> {
@@ -128,7 +124,8 @@ export default class App {
         if (id) {
             const marketData = await Manifold.getFullMarketByID(id);
             const market = new Market(this, marketData);
-            this.selectedMarketMap[channel] = market;
+            // this.selectedMarketMap[channel] = market;
+            this.selectedMarket = market;
             this.io.emit(Packet.SELECT_MARKET_ID, market.data.id); //!!!
             this.io.emit(Packet.ADD_BETS, market.bets);
             return market;
