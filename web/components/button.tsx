@@ -1,31 +1,25 @@
-import { ReactNode } from 'react'
 import clsx from 'clsx'
 
-export function Button(props: {
-  className?: string
-  onClick?: () => void
-  children?: ReactNode
-  size?: '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-  color?:
-    | 'green'
-    | 'red'
-    | 'blue'
-    | 'indigo'
-    | 'yellow'
-    | 'gray'
-    | 'gradient'
-    | 'gray-white'
-  type?: 'button' | 'reset' | 'submit'
-  disabled?: boolean
-}) {
+export function Button(
+  props: {
+    size?: '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+    color?:
+      | 'green'
+      | 'red'
+      | 'blue'
+      | 'indigo'
+      | 'yellow'
+      | 'gray'
+      | 'gradient'
+      | 'gray-white'
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+) {
   const {
     children,
     className,
-    onClick,
     size = 'md',
     color = 'indigo',
-    type = 'button',
-    disabled = false,
+    ...buttonProps // onClick, disabled, type, etc.
   } = props
 
   const sizeClasses = {
@@ -40,7 +34,6 @@ export function Button(props: {
 
   return (
     <button
-      type={type}
       className={clsx(
         'font-md items-center justify-center rounded-md border border-transparent shadow-sm hover:transition-colors disabled:cursor-not-allowed disabled:opacity-50',
         sizeClasses,
@@ -56,8 +49,8 @@ export function Button(props: {
           'border-none bg-white text-gray-500 shadow-none hover:bg-gray-200',
         className
       )}
-      disabled={disabled}
-      onClick={onClick}
+      type="button"
+      {...buttonProps}
     >
       {children}
     </button>
