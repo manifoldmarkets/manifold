@@ -329,7 +329,7 @@ function GroupsList(props: {
   const { height } = useWindowSize()
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   const remainingHeight =
-    (height ?? window.innerHeight) - (containerRef?.offsetTop ?? 0)
+    (height ?? 0) - (containerRef?.offsetTop ?? 0)
 
   const notifIsForThisItem = useMemo(
     () => (itemHref: string) =>
