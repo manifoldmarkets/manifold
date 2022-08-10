@@ -338,7 +338,11 @@ const GroupMessage = memo(function GroupMessage_(props: {
       </Row>
       <div className="mt-2 text-black">
         {comments.map((comment) => (
-          <Content content={comment.content || comment.text} smallImage />
+          <Content
+            key={comment.id}
+            content={comment.content || comment.text}
+            smallImage
+          />
         ))}
       </div>
       <Row>
