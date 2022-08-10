@@ -53,7 +53,7 @@ export function AuthProvider(props: {
         let user = await getUser(fbUser.uid)
         if (!user) {
           const deviceToken = ensureDeviceToken()
-          user = (await createUser({ deviceToken })) as User
+          user = (await createUser({ deviceToken })).user as User
         }
         setAuthUser(user)
         // Persist to local storage, to reduce login blink next time.

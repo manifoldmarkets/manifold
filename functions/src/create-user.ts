@@ -98,7 +98,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
   await sendWelcomeEmail(user, privateUser)
   await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
-  return user
+  return { user, privateUser }
 })
 
 const firestore = admin.firestore()
