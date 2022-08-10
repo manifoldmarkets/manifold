@@ -54,7 +54,7 @@ export async function getUser(userId: string) {
 
 export async function getPrivateUser(userId: string) {
   /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-  return (await getDoc(doc(users, userId))).data()!
+  return (await getDoc(doc(privateUsers, userId))).data()!
 }
 
 export async function getUserByUsername(username: string) {
