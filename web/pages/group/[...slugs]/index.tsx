@@ -16,7 +16,7 @@ import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
@@ -30,7 +30,6 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import React, { useState } from 'react'
-import { GroupChatInBubble } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
@@ -51,6 +50,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { Comment } from 'common/comment'
+import { GroupChat } from 'web/components/groups/group-chat'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -157,15 +157,11 @@ export default function GroupPage(props: {
   const messages = useCommentsOnGroup(group?.id) ?? props.messages
 
   const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
     groupId: group?.id,
   })
-
-  const chatDisabled = !group || group.chatDisabled
-  const showChatBubble = !chatDisabled
 
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
@@ -201,6 +197,7 @@ export default function GroupPage(props: {
 
   const questionsTab = (
     <ContractSearch
+      user={user}
       querySortOptions={{
         shouldLoadFromStorage: true,
         defaultSort: getSavedSort() ?? 'newest',
@@ -210,11 +207,20 @@ export default function GroupPage(props: {
     />
   )
 
+  const chatTab = (
+    <GroupChat messages={messages} group={group} user={user} tips={tips} />
+  )
+
   const tabs = [
     {
       title: 'Markets',
       content: questionsTab,
       href: groupPath(group.slug, 'markets'),
+    },
+    {
+      title: 'Chat',
+      content: chatTab,
+      href: groupPath(group.slug, 'chat'),
     },
     {
       title: 'Leaderboards',
@@ -228,7 +234,9 @@ export default function GroupPage(props: {
     },
   ]
 
-  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
+  const tabIndex = tabs
+    .map((t) => t.title.toLowerCase())
+    .indexOf(page ?? 'markets')
 
   return (
     <Page>
@@ -264,15 +272,6 @@ export default function GroupPage(props: {
         defaultIndex={tabIndex > 0 ? tabIndex : 0}
         tabs={tabs}
       />
-      {showChatBubble && (
-        <GroupChatInBubble
-          group={group}
-          user={user}
-          privateUser={privateUser}
-          tips={tips}
-          messages={messages}
-        />
-      )}
     </Page>
   )
 }
@@ -614,6 +613,7 @@ function AddContractButton(props: { group: Group; user: User }) {
 
           <div className={'overflow-y-scroll sm:px-8'}>
             <ContractSearch
+              user={user}
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
               overrideGridClassName={

@@ -2,6 +2,7 @@
 import algoliasearch from 'algoliasearch/lite'
 
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import {
   QuerySortOptions,
   Sort,
@@ -14,7 +15,6 @@ import {
 import { Row } from './layout/row'
 import { useEffect, useMemo, useState } from 'react'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
@@ -49,6 +49,7 @@ export const DEFAULT_SORT = 'score'
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
+  user: User | null | undefined
   querySortOptions?: { defaultFilter?: filter } & QuerySortOptions
   additionalFilter?: {
     creatorId?: string
@@ -68,6 +69,7 @@ export function ContractSearch(props: {
   headerClassName?: string
 }) {
   const {
+    user,
     querySortOptions,
     additionalFilter,
     onContractClick,
@@ -79,7 +81,6 @@ export function ContractSearch(props: {
     headerClassName,
   } = props
 
-  const user = useUser()
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
     (group) => !NEW_USER_GROUP_SLUGS.includes(group.slug)
   )
@@ -234,7 +235,7 @@ export function ContractSearch(props: {
     if (newFilter === filter) return
     setFilter(newFilter)
     setPage(0)
-    trackCallback('select search filter', { filter: newFilter })
+    track('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
@@ -242,7 +243,7 @@ export function ContractSearch(props: {
 
     setPage(0)
     setSort(newSort)
-    track('select sort', { sort: newSort })
+    track('select search sort', { sort: newSort })
   }
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
@@ -267,6 +268,7 @@ export function ContractSearch(props: {
             type="text"
             value={query}
             onChange={(e) => updateQuery(e.target.value)}
+            onBlur={trackCallback('search', { query })}
             placeholder={showPlaceHolder ? `Search ${filter} markets` : ''}
             className="input input-bordered w-full"
           />
@@ -347,7 +349,6 @@ export function ContractSearch(props: {
         <ContractsGrid
           contracts={hitsByPage[0] === undefined ? undefined : contracts}
           loadMore={loadMore}
-          hasMore={true}
           showTime={showTime}
           onContractClick={onContractClick}
           overrideGridClassName={overrideGridClassName}

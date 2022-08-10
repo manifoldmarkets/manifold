@@ -3,7 +3,6 @@ import Placeholder from '@tiptap/extension-placeholder'
 import {
   useEditor,
   EditorContent,
-  FloatingMenu,
   JSONContent,
   Content,
   Editor,
@@ -11,13 +10,11 @@ import {
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
-import { Mention } from '@tiptap/extension-mention'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
-import { exhibitExts } from 'common/util/parse'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 import { useUsers } from 'web/hooks/use-users'
@@ -37,8 +34,20 @@ import { Spacer } from './layout/spacer'
 import { MarketModal } from './editor/market-modal'
 import { insertContent } from './editor/utils'
 
+const DisplayImage = Image.configure({
+  HTMLAttributes: {
+    class: 'max-h-60',
+  },
+})
+
+const DisplayLink = Link.configure({
+  HTMLAttributes: {
+    class: clsx('no-underline !text-indigo-700', linkClass),
+  },
+})
+
 const proseClass = clsx(
-  'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
+  'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
   'font-light prose-a:font-light prose-blockquote:font-light'
 )
 
@@ -70,15 +79,11 @@ export function useTextEditor(props: {
         Placeholder.configure({
           placeholder,
           emptyEditorClass:
-            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0',
+            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
         }),
         CharacterCount.configure({ limit: max }),
-        Image,
-        Link.configure({
-          HTMLAttributes: {
-            class: clsx('no-underline !text-indigo-700', linkClass),
-          },
-        }),
+        simple ? DisplayImage : Image,
+        DisplayLink,
         DisplayMention.configure({
           suggestion: mentionSuggestion(users),
         }),
@@ -126,6 +131,13 @@ function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
 
+function isValidUrl(text: string) {
+  // Conjured by Codex, not sure if it's actually good
+  return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(
+    text
+  )
+}
+
 export function TextEditor(props: {
   editor: Editor | null
   upload: ReturnType<typeof useUploadMutation>
@@ -139,15 +151,7 @@ export function TextEditor(props: {
     <>
       {/* hide placeholder when focused */}
       <div className="relative w-full [&:focus-within_p.is-empty]:before:content-none">
-        {editor && (
-          <FloatingMenu
-            editor={editor}
-            className={clsx(proseClass, '-ml-2 mr-2 w-full text-slate-300 ')}
-          >
-            Type <em>*markdown*</em>
-          </FloatingMenu>
-        )}
-        <div className="rounded-lg border border-gray-300 shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+        <div className="rounded-lg border border-gray-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
@@ -190,7 +194,14 @@ export function TextEditor(props: {
                 />
               </button>
             </div>
-            <div className="ml-auto" />
+            {/* Spacer that also focuses editor on click */}
+            <div
+              className="grow cursor-text self-stretch"
+              onMouseDown={() =>
+                editor?.chain().focus('end').createParagraphNear().run()
+              }
+              aria-hidden
+            />
             {children}
           </div>
         </div>
@@ -209,8 +220,9 @@ function IframeModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { editor, open, setOpen } = props
-  const [embedCode, setEmbedCode] = useState('')
-  const valid = isValidIframe(embedCode)
+  const [input, setInput] = useState('')
+  const valid = isValidIframe(input) || isValidUrl(input)
+  const embedCode = isValidIframe(input) ? input : `<iframe src="${input}" />`
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -227,8 +239,8 @@ function IframeModal(props: {
           id="embed"
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           placeholder='e.g. <iframe src="..."></iframe>'
-          value={embedCode}
-          onChange={(e) => setEmbedCode(e.target.value)}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
         />
 
         {/* Preview the embed if it's valid */}
@@ -240,7 +252,7 @@ function IframeModal(props: {
             onClick={() => {
               if (editor && valid) {
                 insertContent(editor, embedCode)
-                setEmbedCode('')
+                setInput('')
                 setOpen(false)
               }
             }}
@@ -250,7 +262,7 @@ function IframeModal(props: {
           <Button
             color="gray"
             onClick={() => {
-              setEmbedCode('')
+              setInput('')
               setOpen(false)
             }}
           >
@@ -280,14 +292,19 @@ const useUploadMutation = (editor: Editor | null) =>
     }
   )
 
-function RichContent(props: { content: JSONContent | string }) {
-  const { content } = props
+function RichContent(props: {
+  content: JSONContent | string
+  smallImage?: boolean
+}) {
+  const { content, smallImage } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
     extensions: [
-      // replace tiptap's Mention with ours, to add style and link
-      ...exhibitExts.filter((ex) => ex.name !== Mention.name),
+      StarterKit,
+      smallImage ? DisplayImage : Image,
+      DisplayLink,
       DisplayMention,
+      Iframe,
     ],
     content,
     editable: false,
@@ -298,13 +315,16 @@ function RichContent(props: { content: JSONContent | string }) {
 }
 
 // backwards compatibility: we used to store content as strings
-export function Content(props: { content: JSONContent | string }) {
+export function Content(props: {
+  content: JSONContent | string
+  smallImage?: boolean
+}) {
   const { content } = props
   return typeof content === 'string' ? (
     <div className="whitespace-pre-line font-light leading-relaxed">
       <Linkify text={content} />
     </div>
   ) : (
-    <RichContent content={content} />
+    <RichContent {...props} />
   )
 }

@@ -3,6 +3,8 @@ import imageCompression from 'browser-image-compression'
 import { nanoid } from 'nanoid'
 import { storage } from './init'
 
+const ONE_YEAR_SECS = 60 * 60 * 24 * 365
+
 export const uploadImage = async (
   username: string,
   file: File,
@@ -24,7 +26,9 @@ export const uploadImage = async (
     })
   }
 
-  const uploadTask = uploadBytesResumable(storageRef, file)
+  const uploadTask = uploadBytesResumable(storageRef, file, {
+    cacheControl: `public, max-age=${ONE_YEAR_SECS}`,
+  })
 
   let resolvePromise: (url: string) => void
   let rejectPromise: (reason?: any) => void

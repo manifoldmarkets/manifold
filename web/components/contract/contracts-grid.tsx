@@ -5,10 +5,10 @@ import { SiteLink } from '../site-link'
 import { ContractCard } from './contract-card'
 import { ShowTime } from './contract-details'
 import { ContractSearch } from '../contract-search'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import clsx from 'clsx'
 import { LoadingIndicator } from '../loading-indicator'
+import { VisibilityObserver } from '../visibility-observer'
 
 export type ContractHighlightOptions = {
   contractIds?: string[]
@@ -17,8 +17,7 @@ export type ContractHighlightOptions = {
 
 export function ContractsGrid(props: {
   contracts: Contract[] | undefined
-  loadMore: () => void
-  hasMore: boolean
+  loadMore?: () => void
   showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
   overrideGridClassName?: string
@@ -31,7 +30,6 @@ export function ContractsGrid(props: {
   const {
     contracts,
     showTime,
-    hasMore,
     loadMore,
     onContractClick,
     overrideGridClassName,
@@ -39,16 +37,15 @@ export function ContractsGrid(props: {
     highlightOptions,
   } = props
   const { hideQuickBet, hideGroupLink } = cardHideOptions || {}
-
   const { contractIds, highlightClassName } = highlightOptions || {}
-  const [elem, setElem] = useState<HTMLElement | null>(null)
-  const isBottomVisible = useIsVisible(elem)
-
-  useEffect(() => {
-    if (isBottomVisible && hasMore) {
-      loadMore()
-    }
-  }, [isBottomVisible, hasMore, loadMore])
+  const onVisibilityUpdated = useCallback(
+    (visible) => {
+      if (visible && loadMore) {
+        loadMore()
+      }
+    },
+    [loadMore]
+  )
 
   if (contracts === undefined) {
     return <LoadingIndicator />
@@ -92,16 +89,23 @@ export function ContractsGrid(props: {
           />
         ))}
       </ul>
-      <div ref={setElem} className="relative -top-96 h-1" />
+      <VisibilityObserver
+        onVisibilityUpdated={onVisibilityUpdated}
+        className="relative -top-96 h-1"
+      />
     </Col>
   )
 }
 
-export function CreatorContractsList(props: { creator: User }) {
-  const { creator } = props
+export function CreatorContractsList(props: {
+  user: User | null | undefined
+  creator: User
+}) {
+  const { user, creator } = props
 
   return (
     <ContractSearch
+      user={user}
       querySortOptions={{
         defaultSort: 'newest',
         defaultFilter: 'all',

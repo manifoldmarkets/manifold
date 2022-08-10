@@ -484,6 +484,8 @@ function LimitOrderPanel(props: {
         setIsSubmitting(false)
         setWasSubmitted(true)
         setBetAmount(undefined)
+        setLowLimitProb(undefined)
+        setHighLimitProb(undefined)
         if (onBuySuccess) onBuySuccess()
       })
 
