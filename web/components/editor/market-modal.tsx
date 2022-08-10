@@ -8,6 +8,7 @@ import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
 import { embedCode } from '../share-embed-button'
+import { insertContent } from './utils'
 
 export function MarketModal(props: {
   editor: Editor | null
@@ -27,14 +28,7 @@ export function MarketModal(props: {
 
   async function doneAddingContracts() {
     setLoading(true)
-    if (editor) {
-      const e = editor.chain()
-      for (const contract of contracts) {
-        console.log('embedding', embedCode(contract))
-        e.insertContent(embedCode(contract))
-      }
-      e.run()
-    }
+    insertContent(editor, ...contracts.map(embedCode))
     setLoading(false)
     setOpen(false)
     setContracts([])

@@ -35,6 +35,7 @@ import { Button } from './button'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { MarketModal } from './editor/market-modal'
+import { insertContent } from './editor/utils'
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
@@ -105,7 +106,7 @@ export function useTextEditor(props: {
         // If the pasted content is iframe code, directly inject it
         const text = event.clipboardData?.getData('text/plain').trim() ?? ''
         if (isValidIframe(text)) {
-          editor.chain().insertContent(text).run()
+          insertContent(editor, text)
           return true // Prevent the code from getting pasted as text
         }
 
@@ -238,7 +239,7 @@ function IframeModal(props: {
             disabled={!valid}
             onClick={() => {
               if (editor && valid) {
-                editor.chain().insertContent(embedCode).run()
+                insertContent(editor, embedCode)
                 setEmbedCode('')
                 setOpen(false)
               }
