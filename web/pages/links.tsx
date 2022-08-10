@@ -26,6 +26,7 @@ import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/pagination'
 import { Manalink } from 'common/manalink'
 import { REFERRAL_AMOUNT } from 'common/user'
+import { SiteLink } from 'web/components/site-link'
 
 const LINKS_PER_PAGE = 24
 
@@ -69,9 +70,11 @@ export default function LinkPage(props: { user: User }) {
         </Row>
         <p>
           You can use manalinks to send mana (M$) to other people, even if they
-          don&apos;t yet have a Manifold account. Manalinks are also eligible
-          for the referral bonus. Invite a new user to Manifold and get M$
-          {REFERRAL_AMOUNT} if they sign up!
+          don&apos;t yet have a Manifold account.{' '}
+          <SiteLink href="/referrals">
+            Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
+            user signs up!
+          </SiteLink>
         </p>
         <Subtitle text="Your Manalinks" />
         <ManalinksDisplay

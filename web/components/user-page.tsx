@@ -280,8 +280,10 @@ export function UserPage(props: { user: User; currentUser?: User }) {
             }
           >
             <span>
-              Refer a friend and earn {formatMoney(500)} when they sign up! You
-              have <ReferralsButton user={user} currentUser={currentUser} />
+              <SiteLink href="/referrals">
+                Refer a friend and earn {formatMoney(500)} when they sign up!
+              </SiteLink>{' '}
+              You have <ReferralsButton user={user} currentUser={currentUser} />
             </span>
             <ShareIconButton
               copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
