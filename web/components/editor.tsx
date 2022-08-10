@@ -279,7 +279,7 @@ const useUploadMutation = (editor: Editor | null) =>
     }
   )
 
-export function RichContent(props: { content: JSONContent | string }) {
+function RichContent(props: { content: JSONContent | string }) {
   const { content } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
