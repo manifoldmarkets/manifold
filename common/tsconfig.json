@@ -8,7 +8,8 @@
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "target": "es2017",
+    "jsx": "preserve"
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "util/tiptap-tweet.tsx"]
 }

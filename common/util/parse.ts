@@ -22,6 +22,7 @@ import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
+import TiptapTweet from './tiptap-tweet'
 import { uniq } from 'lodash'
 
 export function parseTags(text: string) {
@@ -94,6 +95,7 @@ export const exhibitExts = [
   Link,
   Mention,
   Iframe,
+  TiptapTweet,
 ]
 
 export function richTextToString(text?: JSONContent) {

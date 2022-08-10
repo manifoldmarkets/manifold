@@ -21,12 +21,14 @@ import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
+import TiptapTweet from 'common/util/tiptap-tweet'
 import { CodeIcon, PhotographIcon } from '@heroicons/react/solid'
 import { Modal } from './layout/modal'
 import { Col } from './layout/col'
 import { Button } from './button'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
+import { TweetModal } from './editor/tweetModal'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -82,6 +84,7 @@ export function useTextEditor(props: {
           suggestion: mentionSuggestion(users),
         }),
         Iframe,
+        TiptapTweet,
       ],
       content: defaultValue,
     },
@@ -139,6 +142,7 @@ export function TextEditor(props: {
 }) {
   const { editor, upload, children } = props
   const [iframeOpen, setIframeOpen] = useState(false)
+  const [tweetOpen, setTweetOpen] = useState(false)
 
   return (
     <>
@@ -170,6 +174,26 @@ export function TextEditor(props: {
                 />
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
                 <span className="sr-only">Embed an iframe</span>
+              </button>
+            </div>
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setTweetOpen(true)}
+                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
+              >
+                <TweetModal
+                  editor={editor}
+                  open={tweetOpen}
+                  setOpen={setTweetOpen}
+                />
+                <img
+                  className="mr-2"
+                  src={'/twitter-logo.svg'}
+                  width={15}
+                  height={15}
+                />
+                <span className="sr-only">Embed a tweet</span>
               </button>
             </div>
             {/* Spacer that also focuses editor on click */}
