@@ -49,7 +49,7 @@ export const DEFAULT_SORT = 'score'
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
-  user: User | null | undefined
+  user?: User | null
   querySortOptions?: { defaultFilter?: filter } & QuerySortOptions
   additionalFilter?: {
     creatorId?: string
