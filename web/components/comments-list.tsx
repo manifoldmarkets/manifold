@@ -65,7 +65,7 @@ function ProfileComment(props: { comment: Comment; className?: string }) {
           />{' '}
           <RelativeTimestamp time={createdTime} />
         </p>
-        <Content content={content || text} />
+        <Content content={content || text} smallImage />
       </div>
     </Row>
   )
