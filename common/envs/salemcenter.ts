@@ -2,6 +2,7 @@ import { EnvConfig, PROD_CONFIG } from './prod'
 
 export const SALEM_CENTER_CONFIG: EnvConfig = {
   domain: 'salemcenter.manifold.markets',
+  amplitudeApiKey: '3ffa2921424f251908926086f37bc447',
   firebaseConfig: {
     apiKey: 'AIzaSyBxisXMHPJDtM7ZseaOOlLAM_T7QHP_QvA',
     authDomain: 'salem-center-manifold.firebaseapp.com',
