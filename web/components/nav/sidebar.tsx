@@ -30,6 +30,7 @@ import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { CHALLENGES_ENABLED } from 'common/challenge'
+import { buildArray } from 'common/util/array'
 
 const logout = async () => {
   // log out, and then reload the page, in case SSR wants to boot them out
@@ -61,29 +62,31 @@ function getMoreNavigation(user?: User | null) {
   }
 
   if (!user) {
-    if (CHALLENGES_ENABLED)
-      return [
-        { name: 'Challenges', href: '/challenges' },
+    return buildArray(
+      CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
+      [
         { name: 'Charity', href: '/charity' },
+        {
+          name: 'Salem tournament',
+          href: 'https://salemcenter.manifold.markets/',
+        },
         { name: 'Blog', href: 'https://news.manifold.markets' },
         { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
       ]
-    else
-      return [
-        { name: 'Charity', href: '/charity' },
-        { name: 'Blog', href: 'https://news.manifold.markets' },
-        { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-        { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-      ]
+    )
   }
 
-  if (CHALLENGES_ENABLED)
-    return [
-      { name: 'Challenges', href: '/challenges' },
+  return buildArray(
+    CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
+    [
       { name: 'Referrals', href: '/referrals' },
       { name: 'Charity', href: '/charity' },
       { name: 'Send M$', href: '/links' },
+      {
+        name: 'Salem tournament',
+        href: 'https://salemcenter.manifold.markets/',
+      },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
       { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
       {
@@ -92,19 +95,7 @@ function getMoreNavigation(user?: User | null) {
         onClick: logout,
       },
     ]
-  else
-    return [
-      { name: 'Referrals', href: '/referrals' },
-      { name: 'Charity', href: '/charity' },
-      { name: 'Send M$', href: '/links' },
-      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-      { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
-      {
-        name: 'Sign out',
-        href: '#',
-        onClick: logout,
-      },
-    ]
+  )
 }
 
 const signedOutNavigation = [
@@ -141,29 +132,27 @@ const signedInMobileNavigation = [
 ]
 
 function getMoreMobileNav() {
-  return [
-    ...(IS_PRIVATE_MANIFOLD
-      ? []
-      : CHALLENGES_ENABLED
-      ? [
-          { name: 'Challenges', href: '/challenges' },
-          { name: 'Referrals', href: '/referrals' },
-          { name: 'Charity', href: '/charity' },
-          { name: 'Send M$', href: '/links' },
-          { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-        ]
-      : [
-          { name: 'Referrals', href: '/referrals' },
-          { name: 'Charity', href: '/charity' },
-          { name: 'Send M$', href: '/links' },
-          { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-        ]),
-    {
-      name: 'Sign out',
-      href: '#',
-      onClick: logout,
-    },
-  ]
+  const signOut = {
+    name: 'Sign out',
+    href: '#',
+    onClick: logout,
+  }
+  if (IS_PRIVATE_MANIFOLD) return [signOut]
+
+  return buildArray<Item>(
+    CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
+    [
+      { name: 'Referrals', href: '/referrals' },
+      {
+        name: 'Salem tournament',
+        href: 'https://salemcenter.manifold.markets/',
+      },
+      { name: 'Charity', href: '/charity' },
+      { name: 'Send M$', href: '/links' },
+      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    ],
+    signOut
+  )
 }
 
 export type Item = {
