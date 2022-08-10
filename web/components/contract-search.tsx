@@ -236,7 +236,7 @@ export function ContractSearch(props: {
     if (newFilter === filter) return
     setFilter(newFilter)
     setPage(0)
-    trackCallback('select search filter', { filter: newFilter })
+    track('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
@@ -244,7 +244,7 @@ export function ContractSearch(props: {
 
     setPage(0)
     setSort(newSort)
-    track('select sort', { sort: newSort })
+    track('select search sort', { sort: newSort })
   }
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
@@ -263,6 +263,7 @@ export function ContractSearch(props: {
           type="text"
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
+          onBlur={trackCallback('search', { query })}
           placeholder={showPlaceHolder ? `Search ${filter} markets` : ''}
           className="input input-bordered w-full"
         />
