@@ -81,6 +81,7 @@ export function MarketModal(props: {
               highlightClassName:
                 '!bg-indigo-100 outline outline-2 outline-indigo-300',
             }}
+            additionalFilter={{}} /* hide pills */
             headerClassName="bg-white"
           />
         </div>
