@@ -65,7 +65,7 @@ export function ShareModal(props: {
             track('copy share link')
           }}
         >
-          {!!window.navigator.share ? 'Share' : <>{linkIcon} Copy link</>}
+          {linkIcon} Copy link
         </Button>
 
         <Row className="z-0 justify-start gap-4 self-center">
