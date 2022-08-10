@@ -319,7 +319,7 @@ function getProb(contract: Contract) {
     ? getBinaryProb(contract)
     : outcomeType === 'PSEUDO_NUMERIC'
     ? getProbability(contract)
-    : outcomeType === 'FREE_RESPONSE'
+    : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
     ? getNumericScale(contract)
