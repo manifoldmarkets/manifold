@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
-import Confetti from 'react-confetti'
 
 import { getPortfolioHistory, User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-grid'
@@ -19,11 +18,11 @@ import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
 import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
+import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { BetsList } from './bets-list'
 import { FollowersButton, FollowingButton } from './following-button'
 import { UserFollowButton } from './follow-button'
@@ -82,7 +81,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
     Dictionary<Contract> | undefined
   >()
   const [showConfetti, setShowConfetti] = useState(false)
-  const { width, height } = useWindowSize()
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -124,12 +122,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         url={`/${user.username}`}
       />
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
