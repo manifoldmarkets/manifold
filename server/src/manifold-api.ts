@@ -70,7 +70,7 @@ export async function sellShares(marketID: string, APIKey: string, outcome?: "YE
     return post(`${APIBase}market/${marketID}/sell`, APIKey, parameters);
 }
 
-export async function createBinaryMarket(APIKey: string, question: string, description: string, initialProb_percent: number): Promise<ManifoldAPI.LiteMarket> {
+export async function createBinaryMarket(APIKey: string, question: string, description: string, initialProb_percent: number, groups?: string[]): Promise<ManifoldAPI.LiteMarket> {
     const outcomeType: "BINARY" | "FREE_RESPONSE" | "NUMERIC" = "BINARY";
     const descriptionObject = {
         type: "doc",
@@ -96,6 +96,7 @@ export async function createBinaryMarket(APIKey: string, question: string, descr
         description: descriptionObject,
         closeTime: Date.now() + 1e12, // Arbitrarily long time in the future
         initialProb: initialProb_percent,
+        tags: groups,
     };
     return <Promise<ManifoldAPI.LiteMarket>>(await post(`${APIBase}market`, APIKey, requestData)).json();
 }

@@ -46,12 +46,30 @@ export default class App {
             const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
 
             if (mkt) {
-                socket.emit(Packet.SELECT_MARKET, mkt.getSlug());
+                socket.emit(Packet.SELECT_MARKET_ID, mkt.data.id);
                 socket.emit(Packet.ADD_BETS, mkt.bets);
 
                 mkt.overlaySockets.push(socket);
             }
             //!!! Need some linking method
+
+            socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
+                console.log("Select market: " + marketID);
+                const market = await this.selectMarket("#philbladen", marketID); //!!! Channel name
+
+                // const market = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
+                if (market) {
+                    setTimeout(() => {
+                        for (const socket of this.io.sockets.sockets) {
+                            if (market.overlaySockets.indexOf(socket[1]) < 0) {
+                                market.overlaySockets.push(socket[1]);
+                            }
+                        }
+                        this.io.emit(Packet.ADD_BETS, market.bets);
+                        log.info("Pushed market socket");
+                    }, 2000); //!!! This is horrible
+                }
+            });
         });
         // this.io.on("disconnect", (socket) => {
         //     console.log(socket.id);
@@ -95,14 +113,17 @@ export default class App {
         return null;
     }
 
-    public async selectMarket(channel: string, id: string) {
-        const marketData = await Manifold.getFullMarketByID(id);
-        const market = new Market(this, marketData);
-        this.selectedMarketMap[channel] = market;
+    public async selectMarket(channel: string, id: string): Promise<Market> {
+        this.io.emit(Packet.CLEAR); //!!!
 
-        // this.io.emit(Packet.CLEAR);
-        // this.io.emit(Packet.SELECT_MARKET, market.getSlug());
-        //!!!
+        if (id) {
+            const marketData = await Manifold.getFullMarketByID(id);
+            const market = new Market(this, marketData);
+            this.selectedMarketMap[channel] = market;
+            this.io.emit(Packet.SELECT_MARKET_ID, market.data.id); //!!!
+            this.io.emit(Packet.ADD_BETS, market.bets);
+            return market;
+        }
     }
 
     private loadUsersFromFile() {

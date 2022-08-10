@@ -40,8 +40,9 @@ const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no m
 
 export default class TwitchBot {
     private readonly app: App;
-
     private readonly client: Client;
+
+    private defaultGroup: string = null;
 
     constructor(app: App) {
         this.app = app;
@@ -130,7 +131,7 @@ export default class TwitchBot {
                 question = question.trim();
 
                 try {
-                    const market = await user.createBinaryMarket(question, null, 50);
+                    const market = await user.createBinaryMarket(question, null, 50, this.defaultGroup ? [this.defaultGroup] : []);
                     log.info("Created market ID: " + market.id);
                     this.app.selectMarket(channel, market.id);
                     this.client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question));
@@ -158,7 +159,12 @@ export default class TwitchBot {
             select: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
                 if (args.length < 1) return;
                 this.app.selectMarket(channel, (await Manifold.getMarketBySlug(args[0])).id);
-            }
+            },
+            setdefaultgroup: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
+                if (args.length < 1) return;
+                this.defaultGroup = args[0];
+                this.client.say(channel, `Set default group for all new markets to '${this.defaultGroup}'`);
+            },
         };
 
         this.client = new Client({
@@ -193,7 +199,7 @@ export default class TwitchBot {
                 } else {
                     try {
                         const market = app.getMarketForTwitchChannel(channel);
-                        if (!market && commandString !== "select" && commandString !== "balance" && commandString !== "create") {
+                        if (!market && commandString !== "select" && commandString !== "balance" && commandString !== "create" && commandString !== "setdefaultgroup") {
                             this.client.say(channel, MSG_NO_MARKET_SELECTED(userDisplayName));
                             return;
                         }

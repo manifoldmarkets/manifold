@@ -4,7 +4,7 @@ import { Group } from "common/group";
 import clsx from "clsx";
 import { ConfirmationButton } from "../components/confirmation-button";
 import { Title } from "web/components/title";
-import { Fragment, ReactNode, useEffect, useState } from "react";
+import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
 import Textarea from "react-expanding-textarea";
 import { InfoTooltip } from "web/components/info-tooltip";
 import { Row } from "web/components/layout/row";
@@ -12,6 +12,8 @@ import { Col } from "web/components/layout/col";
 import { Transition } from "@headlessui/react";
 import ContractCard from "web/components/contract-card";
 import { CONTRACT_ANTE, formatMoney, Resolution } from "web/utils/utils";
+import io, { Socket } from "socket.io-client";
+import { SELECT_MARKET_ID } from "common/packet-ids";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 const dummyUser: LiteUser = { id: "asdasdfgdsef" } as LiteUser;
@@ -32,6 +34,8 @@ async function getUserBalance(): Promise<number> {
     return user.balance;
 }
 
+let socket: Socket;
+
 export default () => {
     const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(undefined);
     const [balance, setBalance] = useState(0);
@@ -45,6 +49,19 @@ export default () => {
     const onSubmit = async () => {
         return true; //!!!
     };
+
+    useEffect(() => {
+        socket = io();
+    }, []);
+
+    const firstRender = useRef(true);
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+            return;
+        }
+        socket.emit(SELECT_MARKET_ID, selectedContract?.id);
+    }, [selectedContract]);
 
     useEffect(() => {
         if (selectedGroup) {
@@ -68,7 +85,7 @@ export default () => {
                         <ConfirmationButton
                             openModalBtn={{
                                 label: `Create and feature a question`,
-                                className: clsx(!selectedGroup ? "btn-disabled" : "btn-primary", "uppercase w-full mt-2"),
+                                className: clsx(!selectedGroup ? "btn-disabled" : "from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md", "uppercase w-full mt-2 py-2.5 text-base font-semibold text-white shadow-sm h-11"),
                             }}
                             submitBtn={{
                                 label: "Create",
@@ -125,7 +142,7 @@ export default () => {
                     ) : contracts.length > 0 ? (
                         contracts.map((contract, index) => (
                             <Transition key={contract.id} appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
-                                <div className="mb-2" style={{ transitionDelay: index * 50 + "ms", zIndex: contracts.length - index }}>
+                                <div className="mb-2 hover:z-10" style={{ transitionDelay: index * 50 + "ms" }}>
                                     <ContractCard contract={contract} setSelectedContract={setSelectedContract} />
                                 </div>
                             </Transition>
@@ -145,7 +162,7 @@ export default () => {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-[100]" onClick={() => setSelectedContract(undefined)} />
+                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
                 </Transition>
                 {selectedContract && (
                     <Transition appear show enter="ease-out duration-300" enterFrom="opacity-0 translate-y-4" enterTo="opacity-100 translate-y-0">
@@ -157,8 +174,9 @@ export default () => {
     );
 };
 
-function ResolutionPanel({ contract, onCancelClick, onUnfeatureMarket }: { contract: LiteMarket; onCancelClick: () => void; onUnfeatureMarket: () => void }) {
-    const [isSubmitting, setIsSubmitting] = useState(false);
+function ResolutionPanel({ contract, onUnfeatureMarket }: { contract: LiteMarket; onCancelClick: () => void; onUnfeatureMarket: () => void }) {
+    // const [isSubmitting, setIsSubmitting] = useState(false);
+    const isSubmitting = false;
     const [outcome, setOutcome] = useState<Resolution | undefined>();
 
     // const earnedFees = contract.mechanism === "dpm-2" ? `${DPM_CREATOR_FEE * 100}% of trader profits` : `${formatMoney((contract as any).fees.creatorFee)} in fees`;
@@ -175,7 +193,7 @@ function ResolutionPanel({ contract, onCancelClick, onUnfeatureMarket }: { contr
             : "btn-disabled";
 
     return (
-        <Col className={"rounded-md bg-white px-8 py-6 cursor-default z-[200]"} onClick={(e) => e.stopPropagation()}>
+        <Col className={"rounded-md bg-white px-8 py-6 cursor-default"} onClick={(e) => e.stopPropagation()}>
             <div className="whitespace-nowrap text-2xl">Resolve market</div>
 
             <p

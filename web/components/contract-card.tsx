@@ -43,14 +43,20 @@ export default function ContractCard(props: { contract: LiteMarket; setSelectedC
                         <ProbBar previewProb={contract.probability} />
                     </Col>
                     <Row className="items-center mt-2">
-                        {contract.outcomeType !== "BINARY" && (
+                        {contract.outcomeType !== "BINARY" ? (
                             <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={"This type of market is not currently supported"}>
                                 <InformationCircleIcon className="h-5 w-5 text-gray-500" />
                             </div>
+                        ) : (
+                            contract.closeTime < Date.now() && (
+                                <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={"This market is currently closed"}>
+                                    <InformationCircleIcon className="h-5 w-5 text-gray-500" />
+                                </div>
+                            )
                         )}
                         <ConfirmationButton
                             openModalBtn={{
-                                className: clsx("z-40 btn btn-sm border-2 rounded-lg", contract.outcomeType !== "BINARY" ? "btn-disabled" : "btn-outline btn-secondary"),
+                                className: clsx("z-40 btn btn-sm border-2 rounded-lg", (contract.outcomeType !== "BINARY" || contract.closeTime < Date.now()) ? "btn-disabled" : "btn-outline btn-secondary"),
                                 label: "Feature",
                             }}
                             cancelBtn={{
@@ -73,7 +79,6 @@ export default function ContractCard(props: { contract: LiteMarket; setSelectedC
         </Col>
     );
 }
-
 
 function MiscDetails(props: { contract: LiteMarket; showHotVolume?: boolean; showTime?: boolean; hideGroupLink?: boolean }) {
     const { contract, showHotVolume } = props;

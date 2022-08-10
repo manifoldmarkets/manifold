@@ -1,3 +1,3 @@
-export const SELECT_MARKET = "selectmarket";
+export const SELECT_MARKET_ID = "selectmarket";
 export const CLEAR = "clear";
 export const ADD_BETS = "bets";

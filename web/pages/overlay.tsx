@@ -18,6 +18,7 @@ import { useEffect } from "react";
 import Head from "next/head";
 import { Row } from "web/components/layout/row";
 import clsx from "clsx";
+import * as Packet from "common/packet-ids";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -76,29 +77,6 @@ class Application {
         // Update bet times:
         setInterval(() => this.updateBetTimes(), 1000);
 
-        // const addRandomTransaction = () => {
-        //     const customConfig: Config = {
-        //         dictionaries: [adjectives, colors, animals, countries],
-        //         separator: "",
-        //         length: 2,
-        //         style: "capital",
-        //     };
-        //     let numWords = randomInt(2) + 1;
-        //     while (customConfig.dictionaries.length > numWords) {
-        //         customConfig.dictionaries.splice(randomInt(customConfig.dictionaries.length - 1), 1);
-        //     }
-        //     customConfig.length = customConfig.dictionaries.length;
-        //     let name = uniqueNamesGenerator(customConfig);
-        //     name = name.replace(/ /g, ""); // Remove all whitespace
-        //     //!!! this.addBet(new Transaction(name, Math.ceil(Math.random() * 10) * Math.pow(10, Math.floor(3 * Math.random())), Math.random() > 0.5, Date.now()));
-
-        //     setTimeout(addRandomTransaction, randomInt(5000));
-        // };
-        // setTimeout(addRandomTransaction, 1000);
-
-        // this.loadMarket("this-is-a-local-market");
-        // this.loadBettingHistory();
-
         // let lastAddedTimestamp = 0;
         const socket = io();
         socket.on("bets", (bets: FullBet[]) => {
@@ -114,18 +92,34 @@ class Application {
                 this.addBet(bet);
                 // lastAddedTimestamp = bet.createdTime;
             }
+
+            console.log(bets);
         });
-        socket.on("selectmarket", (marketSlug: string) => {
-            this.loadMarket(marketSlug);
-            console.log("Selecting market: " + marketSlug);
+        socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
+            this.loadMarketByID(marketID);
+            console.log("Selecting market by ID: " + marketID);
         });
-        socket.on("clear", () => {
+        socket.on(Packet.CLEAR, () => {
+            this.resetUI();
+
             this.chart.data = [];
             for (const bet of this.betElements) {
                 bet.element.parentElement.removeChild(bet.element);
             }
             this.betElements = [];
         });
+    }
+
+    resetUI() {
+        document.getElementById("question").innerHTML = "";
+        document.getElementById("spinner").style.display = "";
+        this.chart.canvasElement.style.display = "none";
+        document
+            .getElementById("chance")
+            .parentElement.querySelectorAll("div")
+            .forEach((r) => {
+                if (r.id !== "spinner") r.classList.add("invisible");
+            });
     }
 
     updateBetTimes() {
@@ -138,12 +132,14 @@ class Application {
         }
     }
 
-    loadMarket(slug: string) {
-        fetch(`${APIBase}slug/${slug}`)
+    loadMarketByID(id: string) {
+        fetch(`${APIBase}market/${id}/lite`)
             .then((r) => r.json() as Promise<Manifold.LiteMarket>)
             .then((market) => {
                 this.currentMarket = market;
-                this.currentMarket["slug"] = slug;
+                this.currentMarket["slug"] = this.currentMarket.url.substring(this.currentMarket.url.lastIndexOf("/") + 1, this.currentMarket.url.length); //!!!
+
+                this.chart.canvasElement.style.display = "";
 
                 document.getElementById("question").innerHTML = this.currentMarket.question;
                 this.currentProbability_percent = this.currentMarket.probability * 100;
@@ -154,9 +150,11 @@ class Application {
                 document
                     .getElementById("chance")
                     .parentElement.querySelectorAll("div")
-                    .forEach((r) => (r.classList.remove("invisible")));
+                    .forEach((r) => r.classList.remove("invisible"));
 
                 this.loadBettingHistory();
+
+                this.chart.resize();
             })
             .catch((e) => {
                 console.error(e);
@@ -209,7 +207,7 @@ class Application {
         //
         t.querySelector(".amount").innerHTML = betAmountMagnitude.toFixed(0);
         t.querySelector(".boughtSold").innerHTML = (bet.amount < 0 ? "sold " : "") + (positiveBet ? "YES" : "NO");
-        (t.querySelector(".color") as HTMLElement).style.color = (positiveBet ? "#92ff83" : "#ff3d3d");
+        (t.querySelector(".color") as HTMLElement).style.color = positiveBet ? "#92ff83" : "#ff3d3d";
 
         const response = document.createElement("p");
         // response.classList.add(bet.outcome == "YES" ? "yes" : "no");
@@ -257,26 +255,17 @@ export default () => {
                 <meta name="viewport" />
                 {/* <meta name="viewport" content="initial-scale=1.0, width=device-width" /> */}
                 <style>{`
-                    :root {
-                        background-color: transparent !important;
-                    }
-                    body {
-                        // display: flex;
-                        // align-items: stretch;
-                        border: 8px #555 solid;
-                        border-radius: 8px;
+                    body,:root {
                         background-color: transparent !important;
                     }
                 `}</style>
             </Head>
-            <Col className="absolute text-white bg-[#212121] leading-[normal] inset-[8px]" style={{ fontSize: "calc(min(70px, 4.5vw))"}}>
+            <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0", styles.border)} style={{ fontSize: "calc(min(70px, 4.5vw))" }}>
                 <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
                     <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
                     <Col className="items-center justify-center justify-self-end">
                         <div id="chance" className="after:content-['%'] text-[1.5em] text-[#A5FF6E] invisible"></div>
-                        <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E] invisible">
-                            chance
-                        </div>
+                        <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E] invisible">chance</div>
                         <div id="spinner" className={clsx("absolute", styles.spinner)}></div>
                     </Col>
                 </Row>
@@ -305,7 +294,7 @@ export default () => {
                                 height: "1.5em",
                             }}
                         ></div>
-                        <div className="text-[0.4em] whitespace-nowrap" style={{fontFamily: "Major Mono Display, monospace"}}>
+                        <div className="text-[0.4em] whitespace-nowrap" style={{ fontFamily: "Major Mono Display, monospace" }}>
                             manifold
                             <br />
                             markets

@@ -30,8 +30,8 @@ export default class User {
         return Manifold.sellShares(marketID, this.APIKey);
     }
 
-    public async createBinaryMarket(question: string, description: string, initialProb_percent: number): Promise<ManifoldAPI.LiteMarket> {
-        return Manifold.createBinaryMarket(this.APIKey, question, description, initialProb_percent);
+    public async createBinaryMarket(question: string, description: string, initialProb_percent: number, groups?: string[]): Promise<ManifoldAPI.LiteMarket> {
+        return Manifold.createBinaryMarket(this.APIKey, question, description, initialProb_percent, groups);
     }
 
     public async resolveBinaryMarket(marketID: string, outcome: ManifoldAPI.ResolutionOutcome) {

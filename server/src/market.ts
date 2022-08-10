@@ -26,11 +26,14 @@ export class Market {
         this.data = data;
 
         for (const bet of this.data.bets) {
-            const fullBet: FullBet = {
-                ...bet,
-                username: "Bob", //!!!
-            };
-            this.bets.push(fullBet);
+            // const fullBet: FullBet = {
+            //     ...bet,
+            //     username: "Bob", //!!!
+            // };
+            // this.bets.push(fullBet);
+
+            this.pendingBets.push(bet);
+            this.loadUser(bet.userId);
         }
 
         const pollTask = async () => {
@@ -172,7 +175,8 @@ export class Market {
             this.userIdToNameMap[user.id] = user.name;
 
             const betsToRemove = [];
-            for (const bet of this.pendingBets) {
+            while (this.pendingBets.length) { //!!! This incorrectly re-orders the bets
+                const bet = this.pendingBets[0];
                 if (user.id == bet.userId) {
                     const fullBet: FullBet = {
                         ...bet,
@@ -181,10 +185,11 @@ export class Market {
                     this.addBet(fullBet);
                     betsToRemove.push(bet);
                 }
+                this.pendingBets.splice(0, 1);
             }
-            this.pendingBets = this.pendingBets.filter((e) => {
-                return betsToRemove.indexOf(e) < 0;
-            });
+            // this.pendingBets = this.pendingBets.filter((e) => {
+            //     return betsToRemove.indexOf(e) < 0;
+            // });
         } catch (e) {
             log.trace(e);
         }
