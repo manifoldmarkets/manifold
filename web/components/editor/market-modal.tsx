@@ -42,49 +42,46 @@ export function MarketModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
-      <Col className={' w-full gap-4 rounded-md bg-white'}>
-        <Col className="p-8 pb-0">
+      <Col className="h-[85vh] w-full gap-4 rounded-md bg-white">
+        <Row className="p-8 pb-0">
           <div className={'text-xl text-indigo-700'}>Embed a market</div>
 
-          <Col className={'w-full '}>
-            {!loading ? (
-              <Row className={'justify-end gap-4'}>
-                {contracts.length > 0 && (
-                  <Button onClick={doneAddingContracts} color={'indigo'}>
-                    Embed {contracts.length} question
-                    {contracts.length > 1 && 's'}
-                  </Button>
-                )}
-                <Button
-                  onClick={() => {
-                    setContracts([])
-                  }}
-                  color={'gray'}
-                >
-                  Cancel
+          {!loading && (
+            <Row className="grow justify-end gap-4">
+              {contracts.length > 0 && (
+                <Button onClick={doneAddingContracts} color={'indigo'}>
+                  Embed {contracts.length} question
+                  {contracts.length > 1 && 's'}
                 </Button>
-              </Row>
-            ) : (
-              <Row className={'justify-center'}>
-                <LoadingIndicator />
-              </Row>
-            )}
-          </Col>
-        </Col>
+              )}
+              <Button onClick={() => setContracts([])} color="gray">
+                Cancel
+              </Button>
+            </Row>
+          )}
+        </Row>
 
-        <div className={'overflow-y-scroll sm:px-8'}>
+        {loading && (
+          <div className="w-full justify-center">
+            <LoadingIndicator />
+          </div>
+        )}
+
+        <div className="overflow-y-scroll sm:px-8">
           <ContractSearch
-            hideOrderSelector={true}
+            hideOrderSelector
             onContractClick={addContract}
             overrideGridClassName={
               'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
             }
-            showPlaceHolder={true}
+            showPlaceHolder
             cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
             highlightOptions={{
               contractIds: contracts.map((c) => c.id),
-              highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
+              highlightClassName:
+                '!bg-indigo-100 outline outline-2 outline-indigo-300',
             }}
+            headerClassName="bg-white"
           />
         </div>
       </Col>
