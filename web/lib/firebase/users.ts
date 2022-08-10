@@ -43,6 +43,8 @@ export const privateUsers = coll<PrivateUser>('private-users')
 
 export type { User }
 
+export type UserAndPrivateUser = { user: User; privateUser: PrivateUser }
+
 export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
 export const auth = getAuth(app)
@@ -64,7 +66,7 @@ export async function getUserAndPrivateUser(userId: string) {
       getDoc(doc(privateUsers, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
     ])
   ).map((d) => d.data()) as [User, PrivateUser]
-  return { user, privateUser }
+  return { user, privateUser } as UserAndPrivateUser
 }
 
 export async function getUserByUsername(username: string) {

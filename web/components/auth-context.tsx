@@ -1,7 +1,7 @@
 import { ReactNode, createContext, useEffect } from 'react'
-import { User, PrivateUser } from 'common/user'
 import { onIdTokenChanged } from 'firebase/auth'
 import {
+  UserAndPrivateUser,
   auth,
   listenForUser,
   listenForPrivateUser,
@@ -13,8 +13,6 @@ import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
-
-type UserAndPrivateUser = { user: User; privateUser: PrivateUser }
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.

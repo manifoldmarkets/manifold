@@ -11,7 +11,7 @@ import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { Subtitle } from 'web/components/subtitle'
-import { getUser } from 'web/lib/firebase/users'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useUserManalinks } from 'web/lib/firebase/manalinks'
 import { useUserById } from 'web/hooks/use-user'
 import { ManalinkTxn } from 'common/txn'
@@ -31,16 +31,15 @@ import { SiteLink } from 'web/components/site-link'
 const LINKS_PER_PAGE = 24
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  const user = await getUser(creds.user.uid)
-  return { props: { user } }
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
 })
 
 export function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
-export default function LinkPage(props: { user: User }) {
-  const { user } = props
+export default function LinkPage(props: { auth: { user: User } }) {
+  const { user } = props.auth
   const links = useUserManalinks(user.id ?? '')
   // const manalinkTxns = useManalinkTxns(user?.id ?? '')
   const [highlightedSlug, setHighlightedSlug] = useState('')
