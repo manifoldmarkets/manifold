@@ -254,7 +254,7 @@ export function FeedComment(props: {
           />
         </div>
         <div className="mt-2 text-[15px] text-gray-700">
-          <Content content={content || text} />
+          <Content content={content || text} smallImage />
         </div>
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           <Tipper comment={comment} tips={tips ?? {}} />
@@ -394,8 +394,8 @@ export function CommentInput(props: {
           />
         </div>
         <div className={'min-w-0 flex-1'}>
-          <div className="pl-0.5 text-sm text-gray-500">
-            <div className={'mb-1'}>
+          <div className="pl-0.5 text-sm">
+            <div className="mb-1 text-gray-500">
               {mostRecentCommentableBet && (
                 <BetStatusText
                   contract={contract}
