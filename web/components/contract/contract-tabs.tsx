@@ -16,7 +16,7 @@ import { Avatar } from 'web/components/avatar'
 import { Grid, _ } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { useState, useEffect, useRef } from 'react'
-import { maxBy } from 'lodash'
+import { maxBy, Dictionary } from 'lodash'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -100,7 +100,7 @@ export function ContractTabs(props: {
     </div>
   )
 
-  const [users, setUsers] = useState({} as {[key: string]: User})
+  const [users, setUsers] = useState({} as Dictionary<User>)
   const asked = useRef(new Set<string>())
 
   useEffect(() => {
@@ -135,13 +135,13 @@ export function ContractTabs(props: {
 
   const gridjsstyle = {th: {padding: 0}, td: {padding: 0}}
 
-  const userpositions = {} as {[key: string]: any}
+  const userpositions = {} as Dictionary<any>
   bets.forEach(({ userId, outcome, shares, amount }) => {
     const {id, position, mana} = userpositions[userId] || {id: userId, position: {}, mana: 0}
     position[outcome] = (position[outcome] || 0) + shares
     userpositions[userId] = {id:id, position:position, mana:(mana + amount)}
   })
-  const argmax = (obj:{[key:string]:number}) => maxBy(Object.keys(obj), (k:string) => obj[k])
+  const argmax = (obj:Dictionary<number>) => maxBy(Object.keys(obj), (k:string) => obj[k])
   const gridjsusers = Object.values(userpositions).map((row:any) => ({...row
     , topout: argmax(row.position)
     , topshr: row.position[argmax(row.position) || ""]
