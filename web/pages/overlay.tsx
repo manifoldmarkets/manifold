@@ -17,6 +17,7 @@ import { Col } from "web/components/layout/col";
 import { useEffect } from "react";
 import Head from "next/head";
 import { Row } from "web/components/layout/row";
+import clsx from "clsx";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -103,6 +104,9 @@ class Application {
         socket.on("bets", (bets: FullBet[]) => {
             // console.log(bet);
             // bets.reverse();
+            if (bets.length > 3) {
+                bets.splice(0, bets.length - 3);
+            }
             for (const bet of bets) {
                 // if (bet.createdTime <= lastAddedTimestamp) {
                 //     continue;
@@ -113,6 +117,7 @@ class Application {
         });
         socket.on("selectmarket", (marketSlug: string) => {
             this.loadMarket(marketSlug);
+            console.log("Selecting market: " + marketSlug);
         });
         socket.on("clear", () => {
             this.chart.data = [];
@@ -121,8 +126,6 @@ class Application {
             }
             this.betElements = [];
         });
-
-        this.loadMarket("this-is-a-local-market");
     }
 
     updateBetTimes() {
@@ -251,14 +254,9 @@ export default () => {
         <>
             <Head>
                 <title>Overlay</title>
+                <meta name="viewport" />
                 {/* <meta name="viewport" content="initial-scale=1.0, width=device-width" /> */}
                 <style>{`
-                    // #__next {
-                    //     width: 100%;
-                    //     display: flex;
-                    //     flex-direction: row;
-                    //     align-items: stretch;
-                    // }
                     :root {
                         background-color: transparent !important;
                     }
@@ -271,7 +269,6 @@ export default () => {
                     }
                 `}</style>
             </Head>
-            {/* <div className="absolute inset-0 bg-slate-800 z-10"></div> */}
             <Col className="absolute text-white bg-[#212121] leading-[normal] inset-[8px]" style={{ fontSize: "calc(min(70px, 4.5vw))"}}>
                 <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
                     <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
@@ -280,7 +277,7 @@ export default () => {
                         <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E] invisible">
                             chance
                         </div>
-                        <div id="spinner" className="absolute"></div>
+                        <div id="spinner" className={clsx("absolute", styles.spinner)}></div>
                     </Col>
                 </Row>
                 <Col className="relative grow shrink items-stretch min-h-0">
@@ -289,7 +286,7 @@ export default () => {
                 <Row className="justify-end items-center p-[0.2em]">
                     <Col id="transactions" className="grow shrink h-full items-start justify-end">
                         <div id="transaction-template" className={styles.bet}>
-                            <div className="name"></div>
+                            <div className="name font-bold"></div>
                             &nbsp;
                             <div className="color">
                                 <p className="boughtSold"></p> M$<p className="amount">1000</p>

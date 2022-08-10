@@ -48,9 +48,14 @@ export default class App {
             if (mkt) {
                 socket.emit(Packet.SELECT_MARKET, mkt.getSlug());
                 socket.emit(Packet.ADD_BETS, mkt.bets);
+
+                mkt.overlaySockets.push(socket);
             }
             //!!! Need some linking method
         });
+        // this.io.on("disconnect", (socket) => {
+        //     console.log(socket.id);
+        // })
         server.listen(31452, () => {
             const address = <AddressInfo>server.address();
             log.info(`Websocket listening on ${address.address}:${address.port}`);
@@ -91,7 +96,7 @@ export default class App {
     }
 
     public async selectMarket(channel: string, id: string) {
-        const marketData = await Manifold.getMarketByID(id);
+        const marketData = await Manifold.getFullMarketByID(id);
         const market = new Market(this, marketData);
         this.selectedMarketMap[channel] = market;
 

@@ -145,7 +145,7 @@ export default () => {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setSelectedContract(undefined)} />
+                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 z-[100]" onClick={() => setSelectedContract(undefined)} />
                 </Transition>
                 {selectedContract && (
                     <Transition appear show enter="ease-out duration-300" enterFrom="opacity-0 translate-y-4" enterTo="opacity-100 translate-y-0">
@@ -161,7 +161,6 @@ function ResolutionPanel({ contract, onCancelClick, onUnfeatureMarket }: { contr
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [outcome, setOutcome] = useState<Resolution | undefined>();
 
-    console.log(contract);
     // const earnedFees = contract.mechanism === "dpm-2" ? `${DPM_CREATOR_FEE * 100}% of trader profits` : `${formatMoney((contract as any).fees.creatorFee)} in fees`;
 
     const submitButtonClass =
@@ -176,7 +175,7 @@ function ResolutionPanel({ contract, onCancelClick, onUnfeatureMarket }: { contr
             : "btn-disabled";
 
     return (
-        <Col className={"rounded-md bg-white px-8 py-6 cursor-default"} onClick={(e) => e.stopPropagation()}>
+        <Col className={"rounded-md bg-white px-8 py-6 cursor-default z-[200]"} onClick={(e) => e.stopPropagation()}>
             <div className="whitespace-nowrap text-2xl">Resolve market</div>
 
             <p

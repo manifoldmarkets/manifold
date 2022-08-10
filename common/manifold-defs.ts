@@ -41,17 +41,14 @@
         resolutionTime?: number;
         resolution?: string;
         resolutionProbability?: number; // Used for BINARY markets resolved to MKT
-
-        // PJB:
-        bets: Bet[];
     };
 
     // // A complete market, along with bets, comments, and answers (for free response markets)
-    // export type FullMarket = LiteMarket & {
-    //     bets: Bet[];
-    //     comments: Comment[]; //!!! Missing type defs for Comment and Answer - speak to Marshall
-    //     answers?: Answer[];
-    // };
+    export type FullMarket = LiteMarket & {
+        bets: Bet[];
+        // comments: Comment[]; //!!! Missing type defs for Comment and Answer - speak to Marshall
+        // answers?: Answer[];
+    };
 
     export type Bet = {
         id: string;

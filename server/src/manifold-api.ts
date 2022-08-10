@@ -21,7 +21,7 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
         const errorMessage = error.message;
         if (errorMessage === "Insufficient balance.") throw new InsufficientBalanceException();
         if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
-        if (r.status === 403) throw new ForbiddenException();
+        if (r.status === 403) throw new ForbiddenException(errorMessage);
         throw new Error(errorMessage);
     }
     return r;
@@ -130,6 +130,10 @@ export async function getMarketBySlug(marketSlug: string): Promise<ManifoldAPI.L
     return <Promise<ManifoldAPI.LiteMarket>>(await get(`${APIBase}slug/${marketSlug}`)).json();
 }
 
-export async function getMarketByID(marketID: string): Promise<ManifoldAPI.LiteMarket> {
-    return <Promise<ManifoldAPI.LiteMarket>>(await get(`${APIBase}market/${marketID}`)).json();
+export async function getFullMarketByID(marketID: string): Promise<ManifoldAPI.FullMarket> {
+    return <Promise<ManifoldAPI.FullMarket>>(await get(`${APIBase}market/${marketID}`)).json();
+}
+
+export async function getLiteMarketByID(marketID: string): Promise<ManifoldAPI.LiteMarket> {
+    return <Promise<ManifoldAPI.LiteMarket>>(await get(`${APIBase}market/${marketID}/lite`)).json();
 }

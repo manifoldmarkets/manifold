@@ -4,7 +4,7 @@
 
 @use "sass:color";
 
-// @import "./spinner.scss";
+@import "./spinner.module.scss";
 
 $borderWidth: 8px;
 
@@ -79,7 +79,7 @@ $borderColor: color.scale($backgroundColor, $lightness: 30%);//#555;
         padding-right: $elementPadding;
     }
 
-    & .name {
+    .name {
         // color: $themeBlue;
         // font-style: ;
         // min-width: 6em;

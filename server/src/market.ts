@@ -1,10 +1,12 @@
-import { LiteMarket, Bet, LiteUser, ResolutionOutcome } from "common/manifold-defs";
+import { LiteMarket, Bet, LiteUser, ResolutionOutcome, FullMarket } from "common/manifold-defs";
 import { FullBet } from "common/transaction";
 import App from "./app";
 import log from "./logger";
 import * as Manifold from "./manifold-api";
 import moment from "moment";
 import lodash from "lodash";
+import { Socket } from "socket.io";
+import { ADD_BETS } from "common/packet-ids";
 const { keyBy, mapValues, sumBy, groupBy } = lodash;
 
 export class Market {
@@ -12,12 +14,14 @@ export class Market {
     readonly bets: FullBet[] = [];
     private latestLoadedBetId: string = null;
 
-    data: LiteMarket;
+    data: FullMarket;
     pendingBets: Bet[] = [];
     pendingFetches = {};
     userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
 
-    constructor(app: App, data: LiteMarket) {
+    overlaySockets: Socket[] = [];
+
+    constructor(app: App, data: FullMarket) {
         this.app = app;
         this.data = data;
 
@@ -148,6 +152,12 @@ export class Market {
         this.bets.push(bet);
         // this.io.emit(Packet.ADD_BETS, [bet]); //!!!
 
+        for (const socket of this.overlaySockets) {
+            if (!socket.disconnected) { //!!!
+                socket.emit(ADD_BETS, [bet]);
+            }
+        }
+
         log.info(`${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(bet.createdTime).fromNow()}`);
     }
 
@@ -227,7 +237,7 @@ export class Market {
     }
 
     async detectResolution() {
-        this.data = await Manifold.getMarketByID(this.data.id);
-        return this.data.isResolved;
+        const liteMarket = await Manifold.getLiteMarketByID(this.data.id);
+        return liteMarket.isResolved;
     }
 }
