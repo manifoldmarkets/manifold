@@ -10,7 +10,7 @@ class Point {
 
 export default class Chart {
     readonly canvasElement: HTMLCanvasElement;
-    readonly ctx: CanvasRenderingContext2D | null;
+    readonly ctx: CanvasRenderingContext2D;
 
     data: Point[];
 
@@ -25,6 +25,7 @@ export default class Chart {
 
         const animationFrame = () => {
             this.render();
+            // this.resize();
             window.requestAnimationFrame(animationFrame);
         };
         window.requestAnimationFrame(animationFrame);
@@ -33,12 +34,14 @@ export default class Chart {
     }
 
     resize() {
-        this.canvasElement.width = this.canvasElement.clientWidth;
-        this.canvasElement.height = this.canvasElement.clientHeight;
+        const pixelRatio = 1.0;//window.devicePixelRatio;
+        const r = this.canvasElement.parentElement.getBoundingClientRect();
+        this.canvasElement.width = r.width * pixelRatio;
+        this.canvasElement.height = r.height * pixelRatio;
     }
 
     produceData(): Point[] {
-        const points = <Point[]> [];
+        const points = [] as Point[];
         let x = 0;
         for (let i = 0; i < 30; i++) {
             const y = Math.random() * 100;
@@ -50,8 +53,6 @@ export default class Chart {
     }
 
     render() {
-        if (!this.ctx) return;
-        
         const ctx = this.ctx;
 
         const padding_px = 10;
@@ -114,11 +115,11 @@ export default class Chart {
                 if (i == numXAxisLines - 1) {
                     labelText = "now";
                     const m = ctx.measureText(labelText);
-                    ctx.fillText(labelText, x - m.width, m.actualBoundingBoxAscent + 10);
+                    ctx.fillText(labelText, x - m.width, 21);
                 }
                 else {
                     const m = ctx.measureText(labelText);
-                    ctx.fillText(labelText, x - m.width * 0.5, m.actualBoundingBoxAscent + 10);
+                    ctx.fillText(labelText, x - m.width * 0.5, 21);
                 }
 
                 ctx.fillRect(x - 1.5, 0.5, 3, 5);

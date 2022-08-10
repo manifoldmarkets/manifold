@@ -1,0 +1,324 @@
+/**
+ * COPYRIGHT 2022 Phil Bladen www.philbladen.co.uk
+ */
+
+import styles from "../styles/overlay.module.scss";
+
+import moment from "moment";
+
+import Chart, { Point } from "../components/chart";
+
+import * as Manifold from "common/manifold-defs";
+import { getCanvasFont, getTextWidth } from "../utils/utils";
+import { FullBet } from "common/transaction";
+
+import io from "socket.io-client";
+import { Col } from "web/components/layout/col";
+import { useEffect } from "react";
+import Head from "next/head";
+import { Row } from "web/components/layout/row";
+
+const APIBase = "https://dev.manifold.markets/api/v0/";
+
+class BetElement {
+    bet: FullBet;
+    element: HTMLDivElement;
+}
+
+class Application {
+    readonly transactionTemplate: HTMLElement;
+    readonly chart: Chart;
+
+    betElements: BetElement[] = [];
+
+    currentProbability_percent = 0;
+    animatedProbability_percent: number = this.currentProbability_percent;
+
+    currentMarket: Manifold.LiteMarket = null;
+
+    constructor() {
+        this.transactionTemplate = document.getElementById("transaction-template");
+        this.transactionTemplate.removeAttribute("id");
+        this.transactionTemplate.parentElement.removeChild(this.transactionTemplate);
+
+        this.chart = new Chart(document.getElementById("chart") as HTMLCanvasElement);
+
+        moment.relativeTimeThreshold("s", 60);
+        moment.updateLocale("en", {
+            relativeTime: {
+                future: "in %s",
+                past: "%s",
+                s: "%ds",
+                ss: "%ss",
+                m: "1m",
+                mm: "%dm",
+                h: "1h",
+                hh: "%dh",
+                d: "1d",
+                dd: "%dd",
+                M: "1m",
+                MM: "%dM",
+                y: "1y",
+                yy: "%dY",
+            },
+        });
+
+        //!!! This all needs to move to another polling system for the market probability:
+        const animationFrame = () => {
+            this.animatedProbability_percent += (this.currentProbability_percent - this.animatedProbability_percent) * 0.1;
+            document.getElementById("chance").innerHTML = this.animatedProbability_percent.toFixed(0);
+
+            window.requestAnimationFrame(animationFrame);
+        };
+        window.requestAnimationFrame(animationFrame);
+
+        // Update bet times:
+        setInterval(() => this.updateBetTimes(), 1000);
+
+        // const addRandomTransaction = () => {
+        //     const customConfig: Config = {
+        //         dictionaries: [adjectives, colors, animals, countries],
+        //         separator: "",
+        //         length: 2,
+        //         style: "capital",
+        //     };
+        //     let numWords = randomInt(2) + 1;
+        //     while (customConfig.dictionaries.length > numWords) {
+        //         customConfig.dictionaries.splice(randomInt(customConfig.dictionaries.length - 1), 1);
+        //     }
+        //     customConfig.length = customConfig.dictionaries.length;
+        //     let name = uniqueNamesGenerator(customConfig);
+        //     name = name.replace(/ /g, ""); // Remove all whitespace
+        //     //!!! this.addBet(new Transaction(name, Math.ceil(Math.random() * 10) * Math.pow(10, Math.floor(3 * Math.random())), Math.random() > 0.5, Date.now()));
+
+        //     setTimeout(addRandomTransaction, randomInt(5000));
+        // };
+        // setTimeout(addRandomTransaction, 1000);
+
+        // this.loadMarket("this-is-a-local-market");
+        // this.loadBettingHistory();
+
+        // let lastAddedTimestamp = 0;
+        const socket = io();
+        socket.on("bets", (bets: FullBet[]) => {
+            // console.log(bet);
+            // bets.reverse();
+            for (const bet of bets) {
+                // if (bet.createdTime <= lastAddedTimestamp) {
+                //     continue;
+                // }
+                this.addBet(bet);
+                // lastAddedTimestamp = bet.createdTime;
+            }
+        });
+        socket.on("selectmarket", (marketSlug: string) => {
+            this.loadMarket(marketSlug);
+        });
+        socket.on("clear", () => {
+            this.chart.data = [];
+            for (const bet of this.betElements) {
+                bet.element.parentElement.removeChild(bet.element);
+            }
+            this.betElements = [];
+        });
+
+        this.loadMarket("this-is-a-local-market");
+    }
+
+    updateBetTimes() {
+        try {
+            this.betElements.forEach((t) => {
+                t.element.querySelector(".time").innerHTML = moment(t.bet.createdTime).fromNow();
+            });
+        } catch (e) {
+            // Empty
+        }
+    }
+
+    loadMarket(slug: string) {
+        fetch(`${APIBase}slug/${slug}`)
+            .then((r) => r.json() as Promise<Manifold.LiteMarket>)
+            .then((market) => {
+                this.currentMarket = market;
+                this.currentMarket["slug"] = slug;
+
+                document.getElementById("question").innerHTML = this.currentMarket.question;
+                this.currentProbability_percent = this.currentMarket.probability * 100;
+                this.animatedProbability_percent = this.currentProbability_percent;
+                console.log(market);
+
+                document.getElementById("spinner").style.display = "none";
+                document
+                    .getElementById("chance")
+                    .parentElement.querySelectorAll("div")
+                    .forEach((r) => (r.classList.remove("invisible")));
+
+                this.loadBettingHistory();
+            })
+            .catch((e) => {
+                console.error(e);
+            });
+    }
+
+    loadBettingHistory() {
+        fetch(`${APIBase}bets?market=${this.currentMarket["slug"]}&limit=1000`)
+            .then((r) => r.json() as Promise<Manifold.Bet[]>)
+            .then((r) => {
+                const data: Point[] = [];
+                r.reverse(); // Data is returned in newest-first fashion and must be pushed in oldest-first
+                for (const t of r) {
+                    data.push(new Point(t.createdTime, t.probBefore));
+                    data.push(new Point(t.createdTime, t.probAfter));
+                }
+                this.chart.data = data;
+            })
+            .catch((r) => {
+                console.error(r);
+            });
+    }
+
+    addBet(bet: FullBet) {
+        // const maxNameLength = 20; //!!! hack
+        let name = bet.username; //!!!
+        // if (name.length > maxNameLength) {
+        //     name = name.substring(0, maxNameLength - 3);
+        //     name += "...";
+        // }
+
+        const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
+
+        let positiveBet = false;
+        if ((bet.amount > 0 && bet.outcome == "YES") || (bet.amount < 0 && bet.outcome == "NO")) {
+            positiveBet = true;
+        }
+
+        const t = this.transactionTemplate.cloneNode(true) as HTMLDivElement;
+        document.getElementById("transactions").prepend(t);
+        //
+        const nameDiv = t.querySelector(".name") as HTMLElement;
+        const divFont = getCanvasFont(nameDiv);
+        let isTruncated = false;
+        while (getTextWidth(name + (isTruncated ? "..." : ""), divFont) > 400) {
+            name = name.substring(0, name.length - 1);
+            isTruncated = true;
+        }
+        nameDiv.innerHTML = name + (isTruncated ? "..." : "");
+        //
+        t.querySelector(".amount").innerHTML = betAmountMagnitude.toFixed(0);
+        t.querySelector(".boughtSold").innerHTML = (bet.amount < 0 ? "sold " : "") + (positiveBet ? "YES" : "NO");
+        (t.querySelector(".color") as HTMLElement).style.color = (positiveBet ? "#92ff83" : "#ff3d3d");
+
+        const response = document.createElement("p");
+        // response.classList.add(bet.outcome == "YES" ? "yes" : "no");
+        t.appendChild(response);
+
+        // t.innerHTML = bet.displayText; //!!! REMOVE
+
+        const betElement = new BetElement();
+        betElement.element = t;
+        betElement.bet = bet;
+
+        this.betElements.push(betElement);
+        t.offsetLeft;
+        setTimeout(() => {
+            t.classList.add("!h-[1.2em]");
+        }, 1);
+
+        if (this.betElements.length > 3) {
+            const transactionToRemove = this.betElements.shift().element;
+            transactionToRemove.classList.remove("!h-[1.2em]");
+            setTimeout(() => {
+                transactionToRemove.parentElement.removeChild(transactionToRemove);
+            }, 500);
+        }
+
+        if (this.currentMarket) {
+            this.currentMarket.probability = bet.probAfter;
+            this.currentProbability_percent = this.currentMarket.probability * 100;
+            this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
+            this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
+        }
+
+        this.updateBetTimes();
+    }
+}
+
+export default () => {
+    useEffect(() => {
+        new Application();
+    }, []);
+    return (
+        <>
+            <Head>
+                <title>Overlay</title>
+                {/* <meta name="viewport" content="initial-scale=1.0, width=device-width" /> */}
+                <style>{`
+                    // #__next {
+                    //     width: 100%;
+                    //     display: flex;
+                    //     flex-direction: row;
+                    //     align-items: stretch;
+                    // }
+                    :root {
+                        background-color: transparent !important;
+                    }
+                    body {
+                        // display: flex;
+                        // align-items: stretch;
+                        border: 8px #555 solid;
+                        border-radius: 8px;
+                        background-color: transparent !important;
+                    }
+                `}</style>
+            </Head>
+            {/* <div className="absolute inset-0 bg-slate-800 z-10"></div> */}
+            <Col className="absolute text-white bg-[#212121] leading-[normal] inset-[8px]" style={{ fontSize: "calc(min(70px, 4.5vw))"}}>
+                <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
+                    <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
+                    <Col className="items-center justify-center justify-self-end">
+                        <div id="chance" className="after:content-['%'] text-[1.5em] text-[#A5FF6E] invisible"></div>
+                        <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E] invisible">
+                            chance
+                        </div>
+                        <div id="spinner" className="absolute"></div>
+                    </Col>
+                </Row>
+                <Col className="relative grow shrink items-stretch min-h-0">
+                    <canvas id="chart" className="absolute" style={{ aspectRatio: "unset" }}></canvas>
+                </Col>
+                <Row className="justify-end items-center p-[0.2em]">
+                    <Col id="transactions" className="grow shrink h-full items-start justify-end">
+                        <div id="transaction-template" className={styles.bet}>
+                            <div className="name"></div>
+                            &nbsp;
+                            <div className="color">
+                                <p className="boughtSold"></p> M$<p className="amount">1000</p>
+                            </div>
+                        </div>
+                    </Col>
+                    <Col className="text-center">
+                        <div
+                            style={{
+                                backgroundImage: "url(logo-white.svg)",
+                                backgroundSize: "contain",
+                                backgroundRepeat: "no-repeat",
+                                backgroundPosition: "center",
+                                aspectRatio: "1",
+                                display: "block",
+                                height: "1.5em",
+                            }}
+                        ></div>
+                        <div className="text-[0.4em] whitespace-nowrap" style={{fontFamily: "Major Mono Display, monospace"}}>
+                            manifold
+                            <br />
+                            markets
+                        </div>
+                        <div className="text-center text-[0.7em]" style={{ fontWeight: "bold" }}>
+                            !signup
+                        </div>
+                    </Col>
+                </Row>
+            </Col>
+        </>
+    );
+};
