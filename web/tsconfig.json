@@ -25,9 +25,9 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "../common/**/*",
-    "src/*",
-    "../styles/**/*"
+    "../common/**/*.ts",
+    // "src/*",
+    // "styles/**/*"
   ],
   "exclude": [
     "node_modules"

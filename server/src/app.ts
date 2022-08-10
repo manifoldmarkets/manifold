@@ -17,6 +17,7 @@ import TwitchBot from "./twitch-bot";
 import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
+import { PacketResolved } from "common/packets";
 
 const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
 
@@ -67,6 +68,14 @@ export default class App {
                         }
                         this.io.emit(Packet.ADD_BETS, market.bets);
                         log.info("Pushed market socket");
+
+                        const resolveData: PacketResolved = {
+                            outcome: "NA",
+                            uniqueTraders: 55,
+                            topWinners: [{displayName: "Phil", profit: 10}, {displayName: "ajyBore1", profit: 4}],
+                            topLosers: [{displayName: "xAlan5x", profit: -49}, {displayName: "junq", profit: -4}]
+                        };
+                        this.io.emit(Packet.RESOLVE, resolveData);//!!!
                     }, 2000); //!!! This is horrible
                 }
             });

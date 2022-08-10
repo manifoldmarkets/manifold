@@ -8,17 +8,26 @@ import moment from "moment";
 
 import Chart, { Point } from "../components/chart";
 
-import * as Manifold from "common/manifold-defs";
 import { getCanvasFont, getTextWidth } from "../utils/utils";
-import { FullBet } from "common/transaction";
 
-import io from "socket.io-client";
+import io, { Socket } from "socket.io-client";
 import { Col } from "web/components/layout/col";
-import { useEffect } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import { Row } from "web/components/layout/row";
 import clsx from "clsx";
+import { Transition } from "@headlessui/react";
+
+import * as Manifold from "common/manifold-defs";
 import * as Packet from "common/packet-ids";
+import { FullBet } from "common/transaction";
+import { PacketResolved } from "common/packets";
+// class PacketResolved {
+//     outcome: "YES" | "NO" | "NA";
+//     uniqueTraders: number;
+//     topWinners: {displayName: string, profit: number}[];
+//     topLosers: {displayName: string, profit: number}[];
+// }
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -30,6 +39,7 @@ class BetElement {
 class Application {
     readonly transactionTemplate: HTMLElement;
     readonly chart: Chart;
+    readonly socket: Socket;
 
     betElements: BetElement[] = [];
 
@@ -78,8 +88,8 @@ class Application {
         setInterval(() => this.updateBetTimes(), 1000);
 
         // let lastAddedTimestamp = 0;
-        const socket = io();
-        socket.on("bets", (bets: FullBet[]) => {
+        this.socket = io();
+        this.socket.on("bets", (bets: FullBet[]) => {
             // console.log(bet);
             // bets.reverse();
             if (bets.length > 3) {
@@ -95,11 +105,11 @@ class Application {
 
             console.log(bets);
         });
-        socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
+        this.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
             this.loadMarketByID(marketID);
             console.log("Selecting market by ID: " + marketID);
         });
-        socket.on(Packet.CLEAR, () => {
+        this.socket.on(Packet.CLEAR, () => {
             this.resetUI();
 
             this.chart.data = [];
@@ -244,15 +254,83 @@ class Application {
     }
 }
 
-export default () => {
+enum Page {
+    MAIN,
+    RESOLVED_RESULT,
+    RESOLVED_TRADERS,
+    RESOLVED_GRAPH,
+}
+
+function useInterval(callback, delay) {
+    const savedCallback = useRef();
+
+    // Remember the latest callback.
     useEffect(() => {
-        new Application();
+        savedCallback.current = callback;
+    }, [callback]);
+
+    // Set up the interval.
+    useEffect(() => {
+        function tick() {
+            (savedCallback.current as () => void)();
+        }
+        if (delay !== null) {
+            let id = setInterval(tick, delay);
+            return () => clearInterval(id);
+        }
+    }, [delay]);
+}
+
+export default () => {
+    const [page, setPage] = useState<Page>(Page.RESOLVED_TRADERS);
+    const [resolvedData, setResolvedData] = useState<PacketResolved | undefined>(undefined);
+
+    useEffect(() => {
+        const app = new Application();
+        app.socket.on(Packet.RESOLVE, (packet: PacketResolved) => {
+            setResolvedData(packet);
+            console.log(packet);
+        });
     }, []);
+
+    useEffect(() => {
+        if (resolvedData) {
+            setPage(Page.RESOLVED_RESULT);
+            const interval = setInterval(() => {
+                setPage((page) => {
+                    console.log("Change page: " + page);
+                    switch (page) {
+                        case Page.RESOLVED_RESULT:
+                            return Page.RESOLVED_TRADERS;
+                        case Page.RESOLVED_TRADERS:
+                            return Page.RESOLVED_GRAPH;
+                        case Page.RESOLVED_GRAPH:
+                            return Page.RESOLVED_RESULT;
+                        default:
+                            throw new Error("Unhandled case: " + page);
+                    }
+                });
+            }, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [resolvedData]);
+
+    // useInterval(() => {
+    //     if (!isResolved) return;
+    //     setPage((page) => {
+    //         switch (page) {
+    //             case Page.RESOLVED_RESULT: return Page.RESOLVED_TRADERS;
+    //             case Page.RESOLVED_TRADERS: return Page.RESOLVED_GRAPH;
+    //             case Page.RESOLVED_GRAPH: return Page.RESOLVED_RESULT;
+    //         }
+    //     });
+    // }, 3000);
+
     return (
         <>
             <Head>
                 <title>Overlay</title>
-                <meta name="viewport" />
+                {/* <meta name="viewport" /> */}
                 {/* <meta name="viewport" content="initial-scale=1.0, width=device-width" /> */}
                 <style>{`
                     body,:root {
@@ -305,6 +383,71 @@ export default () => {
                     </Col>
                 </Row>
             </Col>
+            {resolvedData && (
+                <>
+                    <Transition
+                        as={Fragment}
+                        show={page == Page.RESOLVED_RESULT}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-300"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0", styles.border)}>
+                            <Col className="flex items-center text-6xl justify-center font-bold grow">
+                                <div>Resolved</div>
+                                {resolvedData.outcome == "YES" ? (
+                                    <div className={clsx("mt-1", styles.green, styles.color)}>YES</div>
+                                ) : resolvedData.outcome == "NO" ? (
+                                    <div className={clsx("mt-1", styles.red, styles.color)}>NO</div>
+                                ) : (
+                                    <div className={clsx("mt-1", styles.blue, styles.color)}>N/A</div>
+                                )}
+                            </Col>
+                        </Col>
+                    </Transition>
+                    <Transition
+                        as={Fragment}
+                        show={page == Page.RESOLVED_TRADERS}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-300"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0 p-4 font-bold", styles.border)}>
+                            <Row className="justify-between">
+                                <Row className="items-center text-4xl">
+                                    <div>Resolved</div>
+                                    &nbsp;
+                                    {resolvedData.outcome == "YES" ? (
+                                        <div className={clsx("", styles.green, styles.color)}>YES</div>
+                                    ) : resolvedData.outcome == "NO" ? (
+                                        <div className={clsx("", styles.red, styles.color)}>NO</div>
+                                    ) : (
+                                        <div className={clsx("", styles.blue, styles.color)}>N/A</div>
+                                    )}
+                                </Row>
+                                <Col className="items-center text-1xl">
+                                    <div>{resolvedData.uniqueTraders} unique</div>
+                                    <div>traders!</div>
+                                </Col>
+                            </Row>
+                            <Col className="grow mt-5 text-xl">
+                                <div className="text-green-400">Top Winners:</div>
+                                <div className="font-normal">SirSalty (+M$100), Phil (+80), plebian69 (+20), ...</div>
+                            </Col>
+                            <Col className="grow text-xl">
+                                <div className="text-red-500">Top Losers:</div>
+                                <div className="font-normal">xXM0MSlayerXx (-M$666)</div>
+                            </Col>
+                        </Col>
+                    </Transition>
+                </>
+            )}
         </>
     );
 };
