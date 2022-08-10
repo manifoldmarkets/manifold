@@ -13,7 +13,8 @@ import {
 import { AuthContext } from 'web/components/auth-context'
 
 export const useUser = () => {
-  return useContext(AuthContext)
+  const authUser = useContext(AuthContext)
+  return authUser ? authUser.user : authUser
 }
 
 export const usePrivateUser = (userId?: string) => {

@@ -57,6 +57,16 @@ export async function getPrivateUser(userId: string) {
   return (await getDoc(doc(privateUsers, userId))).data()!
 }
 
+export async function getUserAndPrivateUser(userId: string) {
+  const [user, privateUser] = (
+    await Promise.all([
+      getDoc(doc(users, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      getDoc(doc(privateUsers, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    ])
+  ).map((d) => d.data()) as [User, PrivateUser]
+  return { user, privateUser }
+}
+
 export async function getUserByUsername(username: string) {
   // Find a user whose username matches the given username, or null if no such user exists.
   const q = query(users, where('username', '==', username), limit(1))
