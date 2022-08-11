@@ -22,8 +22,9 @@ export function TweetModal(props: {
   const { editor, open, setOpen } = props
   const [input, setInput] = useState('')
   const tweetId = getTweetId(input)
-  const tweetCode = `<tiptap-tweet tweetid="${tweetId}"></tiptap-tweet>`
-  console.log('tweetCode', tweetCode)
+  // Append a leading 't', to prevent tweetId from being interpreted as a number.
+  // If it's a number, there may be numeric precision issues.
+  const tweetCode = `<tiptap-tweet tweetid="t${tweetId}"></tiptap-tweet>`
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -32,7 +33,7 @@ export function TweetModal(props: {
           htmlFor="embed"
           className="block text-sm font-medium text-gray-700"
         >
-          Tweet link
+          Paste a tweet link
         </label>
         <input
           type="text"
