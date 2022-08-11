@@ -23,12 +23,7 @@ import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from 'common/util/tiptap-tweet'
 import { CodeIcon, PhotographIcon } from '@heroicons/react/solid'
-import { Modal } from './layout/modal'
-import { Col } from './layout/col'
-import { Button } from './button'
-import { Row } from './layout/row'
-import { Spacer } from './layout/spacer'
-import { TweetModal } from './editor/tweetModal'
+import { EmbedModal } from './editor/embed-modal'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -128,13 +123,6 @@ function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
 
-function isValidUrl(text: string) {
-  // Conjured by Codex, not sure if it's actually good
-  return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(
-    text
-  )
-}
-
 export function TextEditor(props: {
   editor: Editor | null
   upload: ReturnType<typeof useUploadMutation>
@@ -142,7 +130,6 @@ export function TextEditor(props: {
 }) {
   const { editor, upload, children } = props
   const [iframeOpen, setIframeOpen] = useState(false)
-  const [tweetOpen, setTweetOpen] = useState(false)
 
   return (
     <>
@@ -167,33 +154,13 @@ export function TextEditor(props: {
                 onClick={() => setIframeOpen(true)}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
               >
-                <IframeModal
+                <EmbedModal
                   editor={editor}
                   open={iframeOpen}
                   setOpen={setIframeOpen}
                 />
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
                 <span className="sr-only">Embed an iframe</span>
-              </button>
-            </div>
-            <div className="flex items-center">
-              <button
-                type="button"
-                onClick={() => setTweetOpen(true)}
-                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-              >
-                <TweetModal
-                  editor={editor}
-                  open={tweetOpen}
-                  setOpen={setTweetOpen}
-                />
-                <img
-                  className="mr-2"
-                  src={'/twitter-logo.svg'}
-                  width={15}
-                  height={15}
-                />
-                <span className="sr-only">Embed a tweet</span>
               </button>
             </div>
             {/* Spacer that also focuses editor on click */}
@@ -216,66 +183,6 @@ export function TextEditor(props: {
   )
 }
 
-function IframeModal(props: {
-  editor: Editor | null
-  open: boolean
-  setOpen: (open: boolean) => void
-}) {
-  const { editor, open, setOpen } = props
-  const [input, setInput] = useState('')
-  const valid = isValidIframe(input) || isValidUrl(input)
-  const embedCode = isValidIframe(input) ? input : `<iframe src="${input}" />`
-
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className="gap-2 rounded bg-white p-6">
-        <label
-          htmlFor="embed"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Embed a market, Youtube video, etc.
-        </label>
-        <input
-          type="text"
-          name="embed"
-          id="embed"
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder='e.g. <iframe src="..."></iframe>'
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-
-        {/* Preview the embed if it's valid */}
-        {valid ? <RichContent content={embedCode} /> : <Spacer h={2} />}
-
-        <Row className="gap-2">
-          <Button
-            disabled={!valid}
-            onClick={() => {
-              if (editor && valid) {
-                editor.chain().insertContent(embedCode).run()
-                setInput('')
-                setOpen(false)
-              }
-            }}
-          >
-            Embed
-          </Button>
-          <Button
-            color="gray"
-            onClick={() => {
-              setInput('')
-              setOpen(false)
-            }}
-          >
-            Cancel
-          </Button>
-        </Row>
-      </Col>
-    </Modal>
-  )
-}
-
 const useUploadMutation = (editor: Editor | null) =>
   useMutation(
     (files: File[]) =>
@@ -294,7 +201,7 @@ const useUploadMutation = (editor: Editor | null) =>
     }
   )
 
-function RichContent(props: {
+export function RichContent(props: {
   content: JSONContent | string
   smallImage?: boolean
 }) {
@@ -307,6 +214,7 @@ function RichContent(props: {
       DisplayLink,
       DisplayMention,
       Iframe,
+      TiptapTweet,
     ],
     content,
     editable: false,

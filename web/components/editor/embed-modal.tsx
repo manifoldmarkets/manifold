@@ -2,29 +2,62 @@ import { Editor } from '@tiptap/react'
 import { useState } from 'react'
 import { TwitterTweetEmbed } from 'react-twitter-embed'
 import { Button } from '../button'
+import { RichContent } from '../editor'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 
+function isValidIframe(text: string) {
+  return /^<iframe.*<\/iframe>$/.test(text)
+}
+
 // A valid tweet URL looks like 'https://twitter.com/username/status/123456789'
 // Return the tweetId if the URL is valid, otherwise return null.
 function getTweetId(text: string) {
-  const match = text.match(/^https?:\/\/twitter\.com\/.*\/status\/(\d+)$/)
+  const match = text.match(/^https?:\/\/twitter\.com\/.*\/status\/(\d+)/)
   return match ? match[1] : null
 }
 
-export function TweetModal(props: {
+// A valid YouTube URL looks like 'https://www.youtube.com/watch?v=ziq7FUKpCS8'
+function getYoutubeId(text: string) {
+  const match = text.match(/^https?:\/\/www\.youtube\.com\/watch\?v=([^&]+)/)
+  return match ? match[1] : null
+}
+
+function isValidUrl(text: string) {
+  // Conjured by Codex
+  return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(
+    text
+  )
+}
+
+function embedCode(text: string) {
+  if (isValidIframe(text)) {
+    return text
+  } else if (getTweetId(text)) {
+    // Append a leading 't', to prevent tweetId from being interpreted as a number.
+    // If it's a number, there may be numeric precision issues.
+    return `<tiptap-tweet tweetid="t${getTweetId(text)}"></tiptap-tweet>`
+  } else if (getYoutubeId(text)) {
+    return `<iframe src="https://www.youtube.com/embed/${getYoutubeId(
+      text
+    )}"></iframe>`
+  } else if (isValidUrl(text)) {
+    return `<iframe src="${text}"></iframe>`
+  }
+  // Return null if the text is not embeddable.
+  return null
+}
+
+export function EmbedModal(props: {
   editor: Editor | null
   open: boolean
   setOpen: (open: boolean) => void
 }) {
   const { editor, open, setOpen } = props
   const [input, setInput] = useState('')
-  const tweetId = getTweetId(input)
-  // Append a leading 't', to prevent tweetId from being interpreted as a number.
-  // If it's a number, there may be numeric precision issues.
-  const tweetCode = `<tiptap-tweet tweetid="t${tweetId}"></tiptap-tweet>`
+  const embed = embedCode(input)
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -33,7 +66,7 @@ export function TweetModal(props: {
           htmlFor="embed"
           className="block text-sm font-medium text-gray-700"
         >
-          Paste a tweet link
+          Embed a Youtube video, Tweet, or other link
         </label>
         <input
           type="text"
@@ -46,14 +79,14 @@ export function TweetModal(props: {
         />
 
         {/* Preview the embed if it's valid */}
-        {tweetId ? <TwitterTweetEmbed tweetId={tweetId} /> : <Spacer h={2} />}
+        {embed ? <RichContent content={embed} /> : <Spacer h={2} />}
 
         <Row className="gap-2">
           <Button
-            disabled={!tweetId}
+            disabled={!embed}
             onClick={() => {
-              if (editor && tweetId) {
-                editor.chain().insertContent(tweetCode).run()
+              if (editor && embed) {
+                editor.chain().insertContent(embed).run()
                 console.log('editorjson', editor.getJSON())
                 setInput('')
                 setOpen(false)
