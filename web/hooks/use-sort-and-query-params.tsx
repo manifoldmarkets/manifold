@@ -25,12 +25,18 @@ export function getSavedSort() {
   }
 }
 
-export function useQueryAndSortParams(options?: {
+export interface QuerySortOptions {
   defaultSort?: Sort
   shouldLoadFromStorage?: boolean
-}) {
-  const { defaultSort = DEFAULT_SORT, shouldLoadFromStorage = true } =
-    options ?? {}
+  /** Use normal react state instead of url query string */
+  disableQueryString?: boolean
+}
+
+export function useQueryAndSortParams({
+  defaultSort = DEFAULT_SORT,
+  shouldLoadFromStorage = true,
+  disableQueryString,
+}: QuerySortOptions = {}) {
   const router = useRouter()
 
   const { s: sort, q: query } = router.query as {
@@ -68,7 +74,9 @@ export function useQueryAndSortParams(options?: {
 
   const setQuery = (query: string | undefined) => {
     setQueryState(query)
-    pushQuery(query)
+    if (!disableQueryString) {
+      pushQuery(query)
+    }
   }
 
   useEffect(() => {
@@ -86,10 +94,13 @@ export function useQueryAndSortParams(options?: {
     }
   })
 
+  // use normal state if querydisableQueryString
+  const [sortState, setSortState] = useState(defaultSort)
+
   return {
-    sort: sort ?? defaultSort,
+    sort: disableQueryString ? sortState : sort ?? defaultSort,
     query: queryState ?? '',
-    setSort,
+    setSort: disableQueryString ? setSortState : setSort,
     setQuery,
   }
 }
