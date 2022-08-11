@@ -299,7 +299,7 @@ export function NewContract(props: {
             <Row className="gap-2">
               <input
                 type="number"
-                className="input input-bordered"
+                className="input input-bordered w-32"
                 placeholder="MIN"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
@@ -310,7 +310,7 @@ export function NewContract(props: {
               />
               <input
                 type="number"
-                className="input input-bordered"
+                className="input input-bordered w-32"
                 placeholder="MAX"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}

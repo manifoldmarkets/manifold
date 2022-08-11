@@ -40,10 +40,10 @@ export function MultipleChoiceAnswers(props: {
           />
           {answers.length > 2 && (
             <button
-              className="btn btn-xs btn-outline ml-2"
+              className="-mr-2 rounded p-2"
               onClick={() => removeAnswer(i)}
             >
-              <XIcon className="h-4 w-4 flex-shrink-0" />
+              <XIcon className="h-5 w-5 flex-shrink-0" />
             </button>
           )}
         </Row>
