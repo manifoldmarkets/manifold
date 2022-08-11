@@ -53,7 +53,6 @@
     "react-hot-toast": "2.2.0",
     "react-instantsearch-hooks-web": "6.24.1",
     "react-query": "3.39.0",
-    "react-twitter-embed": "4.0.4",
     "string-similarity": "^4.0.4",
     "tippy.js": "6.3.7"
   },

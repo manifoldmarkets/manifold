@@ -11,5 +11,5 @@
     "target": "es2017",
     "jsx": "preserve"
   },
-  "include": ["**/*.ts", "util/tiptap-tweet.tsx"]
+  "include": ["**/*.ts", "util/tweet-embed.tsx"]
 }
