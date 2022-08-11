@@ -7,20 +7,19 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 
 export function MultipleChoiceAnswers(props: {
+  answers: string[]
   setAnswers: (answers: string[]) => void
 }) {
-  const [answers, setInternalAnswers] = useState(['', '', ''])
+  const { answers, setAnswers } = props
 
   const setAnswer = (i: number, answer: string) => {
     const newAnswers = setElement(answers, i, answer)
-    setInternalAnswers(newAnswers)
-    props.setAnswers(newAnswers)
+    setAnswers(newAnswers)
   }
 
   const removeAnswer = (i: number) => {
     const newAnswers = answers.slice(0, i).concat(answers.slice(i + 1))
-    setInternalAnswers(newAnswers)
-    props.setAnswers(newAnswers)
+    setAnswers(newAnswers)
   }
 
   const addAnswer = () => setAnswer(answers.length, '')
