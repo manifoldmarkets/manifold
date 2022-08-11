@@ -149,7 +149,7 @@ export function ContractDetails(props: {
   const groupInfo = (
     <Row>
       <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-      <span className={'line-clamp-1'}>
+      <span className="truncate">
         {groupToDisplay ? groupToDisplay.name : 'No group'}
       </span>
     </Row>
