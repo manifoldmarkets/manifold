@@ -25,8 +25,7 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import Confetti from 'react-confetti'
+import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { NumericBetPanel } from 'web/components/numeric-bet-panel'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -166,8 +165,6 @@ export function ContractPageContent(
 
   const tips = useTipTxns({ contractId: contract.id })
 
-  const { width, height } = useWindowSize()
-
   const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
@@ -194,12 +191,7 @@ export function ContractPageContent(
   return (
     <Page rightSidebar={rightSidebar}>
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
       {ogCardProps && (
