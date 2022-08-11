@@ -19,9 +19,21 @@ function getTweetId(text: string) {
   return match ? match[1] : null
 }
 
-// A valid YouTube URL looks like 'https://www.youtube.com/watch?v=ziq7FUKpCS8'
+// Manifold URL: https://manifold.markets/Austin/will-manifold-ever-be-worth-1b
+function getManifoldSlug(text: string) {
+  const match = text.match(/^https?:\/\/manifold\.markets\/([^\/]+)\/([^\/]+)/)
+  return match ? [match[1], match[2]] : null
+}
+
+// Youtube URL: 'https://www.youtube.com/watch?v=ziq7FUKpCS8'
 function getYoutubeId(text: string) {
   const match = text.match(/^https?:\/\/www\.youtube\.com\/watch\?v=([^&]+)/)
+  return match ? match[1] : null
+}
+
+// Metaculus URL: 'https://www.metaculus.com/questions/5320/chinese-annexation-of-half-of-taiwan-by-2050/'
+function getMetaculusId(text: string) {
+  const match = text.match(/^https?:\/\/www\.metaculus\.com\/questions\/(\d+)/)
   return match ? match[1] : null
 }
 
@@ -39,8 +51,15 @@ function embedCode(text: string) {
     // Append a leading 't', to prevent tweetId from being interpreted as a number.
     // If it's a number, there may be numeric precision issues.
     return `<tiptap-tweet tweetid="t${getTweetId(text)}"></tiptap-tweet>`
+  } else if (getManifoldSlug(text)) {
+    const [username, slug] = getManifoldSlug(text) as [string, string]
+    return `<iframe src="https://manifold.markets/embed/${username}/${slug}"></iframe>`
   } else if (getYoutubeId(text)) {
     return `<iframe src="https://www.youtube.com/embed/${getYoutubeId(
+      text
+    )}"></iframe>`
+  } else if (getMetaculusId(text)) {
+    return `<iframe src="https://www.metaculus.com/questions/embed/${getMetaculusId(
       text
     )}"></iframe>`
   } else if (isValidUrl(text)) {
