@@ -1,6 +1,5 @@
 import { Editor } from '@tiptap/react'
 import { useState } from 'react'
-import { TwitterTweetEmbed } from 'react-twitter-embed'
 import { Button } from '../button'
 import { RichContent } from '../editor'
 import { Col } from '../layout/col'
