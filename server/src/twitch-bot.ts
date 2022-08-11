@@ -2,7 +2,7 @@ import { ChatUserstate, Client } from "tmi.js";
 import fs from "fs";
 
 import { LiteUser, ResolutionOutcome } from "common/manifold-defs";
-import { InsufficientBalanceException, UserNotRegisteredException } from "common/exceptions";
+import { InsufficientBalanceException, ResourceNotFoundException, UserNotRegisteredException } from "common/exceptions";
 
 import App from "./app";
 import log from "./logger";
@@ -42,7 +42,7 @@ export default class TwitchBot {
     private readonly app: App;
     private readonly client: Client;
 
-    private defaultGroup: string = null;
+    private defaultGroupID: string = null;
 
     constructor(app: App) {
         this.app = app;
@@ -130,8 +130,10 @@ export default class TwitchBot {
                 }
                 question = question.trim();
 
+                log.info("Create command issued with question: " + question);
+
                 try {
-                    const market = await user.createBinaryMarket(question, null, 50, this.defaultGroup ? [this.defaultGroup] : []);
+                    const market = await user.createBinaryMarket(question, null, 50, this.defaultGroupID ? this.defaultGroupID : undefined);
                     log.info("Created market ID: " + market.id);
                     this.app.selectMarket(channel, market.id);
                     this.client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question));
@@ -140,7 +142,7 @@ export default class TwitchBot {
                         user.getBalance().then((balance) => {
                             this.client.say(channel, MSG_NOT_ENOUGH_MANA_CREATE_MARKET(user.twitchDisplayName, balance));
                         });
-                    }
+                    } else throw e;
                 }
             },
             resolve: async (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => {
@@ -162,8 +164,16 @@ export default class TwitchBot {
             },
             setdefaultgroup: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
                 if (args.length < 1) return;
-                this.defaultGroup = args[0];
-                this.client.say(channel, `Set default group for all new markets to '${this.defaultGroup}'`);
+                const groupSlug = args[0];
+                try {
+                    const group = await Manifold.getGroupBySlug(groupSlug);
+                    this.defaultGroupID = group.id;
+                    this.client.say(channel, `Set default group for all new markets to '${group.slug}'`);
+                } catch (e) {
+                    if (e instanceof ResourceNotFoundException) {
+                        this.client.say(channel, `No group found with slug '${groupSlug}'`);
+                    } else throw e;
+                }
             },
         };
 

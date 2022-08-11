@@ -1,7 +1,7 @@
 import fetch, { Response } from "node-fetch";
 
 import * as ManifoldAPI from "common/manifold-defs";
-import { ForbiddenException, InsufficientBalanceException } from "common/exceptions";
+import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException } from "common/exceptions";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -17,11 +17,17 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
         }),
     });
     if (r.status !== 200) {
-        const error = <{ message: string }>await r.json();
+        let error: {message: string} = { message: "" };
+        try {
+           error = <{ message: string }>await r.json();
+        } catch (e) {
+            // Empty
+        }
         const errorMessage = error.message;
         if (errorMessage === "Insufficient balance.") throw new InsufficientBalanceException();
         if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
         if (r.status === 403) throw new ForbiddenException(errorMessage);
+        if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
         throw new Error(errorMessage);
     }
     return r;
@@ -30,8 +36,14 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
 async function get(url: string): Promise<Response> {
     const r = await fetch(url);
     if (r.status != 200) {
-        const error = <{ error: string }>await r.json();
+        let error: {error: string} = { error: "" };
+        try {
+           error = <{ error: string }>await r.json();
+        } catch (e) {
+            // Empty
+        }
         const errorMessage = error.error;
+        if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
         throw new Error(errorMessage);
     }
     return r;
@@ -70,7 +82,7 @@ export async function sellShares(marketID: string, APIKey: string, outcome?: "YE
     return post(`${APIBase}market/${marketID}/sell`, APIKey, parameters);
 }
 
-export async function createBinaryMarket(APIKey: string, question: string, description: string, initialProb_percent: number, groups?: string[]): Promise<ManifoldAPI.LiteMarket> {
+export async function createBinaryMarket(APIKey: string, question: string, description: string, initialProb_percent: number, groupID?: string): Promise<ManifoldAPI.LiteMarket> {
     const outcomeType: "BINARY" | "FREE_RESPONSE" | "NUMERIC" = "BINARY";
     const descriptionObject = {
         type: "doc",
@@ -96,7 +108,7 @@ export async function createBinaryMarket(APIKey: string, question: string, descr
         description: descriptionObject,
         closeTime: Date.now() + 1e12, // Arbitrarily long time in the future
         initialProb: initialProb_percent,
-        tags: groups,
+        ...groupID && {groupId: groupID},
     };
     return <Promise<ManifoldAPI.LiteMarket>>(await post(`${APIBase}market`, APIKey, requestData)).json();
 }
@@ -137,4 +149,8 @@ export async function getFullMarketByID(marketID: string): Promise<ManifoldAPI.F
 
 export async function getLiteMarketByID(marketID: string): Promise<ManifoldAPI.LiteMarket> {
     return <Promise<ManifoldAPI.LiteMarket>>(await get(`${APIBase}market/${marketID}/lite`)).json();
+}
+
+export async function getGroupBySlug(groupSlug: string): Promise<ManifoldAPI.Group> {
+    return <Promise<ManifoldAPI.Group>>(await get(`${APIBase}group/${groupSlug}`)).json();
 }

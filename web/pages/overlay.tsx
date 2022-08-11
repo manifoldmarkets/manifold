@@ -12,7 +12,7 @@ import { getCanvasFont, getTextWidth } from "../utils/utils";
 
 import io, { Socket } from "socket.io-client";
 import { Col } from "web/components/layout/col";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Head from "next/head";
 import { Row } from "web/components/layout/row";
 import clsx from "clsx";
@@ -22,12 +22,6 @@ import * as Manifold from "common/manifold-defs";
 import * as Packet from "common/packet-ids";
 import { FullBet } from "common/transaction";
 import { PacketResolved } from "common/packets";
-// class PacketResolved {
-//     outcome: "YES" | "NO" | "NA";
-//     uniqueTraders: number;
-//     topWinners: {displayName: string, profit: number}[];
-//     topLosers: {displayName: string, profit: number}[];
-// }
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -216,7 +210,7 @@ class Application {
         nameDiv.innerHTML = name + (isTruncated ? "..." : "");
         //
         t.querySelector(".amount").innerHTML = betAmountMagnitude.toFixed(0);
-        t.querySelector(".boughtSold").innerHTML = (bet.amount < 0 ? "sold " : "") + (positiveBet ? "YES" : "NO");
+        t.querySelector(".boughtSold").innerHTML = (bet.amount < 0 ? "sold " : "") + ((bet.amount < 0 ? !positiveBet : positiveBet) ? "YES" : "NO");
         (t.querySelector(".color") as HTMLElement).style.color = positiveBet ? "#92ff83" : "#ff3d3d";
 
         const response = document.createElement("p");

@@ -13,7 +13,8 @@ import { Transition } from "@headlessui/react";
 import ContractCard from "web/components/contract-card";
 import { CONTRACT_ANTE, formatMoney, Resolution } from "web/utils/utils";
 import io, { Socket } from "socket.io-client";
-import { SELECT_MARKET_ID } from "common/packet-ids";
+import * as Packets from "common/packet-ids";
+import { PacketResolved } from "common/packets";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -51,6 +52,13 @@ export default () => {
 
     useEffect(() => {
         socket = io();
+
+        socket.on(Packets.RESOLVE, () => {
+            console.log("Market resolved");
+            location.reload();
+        });
+
+        getUserBalance().then((b) => setBalance(b));
     }, []);
 
     const firstRender = useRef(true);
@@ -59,7 +67,7 @@ export default () => {
             firstRender.current = false;
             return;
         }
-        socket.emit(SELECT_MARKET_ID, selectedContract?.id);
+        socket.emit(Packets.SELECT_MARKET_ID, selectedContract?.id);
     }, [selectedContract]);
 
     useEffect(() => {
@@ -75,19 +83,6 @@ export default () => {
         }
     }, [selectedGroup]);
 
-    // const onRefresh = async () => {
-    //     if (selectedGroup) {
-    //         setLoadingContracts(true);
-    //         fetchMarketsInGroup(selectedGroup)
-    //             .then((markets) => {
-    //                 setContracts(markets);
-    //             })
-    //             .finally(() => {
-    //                 setTimeout(() => setLoadingContracts(false), 0);
-    //             });
-    //     }
-    // };
-
     return (
         <div className="flex justify-center">
             <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
@@ -97,7 +92,10 @@ export default () => {
                         <ConfirmationButton
                             openModalBtn={{
                                 label: `Create and feature a question`,
-                                className: clsx(!selectedGroup ? "btn-disabled" : "from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md", "uppercase w-full mt-2 py-2.5 text-base font-semibold text-white shadow-sm h-11"),
+                                className: clsx(
+                                    !selectedGroup ? "btn-disabled" : "from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md",
+                                    "uppercase w-full mt-2 py-2.5 text-base font-semibold text-white shadow-sm h-11"
+                                ),
                             }}
                             submitBtn={{
                                 label: "Create",
@@ -177,18 +175,23 @@ export default () => {
                     <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
                 </Transition>
                 {selectedContract && (
-                    <Transition appear show enter="ease-out duration-300" enterFrom="opacity-0 translate-y-4" enterTo="opacity-100 translate-y-0">
-                        <ResolutionPanel contract={selectedContract} onCancelClick={() => setSelectedContract(undefined)} onUnfeatureMarket={() => setSelectedContract(undefined)} />
-                    </Transition>
+                    <div className="fixed inset-0 flex flex-col items-center">
+                        <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 translate-y-4" enterTo="opacity-100 translate-y-0">
+                            <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
+                                <ResolutionPanel contract={selectedContract} onCancelClick={() => setSelectedContract(undefined)} onUnfeatureMarket={() => setSelectedContract(undefined)} />
+                            </div>
+                        </Transition>
+                    </div>
                 )}
             </div>
         </div>
     );
 };
 
-function ResolutionPanel({ contract, onUnfeatureMarket }: { contract: LiteMarket; onCancelClick: () => void; onUnfeatureMarket: () => void }) {
-    // const [isSubmitting, setIsSubmitting] = useState(false);
-    const isSubmitting = false;
+function ResolutionPanel(props: { contract: LiteMarket; onCancelClick: () => void; onUnfeatureMarket: () => void }) {
+    const { contract, onUnfeatureMarket } = props;
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [outcome, setOutcome] = useState<Resolution | undefined>();
 
     // const earnedFees = contract.mechanism === "dpm-2" ? `${DPM_CREATOR_FEE * 100}% of trader profits` : `${formatMoney((contract as any).fees.creatorFee)} in fees`;
@@ -203,6 +206,13 @@ function ResolutionPanel({ contract, onUnfeatureMarket }: { contract: LiteMarket
             : outcome === "MKT"
             ? "bg-blue-400 hover:bg-blue-500"
             : "btn-disabled";
+
+    const resolveClicked = async (): Promise<boolean> => {
+        console.log("Resolve clicked: " + outcome);
+        socket.emit(Packets.RESOLVE, outcome);
+        setIsSubmitting(true);
+        return true;
+    }
 
     return (
         <Col className={"rounded-md bg-white px-8 py-6 cursor-default"} onClick={(e) => e.stopPropagation()}>
@@ -221,7 +231,7 @@ function ResolutionPanel({ contract, onUnfeatureMarket }: { contract: LiteMarket
 
             <YesNoCancelSelector className="mx-auto my-2" selected={outcome} onSelect={setOutcome} btnClassName={isSubmitting ? "btn-disabled" : ""} />
 
-            <div className="my-4" />
+            <div className="my-2" />
 
             <div>
                 {outcome === "YES" ? (
@@ -248,25 +258,23 @@ function ResolutionPanel({ contract, onUnfeatureMarket }: { contract: LiteMarket
                     //         You will earn {earnedFees}.
                     //     </Col>
                     // )
-                    <>Resolving this market will immediately pay out traders.</>
+                    <p className="text-sm">Resolving this market will immediately pay out traders.</p>
                 )}
             </div>
 
-            <div className="my-4" />
+            {/* <div className="my-4" /> */}
 
             {/* {!!error && <div className="text-red-500">{error}</div>} */}
 
             <ResolveConfirmationButton
-                onResolve={() => {
-                    /** */
-                }}
+                onResolve={resolveClicked}
                 isSubmitting={isSubmitting}
                 openModalButtonClass={clsx("w-full mt-2", submitButtonClass)}
                 submitButtonClass={submitButtonClass}
             />
             <ConfirmationButton
                 openModalBtn={{
-                    className: clsx("border-none self-start w-full mt-2"),
+                    className: clsx("border-none self-start w-full mt-2", isSubmitting ? "btn-disabled" : ""),
                     label: "Unfeature market",
                 }}
                 cancelBtn={{
@@ -289,7 +297,7 @@ function ResolutionPanel({ contract, onUnfeatureMarket }: { contract: LiteMarket
     );
 }
 
-export function ResolveConfirmationButton(props: { onResolve: () => void; isSubmitting: boolean; openModalButtonClass?: string; submitButtonClass?: string }) {
+export function ResolveConfirmationButton(props: { onResolve: () => Promise<boolean>; isSubmitting: boolean; openModalButtonClass?: string; submitButtonClass?: string }) {
     const { onResolve, isSubmitting, openModalButtonClass, submitButtonClass } = props;
     return (
         <ConfirmationButton
@@ -304,7 +312,7 @@ export function ResolveConfirmationButton(props: { onResolve: () => void; isSubm
                 label: "Resolve",
                 className: clsx("border-none", submitButtonClass),
             }}
-            onSubmit={onResolve}
+            onSubmitWithSuccess={onResolve}
         >
             <p>Are you sure you want to resolve this market?</p>
         </ConfirmationButton>

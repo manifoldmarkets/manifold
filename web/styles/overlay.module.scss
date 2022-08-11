@@ -17,19 +17,7 @@ $themeGreen: #92ff83;
 $themeRed: #ff3d3d;
 
 $backgroundColor: #212121;
-$borderColor: color.scale($backgroundColor, $lightness: 30%);//#555;
-
-// body {
-//     // height: calc(100vh - 2 * $borderWidth);
-//     // border: $borderWidth $borderColor solid;
-//     // border-radius: $borderWidth;
-
-//     // display: flex;
-//     // flex-direction: row;
-//     // align-items: stretch;
-
-//     // color: white;
-// }
+$borderColor: color.scale($backgroundColor, $lightness: 10%);
 
 .border {
     border: $borderWidth $borderColor solid;
@@ -38,16 +26,6 @@ $borderColor: color.scale($backgroundColor, $lightness: 30%);//#555;
 
 .content {
     background-color: $backgroundColor;
-}
-
-.row {
-    display: flex;
-    flex-direction: row;
-}
-
-.col {
-    display: flex;
-    flex-direction: column;
 }
 
 #chance {

@@ -48,6 +48,7 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; setSele
                         setSelectedGroup(g);
                         break;
                     }
+                    setSelectedGroup(undefined);
                 }
                 onRefresh?.();
             })

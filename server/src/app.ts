@@ -18,6 +18,7 @@ import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
 import { PacketResolved } from "common/packets";
+import { ResolutionOutcome } from "common/manifold-defs";
 
 const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
 
@@ -73,6 +74,18 @@ export default class App {
                     }, 2000); //!!! This is horrible
                 }
             });
+
+            socket.on(Packet.RESOLVE, async (o: string) => {
+                log.info("Dock requested market resolve: " + o);
+
+                const outcome = o === "YES" ? ResolutionOutcome.YES : o === "NO" ? ResolutionOutcome.NO : ResolutionOutcome.CANCEL; //!!!
+
+                if (this.selectedMarket) {
+                    const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
+                    if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
+                    await Manifold.resolveBinaryMarket(this.selectedMarket.data.id, pseudoUser.APIKey, outcome);
+                }
+            });
         });
         // this.io.on("disconnect", (socket) => {
         //     console.log(socket.id);
@@ -119,6 +132,11 @@ export default class App {
     }
 
     public async selectMarket(channel: string, id: string): Promise<Market> {
+        if (this.selectedMarket) {
+            this.selectedMarket.continuePolling = false;
+            this.selectedMarket = null;
+        }
+
         this.io.emit(Packet.CLEAR); //!!!
 
         if (id) {

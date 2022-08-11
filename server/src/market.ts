@@ -24,6 +24,8 @@ export class Market {
 
     overlaySockets: Socket[] = [];
 
+    continuePolling = false;
+
     constructor(app: App, data: FullMarket) {
         this.app = app;
         this.data = data;
@@ -39,14 +41,14 @@ export class Market {
             this.loadUser(bet.userId);
         }
 
+        this.continuePolling = true;
         const pollTask = async () => {
-            let continuePolling = true;
             try {
                 this.pollBets();
                 if (await this.detectResolution()) {
                     this.data = await Manifold.getFullMarketByID(this.data.id);
 
-                    continuePolling = false;
+                    this.continuePolling = false;
                     const winners = await this.calculateWinners();
 
                     const channel = this.app.getChannelForMarketID(this.data.id);
@@ -81,8 +83,10 @@ export class Market {
             } catch (e) {
                 log.trace(e);
             } finally {
-                if (continuePolling) {
+                if (this.continuePolling) {
                     setTimeout(pollTask, 1000);
+                } else {
+                    log.info("Market poll task terminated.");
                 }
             }
         };
