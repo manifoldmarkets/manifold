@@ -51,6 +51,7 @@ function getNavigation() {
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
     return [
+      { name: 'Discord', href: 'https://discord.gg/ZtT7PxapSS' },
       { name: 'Manifold Markets', href: 'https://manifold.markets' },
       {
         name: 'Sign out',
@@ -113,7 +114,15 @@ const signedOutNavigation = [
 ]
 
 const signedOutMobileNavigation = IS_PRIVATE_MANIFOLD
-  ? [{ name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon }]
+  ? [
+      { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+
+      {
+        name: 'Discord',
+        href: 'https://discord.gg/ZtT7PxapSS',
+        icon: ChatIcon,
+      },
+    ]
   : [
       { name: 'Charity', href: '/charity', icon: HeartIcon },
       { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
@@ -141,7 +150,10 @@ const signedInMobileNavigation = [
 function getMoreMobileNav() {
   return [
     ...(IS_PRIVATE_MANIFOLD
-      ? [{ name: 'Manifold Markets', href: 'https://manifold.markets' }]
+      ? [
+          { name: 'Manifold Markets', href: 'https://manifold.markets' },
+          { name: 'Discord', href: 'https://discord.gg/ZtT7PxapSS' },
+        ]
       : CHALLENGES_ENABLED
       ? [
           { name: 'Challenges', href: '/challenges' },
