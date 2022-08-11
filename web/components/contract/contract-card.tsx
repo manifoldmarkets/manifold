@@ -76,7 +76,8 @@ export function ContractCard(props: {
           <Col className="relative flex-1 gap-3 pr-1">
             <div
               className={clsx(
-                'peer absolute -left-6 -top-4 -bottom-4 right-0 z-10'
+                'peer absolute -left-6 -top-4 -bottom-4 z-10',
+                hideQuickBet ? '-right-20' : 'right-0'
               )}
             >
               {onClick ? (
