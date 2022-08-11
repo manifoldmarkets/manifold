@@ -28,7 +28,6 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
     className,
     currentPageForAnalytics,
   } = props
-  const activeTab = tabs[activeIndex] as Tab | undefined // can be undefined in weird case
   return (
     <>
       <nav
@@ -64,7 +63,11 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
           </a>
         ))}
       </nav>
-      {activeTab?.content}
+      {tabs.map((tab, i) => (
+        <div key={i} className={i === activeIndex ? 'block' : 'hidden'}>
+          {tab.content}
+        </div>
+      ))}
     </>
   )
 }
