@@ -21,6 +21,7 @@ import { Content, useTextEditor } from 'web/components/editor'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { ChevronDownIcon, UsersIcon } from '@heroicons/react/outline'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
+import { usePrivateUser } from 'web/hooks/use-user'
 
 export function GroupChat(props: {
   messages: Comment[]
@@ -29,6 +30,9 @@ export function GroupChat(props: {
   tips: CommentTipMap
 }) {
   const { messages, user, group, tips } = props
+
+  const privateUser = usePrivateUser(user?.id)
+
   const { editor, upload } = useTextEditor({
     simple: true,
     placeholder: 'Send a message',
@@ -175,6 +179,15 @@ export function GroupChat(props: {
           </div>
         </div>
       )}
+
+      {privateUser && (
+        <GroupChatNotificationsIcon
+          group={group}
+          privateUser={privateUser}
+          shouldSetAsSeen={true}
+          hidden={true}
+        />
+      )}
     </Col>
   )
 }
@@ -248,6 +261,7 @@ export function GroupChatInBubble(props: {
             group={group}
             privateUser={privateUser}
             shouldSetAsSeen={shouldShowChat}
+            hidden={false}
           />
         )}
       </button>
@@ -259,8 +273,9 @@ function GroupChatNotificationsIcon(props: {
   group: Group
   privateUser: PrivateUser
   shouldSetAsSeen: boolean
+  hidden: boolean
 }) {
-  const { privateUser, group, shouldSetAsSeen } = props
+  const { privateUser, group, shouldSetAsSeen, hidden } = props
   const preferredNotificationsForThisGroup = useUnseenPreferredNotifications(
     privateUser,
     {
@@ -282,7 +297,9 @@ function GroupChatNotificationsIcon(props: {
   return (
     <div
       className={
-        preferredNotificationsForThisGroup.length > 0 && !shouldSetAsSeen
+        !hidden &&
+        preferredNotificationsForThisGroup.length > 0 &&
+        !shouldSetAsSeen
           ? 'absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-white bg-red-500'
           : 'hidden'
       }
