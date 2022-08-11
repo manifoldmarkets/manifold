@@ -20,8 +20,8 @@ function getTweetId(text: string) {
 
 // Manifold URL: https://manifold.markets/Austin/will-manifold-ever-be-worth-1b
 function getManifoldSlug(text: string) {
-  const match = text.match(/^https?:\/\/manifold\.markets\/([^\/]+)\/([^\/]+)/)
-  return match ? [match[1], match[2]] : null
+  const match = text.match(/^https?:\/\/manifold\.markets\/([^\/]+\/[^\/]+)/)
+  return match ? match[1] : null
 }
 
 // Youtube URL: 'https://www.youtube.com/watch?v=ziq7FUKpCS8'
@@ -51,8 +51,9 @@ function embedCode(text: string) {
     // If it's a number, there may be numeric precision issues.
     return `<tiptap-tweet tweetid="t${getTweetId(text)}"></tiptap-tweet>`
   } else if (getManifoldSlug(text)) {
-    const [username, slug] = getManifoldSlug(text) as [string, string]
-    return `<iframe src="https://manifold.markets/embed/${username}/${slug}"></iframe>`
+    return `<iframe src="https://manifold.markets/embed/${getManifoldSlug(
+      text
+    )}"></iframe>`
   } else if (getYoutubeId(text)) {
     return `<iframe src="https://www.youtube.com/embed/${getYoutubeId(
       text
