@@ -7,7 +7,7 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { JSONContent } from '@tiptap/core'
-import { richTextToString } from 'common/lib/util/parse'
+import { richTextToString } from 'common/util/parse'
 
 export type LiteMarket = {
   // Unique identifer for this market
