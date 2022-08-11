@@ -162,6 +162,10 @@ export default class TwitchBot {
                 if (args.length < 1) return;
                 this.app.selectMarket(channel, (await Manifold.getMarketBySlug(args[0])).id);
             },
+            feature: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
+                if (args.length < 1) return;
+                this.app.selectMarket(channel, (await Manifold.getMarketBySlug(args[0])).id);
+            },
             setdefaultgroup: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
                 if (args.length < 1) return;
                 const groupSlug = args[0];
@@ -209,7 +213,7 @@ export default class TwitchBot {
                 } else {
                     try {
                         const market = app.getMarketForTwitchChannel(channel);
-                        if (!market && commandString !== "select" && commandString !== "balance" && commandString !== "create" && commandString !== "setdefaultgroup") {
+                        if (!market && commandString !== "select" && commandString !== "balance" && commandString !== "create" && commandString !== "setdefaultgroup" && commandString !== "feature") {
                             this.client.say(channel, MSG_NO_MARKET_SELECTED(userDisplayName));
                             return;
                         }
@@ -220,7 +224,10 @@ export default class TwitchBot {
                             await userCommands[commandString](user, tags, args, channel, market);
                         } else if (modUserCommands[commandString]) {
                             if (!this.isAllowedAdminCommand(tags)) {
-                                log.warn(`User ${user.twitchDisplayName} tried to use create without permission.`);
+                                log.warn(`User ${user.twitchDisplayName} tried to use ${commandString} without permission.`);
+                                if (commandString == "resolve" && args.length > 0) {
+                                    this.client.say(channel, userDisplayName + ` resolved ${args[0].toLocaleUpperCase()} Kappa`);
+                                }
                                 return;
                             }
                             await modUserCommands[commandString](user, tags, args, channel, market);

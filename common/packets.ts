@@ -4,3 +4,12 @@ export class PacketResolved {
     topWinners: {displayName: string, profit: number}[];
     topLosers: {displayName: string, profit: number}[];
 }
+
+export class PacketCreateMarket {
+    question: string;
+    groupId: string;
+}
+
+export class PacketMarketCreated {
+    id: string;
+}

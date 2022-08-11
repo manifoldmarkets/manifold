@@ -26,6 +26,8 @@ export class Market {
 
     continuePolling = false;
 
+    resolveData: PacketResolved = null;
+
     constructor(app: App, data: FullMarket) {
         this.app = app;
         this.data = data;
@@ -52,7 +54,7 @@ export class Market {
                     const winners = await this.calculateWinners();
 
                     const channel = this.app.getChannelForMarketID(this.data.id);
-                    this.app.bot.resolveMarket(channel, this.data.resolution == "YES" ? ResolutionOutcome.YES : ResolutionOutcome.NO, winners); //!!! Proper outcomes
+                    this.app.bot.resolveMarket(channel, this.data.resolution === "YES" ? ResolutionOutcome.YES : this.data.resolution === "NO" ? ResolutionOutcome.NO : ResolutionOutcome.CANCEL, winners); //!!! Proper outcomes
 
                     const uniqueTraderCount = _(this.data.bets).groupBy("userId").size();
 
@@ -60,24 +62,28 @@ export class Market {
                     const topWinners: Result[] = [];
                     const topLosers: Result[] = [];
                     for (const winner of winners) {
+                        if (Math.abs(winner.profit) == 0) {
+                            continue; // Ignore profit/losses of 0
+                        }
                         if (winner.profit > 0) {
                             topWinners.push({ displayName: winner.user.name, profit: winner.profit });
                         } else {
                             topLosers.push({ displayName: winner.user.name, profit: winner.profit });
                         }
                     }
-                    const sortFunction = (a: Result, b: Result) => Math.abs(a.profit) > Math.abs(b.profit) ? 1 : -1;
+                    const sortFunction = (a: Result, b: Result) => Math.abs(a.profit) > Math.abs(b.profit) ? -1 : 1;
                     topWinners.sort(sortFunction);
                     topLosers.sort(sortFunction);
 
-                    const resolveData: PacketResolved = {
+                    this.resolveData = {
                         outcome: this.data.resolution === "YES" ? "YES" : this.data.resolution === "NO" ? "NO" : "NA", //!!! Proper outcomes
                         uniqueTraders: uniqueTraderCount,
                         topWinners: topWinners,
                         topLosers: topLosers,
                     };
-                    for (const packet of this.overlaySockets) {
-                        packet.emit(Packet.RESOLVE, resolveData); //!!!
+                    for (const socket of this.overlaySockets) {
+                        socket.emit(Packet.RESOLVE, this.resolveData); //!!!
+                        socket.emit(Packet.RESOLVED); //!!!
                     }
                 }
             } catch (e) {

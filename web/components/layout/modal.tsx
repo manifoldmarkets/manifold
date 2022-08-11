@@ -15,7 +15,7 @@ export function Modal(props: { children: ReactNode; open: boolean; setOpen: (ope
 
     return (
         <Transition.Root show={open} as={Fragment}>
-            <Dialog as="div" className="fixed inset-0 z-50 overflow-y-auto" onClose={setOpen}>
+            <Dialog as="div" className="fixed inset-0 z-50 overflow-hidden" onClose={setOpen}>
                 <div className="flex min-h-screen items-end justify-center text-center">
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
                         <Dialog.Overlay className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />

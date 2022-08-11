@@ -17,7 +17,7 @@ import TwitchBot from "./twitch-bot";
 import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
-import { PacketResolved } from "common/packets";
+import { PacketCreateMarket, PacketMarketCreated, PacketResolved } from "common/packets";
 import { ResolutionOutcome } from "common/manifold-defs";
 
 const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
@@ -54,6 +54,10 @@ export default class App {
                 socket.emit(Packet.ADD_BETS, this.selectedMarket.bets);
 
                 this.selectedMarket.overlaySockets.push(socket);
+
+                if (this.selectedMarket.resolveData) {
+                    socket.emit(Packet.RESOLVE, this.selectedMarket.resolveData); //!!!
+                }
             }
             //!!! Need some linking method
 
@@ -62,17 +66,6 @@ export default class App {
                 const market = await this.selectMarket("#philbladen", marketID); //!!! Channel name
 
                 // const market = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
-                if (market) {
-                    setTimeout(() => {
-                        for (const socket of this.io.sockets.sockets) {
-                            if (market.overlaySockets.indexOf(socket[1]) < 0) {
-                                market.overlaySockets.push(socket[1]);
-                            }
-                        }
-                        this.io.emit(Packet.ADD_BETS, market.bets);
-                        log.info("Pushed market socket");
-                    }, 2000); //!!! This is horrible
-                }
             });
 
             socket.on(Packet.RESOLVE, async (o: string) => {
@@ -82,9 +75,17 @@ export default class App {
 
                 if (this.selectedMarket) {
                     const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
-                    if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
+                    if (!pseudoUser) throw new Error("Pseudo user not found"); //!!!
                     await Manifold.resolveBinaryMarket(this.selectedMarket.data.id, pseudoUser.APIKey, outcome);
                 }
+            });
+
+            socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
+                const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
+                if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
+                const newMarket = await Manifold.createBinaryMarket(pseudoUser.APIKey, packet.question, undefined, 50, packet.groupId);
+                socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
+                log.info("Created new market via dock: " + packet.question);
             });
         });
         // this.io.on("disconnect", (socket) => {
@@ -123,7 +124,7 @@ export default class App {
     }
 
     public getChannelForMarketID(marketID: string) {
-        return "#philbladen";//!!!
+        return "#philbladen"; //!!!
         // for (const channel of Object.keys(this.selectedMarketMap)) {
         //     const market = this.selectedMarketMap[channel];
         //     if (market.data.id == marketID) return channel;
@@ -146,6 +147,19 @@ export default class App {
             this.selectedMarket = market;
             this.io.emit(Packet.SELECT_MARKET_ID, market.data.id); //!!!
             this.io.emit(Packet.ADD_BETS, market.bets);
+
+            if (market) {
+                setTimeout(() => {
+                    for (const socket of this.io.sockets.sockets) {
+                        if (market.overlaySockets.indexOf(socket[1]) < 0) {
+                            market.overlaySockets.push(socket[1]);
+                        }
+                    }
+                    this.io.emit(Packet.ADD_BETS, market.bets);
+                    log.info("Pushed market socket");
+                }, 2000); //!!! This is horrible
+            }
+
             return market;
         }
     }

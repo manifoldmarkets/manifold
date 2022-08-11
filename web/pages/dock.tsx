@@ -14,7 +14,7 @@ import ContractCard from "web/components/contract-card";
 import { CONTRACT_ANTE, formatMoney, Resolution } from "web/utils/utils";
 import io, { Socket } from "socket.io-client";
 import * as Packets from "common/packet-ids";
-import { PacketResolved } from "common/packets";
+import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -43,17 +43,40 @@ export default () => {
     const [loadingContracts, setLoadingContracts] = useState<boolean>(false);
     const [contracts, setContracts] = useState<LiteMarket[]>([]);
     const [selectedContract, setSelectedContract] = useState<LiteMarket | undefined>(undefined);
+    const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
 
     const ante = CONTRACT_ANTE;
-    const isSubmitting = false;
-    const onSubmit = async () => {
-        return true; //!!!
+    const onSubmitNewQuestion = async () => {
+        setIsSubmittingQuestion(true);
+        try {
+            await new Promise<void>((resolve, reject) => {
+                socket.emit(Packets.CREATE_MARKET, { groupId: selectedGroup.id, question: question } as PacketCreateMarket);
+                socket.once(Packets.MARKET_CREATED, async (packet: PacketMarketCreated) => {
+                    //!!! Need to refresh groups
+                    const markets = await fetchMarketsInGroup(selectedGroup);
+                    setContracts(markets);
+                    for (const market of markets) {
+                        if (market.id === packet.id) {
+                            setSelectedContract(market);
+                            break;
+                        }
+                    }
+                    resolve();
+                });
+                setTimeout(reject, 5000); //!!! Handle errors nicely
+            });
+            return true;
+        } catch (e) {
+            return false;
+        } finally {
+            setIsSubmittingQuestion(false);
+        }
     };
 
     useEffect(() => {
         socket = io();
 
-        socket.on(Packets.RESOLVE, () => {
+        socket.on(Packets.RESOLVED, () => {
             console.log("Market resolved");
             location.reload();
         });
@@ -99,9 +122,12 @@ export default () => {
                             }}
                             submitBtn={{
                                 label: "Create",
-                                className: clsx("normal-case btn", ante > balance ? "btn-disabled" : isSubmitting ? "loading btn-disabled" : "btn-primary"),
+                                className: clsx("normal-case btn", (question.trim().length == 0  || ante > balance) ? "btn-disabled" : isSubmittingQuestion ? "loading btn-disabled" : "btn-primary"),
                             }}
-                            onSubmitWithSuccess={onSubmit}
+                            cancelBtn={{
+                                className: isSubmittingQuestion ? "btn-disabled" : "",
+                            }}
+                            onSubmitWithSuccess={onSubmitNewQuestion}
                             onOpenChanged={() => {
                                 getUserBalance().then((b) => setBalance(b));
                             }}
@@ -212,7 +238,7 @@ function ResolutionPanel(props: { contract: LiteMarket; onCancelClick: () => voi
         socket.emit(Packets.RESOLVE, outcome);
         setIsSubmitting(true);
         return true;
-    }
+    };
 
     return (
         <Col className={"rounded-md bg-white px-8 py-6 cursor-default"} onClick={(e) => e.stopPropagation()}>
@@ -266,12 +292,7 @@ function ResolutionPanel(props: { contract: LiteMarket; onCancelClick: () => voi
 
             {/* {!!error && <div className="text-red-500">{error}</div>} */}
 
-            <ResolveConfirmationButton
-                onResolve={resolveClicked}
-                isSubmitting={isSubmitting}
-                openModalButtonClass={clsx("w-full mt-2", submitButtonClass)}
-                submitButtonClass={submitButtonClass}
-            />
+            <ResolveConfirmationButton onResolve={resolveClicked} isSubmitting={isSubmitting} openModalButtonClass={clsx("w-full mt-2", submitButtonClass)} submitButtonClass={submitButtonClass} />
             <ConfirmationButton
                 openModalBtn={{
                     className: clsx("border-none self-start w-full mt-2", isSubmitting ? "btn-disabled" : ""),
