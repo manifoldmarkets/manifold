@@ -1,8 +1,6 @@
 import { MAX_ANSWER_LENGTH } from 'common/answer'
-import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 import { XIcon } from '@heroicons/react/solid'
-
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 
