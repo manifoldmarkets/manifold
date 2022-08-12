@@ -19,12 +19,6 @@
   "watchOptions": {
     "excludeDirectories": [".next"]
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "../common/**/*.ts",
-    "../common/util/tiptap-tweet.tsx"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "../common/**/*.ts"],
   "exclude": ["node_modules"]
 }
