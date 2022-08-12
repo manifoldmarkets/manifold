@@ -1,9 +1,8 @@
-import React from 'react'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import advanced from 'dayjs/plugin/advancedFormat'
-import { ClientRender } from './client-render'
+import { Tooltip } from './tooltip'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -13,23 +12,16 @@ export function DateTimeTooltip(props: {
   time: number
   text?: string
   children?: React.ReactNode
+  noTap?: boolean
 }) {
-  const { time, text } = props
+  const { time, text, noTap } = props
 
   const formattedTime = dayjs(time).format('MMM DD, YYYY hh:mm a z')
   const toolTip = text ? `${text} ${formattedTime}` : formattedTime
 
   return (
-    <>
-      <ClientRender>
-        <span
-          className="tooltip hidden cursor-default sm:inline-block"
-          data-tip={toolTip}
-        >
-          {props.children}
-        </span>
-      </ClientRender>
-      <span className="whitespace-nowrap sm:hidden">{props.children}</span>
-    </>
+    <Tooltip text={toolTip} noTap={noTap}>
+      {props.children}
+    </Tooltip>
   )
 }

@@ -31,6 +31,7 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
+import { Tooltip } from '../tooltip'
 
 export function ContractCard(props: {
   contract: Contract
@@ -333,22 +334,19 @@ export function PseudoNumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <div
-              className={clsx('tooltip', textColor)}
-              data-tip={value.toFixed(2)}
-            >
+            <Tooltip className={textColor} text={value.toFixed(2)}>
               {formatLargeNumber(value)}
-            </div>
+            </Tooltip>
           )}
         </>
       ) : (
         <>
-          <div
-            className={clsx('tooltip text-3xl', textColor)}
-            data-tip={value.toFixed(2)}
+          <Tooltip
+            className={clsx('text-3xl', textColor)}
+            text={value.toFixed(2)}
           >
             {formatLargeNumber(value)}
-          </div>
+          </Tooltip>
           <div className={clsx('text-base', textColor)}>expected</div>
         </>
       )}
