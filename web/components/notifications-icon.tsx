@@ -2,15 +2,14 @@ import { BellIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { usePrivateUser } from 'web/hooks/use-user'
 import { useRouter } from 'next/router'
 import { useUnseenPreferredNotificationGroups } from 'web/hooks/use-notifications'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 import { PrivateUser } from 'common/user'
 
 export default function NotificationsIcon(props: { className?: string }) {
-  const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
+  const privateUser = usePrivateUser()
 
   return (
     <Row className={clsx('justify-center')}>

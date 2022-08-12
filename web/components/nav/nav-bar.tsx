@@ -44,7 +44,7 @@ export function BottomNavBar() {
   const currentPage = router.pathname
 
   const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
+  const privateUser = usePrivateUser()
 
   const isIframe = useIsIframe()
   if (isIframe) {
