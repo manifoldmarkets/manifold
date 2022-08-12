@@ -79,7 +79,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
       </Head>
-      <AuthProvider serverUser={pageProps.authUser}>
+      <AuthProvider serverUser={pageProps.auth}>
         <QueryClientProvider client={queryClient}>
           <Welcome {...pageProps} />
           <Component {...pageProps} />
