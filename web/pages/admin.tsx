@@ -47,7 +47,8 @@ function UsersTable() {
         )
       }
     )
-  }, [users])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users.map((user) => user.id).join(',')])
 
   // For each user, set their email from the PrivateUser
   const fullUsers = users
