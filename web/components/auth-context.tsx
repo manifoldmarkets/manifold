@@ -53,7 +53,7 @@ export function AuthProvider(props: {
           refresh: fbUser.refreshToken,
         })
         let current = await getUserAndPrivateUser(fbUser.uid)
-        if (!current) {
+        if (!current.user || !current.privateUser) {
           const deviceToken = ensureDeviceToken()
           current = (await createUser({ deviceToken })) as UserAndPrivateUser
         }
