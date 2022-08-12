@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
 
-import { getPortfolioHistory, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -26,7 +26,6 @@ import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { BetsList } from './bets-list'
 import { FollowersButton, FollowingButton } from './following-button'
 import { UserFollowButton } from './follow-button'
-import { PortfolioMetrics } from 'common/user'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { filterDefined } from 'common/util/array'
@@ -74,9 +73,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
       ? 0
       : userBets.filter((bet) => !bet.isRedemption && bet.amount !== 0).length
 
-  const [portfolioHistory, setUsersPortfolioHistory] = useState<
-    PortfolioMetrics[]
-  >([])
   const [contractsById, setContractsById] = useState<
     Dictionary<Contract> | undefined
   >()
@@ -91,7 +87,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
     if (!user) return
     getUsersComments(user.id).then(setUsersComments)
     listContracts(user.id).then(setUsersContracts)
-    getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
   }, [user])
 
   // TODO: display comments on groups
@@ -300,9 +295,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
                 title: 'Bets',
                 content: (
                   <div>
-                    <PortfolioValueSection
-                      portfolioHistory={portfolioHistory}
-                    />
+                    <PortfolioValueSection userId={user.id} />
                     <BetsList
                       user={user}
                       bets={userBets}
