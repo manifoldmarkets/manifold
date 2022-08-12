@@ -27,20 +27,22 @@ export function UserCommentsList(props: {
       {Object.entries(commentsByContract).map(([contractId, comments]) => {
         const contract = contractsById[contractId]
         return (
-          <div key={contractId} className={'border-width-1 border-b p-5'}>
+          <div key={contractId} className="border-b p-5">
             <SiteLink
-              className={'mb-2 block text-sm text-indigo-700'}
+              className="mb-2 block pb-2 font-medium text-indigo-700"
               href={contractPath(contract)}
             >
               {contract.question}
             </SiteLink>
-            {comments.map((comment) => (
-              <ProfileComment
-                key={comment.id}
-                comment={comment}
-                className="relative flex items-start space-x-3 pb-6"
-              />
-            ))}
+            <Col className="gap-6">
+              {comments.map((comment) => (
+                <ProfileComment
+                  key={comment.id}
+                  comment={comment}
+                  className="relative flex items-start space-x-3"
+                />
+              ))}
+            </Col>
           </div>
         )
       })}
