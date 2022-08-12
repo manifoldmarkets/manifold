@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Dictionary, groupBy, keyBy, mapValues, uniq } from 'lodash'
+import { Dictionary, keyBy, uniq } from 'lodash'
 
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
@@ -59,7 +59,7 @@ export function UserCommentsList(props: { user: User }) {
       {pageComments.map(({ key, items }, i) => {
         const contract = contracts[key]
         return (
-          <div key={i} className="border-b p-5">
+          <div key={start + i} className="border-b p-5">
             <SiteLink
               className="mb-2 block pb-2 font-medium text-indigo-700"
               href={contractPath(contract)}

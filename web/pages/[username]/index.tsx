@@ -17,11 +17,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
   const [auth, user] = (await Promise.all([
     creds != null ? getUserAndPrivateUser(creds.user.uid) : null,
-    getUserByUsername(ctx.params!.username as string),
+    getUserByUsername(ctx.params!.username as string), // eslint-disable-line @typescript-eslint/no-non-null-assertion
   ])) as [UserAndPrivateUser | null, User | null]
-  return {
-    props: { auth, user },
-  }
+  return { props: { auth, user } }
 }
 
 export default function UserProfile(props: { user: User | null }) {
