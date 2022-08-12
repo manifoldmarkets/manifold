@@ -59,7 +59,6 @@ export function ContractSearch(props: {
   }
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
-  showPlaceHolder?: boolean
   hideOrderSelector?: boolean
   overrideGridClassName?: string
   cardHideOptions?: {
@@ -75,7 +74,6 @@ export function ContractSearch(props: {
     onContractClick,
     overrideGridClassName,
     hideOrderSelector,
-    showPlaceHolder,
     cardHideOptions,
     highlightOptions,
     headerClassName,
@@ -269,7 +267,7 @@ export function ContractSearch(props: {
             value={query}
             onChange={(e) => updateQuery(e.target.value)}
             onBlur={trackCallback('search', { query })}
-            placeholder={showPlaceHolder ? `Search ${filter} markets` : ''}
+            placeholder={'Search'}
             className="input input-bordered w-full"
           />
           {!query && (
