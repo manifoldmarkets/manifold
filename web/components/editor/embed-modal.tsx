@@ -25,6 +25,8 @@ const embedPatterns: EmbedPattern[] = [
   },
   {
     regex: /^https?:\/\/twitter\.com\/.*\/status\/(\d+)/,
+    // Hack: append a leading 't', to prevent tweetId from being interpreted as a number.
+    // If it's a number, there may be numeric precision issues.
     rewrite: (id) => `<tiptap-tweet tweetid="t${id}"></tiptap-tweet>`,
   },
   {
