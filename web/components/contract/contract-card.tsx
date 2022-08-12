@@ -137,24 +137,24 @@ export function ContractCard(props: {
       {showQuickBet ? (
         <QuickBet contract={contract} user={user} />
       ) : (
-        <Col className="m-auto pl-2">
+        <>
           {outcomeType === 'BINARY' && (
             <BinaryResolutionOrChance
-              className="items-center"
+              className="items-center self-center"
               contract={contract}
             />
           )}
 
           {outcomeType === 'PSEUDO_NUMERIC' && (
             <PseudoNumericResolutionOrExpectation
-              className="items-center"
+              className="items-center self-center"
               contract={contract}
             />
           )}
 
           {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
-              className="items-center"
+              className="items-center self-center"
               contract={contract}
             />
           )}
@@ -162,13 +162,13 @@ export function ContractCard(props: {
           {(outcomeType === 'FREE_RESPONSE' ||
             outcomeType === 'MULTIPLE_CHOICE') && (
             <FreeResponseResolutionOrChance
-              className="self-end text-gray-600"
+              className="items-center self-center text-gray-600"
               contract={contract}
               truncate="long"
             />
           )}
           <ProbBar contract={contract} />
-        </Col>
+        </>
       )}
     </Row>
   )
