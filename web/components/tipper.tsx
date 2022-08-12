@@ -103,7 +103,8 @@ function DownTip(props: { onClick?: () => void }) {
   const { onClick } = props
   return (
     <Tooltip
-      className="tooltip-bottom h-6 w-6"
+      className="h-6 w-6"
+      placement="bottom"
       text={onClick && `-${formatMoney(5)}`}
     >
       <button
@@ -122,7 +123,8 @@ function UpTip(props: { onClick?: () => void; value: number }) {
   const IconKind = value >= 10 ? ChevronDoubleRightIcon : ChevronRightIcon
   return (
     <Tooltip
-      className="tooltip-bottom h-6 w-6"
+      className="h-6 w-6"
+      placement="bottom"
       text={onClick && `Tip ${formatMoney(5)}`}
     >
       <button
