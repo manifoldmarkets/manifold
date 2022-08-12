@@ -7,7 +7,6 @@ module.exports = {
   optimizeFonts: false,
   experimental: {
     externalDir: true,
-    optimizeCss: true,
     modularizeImports: {
       '@heroicons/react/solid/?(((\\w*)?/?)*)': {
         transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
