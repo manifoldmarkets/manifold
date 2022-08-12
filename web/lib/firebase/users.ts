@@ -221,12 +221,7 @@ export async function getTopTraders(period: Period) {
   )
 
   const topUsers = await getValues<User>(topTraders)
-  return topUsers
-    .filter(
-      (user) =>
-        user.username !== 'SalemCenter' && user.username !== 'RichardHanania'
-    )
-    .slice(0, 20)
+  return topUsers.slice(0, 20)
 }
 
 export function getTopCreators(period: Period) {
@@ -240,6 +235,20 @@ export function getTopCreators(period: Period) {
 
 export async function getTopFollowed() {
   return (await getValues<User>(topFollowedQuery)).slice(0, 20)
+}
+
+export async function getFirstDayProfit(userId: string) {
+  const firstDay = new Date('2022-08-08').getTime()
+  const firstDayPortfolio = query(
+    collection(users, userId, 'portfolioHistory'),
+    where('timestamp', '<', firstDay),
+    orderBy('timestamp', 'desc'),
+    limit(1)
+  )
+  const values = await getValues<PortfolioMetrics>(firstDayPortfolio)
+  if (values.length === 0) return 0
+  const portfolioValue = values[0].balance + values[0].investmentValue
+  return Math.max(0, portfolioValue - 1000)
 }
 
 const topFollowedQuery = query(
