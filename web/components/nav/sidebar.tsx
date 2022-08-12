@@ -221,7 +221,7 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
 
   const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
+  const privateUser = usePrivateUser()
   // usePing(user?.id)
 
   const navigationOptions = !user ? signedOutNavigation : getNavigation()

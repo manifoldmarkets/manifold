@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
-import { getUser } from 'web/lib/firebase/users'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
 import { FIXED_ANTE } from 'common/antes'
@@ -34,8 +34,7 @@ import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  const user = await getUser(creds.user.uid)
-  return { props: { user } }
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
 })
 
 type NewQuestionParams = {
@@ -52,9 +51,9 @@ type NewQuestionParams = {
   initValue?: string
 }
 
-export default function Create(props: { user: User }) {
+export default function Create(props: { auth: { user: User } }) {
   useTracking('view create page')
-  const { user } = props
+  const { user } = props.auth
   const router = useRouter()
   const params = router.query as NewQuestionParams
   // TODO: Not sure why Question is pulled out as its own component;

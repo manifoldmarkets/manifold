@@ -10,19 +10,18 @@ import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
-import { getUser } from 'web/lib/firebase/users'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  const user = await getUser(creds.user.uid)
-  return { props: { user } }
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
 })
 
-const Home = (props: { user: User }) => {
-  const { user } = props
+const Home = (props: { auth: { user: User } }) => {
+  const { user } = props.auth
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()

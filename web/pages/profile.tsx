@@ -13,8 +13,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { User, PrivateUser } from 'common/user'
 import {
-  getUser,
-  getPrivateUser,
+  getUserAndPrivateUser,
   updateUser,
   updatePrivateUser,
 } from 'web/lib/firebase/users'
@@ -24,11 +23,7 @@ import Textarea from 'react-expanding-textarea'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  const [user, privateUser] = await Promise.all([
-    getUser(creds.user.uid),
-    getPrivateUser(creds.user.uid),
-  ])
-  return { props: { user, privateUser } }
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
 })
 
 function EditUserField(props: {
@@ -69,10 +64,9 @@ function EditUserField(props: {
 }
 
 export default function ProfilePage(props: {
-  user: User
-  privateUser: PrivateUser
+  auth: { user: User; privateUser: PrivateUser }
 }) {
-  const { user, privateUser } = props
+  const { user, privateUser } = props.auth
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [name, setName] = useState(user.name)

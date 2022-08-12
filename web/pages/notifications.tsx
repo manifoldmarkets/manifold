@@ -13,7 +13,7 @@ import {
   MANIFOLD_USERNAME,
   PrivateUser,
 } from 'common/user'
-import { getPrivateUser } from 'web/lib/firebase/users'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
@@ -46,12 +46,13 @@ const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  const privateUser = await getPrivateUser(creds.user.uid)
-  return { props: { privateUser } }
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
 })
 
-export default function Notifications(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
+export default function Notifications(props: {
+  auth: { privateUser: PrivateUser }
+}) {
+  const { privateUser } = props.auth
   const local = safeLocalStorage()
   let localNotifications = [] as Notification[]
   const localSavedNotificationGroups = local?.getItem('notification-groups')

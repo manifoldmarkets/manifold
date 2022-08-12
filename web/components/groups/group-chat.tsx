@@ -31,7 +31,7 @@ export function GroupChat(props: {
 }) {
   const { messages, user, group, tips } = props
 
-  const privateUser = usePrivateUser(user?.id)
+  const privateUser = usePrivateUser()
 
   const { editor, upload } = useTextEditor({
     simple: true,

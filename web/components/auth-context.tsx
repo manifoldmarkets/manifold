@@ -1,10 +1,11 @@
 import { ReactNode, createContext, useEffect } from 'react'
-import { User } from 'common/user'
 import { onIdTokenChanged } from 'firebase/auth'
 import {
+  UserAndPrivateUser,
   auth,
   listenForUser,
-  getUser,
+  listenForPrivateUser,
+  getUserAndPrivateUser,
   setCachedReferralInfoForUser,
 } from 'web/lib/firebase/users'
 import { deleteTokenCookies, setTokenCookies } from 'web/lib/firebase/auth'
@@ -14,10 +15,10 @@ import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
-// the user is not logged in (null), or we know the user is logged in (User).
-type AuthUser = undefined | null | User
+// the user is not logged in (null), or we know the user is logged in.
+type AuthUser = undefined | null | UserAndPrivateUser
 
-const CACHED_USER_KEY = 'CACHED_USER_KEY'
+const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
 
 const ensureDeviceToken = () => {
   let deviceToken = localStorage.getItem('device-token')
@@ -36,6 +37,7 @@ export function AuthProvider(props: {
 }) {
   const { children, serverUser } = props
   const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
+
   useEffect(() => {
     if (serverUser === undefined) {
       const cachedUser = localStorage.getItem(CACHED_USER_KEY)
@@ -50,16 +52,16 @@ export function AuthProvider(props: {
           id: await fbUser.getIdToken(),
           refresh: fbUser.refreshToken,
         })
-        let user = await getUser(fbUser.uid)
-        if (!user) {
+        let current = await getUserAndPrivateUser(fbUser.uid)
+        if (!current.user || !current.privateUser) {
           const deviceToken = ensureDeviceToken()
-          user = (await createUser({ deviceToken })) as User
+          current = (await createUser({ deviceToken })) as UserAndPrivateUser
         }
-        setAuthUser(user)
+        setAuthUser(current)
         // Persist to local storage, to reduce login blink next time.
         // Note: Cap on localStorage size is ~5mb
-        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user))
-        setCachedReferralInfoForUser(user)
+        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
+        setCachedReferralInfoForUser(current.user)
       } else {
         // User logged out; reset to null
         deleteTokenCookies()
@@ -69,15 +71,30 @@ export function AuthProvider(props: {
     })
   }, [setAuthUser])
 
-  const authUserId = authUser?.id
-  const authUsername = authUser?.username
+  const uid = authUser?.user.id
+  const username = authUser?.user.username
   useEffect(() => {
-    if (authUserId && authUsername) {
-      identifyUser(authUserId)
-      setUserProperty('username', authUsername)
-      return listenForUser(authUserId, setAuthUser)
+    if (uid && username) {
+      identifyUser(uid)
+      setUserProperty('username', username)
+      const userListener = listenForUser(uid, (user) =>
+        setAuthUser((authUser) => {
+          /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+          return { ...authUser!, user: user! }
+        })
+      )
+      const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
+        setAuthUser((authUser) => {
+          /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+          return { ...authUser!, privateUser: privateUser! }
+        })
+      })
+      return () => {
+        userListener()
+        privateUserListener()
+      }
     }
-  }, [authUserId, authUsername, setAuthUser])
+  }, [uid, username, setAuthUser])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
