@@ -35,6 +35,8 @@ export const sendTemplateEmail = (
     subject,
     template: templateId,
     'h:X-Mailgun-Variables': JSON.stringify(templateData),
+    'o:tag': templateId,
+    'o:tracking': true,
   }
   const mg = initMailgun()
 
