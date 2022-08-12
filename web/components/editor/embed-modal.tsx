@@ -78,7 +78,7 @@ export function EmbedModal(props: {
           name="embed"
           id="embed"
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder="e.g. https://twitter.com/jahooma/status/1557429814990196736"
+          placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
