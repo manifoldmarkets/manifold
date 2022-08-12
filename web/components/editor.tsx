@@ -21,7 +21,7 @@ import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
-import TiptapTweet from 'common/util/tiptap-tweet'
+import TiptapTweet from './editor/tiptap-tweet'
 import { CodeIcon, PhotographIcon } from '@heroicons/react/solid'
 import { EmbedModal } from './editor/embed-modal'
 
