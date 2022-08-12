@@ -30,7 +30,7 @@ export function CopyLinkDateTimeComponent(props: {
   }
   return (
     <div className={clsx('inline', className)}>
-      <DateTimeTooltip time={createdTime}>
+      <DateTimeTooltip time={createdTime} noTap>
         <Link href={`/${prefix}/${slug}#${elementId}`} passHref={true}>
           <a
             onClick={(event) => copyLinkToComment(event)}

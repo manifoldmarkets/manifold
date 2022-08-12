@@ -17,21 +17,23 @@ export function Tooltip(props: {
   children: ReactNode
   className?: string
   placement?: Placement
+  noTap?: boolean
 }) {
-  const { text, children, className, placement = 'top' } = props
+  const { text, children, className, placement = 'top', noTap } = props
 
   const arrowRef = useRef(null)
 
-  const { x, y, reference, floating, strategy, middlewareData } = useFloating({
-    whileElementsMounted: autoUpdate,
-    placement,
-    middleware: [
-      offset(8),
-      flip(),
-      shift({ padding: 4 }),
-      arrow({ element: arrowRef }),
-    ],
-  })
+  const { x, y, refs, reference, floating, strategy, middlewareData } =
+    useFloating({
+      whileElementsMounted: autoUpdate,
+      placement,
+      middleware: [
+        offset(8),
+        flip(),
+        shift({ padding: 4 }),
+        arrow({ element: arrowRef }),
+      ],
+    })
 
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
@@ -45,14 +47,19 @@ export function Tooltip(props: {
 
   return text ? (
     <>
-      <div className={clsx('peer inline-block', className)} ref={reference}>
+      <div
+        className={clsx('peer inline-block', className)}
+        ref={reference}
+        tabIndex={noTap ? undefined : 0}
+        onTouchStart={() => (refs.reference.current as HTMLElement).focus()}
+      >
         {children}
       </div>
       <div
         role="tooltip"
         ref={floating}
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
-        className="z-10 max-w-xs rounded bg-slate-700 px-2 py-1 text-center text-sm text-white opacity-0 transition-opacity peer-hover:opacity-100"
+        className="z-10 max-w-xs rounded bg-slate-700 px-2 py-1 text-center text-sm text-white opacity-0 transition-opacity peer-hover:opacity-100 peer-focus:opacity-100"
       >
         {text}
         <div
