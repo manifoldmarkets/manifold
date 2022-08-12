@@ -68,7 +68,6 @@ export function MarketModal(props: {
             overrideGridClassName={
               'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
             }
-            showPlaceHolder
             cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
             querySortOptions={{ disableQueryString: true }}
             highlightOptions={{
