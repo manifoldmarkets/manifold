@@ -68,48 +68,41 @@ export function ContractCard(props: {
   return (
     <Row
       className={clsx(
-        'relative gap-3 self-start rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
+        'relative gap-3 self-start rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
         className
       )}
     >
-      <Col className="relative flex-1 gap-3">
-        <div
-          className={clsx(
-            'peer absolute -left-6 -top-4 -bottom-4 z-10',
-            hideQuickBet ? '-right-20' : 'right-0'
-          )}
-        >
-          {onClick ? (
-            <a
-              className="absolute top-0 left-0 right-0 bottom-0"
-              href={contractPath(contract)}
-              onClick={(e) => {
-                // Let the browser handle the link click (opens in new tab).
-                if (e.ctrlKey || e.metaKey) return
+      <Col className="group relative flex-1 gap-3 py-4 pl-6">
+        {onClick ? (
+          <a
+            className="absolute top-0 left-0 right-0 bottom-0"
+            href={contractPath(contract)}
+            onClick={(e) => {
+              // Let the browser handle the link click (opens in new tab).
+              if (e.ctrlKey || e.metaKey) return
 
-                e.preventDefault()
-                track('click market card', {
-                  slug: contract.slug,
-                  contractId: contract.id,
-                })
-                onClick()
-              }}
+              e.preventDefault()
+              track('click market card', {
+                slug: contract.slug,
+                contractId: contract.id,
+              })
+              onClick()
+            }}
+          />
+        ) : (
+          <Link href={contractPath(contract)}>
+            <a
+              onClick={trackCallback('click market card', {
+                slug: contract.slug,
+                contractId: contract.id,
+              })}
+              className="absolute top-0 left-0 right-0 bottom-0"
             />
-          ) : (
-            <Link href={contractPath(contract)}>
-              <a
-                onClick={trackCallback('click market card', {
-                  slug: contract.slug,
-                  contractId: contract.id,
-                })}
-                className="absolute top-0 left-0 right-0 bottom-0"
-              />
-            </Link>
-          )}
-        </div>
+          </Link>
+        )}
         <AvatarDetails contract={contract} />
         <p
-          className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
+          className="break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2"
           style={{ /* For iOS safari */ wordBreak: 'break-word' }}
         >
           {question}
@@ -140,21 +133,21 @@ export function ContractCard(props: {
         <>
           {outcomeType === 'BINARY' && (
             <BinaryResolutionOrChance
-              className="items-center self-center"
+              className="items-center self-center pr-5"
               contract={contract}
             />
           )}
 
           {outcomeType === 'PSEUDO_NUMERIC' && (
             <PseudoNumericResolutionOrExpectation
-              className="items-center self-center"
+              className="items-center self-center pr-5"
               contract={contract}
             />
           )}
 
           {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
-              className="items-center self-center"
+              className="items-center self-center pr-5"
               contract={contract}
             />
           )}
@@ -162,7 +155,7 @@ export function ContractCard(props: {
           {(outcomeType === 'FREE_RESPONSE' ||
             outcomeType === 'MULTIPLE_CHOICE') && (
             <FreeResponseResolutionOrChance
-              className="items-center self-center text-gray-600"
+              className="items-center self-center pr-5 text-gray-600"
               contract={contract}
               truncate="long"
             />
