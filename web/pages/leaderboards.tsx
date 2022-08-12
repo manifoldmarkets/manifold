@@ -35,8 +35,6 @@ const fetchProps = async () => {
     )
     .slice(0, 20)
 
-  console.log(topTradersProfit)
-
   const topTraders = topTradersProfit.map(([user]) => user)
 
   // Hide profit for now.
