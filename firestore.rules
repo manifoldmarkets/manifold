@@ -20,17 +20,17 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read;
-      allow update: if resource.data.id == request.auth.uid
+      allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome']);
       // User referral rules
-      allow update: if resource.data.id == request.auth.uid
+      allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
                           .hasOnly(['referredByUserId', 'referredByContractId', 'referredByGroupId'])
                           // only one referral allowed per user
                           && !("referredByUserId" in resource.data)
                           // user can't refer themselves
-                          && !(resource.data.id == request.resource.data.referredByUserId);
+                          && !(userId == request.resource.data.referredByUserId);
                           // quid pro quos enabled (only once though so nbd) - bc I can't make this work:
                           // && (get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId == resource.data.id);
     }
@@ -60,8 +60,8 @@ service cloud.firestore {
     }
 
     match /private-users/{userId} {
-      allow read: if resource.data.id == request.auth.uid || isAdmin();
-      allow update: if (resource.data.id == request.auth.uid || isAdmin())
+      allow read: if userId == request.auth.uid || isAdmin();
+      allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                        .hasOnly(['apiKey', 'unsubscribedFromResolutionEmails', 'unsubscribedFromCommentEmails', 'unsubscribedFromAnswerEmails', 'notificationPreferences' ]);
     }
