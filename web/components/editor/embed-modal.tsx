@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/react'
+import { DOMAIN } from 'common/envs/constants'
 import { useState } from 'react'
 import { Button } from '../button'
 import { RichContent } from '../editor'
@@ -38,6 +39,19 @@ const embedPatterns: EmbedPattern[] = [
     regex: /^https?:\/\/www\.metaculus\.com\/questions\/(\d+)/,
     rewrite: (id) =>
       `<iframe src="https://www.metaculus.com/questions/embed/${id}"></iframe>`,
+  },
+  // Twitch is a bit annoying, since it requires the `&parent=DOMAIN` to match
+  {
+    // Twitch: https://www.twitch.tv/videos/1445087149
+    regex: /^https?:\/\/www\.twitch\.tv\/videos\/(\d+)/,
+    rewrite: (id) =>
+      `<iframe src="https://player.twitch.tv/?video=${id}&parent=${DOMAIN}"></iframe>`,
+  },
+  {
+    // Twitch: https://www.twitch.tv/sirsalty
+    regex: /^https?:\/\/www\.twitch\.tv\/([^\/]+)/,
+    rewrite: (channel) =>
+      `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${DOMAIN}"></iframe>`,
   },
   {
     regex: /^(https?:\/\/.*)/,
