@@ -4,8 +4,8 @@ export interface TweetOptions {
   tweetId: string
 }
 
-// This export excludes addNodeView, since that require tsx,
-// which common/ does not support transpilation of.
+// This is a version of the Tiptap Node config without addNodeView,
+// since that would require bundling in tsx
 export const TiptapTweetNode = {
   name: 'tiptapTweet',
   group: 'block',
