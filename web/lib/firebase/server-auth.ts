@@ -74,26 +74,34 @@ type RequestContext = {
 const authAndRefreshTokens = async (ctx: RequestContext) => {
   const adminAuth = (await ensureApp()).auth()
   const clientAuth = getAuth(clientApp)
+  console.debug('Initialized Firebase auth libraries.')
+
   let { id, refresh, custom } = getTokensFromCookies(ctx.req)
 
   // step 0: if you have no refresh token you are logged out
   if (refresh == null) {
+    console.debug('User is unauthenticated.')
     return undefined
   }
+
+  console.debug('User may be authenticated; checking cookies.')
 
   // step 1: given a valid refresh token, ensure a valid ID token
   if (id != null) {
     // if they have an ID token, throw it out if it's invalid/expired
     try {
       await adminAuth.verifyIdToken(id)
+      console.debug('Verified ID token.')
     } catch {
       id = undefined
+      console.debug('Invalid existing ID token.')
     }
   }
   if (id == null) {
     // ask for a new one from google using the refresh token
     try {
       const resp = await requestFirebaseIdToken(refresh)
+      console.debug('Obtained fresh ID token from Firebase.')
       id = resp.id_token
       refresh = resp.refresh_token
     } catch (e) {
@@ -108,27 +116,23 @@ const authAndRefreshTokens = async (ctx: RequestContext) => {
   if (custom != null) {
     // sign in with this token, or throw it out if it's invalid/expired
     try {
-      return {
-        creds: await signInWithCustomToken(clientAuth, custom),
-        id,
-        refresh,
-        custom,
-      }
+      const creds = await signInWithCustomToken(clientAuth, custom)
+      console.debug('Signed in with custom token.')
+      return { creds, id, refresh, custom }
     } catch {
       custom = undefined
+      console.debug('Invalid existing custom token.')
     }
   }
   if (custom == null) {
     // ask for a new one from our cloud functions using the ID token, then sign in
     try {
       const resp = await requestManifoldCustomToken(id)
+      console.debug('Obtained fresh custom token from backend.')
       custom = resp.token
-      return {
-        creds: await signInWithCustomToken(clientAuth, custom),
-        id,
-        refresh,
-        custom,
-      }
+      const creds = await signInWithCustomToken(clientAuth, custom)
+      console.debug('Signed in with custom token.')
+      return { creds, id, refresh, custom }
     } catch (e) {
       // big unexpected problem -- functionally, they are not logged in
       console.error(e)
@@ -138,13 +142,17 @@ const authAndRefreshTokens = async (ctx: RequestContext) => {
 }
 
 export const authenticateOnServer = async (ctx: RequestContext) => {
+  console.debug('Server authentication sequence starting.')
   const tokens = await authAndRefreshTokens(ctx)
+  console.debug('Finished checking and refreshing tokens.')
   const creds = tokens?.creds
   try {
     if (tokens == null) {
       deleteTokenCookies(ctx.res)
+      console.debug('Not logged in; cleared token cookies.')
     } else {
       setTokenCookies(tokens, ctx.res)
+      console.debug('Logged in; set current token cookies.')
     }
   } catch (e) {
     // definitely not supposed to happen, but let's be maximally robust
@@ -168,8 +176,15 @@ export const redirectIfLoggedIn = <P>(
   return async (ctx: GetServerSidePropsContext) => {
     const creds = await authenticateOnServer(ctx)
     if (creds == null) {
-      return fn != null ? await fn(ctx) : { props: {} }
+      if (fn == null) {
+        return { props: {} }
+      } else {
+        const props = fn(ctx)
+        console.debug('Finished getting initial props for rendering.')
+        return props
+      }
     } else {
+      console.debug(`Redirecting to ${dest}.`)
       return { redirect: { destination: dest, permanent: false } }
     }
   }
@@ -182,9 +197,16 @@ export const redirectIfLoggedOut = <P>(
   return async (ctx: GetServerSidePropsContext) => {
     const creds = await authenticateOnServer(ctx)
     if (creds == null) {
+      console.debug(`Redirecting to ${dest}.`)
       return { redirect: { destination: dest, permanent: false } }
     } else {
-      return fn != null ? await fn(ctx, creds) : { props: {} }
+      if (fn == null) {
+        return { props: {} }
+      } else {
+        const props = fn(ctx, creds)
+        console.debug('Finished getting initial props for rendering.')
+        return props
+      }
     }
   }
 }
