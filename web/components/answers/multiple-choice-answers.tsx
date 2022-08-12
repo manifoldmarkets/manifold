@@ -3,6 +3,7 @@ import Textarea from 'react-expanding-textarea'
 import { XIcon } from '@heroicons/react/solid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { Button } from '../button'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
@@ -25,7 +26,7 @@ export function MultipleChoiceAnswers(props: {
   return (
     <Col>
       {answers.map((answer, i) => (
-        <Row className="mb-2 items-center align-middle">
+        <Row className="mb-2 items-center gap-2 align-middle">
           {i + 1}.{' '}
           <Textarea
             value={answer}
@@ -37,17 +38,22 @@ export function MultipleChoiceAnswers(props: {
           />
           {answers.length > 2 && (
             <button
-              className="-mr-2 rounded p-2"
               onClick={() => removeAnswer(i)}
+              type="button"
+              className="inline-flex items-center rounded-full border border-gray-300 bg-white p-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              <XIcon className="h-5 w-5 flex-shrink-0" />
+              <XIcon className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
         </Row>
       ))}
 
       <Row className="justify-end">
-        <button className="btn btn-outline btn-xs" onClick={addAnswer}>
+        <button
+          type="button"
+          onClick={addAnswer}
+          className="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
           Add answer
         </button>
       </Row>
