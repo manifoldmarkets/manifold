@@ -30,6 +30,7 @@ import {
 } from '@heroicons/react/solid'
 import { MarketModal } from './editor/market-modal'
 import { insertContent } from './editor/utils'
+import { Tooltip } from './tooltip'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -146,15 +147,15 @@ export function TextEditor(props: {
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
-            <div className="tooltip flex items-center" data-tip="Add image">
+            <Tooltip className="flex items-center" text="Add image" noTap>
               <FileUploadButton
                 onFiles={upload.mutate}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
               >
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
               </FileUploadButton>
-            </div>
-            <div className="tooltip flex items-center" data-tip="Add embed">
+            </Tooltip>
+            <Tooltip className="flex items-center" text="Add embed" noTap>
               <button
                 type="button"
                 onClick={() => setIframeOpen(true)}
@@ -167,8 +168,8 @@ export function TextEditor(props: {
                 />
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
               </button>
-            </div>
-            <div className="tooltip flex items-center" data-tip="Add market">
+            </Tooltip>
+            <Tooltip className="flex items-center" text="Add market" noTap>
               <button
                 type="button"
                 onClick={() => setMarketOpen(true)}
@@ -184,7 +185,7 @@ export function TextEditor(props: {
                   aria-hidden="true"
                 />
               </button>
-            </div>
+            </Tooltip>
             {/* Spacer that also focuses editor on click */}
             <div
               className="grow cursor-text self-stretch"

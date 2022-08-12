@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
 import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
@@ -11,7 +10,7 @@ import {
   resolution,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
-import { ClientRender } from './client-render'
+import { Tooltip } from './tooltip'
 
 export function OutcomeLabel(props: {
   contract: Contract
@@ -91,13 +90,13 @@ export function FreeResponseOutcomeLabel(props: {
   const chosen = contract.answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
-    <FreeResponseAnswerToolTip text={chosen.text}>
+    <Tooltip text={chosen.text}>
       <AnswerLabel
         answer={chosen}
         truncate={truncate}
         className={answerClassName}
       />
-    </FreeResponseAnswerToolTip>
+    </Tooltip>
   )
 }
 
@@ -172,25 +171,5 @@ export function AnswerLabel(props: {
     >
       {truncated}
     </span>
-  )
-}
-
-function FreeResponseAnswerToolTip(props: {
-  text: string
-  children?: ReactNode
-}) {
-  const { text } = props
-  return (
-    <>
-      <ClientRender>
-        <span
-          className="tooltip hidden cursor-default sm:inline-block"
-          data-tip={text}
-        >
-          {props.children}
-        </span>
-      </ClientRender>
-      <span className="whitespace-nowrap sm:hidden">{props.children}</span>
-    </>
   )
 }
