@@ -3,7 +3,6 @@ import Textarea from 'react-expanding-textarea'
 import { XIcon } from '@heroicons/react/solid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Button } from '../button'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
