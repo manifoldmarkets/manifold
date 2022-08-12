@@ -59,12 +59,12 @@ export function Tooltip(props: {
         role="tooltip"
         ref={floating}
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
-        className="z-10 max-w-xs rounded bg-slate-700 px-2 py-1 text-center text-sm text-white opacity-0 transition-opacity peer-hover:opacity-100 peer-focus:opacity-100"
+        className="-z-10 max-w-xs rounded bg-slate-700 px-2 py-1 text-center text-sm text-white opacity-0 transition-opacity peer-hover:z-10 peer-hover:opacity-100 peer-focus:z-10 peer-focus:opacity-100"
       >
         {text}
         <div
           ref={arrowRef}
-          className="absolute h-2 w-2  rotate-45 bg-slate-700"
+          className="absolute h-2 w-2 rotate-45 bg-slate-700"
           style={{
             top: arrowY != null ? arrowY : '',
             left: arrowX != null ? arrowX : '',
