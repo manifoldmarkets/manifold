@@ -66,115 +66,111 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <div>
-      <Col
-        className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
-          className
-        )}
-      >
-        <Row>
-          <Col className="relative flex-1 gap-3 pr-1">
-            <div
-              className={clsx(
-                'peer absolute -left-6 -top-4 -bottom-4 z-10',
-                hideQuickBet ? '-right-20' : 'right-0'
-              )}
-            >
-              {onClick ? (
-                <a
-                  className="absolute top-0 left-0 right-0 bottom-0"
-                  href={contractPath(contract)}
-                  onClick={(e) => {
-                    // Let the browser handle the link click (opens in new tab).
-                    if (e.ctrlKey || e.metaKey) return
-
-                    e.preventDefault()
-                    track('click market card', {
-                      slug: contract.slug,
-                      contractId: contract.id,
-                    })
-                    onClick()
-                  }}
-                />
-              ) : (
-                <Link href={contractPath(contract)}>
-                  <a
-                    onClick={trackCallback('click market card', {
-                      slug: contract.slug,
-                      contractId: contract.id,
-                    })}
-                    className="absolute top-0 left-0 right-0 bottom-0"
-                  />
-                </Link>
-              )}
-            </div>
-            <AvatarDetails contract={contract} />
-            <p
-              className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
-              style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-            >
-              {question}
-            </p>
-
-            {(outcomeType === 'FREE_RESPONSE' ||
-              outcomeType === 'MULTIPLE_CHOICE') &&
-              (resolution ? (
-                <FreeResponseOutcomeLabel
-                  contract={contract}
-                  resolution={resolution}
-                  truncate={'long'}
-                />
-              ) : (
-                <FreeResponseTopAnswer contract={contract} truncate="long" />
-              ))}
-
-            <MiscDetails
-              contract={contract}
-              showHotVolume={showHotVolume}
-              showTime={showTime}
-              hideGroupLink={hideGroupLink}
-            />
-          </Col>
-          {showQuickBet ? (
-            <QuickBet contract={contract} user={user} />
-          ) : (
-            <Col className="m-auto pl-2">
-              {outcomeType === 'BINARY' && (
-                <BinaryResolutionOrChance
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {outcomeType === 'PSEUDO_NUMERIC' && (
-                <PseudoNumericResolutionOrExpectation
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {outcomeType === 'NUMERIC' && (
-                <NumericResolutionOrExpectation
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {(outcomeType === 'FREE_RESPONSE' ||
-                outcomeType === 'MULTIPLE_CHOICE') && (
-                <FreeResponseResolutionOrChance
-                  className="self-end text-gray-600"
-                  contract={contract}
-                  truncate="long"
-                />
-              )}
-              <ProbBar contract={contract} />
-            </Col>
+    <Row
+      className={clsx(
+        'relative gap-3 self-start rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
+        className
+      )}
+    >
+      <Col className="relative flex-1 gap-3">
+        <div
+          className={clsx(
+            'peer absolute -left-6 -top-4 -bottom-4 z-10',
+            hideQuickBet ? '-right-20' : 'right-0'
           )}
-        </Row>
+        >
+          {onClick ? (
+            <a
+              className="absolute top-0 left-0 right-0 bottom-0"
+              href={contractPath(contract)}
+              onClick={(e) => {
+                // Let the browser handle the link click (opens in new tab).
+                if (e.ctrlKey || e.metaKey) return
+
+                e.preventDefault()
+                track('click market card', {
+                  slug: contract.slug,
+                  contractId: contract.id,
+                })
+                onClick()
+              }}
+            />
+          ) : (
+            <Link href={contractPath(contract)}>
+              <a
+                onClick={trackCallback('click market card', {
+                  slug: contract.slug,
+                  contractId: contract.id,
+                })}
+                className="absolute top-0 left-0 right-0 bottom-0"
+              />
+            </Link>
+          )}
+        </div>
+        <AvatarDetails contract={contract} />
+        <p
+          className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
+          style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+        >
+          {question}
+        </p>
+
+        {(outcomeType === 'FREE_RESPONSE' ||
+          outcomeType === 'MULTIPLE_CHOICE') &&
+          (resolution ? (
+            <FreeResponseOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+              truncate={'long'}
+            />
+          ) : (
+            <FreeResponseTopAnswer contract={contract} truncate="long" />
+          ))}
+
+        <MiscDetails
+          contract={contract}
+          showHotVolume={showHotVolume}
+          showTime={showTime}
+          hideGroupLink={hideGroupLink}
+        />
       </Col>
-    </div>
+      {showQuickBet ? (
+        <QuickBet contract={contract} user={user} />
+      ) : (
+        <Col className="m-auto pl-2">
+          {outcomeType === 'BINARY' && (
+            <BinaryResolutionOrChance
+              className="items-center"
+              contract={contract}
+            />
+          )}
+
+          {outcomeType === 'PSEUDO_NUMERIC' && (
+            <PseudoNumericResolutionOrExpectation
+              className="items-center"
+              contract={contract}
+            />
+          )}
+
+          {outcomeType === 'NUMERIC' && (
+            <NumericResolutionOrExpectation
+              className="items-center"
+              contract={contract}
+            />
+          )}
+
+          {(outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') && (
+            <FreeResponseResolutionOrChance
+              className="self-end text-gray-600"
+              contract={contract}
+              truncate="long"
+            />
+          )}
+          <ProbBar contract={contract} />
+        </Col>
+      )}
+    </Row>
   )
 }
 
