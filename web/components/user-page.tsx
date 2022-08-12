@@ -4,14 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
-import Confetti from 'react-confetti'
 
-import {
-  follow,
-  getPortfolioHistory,
-  unfollow,
-  User,
-} from 'web/lib/firebase/users'
+import { getPortfolioHistory, User } from 'web/lib/firebase/users'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -24,15 +18,14 @@ import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
 import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { Comment, getUsersComments } from 'web/lib/firebase/comments'
 import { Contract } from 'common/contract'
 import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
 import { LoadingIndicator } from './loading-indicator'
+import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { BetsList } from './bets-list'
 import { FollowersButton, FollowingButton } from './following-button'
-import { useFollows } from 'web/hooks/use-follows'
-import { FollowButton } from './follow-button'
+import { UserFollowButton } from './follow-button'
 import { PortfolioMetrics } from 'common/user'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
@@ -88,7 +81,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
     Dictionary<Contract> | undefined
   >()
   const [showConfetti, setShowConfetti] = useState(false)
-  const { width, height } = useWindowSize()
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -120,18 +112,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
     }
   }, [userBets, usersComments])
 
-  const yourFollows = useFollows(currentUser?.id)
-  const isFollowing = yourFollows?.includes(user.id)
   const profit = user.profitCached.allTime
-
-  const onFollow = () => {
-    if (!currentUser) return
-    follow(currentUser.id, user.id)
-  }
-  const onUnfollow = () => {
-    if (!currentUser) return
-    unfollow(currentUser.id, user.id)
-  }
 
   return (
     <Page key={user.id}>
@@ -141,12 +122,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
         url={`/${user.username}`}
       />
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
@@ -167,13 +143,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
 
         {/* Top right buttons (e.g. edit, follow) */}
         <div className="absolute right-0 top-0 mt-4 mr-4">
-          {!isCurrentUser && (
-            <FollowButton
-              isFollowing={isFollowing}
-              onFollow={onFollow}
-              onUnfollow={onUnfollow}
-            />
-          )}
+          {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
             <SiteLink className="btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}

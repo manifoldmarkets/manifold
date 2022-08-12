@@ -1,10 +1,13 @@
 import { Editor, Content } from '@tiptap/react'
 
-export function appendToEditor(editor: Editor | null, content: Content) {
-  editor
-    ?.chain()
-    .focus('end')
-    .createParagraphNear()
-    .insertContent(content)
-    .run()
+export function insertContent(editor: Editor | null, ...contents: Content[]) {
+  if (!editor) {
+    return
+  }
+
+  let e = editor.chain()
+  for (const content of contents) {
+    e = e.createParagraphNear().insertContent(content)
+  }
+  e.run()
 }

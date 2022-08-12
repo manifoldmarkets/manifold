@@ -33,7 +33,7 @@ import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
-import { appendToEditor } from '../editor/utils'
+import { insertContent } from '../editor/utils'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -149,7 +149,7 @@ export function ContractDetails(props: {
   const groupInfo = (
     <Row>
       <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-      <span className={'line-clamp-1'}>
+      <span className="truncate">
         {groupToDisplay ? groupToDisplay.name : 'No group'}
       </span>
     </Row>
@@ -283,7 +283,8 @@ function EditableCloseDate(props: {
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
       const editor = new Editor({ content, extensions: exhibitExts })
-      appendToEditor(
+      editor.commands.focus('end')
+      insertContent(
         editor,
         `<br><p>Close date updated to ${formattedCloseDate}</p>`
       )

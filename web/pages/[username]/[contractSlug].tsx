@@ -25,8 +25,7 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import Confetti from 'react-confetti'
+import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { NumericBetPanel } from 'web/components/numeric-bet-panel'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -36,7 +35,6 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
-import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 import { User } from 'common/user'
@@ -161,14 +159,11 @@ export function ContractPageContent(
   })
 
   const bets = useBets(contract.id) ?? props.bets
-  const liquidityProvisions =
-    useLiquidity(contract.id)?.filter((l) => !l.isAnte && l.amount > 0) ?? []
+
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
   const tips = useTipTxns({ contractId: contract.id })
-
-  const { width, height } = useWindowSize()
 
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -196,12 +191,7 @@ export function ContractPageContent(
   return (
     <Page rightSidebar={rightSidebar}>
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
       {ogCardProps && (
@@ -267,7 +257,6 @@ export function ContractPageContent(
         <ContractTabs
           contract={contract}
           user={user}
-          liquidityProvisions={liquidityProvisions}
           bets={bets}
           tips={tips}
           comments={comments}

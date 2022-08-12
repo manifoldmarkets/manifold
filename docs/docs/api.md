@@ -528,6 +528,10 @@ $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application
                  "contractId":"{...}"}'
 ```
 
+### `POST /v0/bet/cancel/[id]`
+
+Cancel the limit order of a bet with the specified id. If the bet was unfilled, it will be cancelled so that no other bets will match with it. This is action irreversable.
+
 ### `POST /v0/market`
 
 Creates a new market on behalf of the authorized user.

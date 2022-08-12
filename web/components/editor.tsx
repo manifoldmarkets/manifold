@@ -22,8 +22,14 @@ import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
-import { CodeIcon, PhotographIcon } from '@heroicons/react/solid'
 import { EmbedModal } from './editor/embed-modal'
+import {
+  CodeIcon,
+  PhotographIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/solid'
+import { MarketModal } from './editor/market-modal'
+import { insertContent } from './editor/utils'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -103,7 +109,7 @@ export function useTextEditor(props: {
         // If the pasted content is iframe code, directly inject it
         const text = event.clipboardData?.getData('text/plain').trim() ?? ''
         if (isValidIframe(text)) {
-          editor.chain().insertContent(text).run()
+          insertContent(editor, text)
           return true // Prevent the code from getting pasted as text
         }
 
@@ -130,6 +136,7 @@ export function TextEditor(props: {
 }) {
   const { editor, upload, children } = props
   const [iframeOpen, setIframeOpen] = useState(false)
+  const [marketOpen, setMarketOpen] = useState(false)
 
   return (
     <>
@@ -139,16 +146,15 @@ export function TextEditor(props: {
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
-            <div className="flex items-center">
+            <div className="tooltip flex items-center" data-tip="Add image">
               <FileUploadButton
                 onFiles={upload.mutate}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
               >
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
-                <span className="sr-only">Upload an image</span>
               </FileUploadButton>
             </div>
-            <div className="flex items-center">
+            <div className="tooltip flex items-center" data-tip="Add embed">
               <button
                 type="button"
                 onClick={() => setIframeOpen(true)}
@@ -160,7 +166,23 @@ export function TextEditor(props: {
                   setOpen={setIframeOpen}
                 />
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
-                <span className="sr-only">Embed an iframe</span>
+              </button>
+            </div>
+            <div className="tooltip flex items-center" data-tip="Add market">
+              <button
+                type="button"
+                onClick={() => setMarketOpen(true)}
+                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
+              >
+                <MarketModal
+                  editor={editor}
+                  open={marketOpen}
+                  setOpen={setMarketOpen}
+                />
+                <PresentationChartLineIcon
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
               </button>
             </div>
             {/* Spacer that also focuses editor on click */}

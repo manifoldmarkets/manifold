@@ -3,14 +3,17 @@ import algoliasearch from 'algoliasearch/lite'
 
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { Sort, useQueryAndSortParams } from '../hooks/use-sort-and-query-params'
+import {
+  QuerySortOptions,
+  Sort,
+  useQueryAndSortParams,
+} from '../hooks/use-sort-and-query-params'
 import {
   ContractHighlightOptions,
   ContractsGrid,
 } from './contract/contracts-grid'
 import { Row } from './layout/row'
 import { useEffect, useMemo, useState } from 'react'
-import { Spacer } from './layout/spacer'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import { track, trackCallback } from 'web/lib/service/analytics'
@@ -21,6 +24,7 @@ import { PillButton } from './buttons/pill-button'
 import { range, sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
+import clsx from 'clsx'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -45,12 +49,8 @@ export const DEFAULT_SORT = 'score'
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 export function ContractSearch(props: {
-  user: User | null | undefined
-  querySortOptions?: {
-    defaultSort: Sort
-    defaultFilter?: filter
-    shouldLoadFromStorage?: boolean
-  }
+  user?: User | null
+  querySortOptions?: { defaultFilter?: filter } & QuerySortOptions
   additionalFilter?: {
     creatorId?: string
     tag?: string
@@ -66,6 +66,7 @@ export function ContractSearch(props: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
   }
+  headerClassName?: string
 }) {
   const {
     user,
@@ -77,6 +78,7 @@ export function ContractSearch(props: {
     showPlaceHolder,
     cardHideOptions,
     highlightOptions,
+    headerClassName,
   } = props
 
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
@@ -99,11 +101,8 @@ export function ContractSearch(props: {
 
   const follows = useFollows(user?.id)
 
-  const { shouldLoadFromStorage, defaultSort } = querySortOptions ?? {}
-  const { query, setQuery, sort, setSort } = useQueryAndSortParams({
-    defaultSort,
-    shouldLoadFromStorage,
-  })
+  const { query, setQuery, sort, setSort } =
+    useQueryAndSortParams(querySortOptions)
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
@@ -257,87 +256,90 @@ export function ContractSearch(props: {
   }
 
   return (
-    <Col>
-      <Row className="gap-1 sm:gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => updateQuery(e.target.value)}
-          onBlur={trackCallback('search', { query })}
-          placeholder={showPlaceHolder ? `Search ${filter} markets` : ''}
-          className="input input-bordered w-full"
-        />
-        {!query && (
-          <select
-            className="select select-bordered"
-            value={filter}
-            onChange={(e) => selectFilter(e.target.value as filter)}
-          >
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-            <option value="all">All</option>
-          </select>
+    <Col className="h-full">
+      <Col
+        className={clsx(
+          'bg-base-200 sticky top-0 z-20 gap-3 pb-3',
+          headerClassName
         )}
-        {!hideOrderSelector && !query && (
-          <select
-            className="select select-bordered"
-            value={sort}
-            onChange={(e) => selectSort(e.target.value as Sort)}
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        )}
-      </Row>
-
-      <Spacer h={3} />
-
-      {pillsEnabled && (
-        <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
-          <PillButton
-            key={'all'}
-            selected={pillFilter === undefined}
-            onSelect={selectPill(undefined)}
-          >
-            All
-          </PillButton>
-          <PillButton
-            key={'personal'}
-            selected={pillFilter === 'personal'}
-            onSelect={selectPill('personal')}
-          >
-            {user ? 'For you' : 'Featured'}
-          </PillButton>
-
-          {user && (
-            <PillButton
-              key={'your-bets'}
-              selected={pillFilter === 'your-bets'}
-              onSelect={selectPill('your-bets')}
+      >
+        <Row className="gap-1 sm:gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => updateQuery(e.target.value)}
+            onBlur={trackCallback('search', { query })}
+            placeholder={showPlaceHolder ? `Search ${filter} markets` : ''}
+            className="input input-bordered w-full"
+          />
+          {!query && (
+            <select
+              className="select select-bordered"
+              value={filter}
+              onChange={(e) => selectFilter(e.target.value as filter)}
             >
-              Your bets
-            </PillButton>
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              <option value="resolved">Resolved</option>
+              <option value="all">All</option>
+            </select>
           )}
-
-          {pillGroups.map(({ name, slug }) => {
-            return (
-              <PillButton
-                key={slug}
-                selected={pillFilter === slug}
-                onSelect={selectPill(slug)}
-              >
-                {name}
-              </PillButton>
-            )
-          })}
+          {!hideOrderSelector && !query && (
+            <select
+              className="select select-bordered"
+              value={sort}
+              onChange={(e) => selectSort(e.target.value as Sort)}
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )}
         </Row>
-      )}
 
-      <Spacer h={3} />
+        {pillsEnabled && (
+          <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
+            <PillButton
+              key={'all'}
+              selected={pillFilter === undefined}
+              onSelect={selectPill(undefined)}
+            >
+              All
+            </PillButton>
+            <PillButton
+              key={'personal'}
+              selected={pillFilter === 'personal'}
+              onSelect={selectPill('personal')}
+            >
+              {user ? 'For you' : 'Featured'}
+            </PillButton>
+
+            {user && (
+              <PillButton
+                key={'your-bets'}
+                selected={pillFilter === 'your-bets'}
+                onSelect={selectPill('your-bets')}
+              >
+                Your bets
+              </PillButton>
+            )}
+
+            {pillGroups.map(({ name, slug }) => {
+              return (
+                <PillButton
+                  key={slug}
+                  selected={pillFilter === slug}
+                  onSelect={selectPill(slug)}
+                >
+                  {name}
+                </PillButton>
+              )
+            })}
+          </Row>
+        )}
+      </Col>
 
       {filter === 'personal' &&
       (follows ?? []).length === 0 &&

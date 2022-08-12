@@ -120,7 +120,8 @@ export function NewContract(props: {
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
 
-  const [answers, setAnswers] = useState<string[]>([]) // for multiple choice
+  // for multiple choice, init to 3 empty answers
+  const [answers, setAnswers] = useState(['', '', ''])
 
   useEffect(() => {
     if (groupId)
@@ -285,7 +286,7 @@ export function NewContract(props: {
       <Spacer h={6} />
 
       {outcomeType === 'MULTIPLE_CHOICE' && (
-        <MultipleChoiceAnswers setAnswers={setAnswers} />
+        <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
       )}
 
       {outcomeType === 'PSEUDO_NUMERIC' && (
@@ -299,7 +300,7 @@ export function NewContract(props: {
             <Row className="gap-2">
               <input
                 type="number"
-                className="input input-bordered"
+                className="input input-bordered w-32"
                 placeholder="MIN"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
@@ -310,7 +311,7 @@ export function NewContract(props: {
               />
               <input
                 type="number"
-                className="input input-bordered"
+                className="input input-bordered w-32"
                 placeholder="MAX"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
