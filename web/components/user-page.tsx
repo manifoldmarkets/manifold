@@ -5,6 +5,7 @@ import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
 
 import { User } from 'web/lib/firebase/users'
+import { useUser } from 'web/hooks/use-user'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './page'
@@ -50,9 +51,10 @@ export function UserLink(props: {
 
 export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
 
-export function UserPage(props: { user: User; currentUser?: User }) {
-  const { user, currentUser } = props
+export function UserPage(props: { user: User }) {
+  const { user } = props
   const router = useRouter()
+  const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
