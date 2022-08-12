@@ -7,6 +7,7 @@ import {
   HeartIcon,
   TrendingUpIcon,
   ChatIcon,
+  ExternalLinkIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -40,7 +41,7 @@ function getNavigation() {
       icon: NotificationsIcon,
     },
 
-    { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+    { name: 'Leaderboard', href: '/leaderboards', icon: TrendingUpIcon },
 
     ...(IS_PRIVATE_MANIFOLD
       ? []
@@ -51,6 +52,10 @@ function getNavigation() {
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
     return [
+      {
+        name: 'Rules',
+        href: 'https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting',
+      },
       { name: 'Discord', href: 'https://discord.gg/ZtT7PxapSS' },
       { name: 'Manifold Markets', href: 'https://manifold.markets' },
       {
@@ -115,12 +120,21 @@ const signedOutNavigation = [
 
 const signedOutMobileNavigation = IS_PRIVATE_MANIFOLD
   ? [
-      { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
-
+      { name: 'Leaderboard', href: '/leaderboards', icon: TrendingUpIcon },
+      {
+        name: 'Rules',
+        href: 'https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting',
+        icon: BookOpenIcon,
+      },
       {
         name: 'Discord',
         href: 'https://discord.gg/ZtT7PxapSS',
         icon: ChatIcon,
+      },
+      {
+        name: 'Manifold Markets',
+        href: 'https://manifold.markets',
+        icon: ExternalLinkIcon,
       },
     ]
   : [
@@ -134,9 +148,25 @@ const signedOutMobileNavigation = IS_PRIVATE_MANIFOLD
     ]
 
 const signedInMobileNavigation = [
-  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+  { name: 'Leaderboard', href: '/leaderboards', icon: TrendingUpIcon },
   ...(IS_PRIVATE_MANIFOLD
-    ? []
+    ? [
+        {
+          name: 'Rules',
+          href: 'https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting',
+          icon: BookOpenIcon,
+        },
+        {
+          name: 'Discord',
+          href: 'https://discord.gg/ZtT7PxapSS',
+          icon: ChatIcon,
+        },
+        {
+          name: 'Manifold Markets',
+          href: 'https://manifold.markets',
+          icon: ExternalLinkIcon,
+        },
+      ]
     : [
         { name: 'Get M$', href: '/add-funds', icon: CashIcon },
         {
@@ -150,10 +180,7 @@ const signedInMobileNavigation = [
 function getMoreMobileNav() {
   return [
     ...(IS_PRIVATE_MANIFOLD
-      ? [
-          { name: 'Manifold Markets', href: 'https://manifold.markets' },
-          { name: 'Discord', href: 'https://discord.gg/ZtT7PxapSS' },
-        ]
+      ? []
       : CHALLENGES_ENABLED
       ? [
           { name: 'Challenges', href: '/challenges' },

@@ -3,7 +3,6 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { Page } from 'web/components/page'
 import { User, getFirstDayProfit, listAllUsers } from 'web/lib/firebase/users'
 import { useEffect, useState } from 'react'
-import { Title } from 'web/components/title'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { sortBy } from 'lodash'
@@ -60,11 +59,10 @@ export default function Leaderboards(_props: { topTraders: User[] }) {
   return (
     <Page>
       <SEO
-        title="Leaderboards"
-        description="Manifold's leaderboards show the top traders and market creators."
+        title="Leaderboard"
+        description="See the top traders of the CSPI/Salem Center Tournament."
         url="/leaderboards"
       />
-      <Title text={'Leaderboards'} className={'hidden md:block'} />
 
       <Col className="mx-4 max-w-sm items-center gap-10 lg:flex-row">
         <Leaderboard
