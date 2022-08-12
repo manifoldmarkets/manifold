@@ -10,6 +10,8 @@ import { mapKeys } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { useEffect, useState } from 'react'
+import { getFirstDayProfit } from 'web/lib/firebase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -27,14 +29,32 @@ function UsersTable() {
 
   // Map private users by user id
   const privateUsersById = mapKeys(privateUsers, 'id')
-  console.log('private users by id', privateUsersById)
+
+  const [profitByUser, setProfitByUser] = useState<{
+    [userId: string]: number
+  }>({})
+
+  useEffect(() => {
+    Promise.all(users.map((user) => getFirstDayProfit(user.id))).then(
+      (firstDayProfits) => {
+        setProfitByUser(
+          Object.fromEntries(
+            users.map((user, i) => [
+              user.id,
+              user.profitCached.allTime - firstDayProfits[i],
+            ])
+          )
+        )
+      }
+    )
+  }, [users])
 
   // For each user, set their email from the PrivateUser
   const fullUsers = users
     .map((user) => {
       return {
         email: privateUsersById[user.id]?.email,
-        profit: user.profitCached.allTime,
+        profit: profitByUser[user.id] ?? 0,
         ...user,
       }
     })
