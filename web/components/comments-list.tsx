@@ -1,6 +1,12 @@
+import { useEffect, useState } from 'react'
+import { Dictionary, groupBy, keyBy } from 'lodash'
+
 import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
+import { filterDefined } from 'common/util/array'
 import { contractPath } from 'web/lib/firebase/contracts'
+import { getUsersComments } from 'web/lib/firebase/comments'
+import { getContractFromId } from 'web/lib/firebase/contracts'
 import { SiteLink } from './site-link'
 import { Row } from './layout/row'
 import { Avatar } from './avatar'
@@ -8,24 +14,41 @@ import { RelativeTimestamp } from './relative-timestamp'
 import { UserLink } from './user-page'
 import { User } from 'common/user'
 import { Col } from './layout/col'
-import { groupBy } from 'lodash'
 import { Content } from './editor'
+import { LoadingIndicator } from './loading-indicator'
 
-export function UserCommentsList(props: {
-  user: User
-  comments: Comment[]
-  contractsById: { [id: string]: Contract }
-}) {
-  const { comments, contractsById } = props
+export function UserCommentsList(props: { user: User }) {
+  const { user } = props
+  const [comments, setComments] = useState<Dictionary<Comment[]> | undefined>()
+  const [contracts, setContracts] = useState<Dictionary<Contract> | undefined>()
 
-  // we don't show comments in groups here atm, just comments on contracts
-  const contractComments = comments.filter((c) => c.contractId)
-  const commentsByContract = groupBy(contractComments, 'contractId')
+  useEffect(() => {
+    getUsersComments(user.id).then((cs) => {
+      // we don't show comments in groups here atm, just comments on contracts
+      const contractComments = cs.filter((c) => c.contractId)
+      const commentsByContractId = groupBy(contractComments, 'contractId')
+      setComments(commentsByContractId)
+    })
+  }, [user.id])
+
+  useEffect(() => {
+    if (comments) {
+      Promise.all(Object.keys(comments).map(getContractFromId)).then(
+        (contracts) => {
+          setContracts(keyBy(filterDefined(contracts), 'id'))
+        }
+      )
+    }
+  }, [comments])
+
+  if (comments == null || contracts == null) {
+    return <LoadingIndicator />
+  }
 
   return (
     <Col className={'bg-white'}>
-      {Object.entries(commentsByContract).map(([contractId, comments]) => {
-        const contract = contractsById[contractId]
+      {Object.entries(comments).map(([contractId, comments]) => {
+        const contract = contracts[contractId]
         return (
           <div key={contractId} className="border-b p-5">
             <SiteLink

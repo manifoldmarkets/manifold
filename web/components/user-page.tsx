@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { Dictionary, keyBy, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
@@ -18,18 +17,12 @@ import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
 import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
-import { Comment, getUsersComments } from 'web/lib/firebase/comments'
-import { Contract } from 'common/contract'
-import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
-import { LoadingIndicator } from './loading-indicator'
 import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { BetsList } from './bets-list'
 import { FollowersButton, FollowingButton } from './following-button'
 import { UserFollowButton } from './follow-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
-import { filterDefined } from 'common/util/array'
-import { useUserBets } from 'web/hooks/use-user-bets'
 import { ReferralsButton } from 'web/components/referrals-button'
 import { formatMoney } from 'common/util/format'
 import { ShareIconButton } from 'web/components/share-icon-button'
@@ -56,56 +49,18 @@ export function UserLink(props: {
 }
 
 export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
-const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
 export function UserPage(props: { user: User; currentUser?: User }) {
   const { user, currentUser } = props
   const router = useRouter()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
-  const [usersComments, setUsersComments] = useState<Comment[] | undefined>()
-  const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
-    'loading'
-  )
-  const userBets = useUserBets(user.id, { includeRedemptions: true })
-  const betCount =
-    userBets === undefined
-      ? 0
-      : userBets.filter((bet) => !bet.isRedemption && bet.amount !== 0).length
-
-  const [contractsById, setContractsById] = useState<
-    Dictionary<Contract> | undefined
-  >()
   const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
     setShowConfetti(claimedMana)
   }, [router])
-
-  useEffect(() => {
-    if (!user) return
-    getUsersComments(user.id).then(setUsersComments)
-    listContracts(user.id).then(setUsersContracts)
-  }, [user])
-
-  // TODO: display comments on groups
-  useEffect(() => {
-    if (usersComments && userBets) {
-      const uniqueContractIds = uniq([
-        ...usersComments.map((comment) => comment.contractId),
-        ...(userBets?.map((bet) => bet.contractId) ?? []),
-      ])
-      Promise.all(
-        uniqueContractIds.map((contractId) =>
-          contractId ? getContractFromId(contractId) : undefined
-        )
-      ).then((contracts) => {
-        const contractsById = keyBy(filterDefined(contracts), 'id')
-        setContractsById(contractsById)
-      })
-    }
-  }, [userBets, usersComments])
 
   const profit = user.profitCached.allTime
 
@@ -163,9 +118,7 @@ export function UserPage(props: { user: User; currentUser?: User }) {
           </span>{' '}
           profit
         </span>
-
         <Spacer h={4} />
-
         {user.bio && (
           <>
             <div>
@@ -174,7 +127,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
             <Spacer h={4} />
           </>
         )}
-
         <Col className="flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-4">
           <Row className="gap-4">
             <FollowingButton user={user} />
@@ -236,7 +188,6 @@ export function UserPage(props: { user: User; currentUser?: User }) {
             </SiteLink>
           )}
         </Col>
-
         <Spacer h={5} />
         {currentUser?.id === user.id && (
           <Row
@@ -259,58 +210,31 @@ export function UserPage(props: { user: User; currentUser?: User }) {
           </Row>
         )}
         <Spacer h={5} />
-
-        {usersContracts !== 'loading' && contractsById && usersComments ? (
-          <QueryUncontrolledTabs
-            currentPageForAnalytics={'profile'}
-            labelClassName={'pb-2 pt-1 '}
-            tabs={[
-              {
-                title: 'Markets',
-                content: (
-                  <CreatorContractsList user={currentUser} creator={user} />
-                ),
-                tabIcon: (
-                  <span className="px-0.5 font-bold">
-                    {usersContracts.length}
-                  </span>
-                ),
-              },
-              {
-                title: 'Comments',
-                content: (
-                  <UserCommentsList
-                    user={user}
-                    contractsById={contractsById}
-                    comments={usersComments}
-                  />
-                ),
-                tabIcon: (
-                  <span className="px-0.5 font-bold">
-                    {usersComments.length}
-                  </span>
-                ),
-              },
-              {
-                title: 'Bets',
-                content: (
-                  <div>
-                    <PortfolioValueSection userId={user.id} />
-                    <BetsList
-                      user={user}
-                      bets={userBets}
-                      hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
-                      contractsById={contractsById}
-                    />
-                  </div>
-                ),
-                tabIcon: <span className="px-0.5 font-bold">{betCount}</span>,
-              },
-            ]}
-          />
-        ) : (
-          <LoadingIndicator />
-        )}
+        <QueryUncontrolledTabs
+          currentPageForAnalytics={'profile'}
+          labelClassName={'pb-2 pt-1 '}
+          tabs={[
+            {
+              title: 'Markets',
+              content: (
+                <CreatorContractsList user={currentUser} creator={user} />
+              ),
+            },
+            {
+              title: 'Comments',
+              content: <UserCommentsList user={user} />,
+            },
+            {
+              title: 'Bets',
+              content: (
+                <>
+                  <PortfolioValueSection userId={user.id} />
+                  <BetsList user={user} />
+                </>
+              ),
+            },
+          ]}
+        />
       </Col>
     </Page>
   )
