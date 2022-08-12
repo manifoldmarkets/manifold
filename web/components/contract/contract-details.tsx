@@ -83,12 +83,10 @@ export function MiscDetails(props: {
       {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
         <SiteLink
           href={groupPath(groupLinks[0].slug)}
-          className="text-sm text-gray-400"
+          className="line-clamp-1 text-sm text-gray-400"
         >
-          <Row className={'line-clamp-1 flex-wrap items-center '}>
-            <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
-            {groupLinks[0].name}
-          </Row>
+          <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
+          {groupLinks[0].name}
         </SiteLink>
       )}
     </Row>
