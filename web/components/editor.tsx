@@ -21,16 +21,13 @@ import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
+import TiptapTweet from './editor/tiptap-tweet'
+import { EmbedModal } from './editor/embed-modal'
 import {
   CodeIcon,
   PhotographIcon,
   PresentationChartLineIcon,
 } from '@heroicons/react/solid'
-import { Modal } from './layout/modal'
-import { Col } from './layout/col'
-import { Button } from './button'
-import { Row } from './layout/row'
-import { Spacer } from './layout/spacer'
 import { MarketModal } from './editor/market-modal'
 import { insertContent } from './editor/utils'
 
@@ -88,6 +85,7 @@ export function useTextEditor(props: {
           suggestion: mentionSuggestion(users),
         }),
         Iframe,
+        TiptapTweet,
       ],
       content: defaultValue,
     },
@@ -131,13 +129,6 @@ function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
 
-function isValidUrl(text: string) {
-  // Conjured by Codex, not sure if it's actually good
-  return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(
-    text
-  )
-}
-
 export function TextEditor(props: {
   editor: Editor | null
   upload: ReturnType<typeof useUploadMutation>
@@ -169,7 +160,7 @@ export function TextEditor(props: {
                 onClick={() => setIframeOpen(true)}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
               >
-                <IframeModal
+                <EmbedModal
                   editor={editor}
                   open={iframeOpen}
                   setOpen={setIframeOpen}
@@ -214,66 +205,6 @@ export function TextEditor(props: {
   )
 }
 
-function IframeModal(props: {
-  editor: Editor | null
-  open: boolean
-  setOpen: (open: boolean) => void
-}) {
-  const { editor, open, setOpen } = props
-  const [input, setInput] = useState('')
-  const valid = isValidIframe(input) || isValidUrl(input)
-  const embedCode = isValidIframe(input) ? input : `<iframe src="${input}" />`
-
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className="gap-2 rounded bg-white p-6">
-        <label
-          htmlFor="embed"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Embed a market, Youtube video, etc.
-        </label>
-        <input
-          type="text"
-          name="embed"
-          id="embed"
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder='e.g. <iframe src="..."></iframe>'
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-
-        {/* Preview the embed if it's valid */}
-        {valid ? <RichContent content={embedCode} /> : <Spacer h={2} />}
-
-        <Row className="gap-2">
-          <Button
-            disabled={!valid}
-            onClick={() => {
-              if (editor && valid) {
-                insertContent(editor, embedCode)
-                setInput('')
-                setOpen(false)
-              }
-            }}
-          >
-            Embed
-          </Button>
-          <Button
-            color="gray"
-            onClick={() => {
-              setInput('')
-              setOpen(false)
-            }}
-          >
-            Cancel
-          </Button>
-        </Row>
-      </Col>
-    </Modal>
-  )
-}
-
 const useUploadMutation = (editor: Editor | null) =>
   useMutation(
     (files: File[]) =>
@@ -292,7 +223,7 @@ const useUploadMutation = (editor: Editor | null) =>
     }
   )
 
-function RichContent(props: {
+export function RichContent(props: {
   content: JSONContent | string
   smallImage?: boolean
 }) {
@@ -305,6 +236,7 @@ function RichContent(props: {
       DisplayLink,
       DisplayMention,
       Iframe,
+      TiptapTweet,
     ],
     content,
     editable: false,
