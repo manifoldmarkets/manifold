@@ -46,7 +46,7 @@ export function Tooltip(props: {
   }[placement.split('-')[0]] as string
 
   return text ? (
-    <>
+    <div className="contents">
       <div
         className={clsx('peer inline-block', className)}
         ref={reference}
@@ -74,7 +74,7 @@ export function Tooltip(props: {
           }}
         />
       </div>
-    </>
+    </div>
   ) : (
     <>{children}</>
   )
