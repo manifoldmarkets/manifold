@@ -29,7 +29,9 @@ const fetchProps = async () => {
     .reverse()
     .filter(
       ([user]) =>
-        user.username !== 'SalemCenter' && user.username !== 'RichardHanania'
+        user.username !== 'SalemCenter' &&
+        user.username !== 'RichardHanania' &&
+        user.username !== 'JamesGrugett'
     )
     .slice(0, 20)
 
