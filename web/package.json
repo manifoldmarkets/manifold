@@ -67,6 +67,7 @@
     "@types/lodash": "4.14.178",
     "@types/node": "16.11.11",
     "@types/react": "17.0.43",
+    "@types/react-dom": "17.0.2",
     "@types/string-similarity": "^4.0.0",
     "autoprefixer": "10.2.6",
     "critters": "0.0.16",

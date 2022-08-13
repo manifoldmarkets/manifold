@@ -13,7 +13,8 @@ import {
   ContractsGrid,
 } from './contract/contracts-grid'
 import { Row } from './layout/row'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
+import { unstable_batchedUpdates } from 'react-dom'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import { track, trackCallback } from 'web/lib/service/analytics'
@@ -21,7 +22,7 @@ import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { Group, NEW_USER_GROUP_SLUGS } from 'common/group'
 import { PillButton } from './buttons/pill-button'
-import { range, sortBy } from 'lodash'
+import { sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
 import clsx from 'clsx'
@@ -111,7 +112,6 @@ export function ContractSearch(props: {
 
   const selectPill = (pill: string | undefined) => () => {
     setPillFilter(pill)
-    setPage(0)
     track('select search category', { category: pill ?? 'all' })
   }
 
@@ -167,79 +167,62 @@ export function ContractSearch(props: {
     [searchIndexName]
   )
 
-  const [page, setPage] = useState(0)
   const [numPages, setNumPages] = useState(1)
-  const [hitsByPage, setHitsByPage] = useState<{ [page: string]: Contract[] }>(
-    {}
-  )
+  const [pages, setPages] = useState<Contract[][]>([])
+  const requestId = useRef(0)
 
-  useEffect(() => {
-    let wasMostRecentQuery = true
-    const algoliaIndex = query ? searchIndex : index
-
-    algoliaIndex
-      .search(query, {
+  const performQuery = async (freshQuery?: boolean) => {
+    const id = ++requestId.current
+    const requestedPage = freshQuery ? 0 : pages.length
+    if (freshQuery || requestedPage < numPages) {
+      const algoliaIndex = query ? searchIndex : index
+      const results = await algoliaIndex.search(query, {
         facetFilters,
         numericFilters,
-        page,
+        page: requestedPage,
         hitsPerPage: 20,
       })
-      .then((results) => {
-        if (!wasMostRecentQuery) return
-
-        if (page === 0) {
-          setHitsByPage({
-            [0]: results.hits as any as Contract[],
-          })
-        } else {
-          setHitsByPage((hitsByPage) => ({
-            ...hitsByPage,
-            [page]: results.hits,
-          }))
-        }
-        setNumPages(results.nbPages)
-      })
-    return () => {
-      wasMostRecentQuery = false
+      // if there's a more recent request, forget about this one
+      if (id === requestId.current) {
+        const newPage = results.hits as any as Contract[]
+        // this spooky looking function is the easiest way to get react to
+        // batch this and not do two renders. we can throw it out in react 18.
+        // see https://github.com/reactwg/react-18/discussions/21
+        unstable_batchedUpdates(() => {
+          setNumPages(results.nbPages)
+          if (freshQuery) {
+            setPages([newPage])
+          } else {
+            setPages((pages) => [...pages, newPage])
+          }
+        })
+      }
     }
-    // Note numeric filters are unique based on current time, so can't compare
-    // them by value.
-  }, [query, page, index, searchIndex, JSON.stringify(facetFilters), filter])
-
-  const loadMore = () => {
-    if (page >= numPages - 1) return
-
-    const haveLoadedCurrentPage = hitsByPage[page]
-    if (haveLoadedCurrentPage) setPage(page + 1)
   }
 
-  const hits = range(0, page + 1)
-    .map((p) => hitsByPage[p] ?? [])
-    .flat()
+  useEffect(() => {
+    performQuery(true)
+  }, [query, index, searchIndex, filter, JSON.stringify(facetFilters)])
 
-  const contracts = hits.filter(
-    (c) => !additionalFilter?.excludeContractIds?.includes(c.id)
-  )
+  const contracts = pages
+    .flat()
+    .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
 
   const showTime =
     sort === 'close-date' || sort === 'resolve-date' ? sort : undefined
 
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
-    setPage(0)
   }
 
   const selectFilter = (newFilter: filter) => {
     if (newFilter === filter) return
     setFilter(newFilter)
-    setPage(0)
     track('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
     if (newSort === sort) return
-
-    setPage(0)
     setSort(newSort)
     track('select search sort', { sort: newSort })
   }
@@ -345,8 +328,8 @@ export function ContractSearch(props: {
         <>You're not following anyone, nor in any of your own groups yet.</>
       ) : (
         <ContractsGrid
-          contracts={hitsByPage[0] === undefined ? undefined : contracts}
-          loadMore={loadMore}
+          contracts={pages.length === 0 ? undefined : contracts}
+          loadMore={performQuery}
           showTime={showTime}
           onContractClick={onContractClick}
           overrideGridClassName={overrideGridClassName}
