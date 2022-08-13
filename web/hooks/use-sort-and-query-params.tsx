@@ -1,6 +1,5 @@
-import { debounce } from 'lodash'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DEFAULT_SORT } from 'web/components/contract-search'
 
 const MARKETS_SORT = 'markets_sort'
@@ -32,22 +31,38 @@ export interface QuerySortOptions {
   disableQueryString?: boolean
 }
 
+function withQueryParams(
+  location: Location,
+  params: { [k: string]: string | null | undefined }
+) {
+  const newParams = new URLSearchParams(location.search)
+  for (const [k, v] of Object.entries(params)) {
+    if (!v) {
+      newParams.delete(k)
+    } else {
+      newParams.set(k, v)
+    }
+  }
+  const newUrl = new URL(location.href)
+  newUrl.search = newParams.toString()
+  return newUrl
+}
+
 export function useQueryAndSortParams({
   defaultSort = DEFAULT_SORT,
   shouldLoadFromStorage = true,
   disableQueryString,
 }: QuerySortOptions = {}) {
   const router = useRouter()
-
   const { s: sort, q: query } = router.query as {
     q?: string
     s?: Sort
   }
 
   const setSort = (sort: Sort | undefined) => {
-    router.replace({ query: { ...router.query, s: sort } }, undefined, {
-      shallow: true,
-    })
+    const history = window.history
+    const url = withQueryParams(window.location, { s: sort }).toString()
+    history.replaceState({ ...history.state, as: url, url }, '', url)
     if (shouldLoadFromStorage) {
       localStorage.setItem(MARKETS_SORT, sort || '')
     }
@@ -60,17 +75,11 @@ export function useQueryAndSortParams({
   }, [query])
 
   // Debounce router query update.
-  const pushQuery = useMemo(
-    () =>
-      debounce((query: string | undefined) => {
-        const queryObj = { ...router.query, q: query }
-        if (!query) delete queryObj.q
-        router.replace({ query: queryObj }, undefined, {
-          shallow: true,
-        })
-      }, 100),
-    [router]
-  )
+  const pushQuery = (query: string | undefined) => {
+    const history = window.history
+    const url = withQueryParams(window.location, { q: query }).toString()
+    history.replaceState({ ...history.state, as: url, url }, '', url)
+  }
 
   const setQuery = (query: string | undefined) => {
     setQueryState(query)
@@ -81,15 +90,15 @@ export function useQueryAndSortParams({
 
   useEffect(() => {
     // If there's no sort option, then set the one from localstorage
-    if (router.isReady && !sort && shouldLoadFromStorage) {
+    if (!sort && shouldLoadFromStorage) {
       const localSort = localStorage.getItem(MARKETS_SORT) as Sort
       if (localSort && localSort !== defaultSort) {
         // Use replace to not break navigating back.
-        router.replace(
-          { query: { ...router.query, s: localSort } },
-          undefined,
-          { shallow: true }
-        )
+        const history = window.history
+        const url = withQueryParams(window.location, {
+          s: localSort,
+        }).toString()
+        history.replaceState({ ...history.state, as: url, url }, '', url)
       }
     }
   })
