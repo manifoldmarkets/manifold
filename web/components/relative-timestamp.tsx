@@ -6,10 +6,11 @@ export function RelativeTimestamp(props: { time: number }) {
   const { time } = props
   const dayJsTime = dayjs(time)
   return (
-    <DateTimeTooltip time={dayJsTime}>
-      <span className="ml-1 whitespace-nowrap text-gray-400">
-        {dayJsTime.fromNow()}
-      </span>
+    <DateTimeTooltip
+      className="ml-1 whitespace-nowrap text-gray-400"
+      time={dayJsTime}
+    >
+      {dayJsTime.fromNow()}
     </DateTimeTooltip>
   )
 }
