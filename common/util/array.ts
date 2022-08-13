@@ -17,3 +17,22 @@ export function buildArray<T>(
 
   return array
 }
+
+export function groupConsecutive<T, U>(xs: T[], key: (x: T) => U) {
+  if (!xs.length) {
+    return []
+  }
+  const result = []
+  let curr = { key: key(xs[0]), items: [xs[0]] }
+  for (const x of xs.slice(1)) {
+    const k = key(x)
+    if (k !== curr.key) {
+      result.push(curr)
+      curr = { key: k, items: [x] }
+    } else {
+      curr.items.push(x)
+    }
+  }
+  result.push(curr)
+  return result
+}
