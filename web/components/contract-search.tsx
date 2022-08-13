@@ -149,6 +149,7 @@ export function ContractSearch(props: {
     <Col className="h-full">
       <ContractSearchControls
         className={headerClassName}
+        additionalFilter={additionalFilter}
         hideOrderSelector={hideOrderSelector}
         querySortOptions={querySortOptions}
         user={user}
