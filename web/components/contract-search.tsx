@@ -22,7 +22,7 @@ import { useFollows } from 'web/hooks/use-follows'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
-import { Group, NEW_USER_GROUP_SLUGS } from 'common/group'
+import { NEW_USER_GROUP_SLUGS } from 'common/group'
 import { PillButton } from './buttons/pill-button'
 import { sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
@@ -204,10 +204,8 @@ function ContractSearchControls(props: {
     (group) => group.contractIds.length
   ).reverse()
 
-  const defaultPillGroups = DEFAULT_CATEGORY_GROUPS as Group[]
-
-  const pillGroups =
-    memberPillGroups.length > 0 ? memberPillGroups : defaultPillGroups
+  const pillGroups: { name: string; slug: string }[] =
+    memberPillGroups.length > 0 ? memberPillGroups : DEFAULT_CATEGORY_GROUPS
 
   const [filter, setFilter] = useState<filter>(
     querySortOptions?.defaultFilter ?? 'open'
