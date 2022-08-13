@@ -81,7 +81,7 @@ const authAndRefreshTokens = async (ctx: RequestContext) => {
   // step 0: if you have no refresh token you are logged out
   if (refresh == null) {
     console.debug('User is unauthenticated.')
-    return undefined
+    return null
   }
 
   console.debug('User may be authenticated; checking cookies.')
@@ -107,7 +107,7 @@ const authAndRefreshTokens = async (ctx: RequestContext) => {
     } catch (e) {
       // big unexpected problem -- functionally, they are not logged in
       console.error(e)
-      return undefined
+      return null
     }
   }
 
@@ -136,9 +136,10 @@ const authAndRefreshTokens = async (ctx: RequestContext) => {
     } catch (e) {
       // big unexpected problem -- functionally, they are not logged in
       console.error(e)
-      return undefined
+      return null
     }
   }
+  return null
 }
 
 export const authenticateOnServer = async (ctx: RequestContext) => {
@@ -158,7 +159,7 @@ export const authenticateOnServer = async (ctx: RequestContext) => {
     // definitely not supposed to happen, but let's be maximally robust
     console.error(e)
   }
-  return creds
+  return creds ?? null
 }
 
 // note that we might want to define these types more generically if we want better
