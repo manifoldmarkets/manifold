@@ -197,6 +197,8 @@ export function ContractSearch(props: {
   }
 
   useEffect(() => {
+    // if there are no search results yet (not even an empty page), that means
+    // we should do an initial search to populate a first page.
     if (pages.length === 0) {
       queryNextPage()
     }
