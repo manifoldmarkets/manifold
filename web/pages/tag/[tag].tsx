@@ -15,11 +15,8 @@ export default function TagPage() {
       <Title text={`#${tag}`} />
       <ContractSearch
         user={user}
-        querySortOptions={{
-          defaultSort: 'newest',
-          defaultFilter: 'all',
-          shouldLoadFromStorage: true,
-        }}
+        defaultSort="newest"
+        defaultFilter="all"
         additionalFilter={{ tag }}
       />
     </Page>

@@ -31,7 +31,6 @@ import { CreateQuestionButton } from 'web/components/create-question-button'
 import React, { useState } from 'react'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
-import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
@@ -196,11 +195,8 @@ export default function GroupPage(props: {
   const questionsTab = (
     <ContractSearch
       user={user}
-      querySortOptions={{
-        shouldLoadFromStorage: true,
-        defaultSort: getSavedSort() ?? 'newest',
-        defaultFilter: 'open',
-      }}
+      defaultSort={'newest'}
+      defaultFilter={'open'}
       additionalFilter={{ groupSlug: group.slug }}
     />
   )
