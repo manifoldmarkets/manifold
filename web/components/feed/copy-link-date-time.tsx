@@ -7,6 +7,7 @@ import { fromNow } from 'web/lib/util/time'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { LinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 
 export function CopyLinkDateTimeComponent(props: {
   prefix: string
@@ -17,6 +18,7 @@ export function CopyLinkDateTimeComponent(props: {
 }) {
   const { prefix, slug, elementId, createdTime, className } = props
   const [showToast, setShowToast] = useState(false)
+  const time = dayjs(createdTime)
 
   function copyLinkToComment(
     event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
@@ -30,7 +32,7 @@ export function CopyLinkDateTimeComponent(props: {
   }
   return (
     <div className={clsx('inline', className)}>
-      <DateTimeTooltip time={createdTime} noTap>
+      <DateTimeTooltip time={time} noTap>
         <Link href={`/${prefix}/${slug}#${elementId}`} passHref={true}>
           <a
             onClick={(event) => copyLinkToComment(event)}

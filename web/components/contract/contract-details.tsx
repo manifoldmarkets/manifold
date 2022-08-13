@@ -83,12 +83,10 @@ export function MiscDetails(props: {
       {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
         <SiteLink
           href={groupPath(groupLinks[0].slug)}
-          className="text-sm text-gray-400"
+          className="line-clamp-1 text-sm text-gray-400"
         >
-          <Row className={'line-clamp-1 flex-wrap items-center '}>
-            <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
-            {groupLinks[0].name}
-          </Row>
+          <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
+          {groupLinks[0].name}
         </SiteLink>
       )}
     </Row>
@@ -211,7 +209,7 @@ export function ContractDetails(props: {
             <>
               <DateTimeTooltip
                 text="Market resolved:"
-                time={contract.resolutionTime}
+                time={dayjs(contract.resolutionTime)}
               >
                 {resolvedDate}
               </DateTimeTooltip>
@@ -267,13 +265,16 @@ function EditableCloseDate(props: {
 }) {
   const { closeTime, contract, isCreator } = props
 
+  const dayJsCloseTime = dayjs(closeTime)
+  const dayJsNow = dayjs()
+
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const [closeDate, setCloseDate] = useState(
-    closeTime && dayjs(closeTime).format('YYYY-MM-DDTHH:mm')
+    closeTime && dayJsCloseTime.format('YYYY-MM-DDTHH:mm')
   )
 
-  const isSameYear = dayjs(closeTime).isSame(dayjs(), 'year')
-  const isSameDay = dayjs(closeTime).isSame(dayjs(), 'day')
+  const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
+  const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
 
   const onSave = () => {
     const newCloseTime = dayjs(closeDate).valueOf()
@@ -314,11 +315,11 @@ function EditableCloseDate(props: {
       ) : (
         <DateTimeTooltip
           text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-          time={closeTime}
+          time={dayJsCloseTime}
         >
           {isSameYear
-            ? dayjs(closeTime).format('MMM D')
-            : dayjs(closeTime).format('MMM D, YYYY')}
+            ? dayJsCloseTime.format('MMM D')
+            : dayJsCloseTime.format('MMM D, YYYY')}
           {isSameDay && <> ({fromNow(closeTime)})</>}
         </DateTimeTooltip>
       )}
