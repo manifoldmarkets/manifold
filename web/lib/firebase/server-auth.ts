@@ -179,7 +179,7 @@ export const redirectIfLoggedIn = <P>(
       if (fn == null) {
         return { props: {} }
       } else {
-        const props = fn(ctx)
+        const props = await fn(ctx)
         console.debug('Finished getting initial props for rendering.')
         return props
       }
@@ -203,7 +203,7 @@ export const redirectIfLoggedOut = <P>(
       if (fn == null) {
         return { props: {} }
       } else {
-        const props = fn(ctx, creds)
+        const props = await fn(ctx, creds)
         console.debug('Finished getting initial props for rendering.')
         return props
       }
