@@ -86,8 +86,8 @@ export function BetsList(props: { user: User }) {
 
   useEffect(() => {
     if (bets) {
-      const contractIds = uniq(bets.map((b) => getContractFromId(b.contractId)))
-      Promise.all(contractIds).then((contracts) => {
+      const contractIds = uniq(bets.map((b) => b.contractId))
+      Promise.all(contractIds.map(getContractFromId)).then((contracts) => {
         setContractsById(keyBy(filterDefined(contracts), 'id'))
       })
     }
