@@ -266,7 +266,7 @@ export default function GroupPage(props: {
       </Col>
       <Tabs
         currentPageForAnalytics={groupPath(group.slug)}
-        className={'mb-0 sm:mb-2'}
+        className={'mx-2 mb-0 sm:mb-2'}
         defaultIndex={tabIndex > 0 ? tabIndex : 0}
         tabs={tabs}
       />
