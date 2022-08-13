@@ -1,5 +1,4 @@
 import { debounce, sortBy, take } from 'lodash'
-import PlusSmIcon from '@heroicons/react/solid/PlusSmIcon'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
@@ -38,7 +37,6 @@ import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import { REFERRAL_AMOUNT } from 'common/user'
 import { ContractSearch } from 'web/components/contract-search'
-import clsx from 'clsx'
 import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
@@ -557,32 +555,29 @@ function AddContractButton(props: { group: Group; user: User }) {
   return (
     <>
       <div className={'flex justify-center'}>
-        <button
-          className={clsx('btn btn-sm btn-outline')}
-          onClick={() => setOpen(true)}
-        >
-          <PlusSmIcon className="h-6 w-6" aria-hidden="true" /> question
-        </button>
+        <Button size="sm" color="gradient" onClick={() => setOpen(true)}>
+          Add market
+        </Button>
       </div>
 
       <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
         <Col className={' w-full gap-4 rounded-md bg-white'}>
           <Col className="p-8 pb-0">
             <div className={'text-xl text-indigo-700'}>
-              Add a question to your group
+              Add a market to your group
             </div>
 
             {contracts.length === 0 ? (
               <Col className="items-center justify-center">
                 <CreateQuestionButton
                   user={user}
-                  overrideText={'New question'}
+                  overrideText={'New market'}
                   className={'w-48 flex-shrink-0 '}
                   query={`?groupId=${group.id}`}
                 />
 
                 <div className={'mt-1 text-lg text-gray-600'}>
-                  (or select old questions)
+                  (or select old markets)
                 </div>
               </Col>
             ) : (
