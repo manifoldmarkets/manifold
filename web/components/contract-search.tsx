@@ -112,8 +112,6 @@ export function ContractSearch(props: {
 
   const selectPill = (pill: string | undefined) => () => {
     setPillFilter(pill)
-    setPages([])
-    setNumPages(1)
     track('select search category', { category: pill ?? 'all' })
   }
 
@@ -173,36 +171,38 @@ export function ContractSearch(props: {
   const [pages, setPages] = useState<Contract[][]>([])
   const requestId = useRef(0)
 
-  const queryNextPage = async () => {
+  const performQuery = async (freshQuery?: boolean) => {
     const id = ++requestId.current
-    if (pages.length < numPages) {
+    const requestedPage = freshQuery ? 0 : pages.length
+    if (freshQuery || requestedPage < numPages) {
       const algoliaIndex = query ? searchIndex : index
       const results = await algoliaIndex.search(query, {
         facetFilters,
         numericFilters,
-        page: pages.length,
+        page: requestedPage,
         hitsPerPage: 20,
       })
       // if there's a more recent request, forget about this one
       if (id === requestId.current) {
+        const newPage = results.hits as any as Contract[]
         // this spooky looking function is the easiest way to get react to
         // batch this and not do two renders. we can throw it out in react 18.
         // see https://github.com/reactwg/react-18/discussions/21
         unstable_batchedUpdates(() => {
-          setPages((pages) => [...pages, results.hits as any as Contract[]])
           setNumPages(results.nbPages)
+          if (freshQuery) {
+            setPages([newPage])
+          } else {
+            setPages((pages) => [...pages, newPage])
+          }
         })
       }
     }
   }
 
   useEffect(() => {
-    // if there are no search results yet (not even an empty page), that means
-    // we should do an initial search to populate a first page.
-    if (pages.length === 0) {
-      queryNextPage()
-    }
-  }, [pages])
+    performQuery(true)
+  }, [query, index, searchIndex, filter, JSON.stringify(facetFilters)])
 
   const contracts = pages
     .flat()
@@ -213,23 +213,17 @@ export function ContractSearch(props: {
 
   const updateQuery = (newQuery: string) => {
     setQuery(newQuery)
-    setPages([])
-    setNumPages(1)
   }
 
   const selectFilter = (newFilter: filter) => {
     if (newFilter === filter) return
     setFilter(newFilter)
-    setPages([])
-    setNumPages(1)
     track('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
     if (newSort === sort) return
     setSort(newSort)
-    setPages([])
-    setNumPages(1)
     track('select search sort', { sort: newSort })
   }
 
@@ -335,7 +329,7 @@ export function ContractSearch(props: {
       ) : (
         <ContractsGrid
           contracts={pages.length === 0 ? undefined : contracts}
-          loadMore={queryNextPage}
+          loadMore={performQuery}
           showTime={showTime}
           onContractClick={onContractClick}
           overrideGridClassName={overrideGridClassName}
