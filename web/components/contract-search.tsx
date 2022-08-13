@@ -100,7 +100,7 @@ export function ContractSearch(props: {
   const requestId = useRef(0)
 
   const performQuery = async (freshQuery?: boolean) => {
-    if (searchParameters.current == null) {
+    if (searchParameters.current === undefined) {
       return
     }
     const params = searchParameters.current
