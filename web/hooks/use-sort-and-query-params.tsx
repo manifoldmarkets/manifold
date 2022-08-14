@@ -11,10 +11,10 @@ export type Sort =
   | 'last-updated'
   | 'score'
 
-type NewQueryParams = { [k: string]: string | null | undefined }
+type UpdatedQueryParams = { [k: string]: string }
 
-function withURLParams(params: NewQueryParams) {
-  const newParams = new URLSearchParams(window.location.search)
+function withURLParams(location: Location, params: UpdatedQueryParams) {
+  const newParams = new URLSearchParams(location.search)
   for (const [k, v] of Object.entries(params)) {
     if (!v) {
       newParams.delete(k)
@@ -22,13 +22,14 @@ function withURLParams(params: NewQueryParams) {
       newParams.set(k, v)
     }
   }
-  const newUrl = new URL(window.location.href)
+  const newUrl = new URL(location.href)
   newUrl.search = newParams.toString()
   return newUrl
 }
 
-function updateURL(params: NewQueryParams) {
-  const url = withURLParams(params).toString()
+function updateURL(params: UpdatedQueryParams) {
+  // see relevant discussion here https://github.com/vercel/next.js/discussions/18072
+  const url = withURLParams(window.location, params).toString()
   const updatedState = { ...window.history.state, as: url, url }
   window.history.replaceState(updatedState, '', url)
 }
