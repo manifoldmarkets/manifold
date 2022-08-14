@@ -20,7 +20,7 @@ import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { NEW_USER_GROUP_SLUGS } from 'common/group'
 import { PillButton } from './buttons/pill-button'
-import { sortBy } from 'lodash'
+import { debounce, sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -147,6 +147,12 @@ export function ContractSearch(props: {
     }
   }
 
+  const onSearchParametersChanged = useRef(
+    debounce((params) => {
+      searchParameters.current = params
+      performQuery(true)
+    }, 100)
+  )
   const contracts = pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
@@ -166,10 +172,7 @@ export function ContractSearch(props: {
         useQuerySortLocalStorage={useQuerySortLocalStorage}
         useQuerySortUrlParams={useQuerySortUrlParams}
         user={user}
-        onSearchParametersChanged={(params) => {
-          searchParameters.current = params
-          performQuery(true)
-        }}
+        onSearchParametersChanged={onSearchParametersChanged.current}
       />
       <ContractsGrid
         contracts={pages.length === 0 ? undefined : contracts}
