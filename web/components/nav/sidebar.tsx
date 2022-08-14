@@ -44,7 +44,13 @@ function getNavigation() {
     { name: 'Leaderboard', href: '/leaderboards', icon: TrendingUpIcon },
 
     ...(IS_PRIVATE_MANIFOLD
-      ? []
+      ? [
+          {
+            name: 'Rules',
+            href: 'https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting',
+            icon: BookOpenIcon,
+          },
+        ]
       : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   ]
 }
@@ -52,10 +58,6 @@ function getNavigation() {
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
     return [
-      {
-        name: 'Rules',
-        href: 'https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting',
-      },
       { name: 'Discord', href: 'https://discord.gg/ZtT7PxapSS' },
       { name: 'Manifold Markets', href: 'https://manifold.markets' },
       {
