@@ -56,12 +56,6 @@ export default function Create(props: { auth: { user: User } }) {
   const { user } = props.auth
   const router = useRouter()
   const params = router.query as NewQuestionParams
-  // TODO: Not sure why Question is pulled out as its own component;
-  // Maybe merge into newContract and then we don't need useEffect here.
-  const [question, setQuestion] = useState('')
-  useEffect(() => {
-    setQuestion(params.q ?? '')
-  }, [params.q])
 
   if (!router.isReady) return <div />
 
@@ -76,26 +70,7 @@ export default function Create(props: { auth: { user: User } }) {
         <div className="rounded-lg px-6 py-4 sm:py-0">
           <Title className="!mt-0" text="Create a market" />
 
-          <form>
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="mb-1">
-                  Question<span className={'text-red-700'}>*</span>
-                </span>
-              </label>
-
-              <Textarea
-                placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-                className="input input-bordered resize-none"
-                autoFocus
-                maxLength={MAX_QUESTION_LENGTH}
-                value={question}
-                onChange={(e) => setQuestion(e.target.value || '')}
-              />
-            </div>
-          </form>
-          <Spacer h={6} />
-          <NewContract question={question} params={params} creator={user} />
+          <NewContract params={params} creator={user} />
         </div>
       </div>
     </Page>
@@ -103,12 +78,9 @@ export default function Create(props: { auth: { user: User } }) {
 }
 
 // Allow user to create a new contract
-export function NewContract(props: {
-  creator: User
-  question: string
-  params?: NewQuestionParams
-}) {
-  const { creator, question, params } = props
+function NewContract(props: { creator: User; params?: NewQuestionParams }) {
+  const { creator, params } = props
+  const [question, setQuestion] = useState('')
   const { groupId, initValue } = params ?? {}
   const [outcomeType, setOutcomeType] = useState<outcomeType>(
     (params?.outcomeType as outcomeType) ?? 'BINARY'
@@ -131,6 +103,11 @@ export function NewContract(props: {
         }
       })
   }, [creator.id, groupId])
+
+  useEffect(() => {
+    setQuestion(params?.q ?? '')
+  }, [params?.q])
+
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
   // If params.closeTime is set, extract out the specified date and time
@@ -254,6 +231,26 @@ export function NewContract(props: {
 
   return (
     <div>
+      <form>
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="mb-1">
+              Question<span className={'text-red-700'}>*</span>
+            </span>
+          </label>
+
+          <Textarea
+            placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
+            className="input input-bordered resize-none"
+            autoFocus
+            maxLength={MAX_QUESTION_LENGTH}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value || '')}
+          />
+        </div>
+      </form>
+      <Spacer h={6} />
+
       <label className="label">
         <span className="mb-1">Answer type</span>
       </label>
