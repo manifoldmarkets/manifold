@@ -83,7 +83,7 @@ export function ContractSearch(props: {
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
-  overrideGridClassName?: string
+  gridClassName?: string
   cardHideOptions?: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
@@ -98,7 +98,7 @@ export function ContractSearch(props: {
     defaultFilter,
     additionalFilter,
     onContractClick,
-    overrideGridClassName,
+    gridClassName,
     hideOrderSelector,
     cardHideOptions,
     highlightOptions,
@@ -181,7 +181,7 @@ export function ContractSearch(props: {
         loadMore={performQuery}
         showTime={showTime}
         onContractClick={onContractClick}
-        overrideGridClassName={overrideGridClassName}
+        gridClassName={gridClassName}
         highlightOptions={highlightOptions}
         cardHideOptions={cardHideOptions}
       />
