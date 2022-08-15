@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { getValues, log, writeAsync } from './utils'
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { Contract, CPMMContract, FreeResponseContract } from 'common/contract'
 import { User } from 'common/user'
 import { Dictionary, groupBy, keyBy, minBy, sumBy } from 'lodash'
@@ -34,21 +34,23 @@ async function updateLoansCore() {
   const contractsById = keyBy(contracts, (contract) => contract.id)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
 
-  const userLoanUpdates = users.map((user) =>
-    getUserLoanUpdates(betsByUser[user.id] ?? [], contractsById).betUpdates
-  ).flat()
+  const userLoanUpdates = users
+    .map(
+      (user) =>
+        getUserLoanUpdates(betsByUser[user.id] ?? [], contractsById).betUpdates
+    )
+    .flat()
 
-  const betUpdates = userLoanUpdates
-    .map((update) => ({
-      doc: firestore
-        .collection('contracts')
-        .doc(update.contractId)
-        .collection('bets')
-        .doc(update.betId),
-      fields: {
-        loanAmount: update.loanTotal,
-      },
-    }))
+  const betUpdates = userLoanUpdates.map((update) => ({
+    doc: firestore
+      .collection('contracts')
+      .doc(update.contractId)
+      .collection('bets')
+      .doc(update.betId),
+    fields: {
+      loanAmount: update.loanTotal,
+    },
+  }))
 
   await writeAsync(firestore, betUpdates)
 }
@@ -91,7 +93,13 @@ const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
   const shares = YES || NO
   const outcome = YES ? 'YES' : 'NO'
 
-  const { saleValue } = calculateCpmmSale(contract, shares, outcome)
+  const unfilledBets: LimitBet[] = []
+  const { saleValue } = calculateCpmmSale(
+    contract,
+    shares,
+    outcome,
+    unfilledBets
+  )
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
