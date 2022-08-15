@@ -40,6 +40,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
+import { SEO } from 'web/components/SEO'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -68,6 +69,8 @@ export default function Notifications(props: {
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
+        <SEO title="Notifications" description="Manifold user notifications" />
+
         <div>
           <Tabs
             currentPageForAnalytics={'notifications'}
