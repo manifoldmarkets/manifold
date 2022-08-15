@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 import { findBestMatch } from 'string-similarity'
 
-import { FreeResponseContract } from 'common/contract'
+import { BountyContract, FreeResponseContract } from 'common/contract'
 import { BuyAmountInput } from '../amount-input'
 import { Col } from '../layout/col'
 import { APIError, createAnswer } from 'web/lib/firebase/api'
@@ -26,7 +26,9 @@ import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { lowerCase } from 'lodash'
 
-export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
+export function CreateAnswerPanel(props: {
+  contract: FreeResponseContract | BountyContract
+}) {
   const { contract } = props
   const user = useUser()
   const [text, setText] = useState('')

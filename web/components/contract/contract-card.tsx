@@ -9,6 +9,7 @@ import {
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
+  AnswerContract,
   BinaryContract,
   BountyContract,
   Contract,
@@ -232,7 +233,7 @@ export function BountyValue(props: {
 }
 
 function FreeResponseTopAnswer(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: AnswerContract
   truncate: 'short' | 'long' | 'none'
   className?: string
 }) {

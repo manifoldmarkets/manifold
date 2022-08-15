@@ -3,6 +3,7 @@ import { Answer } from 'common/answer'
 import { getProbability } from 'common/calculate'
 import { getValueFromBucket } from 'common/calculate-dpm'
 import {
+  AnswerContract,
   BinaryContract,
   BountyContract,
   Contract,
@@ -78,7 +79,7 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function FreeResponseOutcomeLabel(props: {
-  contract: FreeResponseContract | MultipleChoiceContract | BountyContract
+  contract: AnswerContract
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string

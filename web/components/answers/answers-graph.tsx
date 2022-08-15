@@ -5,14 +5,18 @@ import { groupBy, sortBy, sumBy } from 'lodash'
 import { memo } from 'react'
 
 import { Bet } from 'common/bet'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import {
+  AnswerContract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useWindowSize } from 'web/hooks/use-window-size'
 
 const NUM_LINES = 6
 
 export const AnswersGraph = memo(function AnswersGraph(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: AnswerContract
   bets: Bet[]
   height?: number
 }) {
@@ -178,10 +182,7 @@ function formatTime(
   return d.format(format)
 }
 
-const computeProbsByOutcome = (
-  bets: Bet[],
-  contract: FreeResponseContract | MultipleChoiceContract
-) => {
+const computeProbsByOutcome = (bets: Bet[], contract: AnswerContract) => {
   const { totalBets, outcomeType } = contract
 
   const betsByOutcome = groupBy(bets, (bet) => bet.outcome)

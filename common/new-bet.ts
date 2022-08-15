@@ -15,6 +15,7 @@ import {
   getCpmmProbability,
 } from './calculate-cpmm'
 import {
+  AnswerContract,
   CPMMBinaryContract,
   DPMBinaryContract,
   FreeResponseContract,
@@ -323,7 +324,7 @@ export const getNewBinaryDpmBetInfo = (
 export const getNewMultiBetInfo = (
   outcome: string,
   amount: number,
-  contract: FreeResponseContract | MultipleChoiceContract,
+  contract: AnswerContract,
   loanAmount: number
 ) => {
   const { pool, totalShares, totalBets } = contract

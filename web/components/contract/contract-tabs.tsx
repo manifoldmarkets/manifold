@@ -56,7 +56,8 @@ export function ContractTabs(props: {
         tips={tips}
         user={user}
         mode={
-          contract.outcomeType === 'FREE_RESPONSE'
+          contract.outcomeType === 'FREE_RESPONSE' ||
+          contract.outcomeType === 'BOUNTY'
             ? 'free-response-comment-answer-groups'
             : 'comments'
         }

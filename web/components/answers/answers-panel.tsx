@@ -1,7 +1,12 @@
 import { sortBy, partition, sum, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import {
+  AnswerContract,
+  BountyContract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
@@ -25,9 +30,7 @@ import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import { BuyButton } from 'web/components/yes-no-selector'
 
-export function AnswersPanel(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
-}) {
+export function AnswersPanel(props: { contract: AnswerContract }) {
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets, outcomeType } =
     contract
@@ -136,7 +139,7 @@ export function AnswersPanel(props: {
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
-      {outcomeType === 'FREE_RESPONSE' &&
+      {(outcomeType === 'FREE_RESPONSE' || outcomeType === 'BOUNTY') &&
         tradingAllowed(contract) &&
         (!resolveOption || resolveOption === 'CANCEL') && (
           <CreateAnswerPanel contract={contract} />
@@ -158,7 +161,7 @@ export function AnswersPanel(props: {
 }
 
 function getAnswerItems(
-  contract: FreeResponseContract | MultipleChoiceContract,
+  contract: AnswerContract,
   answers: Answer[],
   user: User | undefined | null
 ) {
@@ -184,7 +187,7 @@ function getAnswerItems(
 }
 
 function OpenAnswer(props: {
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: AnswerContract
   answer: Answer
   items: ActivityItem[]
   type: string

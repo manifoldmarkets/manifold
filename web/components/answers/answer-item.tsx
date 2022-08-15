@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 
 import { Answer } from 'common/answer'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { AnswerContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../avatar'
@@ -13,7 +13,7 @@ import { Linkify } from '../linkify'
 
 export function AnswerItem(props: {
   answer: Answer
-  contract: FreeResponseContract | MultipleChoiceContract
+  contract: AnswerContract
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
   totalChosenProb?: number

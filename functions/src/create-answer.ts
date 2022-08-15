@@ -36,7 +36,10 @@ export const createanswer = newEndpoint(opts, async (req, auth) => {
     if (!contractSnap.exists) throw new APIError(400, 'Invalid contract')
     const contract = contractSnap.data() as Contract
 
-    if (contract.outcomeType !== 'FREE_RESPONSE')
+    if (
+      contract.outcomeType !== 'FREE_RESPONSE' &&
+      contract.outcomeType !== 'BOUNTY'
+    )
       throw new APIError(400, 'Requires a free response contract')
 
     const { closeTime, volume } = contract

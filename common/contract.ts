@@ -71,6 +71,10 @@ export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type DPMBinaryContract = BinaryContract & DPM
 export type CPMMBinaryContract = BinaryContract & CPMM
+export type AnswerContract =
+  | FreeResponseContract
+  | MultipleChoiceContract
+  | BountyContract
 
 export type DPM = {
   mechanism: 'dpm-2'
