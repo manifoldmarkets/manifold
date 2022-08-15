@@ -6,6 +6,7 @@ import http from "http";
 import fs from "fs";
 import crypto from "crypto";
 import cors from "cors";
+import path from "path";
 
 import * as Packet from "common/packet-ids";
 import { UserNotRegisteredException } from "common/exceptions";
@@ -24,7 +25,7 @@ const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
 
 export default class App {
     private readonly app: Express;
-    private readonly io: Server;
+    private io: Server;
     readonly bot: TwitchBot;
 
     private userList: User[] = [];
@@ -41,60 +42,6 @@ export default class App {
         this.app.use(express.json());
 
         this.bot = new TwitchBot(this);
-
-        const server = http.createServer(this.app);
-        this.io = new Server(server);
-        this.io.on("connection", (socket) => {
-            socket.emit(Packet.CLEAR);
-
-            // const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
-
-            if (this.selectedMarket) {
-                socket.emit(Packet.SELECT_MARKET_ID, this.selectedMarket.data.id);
-                socket.emit(Packet.ADD_BETS, this.selectedMarket.bets);
-
-                this.selectedMarket.overlaySockets.push(socket);
-
-                if (this.selectedMarket.resolveData) {
-                    socket.emit(Packet.RESOLVE, this.selectedMarket.resolveData); //!!!
-                }
-            }
-            //!!! Need some linking method
-
-            socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
-                console.log("Select market: " + marketID);
-                const market = await this.selectMarket("#philbladen", marketID); //!!! Channel name
-
-                // const market = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
-            });
-
-            socket.on(Packet.RESOLVE, async (o: string) => {
-                log.info("Dock requested market resolve: " + o);
-
-                const outcome = o === "YES" ? ResolutionOutcome.YES : o === "NO" ? ResolutionOutcome.NO : ResolutionOutcome.CANCEL; //!!!
-
-                if (this.selectedMarket) {
-                    const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
-                    if (!pseudoUser) throw new Error("Pseudo user not found"); //!!!
-                    await Manifold.resolveBinaryMarket(this.selectedMarket.data.id, pseudoUser.APIKey, outcome);
-                }
-            });
-
-            socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
-                const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
-                if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
-                const newMarket = await Manifold.createBinaryMarket(pseudoUser.APIKey, packet.question, undefined, 50, packet.groupId);
-                socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
-                log.info("Created new market via dock: " + packet.question);
-            });
-        });
-        // this.io.on("disconnect", (socket) => {
-        //     console.log(socket.id);
-        // })
-        server.listen(31452, () => {
-            const address = <AddressInfo>server.address();
-            log.info(`Websocket listening on ${address.address}:${address.port}`);
-        });
 
         moment.updateLocale("en", {
             relativeTime: {
@@ -212,6 +159,67 @@ export default class App {
     launch() {
         this.bot.connect();
 
+        const server = this.app.listen(9172, () => {
+            const addressInfo = <AddressInfo>server.address();
+            const host = addressInfo.address;
+            const port = addressInfo.port;
+            log.info("Twitch bot webserver listening at http://%s:%s", host, port);
+        });
+
+        // const server = http.createServer(this.app);
+        this.io = new Server(server);
+        this.io.on("connection", (socket) => {
+            socket.emit(Packet.CLEAR);
+
+            // const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
+
+            if (this.selectedMarket) {
+                socket.emit(Packet.SELECT_MARKET_ID, this.selectedMarket.data.id);
+                socket.emit(Packet.ADD_BETS, this.selectedMarket.bets);
+
+                this.selectedMarket.overlaySockets.push(socket);
+
+                if (this.selectedMarket.resolveData) {
+                    socket.emit(Packet.RESOLVE, this.selectedMarket.resolveData); //!!!
+                }
+            }
+            //!!! Need some linking method
+
+            socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
+                console.log("Select market: " + marketID);
+                const market = await this.selectMarket("#philbladen", marketID); //!!! Channel name
+
+                // const market = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
+            });
+
+            socket.on(Packet.RESOLVE, async (o: string) => {
+                log.info("Dock requested market resolve: " + o);
+
+                const outcome = o === "YES" ? ResolutionOutcome.YES : o === "NO" ? ResolutionOutcome.NO : ResolutionOutcome.CANCEL; //!!!
+
+                if (this.selectedMarket) {
+                    const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
+                    if (!pseudoUser) throw new Error("Pseudo user not found"); //!!!
+                    await Manifold.resolveBinaryMarket(this.selectedMarket.data.id, pseudoUser.APIKey, outcome);
+                }
+            });
+
+            socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
+                const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
+                if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
+                const newMarket = await Manifold.createBinaryMarket(pseudoUser.APIKey, packet.question, undefined, 50, packet.groupId);
+                socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
+                log.info("Created new market via dock: " + packet.question);
+            });
+        });
+        // this.io.on("disconnect", (socket) => {
+        //     console.log(socket.id);
+        // })
+        // server.listen(31452, () => {
+        //     const address = <AddressInfo>server.address();
+        //     log.info(`Websocket listening on ${address.address}:${address.port}`);
+        // });
+
         this.app.get("/unregisterchannel", (request, response) => {
             const params = getParamsFromURL(request.url);
             const channelName = params["c"];
@@ -299,11 +307,6 @@ export default class App {
             }
         });
 
-        const server = this.app.listen(9172, () => {
-            const addressInfo = <AddressInfo>server.address();
-            const host = addressInfo.address;
-            const port = addressInfo.port;
-            log.info("Twitch bot webserver listening at http://%s:%s", host, port);
-        });
+        this.app.use(express.static(path.resolve("../web/out"), { index: false, extensions: ["html"] }));
     }
 }
