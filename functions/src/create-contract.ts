@@ -234,7 +234,7 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
       )
     )
     await contractRef.update({ answers: answerObjects })
-  } else if (outcomeType === 'FREE_RESPONSE') {
+  } else if (outcomeType === 'FREE_RESPONSE' || outcomeType === 'BOUNTY') {
     const noneAnswerDoc = firestore
       .collection(`contracts/${contract.id}/answers`)
       .doc('0')
