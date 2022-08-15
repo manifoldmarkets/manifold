@@ -1,3 +1,5 @@
+import { isEqual } from 'lodash'
+
 export function filterDefined<T>(array: (T | null | undefined)[]) {
   return array.filter((item) => item !== null && item !== undefined) as T[]
 }
@@ -26,7 +28,7 @@ export function groupConsecutive<T, U>(xs: T[], key: (x: T) => U) {
   let curr = { key: key(xs[0]), items: [xs[0]] }
   for (const x of xs.slice(1)) {
     const k = key(x)
-    if (k !== curr.key) {
+    if (!isEqual(key, curr.key)) {
       result.push(curr)
       curr = { key: k, items: [x] }
     } else {
