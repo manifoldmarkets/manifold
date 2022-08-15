@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch, { SearchIndex } from 'algoliasearch/lite'
-import { SearchOptions } from '@algolia/client-search'
+import { Hit, SearchOptions } from '@algolia/client-search'
 
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -75,6 +75,28 @@ type AdditionalFilter = {
   groupSlug?: string
 }
 
+// get rid of algolia-specific properties on the search results. if we match
+// the contract object in the DB, then we save re-renders later when the
+// contract cards fetch the latest contract and feed it into `useStateCheckEquality`.
+//
+// unfortunately, we rarely succeed, because:
+// - algolia deletes `null` properties
+// - floating-point error is frequently introduced
+// but sometimes we do, so it's worth trying
+//
+function hitToDatabaseDocument<T>(hit: Hit<T>) {
+  // the properties of the `Hit` type
+  delete (hit as any).objectID
+  delete (hit as any)._highlightResult
+  delete (hit as any)._snippetResult
+  delete (hit as any)._rankingInfo
+  delete (hit as any)._distinctSeqId
+  // algolia doesn't document these but they are things
+  delete (hit as any).lastmodified
+  delete (hit as any).path
+  return hit as T
+}
+
 export function ContractSearch(props: {
   user?: User | null
   defaultSort?: Sort
@@ -122,7 +144,7 @@ export function ContractSearch(props: {
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : pages.length
     if (freshQuery || requestedPage < numPages) {
-      const results = await params.index.search(params.query, {
+      const results = await params.index.search<Contract>(params.query, {
         facetFilters: params.facetFilters,
         numericFilters: params.numericFilters,
         page: requestedPage,
@@ -130,7 +152,9 @@ export function ContractSearch(props: {
       })
       // if there's a more recent request, forget about this one
       if (id === requestId.current) {
-        const newPage = results.hits as any as Contract[]
+        const newPage = results.hits
+          .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
+          .map(hitToDatabaseDocument)
         // this spooky looking function is the easiest way to get react to
         // batch this and not do multiple renders. we can throw it out in react 18.
         // see https://github.com/reactwg/react-18/discussions/21
@@ -154,10 +178,6 @@ export function ContractSearch(props: {
     }, 100)
   ).current
 
-  const contracts = pages
-    .flat()
-    .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
   }
@@ -176,7 +196,7 @@ export function ContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
       />
       <ContractsGrid
-        contracts={pages.length === 0 ? undefined : contracts}
+        contracts={pages.length === 0 ? undefined : pages.flat()}
         loadMore={performQuery}
         showTime={showTime}
         onContractClick={onContractClick}
