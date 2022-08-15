@@ -17,9 +17,8 @@ export default function ContractSearchFirestore(props: {
 }) {
   const contracts = useContracts()
   const { additionalFilter } = props
-
-  const [query, setQuery] = useQuery('', true)
-  const [sort, setSort] = useSort('score', true)
+  const [query, setQuery] = useQuery('', { useUrl: true })
+  const [sort, setSort] = useSort('score', { useUrl: true })
 
   let matches = (contracts ?? []).filter((c) =>
     searchInAny(

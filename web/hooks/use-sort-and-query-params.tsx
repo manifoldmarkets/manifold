@@ -12,6 +12,7 @@ export type Sort =
   | 'score'
 
 type UpdatedQueryParams = { [k: string]: string }
+type QuerySortOpts = { useUrl: boolean }
 
 function withURLParams(location: Location, params: UpdatedQueryParams) {
   const newParams = new URLSearchParams(location.search)
@@ -39,7 +40,8 @@ function getStringURLParam(router: NextRouter, k: string) {
   return typeof v === 'string' ? v : null
 }
 
-export function useQuery(defaultQuery: string, useUrl: boolean) {
+export function useQuery(defaultQuery: string, opts?: QuerySortOpts) {
+  const useUrl = opts?.useUrl ?? false
   const router = useRouter()
   const initialQuery = useUrl ? getStringURLParam(router, 'q') : null
   const [query, setQuery] = useState(initialQuery ?? defaultQuery)
@@ -50,7 +52,8 @@ export function useQuery(defaultQuery: string, useUrl: boolean) {
   }
 }
 
-export function useSort(defaultSort: Sort, useUrl: boolean) {
+export function useSort(defaultSort: Sort, opts?: QuerySortOpts) {
+  const useUrl = opts?.useUrl ?? false
   const router = useRouter()
   const initialSort = useUrl ? (getStringURLParam(router, 's') as Sort) : null
   const [sort, setSort] = useState(initialSort ?? defaultSort)

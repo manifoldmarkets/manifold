@@ -152,7 +152,8 @@ export function ContractSearch(props: {
       searchParameters.current = params
       performQuery(true)
     }, 100)
-  )
+  ).current
+
   const contracts = pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
@@ -172,7 +173,7 @@ export function ContractSearch(props: {
         useQuerySortLocalStorage={useQuerySortLocalStorage}
         useQuerySortUrlParams={useQuerySortUrlParams}
         user={user}
-        onSearchParametersChanged={onSearchParametersChanged.current}
+        onSearchParametersChanged={onSearchParametersChanged}
       />
       <ContractsGrid
         contracts={pages.length === 0 ? undefined : contracts}
@@ -212,8 +213,9 @@ function ContractSearchControls(props: {
 
   const savedSort = useQuerySortLocalStorage ? getSavedSort() : null
   const initialSort = savedSort ?? defaultSort ?? 'score'
-  const [sort, setSort] = useSort(initialSort, !!useQuerySortUrlParams)
-  const [query, setQuery] = useQuery('', !!useQuerySortUrlParams)
+  const querySortOpts = { useUrl: !!useQuerySortUrlParams }
+  const [sort, setSort] = useSort(initialSort, querySortOpts)
+  const [query, setQuery] = useQuery('', querySortOpts)
   const [filter, setFilter] = useState<filter>(defaultFilter ?? 'open')
   const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
 
