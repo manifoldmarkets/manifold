@@ -4,11 +4,7 @@ import { SearchOptions } from '@algolia/client-search'
 
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import {
-  QuerySortOptions,
-  Sort,
-  useQueryAndSortParams,
-} from '../hooks/use-sort-and-query-params'
+import { Sort, useQuery, useSort } from '../hooks/use-sort-and-query-params'
 import {
   ContractHighlightOptions,
   ContractsGrid,
@@ -24,10 +20,24 @@ import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { NEW_USER_GROUP_SLUGS } from 'common/group'
 import { PillButton } from './buttons/pill-button'
-import { sortBy } from 'lodash'
+import { debounce, sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
+import { safeLocalStorage } from 'web/lib/util/local'
 import clsx from 'clsx'
+
+// TODO: this obviously doesn't work with SSR, common sense would suggest
+// that we should save things like this in cookies so the server has them
+
+const MARKETS_SORT = 'markets_sort'
+
+function setSavedSort(s: Sort) {
+  safeLocalStorage()?.setItem(MARKETS_SORT, s)
+}
+
+function getSavedSort() {
+  return safeLocalStorage()?.getItem(MARKETS_SORT) as Sort | null | undefined
+}
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -47,7 +57,6 @@ const sortOptions = [
   { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
 ]
-export const DEFAULT_SORT = 'score'
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
@@ -68,7 +77,8 @@ type AdditionalFilter = {
 
 export function ContractSearch(props: {
   user?: User | null
-  querySortOptions?: { defaultFilter?: filter } & QuerySortOptions
+  defaultSort?: Sort
+  defaultFilter?: filter
   additionalFilter?: AdditionalFilter
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
@@ -79,10 +89,13 @@ export function ContractSearch(props: {
     hideQuickBet?: boolean
   }
   headerClassName?: string
+  useQuerySortLocalStorage?: boolean
+  useQuerySortUrlParams?: boolean
 }) {
   const {
     user,
-    querySortOptions,
+    defaultSort,
+    defaultFilter,
     additionalFilter,
     onContractClick,
     overrideGridClassName,
@@ -90,6 +103,8 @@ export function ContractSearch(props: {
     cardHideOptions,
     highlightOptions,
     headerClassName,
+    useQuerySortLocalStorage,
+    useQuerySortUrlParams,
   } = props
 
   const [numPages, setNumPages] = useState(1)
@@ -132,31 +147,33 @@ export function ContractSearch(props: {
     }
   }
 
+  const onSearchParametersChanged = useRef(
+    debounce((params) => {
+      searchParameters.current = params
+      performQuery(true)
+    }, 100)
+  ).current
+
   const contracts = pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
-    return (
-      <ContractSearchFirestore
-        querySortOptions={querySortOptions}
-        additionalFilter={additionalFilter}
-      />
-    )
+    return <ContractSearchFirestore additionalFilter={additionalFilter} />
   }
 
   return (
     <Col className="h-full">
       <ContractSearchControls
         className={headerClassName}
+        defaultSort={defaultSort}
+        defaultFilter={defaultFilter}
         additionalFilter={additionalFilter}
         hideOrderSelector={hideOrderSelector}
-        querySortOptions={querySortOptions}
+        useQuerySortLocalStorage={useQuerySortLocalStorage}
+        useQuerySortUrlParams={useQuerySortUrlParams}
         user={user}
-        onSearchParametersChanged={(params) => {
-          searchParameters.current = params
-          performQuery(true)
-        }}
+        onSearchParametersChanged={onSearchParametersChanged}
       />
       <ContractsGrid
         contracts={pages.length === 0 ? undefined : contracts}
@@ -173,23 +190,40 @@ export function ContractSearch(props: {
 
 function ContractSearchControls(props: {
   className?: string
+  defaultSort?: Sort
+  defaultFilter?: filter
   additionalFilter?: AdditionalFilter
   hideOrderSelector?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
-  querySortOptions?: { defaultFilter?: filter } & QuerySortOptions
+  useQuerySortLocalStorage?: boolean
+  useQuerySortUrlParams?: boolean
   user?: User | null
 }) {
   const {
     className,
+    defaultSort,
+    defaultFilter,
     additionalFilter,
     hideOrderSelector,
     onSearchParametersChanged,
-    querySortOptions,
+    useQuerySortLocalStorage,
+    useQuerySortUrlParams,
     user,
   } = props
 
-  const { query, setQuery, sort, setSort } =
-    useQueryAndSortParams(querySortOptions)
+  const savedSort = useQuerySortLocalStorage ? getSavedSort() : null
+  const initialSort = savedSort ?? defaultSort ?? 'score'
+  const querySortOpts = { useUrl: !!useQuerySortUrlParams }
+  const [sort, setSort] = useSort(initialSort, querySortOpts)
+  const [query, setQuery] = useQuery('', querySortOpts)
+  const [filter, setFilter] = useState<filter>(defaultFilter ?? 'open')
+  const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (useQuerySortLocalStorage) {
+      setSavedSort(sort)
+    }
+  }, [sort])
 
   const follows = useFollows(user?.id)
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
@@ -207,12 +241,6 @@ function ContractSearchControls(props: {
 
   const pillGroups: { name: string; slug: string }[] =
     memberPillGroups.length > 0 ? memberPillGroups : DEFAULT_CATEGORY_GROUPS
-
-  const [filter, setFilter] = useState<filter>(
-    querySortOptions?.defaultFilter ?? 'open'
-  )
-
-  const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
 
   const additionalFilters = [
     additionalFilter?.creatorId
