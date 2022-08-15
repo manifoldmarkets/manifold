@@ -67,7 +67,7 @@ function UsersTable() {
         u.email ?? '',
         u.name,
         Math.round(u.balance).toString(),
-        Math.round(u.profitCached.allTime).toString(),
+        Math.round(profitByUser[u.id] ?? 0).toString(),
       ])
     )
     const csv = lines.map((line) => line.join(', ')).join('\n')
