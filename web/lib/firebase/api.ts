@@ -88,3 +88,7 @@ export function acceptChallenge(params: any) {
 export function getCurrentUser(params: any) {
   return call(getFunctionUrl('getcurrentuser'), 'GET', params)
 }
+
+export function addBounty(params: any) {
+  return call(getFunctionUrl('addbounty'), 'POST', params)
+}

@@ -66,6 +66,7 @@ import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { getcustomtoken } from './get-custom-token'
+import { addbounty } from './add-bounty'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -91,6 +92,7 @@ const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
 const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const getCustomTokenFunction = toCloudFunction(getcustomtoken)
+const addBountyFunction = toCloudFunction(addbounty)
 
 export {
   healthFunction as health,
@@ -114,4 +116,5 @@ export {
   getCurrentUserFunction as getcurrentuser,
   acceptChallenge as acceptchallenge,
   getCustomTokenFunction as getcustomtoken,
+  addBountyFunction as addbounty,
 }
