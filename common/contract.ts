@@ -10,6 +10,7 @@ export type AnyOutcomeType =
   | PseudoNumeric
   | FreeResponse
   | Numeric
+  | Bounty
 export type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
@@ -68,6 +69,7 @@ export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type DPMBinaryContract = BinaryContract & DPM
 export type CPMMBinaryContract = BinaryContract & CPMM
+export type BountyContract = Contract & Bounty
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -127,6 +129,18 @@ export type Numeric = {
   resolutionValue?: number
 }
 
+export type Bounty = {
+  outcomeType: 'BOUNTY'
+  // One answer for each submission
+  answers: Answer[]
+  prizes: {
+    [giverId: string]: number
+  }
+  prizeTotal: number
+  // Resolution = which ID the bounty went to
+  resolution?: string | 'MKT' | 'CANCEL'
+}
+
 export type outcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
@@ -136,6 +150,7 @@ export const OUTCOME_TYPES = [
   'FREE_RESPONSE',
   'PSEUDO_NUMERIC',
   'NUMERIC',
+  'BOUNTY',
 ] as const
 
 export const MAX_QUESTION_LENGTH = 480

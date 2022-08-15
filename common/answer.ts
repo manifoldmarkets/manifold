@@ -1,3 +1,4 @@
+import { JSONContent } from '@tiptap/core'
 import { User } from './user'
 
 export type Answer = {
@@ -12,6 +13,7 @@ export type Answer = {
   avatarUrl?: string
 
   text: string
+  description?: string | JSONContent
 }
 
 export const getNoneAnswer = (contractId: string, creator: User) => {

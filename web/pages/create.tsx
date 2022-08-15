@@ -108,6 +108,19 @@ function NewContract(props: { creator: User; params?: NewQuestionParams }) {
     setQuestion(params?.q ?? '')
   }, [params?.q])
 
+  const questionLabel = outcomeType === 'BOUNTY' ? 'Bounty' : 'Question'
+  const placeholders = {
+    BINARY: 'e.g. Will the Democrats win the 2024 US presidential election?',
+    MULTIPLE_CHOICE:
+      'e.g. Which basketball team will be the March Madness champion?',
+    FREE_RESPONSE: 'e.g. What programming language should I learn next?',
+    NUMERIC: '', // Numeric type is deprecated
+    PSEUDO_NUMERIC:
+      'e.g. How many people will show up to Taco Tuesday this week?',
+    BOUNTY: 'e.g. Add Dark Mode to Manifold Markets',
+  }
+  const placeholder = placeholders[outcomeType] ?? placeholders['BINARY']
+
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
   // If params.closeTime is set, extract out the specified date and time
@@ -231,28 +244,8 @@ function NewContract(props: { creator: User; params?: NewQuestionParams }) {
 
   return (
     <div>
-      <form>
-        <div className="form-control w-full">
-          <label className="label">
-            <span className="mb-1">
-              Question<span className={'text-red-700'}>*</span>
-            </span>
-          </label>
-
-          <Textarea
-            placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-            className="input input-bordered resize-none"
-            autoFocus
-            maxLength={MAX_QUESTION_LENGTH}
-            value={question}
-            onChange={(e) => setQuestion(e.target.value || '')}
-          />
-        </div>
-      </form>
-      <Spacer h={6} />
-
       <label className="label">
-        <span className="mb-1">Answer type</span>
+        <span className="mb-1">Market type</span>
       </label>
       <ChoicesToggleGroup
         currentChoice={outcomeType}
@@ -269,6 +262,7 @@ function NewContract(props: { creator: User; params?: NewQuestionParams }) {
           'Multiple choice': 'MULTIPLE_CHOICE',
           'Free response': 'FREE_RESPONSE',
           Numeric: 'PSEUDO_NUMERIC',
+          Bounty: 'BOUNTY',
         }}
         isSubmitting={isSubmitting}
         className={'col-span-4'}
@@ -279,6 +273,27 @@ function NewContract(props: { creator: User; params?: NewQuestionParams }) {
         </div>
       )}
 
+      <Spacer h={6} />
+
+      <form>
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="mb-1">
+              {questionLabel}
+              <span className={'text-red-700'}>*</span>
+            </span>
+          </label>
+
+          <Textarea
+            placeholder={placeholder}
+            className="input input-bordered resize-none"
+            autoFocus
+            maxLength={MAX_QUESTION_LENGTH}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value || '')}
+          />
+        </div>
+      </form>
       <Spacer h={6} />
 
       {outcomeType === 'MULTIPLE_CHOICE' && (
@@ -377,7 +392,7 @@ function NewContract(props: { creator: User; params?: NewQuestionParams }) {
 
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
-          <span>Question closes in</span>
+          <span>{questionLabel} closes in</span>
           <InfoTooltip text="Betting will be halted after this time (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
@@ -433,7 +448,7 @@ function NewContract(props: { creator: User; params?: NewQuestionParams }) {
       <Row className="items-end justify-between">
         <div className="form-control mb-1 items-start">
           <label className="label mb-1 gap-2">
-            <span>Cost</span>
+            <span>{outcomeType === 'BOUNTY' ? 'Initial Bounty' : 'Cost'}</span>
             <InfoTooltip
               text={`Cost to create your question. This amount is used to subsidize betting.`}
             />
