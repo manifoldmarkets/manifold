@@ -18,7 +18,13 @@ online = false
 firstPrint = false
 flag = true
 page = 1
+sets = {}
 
+fetch('jsons/set.json')
+  .then((response) => response.json())
+  .then((data) => (sets = data))
+
+window.console.log(sets)
 document.location.search.split('&').forEach((pair) => {
   let v = pair.split('=')
   if (v[0] === '?whichguesser') {
@@ -55,7 +61,7 @@ function putIntoMapAndFetch(data) {
   } else if (whichGuesser === 'beast') {
     document.getElementById('guess-type').innerText = 'Finding Fantastic Beasts'
   } else if (whichGuesser === 'basic') {
-    document.getElementById('guess-type').innerText = 'Basic B****'
+    document.getElementById('guess-type').innerText = 'How Basic'
   }
   setUpNewGame()
 }
@@ -128,7 +134,7 @@ function determineIfSkip(card) {
   }
   if (firstPrint) {
     if (whichGuesser == 'basic') {
-      if (card.set_type !== 'expansion') {
+      if (card.set_type !== 'expansion' && card.set_type !== 'funny') {
         return true
       }
     } else {
@@ -158,6 +164,13 @@ function putIntoMap(data) {
     // remove slashes from adventure cards
     if (card.card_faces) {
       name = card.card_faces[0].name
+    }
+    if (whichGuesser === 'basic') {
+      name =
+        '<img class="symbol" style="width: 15px; height: 15px" src="' +
+        sets[name][1] +
+        '" /> ' +
+        sets[name][0]
     }
     let normalImg = ''
     if (card.image_uris.normal) {
@@ -219,7 +232,7 @@ function setUpNewGame() {
   for (nameIndex = 1; nameIndex <= k + extra; nameIndex++) {
     currName = document.getElementById('name-' + nameIndex)
     // window.console.log(currName)
-    currName.innerText = namesList[nameIndex - 1]
+    currName.innerHTML = namesList[nameIndex - 1]
     nameBank.appendChild(currName)
   }
 }
@@ -347,6 +360,10 @@ function dropOnCard(id, data) {
 }
 
 function setWordsLeft() {
+  cardName = 'Unused Card Names: '
+  if (whichGuesser === 'basic') {
+    cardName = 'Unused Set Names: '
+  }
   document.getElementById('words-left').innerText =
-    'Unused Card Names: ' + wordsLeft + '/Images: ' + imagesLeft
+    cardName + wordsLeft + '/Images: ' + imagesLeft
 }
