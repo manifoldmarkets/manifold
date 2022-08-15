@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Dictionary, keyBy, uniq } from 'lodash'
 
 import { Comment } from 'common/comment'
-import { Contract } from 'common/contract'
-import { filterDefined, groupConsecutive } from 'common/util/array'
-import { contractPath } from 'web/lib/firebase/contracts'
+import { groupConsecutive } from 'common/util/array'
 import { getUsersComments } from 'web/lib/firebase/comments'
-import { getContractFromId } from 'web/lib/firebase/contracts'
 import { SiteLink } from './site-link'
 import { Row } from './layout/row'
 import { Avatar } from './avatar'
@@ -20,12 +16,20 @@ import { LoadingIndicator } from './loading-indicator'
 
 const COMMENTS_PER_PAGE = 50
 
-type ContractComment = Comment & { contractId: string }
+type ContractComment = Comment & {
+  contractId: string
+  contractSlug: string
+  contractQuestion: string
+}
+
+function contractPath(slug: string) {
+  // in honor of austin, who insists that contract URLs are prefixed with a username
+  return `/Austin/${slug}`
+}
 
 export function UserCommentsList(props: { user: User }) {
   const { user } = props
   const [comments, setComments] = useState<ContractComment[] | undefined>()
-  const [contracts, setContracts] = useState<Dictionary<Contract> | undefined>()
   const [page, setPage] = useState(0)
   const start = page * COMMENTS_PER_PAGE
   const end = start + COMMENTS_PER_PAGE
@@ -37,34 +41,23 @@ export function UserCommentsList(props: { user: User }) {
     })
   }, [user.id])
 
-  useEffect(() => {
-    if (comments) {
-      const contractIds = uniq(comments.map((c) => c.contractId))
-      Promise.all(contractIds.map(getContractFromId)).then((contracts) => {
-        setContracts(keyBy(filterDefined(contracts), 'id'))
-      })
-    }
-  }, [comments])
-
-  if (comments == null || contracts == null) {
+  if (comments == null) {
     return <LoadingIndicator />
   }
 
-  const pageComments = groupConsecutive(
-    comments.slice(start, end),
-    (c) => c.contractId
-  )
+  const pageComments = groupConsecutive(comments.slice(start, end), (c) => {
+    return { question: c.contractQuestion, slug: c.contractSlug }
+  })
   return (
     <Col className={'bg-white'}>
       {pageComments.map(({ key, items }, i) => {
-        const contract = contracts[key]
         return (
           <div key={start + i} className="border-b p-5">
             <SiteLink
               className="mb-2 block pb-2 font-medium text-indigo-700"
-              href={contractPath(contract)}
+              href={contractPath(key.slug)}
             >
-              {contract.question}
+              {key.question}
             </SiteLink>
             <Col className="gap-6">
               {items.map((comment) => (
