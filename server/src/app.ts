@@ -306,6 +306,6 @@ export default class App {
             }
         });
 
-        this.app.use(express.static(path.resolve("../web/out"), { index: false, extensions: ["html"] }));
+        this.app.use(express.static(path.resolve("static"), { index: false, extensions: ["html"] }));
     }
 }
