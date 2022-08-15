@@ -20,4 +20,6 @@ export type Comment = {
   userName: string
   userUsername: string
   userAvatarUrl?: string
+  contractSlug?: string
+  contractQuestion?: string
 }
