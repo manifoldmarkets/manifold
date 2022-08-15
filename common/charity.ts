@@ -169,7 +169,7 @@ export const charities: Charity[] = [
   {
     name: "Founder's Pledge Climate Change Fund",
     website: 'https://founderspledge.com/funds/climate-change-fund',
-    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    photo: 'https://i.imgur.com/9turaJW.png',
     preview:
       'The Climate Change Fund aims to sustainably reach net-zero emissions globally, while still allowing growth to free millions from energy poverty.',
     description: `The Climate Change Fund aims to sustainably reach net-zero emissions globally.
@@ -183,7 +183,7 @@ export const charities: Charity[] = [
   {
     name: "Founder's Pledge Patient Philanthropy Fund",
     website: 'https://founderspledge.com/funds/patient-philanthropy-fund',
-    photo: 'https://i.imgur.com/ZAhzHu4.png',
+    photo: 'https://i.imgur.com/LLR6CI6.png',
     preview:
       'The Patient Philanthropy Project aims to safeguard and benefit the long-term future of humanity',
     description: `The Patient Philanthropy Project focuses on how we can collectively grow our resources to support the long-term flourishing of humanity. It addresses a crucial gap: as a society, we spend much too little on safeguarding and benefiting future generations. In fact, we spend more money on ice cream each year than we do on preventing our own extinction. However, people in the future - who do not have a voice in their future survival or environment - matter. Lots of them may yet come into existence and we have the ability to positively affect their lives now, if only by making sure we avoid major catastrophes that could destroy our common future.
@@ -300,10 +300,29 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     name: 'Wild Animal Initiative',
     website: 'https://www.wildanimalinitiative.org/',
     ein: '82-2281466',
+    tags: ['Featured'] as CharityTag[],
     photo: 'https://i.imgur.com/bOVUnDm.png',
-    preview: 'We want to make life better for wild animals.',
-    description:
-      'Wild Animal Initiative (WAI) currently operates in the U.S., where they work to strengthen the animal advocacy movement through creating an academic field dedicated to wild animal welfare. They compile literature reviews, write theoretical and opinion articles, and publish research results on their website and/or in peer-reviewed journals. WAI focuses on identifying and sharing possible research avenues and connecting with more established fields. They also work with researchers from various academic and non-academic institutions to identify potential collaborators, and they recently launched a grant assistance program.',
+    preview:
+      'Our mission is to understand and improve the lives of wild animals.',
+    description: `Although the natural world is a source of great beauty and happiness, vast numbers of animals routinely face serious challenges such as disease, hunger, or natural disasters. There is no “one-size-fits-all” solution to these threats. However, even as we recognize that improving the welfare of free-ranging wild animals is difficult, we believe that humans have a responsibility to help whenever we can.
+
+Our staff explores how humans can beneficially coexist with animals through the lens of wild animal welfare. 
+
+We respect wild animals as individuals with their own needs and preferences, rather than seeing them as mere parts of ecosystems. But this approach demands a richer understanding of wild animals’ lives. 
+
+We want to take a proactive approach to managing the welfare benefits, threats, and uncertainties that are inherent to complex natural and urban environments. Yet, to take action safely, we must conduct research to understand the impacts of our actions. The transdisciplinary perspective of wild animal welfare draws upon ethics, ecology, and animal welfare science to gather the knowledge we need, facilitating evidence-based improvements to wild animals’ quality of life.
+
+Without sufficient public interest or research activity, solutions to the problems wild animals face will go undiscovered. 
+
+Wild Animal Initiative currently focuses on helping scientists, grantors, and decision-makers investigate important and understudied questions about wild animal welfare. Our work catalyzes research and applied projects that will open the door to a clearer picture of wild animals’ needs and how to enhance their well-being. Ultimately, we envision a world in which people actively choose to help wild animals — and have the knowledge they need to do so responsibly.`,
+  },
+  {
+    name: 'FYXX Foundation',
+    website: 'https://www.fyxxfoundation.org/',
+    photo: 'https://i.imgur.com/ROmWO7m.png',
+    preview:
+      'FYXX Foundation: wildlife population management, without killing.',
+    description: `The future of our planet depends on the innovations of today, and the health of our wildlife are the first indication of our successful stewardship, which we believe can be improved by safe population management utilizing fertility control instead of poison and culling.`,
   },
   {
     name: 'New Incentives',
@@ -515,6 +534,36 @@ The American Civil Liberties Union is our nation's guardian of liberty, working 
 "So long as we have enough people in this country willing to fight for their rights, we'll be called a democracy," ACLU Founder Roger Baldwin said.
 
 The U.S. Constitution and the Bill of Rights trumpet our aspirations for the kind of society that we want to be. But for much of our history, our nation failed to fulfill the promise of liberty for whole groups of people.`,
+  },
+  {
+    name: 'The Center for Election Science',
+    website: 'https://electionscience.org/',
+    photo: 'https://i.imgur.com/WvdHHZa.png',
+    preview:
+      'The Center for Election Science is a nonpartisan nonprofit dedicated to empowering voters with voting methods that strengthen democracy. We believe you deserve a vote that empowers you to impact the world you live in.',
+    description: `Founded in 2011, The Center for Election Science is a national, nonpartisan nonprofit focused on voting reform.
+
+Our Mission — To empower people with voting methods that strengthen democracy.
+
+Our Vision — A world where democracies thrive because voters’ voices are heard.
+
+With an emphasis on approval voting, we bring better elections to people across the country through both advocacy and research.
+
+The movement for a better way to vote is rapidly gaining momentum as voters grow tired of election results that don’t represent the will of the people. In 2018, we worked with locals in Fargo, ND to help them become the first city in the U.S. to adopt approval voting. And in 2020, we helped grassroots activists empower the 300k people of St. Louis, MO with stronger democracy through approval voting.`,
+  },
+  {
+    name: 'Founders Pledge Global Health and Development Fund',
+    website: 'https://founderspledge.com/funds/global-health-and-development',
+    photo: 'https://i.imgur.com/EXbxH7T.png',
+    preview:
+      'Tackling the vast global inequalities in health, wealth and opportunity',
+    description: `Nearly half the world lives on less than $2.50 a day, yet giving by the world’s richest often overlooks the world’s poorest and most vulnerable. Despite the average American household being richer than 90% of the rest of the world, only 6% of US charitable giving goes to charities which work internationally.
+
+This Fund is focused on helping those who need it most, wherever that help can make the biggest difference. By building a mixed portfolio of direct and indirect interventions, such as policy work, we aim to:
+
+Improve the lives of the world's most vulnerable people.
+Reduce the number of easily preventable deaths worldwide.
+Work towards sustainable, systemic change.`,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

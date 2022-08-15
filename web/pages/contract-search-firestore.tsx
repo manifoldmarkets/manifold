@@ -1,48 +1,33 @@
 import { Answer } from 'common/answer'
+import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
-import { useState } from 'react'
-import { ContractsGrid } from 'web/components/contract/contracts-list'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useContracts } from 'web/hooks/use-contracts'
-import {
-  Sort,
-  useInitialQueryAndSort,
-} from 'web/hooks/use-sort-and-query-params'
+import { Sort, useQuery, useSort } from 'web/hooks/use-sort-and-query-params'
+
+const MAX_CONTRACTS_RENDERED = 100
 
 export default function ContractSearchFirestore(props: {
-  querySortOptions?: {
-    defaultSort: Sort
-    shouldLoadFromStorage?: boolean
-  }
   additionalFilter?: {
     creatorId?: string
     tag?: string
+    excludeContractIds?: string[]
+    groupSlug?: string
   }
 }) {
   const contracts = useContracts()
-  const { querySortOptions, additionalFilter } = props
+  const { additionalFilter } = props
+  const [query, setQuery] = useQuery('', { useUrl: true })
+  const [sort, setSort] = useSort('score', { useUrl: true })
 
-  const { initialSort, initialQuery } = useInitialQueryAndSort(querySortOptions)
-  const [sort, setSort] = useState(initialSort || 'newest')
-  const [query, setQuery] = useState(initialQuery)
-
-  const queryWords = query.toLowerCase().split(' ')
-  function check(corpus: string) {
-    return queryWords.every((word) => corpus.toLowerCase().includes(word))
-  }
-
-  let matches = (contracts ?? []).filter(
-    (c) =>
-      check(c.question) ||
-      check(c.description) ||
-      check(c.creatorName) ||
-      check(c.creatorUsername) ||
-      check(c.lowercaseTags.map((tag) => `#${tag}`).join(' ')) ||
-      check(
-        ((c as any).answers ?? [])
-          .map((answer: Answer) => answer.text)
-          .join(' ')
-      )
+  let matches = (contracts ?? []).filter((c) =>
+    searchInAny(
+      query,
+      c.question,
+      c.creatorName,
+      c.lowercaseTags.map((tag) => `#${tag}`).join(' '),
+      ((c as any).answers ?? []).map((answer: Answer) => answer.text).join(' ')
+    )
   )
 
   if (sort === 'newest') {
@@ -53,13 +38,11 @@ export default function ContractSearchFirestore(props: {
     matches.sort((a, b) => a.createdTime - b.createdTime)
   } else if (sort === 'close-date') {
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
-    matches = sortBy(
-      matches,
-      (contract) =>
-        (sort === 'close-date' ? -1 : 1) * (contract.closeTime ?? Infinity)
-    )
+    matches = sortBy(matches, (contract) => contract.closeTime ?? Infinity)
   } else if (sort === 'most-traded') {
     matches.sort((a, b) => b.volume - a.volume)
+  } else if (sort === 'score') {
+    matches.sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
   } else if (sort === '24-hour-vol') {
     // Use lodash for stable sort, so previous sort breaks all ties.
     matches = sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
@@ -67,7 +50,7 @@ export default function ContractSearchFirestore(props: {
   }
 
   if (additionalFilter) {
-    const { creatorId, tag } = additionalFilter
+    const { creatorId, tag, groupSlug, excludeContractIds } = additionalFilter
 
     if (creatorId) {
       matches = matches.filter((c) => c.creatorId === creatorId)
@@ -78,7 +61,17 @@ export default function ContractSearchFirestore(props: {
         c.lowercaseTags.includes(tag.toLowerCase())
       )
     }
+
+    if (groupSlug) {
+      matches = matches.filter((c) => c.groupSlugs?.includes(groupSlug))
+    }
+
+    if (excludeContractIds) {
+      matches = matches.filter((c) => !excludeContractIds.includes(c.id))
+    }
   }
+
+  matches = matches.slice(0, MAX_CONTRACTS_RENDERED)
 
   const showTime = ['close-date', 'closed'].includes(sort)
     ? 'close-date'
@@ -102,23 +95,14 @@ export default function ContractSearchFirestore(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
         >
+          <option value="score">Trending</option>
           <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
         </select>
       </div>
-      {contracts === undefined ? (
-        <LoadingIndicator />
-      ) : (
-        <ContractsGrid
-          contracts={matches}
-          loadMore={() => {}}
-          hasMore={false}
-          showTime={showTime}
-        />
-      )}
+      <ContractsGrid contracts={matches} showTime={showTime} />
     </div>
   )
 }

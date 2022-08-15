@@ -19,6 +19,7 @@ module.exports = {
     ],
     '@next/next/no-img-element': 'off',
     '@next/next/no-typos': 'off',
+    'linebreak-style': ['error', 'unix'],
     'lodash/import-scope': [2, 'member'],
   },
   env: {

@@ -1,13 +1,16 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { z } from 'zod'
+import { uniq } from 'lodash'
 
 import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USERNAME,
   PrivateUser,
   STARTING_BALANCE,
   SUS_STARTING_BALANCE,
   User,
 } from '../../common/user'
-import { getUser, getUserByUsername } from './utils'
+import { getUser, getUserByUsername, getValues, isProd } from './utils'
 import { randomString } from '../../common/util/random'
 import {
   cleanDisplayName,
@@ -15,86 +18,88 @@ import {
 } from '../../common/util/clean-username'
 import { sendWelcomeEmail } from './emails'
 import { isWhitelisted } from '../../common/envs/constants'
-import { DEFAULT_CATEGORIES } from '../../common/categories'
+import {
+  CATEGORIES_GROUP_SLUG_POSTFIX,
+  DEFAULT_CATEGORIES,
+} from '../../common/categories'
 
 import { track } from './analytics'
+import { APIError, newEndpoint, validate } from './api'
+import { Group, NEW_USER_GROUP_SLUGS } from '../../common/group'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from '../../common/antes'
 
-export const createUser = functions
-  .runWith({ minInstances: 1, secrets: ['MAILGUN_KEY'] })
-  .https.onCall(async (data: { deviceToken?: string }, context) => {
-    const userId = context?.auth?.uid
-    if (!userId) return { status: 'error', message: 'Not authorized' }
+const bodySchema = z.object({
+  deviceToken: z.string().optional(),
+})
 
-    const preexistingUser = await getUser(userId)
-    if (preexistingUser)
-      return {
-        status: 'error',
-        message: 'User already created',
-        user: preexistingUser,
-      }
+const opts = { secrets: ['MAILGUN_KEY'] }
 
-    const fbUser = await admin.auth().getUser(userId)
+export const createuser = newEndpoint(opts, async (req, auth) => {
+  const { deviceToken } = validate(bodySchema, req.body)
+  const preexistingUser = await getUser(auth.uid)
+  if (preexistingUser)
+    throw new APIError(400, 'User already exists', { user: preexistingUser })
 
-    const email = fbUser.email
-    if (!isWhitelisted(email)) {
-      return { status: 'error', message: `${email} is not whitelisted` }
-    }
-    const emailName = email?.replace(/@.*$/, '')
+  const fbUser = await admin.auth().getUser(auth.uid)
 
-    const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
-    const name = cleanDisplayName(rawName)
-    let username = cleanUsername(name)
+  const email = fbUser.email
+  if (!isWhitelisted(email)) {
+    throw new APIError(400, `${email} is not whitelisted`)
+  }
+  const emailName = email?.replace(/@.*$/, '')
 
-    const sameNameUser = await getUserByUsername(username)
-    if (sameNameUser) {
-      username += randomString(4)
-    }
+  const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
+  const name = cleanDisplayName(rawName)
+  let username = cleanUsername(name)
 
-    const avatarUrl = fbUser.photoURL
+  const sameNameUser = await getUserByUsername(username)
+  if (sameNameUser) {
+    username += randomString(4)
+  }
 
-    const { deviceToken } = data
-    const deviceUsedBefore =
-      !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
+  const avatarUrl = fbUser.photoURL
+  const deviceUsedBefore =
+    !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
 
-    const ipAddress = context.rawRequest.ip
-    const ipCount = ipAddress ? await numberUsersWithIp(ipAddress) : 0
+  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
 
-    const balance =
-      deviceUsedBefore || ipCount > 2 ? SUS_STARTING_BALANCE : STARTING_BALANCE
+  const user: User = {
+    id: auth.uid,
+    name,
+    username,
+    avatarUrl,
+    balance,
+    totalDeposits: balance,
+    createdTime: Date.now(),
+    profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+    creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+    followerCountCached: 0,
+    followedCategories: DEFAULT_CATEGORIES,
+    shouldShowWelcome: true,
+  }
 
-    const user: User = {
-      id: userId,
-      name,
-      username,
-      avatarUrl,
-      balance,
-      totalDeposits: balance,
-      createdTime: Date.now(),
-      profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      creatorVolumeCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      followerCountCached: 0,
-      followedCategories: DEFAULT_CATEGORIES,
-    }
+  await firestore.collection('users').doc(auth.uid).create(user)
+  console.log('created user', username, 'firebase id:', auth.uid)
 
-    await firestore.collection('users').doc(userId).create(user)
-    console.log('created user', username, 'firebase id:', userId)
+  const privateUser: PrivateUser = {
+    id: auth.uid,
+    username,
+    email,
+    initialIpAddress: req.ip,
+    initialDeviceToken: deviceToken,
+  }
 
-    const privateUser: PrivateUser = {
-      id: userId,
-      username,
-      email,
-      initialIpAddress: ipAddress,
-      initialDeviceToken: deviceToken,
-    }
+  await firestore.collection('private-users').doc(auth.uid).create(privateUser)
 
-    await firestore.collection('private-users').doc(userId).create(privateUser)
+  await addUserToDefaultGroups(user)
+  await sendWelcomeEmail(user, privateUser)
+  await track(auth.uid, 'create user', { username }, { ip: req.ip })
 
-    await sendWelcomeEmail(user, privateUser)
-
-    await track(userId, 'create user', { username }, { ip: ipAddress })
-
-    return { status: 'success', user }
-  })
+  return { user, privateUser }
+})
 
 const firestore = admin.firestore()
 
@@ -107,11 +112,58 @@ const isPrivateUserWithDeviceToken = async (deviceToken: string) => {
   return !snap.empty
 }
 
-const numberUsersWithIp = async (ipAddress: string) => {
+export const numberUsersWithIp = async (ipAddress: string) => {
   const snap = await firestore
     .collection('private-users')
     .where('initialIpAddress', '==', ipAddress)
     .get()
 
   return snap.docs.length
+}
+
+const addUserToDefaultGroups = async (user: User) => {
+  for (const category of Object.values(DEFAULT_CATEGORIES)) {
+    const slug = category.toLowerCase() + CATEGORIES_GROUP_SLUG_POSTFIX
+    const groups = await getValues<Group>(
+      firestore.collection('groups').where('slug', '==', slug)
+    )
+    await firestore
+      .collection('groups')
+      .doc(groups[0].id)
+      .update({
+        memberIds: uniq(groups[0].memberIds.concat(user.id)),
+      })
+  }
+
+  for (const slug of NEW_USER_GROUP_SLUGS) {
+    const groups = await getValues<Group>(
+      firestore.collection('groups').where('slug', '==', slug)
+    )
+    const group = groups[0]
+    await firestore
+      .collection('groups')
+      .doc(group.id)
+      .update({
+        memberIds: uniq(group.memberIds.concat(user.id)),
+      })
+    const manifoldAccount = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
+    if (slug === 'welcome') {
+      const welcomeCommentDoc = firestore
+        .collection(`groups/${group.id}/comments`)
+        .doc()
+      await welcomeCommentDoc.create({
+        id: welcomeCommentDoc.id,
+        groupId: group.id,
+        userId: manifoldAccount,
+        text: `Welcome, @${user.username} aka ${user.name}!`,
+        createdTime: Date.now(),
+        userName: 'Manifold Markets',
+        userUsername: MANIFOLD_USERNAME,
+        userAvatarUrl: MANIFOLD_AVATAR_URL,
+      })
+    }
+  }
 }

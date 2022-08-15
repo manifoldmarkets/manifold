@@ -1,26 +1,23 @@
 import clsx from 'clsx'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 import { Col } from './layout/col'
 import { User } from 'web/lib/firebase/users'
 import { NumberCancelSelector } from './yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
-import { resolveMarket } from 'web/lib/firebase/fn-call'
-import { NumericContract } from 'common/contract'
+import { NumericContract, PseudoNumericContract } from 'common/contract'
+import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { BucketInput } from './bucket-input'
+import { getPseudoProbability } from 'common/pseudo-numeric'
 
 export function NumericResolutionPanel(props: {
   creator: User
-  contract: NumericContract
+  contract: NumericContract | PseudoNumericContract
   className?: string
 }) {
-  useEffect(() => {
-    // warm up cloud function
-    resolveMarket({} as any).catch(() => {})
-  }, [])
-
   const { contract, className } = props
+  const { min, max, outcomeType } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<
     'NUMBER' | 'CANCEL' | undefined
@@ -32,22 +29,44 @@ export function NumericResolutionPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
 
   const resolve = async () => {
-    const finalOutcome = outcomeMode === 'NUMBER' ? outcome : 'CANCEL'
+    const finalOutcome =
+      outcomeMode === 'CANCEL'
+        ? 'CANCEL'
+        : outcomeType === 'PSEUDO_NUMERIC'
+        ? 'MKT'
+        : 'NUMBER'
     if (outcomeMode === undefined || finalOutcome === undefined) return
 
     setIsSubmitting(true)
 
-    const result = await resolveMarket({
-      outcome: finalOutcome,
-      value,
-      contractId: contract.id,
-    }).then((r) => r.data)
+    const boundedValue = Math.max(Math.min(max, value ?? 0), min)
 
-    console.log('resolved', outcome, 'result:', result)
+    const probabilityInt =
+      100 *
+      getPseudoProbability(
+        boundedValue,
+        min,
+        max,
+        outcomeType === 'PSEUDO_NUMERIC' && contract.isLogScale
+      )
 
-    if (result?.status !== 'success') {
-      setError(result?.message || 'Error resolving market')
+    try {
+      const result = await resolveMarket({
+        outcome: finalOutcome,
+        value,
+        probabilityInt,
+        contractId: contract.id,
+      })
+      console.log('resolved', outcome, 'result:', result)
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error resolving market')
+      }
     }
+
     setIsSubmitting(false)
   }
 

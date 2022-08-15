@@ -11,8 +11,6 @@ import { last } from 'lodash'
 
 const firestore = admin.firestore()
 
-const oneDay = 1000 * 60 * 60 * 24
-
 const computeInvestmentValue = (
   bets: Bet[],
   contractsDict: { [k: string]: Contract }
@@ -59,8 +57,8 @@ export const updateMetricsCore = async () => {
     return {
       doc: firestore.collection('contracts').doc(contract.id),
       fields: {
-        volume24Hours: computeVolume(contractBets, now - oneDay),
-        volume7Days: computeVolume(contractBets, now - oneDay * 7),
+        volume24Hours: computeVolume(contractBets, now - DAY_MS),
+        volume7Days: computeVolume(contractBets, now - DAY_MS * 7),
       },
     }
   })

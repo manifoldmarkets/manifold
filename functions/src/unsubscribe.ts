@@ -1,11 +1,11 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { EndpointDefinition } from './api'
 import { getUser } from './utils'
 import { PrivateUser } from '../../common/user'
 
-export const unsubscribe = functions
-  .runWith({ minInstances: 1 })
-  .https.onRequest(async (req, res) => {
+export const unsubscribe: EndpointDefinition = {
+  opts: { method: 'GET', minInstances: 1 },
+  handler: async (req, res) => {
     const id = req.query.id as string
     let type = req.query.type as string
     if (!id || !type) {
@@ -66,6 +66,7 @@ export const unsubscribe = functions
         `${name}, you have been unsubscribed from market answer emails on Manifold Markets.`
       )
     else res.send(`${name}, you have been unsubscribed.`)
-  })
+  },
+}
 
 const firestore = admin.firestore()

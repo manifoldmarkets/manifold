@@ -1,40 +1,41 @@
 import React, { useEffect, useState } from 'react'
-import Router, { useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import { PlusSmIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
-import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ContractSearch } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
-const Home = () => {
-  const user = useUser()
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+})
+
+const Home = (props: { auth: { user: User } }) => {
+  const { user } = props.auth
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
   useTracking('view home')
 
-  if (user === null) {
-    Router.replace('/')
-    return <></>
-  }
+  useSaveReferral()
 
   return (
     <>
       <Page suspend={!!contract}>
         <Col className="mx-auto w-full p-2">
           <ContractSearch
-            querySortOptions={{
-              shouldLoadFromStorage: true,
-              defaultSort: getSavedSort() ?? '24-hour-vol',
-            }}
-            showCategorySelector
+            user={user}
+            useQuerySortLocalStorage={true}
+            useQuerySortUrlParams={true}
             onContractClick={(c) => {
               // Show contract without navigating to contract page.
               setContract(c)
@@ -58,6 +59,7 @@ const Home = () => {
       {contract && (
         <ContractPageContent
           contract={contract}
+          user={user}
           username={contract.creatorUsername}
           slug={contract.slug}
           bets={[]}
@@ -83,26 +85,40 @@ const useContractPage = () => {
         if (!username || !contractSlug) setContract(undefined)
         else {
           // Show contract if route is to a contract: '/[username]/[contractSlug]'.
-          getContractFromSlug(contractSlug).then(setContract)
+          getContractFromSlug(contractSlug).then((contract) => {
+            const path = location.pathname.split('/').slice(1)
+            const [_username, contractSlug] = path
+            // Make sure we're still on the same contract.
+            if (contract?.slug === contractSlug) setContract(contract)
+          })
         }
       }
     }
+
+    addEventListener('popstate', updateContract)
 
     const { pushState, replaceState } = window.history
 
     window.history.pushState = function () {
       // eslint-disable-next-line prefer-rest-params
-      pushState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      pushState.apply(history, args)
       updateContract()
     }
 
     window.history.replaceState = function () {
       // eslint-disable-next-line prefer-rest-params
-      replaceState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      replaceState.apply(history, args)
       updateContract()
     }
 
     return () => {
+      removeEventListener('popstate', updateContract)
       window.history.pushState = pushState
       window.history.replaceState = replaceState
     }

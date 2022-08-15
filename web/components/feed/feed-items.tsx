@@ -1,5 +1,5 @@
 // From https://tailwindui.com/components/application-ui/lists/feeds
-import React, { useState } from 'react'
+import React from 'react'
 import {
   BanIcon,
   CheckIcon,
@@ -22,7 +22,7 @@ import { UserLink } from '../user-page'
 import BetRow from '../bet-row'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
-import { useSaveSeenContract } from 'web/hooks/use-seen-contracts'
+import { useUser } from 'web/hooks/use-user'
 import { trackClick } from 'web/lib/firebase/tracking'
 import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
@@ -31,26 +31,26 @@ import { FeedAnswerCommentGroup } from 'web/components/feed/feed-answer-comment-
 import {
   FeedCommentThread,
   CommentInput,
-  TruncatedComment,
 } from 'web/components/feed/feed-comments'
 import { FeedBet } from 'web/components/feed/feed-bets'
-import { NumericContract } from 'common/contract'
+import { CPMMBinaryContract, NumericContract } from 'common/contract'
 import { FeedLiquidity } from './feed-liquidity'
+import { SignUpPrompt } from '../sign-up-prompt'
+import { User } from 'common/user'
+import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 
 export function FeedItems(props: {
   contract: Contract
   items: ActivityItem[]
   className?: string
   betRowClassName?: string
+  user: User | null | undefined
 }) {
-  const { contract, items, className, betRowClassName } = props
+  const { contract, items, className, betRowClassName, user } = props
   const { outcomeType } = contract
 
-  const [elem, setElem] = useState<HTMLElement | null>(null)
-  useSaveSeenContract(elem, contract)
-
   return (
-    <div className={clsx('flow-root', className)} ref={setElem}>
+    <div className={clsx('flow-root', className)}>
       <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
         {items.map((item, activityItemIdx) => (
           <div key={item.id} className={'relative pb-4'}>
@@ -67,8 +67,20 @@ export function FeedItems(props: {
           </div>
         ))}
       </div>
-      {outcomeType === 'BINARY' && tradingAllowed(contract) && (
-        <BetRow contract={contract} className={clsx('mb-2', betRowClassName)} />
+
+      {!user ? (
+        <Col className="mt-4 max-w-sm items-center xl:hidden">
+          <SignUpPrompt />
+          <PlayMoneyDisclaimer />
+        </Col>
+      ) : (
+        outcomeType === 'BINARY' &&
+        tradingAllowed(contract) && (
+          <BetRow
+            contract={contract as CPMMBinaryContract}
+            className={clsx('mb-2', betRowClassName)}
+          />
+        )
       )}
     </div>
   )
@@ -101,10 +113,9 @@ export function FeedItem(props: { item: ActivityItem }) {
 
 export function FeedQuestion(props: {
   contract: Contract
-  showDescription: boolean
   contractPath?: string
 }) {
-  const { contract, showDescription } = props
+  const { contract } = props
   const {
     creatorName,
     creatorUsername,
@@ -117,6 +128,7 @@ export function FeedQuestion(props: {
   const { volumeLabel } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  const user = useUser()
 
   return (
     <div className={'flex gap-2'}>
@@ -148,7 +160,7 @@ export function FeedQuestion(props: {
             href={
               props.contractPath ? props.contractPath : contractPath(contract)
             }
-            onClick={() => trackClick(contract.id)}
+            onClick={() => user && trackClick(user.id, contract.id)}
             className="text-lg text-indigo-700 sm:text-xl"
           >
             {question}
@@ -160,13 +172,6 @@ export function FeedQuestion(props: {
             />
           )}
         </Col>
-        {showDescription && (
-          <TruncatedComment
-            comment={contract.description}
-            moreHref={contractPath(contract)}
-            shouldTruncate
-          />
-        )}
       </div>
     </div>
   )

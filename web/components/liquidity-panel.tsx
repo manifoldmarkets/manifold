@@ -4,14 +4,13 @@ import { useEffect, useState } from 'react'
 import { CPMMContract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
-import { addLiquidity, withdrawLiquidity } from 'web/lib/firebase/fn-call'
+import { addLiquidity, withdrawLiquidity } from 'web/lib/firebase/api'
 import { AmountInput } from './amount-input'
 import { Row } from './layout/row'
 import { useUserLiquidity } from 'web/hooks/use-liquidity'
 import { Tabs } from './layout/tabs'
 import { NoLabel, YesLabel } from './outcome-label'
 import { Col } from './layout/col'
-import { InfoTooltip } from './info-tooltip'
 import { track } from 'web/lib/service/analytics'
 
 export function LiquidityPanel(props: { contract: CPMMContract }) {
@@ -90,14 +89,10 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
     setIsSuccess(false)
 
     addLiquidity({ amount, contractId })
-      .then((r) => {
-        if (r.status === 'success') {
-          setIsSuccess(true)
-          setError(undefined)
-          setIsLoading(false)
-        } else {
-          setError('Server error')
-        }
+      .then((_) => {
+        setIsSuccess(true)
+        setError(undefined)
+        setIsLoading(false)
       })
       .catch((_) => setError('Server error'))
 
@@ -107,8 +102,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
   return (
     <>
       <div className="align-center mb-4 text-gray-500">
-        Subsidize this market by adding M$ to the liquidity pool.{' '}
-        <InfoTooltip text="The greater the M$ subsidy, the greater the incentive for traders to participate, the more accurate the market will be." />
+        Subsidize this market by adding M$ to the liquidity pool.
       </div>
 
       <Row>
@@ -118,6 +112,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
           label="M$"
           error={error}
           disabled={isLoading}
+          inputClassName="w-28"
         />
         <button
           className={clsx('btn btn-primary ml-2', isLoading && 'btn-disabled')}

@@ -5,12 +5,15 @@ import {
   CPMM,
   DPM,
   FreeResponse,
+  MultipleChoice,
   Numeric,
   outcomeType,
+  PseudoNumeric,
 } from './contract'
 import { User } from './user'
-import { parseTags } from './util/parse'
+import { parseTags, richTextToString } from './util/parse'
 import { removeUndefinedProps } from './util/object'
+import { JSONContent } from '@tiptap/core'
 
 export function getNewContract(
   id: string,
@@ -18,7 +21,7 @@ export function getNewContract(
   creator: User,
   question: string,
   outcomeType: outcomeType,
-  description: string,
+  description: JSONContent,
   initialProb: number,
   ante: number,
   closeTime: number,
@@ -27,18 +30,30 @@ export function getNewContract(
   // used for numeric markets
   bucketCount: number,
   min: number,
-  max: number
+  max: number,
+  isLogScale: boolean,
+
+  // for multiple choice
+  answers: string[]
 ) {
   const tags = parseTags(
-    `${question} ${description} ${extraTags.map((tag) => `#${tag}`).join(' ')}`
+    [
+      question,
+      richTextToString(description),
+      ...extraTags.map((tag) => `#${tag}`),
+    ].join(' ')
   )
   const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
+      : outcomeType === 'PSEUDO_NUMERIC'
+      ? getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale)
       : outcomeType === 'NUMERIC'
       ? getNumericProps(ante, bucketCount, min, max)
+      : outcomeType === 'MULTIPLE_CHOICE'
+      ? getMultipleChoiceProps(ante, answers)
       : getFreeAnswerProps(ante)
 
   const contract: Contract = removeUndefinedProps({
@@ -52,7 +67,7 @@ export function getNewContract(
     creatorAvatarUrl: creator.avatarUrl,
 
     question: question.trim(),
-    description: description.trim(),
+    description,
     tags,
     lowercaseTags,
     visibility: 'public',
@@ -111,6 +126,24 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
   return system
 }
 
+const getPseudoNumericCpmmProps = (
+  initialProb: number,
+  ante: number,
+  min: number,
+  max: number,
+  isLogScale: boolean
+) => {
+  const system: CPMM & PseudoNumeric = {
+    ...getBinaryCpmmProps(initialProb, ante),
+    outcomeType: 'PSEUDO_NUMERIC',
+    min,
+    max,
+    isLogScale,
+  }
+
+  return system
+}
+
 const getFreeAnswerProps = (ante: number) => {
   const system: DPM & FreeResponse = {
     mechanism: 'dpm-2',
@@ -118,6 +151,26 @@ const getFreeAnswerProps = (ante: number) => {
     pool: { '0': ante },
     totalShares: { '0': ante },
     totalBets: { '0': ante },
+    answers: [],
+  }
+
+  return system
+}
+
+const getMultipleChoiceProps = (ante: number, answers: string[]) => {
+  const numAnswers = answers.length
+  const betAnte = ante / numAnswers
+  const betShares = Math.sqrt(ante ** 2 / numAnswers)
+
+  const defaultValues = (x: any) =>
+    Object.fromEntries(range(0, numAnswers).map((k) => [k, x]))
+
+  const system: DPM & MultipleChoice = {
+    mechanism: 'dpm-2',
+    outcomeType: 'MULTIPLE_CHOICE',
+    pool: defaultValues(betAnte),
+    totalShares: defaultValues(betShares),
+    totalBets: defaultValues(betAnte),
     answers: [],
   }
 

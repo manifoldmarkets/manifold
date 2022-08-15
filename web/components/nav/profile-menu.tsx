@@ -8,7 +8,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 export function ProfileSummary(props: { user: User }) {
   const { user } = props
   return (
-    <Link href={`/${user.username}`}>
+    <Link href={`/${user.username}?tab=bets`}>
       <a
         onClick={trackCallback('sidebar: profile')}
         className="group flex flex-row items-center gap-4 rounded-md py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-700"

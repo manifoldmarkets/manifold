@@ -1,19 +1,34 @@
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import imageCompression from 'browser-image-compression'
+import { nanoid } from 'nanoid'
+import { storage } from './init'
 
-const storage = getStorage()
+const ONE_YEAR_SECS = 60 * 60 * 24 * 365
 
 export const uploadImage = async (
   username: string,
   file: File,
   onProgress?: (progress: number, isRunning: boolean) => void
 ) => {
-  const storageRef = ref(storage, `user-images/${username}/${file.name}`)
-  const uploadTask = uploadBytesResumable(storageRef, file)
+  // Replace filename with a nanoid to avoid collisions
+  const [, ext] = file.name.split('.')
+  const filename = `${nanoid(10)}.${ext}`
+  const storageRef = ref(storage, `user-images/${username}/${filename}`)
+
+  if (file.size > 20 * 1024 ** 2) {
+    return Promise.reject('File is over 20 MB.')
+  }
+
+  if (file.size > 1024 ** 2) {
+    file = await imageCompression(file, {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+    })
+  }
+
+  const uploadTask = uploadBytesResumable(storageRef, file, {
+    cacheControl: `public, max-age=${ONE_YEAR_SECS}`,
+  })
 
   let resolvePromise: (url: string) => void
   let rejectPromise: (reason?: any) => void

@@ -1,13 +1,22 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
+import { JSONContent } from '@tiptap/core'
+import { GroupLink } from 'common/group'
 
 export type AnyMechanism = DPM | CPMM
-export type AnyOutcomeType = Binary | FreeResponse | Numeric
+export type AnyOutcomeType =
+  | Binary
+  | MultipleChoice
+  | PseudoNumeric
+  | FreeResponse
+  | Numeric
 export type AnyContractType =
   | (CPMM & Binary)
+  | (CPMM & PseudoNumeric)
   | (DPM & Binary)
   | (DPM & FreeResponse)
   | (DPM & Numeric)
+  | (DPM & MultipleChoice)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -19,7 +28,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   creatorAvatarUrl?: string
 
   question: string
-  description: string // More info about what the contract is about
+  description: string | JSONContent // More info about what the contract is about
   tags: string[]
   lowercaseTags: string[]
   visibility: 'public' | 'unlisted'
@@ -33,7 +42,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isResolved: boolean
   resolutionTime?: number // When the contract creator resolved the market
   resolution?: string
-  resolutionProbability?: number,
+  resolutionProbability?: number
 
   closeEmailsSent?: number
 
@@ -42,11 +51,19 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   volume7Days: number
 
   collectedFees: Fees
+
+  groupSlugs?: string[]
+  groupLinks?: GroupLink[]
+  uniqueBettorIds?: string[]
+  uniqueBettorCount?: number
+  popularityScore?: number
 } & T
 
 export type BinaryContract = Contract & Binary
+export type PseudoNumericContract = Contract & PseudoNumeric
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
+export type MultipleChoiceContract = Contract & MultipleChoice
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type DPMBinaryContract = BinaryContract & DPM
@@ -75,9 +92,28 @@ export type Binary = {
   resolution?: resolution
 }
 
+export type PseudoNumeric = {
+  outcomeType: 'PSEUDO_NUMERIC'
+  min: number
+  max: number
+  isLogScale: boolean
+  resolutionValue?: number
+
+  // same as binary market; map everything to probability
+  initialProbability: number
+  resolutionProbability?: number
+}
+
 export type FreeResponse = {
   outcomeType: 'FREE_RESPONSE'
   answers: Answer[] // Used for outcomeType 'FREE_RESPONSE'.
+  resolution?: string | 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+}
+
+export type MultipleChoice = {
+  outcomeType: 'MULTIPLE_CHOICE'
+  answers: Answer[]
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
@@ -94,10 +130,16 @@ export type Numeric = {
 export type outcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
-export const OUTCOME_TYPES = ['BINARY', 'FREE_RESPONSE', 'NUMERIC'] as const
+export const OUTCOME_TYPES = [
+  'BINARY',
+  'MULTIPLE_CHOICE',
+  'FREE_RESPONSE',
+  'PSEUDO_NUMERIC',
+  'NUMERIC',
+] as const
 
 export const MAX_QUESTION_LENGTH = 480
-export const MAX_DESCRIPTION_LENGTH = 10000
+export const MAX_DESCRIPTION_LENGTH = 16000
 export const MAX_TAG_LENGTH = 60
 
 export const CPMM_MIN_POOL_QTY = 0.01

@@ -9,7 +9,7 @@ import { Title } from '../title'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
 import { MAX_GROUP_NAME_LENGTH } from 'common/group'
-import { createGroup } from 'web/lib/firebase/api-call'
+import { createGroup } from 'web/lib/firebase/api'
 
 export function CreateGroupButton(props: {
   user: User
@@ -46,7 +46,7 @@ export function CreateGroupButton(props: {
     const newGroup = {
       name: groupName,
       memberIds: memberUsers.map((user) => user.id),
-      anyoneCanJoin: false,
+      anyoneCanJoin: true,
     }
     const result = await createGroup(newGroup).catch((e) => {
       const errorDetails = e.details[0]

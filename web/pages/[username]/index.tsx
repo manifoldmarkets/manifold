@@ -1,38 +1,37 @@
 import { useRouter } from 'next/router'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
-import { getUserByUsername, User } from 'web/lib/firebase/users'
+import {
+  getUserByUsername,
+  getUserAndPrivateUser,
+  User,
+  UserAndPrivateUser,
+} from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
-import { useUser } from 'web/hooks/use-user'
 import Custom404 from '../404'
 import { useTracking } from 'web/hooks/use-tracking'
+import { GetServerSideProps } from 'next'
+import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 
-export default function UserProfile() {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const creds = await authenticateOnServer(ctx)
+  const username = ctx.params!.username as string // eslint-disable-line @typescript-eslint/no-non-null-assertion
+  const [auth, user] = (await Promise.all([
+    creds != null ? getUserAndPrivateUser(creds.user.uid) : null,
+    getUserByUsername(username),
+  ])) as [UserAndPrivateUser | null, User | null]
+  return { props: { auth, user } }
+}
+
+export default function UserProfile(props: { user: User | null }) {
+  const { user } = props
+
   const router = useRouter()
-  const [user, setUser] = useState<User | null | 'loading'>('loading')
-  const { username, tab } = router.query as {
+  const { username } = router.query as {
     username: string
-    tab?: string | undefined
   }
-  useEffect(() => {
-    if (username) {
-      getUserByUsername(username).then(setUser)
-    }
-  }, [username])
-
-  const currentUser = useUser()
 
   useTracking('view user profile', { username })
 
-  if (user === 'loading') return <div />
-
-  return user ? (
-    <UserPage
-      user={user}
-      currentUser={currentUser || undefined}
-      defaultTabTitle={tab}
-    />
-  ) : (
-    <Custom404 />
-  )
+  return user ? <UserPage user={user} /> : <Custom404 />
 }

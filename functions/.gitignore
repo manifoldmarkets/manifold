@@ -1,10 +1,11 @@
 # Secrets
-.env*
 .runtimeconfig.json
 
+# GCP deployment artifact
+dist/
+
 # Compiled JavaScript files
-lib/**/*.js
-lib/**/*.js.map
+lib/
 
 # TypeScript v1 declaration files
 typings/

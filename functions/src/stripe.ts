@@ -1,7 +1,7 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 
+import { EndpointDefinition } from './api'
 import { getPrivateUser, getUser, isProd, payUser } from './utils'
 import { sendThankYouEmail } from './emails'
 import { track } from './analytics'
@@ -42,9 +42,9 @@ const manticDollarStripePrice = isProd()
       10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
     }
 
-export const createCheckoutSession = functions
-  .runWith({ minInstances: 1, secrets: ['STRIPE_APIKEY'] })
-  .https.onRequest(async (req, res) => {
+export const createcheckoutsession: EndpointDefinition = {
+  opts: { method: 'POST', minInstances: 1, secrets: ['STRIPE_APIKEY'] },
+  handler: async (req, res) => {
     const userId = req.query.userId?.toString()
 
     const manticDollarQuantity = req.query.manticDollarQuantity?.toString()
@@ -86,20 +86,24 @@ export const createCheckoutSession = functions
     })
 
     res.redirect(303, session.url || '')
-  })
+  },
+}
 
-export const stripeWebhook = functions
-  .runWith({
+export const stripewebhook: EndpointDefinition = {
+  opts: {
+    method: 'POST',
     minInstances: 1,
     secrets: ['MAILGUN_KEY', 'STRIPE_APIKEY', 'STRIPE_WEBHOOKSECRET'],
-  })
-  .https.onRequest(async (req, res) => {
+  },
+  handler: async (req, res) => {
     const stripe = initStripe()
     let event
 
     try {
+      // Cloud Functions jam the raw body into a special `rawBody` property
+      const rawBody = (req as any).rawBody ?? req.body
       event = stripe.webhooks.constructEvent(
-        req.rawBody,
+        rawBody,
         req.headers['stripe-signature'] as string,
         process.env.STRIPE_WEBHOOKSECRET as string
       )
@@ -115,7 +119,8 @@ export const stripeWebhook = functions
     }
 
     res.status(200).send('success')
-  })
+  },
+}
 
 const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session

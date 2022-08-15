@@ -24,6 +24,9 @@ export const onUpdateContract = functions.firestore
         if (resolutionText === 'MKT' && contract.resolutionProbability)
           resolutionText = `${contract.resolutionProbability}%`
         else if (resolutionText === 'MKT') resolutionText = 'PROB'
+      } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
+        if (resolutionText === 'MKT' && contract.resolutionValue)
+          resolutionText = `${contract.resolutionValue}`
       }
 
       await createNotification(
@@ -33,7 +36,7 @@ export const onUpdateContract = functions.firestore
         contractUpdater,
         eventId,
         resolutionText,
-        contract
+        { contract }
       )
     } else if (
       previousValue.closeTime !== contract.closeTime ||
@@ -59,7 +62,7 @@ export const onUpdateContract = functions.firestore
         contractUpdater,
         eventId,
         sourceText,
-        contract
+        { contract }
       )
     }
   })

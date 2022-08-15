@@ -11,7 +11,7 @@ import { debounce, sum } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import { CommentTips } from 'web/hooks/use-tip-txns'
 import { useUser } from 'web/hooks/use-user'
-import { transact } from 'web/lib/firebase/fn-call'
+import { transact } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Row } from './layout/row'
 import { Tooltip } from './tooltip'
@@ -37,7 +37,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
 
   // declare debounced function only on first render
   const [saveTip] = useState(() =>
-    debounce(async (user: User, change: number) => {
+    debounce(async (user: User, comment: Comment, change: number) => {
       if (change === 0) {
         return
       }
@@ -53,6 +53,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
         data: {
           contractId: comment.contractId,
           commentId: comment.id,
+          groupId: comment.groupId,
         },
         description: `${user.name} tipped M$ ${change} to ${comment.userName} for a comment`,
       })
@@ -60,6 +61,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
       track('send comment tip', {
         contractId: comment.contractId,
         commentId: comment.id,
+        groupId: comment.groupId,
         amount: change,
         fromId: user.id,
         toId: comment.userId,
@@ -69,30 +71,24 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   // instant save on unrender
   useEffect(() => () => void saveTip.flush(), [saveTip])
 
-  const changeTip = (tip: number) => {
-    setLocalTip(tip)
-    me && saveTip(me, tip - savedTip)
+  const addTip = (delta: number) => {
+    setLocalTip(localTip + delta)
+    me && saveTip(me, comment, localTip - savedTip + delta)
   }
 
+  const canDown = me && localTip > savedTip
+  const canUp = me && me.id !== comment.userId && me.balance >= localTip + 5
   return (
     <Row className="items-center gap-0.5">
-      <DownTip
-        value={localTip}
-        onChange={changeTip}
-        disabled={!me || localTip <= savedTip}
-      />
+      <DownTip onClick={canDown ? () => addTip(-5) : undefined} />
       <span className="font-bold">{Math.floor(total)}</span>
-      <UpTip
-        value={localTip}
-        onChange={changeTip}
-        disabled={!me || me.id === comment.userId || me.balance < localTip + 5}
-      />
+      <UpTip onClick={canUp ? () => addTip(+5) : undefined} value={localTip} />
       {localTip === 0 ? (
         ''
       ) : (
         <span
           className={clsx(
-            'font-semibold',
+            'ml-1 font-semibold',
             localTip > 0 ? 'text-primary' : 'text-red-400'
           )}
         >
@@ -103,21 +99,19 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   )
 }
 
-function DownTip(prop: {
-  value: number
-  onChange: (tip: number) => void
-  disabled?: boolean
-}) {
-  const { onChange, value, disabled } = prop
+function DownTip(props: { onClick?: () => void }) {
+  const { onClick } = props
   return (
     <Tooltip
-      className="tooltip-bottom"
-      text={!disabled && `-${formatMoney(5)}`}
+      className="h-6 w-6"
+      placement="bottom"
+      text={onClick && `-${formatMoney(5)}`}
+      noTap
     >
       <button
-        className="flex h-max items-center hover:text-red-600 disabled:text-gray-300"
-        disabled={disabled}
-        onClick={() => onChange(value - 5)}
+        className="hover:text-red-600 disabled:text-gray-300"
+        disabled={!onClick}
+        onClick={onClick}
       >
         <ChevronLeftIcon className="h-6 w-6" />
       </button>
@@ -125,30 +119,22 @@ function DownTip(prop: {
   )
 }
 
-function UpTip(prop: {
-  value: number
-  onChange: (tip: number) => void
-  disabled?: boolean
-}) {
-  const { onChange, value, disabled } = prop
-
+function UpTip(props: { onClick?: () => void; value: number }) {
+  const { onClick, value } = props
+  const IconKind = value >= 10 ? ChevronDoubleRightIcon : ChevronRightIcon
   return (
     <Tooltip
-      className="tooltip-bottom"
-      text={!disabled && `Tip ${formatMoney(5)}`}
+      className="h-6 w-6"
+      placement="bottom"
+      text={onClick && `Tip ${formatMoney(5)}`}
+      noTap
     >
       <button
-        className="hover:text-primary flex h-max items-center disabled:text-gray-300"
-        disabled={disabled}
-        onClick={() => onChange(value + 5)}
+        className="hover:text-primary disabled:text-gray-300"
+        disabled={!onClick}
+        onClick={onClick}
       >
-        {value >= 10 ? (
-          <ChevronDoubleRightIcon className="text-primary mx-1 h-6 w-6" />
-        ) : value > 0 ? (
-          <ChevronRightIcon className="text-primary h-6 w-6" />
-        ) : (
-          <ChevronRightIcon className="h-6 w-6" />
-        )}
+        <IconKind className={clsx('h-6 w-6', value ? 'text-primary' : '')} />
       </button>
     </Tooltip>
   )

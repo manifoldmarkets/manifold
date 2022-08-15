@@ -34,6 +34,40 @@ response was a 4xx or 5xx.)
 
 ## Endpoints
 
+### `GET /v0/user/[username]`
+
+Gets a user by their username. Remember that usernames may change.
+
+Requires no authorization.
+
+### `GET /v0/user/by-id/[id]`
+
+Gets a user by their unique ID. Many other API endpoints return this as the `userId`.
+
+Requires no authorization.
+
+### GET /v0/me
+
+Returns the authenticated user.
+
+### `GET /v0/groups`
+
+Gets all groups, in no particular order.
+
+Requires no authorization.
+
+### `GET /v0/groups/[slug]`
+
+Gets a group by its slug.
+
+Requires no authorization.
+
+### `GET /v0/groups/by-id/[id]`
+
+Gets a group by its unique ID.
+
+Requires no authorization.
+
 ### `GET /v0/markets`
 
 Lists all markets, ordered by creation date descending.
@@ -456,7 +490,6 @@ Requires no authorization.
   }
   ```
 
-
 ### `POST /v0/bet`
 
 Places a new bet on behalf of the authorized user.
@@ -470,6 +503,20 @@ Parameters:
   answer. For numeric markets, this is a string representing the target bucket,
   and an additional `value` parameter is required which is a number representing
   the target value. (Bet on numeric markets at your own peril.)
+- `limitProb`: Optional. A number between `0.001` and `0.999` inclusive representing
+  the limit probability for your bet (i.e. 0.1% to 99.9% — multiply by 100 for the
+  probability percentage).
+  The bet will execute immediately in the direction of `outcome`, but not beyond this
+  specified limit. If not all the bet is filled, the bet will remain as an open offer
+  that can later be matched against an opposite direction bet.
+  - For example, if the current market probability is `50%`:
+    - A `M$10` bet on `YES` with `limitProb=0.4` would not be filled until the market
+      probability moves down to `40%` and someone bets `M$15` of `NO` to match your
+      bet odds.
+    - A `M$100` bet on `YES` with `limitProb=0.6` would fill partially or completely
+      depending on current unfilled limit bets and the AMM's liquidity. Any remaining
+      portion of the bet not filled would remain to be matched against in the future.
+  - An unfilled limit order bet can be cancelled using the cancel API.
 
 Example request:
 
@@ -480,6 +527,10 @@ $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application
                  "outcome":"YES", \
                  "contractId":"{...}"}'
 ```
+
+### `POST /v0/bet/cancel/[id]`
+
+Cancel the limit order of a bet with the specified id. If the bet was unfilled, it will be cancelled so that no other bets will match with it. This is action irreversable.
 
 ### `POST /v0/market`
 
@@ -514,8 +565,170 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "initialProb":25}'
 ```
 
+### `POST /v0/market/[marketId]/resolve`
+
+Resolves a market on behalf of the authorized user.
+
+Parameters:
+
+For binary markets:
+
+- `outcome`: Required. One of `YES`, `NO`, `MKT`, or `CANCEL`.
+- `probabilityInt`: Optional. The probability to use for `MKT` resolution.
+
+For free response markets:
+
+- `outcome`: Required. One of `MKT`, `CANCEL`, or a `number` indicating the answer index.
+- `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome.
+
+For numeric markets:
+
+- `outcome`: Required. One of `CANCEL`, or a `number` indicating the selected numeric bucket ID.
+- `value`: The value that the market may resolves to.
+
+Example request:
+
+```
+# Resolve a binary market
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "YES"}'
+
+# Resolve a binary market with a specified probability
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "MKT", \
+                 "probabilityInt": 75}'
+
+# Resolve a free response market with a single answer chosen
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": 2}'
+
+# Resolve a free response market with multiple answers chosen
+$ curl https://manifold.markets/api/v0/market/{marketId}/resolve -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "MKT", \
+                 "resolutions": [ \
+                   {"answer": 0, "pct": 50}, \
+                   {"answer": 2, "pct": 50} \
+                 ]}'
+```
+
+### `POST /v0/market/[marketId]/sell`
+
+Sells some quantity of shares in a binary market on behalf of the authorized user.
+
+Parameters:
+
+- `outcome`: Optional. One of `YES`, or `NO`. If you leave it off, and you only
+  own one kind of shares, you will sell that kind of shares.
+- `shares`: Optional. The amount of shares to sell of the outcome given
+  above. If not provided, all the shares you own will be sold.
+
+Example request:
+
+```
+$ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"outcome": "YES", "shares": 10}'
+```
+
+### `GET /v0/bets`
+
+Gets a list of bets, ordered by creation date descending.
+
+Parameters:
+
+- `username`: Optional. If set, the response will include only bets created by this user.
+- `market`: Optional. The slug of a market. If set, the response will only include bets on this market.
+- `limit`: Optional. How many bets to return. The maximum and the default is 1000.
+- `before`: Optional. The ID of the bet before which the list will start. For
+  example, if you ask for the most recent 10 bets, and then perform a second
+  query for 10 more bets with `before=[the id of the 10th bet]`, you will
+  get bets 11 through 20.
+
+Requires no authorization.
+
+- Example request
+  ```
+  https://manifold.markets/api/v0/bets?username=ManifoldMarkets&market=will-i-be-able-to-place-a-limit-ord
+  ```
+- Response type: A `Bet[]`.
+
+- <details><summary>Example response</summary><p>
+
+  ```json
+  [
+    // Limit bet, partially filled.
+    {
+      "isFilled": false,
+      "amount": 15.596681605353808,
+      "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
+      "contractId": "Tz5dA01GkK5QKiQfZeDL",
+      "probBefore": 0.5730753474948571,
+      "isCancelled": false,
+      "outcome": "YES",
+      "fees": { "creatorFee": 0, "liquidityFee": 0, "platformFee": 0 },
+      "shares": 31.193363210707616,
+      "limitProb": 0.5,
+      "id": "yXB8lVbs86TKkhWA1FVi",
+      "loanAmount": 0,
+      "orderAmount": 100,
+      "probAfter": 0.5730753474948571,
+      "createdTime": 1659482775970,
+      "fills": [
+        {
+          "timestamp": 1659483249648,
+          "matchedBetId": "MfrMd5HTiGASDXzqibr7",
+          "amount": 15.596681605353808,
+          "shares": 31.193363210707616
+        }
+      ]
+    },
+    // Normal bet (no limitProb specified).
+    {
+      "shares": 17.350459904608414,
+      "probBefore": 0.5304358279113885,
+      "isFilled": true,
+      "probAfter": 0.5730753474948571,
+      "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
+      "amount": 10,
+      "contractId": "Tz5dA01GkK5QKiQfZeDL",
+      "id": "1LPJHNz5oAX4K6YtJlP1",
+      "fees": {
+        "platformFee": 0,
+        "liquidityFee": 0,
+        "creatorFee": 0.4251333951457593
+      },
+      "isCancelled": false,
+      "loanAmount": 0,
+      "orderAmount": 10,
+      "fills": [
+        {
+          "amount": 10,
+          "matchedBetId": null,
+          "shares": 17.350459904608414,
+          "timestamp": 1659482757271
+        }
+      ],
+      "createdTime": 1659482757271,
+      "outcome": "YES"
+    }
+  ]
+  ```
+
+  </p>
+  </details>
+
 ## Changelog
 
+- 2022-07-15: Add user by username and user by ID APIs
 - 2022-06-08: Add paging to markets endpoint
 - 2022-06-05: Add new authorized write endpoints
 - 2022-02-28: Add `resolutionTime` to markets, change `closeTime` definition

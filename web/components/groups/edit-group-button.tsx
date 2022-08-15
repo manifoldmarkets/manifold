@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 import { Modal } from 'web/components/layout/modal'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
+import { uniq } from 'lodash'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props
@@ -35,7 +36,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
     await updateGroup(group, {
       name,
       about,
-      memberIds: [...memberIds, ...addMemberUsers.map((user) => user.id)],
+      memberIds: uniq([...memberIds, ...addMemberUsers.map((user) => user.id)]),
     })
 
     setIsSubmitting(false)
@@ -46,7 +47,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
     <div className={clsx('flex p-1', className)}>
       <div
         className={clsx(
-          'btn-ghost cursor-pointer whitespace-nowrap rounded-full text-sm text-white'
+          'btn-ghost cursor-pointer whitespace-nowrap rounded-md p-1 text-sm text-gray-700'
         )}
         onClick={() => updateOpen(!open)}
       >

@@ -1,34 +1,43 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import algoliasearch from 'algoliasearch/lite'
-import {
-  Configure,
-  InstantSearch,
-  SearchBox,
-  SortBy,
-  useInfiniteHits,
-  useSortBy,
-} from 'react-instantsearch-hooks-web'
+import algoliasearch, { SearchIndex } from 'algoliasearch/lite'
+import { SearchOptions } from '@algolia/client-search'
 
-import { Contract } from '../../common/contract'
+import { Contract } from 'common/contract'
+import { User } from 'common/user'
+import { Sort, useQuery, useSort } from '../hooks/use-sort-and-query-params'
 import {
-  Sort,
-  useInitialQueryAndSort,
-  useUpdateQueryAndSort,
-} from '../hooks/use-sort-and-query-params'
-import { ContractsGrid } from './contract/contracts-list'
+  ContractHighlightOptions,
+  ContractsGrid,
+} from './contract/contracts-grid'
+import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Spacer } from './layout/spacer'
+import { useEffect, useRef, useMemo, useState } from 'react'
+import { unstable_batchedUpdates } from 'react-dom'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
 import { useFollows } from 'web/hooks/use-follows'
-import { EditCategoriesButton } from './feed/category-selector'
-import { CATEGORIES, category } from 'common/categories'
-import { Tabs } from './layout/tabs'
-import { EditFollowingButton } from './following-button'
-import { track } from '@amplitude/analytics-browser'
-import { trackCallback } from 'web/lib/service/analytics'
+import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
+import { useMemberGroups } from 'web/hooks/use-group'
+import { NEW_USER_GROUP_SLUGS } from 'common/group'
+import { PillButton } from './buttons/pill-button'
+import { debounce, sortBy } from 'lodash'
+import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
+import { Col } from './layout/col'
+import { safeLocalStorage } from 'web/lib/util/local'
+import clsx from 'clsx'
+
+// TODO: this obviously doesn't work with SSR, common sense would suggest
+// that we should save things like this in cookies so the server has them
+
+const MARKETS_SORT = 'markets_sort'
+
+function setSavedSort(s: Sort) {
+  safeLocalStorage()?.setItem(MARKETS_SORT, s)
+}
+
+function getSavedSort() {
+  return safeLocalStorage()?.getItem(MARKETS_SORT) as Sort | null | undefined
+}
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -36,291 +45,368 @@ const searchClient = algoliasearch(
 )
 
 const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
+const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 
-const sortIndexes = [
-  { label: 'Newest', value: indexPrefix + 'contracts-newest' },
-  { label: 'Oldest', value: indexPrefix + 'contracts-oldest' },
-  { label: 'Most traded', value: indexPrefix + 'contracts-most-traded' },
-  { label: '24h volume', value: indexPrefix + 'contracts-24-hour-vol' },
-  { label: 'Last updated', value: indexPrefix + 'contracts-last-updated' },
-  { label: 'Close date', value: indexPrefix + 'contracts-close-date' },
-  { label: 'Resolve date', value: indexPrefix + 'contracts-resolve-date' },
+const sortOptions = [
+  { label: 'Newest', value: 'newest' },
+  { label: 'Trending', value: 'score' },
+  { label: 'Most traded', value: 'most-traded' },
+  { label: '24h volume', value: '24-hour-vol' },
+  { label: 'Last updated', value: 'last-updated' },
+  { label: 'Subsidy', value: 'liquidity' },
+  { label: 'Close date', value: 'close-date' },
+  { label: 'Resolve date', value: 'resolve-date' },
 ]
 
-type filter = 'open' | 'closed' | 'resolved' | 'all'
+type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
+
+type SearchParameters = {
+  index: SearchIndex
+  query: string
+  numericFilters: SearchOptions['numericFilters']
+  facetFilters: SearchOptions['facetFilters']
+  showTime?: ShowTime
+}
+
+type AdditionalFilter = {
+  creatorId?: string
+  tag?: string
+  excludeContractIds?: string[]
+  groupSlug?: string
+}
 
 export function ContractSearch(props: {
-  querySortOptions?: {
-    defaultSort: Sort
-    defaultFilter?: filter
-    shouldLoadFromStorage?: boolean
-  }
-  additionalFilter?: {
-    creatorId?: string
-    tag?: string
-  }
-  showCategorySelector: boolean
+  user?: User | null
+  defaultSort?: Sort
+  defaultFilter?: filter
+  additionalFilter?: AdditionalFilter
+  highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
+  hideOrderSelector?: boolean
+  overrideGridClassName?: string
+  cardHideOptions?: {
+    hideGroupLink?: boolean
+    hideQuickBet?: boolean
+  }
+  headerClassName?: string
+  useQuerySortLocalStorage?: boolean
+  useQuerySortUrlParams?: boolean
 }) {
   const {
-    querySortOptions,
+    user,
+    defaultSort,
+    defaultFilter,
     additionalFilter,
-    showCategorySelector,
     onContractClick,
+    overrideGridClassName,
+    hideOrderSelector,
+    cardHideOptions,
+    highlightOptions,
+    headerClassName,
+    useQuerySortLocalStorage,
+    useQuerySortUrlParams,
   } = props
 
-  const user = useUser()
-  const followedCategories = user?.followedCategories
-  const follows = useFollows(user?.id)
+  const [numPages, setNumPages] = useState(1)
+  const [pages, setPages] = useState<Contract[][]>([])
+  const [showTime, setShowTime] = useState<ShowTime | undefined>()
 
-  const { initialSort } = useInitialQueryAndSort(querySortOptions)
+  const searchParameters = useRef<SearchParameters | undefined>()
+  const requestId = useRef(0)
 
-  const sort = sortIndexes
-    .map(({ value }) => value)
-    .includes(`${indexPrefix}contracts-${initialSort ?? ''}`)
-    ? initialSort
-    : querySortOptions?.defaultSort ?? '24-hour-vol'
-
-  const [filter, setFilter] = useState<filter>(
-    querySortOptions?.defaultFilter ?? 'open'
-  )
-
-  const [mode, setMode] = useState<'categories' | 'following'>('categories')
-
-  const { filters, numericFilters } = useMemo(() => {
-    let filters = [
-      filter === 'open' ? 'isResolved:false' : '',
-      filter === 'closed' ? 'isResolved:false' : '',
-      filter === 'resolved' ? 'isResolved:true' : '',
-      showCategorySelector
-        ? mode === 'categories'
-          ? followedCategories?.map((cat) => `lowercaseTags:${cat}`) ?? ''
-          : follows?.map((creatorId) => `creatorId:${creatorId}`) ?? ''
-        : '',
-      additionalFilter?.creatorId
-        ? `creatorId:${additionalFilter.creatorId}`
-        : '',
-      additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
-    ].filter((f) => f)
-    // Hack to make Algolia work.
-    filters = ['', ...filters]
-
-    const numericFilters = [
-      filter === 'open' ? `closeTime > ${Date.now()}` : '',
-      filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-    ].filter((f) => f)
-
-    return { filters, numericFilters }
-  }, [
-    filter,
-    showCategorySelector,
-    mode,
-    Object.values(additionalFilter ?? {}).join(','),
-    (followedCategories ?? []).join(','),
-    (follows ?? []).join(','),
-  ])
-
-  const indexName = `${indexPrefix}contracts-${sort}`
-
-  if (IS_PRIVATE_MANIFOLD) {
-    return (
-      <ContractSearchFirestore
-        querySortOptions={querySortOptions}
-        additionalFilter={additionalFilter}
-      />
-    )
-  }
-
-  return (
-    <InstantSearch searchClient={searchClient} indexName={indexName}>
-      <Row className="gap-1 sm:gap-2">
-        <SearchBox
-          className="flex-1"
-          classNames={{
-            form: 'before:top-6',
-            input: '!pl-10 !input !input-bordered shadow-none w-[100px]',
-            resetIcon: 'mt-2 hidden sm:flex',
-          }}
-        />
-        <select
-          className="!select !select-bordered"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as filter)}
-          onBlur={trackCallback('select search filter')}
-        >
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-          <option value="resolved">Resolved</option>
-          <option value="all">All</option>
-        </select>
-        <SortBy
-          items={sortIndexes}
-          classNames={{
-            select: '!select !select-bordered',
-          }}
-          onBlur={trackCallback('select search sort')}
-        />
-        <Configure
-          facetFilters={filters}
-          numericFilters={numericFilters}
-          // Page resets on filters change.
-          page={0}
-        />
-      </Row>
-
-      <Spacer h={3} />
-
-      {showCategorySelector && (
-        <CategoryFollowSelector
-          mode={mode}
-          setMode={setMode}
-          followedCategories={followedCategories ?? []}
-          follows={follows ?? []}
-        />
-      )}
-
-      <Spacer h={4} />
-
-      {mode === 'following' && (follows ?? []).length === 0 ? (
-        <>You're not following anyone yet.</>
-      ) : (
-        <ContractSearchInner
-          querySortOptions={querySortOptions}
-          onContractClick={onContractClick}
-        />
-      )}
-    </InstantSearch>
-  )
-}
-
-export function ContractSearchInner(props: {
-  querySortOptions?: {
-    defaultSort: Sort
-    shouldLoadFromStorage?: boolean
-  }
-  onContractClick?: (contract: Contract) => void
-}) {
-  const { querySortOptions, onContractClick } = props
-  const { initialQuery } = useInitialQueryAndSort(querySortOptions)
-
-  const { query, setQuery, setSort } = useUpdateQueryAndSort({
-    shouldLoadFromStorage: true,
-  })
-
-  useEffect(() => {
-    setQuery(initialQuery)
-  }, [initialQuery])
-
-  const { currentRefinement: index } = useSortBy({
-    items: [],
-  })
-
-  useEffect(() => {
-    setQuery(query)
-  }, [query])
-
-  const isFirstRender = useRef(true)
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
+  const performQuery = async (freshQuery?: boolean) => {
+    if (searchParameters.current === undefined) {
       return
     }
-
-    const sort = index.split('contracts-')[1] as Sort
-    if (sort) {
-      setSort(sort)
+    const params = searchParameters.current
+    const id = ++requestId.current
+    const requestedPage = freshQuery ? 0 : pages.length
+    if (freshQuery || requestedPage < numPages) {
+      const results = await params.index.search(params.query, {
+        facetFilters: params.facetFilters,
+        numericFilters: params.numericFilters,
+        page: requestedPage,
+        hitsPerPage: 20,
+      })
+      // if there's a more recent request, forget about this one
+      if (id === requestId.current) {
+        const newPage = results.hits as any as Contract[]
+        // this spooky looking function is the easiest way to get react to
+        // batch this and not do multiple renders. we can throw it out in react 18.
+        // see https://github.com/reactwg/react-18/discussions/21
+        unstable_batchedUpdates(() => {
+          setShowTime(params.showTime)
+          setNumPages(results.nbPages)
+          if (freshQuery) {
+            setPages([newPage])
+            window.scrollTo(0, 0)
+          } else {
+            setPages((pages) => [...pages, newPage])
+          }
+        })
+      }
     }
-  }, [index])
+  }
 
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
-  useEffect(() => {
-    const id = setTimeout(() => setIsInitialLoad(false), 1000)
-    return () => clearTimeout(id)
-  }, [])
+  const onSearchParametersChanged = useRef(
+    debounce((params) => {
+      searchParameters.current = params
+      performQuery(true)
+    }, 100)
+  ).current
 
-  const { showMore, hits, isLastPage } = useInfiniteHits()
-  const contracts = hits as any as Contract[]
+  const contracts = pages
+    .flat()
+    .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
 
-  if (isInitialLoad && contracts.length === 0) return <></>
-
-  const showTime = index.endsWith('close-date')
-    ? 'close-date'
-    : index.endsWith('resolve-date')
-    ? 'resolve-date'
-    : undefined
-
-  return (
-    <ContractsGrid
-      contracts={contracts}
-      loadMore={showMore}
-      hasMore={!isLastPage}
-      showTime={showTime}
-      onContractClick={onContractClick}
-    />
-  )
-}
-
-function CategoryFollowSelector(props: {
-  mode: 'categories' | 'following'
-  setMode: (mode: 'categories' | 'following') => void
-  followedCategories: string[]
-  follows: string[]
-}) {
-  const { mode, setMode, followedCategories, follows } = props
-
-  const user = useUser()
-
-  const categoriesTitle = `${
-    followedCategories?.length ? followedCategories.length : 'All'
-  } Categories`
-  let categoriesDescription = `Showing all categories`
-
-  const followingTitle = `${follows?.length ? follows.length : 'All'} Following`
-
-  if (followedCategories.length) {
-    const categoriesLabel = followedCategories
-      .slice(0, 3)
-      .map((cat) => CATEGORIES[cat as category])
-      .join(', ')
-    const andMoreLabel =
-      followedCategories.length > 3
-        ? `, and ${followedCategories.length - 3} more`
-        : ''
-    categoriesDescription = `Showing ${categoriesLabel}${andMoreLabel}`
+  if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
+    return <ContractSearchFirestore additionalFilter={additionalFilter} />
   }
 
   return (
-    <Tabs
-      defaultIndex={mode === 'categories' ? 0 : 1}
-      tabs={[
-        {
-          title: categoriesTitle,
-          content: user && (
-            <Row className="items-center gap-1 text-gray-500">
-              <div>{categoriesDescription}</div>
-              <EditCategoriesButton className="self-start" user={user} />
-            </Row>
-          ),
-        },
-        ...(user
-          ? [
-              {
-                title: followingTitle,
-                content: (
-                  <Row className="items-center gap-2 text-gray-500">
-                    <div>Showing markets by users you are following.</div>
-                    <EditFollowingButton className="self-start" user={user} />
-                  </Row>
-                ),
-              },
-            ]
-          : []),
-      ]}
-      onClick={(_, index) => {
-        const mode = index === 0 ? 'categories' : 'following'
-        setMode(mode)
-        track(`click ${mode} tab`)
-      }}
-    />
+    <Col className="h-full">
+      <ContractSearchControls
+        className={headerClassName}
+        defaultSort={defaultSort}
+        defaultFilter={defaultFilter}
+        additionalFilter={additionalFilter}
+        hideOrderSelector={hideOrderSelector}
+        useQuerySortLocalStorage={useQuerySortLocalStorage}
+        useQuerySortUrlParams={useQuerySortUrlParams}
+        user={user}
+        onSearchParametersChanged={onSearchParametersChanged}
+      />
+      <ContractsGrid
+        contracts={pages.length === 0 ? undefined : contracts}
+        loadMore={performQuery}
+        showTime={showTime}
+        onContractClick={onContractClick}
+        overrideGridClassName={overrideGridClassName}
+        highlightOptions={highlightOptions}
+        cardHideOptions={cardHideOptions}
+      />
+    </Col>
+  )
+}
+
+function ContractSearchControls(props: {
+  className?: string
+  defaultSort?: Sort
+  defaultFilter?: filter
+  additionalFilter?: AdditionalFilter
+  hideOrderSelector?: boolean
+  onSearchParametersChanged: (params: SearchParameters) => void
+  useQuerySortLocalStorage?: boolean
+  useQuerySortUrlParams?: boolean
+  user?: User | null
+}) {
+  const {
+    className,
+    defaultSort,
+    defaultFilter,
+    additionalFilter,
+    hideOrderSelector,
+    onSearchParametersChanged,
+    useQuerySortLocalStorage,
+    useQuerySortUrlParams,
+    user,
+  } = props
+
+  const savedSort = useQuerySortLocalStorage ? getSavedSort() : null
+  const initialSort = savedSort ?? defaultSort ?? 'score'
+  const querySortOpts = { useUrl: !!useQuerySortUrlParams }
+  const [sort, setSort] = useSort(initialSort, querySortOpts)
+  const [query, setQuery] = useQuery('', querySortOpts)
+  const [filter, setFilter] = useState<filter>(defaultFilter ?? 'open')
+  const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (useQuerySortLocalStorage) {
+      setSavedSort(sort)
+    }
+  }, [sort])
+
+  const follows = useFollows(user?.id)
+  const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
+    (group) => !NEW_USER_GROUP_SLUGS.includes(group.slug)
+  )
+  const memberGroupSlugs =
+    memberGroups.length > 0
+      ? memberGroups.map((g) => g.slug)
+      : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
+
+  const memberPillGroups = sortBy(
+    memberGroups.filter((group) => group.contractIds.length > 0),
+    (group) => group.contractIds.length
+  ).reverse()
+
+  const pillGroups: { name: string; slug: string }[] =
+    memberPillGroups.length > 0 ? memberPillGroups : DEFAULT_CATEGORY_GROUPS
+
+  const additionalFilters = [
+    additionalFilter?.creatorId
+      ? `creatorId:${additionalFilter.creatorId}`
+      : '',
+    additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
+    additionalFilter?.groupSlug
+      ? `groupLinks.slug:${additionalFilter.groupSlug}`
+      : '',
+  ]
+  const facetFilters = query
+    ? additionalFilters
+    : [
+        ...additionalFilters,
+        filter === 'open' ? 'isResolved:false' : '',
+        filter === 'closed' ? 'isResolved:false' : '',
+        filter === 'resolved' ? 'isResolved:true' : '',
+        pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
+          ? `groupLinks.slug:${pillFilter}`
+          : '',
+        pillFilter === 'personal'
+          ? // Show contracts in groups that the user is a member of
+            memberGroupSlugs
+              .map((slug) => `groupLinks.slug:${slug}`)
+              // Show contracts created by users the user follows
+              .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
+              // Show contracts bet on by users the user follows
+              .concat(
+                follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
+              )
+          : '',
+        // Subtract contracts you bet on from For you.
+        pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
+        pillFilter === 'your-bets' && user
+          ? // Show contracts bet on by the user
+            `uniqueBettorIds:${user.id}`
+          : '',
+      ].filter((f) => f)
+
+  const numericFilters = query
+    ? []
+    : [
+        filter === 'open' ? `closeTime > ${Date.now()}` : '',
+        filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+      ].filter((f) => f)
+
+  const selectPill = (pill: string | undefined) => () => {
+    setPillFilter(pill)
+    track('select search category', { category: pill ?? 'all' })
+  }
+
+  const updateQuery = (newQuery: string) => {
+    setQuery(newQuery)
+  }
+
+  const selectFilter = (newFilter: filter) => {
+    if (newFilter === filter) return
+    setFilter(newFilter)
+    track('select search filter', { filter: newFilter })
+  }
+
+  const selectSort = (newSort: Sort) => {
+    if (newSort === sort) return
+    setSort(newSort)
+    track('select search sort', { sort: newSort })
+  }
+
+  const indexName = `${indexPrefix}contracts-${sort}`
+  const index = useMemo(() => searchClient.initIndex(indexName), [indexName])
+  const searchIndex = useMemo(
+    () => searchClient.initIndex(searchIndexName),
+    [searchIndexName]
+  )
+
+  useEffect(() => {
+    onSearchParametersChanged({
+      index: query ? searchIndex : index,
+      query: query,
+      numericFilters: numericFilters,
+      facetFilters: facetFilters,
+      showTime:
+        sort === 'close-date' || sort === 'resolve-date' ? sort : undefined,
+    })
+  }, [query, index, searchIndex, filter, JSON.stringify(facetFilters)])
+
+  return (
+    <Col
+      className={clsx('bg-base-200 sticky top-0 z-20 gap-3 pb-3', className)}
+    >
+      <Row className="gap-1 sm:gap-2">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => updateQuery(e.target.value)}
+          onBlur={trackCallback('search', { query })}
+          placeholder={'Search'}
+          className="input input-bordered w-full"
+        />
+        {!query && (
+          <select
+            className="select select-bordered"
+            value={filter}
+            onChange={(e) => selectFilter(e.target.value as filter)}
+          >
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All</option>
+          </select>
+        )}
+        {!hideOrderSelector && !query && (
+          <select
+            className="select select-bordered"
+            value={sort}
+            onChange={(e) => selectSort(e.target.value as Sort)}
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </Row>
+
+      {!additionalFilter && !query && (
+        <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
+          <PillButton
+            key={'all'}
+            selected={pillFilter === undefined}
+            onSelect={selectPill(undefined)}
+          >
+            All
+          </PillButton>
+          <PillButton
+            key={'personal'}
+            selected={pillFilter === 'personal'}
+            onSelect={selectPill('personal')}
+          >
+            {user ? 'For you' : 'Featured'}
+          </PillButton>
+
+          {user && (
+            <PillButton
+              key={'your-bets'}
+              selected={pillFilter === 'your-bets'}
+              onSelect={selectPill('your-bets')}
+            >
+              Your bets
+            </PillButton>
+          )}
+
+          {pillGroups.map(({ name, slug }) => {
+            return (
+              <PillButton
+                key={slug}
+                selected={pillFilter === slug}
+                onSelect={selectPill(slug)}
+              >
+                {name}
+              </PillButton>
+            )
+          })}
+        </Row>
+      )}
+    </Col>
   )
 }

@@ -2,6 +2,9 @@ import clsx from 'clsx'
 import { ReactNode } from 'react'
 import Link from 'next/link'
 
+export const linkClass =
+  'z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2'
+
 export const SiteLink = (props: {
   href: string
   children?: ReactNode
@@ -13,10 +16,7 @@ export const SiteLink = (props: {
   return (
     <MaybeLink href={href}>
       <a
-        className={clsx(
-          'z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
-          className
-        )}
+        className={clsx(linkClass, className)}
         href={href}
         target={href.startsWith('http') ? '_blank' : undefined}
         style={{ /* For iOS safari */ wordBreak: 'break-word' }}

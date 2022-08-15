@@ -1,4 +1,4 @@
-import { sumBy } from 'lodash'
+import { mapValues, groupBy, sumBy, uniq } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
@@ -7,26 +7,29 @@ import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
-import { getValues } from './utils'
+import { getValues, log } from './utils'
 import { Bet } from '../../common/bet'
+import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
+import { getUnfilledBetsQuery, updateMakers } from './place-bet'
+import { FieldValue } from 'firebase-admin/firestore'
+import { redeemShares } from './redeem-shares'
 
 const bodySchema = z.object({
   contractId: z.string(),
-  shares: z.number(),
-  outcome: z.enum(['YES', 'NO']),
+  shares: z.number().optional(), // leave it out to sell all shares
+  outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
 })
 
-export const sellshares = newEndpoint(['POST'], async (req, auth) => {
+export const sellshares = newEndpoint({}, async (req, auth) => {
   const { contractId, shares, outcome } = validate(bodySchema, req.body)
 
   // Run as transaction to prevent race conditions.
-  return await firestore.runTransaction(async (transaction) => {
+  const result = await firestore.runTransaction(async (transaction) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
-    const [contractSnap, userSnap, userBets] = await Promise.all([
-      transaction.get(contractDoc),
-      transaction.get(userDoc),
+    const [[contractSnap, userSnap], userBets] = await Promise.all([
+      transaction.getAll(contractDoc, userDoc),
       getValues<Bet>(betsQ), // TODO: why is this not in the transaction??
     ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
@@ -43,18 +46,49 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
       throw new APIError(400, 'Trading is closed.')
 
     const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+    const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
+    const sharesByOutcome = mapValues(betsByOutcome, (bets) =>
+      sumBy(bets, (b) => b.shares)
+    )
 
-    const outcomeBets = userBets.filter((bet) => bet.outcome == outcome)
-    const maxShares = sumBy(outcomeBets, (bet) => bet.shares)
+    let chosenOutcome: 'YES' | 'NO'
+    if (outcome != null) {
+      chosenOutcome = outcome
+    } else {
+      const nonzeroShares = Object.entries(sharesByOutcome).filter(
+        ([_k, v]) => !floatingEqual(0, v)
+      )
+      if (nonzeroShares.length == 0) {
+        throw new APIError(400, "You don't own any shares in this market.")
+      }
+      if (nonzeroShares.length > 1) {
+        throw new APIError(
+          400,
+          `You own multiple kinds of shares, but did not specify which to sell.`
+        )
+      }
+      chosenOutcome = nonzeroShares[0][0] as 'YES' | 'NO'
+    }
 
-    if (shares > maxShares + 0.000000000001)
+    const maxShares = sharesByOutcome[chosenOutcome]
+    const sharesToSell = shares ?? maxShares
+
+    if (!floatingLesserEqual(sharesToSell, maxShares))
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
-    const { newBet, newPool, newP, fees } = getCpmmSellBetInfo(
-      shares,
-      outcome,
+    const soldShares = Math.min(sharesToSell, maxShares)
+
+    const unfilledBetsSnap = await transaction.get(
+      getUnfilledBetsQuery(contractDoc)
+    )
+    const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
+
+    const { newBet, newPool, newP, fees, makers } = getCpmmSellBetInfo(
+      soldShares,
+      chosenOutcome,
       contract,
-      prevLoanAmount
+      prevLoanAmount,
+      unfilledBets
     )
 
     if (
@@ -66,11 +100,17 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
     }
 
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
-    const newBalance = user.balance - newBet.amount + (newBet.loanAmount ?? 0)
-    const userId = user.id
 
-    transaction.update(userDoc, { balance: newBalance })
-    transaction.create(newBetDoc, { id: newBetDoc.id, userId, ...newBet })
+    updateMakers(makers, newBetDoc.id, contractDoc, transaction)
+
+    transaction.update(userDoc, {
+      balance: FieldValue.increment(-newBet.amount),
+    })
+    transaction.create(newBetDoc, {
+      id: newBetDoc.id,
+      userId: user.id,
+      ...newBet,
+    })
     transaction.update(
       contractDoc,
       removeUndefinedProps({
@@ -81,8 +121,14 @@ export const sellshares = newEndpoint(['POST'], async (req, auth) => {
       })
     )
 
-    return { status: 'success' }
+    return { newBet, makers }
   })
+
+  const userIds = uniq(result.makers.map((maker) => maker.bet.userId))
+  await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
+  log('Share redemption transaction finished.')
+
+  return { status: 'success' }
 })
 
 const firestore = admin.firestore()

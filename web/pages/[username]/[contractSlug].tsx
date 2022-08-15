@@ -1,21 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
-import { keyBy, sortBy, groupBy, sumBy, mapValues } from 'lodash'
+import { groupBy, keyBy, mapValues, sortBy, sumBy } from 'lodash'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet-panel'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
-import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { listUsers, User } from 'web/lib/firebase/users'
 import {
   Contract,
   getContractFromSlug,
   tradingAllowed,
-  getBinaryProbPercent,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/page'
@@ -27,22 +24,24 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
-import { useUserById } from 'web/hooks/use-users'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { contractTextDetails } from 'web/components/contract/contract-details'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import Confetti from 'react-confetti'
-import { NumericBetPanel } from '../../components/numeric-bet-panel'
-import { NumericResolutionPanel } from '../../components/numeric-resolution-panel'
-import { FeedComment } from 'web/components/feed/feed-comments'
-import { FeedBet } from 'web/components/feed/feed-bets'
+import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
+import { NumericBetPanel } from 'web/components/numeric-bet-panel'
+import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
+import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
-import { useLiquidity } from 'web/hooks/use-liquidity'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
+import { User } from 'common/user'
+import { listUsers } from 'web/lib/firebase/users'
+import { FeedComment } from 'web/components/feed/feed-comments'
+import { Title } from 'web/components/title'
+import { FeedBet } from 'web/components/feed/feed-bets'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -62,8 +61,9 @@ export async function getStaticPropz(props: {
       contract,
       username,
       slug: contractSlug,
-      bets,
-      comments,
+      // Limit the data sent to the client. Client will still load all bets and comments directly.
+      bets: bets.slice(0, 5000),
+      comments: comments.slice(0, 1000),
     },
 
     revalidate: 60, // regenerate after a minute
@@ -90,6 +90,7 @@ export default function ContractPage(props: {
     slug: '',
   }
 
+  const user = useUser()
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
@@ -101,13 +102,53 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  return <ContractPageContent {...{ ...props, contract }} />
+  return <ContractPageContent {...{ ...props, contract, user }} />
+}
+
+export function ContractPageSidebar(props: {
+  user: User | null | undefined
+  contract: Contract
+}) {
+  const { contract, user } = props
+  const { creatorId, isResolved, outcomeType } = contract
+
+  const isCreator = user?.id === creatorId
+  const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isNumeric = outcomeType === 'NUMERIC'
+  const allowTrade = tradingAllowed(contract)
+  const allowResolve = !isResolved && isCreator && !!user
+  const hasSidePanel =
+    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
+
+  return hasSidePanel ? (
+    <Col className="gap-4">
+      {allowTrade &&
+        (isNumeric ? (
+          <NumericBetPanel className="hidden xl:flex" contract={contract} />
+        ) : (
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
+        ))}
+      {allowResolve &&
+        (isNumeric || isPseudoNumeric ? (
+          <NumericResolutionPanel creator={user} contract={contract} />
+        ) : (
+          <ResolutionPanel creator={user} contract={contract} />
+        ))}
+    </Col>
+  ) : null
 }
 
 export function ContractPageContent(
-  props: Parameters<typeof ContractPage>[0] & { contract: Contract }
+  props: Parameters<typeof ContractPage>[0] & {
+    contract: Contract
+    user?: User | null
+  }
 ) {
-  const { backToHome, comments } = props
+  const { backToHome, comments, user } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
 
@@ -118,15 +159,11 @@ export function ContractPageContent(
   })
 
   const bets = useBets(contract.id) ?? props.bets
-  const liquidityProvisions =
-    useLiquidity(contract.id)?.filter((l) => !l.isAnte && l.amount > 0) ?? []
+
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
 
-  const tips = useTipTxns(contract.id)
-
-  const user = useUser()
-  const { width, height } = useWindowSize()
+  const tips = useTipTxns({ contractId: contract.id })
 
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -139,43 +176,22 @@ export function ContractPageContent(
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
 
-  const { creatorId, isResolved, question, outcomeType } = contract
+  const { isResolved, question, outcomeType } = contract
 
-  const isCreator = user?.id === creatorId
-  const isBinary = outcomeType === 'BINARY'
-  const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
-  const allowResolve = !isResolved && isCreator && !!user
-  const hasSidePanel = (isBinary || isNumeric) && (allowTrade || allowResolve)
 
   const ogCardProps = getOpenGraphProps(contract)
 
-  const rightSidebar = hasSidePanel ? (
-    <Col className="gap-4">
-      {allowTrade &&
-        (isNumeric ? (
-          <NumericBetPanel className="hidden xl:flex" contract={contract} />
-        ) : (
-          <BetPanel className="hidden xl:flex" contract={contract} />
-        ))}
-      {allowResolve &&
-        (isNumeric ? (
-          <NumericResolutionPanel creator={user} contract={contract} />
-        ) : (
-          <ResolutionPanel creator={user} contract={contract} />
-        ))}
-    </Col>
-  ) : null
+  useSaveReferral(user, {
+    defaultReferrerUsername: contract.creatorUsername,
+    contractId: contract.id,
+  })
 
+  const rightSidebar = <ContractPageSidebar user={user} contract={contract} />
   return (
     <Page rightSidebar={rightSidebar}>
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
       {ogCardProps && (
@@ -198,15 +214,20 @@ export function ContractPageContent(
           </button>
         )}
 
-        <ContractOverview contract={contract} bets={bets} />
-        {isNumeric && (
+        <ContractOverview
+          contract={contract}
+          bets={bets.filter((b) => !b.challengeSlug)}
+        />
+
+        {outcomeType === 'NUMERIC' && (
           <AlertBox
             title="Warning"
-            text="Numeric markets were introduced as an experimental feature and are now deprecated."
+            text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
           />
         )}
 
-        {outcomeType === 'FREE_RESPONSE' && (
+        {(outcomeType === 'FREE_RESPONSE' ||
+          outcomeType === 'MULTIPLE_CHOICE') && (
           <>
             <Spacer h={4} />
             <AnswersPanel contract={contract} />
@@ -214,7 +235,7 @@ export function ContractPageContent(
           </>
         )}
 
-        {isNumeric && allowTrade && (
+        {outcomeType === 'NUMERIC' && allowTrade && (
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 
@@ -236,7 +257,6 @@ export function ContractPageContent(
         <ContractTabs
           contract={contract}
           user={user}
-          liquidityProvisions={liquidityProvisions}
           bets={bets}
           tips={tips}
           comments={comments}
@@ -336,7 +356,6 @@ function ContractTopTrades(props: {
               comment={commentsById[topCommentId]}
               tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
-              truncate={false}
               smallAvatar={false}
             />
           </div>
@@ -367,33 +386,4 @@ function ContractTopTrades(props: {
       )}
     </div>
   )
-}
-
-const getOpenGraphProps = (contract: Contract) => {
-  const {
-    resolution,
-    question,
-    creatorName,
-    creatorUsername,
-    outcomeType,
-    creatorAvatarUrl,
-  } = contract
-  const probPercent =
-    outcomeType === 'BINARY' ? getBinaryProbPercent(contract) : undefined
-
-  const description = resolution
-    ? `Resolved ${resolution}. ${contract.description}`
-    : probPercent
-    ? `${probPercent} chance. ${contract.description}`
-    : contract.description
-
-  return {
-    question,
-    probability: probPercent,
-    metadata: contractTextDetails(contract),
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    description,
-  }
 }

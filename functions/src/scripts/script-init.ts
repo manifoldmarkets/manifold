@@ -47,26 +47,37 @@ const getFirebaseActiveProject = (cwd: string) => {
   }
 }
 
-export const initAdmin = (env?: string) => {
+export const getServiceAccountCredentials = (env?: string) => {
   env = env || getFirebaseActiveProject(process.cwd())
   if (env == null) {
-    console.error(
+    throw new Error(
       "Couldn't find active Firebase project; did you do `firebase use <alias>?`"
     )
-    return
   }
   const envVar = `GOOGLE_APPLICATION_CREDENTIALS_${env.toUpperCase()}`
   const keyPath = process.env[envVar]
   if (keyPath == null) {
-    console.error(
+    throw new Error(
       `Please set the ${envVar} environment variable to contain the path to your ${env} environment key file.`
     )
-    return
   }
-  console.log(`Initializing connection to ${env} Firebase...`)
   /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-  const serviceAccount = require(keyPath)
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  })
+  return require(keyPath)
+}
+
+export const initAdmin = (env?: string) => {
+  try {
+    const serviceAccount = getServiceAccountCredentials(env)
+    console.log(
+      `Initializing connection to ${serviceAccount.project_id} Firebase...`
+    )
+    return admin.initializeApp({
+      projectId: serviceAccount.project_id,
+      credential: admin.credential.cert(serviceAccount),
+    })
+  } catch (err) {
+    console.error(err)
+    console.log(`Initializing connection to default Firebase...`)
+    return admin.initializeApp()
+  }
 }

@@ -77,8 +77,7 @@ export function LiquidityStatusText(props: {
       ) : (
         <span>{isSelf ? 'You' : 'A trader'}</span>
       )}{' '}
-      {bought} {money}
-      {' of liquidity'}
+      {bought} a subsidy of {money}
       <RelativeTimestamp time={createdTime} />
     </div>
   )

@@ -5,19 +5,19 @@ import {
   CPMMBinaryContract,
   DPMBinaryContract,
   FreeResponseContract,
+  MultipleChoiceContract,
   NumericContract,
 } from './contract'
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
+import { ENV_CONFIG } from './envs/constants'
+import { Answer } from './answer'
 
-export const FIXED_ANTE = 100
-
-// deprecated
-export const PHANTOM_ANTE = 0.001
-export const MINIMUM_ANTE = 50
+export const FIXED_ANTE = ENV_CONFIG.fixedAnte ?? 100
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
+export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
 
 export function getCpmmInitialLiquidity(
   providerId: string,
@@ -111,6 +111,50 @@ export function getFreeAnswerAnte(
   }
 
   return anteBet
+}
+
+export function getMultipleChoiceAntes(
+  creator: User,
+  contract: MultipleChoiceContract,
+  answers: string[],
+  betDocIds: string[]
+) {
+  const { totalBets, totalShares } = contract
+  const amount = totalBets['0']
+  const shares = totalShares['0']
+  const p = 1 / answers.length
+
+  const { createdTime } = contract
+
+  const bets: Bet[] = answers.map((answer, i) => ({
+    id: betDocIds[i],
+    userId: creator.id,
+    contractId: contract.id,
+    amount,
+    shares,
+    outcome: i.toString(),
+    probBefore: p,
+    probAfter: p,
+    createdTime,
+    isAnte: true,
+    fees: noFees,
+  }))
+
+  const { username, name, avatarUrl } = creator
+
+  const answerObjects: Answer[] = answers.map((answer, i) => ({
+    id: i.toString(),
+    number: i,
+    contractId: contract.id,
+    createdTime,
+    userId: creator.id,
+    username,
+    name,
+    avatarUrl,
+    text: answer,
+  }))
+
+  return { bets, answerObjects }
 }
 
 export function getNumericAnte(

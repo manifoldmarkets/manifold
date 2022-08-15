@@ -2,11 +2,18 @@ import clsx from 'clsx'
 import {
   getOutcomeProbability,
   getOutcomeProbabilityAfterBet,
+  getProbability,
   getTopAnswer,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
-import { Contract, NumericContract, resolution } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  NumericContract,
+  PseudoNumericContract,
+  resolution,
+} from 'common/contract'
 import {
   formatLargeNumber,
   formatMoney,
@@ -15,39 +22,36 @@ import {
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { placeBet } from 'web/lib/firebase/api-call'
+import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProb, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
 import { OUTCOME_TO_COLOR } from '../outcome-label'
-import { useSaveShares } from '../use-save-shares'
-import { sellShares } from 'web/lib/firebase/api-call'
+import { useSaveBinaryShares } from '../use-save-binary-shares'
+import { sellShares } from 'web/lib/firebase/api'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
+import { formatNumericProbability } from 'common/pseudo-numeric'
+import { useUnfilledBets } from 'web/hooks/use-bets'
 
 const BET_SIZE = 10
 
-export function QuickBet(props: { contract: Contract; user: User }) {
+export function QuickBet(props: {
+  contract: BinaryContract | PseudoNumericContract
+  user: User
+}) {
   const { contract, user } = props
-  const isCpmm = contract.mechanism === 'cpmm-1'
+  const { mechanism, outcomeType } = contract
+  const isCpmm = mechanism === 'cpmm-1'
 
   const userBets = useUserContractBets(user.id, contract.id)
-  const topAnswer =
-    contract.outcomeType === 'FREE_RESPONSE'
-      ? getTopAnswer(contract)
-      : undefined
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  // TODO: yes/no from useSaveShares doesn't work on numeric contracts
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
-    contract,
-    userBets,
-    topAnswer?.number.toString() || undefined
-  )
-  const hasUpShares =
-    yesFloorShares || (noFloorShares && contract.outcomeType === 'NUMERIC')
-  const hasDownShares =
-    noFloorShares && yesFloorShares <= 0 && contract.outcomeType !== 'NUMERIC'
+  const { hasYesShares, hasNoShares, yesShares, noShares } =
+    useSaveBinaryShares(contract, userBets)
+  const hasUpShares = hasYesShares
+  const hasDownShares = hasNoShares && !hasUpShares
 
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
@@ -84,13 +88,14 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
       sharesSold = Math.min(oppositeShares, maxSharesSold)
 
-      const { newPool, saleValue } = calculateCpmmSale(
+      const { cpmmState, saleValue } = calculateCpmmSale(
         contract,
         sharesSold,
-        sellOutcome
+        sellOutcome,
+        unfilledBets
       )
       saleAmount = saleValue
-      previewProb = getCpmmProbability(newPool, contract.p)
+      previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
     }
   }
 
@@ -130,29 +135,10 @@ export function QuickBet(props: { contract: Contract; user: User }) {
     })
   }
 
-  function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
-    if (contract.outcomeType === 'BINARY') {
-      return direction === 'UP' ? 'YES' : 'NO'
-    }
-    if (contract.outcomeType === 'FREE_RESPONSE') {
-      // TODO: Implement shorting of free response answers
-      if (direction === 'DOWN') {
-        throw new Error("Can't bet against free response answers")
-      }
-      return getTopAnswer(contract)?.id
-    }
-    if (contract.outcomeType === 'NUMERIC') {
-      // TODO: Ideally an 'UP' bet would be a uniform bet between [current, max]
-      throw new Error("Can't quick bet on numeric markets")
-    }
-  }
-
-  const textColor = `text-${getColor(contract)}`
-
   return (
     <Col
       className={clsx(
-        'relative -my-4 -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle'
+        'relative min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle'
         // Use this for colored QuickBet panes
         // `bg-opacity-10 bg-${color}`
       )}
@@ -169,18 +155,18 @@ export function QuickBet(props: { contract: Contract; user: User }) {
           {formatMoney(10)}
         </div>
 
-        {hasUpShares > 0 ? (
+        {hasUpShares ? (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? textColor : 'text-gray-400'
+              upHover ? 'text-green-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? textColor : 'text-gray-200'
+              upHover ? 'text-green-500' : 'text-gray-200'
             )}
           />
         )}
@@ -189,7 +175,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
 
       {/* Down bet triangle */}
-      {contract.outcomeType !== 'BINARY' ? (
+      {outcomeType !== 'BINARY' && outcomeType !== 'PSEUDO_NUMERIC' ? (
         <div>
           <div className="peer absolute bottom-0 left-0 right-0 h-[50%] cursor-default"></div>
           <TriangleDownFillIcon
@@ -204,7 +190,7 @@ export function QuickBet(props: { contract: Contract; user: User }) {
             onMouseLeave={() => setDownHover(false)}
             onClick={() => placeQuickBet('DOWN')}
           ></div>
-          {hasDownShares > 0 ? (
+          {hasDownShares ? (
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',
@@ -254,6 +240,25 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
   )
 }
 
+function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
+  const { outcomeType } = contract
+
+  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
+    return direction === 'UP' ? 'YES' : 'NO'
+  }
+  if (outcomeType === 'FREE_RESPONSE') {
+    // TODO: Implement shorting of free response answers
+    if (direction === 'DOWN') {
+      throw new Error("Can't bet against free response answers")
+    }
+    return getTopAnswer(contract)?.id
+  }
+  if (outcomeType === 'NUMERIC') {
+    // TODO: Ideally an 'UP' bet would be a uniform bet between [current, max]
+    throw new Error("Can't quick bet on numeric markets")
+  }
+}
+
 function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
@@ -261,15 +266,25 @@ function QuickOutcomeView(props: {
 }) {
   const { contract, previewProb, caption } = props
   const { outcomeType } = contract
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+
   // If there's a preview prob, display that instead of the current prob
   const override =
-    previewProb === undefined ? undefined : formatPercent(previewProb)
+    previewProb === undefined
+      ? undefined
+      : isPseudoNumeric
+      ? formatNumericProbability(previewProb, contract)
+      : formatPercent(previewProb)
+
   const textColor = `text-${getColor(contract)}`
 
   let display: string | undefined
   switch (outcomeType) {
     case 'BINARY':
       display = getBinaryProbPercent(contract)
+      break
+    case 'PSEUDO_NUMERIC':
+      display = formatNumericProbability(getProbability(contract), contract)
       break
     case 'NUMERIC':
       display = formatLargeNumber(getExpectedValue(contract))
@@ -295,12 +310,16 @@ function QuickOutcomeView(props: {
 // Return a number from 0 to 1 for this contract
 // Resolved contracts are set to 1, for coloring purposes (even if NO)
 function getProb(contract: Contract) {
-  const { outcomeType, resolution } = contract
-  return resolution
+  const { outcomeType, resolution, resolutionProbability } = contract
+  return resolutionProbability
+    ? resolutionProbability
+    : resolution
     ? 1
     : outcomeType === 'BINARY'
     ? getBinaryProb(contract)
-    : outcomeType === 'FREE_RESPONSE'
+    : outcomeType === 'PSEUDO_NUMERIC'
+    ? getProbability(contract)
+    : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
     ? getNumericScale(contract)
@@ -316,7 +335,8 @@ function getNumericScale(contract: NumericContract) {
 export function getColor(contract: Contract) {
   // TODO: Try injecting a gradient here
   // return 'primary'
-  const { resolution } = contract
+  const { resolution, outcomeType } = contract
+
   if (resolution) {
     return (
       OUTCOME_TO_COLOR[resolution as resolution] ??
@@ -324,6 +344,8 @@ export function getColor(contract: Contract) {
       'primary'
     )
   }
+
+  if (outcomeType === 'PSEUDO_NUMERIC') return 'blue-400'
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return 'gray-400'

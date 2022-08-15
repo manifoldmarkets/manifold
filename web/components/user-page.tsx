@@ -1,18 +1,12 @@
 import clsx from 'clsx'
-import { uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import { PencilIcon } from '@heroicons/react/outline'
-import Confetti from 'react-confetti'
 
-import {
-  follow,
-  unfollow,
-  User,
-  getPortfolioHistory,
-} from 'web/lib/firebase/users'
-import { CreatorContractsList } from './contract/contracts-list'
+import { User } from 'web/lib/firebase/users'
+import { useUser } from 'web/hooks/use-user'
+import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './page'
 import { SiteLink } from './site-link'
@@ -22,110 +16,64 @@ import { Linkify } from './linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
-import { Tabs } from './layout/tabs'
+import { QueryUncontrolledTabs } from './layout/tabs'
 import { UserCommentsList } from './comments-list'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import { Comment, getUsersComments } from 'web/lib/firebase/comments'
-import { Contract } from 'common/contract'
-import { getContractFromId, listContracts } from 'web/lib/firebase/contracts'
-import { LoadingIndicator } from './loading-indicator'
+import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { BetsList } from './bets-list'
-import { Bet } from 'common/bet'
-import { getUserBets } from 'web/lib/firebase/bets'
 import { FollowersButton, FollowingButton } from './following-button'
-import { useFollows } from 'web/hooks/use-follows'
-import { FollowButton } from './follow-button'
-import { PortfolioMetrics } from 'common/user'
+import { UserFollowButton } from './follow-button'
+import { GroupsButton } from 'web/components/groups/groups-button'
+import { PortfolioValueSection } from './portfolio/portfolio-value-section'
+import { ReferralsButton } from 'web/components/referrals-button'
+import { formatMoney } from 'common/util/format'
+import { ShareIconButton } from 'web/components/share-icon-button'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function UserLink(props: {
   name: string
   username: string
   showUsername?: boolean
   className?: string
+  short?: boolean
 }) {
-  const { name, username, showUsername, className } = props
-
+  const { name, username, showUsername, className, short } = props
+  const firstName = name.split(' ')[0]
+  const maxLength = 10
+  const shortName =
+    firstName.length >= 3
+      ? firstName.length < maxLength
+        ? firstName
+        : firstName.substring(0, maxLength - 3) + '...'
+      : name.length > maxLength
+      ? name.substring(0, maxLength) + '...'
+      : name
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx('z-10 truncate', className)}
     >
-      {name}
+      {short ? shortName : name}
       {showUsername && ` (@${username})`}
     </SiteLink>
   )
 }
 
 export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
-const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
-export function UserPage(props: {
-  user: User
-  currentUser?: User
-  defaultTabTitle?: string | undefined
-}) {
-  const { user, currentUser, defaultTabTitle } = props
+export function UserPage(props: { user: User }) {
+  const { user } = props
   const router = useRouter()
+  const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
-  const [usersComments, setUsersComments] = useState<Comment[]>([] as Comment[])
-  const [usersContracts, setUsersContracts] = useState<Contract[] | 'loading'>(
-    'loading'
-  )
-  const [usersBets, setUsersBets] = useState<Bet[] | 'loading'>('loading')
-  const [, setUsersPortfolioHistory] = useState<PortfolioMetrics[]>([])
-  const [commentsByContract, setCommentsByContract] = useState<
-    Map<Contract, Comment[]> | 'loading'
-  >('loading')
   const [showConfetti, setShowConfetti] = useState(false)
-  const { width, height } = useWindowSize()
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
     setShowConfetti(claimedMana)
   }, [router])
 
-  useEffect(() => {
-    if (!user) return
-    getUsersComments(user.id).then(setUsersComments)
-    listContracts(user.id).then(setUsersContracts)
-    getUserBets(user.id, { includeRedemptions: false }).then(setUsersBets)
-    getPortfolioHistory(user.id).then(setUsersPortfolioHistory)
-  }, [user])
-
-  // TODO: display comments on groups
-  useEffect(() => {
-    const uniqueContractIds = uniq(
-      usersComments.map((comment) => comment.contractId)
-    )
-    Promise.all(
-      uniqueContractIds.map(
-        (contractId) => contractId && getContractFromId(contractId)
-      )
-    ).then((contracts) => {
-      const commentsByContract = new Map<Contract, Comment[]>()
-      contracts.forEach((contract) => {
-        if (!contract) return
-        commentsByContract.set(
-          contract,
-          usersComments.filter((comment) => comment.contractId === contract.id)
-        )
-      })
-      setCommentsByContract(commentsByContract)
-    })
-  }, [usersComments])
-
-  const yourFollows = useFollows(currentUser?.id)
-  const isFollowing = yourFollows?.includes(user.id)
-
-  const onFollow = () => {
-    if (!currentUser) return
-    follow(currentUser.id, user.id)
-  }
-  const onUnfollow = () => {
-    if (!currentUser) return
-    unfollow(currentUser.id, user.id)
-  }
+  const profit = user.profitCached.allTime
 
   return (
     <Page key={user.id}>
@@ -135,12 +83,7 @@ export function UserPage(props: {
         url={`/${user.username}`}
       />
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
@@ -154,20 +97,14 @@ export function UserPage(props: {
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
-            size={20}
+            size={24}
             className="bg-white ring-4 ring-white"
           />
         </div>
 
         {/* Top right buttons (e.g. edit, follow) */}
         <div className="absolute right-0 top-0 mt-4 mr-4">
-          {!isCurrentUser && (
-            <FollowButton
-              isFollowing={isFollowing}
-              onFollow={onFollow}
-              onUnfollow={onUnfollow}
-            />
-          )}
+          {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
             <SiteLink className="btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}
@@ -181,9 +118,18 @@ export function UserPage(props: {
       <Col className="mx-4 -mt-6">
         <span className="text-2xl font-bold">{user.name}</span>
         <span className="text-gray-500">@{user.username}</span>
-
+        <span className="text-gray-500">
+          <span
+            className={clsx(
+              'text-md',
+              profit >= 0 ? 'text-green-600' : 'text-red-400'
+            )}
+          >
+            {formatMoney(profit)}
+          </span>{' '}
+          profit
+        </span>
         <Spacer h={4} />
-
         {user.bio && (
           <>
             <div>
@@ -192,11 +138,15 @@ export function UserPage(props: {
             <Spacer h={4} />
           </>
         )}
-
-        <Col className="gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <Col className="flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-4">
           <Row className="gap-4">
             <FollowingButton user={user} />
             <FollowersButton user={user} />
+            {currentUser &&
+              ['ian', 'Austin', 'SG', 'JamesGrugett'].includes(
+                currentUser.username
+              ) && <ReferralsButton user={user} />}
+            <GroupsButton user={user} />
           </Row>
 
           {user.website && (
@@ -249,68 +199,53 @@ export function UserPage(props: {
             </SiteLink>
           )}
         </Col>
-
-        <Spacer h={10} />
-
-        {usersContracts !== 'loading' && commentsByContract != 'loading' ? (
-          <Tabs
-            className={'pb-2 pt-1 '}
-            defaultIndex={
-              defaultTabTitle ? TAB_IDS.indexOf(defaultTabTitle) : 0
+        <Spacer h={5} />
+        {currentUser?.id === user.id && (
+          <Row
+            className={
+              'w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
             }
-            onClick={(tabName) => {
-              const tabId = tabName.toLowerCase()
-              const subpath = tabId === 'markets' ? '' : '?tab=' + tabId
-              // BUG: if you start on `/Bob/bets`, then click on Markets, use-query-and-sort-params
-              // rewrites the url incorrectly to `/Bob/bets` instead of `/Bob`
-              router.push(`/${user.username}${subpath}`, undefined, {
-                shallow: true,
-              })
-            }}
-            tabs={[
-              {
-                title: 'Markets',
-                content: <CreatorContractsList creator={user} />,
-                tabIcon: (
-                  <div className="px-0.5 font-bold">
-                    {usersContracts.length}
-                  </div>
-                ),
-              },
-              {
-                title: 'Comments',
-                content: (
-                  <UserCommentsList
-                    user={user}
-                    commentsByUniqueContracts={commentsByContract}
-                  />
-                ),
-                tabIcon: (
-                  <div className="px-0.5 font-bold">{usersComments.length}</div>
-                ),
-              },
-              {
-                title: 'Bets',
-                content: (
-                  <div>
-                    {
-                      // TODO: add portfolio-value-section here
-                    }
-                    <BetsList
-                      user={user}
-                      hideBetsBefore={isCurrentUser ? 0 : JUNE_1_2022}
-                    />
-                  </div>
-                ),
-                tabIcon: (
-                  <div className="px-0.5 font-bold">{usersBets.length}</div>
-                ),
-              },
-            ]}
-          />
-        ) : (
-          <LoadingIndicator />
+          >
+            <span>
+              <SiteLink href="/referrals">
+                Refer a friend and earn {formatMoney(500)} when they sign up!
+              </SiteLink>{' '}
+              You have <ReferralsButton user={user} currentUser={currentUser} />
+            </span>
+            <ShareIconButton
+              copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
+              toastClassName={'sm:-left-40 -left-40 min-w-[250%]'}
+              buttonClassName={'h-10 w-10'}
+              iconClassName={'h-8 w-8 text-indigo-700'}
+            />
+          </Row>
         )}
+        <Spacer h={5} />
+        <QueryUncontrolledTabs
+          currentPageForAnalytics={'profile'}
+          labelClassName={'pb-2 pt-1 '}
+          tabs={[
+            {
+              title: 'Markets',
+              content: (
+                <CreatorContractsList user={currentUser} creator={user} />
+              ),
+            },
+            {
+              title: 'Comments',
+              content: <UserCommentsList user={user} />,
+            },
+            {
+              title: 'Bets',
+              content: (
+                <>
+                  <PortfolioValueSection userId={user.id} />
+                  <BetsList user={user} />
+                </>
+              ),
+            },
+          ]}
+        />
       </Col>
     </Page>
   )

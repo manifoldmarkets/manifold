@@ -1,17 +1,17 @@
 import clsx from 'clsx'
-import { sum, mapValues } from 'lodash'
+import { sum } from 'lodash'
 import { useState } from 'react'
 
-import { Contract, FreeResponse } from 'common/contract'
+import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { resolveMarket } from 'web/lib/firebase/fn-call'
+import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerResolvePanel(props: {
-  contract: Contract & FreeResponse
+  contract: FreeResponseContract | MultipleChoiceContract
   resolveOption: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   setResolveOption: (
     option: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
@@ -31,30 +31,34 @@ export function AnswerResolvePanel(props: {
     setIsSubmitting(true)
 
     const totalProb = sum(Object.values(chosenAnswers))
-    const normalizedProbs = mapValues(
-      chosenAnswers,
-      (prob) => (100 * prob) / totalProb
-    )
+    const resolutions = Object.entries(chosenAnswers).map(([i, p]) => {
+      return { answer: parseInt(i), pct: (100 * p) / totalProb }
+    })
 
     const resolutionProps = removeUndefinedProps({
       outcome:
         resolveOption === 'CHOOSE'
-          ? answers[0]
+          ? parseInt(answers[0])
           : resolveOption === 'CHOOSE_MULTIPLE'
           ? 'MKT'
           : 'CANCEL',
       resolutions:
-        resolveOption === 'CHOOSE_MULTIPLE' ? normalizedProbs : undefined,
+        resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
       contractId: contract.id,
     })
 
-    const result = await resolveMarket(resolutionProps).then((r) => r.data)
-
-    console.log('resolved', resolutionProps, 'result:', result)
-
-    if (result?.status !== 'success') {
-      setError(result?.message || 'Error resolving market')
+    try {
+      const result = await resolveMarket(resolutionProps)
+      console.log('resolved', resolutionProps, 'result:', result)
+    } catch (e) {
+      if (e instanceof APIError) {
+        setError(e.toString())
+      } else {
+        console.error(e)
+        setError('Error resolving market')
+      }
     }
+
     setResolveOption(undefined)
     setIsSubmitting(false)
   }

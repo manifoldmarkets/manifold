@@ -1,3 +1,6 @@
+import React from 'react'
+import clsx from 'clsx'
+
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
@@ -5,21 +8,20 @@ import { ContractProbGraph } from './contract-prob-graph'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
-import clsx from 'clsx'
-
 import {
-  FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
+  FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
+  PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
 import BetRow from '../bet-row'
 import { AnswersGraph } from '../answers/answers-graph'
-import { Contract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
-import { ShareMarket } from '../share-market'
 import { NumericGraph } from './numeric-graph'
+import { ShareRow } from './share-row'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -31,7 +33,9 @@ export const ContractOverview = (props: {
 
   const user = useUser()
   const isCreator = user?.id === creatorId
+
   const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <Col className={clsx('mb-6', className)}>
@@ -49,6 +53,13 @@ export const ContractOverview = (props: {
             />
           )}
 
+          {isPseudoNumeric && (
+            <PseudoNumericResolutionOrExpectation
+              contract={contract}
+              className="hidden items-end xl:flex"
+            />
+          )}
+
           {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
               contract={contract}
@@ -61,10 +72,23 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
 
+            {tradingAllowed(contract) && (
+              <BetRow contract={contract as CPMMBinaryContract} />
+            )}
+          </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
+            {tradingAllowed(contract) && <BetRow contract={contract} />}
+          </Row>
+        ) : isPseudoNumeric ? (
+          <Row className="items-center justify-between gap-4 xl:hidden">
+            <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && <BetRow contract={contract} />}
           </Row>
         ) : (
-          outcomeType === 'FREE_RESPONSE' &&
+          (outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') &&
           resolution && (
             <FreeResponseResolutionOrChance
               contract={contract}
@@ -86,13 +110,15 @@ export const ContractOverview = (props: {
         />
       </Col>
       <Spacer h={4} />
-      {isBinary && <ContractProbGraph contract={contract} bets={bets} />}{' '}
-      {outcomeType === 'FREE_RESPONSE' && (
+      {(isBinary || isPseudoNumeric) && (
+        <ContractProbGraph contract={contract} bets={bets} />
+      )}{' '}
+      {(outcomeType === 'FREE_RESPONSE' ||
+        outcomeType === 'MULTIPLE_CHOICE') && (
         <AnswersGraph contract={contract} bets={bets} />
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
-      {(contract.description || isCreator) && <Spacer h={6} />}
-      {isCreator && <ShareMarket className="px-2" contract={contract} />}
+      <ShareRow user={user} contract={contract} />
       <ContractDescription
         className="px-2"
         contract={contract}

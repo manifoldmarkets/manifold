@@ -3,14 +3,13 @@ import Link from 'next/link'
 import {
   HomeIcon,
   MenuAlt3Icon,
-  PresentationChartLineIcon,
   SearchIcon,
   XIcon,
 } from '@heroicons/react/outline'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
 import Sidebar, { Item } from './sidebar'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import clsx from 'clsx'
@@ -18,15 +17,12 @@ import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
+import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
+import { PrivateUser } from 'common/user'
 
-function getNavigation(username: string) {
+function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
-    {
-      name: 'Portfolio',
-      href: `/${username}?tab=bets`,
-      icon: PresentationChartLineIcon,
-    },
     {
       name: 'Notifications',
       href: `/notifications`,
@@ -48,6 +44,7 @@ export function BottomNavBar() {
   const currentPage = router.pathname
 
   const user = useUser()
+  const privateUser = usePrivateUser()
 
   const isIframe = useIsIframe()
   if (isIframe) {
@@ -55,37 +52,43 @@ export function BottomNavBar() {
   }
 
   const navigationOptions =
-    user === null
-      ? signedOutNavigation
-      : getNavigation(user?.username || 'error')
+    user === null ? signedOutNavigation : getNavigation()
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem key={item.name} item={item} currentPage={currentPage} />
       ))}
+
+      {user && (
+        <NavBarItem
+          key={'profile'}
+          currentPage={currentPage}
+          item={{
+            name: formatMoney(user.balance),
+            trackingEventName: 'profile',
+            href: `/${user.username}?tab=bets`,
+            icon: () => (
+              <Avatar
+                className="mx-auto my-1"
+                size="xs"
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                noLink
+              />
+            ),
+          }}
+        />
+      )}
       <div
         className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
         onClick={() => setSidebarOpen(true)}
       >
-        {user === null ? (
-          <>
-            <MenuAlt3Icon className="my-1 mx-auto h-6 w-6" aria-hidden="true" />
-            More
-          </>
-        ) : user ? (
-          <>
-            <Avatar
-              className="mx-auto my-1"
-              size="xs"
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              noLink
-            />
-            {formatMoney(user.balance)}
-          </>
+        <MenuAlt3Icon className=" my-1 mx-auto h-6 w-6" aria-hidden="true" />
+        {privateUser ? (
+          <MoreMenuWithGroupNotifications privateUser={privateUser} />
         ) : (
-          <></>
+          'More'
         )}
       </div>
 
@@ -97,8 +100,25 @@ export function BottomNavBar() {
   )
 }
 
+function MoreMenuWithGroupNotifications(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
+  const preferredNotifications = useUnseenPreferredNotifications(privateUser, {
+    customHref: '/group/',
+  })
+  return (
+    <span
+      className={
+        preferredNotifications.length > 0 ? 'font-bold' : 'font-normal'
+      }
+    >
+      More
+    </span>
+  )
+}
+
 function NavBarItem(props: { item: Item; currentPage: string }) {
   const { item, currentPage } = props
+  const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
 
   return (
     <Link href={item.href}>
@@ -107,9 +127,9 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
           'block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700',
           currentPage === item.href && 'bg-gray-200 text-indigo-700'
         )}
-        onClick={trackCallback('navbar: ' + item.name)}
+        onClick={track}
       >
-        <item.icon className="my-1 mx-auto h-6 w-6" />
+        {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
         {item.name}
       </a>
     </Link>
@@ -150,7 +170,7 @@ export function MobileSidebar(props: {
             leaveFrom="translate-x-0"
             leaveTo="-translate-x-full"
           >
-            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
+            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white">
               <Transition.Child
                 as={Fragment}
                 enter="ease-in-out duration-300"
@@ -171,7 +191,7 @@ export function MobileSidebar(props: {
                   </button>
                 </div>
               </Transition.Child>
-              <div className="mx-2 mt-5 h-0 flex-1 overflow-y-auto">
+              <div className="mx-2 h-0 flex-1 overflow-y-auto">
                 <Sidebar className="pl-2" />
               </div>
             </div>

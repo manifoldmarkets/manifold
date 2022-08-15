@@ -1,4 +1,5 @@
 const defaultTheme = require('tailwindcss/defaultTheme')
+const plugin = require('tailwindcss/plugin')
 
 module.exports = {
   content: [
@@ -17,6 +18,23 @@ module.exports = {
       backgroundImage: {
         'world-trading': "url('/world-trading-background.webp')",
       },
+      colors: {
+        'greyscale-1': '#FBFBFF',
+        'greyscale-2': '#E7E7F4',
+        'greyscale-3': '#D8D8EB',
+        'greyscale-4': '#B1B1C7',
+        'greyscale-5': '#9191A7',
+        'greyscale-6': '#66667C',
+        'greyscale-7': '#111140',
+      },
+      typography: {
+        quoteless: {
+          css: {
+            'blockquote p:first-of-type::before': { content: 'none' },
+            'blockquote p:first-of-type::after': { content: 'none' },
+          },
+        },
+      },
     },
   },
   plugins: [
@@ -24,6 +42,22 @@ module.exports = {
     require('@tailwindcss/typography'),
     require('@tailwindcss/line-clamp'),
     require('daisyui'),
+    plugin(function ({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-hide': {
+          /* IE and Edge */
+          '-ms-overflow-style': 'none',
+
+          /* Firefox */
+          'scrollbar-width': 'none',
+
+          /* Safari and Chrome */
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        },
+      })
+    }),
   ],
   daisyui: {
     themes: [

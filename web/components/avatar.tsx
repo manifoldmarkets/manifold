@@ -31,6 +31,7 @@ export function Avatar(props: {
         !noLink && 'cursor-pointer',
         className
       )}
+      style={{ maxWidth: `${s * 0.25}rem` }}
       src={avatarUrl}
       onClick={onClick}
       alt={username}
@@ -46,14 +47,21 @@ export function Avatar(props: {
   )
 }
 
-export function EmptyAvatar(props: { size?: number; multi?: boolean }) {
-  const { size = 8, multi } = props
+export function EmptyAvatar(props: {
+  className?: string
+  size?: number
+  multi?: boolean
+}) {
+  const { className, size = 8, multi } = props
   const insize = size - 3
   const Icon = multi ? UsersIcon : UserIcon
 
   return (
     <div
-      className={`flex h-${size} w-${size} items-center justify-center rounded-full bg-gray-200`}
+      className={clsx(
+        `flex flex-shrink-0 h-${size} w-${size} items-center justify-center rounded-full bg-gray-200`,
+        className
+      )}
     >
       <Icon className={`h-${insize} w-${insize} text-gray-500`} aria-hidden />
     </div>

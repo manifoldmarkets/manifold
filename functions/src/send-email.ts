@@ -26,16 +26,20 @@ export const sendTemplateEmail = (
   subject: string,
   templateId: string,
   templateData: Record<string, string>,
-  options?: { from: string }
+  options?: Partial<mailgun.messages.SendTemplateData>
 ) => {
-  const data = {
+  const data: mailgun.messages.SendTemplateData = {
+    ...options,
     from: options?.from ?? 'Manifold Markets <info@manifold.markets>',
     to,
     subject,
     template: templateId,
     'h:X-Mailgun-Variables': JSON.stringify(templateData),
+    'o:tag': templateId,
+    'o:tracking': true,
   }
   const mg = initMailgun()
+
   return mg.messages().send(data, (error) => {
     if (error) console.log('Error sending email', error)
     else console.log('Sent template email', templateId, to, subject)

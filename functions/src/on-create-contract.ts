@@ -2,6 +2,8 @@ import * as functions from 'firebase-functions'
 import { getUser } from './utils'
 import { createNotification } from './create-notification'
 import { Contract } from '../../common/contract'
+import { parseMentions, richTextToString } from '../../common/util/parse'
+import { JSONContent } from '@tiptap/core'
 
 export const onCreateContract = functions.firestore
   .document('contracts/{contractId}')
@@ -12,13 +14,16 @@ export const onCreateContract = functions.firestore
     const contractCreator = await getUser(contract.creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
 
+    const desc = contract.description as JSONContent
+    const mentioned = parseMentions(desc)
+
     await createNotification(
       contract.id,
       'contract',
       'created',
       contractCreator,
       eventId,
-      contract.description,
-      contract
+      richTextToString(desc),
+      { contract, recipients: mentioned }
     )
   })

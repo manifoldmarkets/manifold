@@ -1,15 +1,14 @@
-import { ManalinkTxn, DonationTxn, TipTxn } from 'common/txn'
-import { collection, orderBy, query, where } from 'firebase/firestore'
-import { db } from './init'
-import { getValues, listenForValues } from './utils'
+import { ManalinkTxn, DonationTxn, TipTxn, Txn } from 'common/txn'
+import { orderBy, query, where } from 'firebase/firestore'
+import { coll, getValues, listenForValues } from './utils'
 import { useState, useEffect } from 'react'
 import { orderBy as _orderBy } from 'lodash'
 
-const txnCollection = collection(db, 'txns')
+export const txns = coll<Txn>('txns')
 
 const getCharityQuery = (charityId: string) =>
   query(
-    txnCollection,
+    txns,
     where('toType', '==', 'CHARITY'),
     where('toId', '==', charityId),
     orderBy('createdTime', 'desc')
@@ -22,24 +21,37 @@ export function listenForCharityTxns(
   return listenForValues<DonationTxn>(getCharityQuery(charityId), setTxns)
 }
 
-const charitiesQuery = query(txnCollection, where('toType', '==', 'CHARITY'))
+const charitiesQuery = query(txns, where('toType', '==', 'CHARITY'))
 
 export function getAllCharityTxns() {
   return getValues<DonationTxn>(charitiesQuery)
 }
 
-const getTipsQuery = (contractId: string) =>
+const getTipsOnContractQuery = (contractId: string) =>
   query(
-    txnCollection,
+    txns,
     where('category', '==', 'TIP'),
     where('data.contractId', '==', contractId)
+  )
+
+const getTipsOnGroupQuery = (groupId: string) =>
+  query(
+    txns,
+    where('category', '==', 'TIP'),
+    where('data.groupId', '==', groupId)
   )
 
 export function listenForTipTxns(
   contractId: string,
   setTxns: (txns: TipTxn[]) => void
 ) {
-  return listenForValues<TipTxn>(getTipsQuery(contractId), setTxns)
+  return listenForValues<TipTxn>(getTipsOnContractQuery(contractId), setTxns)
+}
+export function listenForTipTxnsOnGroup(
+  groupId: string,
+  setTxns: (txns: TipTxn[]) => void
+) {
+  return listenForValues<TipTxn>(getTipsOnGroupQuery(groupId), setTxns)
 }
 
 // Find all manalink Txns that are from or to this user
@@ -50,13 +62,13 @@ export function useManalinkTxns(userId: string) {
   useEffect(() => {
     // TODO: Need to instantiate these indexes too
     const fromQuery = query(
-      txnCollection,
+      txns,
       where('fromId', '==', userId),
       where('category', '==', 'MANALINK'),
       orderBy('createdTime', 'desc')
     )
     const toQuery = query(
-      txnCollection,
+      txns,
       where('toId', '==', userId),
       where('category', '==', 'MANALINK'),
       orderBy('createdTime', 'desc')

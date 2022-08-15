@@ -1,3 +1,5 @@
+import { ENV_CONFIG } from './envs/constants'
+
 export type User = {
   id: string
   createdTime: number
@@ -33,10 +35,18 @@ export type User = {
   followerCountCached: number
 
   followedCategories?: string[]
+
+  referredByUserId?: string
+  referredByContractId?: string
+  referredByGroupId?: string
+  lastPingTime?: number
+  shouldShowWelcome?: boolean
 }
 
-export const STARTING_BALANCE = 1000
-export const SUS_STARTING_BALANCE = 10 // for sus users, i.e. multiple sign ups for same person
+export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
+// for sus users, i.e. multiple sign ups for same person
+export const SUS_STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 10
+export const REFERRAL_AMOUNT = ENV_CONFIG.referralBonus ?? 500
 
 export type PrivateUser = {
   id: string // same as User.id
@@ -47,6 +57,7 @@ export type PrivateUser = {
   unsubscribedFromCommentEmails?: boolean
   unsubscribedFromAnswerEmails?: boolean
   unsubscribedFromGenericEmails?: boolean
+  manaBonusEmailSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
   apiKey?: string
@@ -62,3 +73,6 @@ export type PortfolioMetrics = {
   timestamp: number
   userId: string
 }
+
+export const MANIFOLD_USERNAME = 'ManifoldMarkets'
+export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'

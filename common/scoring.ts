@@ -42,10 +42,10 @@ export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
   )
   const { payouts: resolvePayouts } = getPayouts(
     resolution as string,
-    {},
     contract,
     openBets,
     [],
+    {},
     resolutionProb
   )
 

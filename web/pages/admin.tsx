@@ -9,6 +9,9 @@ import { useContracts } from 'web/hooks/use-contracts'
 import { mapKeys } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+
+export const getServerSideProps = redirectIfLoggedOut('/')
 
 function avatarHtml(avatarUrl: string) {
   return `<img
@@ -63,12 +66,18 @@ function UsersTable() {
               href="/${cell}">@${cell}</a>`),
           },
           {
+            id: 'name',
+            name: 'Name',
+            formatter: (cell) =>
+              html(`<span class="whitespace-nowrap">${cell}</span>`),
+          },
+          {
             id: 'email',
             name: 'Email',
           },
           {
             id: 'createdTime',
-            name: 'Created Time',
+            name: 'Created',
             formatter: (cell) =>
               html(
                 `<span class="whitespace-nowrap">${dayjs(cell as number).format(

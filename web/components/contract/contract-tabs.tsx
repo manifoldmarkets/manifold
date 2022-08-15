@@ -8,20 +8,30 @@ import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
-import { LiquidityProvision } from 'common/liquidity-provision'
+import { useComments } from 'web/hooks/use-comments'
+import { useLiquidity } from 'web/hooks/use-liquidity'
 
 export function ContractTabs(props: {
   contract: Contract
   user: User | null | undefined
   bets: Bet[]
-  liquidityProvisions: LiquidityProvision[]
   comments: Comment[]
   tips: CommentTipMap
 }) {
-  const { contract, user, bets, comments, tips, liquidityProvisions } = props
+  const { contract, user, bets, tips } = props
   const { outcomeType } = contract
 
   const userBets = user && bets.filter((bet) => bet.userId === user.id)
+  const visibleBets = bets.filter(
+    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
+  )
+
+  const liquidityProvisions =
+    useLiquidity(contract.id)?.filter((l) => !l.isAnte && l.amount > 0) ?? []
+
+  // Load comments here, so the badge count will be correct
+  const updatedComments = useComments(contract.id)
+  const comments = updatedComments ?? props.comments
 
   const betActivity = (
     <ContractActivity
@@ -87,9 +97,14 @@ export function ContractTabs(props: {
 
   return (
     <Tabs
+      currentPageForAnalytics={'contract'}
       tabs={[
-        { title: 'Comments', content: commentActivity },
-        { title: 'Bets', content: betActivity },
+        {
+          title: 'Comments',
+          content: commentActivity,
+          badge: `${comments.length}`,
+        },
+        { title: 'Bets', content: betActivity, badge: `${visibleBets.length}` },
         ...(!user || !userBets?.length
           ? []
           : [{ title: 'Your bets', content: yourTrades }]),

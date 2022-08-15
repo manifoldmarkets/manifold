@@ -25,6 +25,7 @@ export default function Analytics() {
   return (
     <Page>
       <Tabs
+        currentPageForAnalytics={'stats'}
         tabs={[
           {
             title: 'Activity',

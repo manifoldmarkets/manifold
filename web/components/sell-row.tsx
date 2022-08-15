@@ -1,4 +1,4 @@
-import { BinaryContract } from 'common/contract'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { Col } from './layout/col'
@@ -6,11 +6,11 @@ import { Row } from './layout/row'
 import { formatWithCommas } from 'common/util/format'
 import { OutcomeLabel } from './outcome-label'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useSaveShares } from './use-save-shares'
+import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SellSharesModal } from './sell-modal'
 
 export function SellRow(props: {
-  contract: BinaryContract
+  contract: BinaryContract | PseudoNumericContract
   user: User | null | undefined
   className?: string
 }) {
@@ -20,16 +20,7 @@ export function SellRow(props: {
   const [showSellModal, setShowSellModal] = useState(false)
 
   const { mechanism } = contract
-  const { yesFloorShares, noFloorShares, yesShares, noShares } = useSaveShares(
-    contract,
-    userBets
-  )
-  const floorShares = yesFloorShares || noFloorShares
-  const sharesOutcome = yesFloorShares
-    ? 'YES'
-    : noFloorShares
-    ? 'NO'
-    : undefined
+  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
 
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
@@ -37,7 +28,7 @@ export function SellRow(props: {
         <Col className={className}>
           <Row className="items-center justify-between gap-2 ">
             <div>
-              You have {formatWithCommas(floorShares)}{' '}
+              You have {formatWithCommas(shares)}{' '}
               <OutcomeLabel
                 outcome={sharesOutcome}
                 contract={contract}
@@ -64,7 +55,7 @@ export function SellRow(props: {
             contract={contract}
             user={user}
             userBets={userBets ?? []}
-            shares={yesShares || noShares}
+            shares={shares}
             sharesOutcome={sharesOutcome}
             setOpen={setShowSellModal}
           />
