@@ -72,7 +72,7 @@ export function ContractCard(props: {
         className
       )}
     >
-      <Col className="group relative flex-1 gap-3 py-4 pl-6">
+      <Col className="group relative flex-1 gap-3 py-4 pb-12  pl-6">
         {onClick ? (
           <a
             className="absolute top-0 left-0 right-0 bottom-0"
@@ -100,7 +100,10 @@ export function ContractCard(props: {
             />
           </Link>
         )}
-        <AvatarDetails contract={contract} />
+        <AvatarDetails
+          contract={contract}
+          className={'hidden md:inline-flex'}
+        />
         <p
           className="break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2"
           style={{ /* For iOS safari */ wordBreak: 'break-word' }}
@@ -119,13 +122,19 @@ export function ContractCard(props: {
           ) : (
             <FreeResponseTopAnswer contract={contract} truncate="long" />
           ))}
-
-        <MiscDetails
-          contract={contract}
-          showHotVolume={showHotVolume}
-          showTime={showTime}
-          hideGroupLink={hideGroupLink}
-        />
+        <Row className={'absolute bottom-3 gap-2 md:gap-0'}>
+          <AvatarDetails
+            contract={contract}
+            short={true}
+            className={'block md:hidden'}
+          />
+          <MiscDetails
+            contract={contract}
+            showHotVolume={showHotVolume}
+            showTime={showTime}
+            hideGroupLink={hideGroupLink}
+          />
+        </Row>
       </Col>
       {showQuickBet ? (
         <QuickBet contract={contract} user={user} />
