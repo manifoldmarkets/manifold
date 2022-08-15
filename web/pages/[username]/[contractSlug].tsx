@@ -227,7 +227,8 @@ export function ContractPageContent(
         )}
 
         {(outcomeType === 'FREE_RESPONSE' ||
-          outcomeType === 'MULTIPLE_CHOICE') && (
+          outcomeType === 'MULTIPLE_CHOICE' ||
+          outcomeType === 'BOUNTY') && (
           <>
             <Spacer h={4} />
             <AnswersPanel contract={contract} />
