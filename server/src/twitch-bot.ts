@@ -182,7 +182,7 @@ export default class TwitchBot {
         };
 
         this.client = new Client({
-            options: { debug: true },
+            // options: { debug: true },
             connection: {
                 secure: true,
                 reconnect: true,
@@ -257,8 +257,12 @@ export default class TwitchBot {
         this.client.say(channel, MSG_RESOLVED(outcome, winners));
     }
 
-    public connect() {
-        this.client.connect();
+    public async connect() {
+        try {
+            await this.client.connect();
+        } catch (e) {
+            throw new TwitchBotInitializationException(e);
+        }
     }
 
     private getRegisteredChannelListFromFile(): string[] {
@@ -309,3 +313,5 @@ export default class TwitchBot {
         }
     }
 }
+
+class TwitchBotInitializationException extends Error {}

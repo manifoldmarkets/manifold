@@ -1,7 +1,7 @@
 node_modules
 /Manifold notes.txt
 dist
-data
+/server/data
 secrets.ts
 .next
 out

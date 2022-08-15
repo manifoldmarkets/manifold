@@ -2,7 +2,6 @@ import express, { Express } from "express";
 import { AddressInfo } from "net";
 import moment from "moment";
 import { Server } from "socket.io";
-import http from "http";
 import fs from "fs";
 import crypto from "crypto";
 import cors from "cors";
@@ -18,7 +17,7 @@ import TwitchBot from "./twitch-bot";
 import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
-import { PacketCreateMarket, PacketMarketCreated, PacketResolved } from "common/packets";
+import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
 import { ResolutionOutcome } from "common/manifold-defs";
 
 const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
@@ -156,14 +155,14 @@ export default class App {
         throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
     }
 
-    launch() {
-        this.bot.connect();
+    async launch() {
+        await this.bot.connect();
 
         const server = this.app.listen(9172, () => {
             const addressInfo = <AddressInfo>server.address();
             const host = addressInfo.address;
             const port = addressInfo.port;
-            log.info("Twitch bot webserver listening at http://%s:%s", host, port);
+            log.info("Webserver and websocket listening at http://%s:%s", host, port);
         });
 
         // const server = http.createServer(this.app);
