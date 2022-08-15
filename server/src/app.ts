@@ -111,27 +111,33 @@ export default class App {
     }
 
     private loadUsersFromFile() {
-        const rawData = fs.readFileSync("data/users.json");
-        const rawDataString = rawData.toString();
-        if (rawDataString.length > 0) {
-            const data = JSON.parse(rawDataString);
-            if (data.version === USER_FILE_GUID) {
-                const users = data.userData;
-                for (const u of users) {
-                    const user = new User(u.twitchLogin, u.manifoldUsername, u.APIKey);
-                    this.userList.push(user);
+        try {
+            const rawData = fs.readFileSync("data/users.json");
+            const rawDataString = rawData.toString();
+            if (rawDataString.length > 0) {
+                const data = JSON.parse(rawDataString);
+                if (data.version === USER_FILE_GUID) {
+                    const users = data.userData;
+                    for (const u of users) {
+                        const user = new User(u.twitchLogin, u.manifoldUsername, u.APIKey);
+                        this.userList.push(user);
+                    }
+                } else if (data.version === "5d7b6761-0719-4819-a9b9-4dd600f45369") {
+                    log.warn("Loading out of date user data file.");
+                    const users = data.userData;
+                    for (const twitchName in users) {
+                        const userData = users[twitchName];
+                        const user = new User(twitchName, userData.manifoldUsername, userData.APIKey);
+                        this.userList.push(user);
+                    }
+                } else {
+                    log.error("User data file version mismatch. Data not loaded.");
                 }
-            } else if (data.version === "5d7b6761-0719-4819-a9b9-4dd600f45369") {
-                log.warn("Loading out of date user data file.");
-                const users = data.userData;
-                for (const twitchName in users) {
-                    const userData = users[twitchName];
-                    const user = new User(twitchName, userData.manifoldUsername, userData.APIKey);
-                    this.userList.push(user);
-                }
-            } else {
-                log.error("User data file version mismatch. Data not loaded.");
             }
+        } catch (e) {
+            if (e.code === "ENOENT") {
+                // File not found - this is OK
+            } else throw e;
         }
     }
 

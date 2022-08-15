@@ -16,6 +16,5 @@ FROM node:16
 WORKDIR /deploy
 COPY --from=builder /manifold/web/out static
 COPY --from=builder /manifold/server/dist .
-COPY --from=builder /manifold/server/data data
 EXPOSE 9172
 CMD ["node", "bundle.js"]
