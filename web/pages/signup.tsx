@@ -4,9 +4,8 @@ import { Fragment, useEffect, useState } from "react";
 import { Col } from "web/components/layout/col";
 import { Row } from "web/components/layout/row";
 import styles from "../styles/signup.module.scss";
-import { TWTICH_APP_CLIENT_ID } from "common/secrets";
 import { PaperAirplaneIcon, RefreshIcon } from "@heroicons/react/solid";
-import { Combobox, Transition } from "@headlessui/react";
+import { Transition } from "@headlessui/react";
 
 export default () => {
     const [toastVisible, setToastVisible] = useState(false);
@@ -61,7 +60,7 @@ export default () => {
                 const sessionToken = responseData.token;
 
                 const params = {
-                    client_id: TWTICH_APP_CLIENT_ID,
+                    client_id: process.env.TWTICH_APP_CLIENT_ID,
                     response_type: "code",
                     redirect_uri: `http://localhost:9172/linkAccount`,
                     scope: "user:read:email",
@@ -104,7 +103,7 @@ export default () => {
 
         (
             document.getElementById("addbot") as HTMLLinkElement
-        ).href = `https://id.twitch.tv/oauth2/authorize?client_id=${TWTICH_APP_CLIENT_ID}&response_type=code&redirect_uri=http://localhost:9172/registerchanneltwitch&scope=user:read:email`;
+        ).href = `https://id.twitch.tv/oauth2/authorize?client_id=${process.env.TWTICH_APP_CLIENT_ID}&response_type=code&redirect_uri=http://localhost:9172/registerchanneltwitch&scope=user:read:email`;
     }, []);
 
     return (
