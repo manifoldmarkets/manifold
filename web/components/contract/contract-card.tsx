@@ -1,11 +1,16 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
   BinaryContract,
+  BountyContract,
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
@@ -160,6 +165,13 @@ export function ContractCard(props: {
               truncate="long"
             />
           )}
+
+          {outcomeType === 'BOUNTY' && (
+            <BountyValue
+              className="items-center self-center pr-5"
+              contract={contract}
+            />
+          )}
           <ProbBar contract={contract} />
         </>
       )}
@@ -198,6 +210,23 @@ export function BinaryResolutionOrChance(props: {
           </div>
         </>
       )}
+    </Col>
+  )
+}
+
+export function BountyValue(props: {
+  contract: BountyContract
+  large?: boolean
+  className?: string
+}) {
+  const { contract, large, className } = props
+  const textColor = `text-${getColor(contract)}`
+  return (
+    <Col className={clsx(large ? 'text-3xl' : 'text-2xl', className)}>
+      <div className={textColor}>{formatMoney(contract.prizeTotal)}</div>
+      <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
+        bounty
+      </div>
     </Col>
   )
 }

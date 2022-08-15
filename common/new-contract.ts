@@ -1,6 +1,7 @@
 import { range } from 'lodash'
 import {
   Binary,
+  Bounty,
   Contract,
   CPMM,
   DPM,
@@ -45,16 +46,22 @@ export function getNewContract(
   )
   const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
-  const propsByOutcomeType =
-    outcomeType === 'BINARY'
-      ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
-      : outcomeType === 'PSEUDO_NUMERIC'
-      ? getPseudoNumericCpmmProps(initialProb, ante, min, max, isLogScale)
-      : outcomeType === 'NUMERIC'
-      ? getNumericProps(ante, bucketCount, min, max)
-      : outcomeType === 'MULTIPLE_CHOICE'
-      ? getMultipleChoiceProps(ante, answers)
-      : getFreeAnswerProps(ante)
+  const PROPS = {
+    BINARY: getBinaryCpmmProps(initialProb, ante), // getBinaryDpmProps(initialProb, ante)
+    PSEUDO_NUMERIC: getPseudoNumericCpmmProps(
+      initialProb,
+      ante,
+      min,
+      max,
+      isLogScale
+    ),
+    FREE_RESPONSE: getFreeAnswerProps(ante),
+    MULTIPLE_CHOICE: getMultipleChoiceProps(ante, answers),
+    NUMERIC: getNumericProps(ante, bucketCount, min, max),
+    BOUNTY: getBountyProps(ante, creator),
+  }
+
+  const propsByOutcomeType = PROPS[outcomeType] || PROPS['FREE_RESPONSE']
 
   const contract: Contract = removeUndefinedProps({
     id,
@@ -154,6 +161,18 @@ const getFreeAnswerProps = (ante: number) => {
     answers: [],
   }
 
+  return system
+}
+
+function getBountyProps(ante: number, creator: User) {
+  const system: DPM & Bounty = {
+    ...getFreeAnswerProps(ante),
+    outcomeType: 'BOUNTY',
+    prizes: {
+      [creator.id]: ante,
+    },
+    prizeTotal: ante,
+  }
   return system
 }
 

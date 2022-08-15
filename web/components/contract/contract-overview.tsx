@@ -10,6 +10,7 @@ import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
 import {
   BinaryResolutionOrChance,
+  BountyValue,
   FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
@@ -44,7 +45,6 @@ export const ContractOverview = (props: {
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
-
           {isBinary && (
             <BinaryResolutionOrChance
               className="hidden items-end xl:flex"
@@ -52,16 +52,20 @@ export const ContractOverview = (props: {
               large
             />
           )}
-
           {isPseudoNumeric && (
             <PseudoNumericResolutionOrExpectation
               contract={contract}
               className="hidden items-end xl:flex"
             />
           )}
-
           {outcomeType === 'NUMERIC' && (
             <NumericResolutionOrExpectation
+              contract={contract}
+              className="hidden items-end xl:flex"
+            />
+          )}
+          {outcomeType === 'BOUNTY' && (
+            <BountyValue
               contract={contract}
               className="hidden items-end xl:flex"
             />

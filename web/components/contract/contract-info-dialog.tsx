@@ -32,14 +32,15 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
     'userId'
   ).length
 
-  const typeDisplay =
-    outcomeType === 'BINARY'
-      ? 'YES / NO'
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'Free response'
-      : outcomeType === 'MULTIPLE_CHOICE'
-      ? 'Multiple choice'
-      : 'Numeric'
+  const TYPES = {
+    BINARY: 'YES / NO',
+    FREE_RESPONSE: 'Free Response',
+    MULTIPLE_CHOICE: 'Multiple Choice',
+    NUMERIC: 'Numeric (deprecated)',
+    PSEUDO_NUMERIC: 'Numeric',
+    BOUNTY: 'Bounty',
+  }
+  const typeDisplay = TYPES[outcomeType] || 'Unknown'
 
   return (
     <>

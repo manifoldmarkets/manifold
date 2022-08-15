@@ -18,6 +18,7 @@ export type AnyContractType =
   | (DPM & FreeResponse)
   | (DPM & Numeric)
   | (DPM & MultipleChoice)
+  | (DPM & Bounty)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -65,11 +66,11 @@ export type PseudoNumericContract = Contract & PseudoNumeric
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
 export type MultipleChoiceContract = Contract & MultipleChoice
+export type BountyContract = Contract & Bounty
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type DPMBinaryContract = BinaryContract & DPM
 export type CPMMBinaryContract = BinaryContract & CPMM
-export type BountyContract = Contract & Bounty
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -133,12 +134,15 @@ export type Bounty = {
   outcomeType: 'BOUNTY'
   // One answer for each submission
   answers: Answer[]
+  // Resolution = which answer id the bounty went to
+  resolution?: string | 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution
+
+  // Amount contributed to each bounty, and by who
   prizes: {
     [giverId: string]: number
   }
   prizeTotal: number
-  // Resolution = which ID the bounty went to
-  resolution?: string | 'MKT' | 'CANCEL'
 }
 
 export type outcomeType = AnyOutcomeType['outcomeType']
