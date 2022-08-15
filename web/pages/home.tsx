@@ -101,13 +101,19 @@ const useContractPage = () => {
 
     window.history.pushState = function () {
       // eslint-disable-next-line prefer-rest-params
-      pushState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      pushState.apply(history, args)
       updateContract()
     }
 
     window.history.replaceState = function () {
       // eslint-disable-next-line prefer-rest-params
-      replaceState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      replaceState.apply(history, args)
       updateContract()
     }
 
