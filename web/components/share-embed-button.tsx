@@ -1,12 +1,12 @@
-import React, { Fragment } from 'react'
+import React from 'react'
 import { CodeIcon } from '@heroicons/react/outline'
-import { Menu, Transition } from '@headlessui/react'
+import { Menu } from '@headlessui/react'
+import toast from 'react-hot-toast'
 
 import { Contract } from 'common/contract'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { DOMAIN } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
 
 export function embedCode(contract: Contract) {
@@ -16,11 +16,10 @@ export function embedCode(contract: Contract) {
   return `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
 }
 
-export function ShareEmbedButton(props: {
-  contract: Contract
-  toastClassName?: string
-}) {
-  const { contract, toastClassName } = props
+export function ShareEmbedButton(props: { contract: Contract }) {
+  const { contract } = props
+
+  const codeIcon = <CodeIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
 
   return (
     <Menu
@@ -28,6 +27,9 @@ export function ShareEmbedButton(props: {
       className="relative z-10 flex-shrink-0"
       onMouseUp={() => {
         copyToClipboard(embedCode(contract))
+        toast.success('Embed code copied!', {
+          icon: codeIcon,
+        })
         track('copy embed code')
       }}
     >
@@ -39,25 +41,9 @@ export function ShareEmbedButton(props: {
           color: '#9ca3af', // text-gray-400
         }}
       >
-        <CodeIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        {codeIcon}
         Embed
       </Menu.Button>
-
-      <Transition
-        as={Fragment}
-        enter="transition ease-out duration-100"
-        enterFrom="transform opacity-0 scale-95"
-        enterTo="transform opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="transform opacity-100 scale-100"
-        leaveTo="transform opacity-0 scale-95"
-      >
-        <Menu.Items>
-          <Menu.Item>
-            <ToastClipboard className={toastClassName} />
-          </Menu.Item>
-        </Menu.Items>
-      </Transition>
     </Menu>
   )
 }

@@ -3,16 +3,11 @@ import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useContracts } from 'web/hooks/use-contracts'
-import {
-  QuerySortOptions,
-  Sort,
-  useQueryAndSortParams,
-} from 'web/hooks/use-sort-and-query-params'
+import { Sort, useQuery, useSort } from 'web/hooks/use-sort-and-query-params'
 
 const MAX_CONTRACTS_RENDERED = 100
 
 export default function ContractSearchFirestore(props: {
-  querySortOptions?: QuerySortOptions
   additionalFilter?: {
     creatorId?: string
     tag?: string
@@ -21,10 +16,9 @@ export default function ContractSearchFirestore(props: {
   }
 }) {
   const contracts = useContracts()
-  const { querySortOptions, additionalFilter } = props
-
-  const { query, setQuery, sort, setSort } =
-    useQueryAndSortParams(querySortOptions)
+  const { additionalFilter } = props
+  const [query, setQuery] = useQuery('', { useUrl: true })
+  const [sort, setSort] = useSort('score', { useUrl: true })
 
   let matches = (contracts ?? []).filter((c) =>
     searchInAny(

@@ -4,8 +4,7 @@ import { PlusSmIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
-import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
-import { ContractSearch, DEFAULT_SORT } from 'web/components/contract-search'
+import { ContractSearch } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { ContractPageContent } from './[username]/[contractSlug]'
@@ -35,10 +34,8 @@ const Home = (props: { auth: { user: User } }) => {
         <Col className="mx-auto w-full p-2">
           <ContractSearch
             user={user}
-            querySortOptions={{
-              shouldLoadFromStorage: true,
-              defaultSort: getSavedSort() ?? DEFAULT_SORT,
-            }}
+            useQuerySortLocalStorage={true}
+            useQuerySortUrlParams={true}
             onContractClick={(c) => {
               // Show contract without navigating to contract page.
               setContract(c)
@@ -104,13 +101,19 @@ const useContractPage = () => {
 
     window.history.pushState = function () {
       // eslint-disable-next-line prefer-rest-params
-      pushState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      pushState.apply(history, args)
       updateContract()
     }
 
     window.history.replaceState = function () {
       // eslint-disable-next-line prefer-rest-params
-      replaceState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      replaceState.apply(history, args)
       updateContract()
     }
 

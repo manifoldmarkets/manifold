@@ -40,6 +40,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
+import { SEO } from 'web/components/SEO'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -68,6 +69,8 @@ export default function Notifications(props: {
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
+        <SEO title="Notifications" description="Manifold user notifications" />
+
         <div>
           <Tabs
             currentPageForAnalytics={'notifications'}
@@ -437,7 +440,7 @@ function IncomeNotificationItem(props: {
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
                     className={'mr-1 flex-shrink-0'}
-                    justFirstName={true}
+                    short={true}
                   />
                 ))}
               {getReasonForShowingIncomeNotification(false)} {' on'}
@@ -606,7 +609,7 @@ function NotificationItem(props: {
               name={sourceUserName || ''}
               username={sourceUserUsername || ''}
               className={'mr-0 flex-shrink-0'}
-              justFirstName={true}
+              short={true}
             />
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
               <span className={'flex-shrink-0'}>
@@ -678,7 +681,7 @@ function NotificationItem(props: {
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
                     className={'relative mr-1 flex-shrink-0'}
-                    justFirstName={true}
+                    short={true}
                   />
                 )}
                 {getReasonForShowingNotification(

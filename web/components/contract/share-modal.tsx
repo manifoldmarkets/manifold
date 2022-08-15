@@ -51,17 +51,10 @@ export function ShareModal(props: {
           color="gradient"
           className={'mb-2 flex max-w-xs self-center'}
           onClick={() => {
-            if (window.navigator.share) {
-              window.navigator.share({
-                url: shareUrl,
-                title: contract.question,
-              })
-            } else {
-              copyToClipboard(shareUrl)
-              toast.success('Link copied!', {
-                icon: linkIcon,
-              })
-            }
+            copyToClipboard(shareUrl)
+            toast.success('Link copied!', {
+              icon: linkIcon,
+            })
             track('copy share link')
           }}
         >
@@ -73,7 +66,7 @@ export function ShareModal(props: {
             className="self-start"
             tweetText={getTweetText(contract, shareUrl)}
           />
-          <ShareEmbedButton contract={contract} toastClassName={'-left-20'} />
+          <ShareEmbedButton contract={contract} />
           <DuplicateContractButton contract={contract} />
         </Row>
       </Col>
