@@ -9,7 +9,7 @@ To run the development server, install [Yarn 1.x][yarn], and then in this direct
 3. Your site will be available on http://localhost:3000
 
 Check package.json for other command-line tasks. (e.g. `yarn dev` will point the development server at the prod
-database. `yarn emulate` will run against a local emulated database, if you are serving it via `yarn serve` from the
+database. `yarn dev:emulate` will run against a local emulated database, if you are serving it via `yarn serve` from the
 [`functions/` package][functions-readme].)
 
 ## Tech stack
