@@ -30,7 +30,15 @@ const bodySchema = z.object({
 
 const binarySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
-  limitProb: z.number().gte(0.001).lte(0.999).optional(),
+  limitProb: z
+    .number()
+    .gte(0.001)
+    .lte(0.999)
+    .refine(
+      (p) => Math.round(p * 100) === p * 100,
+      'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+    )
+    .optional(),
 })
 
 const freeResponseSchema = z.object({
