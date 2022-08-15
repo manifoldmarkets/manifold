@@ -23,8 +23,9 @@ type ContractComment = Comment & {
 }
 
 function contractPath(slug: string) {
-  // in honor of austin, who insists that contract URLs are prefixed with a username
-  return `/Austin/${slug}`
+  // by convention this includes the contract creator username, but we don't
+  // have that handy, so we just put /market/
+  return `/market/${slug}`
 }
 
 export function UserCommentsList(props: { user: User }) {
