@@ -139,6 +139,7 @@ export function ContractSearch(props: {
           setNumPages(results.nbPages)
           if (freshQuery) {
             setPages([newPage])
+            window.scrollTo(0, 0)
           } else {
             setPages((pages) => [...pages, newPage])
           }
