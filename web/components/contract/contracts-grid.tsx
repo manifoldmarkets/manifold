@@ -106,11 +106,8 @@ export function CreatorContractsList(props: {
   return (
     <ContractSearch
       user={user}
-      querySortOptions={{
-        defaultSort: 'newest',
-        defaultFilter: 'all',
-        shouldLoadFromStorage: false,
-      }}
+      defaultSort="newest"
+      defaultFilter="all"
       additionalFilter={{
         creatorId: creator.id,
       }}
