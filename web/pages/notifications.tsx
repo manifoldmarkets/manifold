@@ -440,7 +440,7 @@ function IncomeNotificationItem(props: {
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
                     className={'mr-1 flex-shrink-0'}
-                    justFirstName={true}
+                    short={true}
                   />
                 ))}
               {getReasonForShowingIncomeNotification(false)} {' on'}
@@ -609,7 +609,7 @@ function NotificationItem(props: {
               name={sourceUserName || ''}
               username={sourceUserUsername || ''}
               className={'mr-0 flex-shrink-0'}
-              justFirstName={true}
+              short={true}
             />
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
               <span className={'flex-shrink-0'}>
@@ -681,7 +681,7 @@ function NotificationItem(props: {
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
                     className={'relative mr-1 flex-shrink-0'}
-                    justFirstName={true}
+                    short={true}
                   />
                 )}
                 {getReasonForShowingNotification(

@@ -34,6 +34,7 @@ import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
+import clsx from 'clsx'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -83,9 +84,8 @@ export function MiscDetails(props: {
       {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
         <SiteLink
           href={groupPath(groupLinks[0].slug)}
-          className="line-clamp-1 text-sm text-gray-400"
+          className="truncate text-sm text-gray-400"
         >
-          <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
           {groupLinks[0].name}
         </SiteLink>
       )}
@@ -93,18 +93,24 @@ export function MiscDetails(props: {
   )
 }
 
-export function AvatarDetails(props: { contract: Contract }) {
-  const { contract } = props
+export function AvatarDetails(props: {
+  contract: Contract
+  className?: string
+  short?: boolean
+}) {
+  const { contract, short, className } = props
   const { creatorName, creatorUsername } = contract
 
   return (
-    <Row className="items-center gap-2 text-sm text-gray-400">
+    <Row
+      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
+    >
       <Avatar
         username={creatorUsername}
         avatarUrl={contract.creatorAvatarUrl}
         size={6}
       />
-      <UserLink name={creatorName} username={creatorUsername} />
+      <UserLink name={creatorName} username={creatorUsername} short={short} />
     </Row>
   )
 }

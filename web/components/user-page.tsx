@@ -34,16 +34,25 @@ export function UserLink(props: {
   username: string
   showUsername?: boolean
   className?: string
-  justFirstName?: boolean
+  short?: boolean
 }) {
-  const { name, username, showUsername, className, justFirstName } = props
-
+  const { name, username, showUsername, className, short } = props
+  const firstName = name.split(' ')[0]
+  const maxLength = 10
+  const shortName =
+    firstName.length >= 3
+      ? firstName.length < maxLength
+        ? firstName
+        : firstName.substring(0, maxLength - 3) + '...'
+      : name.length > maxLength
+      ? name.substring(0, maxLength) + '...'
+      : name
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx('z-10 truncate', className)}
     >
-      {justFirstName ? name.split(' ')[0] : name}
+      {short ? shortName : name}
       {showUsername && ` (@${username})`}
     </SiteLink>
   )
