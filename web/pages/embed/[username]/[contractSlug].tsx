@@ -2,7 +2,7 @@ import { Bet } from 'common/bet'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
-import BetRow from 'web/components/bet-row'
+import BetButton from 'web/components/bet-button'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
@@ -117,7 +117,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           {isBinary && (
             <Row className="items-center gap-4">
               {tradingAllowed(contract) && (
-                <BetRow
+                <BetButton
                   contract={contract as CPMMBinaryContract}
                   betPanelClassName="scale-75"
                 />
@@ -129,7 +129,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           {isPseudoNumeric && (
             <Row className="items-center gap-4">
               {tradingAllowed(contract) && (
-                <BetRow contract={contract} betPanelClassName="scale-75" />
+                <BetButton contract={contract} betPanelClassName="scale-75" />
               )}
               <PseudoNumericResolutionOrExpectation contract={contract} />
             </Row>
