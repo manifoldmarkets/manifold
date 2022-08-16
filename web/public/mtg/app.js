@@ -246,9 +246,13 @@ function checkAnswers() {
     currCard = document.getElementById('card-' + cardIndex)
     let incorrect = true
     if (currCard.dataset.name) {
-      let guess = document.getElementById(currCard.dataset.name).innerText
-      // window.console.log(artDict[currCard.dataset.url][0], guess);
-      incorrect = artDict[currCard.dataset.url][0] !== guess
+      // remove image text
+      let guess = document
+        .getElementById(currCard.dataset.name)
+        .innerText.split('>')
+      let ans = artDict[currCard.dataset.url][0].split('>')
+      window.console.log(ans, guess)
+      incorrect = ans[ans.length - 1] !== guess[guess.length - 1]
       // decide if their guess was correct
     }
     if (incorrect) currCard.classList.add('incorrect')
