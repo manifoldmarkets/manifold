@@ -58,13 +58,13 @@ export function MiscDetails(props: {
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
-    <Row className="items-center gap-3 text-sm text-gray-400">
+    <Row className="items-center gap-3 truncate text-sm text-gray-400">
       {showHotVolume ? (
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
         </Row>
       ) : showTime === 'close-date' ? (
-        <Row className="gap-0.5">
+        <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
