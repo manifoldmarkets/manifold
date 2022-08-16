@@ -26,7 +26,7 @@ export function Page(props: {
         style={suspend ? visuallyHiddenStyle : undefined}
       >
         <Toaster />
-        <Sidebar className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:block" />
+        <Sidebar className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex lg:h-screen lg:flex-col" />
         <main
           className={clsx(
             'lg:col-span-8 lg:pt-6',

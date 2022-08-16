@@ -18,7 +18,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -28,7 +28,6 @@ import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Spacer } from '../layout/spacer'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
 
@@ -278,7 +277,7 @@ export default function Sidebar(props: { className?: string }) {
       </div>
 
       {/* Desktop navigation */}
-      <div className="hidden space-y-1 lg:block">
+      <div className="hidden gap-y-1 lg:flex lg:flex-1 lg:flex-col">
         {navigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
@@ -315,10 +314,6 @@ function GroupsList(props: {
     memberItems.length > 0 ? memberItems.length : undefined
   )
 
-  const { height } = useWindowSize()
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  const remainingHeight = (height ?? 0) - (containerRef?.offsetTop ?? 0)
-
   const notifIsForThisItem = useMemo(
     () => (itemHref: string) =>
       preferredNotifications.some(
@@ -337,11 +332,7 @@ function GroupsList(props: {
         currentPage={currentPage}
       />
 
-      <div
-        className="flex-1 space-y-0.5 overflow-auto"
-        style={{ height: remainingHeight }}
-        ref={setContainerRef}
-      >
+      <div className="flex-1 space-y-0.5 overflow-auto">
         {memberItems.map((item) => (
           <a
             href={
