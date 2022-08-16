@@ -81,7 +81,7 @@ export function ContractsGrid(props: {
             hideQuickBet={hideQuickBet}
             hideGroupLink={hideGroupLink}
             className={clsx(
-              'break-inside-avoid-column',
+              'break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
               contractIds?.includes(contract.id) && highlightClassName
             )}
           />
