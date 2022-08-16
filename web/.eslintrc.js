@@ -5,6 +5,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:react-hooks/recommended',
     'plugin:@next/next/recommended',
+    'prettier',
   ],
   rules: {
     '@typescript-eslint/no-empty-function': 'off',
