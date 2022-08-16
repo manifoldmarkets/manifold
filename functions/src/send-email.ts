@@ -9,10 +9,12 @@ const initMailgun = () => {
 export const sendTextEmail = async (
   to: string,
   subject: string,
-  text: string
+  text: string,
+  options?: Partial<mailgun.messages.SendData>
 ) => {
   const data: mailgun.messages.SendData = {
-    from: 'Manifold Markets <info@manifold.markets>',
+    ...options,
+    from: options?.from ?? 'Manifold Markets <info@manifold.markets>',
     to,
     subject,
     text,
