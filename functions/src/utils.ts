@@ -42,6 +42,15 @@ export const writeAsync = async (
   }
 }
 
+export const tryOrLogError = async <T>(task: Promise<T>) => {
+  try {
+    return await task
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
 export const isProd = () => {
   return admin.instanceId().app.options.projectId === 'mantic-markets'
 }
