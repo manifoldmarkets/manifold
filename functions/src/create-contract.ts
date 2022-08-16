@@ -133,7 +133,7 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
   if (ante > user.balance)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
-  let group = null
+  let group: Group | null = null
   if (groupId) {
     const groupDocRef = firestore.collection('groups').doc(groupId)
     const groupDoc = await groupDocRef.get()
