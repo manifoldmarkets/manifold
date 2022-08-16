@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
+import { difference, mapValues, groupBy, sumBy } from 'lodash'
 
 import {
   Contract,
@@ -22,6 +22,8 @@ import { isManifoldId } from '../../common/envs/constants'
 import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 import { APIError, newEndpoint, validate } from './api'
+import { getContractBetMetrics } from '../../common/calculate'
+import { floatingEqual } from '../../common/util/math'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -162,7 +164,7 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
 
   await sendResolutionEmails(
-    openBets,
+    bets,
     userPayoutsWithoutLoans,
     creator,
     creatorPayout,
@@ -188,7 +190,7 @@ const processPayouts = async (payouts: Payout[], isDeposit = false) => {
 }
 
 const sendResolutionEmails = async (
-  openBets: Bet[],
+  bets: Bet[],
   userPayouts: { [userId: string]: number },
   creator: User,
   creatorPayout: number,
@@ -197,14 +199,15 @@ const sendResolutionEmails = async (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
-  const nonWinners = difference(
-    uniq(openBets.map(({ userId }) => userId)),
-    Object.keys(userPayouts)
-  )
   const investedByUser = mapValues(
-    groupBy(openBets, (bet) => bet.userId),
-    (bets) => sumBy(bets, (bet) => bet.amount)
+    groupBy(bets, (bet) => bet.userId),
+    (bets) => getContractBetMetrics(contract, bets).invested
   )
+  const investedUsers = Object.keys(investedByUser).filter(
+    (userId) => !floatingEqual(investedByUser[userId], 0)
+  )
+
+  const nonWinners = difference(investedUsers, Object.keys(userPayouts))
   const emailPayouts = [
     ...Object.entries(userPayouts),
     ...nonWinners.map((userId) => [userId, 0] as const),
