@@ -20,7 +20,7 @@ export function ContractsGrid(props: {
   loadMore?: () => void
   showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
-  gridClassName?: string
+  overrideGridClassName?: string
   cardHideOptions?: {
     hideQuickBet?: boolean
     hideGroupLink?: boolean
@@ -32,7 +32,7 @@ export function ContractsGrid(props: {
     showTime,
     loadMore,
     onContractClick,
-    gridClassName,
+    overrideGridClassName,
     cardHideOptions,
     highlightOptions,
   } = props
@@ -66,8 +66,9 @@ export function ContractsGrid(props: {
     <Col className="gap-8">
       <ul
         className={clsx(
-          'w-full columns-1 gap-4 space-y-4 md:columns-2',
-          gridClassName
+          overrideGridClassName
+            ? overrideGridClassName
+            : 'grid w-full grid-cols-1 gap-4 md:grid-cols-2'
         )}
       >
         {contracts.map((contract) => (
@@ -80,10 +81,11 @@ export function ContractsGrid(props: {
             }
             hideQuickBet={hideQuickBet}
             hideGroupLink={hideGroupLink}
-            className={clsx(
-              'break-inside-avoid-column',
-              contractIds?.includes(contract.id) && highlightClassName
-            )}
+            className={
+              contractIds?.includes(contract.id)
+                ? highlightClassName
+                : undefined
+            }
           />
         ))}
       </ul>

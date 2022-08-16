@@ -607,7 +607,9 @@ function AddContractButton(props: { group: Group; user: User }) {
               user={user}
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
-              gridClassName="gap-3 space-y-3"
+              overrideGridClassName={
+                'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
+              }
               cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
               additionalFilter={{ excludeContractIds: group.contractIds }}
               highlightOptions={{
