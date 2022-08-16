@@ -1,4 +1,4 @@
-import { maxBy, sortBy, sum } from 'lodash'
+import { maxBy, sortBy, sum, sumBy } from 'lodash'
 import { Bet, LimitBet } from './bet'
 import {
   calculateCpmmSale,
@@ -153,11 +153,26 @@ function getCpmmInvested(yourBets: Bet[]) {
   return sum(Object.values(totalSpent))
 }
 
+function getDpmInvested(yourBets: Bet[]) {
+  const sortedBets = sortBy(yourBets, 'createdTime')
+
+  return sumBy(sortedBets, (bet) => {
+    const { amount, sale } = bet
+
+    if (sale) {
+      const originalBet = sortedBets.find((b) => b.id === sale.betId)
+      if (originalBet) return -originalBet.amount
+      return 0
+    }
+
+    return amount
+  })
+}
+
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
   const isCpmm = contract.mechanism === 'cpmm-1'
 
-  let currentInvested = 0
   let totalInvested = 0
   let payout = 0
   let loan = 0
@@ -183,7 +198,6 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
         saleValue -= amount
       }
 
-      currentInvested += amount
       loan += loanAmount ?? 0
       payout += resolution
         ? calculatePayout(contract, bet, resolution)
@@ -195,11 +209,10 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const profit = payout + saleValue + redeemed - totalInvested
   const profitPercent = (profit / totalInvested) * 100
 
+  const invested = isCpmm ? getCpmmInvested(yourBets) : getDpmInvested(yourBets)
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
   )
-
-  const invested = isCpmm ? getCpmmInvested(yourBets) : currentInvested
 
   return {
     invested,
