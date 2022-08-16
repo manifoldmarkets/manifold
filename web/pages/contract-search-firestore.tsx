@@ -34,8 +34,6 @@ export default function ContractSearchFirestore(props: {
     matches.sort((a, b) => b.createdTime - a.createdTime)
   } else if (sort === 'resolve-date') {
     matches = sortBy(matches, (contract) => -1 * (contract.resolutionTime ?? 0))
-  } else if (sort === 'oldest') {
-    matches.sort((a, b) => a.createdTime - b.createdTime)
   } else if (sort === 'close-date') {
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = sortBy(matches, (contract) => contract.closeTime ?? Infinity)

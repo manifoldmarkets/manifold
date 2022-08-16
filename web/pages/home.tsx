@@ -1,14 +1,10 @@
-import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { PencilAltIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
 import { ContractSearch } from 'web/components/contract-search'
-import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { ContractPageContent } from './[username]/[contractSlug]'
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
@@ -25,8 +21,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 const Home = (props: { auth: { user: User } | null }) => {
   const user = props.auth ? props.auth.user : null
-  const [contract, setContract] = useContractPage()
-
   const router = useRouter()
   useTracking('view home')
 
@@ -35,19 +29,13 @@ const Home = (props: { auth: { user: User } | null }) => {
 
   return (
     <>
-      <Page className={contract ? 'sr-only' : ''}>
+      <Page>
         <Col className="mx-auto w-full p-2">
           <ContractSearch
             user={user}
+            persistPrefix="home-search"
             useQuerySortLocalStorage={true}
             useQuerySortUrlParams={true}
-            onContractClick={(c) => {
-              // Show contract without navigating to contract page.
-              setContract(c)
-              // Update the url without switching pages in Nextjs.
-              history.pushState(null, '', `/${c.creatorUsername}/${c.slug}`)
-            }}
-            isWholePage
           />
         </Col>
         <button
@@ -61,81 +49,8 @@ const Home = (props: { auth: { user: User } | null }) => {
           <PencilAltIcon className="h-7 w-7" aria-hidden="true" />
         </button>
       </Page>
-
-      {contract && (
-        <ContractPageContent
-          contract={contract}
-          user={user}
-          username={contract.creatorUsername}
-          slug={contract.slug}
-          bets={[]}
-          comments={[]}
-          backToHome={() => {
-            history.back()
-          }}
-          recommendedContracts={[]}
-        />
-      )}
     </>
   )
-}
-
-const useContractPage = () => {
-  const [contract, setContract] = useState<Contract | undefined>()
-
-  useEffect(() => {
-    const updateContract = () => {
-      const path = location.pathname.split('/').slice(1)
-      if (path[0] === 'home') setContract(undefined)
-      else {
-        const [username, contractSlug] = path
-        if (!username || !contractSlug) setContract(undefined)
-        else {
-          // Show contract if route is to a contract: '/[username]/[contractSlug]'.
-          getContractFromSlug(contractSlug).then((contract) => {
-            const path = location.pathname.split('/').slice(1)
-            const [_username, contractSlug] = path
-            // Make sure we're still on the same contract.
-            if (contract?.slug === contractSlug) setContract(contract)
-          })
-        }
-      }
-    }
-
-    addEventListener('popstate', updateContract)
-
-    const { pushState, replaceState } = window.history
-
-    window.history.pushState = function () {
-      // eslint-disable-next-line prefer-rest-params
-      const args = [...(arguments as any)] as any
-      // Discard NextJS router state.
-      args[0] = null
-      pushState.apply(history, args)
-      updateContract()
-    }
-
-    window.history.replaceState = function () {
-      // eslint-disable-next-line prefer-rest-params
-      const args = [...(arguments as any)] as any
-      // Discard NextJS router state.
-      args[0] = null
-      replaceState.apply(history, args)
-      updateContract()
-    }
-
-    return () => {
-      removeEventListener('popstate', updateContract)
-      window.history.pushState = pushState
-      window.history.replaceState = replaceState
-    }
-  }, [])
-
-  useEffect(() => {
-    if (contract) window.scrollTo(0, 0)
-  }, [contract])
-
-  return [contract, setContract] as const
 }
 
 export default Home

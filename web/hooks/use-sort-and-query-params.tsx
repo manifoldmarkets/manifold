@@ -1,18 +1,25 @@
 import { useState } from 'react'
+import {
+  usePersistentState,
+  PersistenceOptions,
+} from 'web/hooks/use-persistent-state'
 import { NextRouter, useRouter } from 'next/router'
 
-export type Sort =
-  | 'newest'
-  | 'oldest'
-  | 'most-traded'
-  | '24-hour-vol'
-  | 'close-date'
-  | 'resolve-date'
-  | 'last-updated'
-  | 'score'
+export const SORTS = [
+  { label: 'Newest', value: 'newest' },
+  { label: 'Trending', value: 'score' },
+  { label: 'Most traded', value: 'most-traded' },
+  { label: '24h volume', value: '24-hour-vol' },
+  { label: 'Last updated', value: 'last-updated' },
+  { label: 'Subsidy', value: 'liquidity' },
+  { label: 'Close date', value: 'close-date' },
+  { label: 'Resolve date', value: 'resolve-date' },
+] as const
+
+export type Sort = typeof SORTS[number]['value']
 
 type UpdatedQueryParams = { [k: string]: string }
-type QuerySortOpts = { useUrl: boolean }
+type QuerySortOpts = { useUrl: boolean; persist?: PersistenceOptions }
 
 function withURLParams(location: Location, params: UpdatedQueryParams) {
   const newParams = new URLSearchParams(location.search)
@@ -44,7 +51,10 @@ export function useQuery(defaultQuery: string, opts?: QuerySortOpts) {
   const useUrl = opts?.useUrl ?? false
   const router = useRouter()
   const initialQuery = useUrl ? getStringURLParam(router, 'q') : null
-  const [query, setQuery] = useState(initialQuery ?? defaultQuery)
+  const [query, setQuery] = usePersistentState(
+    initialQuery ?? defaultQuery,
+    opts?.persist
+  )
   if (!useUrl) {
     return [query, setQuery] as const
   } else {
@@ -56,7 +66,10 @@ export function useSort(defaultSort: Sort, opts?: QuerySortOpts) {
   const useUrl = opts?.useUrl ?? false
   const router = useRouter()
   const initialSort = useUrl ? (getStringURLParam(router, 's') as Sort) : null
-  const [sort, setSort] = useState(initialSort ?? defaultSort)
+  const [sort, setSort] = usePersistentState(
+    initialSort ?? defaultSort,
+    opts?.persist
+  )
   if (!useUrl) {
     return [sort, setSort] as const
   } else {

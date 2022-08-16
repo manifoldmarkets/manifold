@@ -1,43 +1,41 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import algoliasearch, { SearchIndex } from 'algoliasearch/lite'
+import algoliasearch from 'algoliasearch/lite'
 import { SearchOptions } from '@algolia/client-search'
 
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { Sort, useQuery, useSort } from '../hooks/use-sort-and-query-params'
+import {
+  SORTS,
+  Sort,
+  useQuery,
+  useSort,
+} from '../hooks/use-sort-and-query-params'
 import {
   ContractHighlightOptions,
   ContractsGrid,
 } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
-import { useEffect, useRef, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useMemo } from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
+import {
+  getKey,
+  saveState,
+  loadState,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { NEW_USER_GROUP_SLUGS } from 'common/group'
 import { PillButton } from './buttons/pill-button'
-import { debounce, sortBy } from 'lodash'
+import { debounce, isEqual, sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
-import { safeLocalStorage } from 'web/lib/util/local'
 import clsx from 'clsx'
-
-// TODO: this obviously doesn't work with SSR, common sense would suggest
-// that we should save things like this in cookies so the server has them
-
-const MARKETS_SORT = 'markets_sort'
-
-function setSavedSort(s: Sort) {
-  safeLocalStorage()?.setItem(MARKETS_SORT, s)
-}
-
-function getSavedSort() {
-  return safeLocalStorage()?.getItem(MARKETS_SORT) as Sort | null | undefined
-}
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -47,22 +45,11 @@ const searchClient = algoliasearch(
 const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 
-const sortOptions = [
-  { label: 'Newest', value: 'newest' },
-  { label: 'Trending', value: 'score' },
-  { label: 'Most traded', value: 'most-traded' },
-  { label: '24h volume', value: '24-hour-vol' },
-  { label: 'Last updated', value: 'last-updated' },
-  { label: 'Subsidy', value: 'liquidity' },
-  { label: 'Close date', value: 'close-date' },
-  { label: 'Resolve date', value: 'resolve-date' },
-]
-
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
 type SearchParameters = {
-  index: SearchIndex
   query: string
+  sort: Sort
   numericFilters: SearchOptions['numericFilters']
   facetFilters: SearchOptions['facetFilters']
   showTime?: ShowTime
@@ -88,6 +75,7 @@ export function ContractSearch(props: {
     hideQuickBet?: boolean
   }
   headerClassName?: string
+  persistPrefix?: string
   useQuerySortLocalStorage?: boolean
   useQuerySortUrlParams?: boolean
   isWholePage?: boolean
@@ -104,29 +92,76 @@ export function ContractSearch(props: {
     cardHideOptions,
     highlightOptions,
     headerClassName,
-    useQuerySortLocalStorage,
+    persistPrefix,
     useQuerySortUrlParams,
     isWholePage,
     maxItems,
     noControls,
   } = props
 
-  const [numPages, setNumPages] = useState(1)
-  const [pages, setPages] = useState<Contract[][]>([])
-  const [showTime, setShowTime] = useState<ShowTime | undefined>()
+  const store = safeSessionStorage()
+  const persistAs = (name: string) => {
+    return persistPrefix ? { prefix: persistPrefix, name, store } : undefined
+  }
 
-  const searchParameters = useRef<SearchParameters | undefined>()
+  const [numPages, setNumPages] = usePersistentState(1, persistAs('numPages'))
+  const [pages, setPages] = usePersistentState<Contract[][]>(
+    [],
+    persistAs('pages')
+  )
+  const [showTime, setShowTime] = usePersistentState<ShowTime | null>(
+    null,
+    persistAs('showTime')
+  )
+
+  const searchParameters = useRef<SearchParameters | null>(null)
   const requestId = useRef(0)
 
+  useLayoutEffect(() => {
+    if (persistPrefix && store) {
+      const parameters = loadState(getKey(persistPrefix, 'parameters'), store)
+      const scrollY = loadState(getKey(persistPrefix, 'scrollY'), store)
+      if (parameters !== undefined) {
+        console.log('Restoring search parameters: ', parameters)
+        searchParameters.current = parameters as SearchParameters
+      }
+      if (scrollY !== undefined) {
+        console.log('Restoring scroll position: ', scrollY)
+        window.scrollTo(0, scrollY as number)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (persistPrefix && store) {
+      const handleScroll = (e: Event) => {
+        const scrollY = (e.currentTarget as Window).scrollY
+        console.log('Saving scroll position: ', scrollY)
+        saveState(getKey(persistPrefix, 'scrollY'), scrollY, store)
+      }
+      window.addEventListener('scroll', handleScroll)
+      return () => window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  const searchIndex = useMemo(
+    () => searchClient.initIndex(searchIndexName),
+    [searchIndexName]
+  )
+
   const performQuery = async (freshQuery?: boolean) => {
-    if (searchParameters.current === undefined) {
+    console.log('Performing query.')
+    if (searchParameters.current == null) {
       return
     }
     const params = searchParameters.current
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : pages.length
     if (freshQuery || requestedPage < numPages) {
-      const results = await params.index.search(params.query, {
+      const index = params.query
+        ? searchIndex
+        : searchClient.initIndex(`${indexPrefix}contracts-${params.sort}`)
+      const results = await index.search(params.query, {
         facetFilters: params.facetFilters,
         numericFilters: params.numericFilters,
         page: requestedPage,
@@ -135,11 +170,16 @@ export function ContractSearch(props: {
       // if there's a more recent request, forget about this one
       if (id === requestId.current) {
         const newPage = results.hits as any as Contract[]
+        const showTime =
+          params.sort === 'close-date' || params.sort === 'resolve-date'
+            ? params.sort
+            : null
+
         // this spooky looking function is the easiest way to get react to
         // batch this and not do multiple renders. we can throw it out in react 18.
         // see https://github.com/reactwg/react-18/discussions/21
         unstable_batchedUpdates(() => {
-          setShowTime(params.showTime)
+          setShowTime(showTime)
           setNumPages(results.nbPages)
           if (freshQuery) {
             setPages([newPage])
@@ -154,8 +194,14 @@ export function ContractSearch(props: {
 
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      searchParameters.current = params
-      performQuery(true)
+      if (!isEqual(searchParameters.current, params)) {
+        console.log('Old vs new:', searchParameters.current, params)
+        if (persistPrefix && store) {
+          saveState(getKey(persistPrefix, 'parameters'), params, store)
+        }
+        searchParameters.current = params
+        performQuery(true)
+      }
     }, 100)
   ).current
 
@@ -177,7 +223,7 @@ export function ContractSearch(props: {
         defaultFilter={defaultFilter}
         additionalFilter={additionalFilter}
         hideOrderSelector={hideOrderSelector}
-        useQuerySortLocalStorage={useQuerySortLocalStorage}
+        persistPrefix={persistPrefix ? `${persistPrefix}-controls` : undefined}
         useQuerySortUrlParams={useQuerySortUrlParams}
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
@@ -186,7 +232,7 @@ export function ContractSearch(props: {
       <ContractsGrid
         contracts={renderedContracts}
         loadMore={noControls ? undefined : performQuery}
-        showTime={showTime}
+        showTime={showTime ?? undefined}
         onContractClick={onContractClick}
         highlightOptions={highlightOptions}
         cardHideOptions={cardHideOptions}
@@ -202,7 +248,7 @@ function ContractSearchControls(props: {
   additionalFilter?: AdditionalFilter
   hideOrderSelector?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
-  useQuerySortLocalStorage?: boolean
+  persistPrefix?: string
   useQuerySortUrlParams?: boolean
   user?: User | null
   noControls?: boolean
@@ -214,25 +260,35 @@ function ContractSearchControls(props: {
     additionalFilter,
     hideOrderSelector,
     onSearchParametersChanged,
-    useQuerySortLocalStorage,
+    persistPrefix,
     useQuerySortUrlParams,
     user,
     noControls,
   } = props
 
-  const savedSort = useQuerySortLocalStorage ? getSavedSort() : null
-  const initialSort = savedSort ?? defaultSort ?? 'score'
-  const querySortOpts = { useUrl: !!useQuerySortUrlParams }
-  const [sort, setSort] = useSort(initialSort, querySortOpts)
-  const [query, setQuery] = useQuery('', querySortOpts)
-  const [filter, setFilter] = useState<filter>(defaultFilter ?? 'open')
-  const [pillFilter, setPillFilter] = useState<string | undefined>(undefined)
+  const localStore = safeLocalStorage()
+  const sessionStore = safeSessionStorage()
+  const persistAs = (name: string, store?: Storage) => {
+    return persistPrefix ? { prefix: persistPrefix, name, store } : undefined
+  }
 
-  useEffect(() => {
-    if (useQuerySortLocalStorage) {
-      setSavedSort(sort)
-    }
-  }, [sort])
+  const initialSort = defaultSort ?? 'score'
+  const [sort, setSort] = useSort(initialSort, {
+    useUrl: !!useQuerySortUrlParams,
+    persist: persistAs('sort', localStore),
+  })
+  const [query, setQuery] = useQuery('', {
+    useUrl: !!useQuerySortUrlParams,
+    persist: persistAs('query', sessionStore),
+  })
+  const [filter, setFilter] = usePersistentState<filter>(
+    defaultFilter ?? 'open',
+    persistAs('filter', sessionStore)
+  )
+  const [pillFilter, setPillFilter] = usePersistentState<string | null>(
+    null,
+    persistAs('pillFilter', sessionStore)
+  )
 
   const follows = useFollows(user?.id)
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
@@ -299,7 +355,7 @@ function ContractSearchControls(props: {
         filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
       ].filter((f) => f)
 
-  const selectPill = (pill: string | undefined) => () => {
+  const selectPill = (pill: string | null) => () => {
     setPillFilter(pill)
     track('select search category', { category: pill ?? 'all' })
   }
@@ -320,23 +376,14 @@ function ContractSearchControls(props: {
     track('select search sort', { sort: newSort })
   }
 
-  const indexName = `${indexPrefix}contracts-${sort}`
-  const index = useMemo(() => searchClient.initIndex(indexName), [indexName])
-  const searchIndex = useMemo(
-    () => searchClient.initIndex(searchIndexName),
-    [searchIndexName]
-  )
-
   useEffect(() => {
     onSearchParametersChanged({
-      index: query ? searchIndex : index,
       query: query,
+      sort: sort,
       numericFilters: numericFilters,
       facetFilters: facetFilters,
-      showTime:
-        sort === 'close-date' || sort === 'resolve-date' ? sort : undefined,
     })
-  }, [query, index, searchIndex, filter, JSON.stringify(facetFilters)])
+  }, [query, sort, filter, JSON.stringify(facetFilters)])
 
   if (noControls) {
     return <></>
@@ -373,7 +420,7 @@ function ContractSearchControls(props: {
             value={sort}
             onChange={(e) => selectSort(e.target.value as Sort)}
           >
-            {sortOptions.map((option) => (
+            {SORTS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -387,7 +434,7 @@ function ContractSearchControls(props: {
           <PillButton
             key={'all'}
             selected={pillFilter === undefined}
-            onSelect={selectPill(undefined)}
+            onSelect={selectPill(null)}
           >
             All
           </PillButton>
