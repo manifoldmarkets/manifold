@@ -7,9 +7,10 @@ COPY server/package.json server/package.json
 COPY common/package.json common/package.json
 RUN yarn
 COPY . .
+ARG TWTICH_APP_CLIENT_ID
+ENV TWTICH_APP_CLIENT_ID ${TWTICH_APP_CLIENT_ID}
 RUN yarn --cwd web build
 RUN yarn --cwd server build
-#CMD ["bash"]
 
 # -- Stage 2 -- #
 FROM node:16

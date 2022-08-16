@@ -11,4 +11,7 @@ module.exports = {
             },
         ];
     },
+    env: {
+        TWTICH_APP_CLIENT_ID: process.env.TWTICH_APP_CLIENT_ID,
+    },
 };
