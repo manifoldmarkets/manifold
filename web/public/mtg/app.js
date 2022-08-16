@@ -167,7 +167,7 @@ function putIntoMap(data) {
     }
     if (whichGuesser === 'basic') {
       name =
-        '<img class="symbol" style="width: 15px; height: 15px" src="' +
+        '<img class="symbol" style="width: 17px; height: 17px" src="' +
         sets[name][1] +
         '" /> ' +
         sets[name][0]
