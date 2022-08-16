@@ -122,19 +122,6 @@ export function ContractCard(props: {
           ) : (
             <FreeResponseTopAnswer contract={contract} truncate="long" />
           ))}
-        <Row className={'absolute bottom-3 gap-2 md:gap-0'}>
-          <AvatarDetails
-            contract={contract}
-            short={true}
-            className={'block md:hidden'}
-          />
-          <MiscDetails
-            contract={contract}
-            showHotVolume={showHotVolume}
-            showTime={showTime}
-            hideGroupLink={hideGroupLink}
-          />
-        </Row>
       </Col>
       {showQuickBet ? (
         <QuickBet contract={contract} user={user} />
@@ -172,6 +159,24 @@ export function ContractCard(props: {
           <ProbBar contract={contract} />
         </>
       )}
+      <Row
+        className={clsx(
+          'absolute bottom-3 gap-2 truncate px-5 md:gap-0',
+          showQuickBet ? 'w-[85%]' : 'w-full'
+        )}
+      >
+        <AvatarDetails
+          contract={contract}
+          short={true}
+          className={'block md:hidden'}
+        />
+        <MiscDetails
+          contract={contract}
+          showHotVolume={showHotVolume}
+          showTime={showTime}
+          hideGroupLink={hideGroupLink}
+        />
+      </Row>
     </Row>
   )
 }
