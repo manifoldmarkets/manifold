@@ -42,6 +42,7 @@ import { listUsers } from 'web/lib/firebase/users'
 import { FeedComment } from 'web/components/feed/feed-comments'
 import { Title } from 'web/components/title'
 import { FeedBet } from 'web/components/feed/feed-bets'
+import { BountyBox } from 'web/components/bounty/bounty-box'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -116,30 +117,38 @@ export function ContractPageSidebar(props: {
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
+  const isBounty = outcomeType === 'BOUNTY'
   const allowTrade = tradingAllowed(contract)
   const allowResolve = !isResolved && isCreator && !!user
   const hasSidePanel =
-    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
+    (isBinary || isNumeric || isPseudoNumeric || isBounty) &&
+    (allowTrade || allowResolve)
+  if (!hasSidePanel) {
+    return null
+  }
 
-  return hasSidePanel ? (
+  return (
     <Col className="gap-4">
       {allowTrade &&
         (isNumeric ? (
           <NumericBetPanel className="hidden xl:flex" contract={contract} />
+        ) : isBounty ? (
+          <BountyBox contract={contract} user={user ?? null} />
         ) : (
           <BetPanel
             className="hidden xl:flex"
             contract={contract as CPMMBinaryContract}
           />
         ))}
+
       {allowResolve &&
         (isNumeric || isPseudoNumeric ? (
           <NumericResolutionPanel creator={user} contract={contract} />
-        ) : (
+        ) : isBinary ? (
           <ResolutionPanel creator={user} contract={contract} />
-        ))}
+        ) : null)}
     </Col>
-  ) : null
+  )
 }
 
 export function ContractPageContent(

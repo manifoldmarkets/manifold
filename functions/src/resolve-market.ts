@@ -2,13 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { difference, uniq, mapValues, groupBy, sumBy } from 'lodash'
 
-import {
-  AnswerContract,
-  Contract,
-  FreeResponseContract,
-  MultipleChoiceContract,
-  RESOLUTIONS,
-} from '../../common/contract'
+import { AnswerContract, Contract, RESOLUTIONS } from '../../common/contract'
 import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
