@@ -34,6 +34,7 @@ export const addbounty = newEndpoint({}, async (req, auth) => {
 
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance')
 
+    // TODO: Capture with txns?
     transaction.update(userDoc, {
       balance: user.balance - amount,
       totalDeposits: user.totalDeposits - amount,
@@ -46,6 +47,7 @@ export const addbounty = newEndpoint({}, async (req, auth) => {
         ...contract.prizes,
         [user.id]: existingPrize + amount,
       },
+      totalPrizes: contract.totalPrizes + amount,
     })
 
     return { status: 'success' }

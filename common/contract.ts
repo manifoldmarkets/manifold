@@ -146,7 +146,7 @@ export type Bounty = {
   prizes: {
     [giverId: string]: number
   }
-  prizeTotal: number
+  totalPrizes: number
 }
 
 export type outcomeType = AnyOutcomeType['outcomeType']

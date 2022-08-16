@@ -171,7 +171,7 @@ function getBountyProps(ante: number, creator: User) {
     prizes: {
       [creator.id]: ante,
     },
-    prizeTotal: ante,
+    totalPrizes: ante,
   }
   return system
 }
