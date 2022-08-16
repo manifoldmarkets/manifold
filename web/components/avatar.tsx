@@ -1,6 +1,6 @@
 import Router from 'next/router'
 import clsx from 'clsx'
-import { MouseEvent } from 'react'
+import { MouseEvent, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 
 export function Avatar(props: {
@@ -10,7 +10,8 @@ export function Avatar(props: {
   size?: number | 'xs' | 'sm'
   className?: string
 }) {
-  const { username, avatarUrl, noLink, size, className } = props
+  const { username, noLink, size, className } = props
+  const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
   const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
 
   const onClick =
@@ -35,6 +36,11 @@ export function Avatar(props: {
       src={avatarUrl}
       onClick={onClick}
       alt={username}
+      onError={() => {
+        // If the image doesn't load, clear the avatarUrl to show the default
+        // Mostly for localhost, when getting a 403 from googleusercontent
+        setAvatarUrl('')
+      }}
     />
   ) : (
     <UserCircleIcon
