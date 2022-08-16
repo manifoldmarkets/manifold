@@ -1,8 +1,4 @@
-import {
-  Contract,
-  getContractsBySlugs,
-  getTrendingContracts,
-} from 'web/lib/firebase/contracts'
+import { Contract, getTrendingContracts } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
