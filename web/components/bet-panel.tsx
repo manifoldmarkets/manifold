@@ -448,8 +448,6 @@ function LimitOrderPanel(props: {
   const yesAmount = shares * (yesLimitProb ?? 1)
   const noAmount = shares * (1 - (noLimitProb ?? 0))
 
-  const profitIfBothFilled = shares - (yesAmount + noAmount)
-
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
@@ -558,6 +556,8 @@ function LimitOrderPanel(props: {
     unfilledBets as LimitBet[]
   )
   const noReturnPercent = formatPercent(noReturn)
+
+  const profitIfBothFilled = shares - (yesAmount + noAmount) - yesFees - noFees
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
