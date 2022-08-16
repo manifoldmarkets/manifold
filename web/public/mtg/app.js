@@ -20,10 +20,6 @@ flag = true
 page = 1
 sets = {}
 
-fetch('jsons/set.json')
-  .then((response) => response.json())
-  .then((data) => (sets = data))
-
 window.console.log(sets)
 document.location.search.split('&').forEach((pair) => {
   let v = pair.split('=')
@@ -37,6 +33,12 @@ document.location.search.split('&').forEach((pair) => {
     firstPrint = v[1]
   }
 })
+
+if (whichGuesser === 'basic') {
+  fetch('jsons/set.json')
+    .then((response) => response.json())
+    .then((data) => (sets = data))
+}
 
 let firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
