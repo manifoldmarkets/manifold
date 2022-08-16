@@ -133,6 +133,26 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
   if (ante > user.balance)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
+  let group: Group | null = null
+  if (groupId) {
+    const groupDocRef = firestore.collection('groups').doc(groupId)
+    const groupDoc = await groupDocRef.get()
+    if (!groupDoc.exists) {
+      throw new APIError(400, 'No group exists with the given group ID.')
+    }
+
+    group = groupDoc.data() as Group
+    if (
+      !group.memberIds.includes(user.id) &&
+      !group.anyoneCanJoin &&
+      group.creatorId !== user.id
+    ) {
+      throw new APIError(
+        400,
+        'User must be a member/creator of the group or group must be open to add markets to it.'
+      )
+    }
+  }
   const slug = await getSlug(question)
   const contractRef = firestore.collection('contracts').doc()
 
@@ -167,28 +187,11 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
 
   await contractRef.create(contract)
 
-  let group = null
-  if (groupId) {
-    const groupDocRef = firestore.collection('groups').doc(groupId)
-    const groupDoc = await groupDocRef.get()
-    if (!groupDoc.exists) {
-      throw new APIError(400, 'No group exists with the given group ID.')
-    }
-
-    group = groupDoc.data() as Group
-    if (
-      !group.memberIds.includes(user.id) &&
-      !group.anyoneCanJoin &&
-      group.creatorId !== user.id
-    ) {
-      throw new APIError(
-        400,
-        'User must be a member/creator of the group or group must be open to add markets to it.'
-      )
-    }
+  if (group != null) {
     if (!group.contractIds.includes(contractRef.id)) {
       await createGroupLinks(group, [contractRef.id], auth.uid)
-      await groupDocRef.update({
+      const groupDocRef = firestore.collection('groups').doc(group.id)
+      groupDocRef.update({
         contractIds: uniq([...group.contractIds, contractRef.id]),
       })
     }
