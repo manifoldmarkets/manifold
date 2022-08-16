@@ -12,3 +12,10 @@ export function getParamsFromURL(url: string) {
     }
     return result;
 }
+
+export function buildURL(baseURL: string, params: {[k: string]: unknown}) {
+    const paramString = Object.keys(params)
+        .map((key) => key + "=" + params[key])
+        .join("&");
+    return `${baseURL}?${paramString}`;
+}

@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import { PUBLIC_FACING_URL, TWITCH_APP_CLIENT_SECRET, TWTICH_APP_CLIENT_ID } from "./envs";
 import log from "./logger";
 
 export class TwitchUser {
@@ -17,8 +18,8 @@ export class TwitchUser {
 
 export async function getTwitchDetailsFromLinkCode(code: string): Promise<TwitchUser> {
     const grantType = "authorization_code";
-    const redirectURI = "http://localhost:9172/registerchanneltwitch";
-    const queryString = `client_id=${process.env.TWTICH_APP_CLIENT_ID}&client_secret=${process.env.TWITCH_APP_CLIENT_SECRET}&code=${code}&grant_type=${grantType}&redirect_uri=${redirectURI}`;
+    const redirectURI = `${PUBLIC_FACING_URL}/registerchanneltwitch`;
+    const queryString = `client_id=${TWTICH_APP_CLIENT_ID}&client_secret=${TWITCH_APP_CLIENT_SECRET}&code=${code}&grant_type=${grantType}&redirect_uri=${redirectURI}`;
 
     let raw = await fetch(`https://id.twitch.tv/oauth2/token?${queryString}`, { method: "POST" });
     let json = await raw.json();
@@ -31,7 +32,7 @@ export async function getTwitchDetailsFromLinkCode(code: string): Promise<Twitch
 
     raw = await fetch("https://api.twitch.tv/helix/users", {
         headers: {
-            "Client-Id": process.env.TWTICH_APP_CLIENT_ID,
+            "Client-Id": TWTICH_APP_CLIENT_ID,
             Authorization: `Bearer ${accessToken}`,
         },
     });

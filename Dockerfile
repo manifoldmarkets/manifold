@@ -6,10 +6,10 @@ COPY web/package.json web/package.json
 COPY server/package.json server/package.json
 COPY common/package.json common/package.json
 RUN yarn
-COPY . .
-ARG TWTICH_APP_CLIENT_ID
-ENV TWTICH_APP_CLIENT_ID ${TWTICH_APP_CLIENT_ID}
+COPY common common
+COPY web web
 RUN yarn --cwd web build
+COPY server server
 RUN yarn --cwd server build
 
 # -- Stage 2 -- #

@@ -1,6 +1,7 @@
 node_modules
 /Manifold notes.txt
-dist
+/server/dist
 /server/data
 .next
-out
+/web/out
+/.env

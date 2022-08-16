@@ -56,20 +56,8 @@ export default () => {
                     console.error(responseData);
                     document.getElementById("errorMessage").innerHTML = responseData.message;
                     return;
-                }
-                const sessionToken = responseData.token;
-
-                const params = {
-                    client_id: process.env.TWTICH_APP_CLIENT_ID,
-                    response_type: "code",
-                    redirect_uri: `http://localhost:9172/linkAccount`,
-                    scope: "user:read:email",
-                    state: sessionToken,
-                };
-                const paramString = Object.keys(params)
-                    .map((key) => key + "=" + params[key])
-                    .join("&");
-                window.open(`https://id.twitch.tv/oauth2/authorize?${paramString}`);
+                }                
+                window.open(responseData.twitchAuthURL);
             } finally {
                 musernameElement.disabled = false;
                 apikeyElement.disabled = false;
@@ -100,11 +88,12 @@ export default () => {
         document.getElementById("copyDockLink").addEventListener("click", () => {
             navigator.clipboard.writeText(`http://localhost:19823/dock.html?session=${sessionId}`).then(() => showToast("Copied dock link to clipboard."));
         });
-
-        (
-            document.getElementById("addbot") as HTMLLinkElement
-        ).href = `https://id.twitch.tv/oauth2/authorize?client_id=${process.env.TWTICH_APP_CLIENT_ID}&response_type=code&redirect_uri=http://localhost:9172/registerchanneltwitch&scope=user:read:email`;
     }, []);
+
+    const onAddBot = async () => {
+        const response = await (await fetch("api/botJoinURL")).json();
+        window.open(response.url);
+    }
 
     return (
         <>
@@ -139,7 +128,7 @@ export default () => {
                     </div>
 
                     <Row className="">
-                        <a id="addbot" target="_blank" className="btn btn-primary grow">
+                        <a id="addbot" target="_blank" className="btn btn-primary grow" onClick={onAddBot}>
                             Add bot to your channel
                         </a>
                     </Row>

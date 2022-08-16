@@ -9,12 +9,11 @@ import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
 import * as Manifold from "./manifold-api";
+import { PUBLIC_FACING_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from "./envs";
 
 const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
-const BOT_USERNAME = "manifoldbot";
-
-const SIGNUP_LINK = "http://localhost:3000/profile"; //!!!
+const SIGNUP_LINK = `${PUBLIC_FACING_URL}/profile`; //!!!
 
 const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) => `Sorry ${username}, you don't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a market LUL`;
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
@@ -188,8 +187,8 @@ export default class TwitchBot {
                 reconnect: true,
             },
             identity: {
-                username: BOT_USERNAME,
-                password: process.env.TWITCH_OAUTH_TOKEN,
+                username: TWITCH_BOT_USERNAME,
+                password: TWITCH_BOT_OAUTH_TOKEN,
             },
             channels: [...this.getRegisteredChannelListFromFile()],
         });
@@ -292,7 +291,7 @@ export default class TwitchBot {
                 this.client.say(channelName, "/color BlueViolet");
 
                 let message = "Hey there! I am the Manifold Markets chat bot.";
-                if (!this.client.isMod(channelName, BOT_USERNAME)) {
+                if (!this.client.isMod(channelName, TWITCH_BOT_USERNAME)) {
                     message += " Please /mod me so I can do my job.";
                 }
                 this.client.say(channelName, message);

@@ -9,7 +9,7 @@ import path from "path";
 
 import * as Packet from "common/packet-ids";
 import { UserNotRegisteredException } from "common/exceptions";
-import { getParamsFromURL } from "common/utils-node";
+import { buildURL, getParamsFromURL } from "./utils";
 
 import * as Manifold from "./manifold-api";
 import * as Twitch from "./twitch-api";
@@ -19,6 +19,7 @@ import User from "./user";
 import { Market } from "./market";
 import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
 import { ResolutionOutcome } from "common/manifold-defs";
+import { PUBLIC_FACING_URL, TWITCH_BOT_OAUTH_TOKEN, TWTICH_APP_CLIENT_ID } from "./envs";
 
 const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
 
@@ -60,6 +61,10 @@ export default class App {
                 yy: "%dY",
             },
         });
+
+        if (!fs.existsSync("data")){
+            fs.mkdirSync("data");
+        }
 
         this.loadUsersFromFile();
     }
@@ -255,7 +260,7 @@ export default class App {
             }
         });
 
-        this.app.post("/linkInit", async (request, response) => {
+        this.app.post("/api/linkInit", async (request, response) => {
             try {
                 const body = request.body;
                 const manifoldUsername = body.manifoldUsername;
@@ -269,10 +274,31 @@ export default class App {
                     apiKey: APIKey,
                 };
 
-                response.json({ message: "Success.", token: sessionToken });
+                const params = {
+                    client_id: TWTICH_APP_CLIENT_ID,
+                    response_type: "code",
+                    redirect_uri: `${PUBLIC_FACING_URL}/linkAccount`,
+                    scope: "user:read:email",
+                    state: sessionToken,
+                };
+                const twitchAuthURL = buildURL("https://id.twitch.tv/oauth2/authorize", params);
+                log.info(`Sent Twitch auth URL: ${twitchAuthURL}`);
+
+                response.json({ message: "Success.", twitchAuthURL: twitchAuthURL });
             } catch (e) {
                 response.status(400).json({ error: "Bad request", message: e.message });
             }
+        });
+
+        this.app.get("/api/botJoinURL", async (request, response) => {
+            const params = {
+                client_id: TWTICH_APP_CLIENT_ID,
+                response_type: "code",
+                redirect_uri: `${PUBLIC_FACING_URL}/registerchanneltwitch`,
+                scope: "user:read:email",
+            };
+            const botURL = buildURL("https://id.twitch.tv/oauth2/authorize", params);
+            response.json({url: botURL});
         });
 
         this.app.get("/linkAccount", async (request, response) => {

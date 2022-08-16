@@ -7,11 +7,8 @@ module.exports = {
             },
             {
                 source: "/api/:slug",
-                destination: "http://localhost:9172/:slug", // Proxy to Backend
+                destination: "http://localhost:9172/api/:slug", // Proxy to Backend
             },
         ];
-    },
-    env: {
-        TWTICH_APP_CLIENT_ID: process.env.TWTICH_APP_CLIENT_ID,
     },
 };
