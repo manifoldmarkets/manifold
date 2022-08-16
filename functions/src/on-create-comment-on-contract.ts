@@ -24,6 +24,11 @@ export const onCreateCommentOnContract = functions
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
 
+    await change.ref.update({
+      contractSlug: contract.slug,
+      contractQuestion: contract.question,
+    })
+
     const comment = change.data() as Comment
     const lastCommentTime = comment.createdTime
 
