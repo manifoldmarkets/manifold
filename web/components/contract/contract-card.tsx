@@ -233,7 +233,7 @@ export function BountyValue(props: {
   const textColor = `text-${getColor(contract)}`
   return (
     <Col className={clsx(large ? 'text-3xl' : 'text-2xl', className)}>
-      <div className={textColor}>{formatMoney(contract.prizeTotal)}</div>
+      <div className={textColor}>{formatMoney(contract.totalPrizes)}</div>
       <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
         bounty
       </div>
