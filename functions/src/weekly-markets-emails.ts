@@ -6,6 +6,7 @@ import { getPrivateUser, getValues, isProd, log } from './utils'
 import { filterDefined } from '../../common/util/array'
 import { sendThreeContractsEmail } from './emails'
 import { createRNG, shuffle } from '../../common/util/random'
+import { DAY_MS } from '../../common/util/time'
 
 export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
@@ -21,6 +22,7 @@ async function getTrendingContracts() {
     firestore
       .collection('contracts')
       .where('isResolved', '==', false)
+      .where('closeTime', '>', Date.now() - DAY_MS)
       .where('visibility', '==', 'public')
       .orderBy('popularityScore', 'desc')
       .limit(50)
