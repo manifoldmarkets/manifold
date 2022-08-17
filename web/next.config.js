@@ -1,5 +1,7 @@
 const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
+const ABOUT_PAGE_URL = 'https://docs.manifold.markets/$how-to'
+
 /** @type {import('next').NextConfig} */
 module.exports = {
   staticPageGenerationTimeout: 600, // e.g. stats page
@@ -33,6 +35,11 @@ module.exports = {
       {
         source: '/api/v0',
         destination: API_DOCS_URL,
+        permanent: false,
+      },
+      {
+        source: '/about',
+        destination: ABOUT_PAGE_URL,
         permanent: false,
       },
       {
