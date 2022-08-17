@@ -1,3 +1,4 @@
+import { XIcon } from '@heroicons/react/solid'
 import { Bet } from 'common/bet'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
@@ -110,14 +111,13 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             disabled
           />
 
-          {(isBinary || isPseudoNumeric) && tradingAllowed(contract) && (
-            <Button
-              color="gradient"
-              onClick={() => setBetPanelOpen((open) => !open)}
-            >
-              {betPanelOpen ? 'Cancel' : 'Bet'}
-            </Button>
-          )}
+          {(isBinary || isPseudoNumeric) &&
+            tradingAllowed(contract) &&
+            !betPanelOpen && (
+              <Button color="gradient" onClick={() => setBetPanelOpen(true)}>
+                Bet
+              </Button>
+            )}
 
           {isBinary && <BinaryResolutionOrChance contract={contract} />}
 
@@ -140,6 +140,15 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         <Spacer h={2} />
       </div>
 
+      {(isBinary || isPseudoNumeric) && betPanelOpen && (
+        <Row className="mb-2 items-center justify-center gap-4 self-center rounded bg-indigo-200 py-2 px-3">
+          <BetInline contract={contract as any} />
+          <button onClick={() => setBetPanelOpen(false)}>
+            <XIcon className="h-6 w-6" />
+          </button>
+        </Row>
+      )}
+
       <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
         {(isBinary || isPseudoNumeric) && (
           <ContractProbGraph
@@ -157,9 +166,6 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           <NumericGraph contract={contract} height={graphHeight} />
         )}
       </div>
-      {(isBinary || isPseudoNumeric) && betPanelOpen && (
-        <BetInline contract={contract as any} />
-      )}
     </Col>
   )
 }

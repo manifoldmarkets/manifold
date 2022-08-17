@@ -38,7 +38,7 @@ export function YesNoSelector(props: {
             'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white',
             selected == 'YES'
               ? 'bg-primary text-white'
-              : 'text-primary bg-transparent',
+              : 'text-primary bg-white',
             btnClassName
           )}
           onClick={() => onSelect('YES')}
@@ -55,7 +55,7 @@ export function YesNoSelector(props: {
             'border-red-400 hover:border-red-500 hover:bg-red-500 hover:text-white',
             selected == 'NO'
               ? 'bg-red-400 text-white'
-              : 'bg-transparent text-red-400',
+              : 'bg-white text-red-400',
             btnClassName
           )}
           onClick={() => onSelect('NO')}

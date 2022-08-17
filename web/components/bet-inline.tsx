@@ -44,12 +44,7 @@ export function BetInline(props: {
   const betDisabled = submitBet.isLoading || submitBet.isError || !amount
 
   return (
-    <Row
-      className={clsx(
-        'align-stretch mb-4 h-8 items-stretch justify-center gap-3',
-        className
-      )}
-    >
+    <Row className={clsx('h-8 items-stretch justify-center gap-3', className)}>
       <div className="text-xl">Bet</div>
       <YesNoSelector
         className="space-x-0"
