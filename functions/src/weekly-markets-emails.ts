@@ -24,6 +24,7 @@ async function getTrendingContracts() {
       .where('isResolved', '==', false)
       .where('closeTime', '>', Date.now() + DAY_MS)
       .where('visibility', '==', 'public')
+      .orderBy('closeTime', 'asc')
       .orderBy('popularityScore', 'desc')
       .limit(50)
   )
