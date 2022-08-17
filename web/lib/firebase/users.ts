@@ -14,7 +14,6 @@ import {
   onSnapshot,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
-import { ref, getStorage, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { zip } from 'lodash'
 import { app, db } from './init'
@@ -200,20 +199,6 @@ export async function firebaseLogin() {
 
 export async function firebaseLogout() {
   await auth.signOut()
-}
-
-const storage = getStorage(app)
-// Example: uploadData('avatars/ajfi8iejsf.png', data)
-export async function uploadData(
-  path: string,
-  data: ArrayBuffer | Blob | Uint8Array
-) {
-  const uploadRef = ref(storage, path)
-  // Uploaded files should be cached for 1 day, then revalidated
-  // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-  const metadata = { cacheControl: 'public, max-age=86400, must-revalidate' }
-  await uploadBytes(uploadRef, data, metadata)
-  return await getDownloadURL(uploadRef)
 }
 
 export async function listUsers(userIds: string[]) {
