@@ -99,8 +99,8 @@ function getMoreNavigation(user?: User | null) {
 }
 
 const signedOutNavigation = [
-  { name: 'Home', href: '/home', icon: HomeIcon },
-  { name: 'Explore', href: '/markets', icon: SearchIcon },
+  { name: 'Home', href: '/', icon: HomeIcon },
+  { name: 'Explore', href: '/home', icon: SearchIcon },
   {
     name: 'About',
     href: 'https://docs.manifold.markets/$how-to',
