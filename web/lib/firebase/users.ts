@@ -15,18 +15,9 @@ import {
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { zip } from 'lodash'
 import { app, db } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
-import {
-  coll,
-  getValue,
-  getValues,
-  listenForValue,
-  listenForValues,
-} from './utils'
-import { feed } from 'common/feed'
-import { CATEGORY_LIST } from 'common/categories'
+import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
 import { addUserToGroupViaId } from 'web/lib/firebase/groups'
@@ -246,25 +237,6 @@ const topFollowedQuery = query(
 
 export function getUsers() {
   return getValues<User>(users)
-}
-
-export async function getUserFeed(userId: string) {
-  const feedDoc = doc(privateUsers, userId, 'cache', 'feed')
-  const userFeed = await getValue<{
-    feed: feed
-  }>(feedDoc)
-  return userFeed?.feed ?? []
-}
-
-export async function getCategoryFeeds(userId: string) {
-  const cacheCollection = collection(privateUsers, userId, 'cache')
-  const feedData = await Promise.all(
-    CATEGORY_LIST.map((category) =>
-      getValue<{ feed: feed }>(doc(cacheCollection, `feed-${category}`))
-    )
-  )
-  const feeds = feedData.map((data) => data?.feed ?? [])
-  return Object.fromEntries(zip(CATEGORY_LIST, feeds) as [string, feed][])
 }
 
 export async function follow(userId: string, followedUserId: string) {
