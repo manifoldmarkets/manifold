@@ -82,15 +82,21 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         (outcomeType == 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
         mechanism == 'cpmm-1'
       ) {
-        const { outcome, limitProb } = validate(binarySchema, req.body)
+        // eslint-disable-next-line prefer-const
+        let { outcome, limitProb } = validate(binarySchema, req.body)
 
         if (limitProb !== undefined && outcomeType === 'BINARY') {
-          const isRounded = Math.round(limitProb * 100) === limitProb * 100
+          const isRounded = floatingEqual(
+            Math.round(limitProb * 100),
+            limitProb * 100
+          )
           if (!isRounded)
             throw new APIError(
               400,
               'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
             )
+
+          limitProb = Math.round(limitProb * 100) / 100
         }
 
         const unfilledBetsSnap = await trans.get(
