@@ -18,7 +18,9 @@ online = false
 firstPrint = false
 flag = true
 page = 1
+sets = {}
 
+window.console.log(sets)
 document.location.search.split('&').forEach((pair) => {
   let v = pair.split('=')
   if (v[0] === '?whichguesser') {
@@ -32,39 +34,38 @@ document.location.search.split('&').forEach((pair) => {
   }
 })
 
-let firstFetch = fetch('jsons/' + whichGuesser + page + '.json')
+if (whichGuesser === 'basic') {
+  fetch('jsons/set.json')
+    .then((response) => response.json())
+    .then((data) => (sets = data))
+}
+
+let firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
 
 function putIntoMapAndFetch(data) {
   putIntoMap(data.data)
-  if (data.has_more) {
-    page += 1
-    window.setTimeout(() =>
-      fetchToResponse(fetch('jsons/' + whichGuesser + page + '.json'))
+  for (const [key, value] of Object.entries(allData)) {
+    nameList.push(key)
+    probList.push(
+      value.length + (probList.length === 0 ? 0 : probList[probList.length - 1])
     )
-  } else {
-    for (const [key, value] of Object.entries(allData)) {
-      nameList.push(key)
-      probList.push(
-        value.length +
-          (probList.length === 0 ? 0 : probList[probList.length - 1])
-      )
-      unseenTotal = total
-    }
-    window.console.log(allData)
-    window.console.log(total)
-    window.console.log(probList)
-    window.console.log(nameList)
-    if (whichGuesser === 'counterspell') {
-      document.getElementById('guess-type').innerText = 'Counterspell Guesser'
-    } else if (whichGuesser === 'burn') {
-      document.getElementById('guess-type').innerText = 'Match With Hot Singles'
-    } else if (whichGuesser === 'beast') {
-      document.getElementById('guess-type').innerText =
-        'Finding Fantastic Beasts'
-    }
-    setUpNewGame()
+    unseenTotal = total
   }
+  window.console.log(allData)
+  window.console.log(total)
+  window.console.log(probList)
+  window.console.log(nameList)
+  if (whichGuesser === 'counterspell') {
+    document.getElementById('guess-type').innerText = 'Counterspell Guesser'
+  } else if (whichGuesser === 'burn') {
+    document.getElementById('guess-type').innerText = 'Match With Hot Singles'
+  } else if (whichGuesser === 'beast') {
+    document.getElementById('guess-type').innerText = 'Finding Fantastic Beasts'
+  } else if (whichGuesser === 'basic') {
+    document.getElementById('guess-type').innerText = 'How Basic'
+  }
+  setUpNewGame()
 }
 
 function getKSamples() {
@@ -134,11 +135,17 @@ function determineIfSkip(card) {
     }
   }
   if (firstPrint) {
-    if (
-      card.reprint === true ||
-      (card.frame_effects && card.frame_effects.includes('showcase'))
-    ) {
-      return true
+    if (whichGuesser == 'basic') {
+      if (card.set_type !== 'expansion' && card.set_type !== 'funny') {
+        return true
+      }
+    } else {
+      if (
+        card.reprint === true ||
+        (card.frame_effects && card.frame_effects.includes('showcase'))
+      ) {
+        return true
+      }
     }
   }
   // reskinned card names show in art crop
@@ -160,13 +167,16 @@ function putIntoMap(data) {
     if (card.card_faces) {
       name = card.card_faces[0].name
     }
+    if (whichGuesser === 'basic') {
+      name =
+        '<img class="symbol" style="width: 17px; height: 17px" src="' +
+        sets[name][1] +
+        '" /> ' +
+        sets[name][0]
+    }
     let normalImg = ''
     if (card.image_uris.normal) {
       normalImg = card.image_uris.normal
-    } else if (card.image_uris.large) {
-      normalImg = card.image_uris.large
-    } else if (card.image_uris.small) {
-      normalImg = card.image_uris.small
     } else {
       continue
     }
@@ -224,7 +234,7 @@ function setUpNewGame() {
   for (nameIndex = 1; nameIndex <= k + extra; nameIndex++) {
     currName = document.getElementById('name-' + nameIndex)
     // window.console.log(currName)
-    currName.innerText = namesList[nameIndex - 1]
+    currName.innerHTML = namesList[nameIndex - 1]
     nameBank.appendChild(currName)
   }
 }
@@ -236,9 +246,13 @@ function checkAnswers() {
     currCard = document.getElementById('card-' + cardIndex)
     let incorrect = true
     if (currCard.dataset.name) {
-      let guess = document.getElementById(currCard.dataset.name).innerText
-      // window.console.log(artDict[currCard.dataset.url][0], guess);
-      incorrect = artDict[currCard.dataset.url][0] !== guess
+      // remove image text
+      let guess = document
+        .getElementById(currCard.dataset.name)
+        .innerText.split('>')
+      let ans = artDict[currCard.dataset.url][0].split('>')
+      window.console.log(ans, guess)
+      incorrect = ans[ans.length - 1] !== guess[guess.length - 1]
       // decide if their guess was correct
     }
     if (incorrect) currCard.classList.add('incorrect')
@@ -352,6 +366,10 @@ function dropOnCard(id, data) {
 }
 
 function setWordsLeft() {
+  cardName = 'Unused Card Names: '
+  if (whichGuesser === 'basic') {
+    cardName = 'Unused Set Names: '
+  }
   document.getElementById('words-left').innerText =
-    'Unused Card Names: ' + wordsLeft + '/Images: ' + imagesLeft
+    cardName + wordsLeft + '/Images: ' + imagesLeft
 }
