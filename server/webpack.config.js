@@ -21,4 +21,9 @@ export default {
         path: path.resolve("./dist"),
         clean: true,
     },
+    externals: {
+        bufferutil: "bufferutil",
+        "utf-8-validate": "utf-8-validate",
+        express: { commonjs: "express" },
+    },
 };

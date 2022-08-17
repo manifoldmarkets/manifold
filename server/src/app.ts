@@ -339,5 +339,6 @@ export default class App {
         });
 
         this.app.use(express.static(path.resolve("static"), { index: false, extensions: ["html"] }));
+        this.app.get("*", (req, res) => res.sendFile(path.resolve("static/404.html")));
     }
 }
