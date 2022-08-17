@@ -6,7 +6,7 @@ import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
-import { User } from 'web/lib/firebase/users'
+import { getFirstDayProfit, User } from 'web/lib/firebase/users'
 import {
   formatLargeNumber,
   formatMoney,
@@ -73,6 +73,7 @@ export function BetsList(props: {
 
   const [sort, setSort] = useState<BetSort>('newest')
   const [filter, setFilter] = useState<BetFilter>('open')
+  const [firstDayProfit, setFirstDayProfit] = useState(0)
   const [page, setPage] = useState(0)
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
@@ -83,6 +84,12 @@ export function BetsList(props: {
       trackLatency(signedInUser.id, 'portfolio', getTime())
     }
   }, [signedInUser, bets, contractsById, getTime])
+
+  useEffect(() => {
+    if (signedInUser && signedInUser.id === user.id) {
+      getFirstDayProfit(signedInUser.id).then(setFirstDayProfit)
+    }
+  }, [signedInUser, user])
 
   if (!bets || !contractsById) {
     return <LoadingIndicator />
@@ -157,30 +164,33 @@ export function BetsList(props: {
     (c) => contractsMetrics[c.id].netPayout
   )
 
-  const totalPnl = user.profitCached.allTime
-  const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
+  const totalPnl = (signedInUser?.profitCached.allTime ?? 0) - firstDayProfit
+  const totalProfitPercent =
+    (totalPnl / (signedInUser?.totalDeposits ?? 1000)) * 100
   const investedProfitPercent =
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
     <Col className="mt-6">
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
-        <Row className="gap-8">
-          <Col>
-            <div className="text-sm text-gray-500">Investment value</div>
-            <div className="text-lg">
-              {formatMoney(currentNetInvestment)}{' '}
-              <ProfitBadge profitPercent={investedProfitPercent} />
-            </div>
-          </Col>
-          <Col>
-            <div className="text-sm text-gray-500">Total profit</div>
-            <div className="text-lg">
-              {formatMoney(totalPnl)}{' '}
-              <ProfitBadge profitPercent={totalProfitPercent} />
-            </div>
-          </Col>
-        </Row>
+        {user.id === signedInUser?.id && (
+          <Row className="gap-8">
+            <Col>
+              <div className="text-sm text-gray-500">Investment value</div>
+              <div className="text-lg">
+                {formatMoney(currentNetInvestment)}{' '}
+                <ProfitBadge profitPercent={investedProfitPercent} />
+              </div>
+            </Col>
+            <Col>
+              <div className="text-sm text-gray-500">Total profit</div>
+              <div className="text-lg">
+                {formatMoney(totalPnl)}{' '}
+                <ProfitBadge profitPercent={totalProfitPercent} />
+              </div>
+            </Col>
+          </Row>
+        )}
 
         <Row className="gap-8">
           <select
