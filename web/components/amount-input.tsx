@@ -37,7 +37,7 @@ export function AmountInput(props: {
 
   return (
     <Col className={className}>
-      <label className="input-group">
+      <label className="input-group mb-4">
         <span className="bg-gray-200 text-sm">{label}</span>
         <input
           className={clsx(
@@ -56,8 +56,6 @@ export function AmountInput(props: {
           onChange={(e) => onAmountChange(e.target.value)}
         />
       </label>
-
-      <Spacer h={4} />
 
       {error && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">

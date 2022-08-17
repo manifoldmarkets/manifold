@@ -1,8 +1,10 @@
 import { Bet } from 'common/bet'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
+import { useState } from 'react'
 import { AnswersGraph } from 'web/components/answers/answers-graph'
-import BetButton from 'web/components/bet-button'
+import { BetInline } from 'web/components/bet-inline'
+import { Button } from 'web/components/button'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
@@ -19,7 +21,6 @@ import { SiteLink } from 'web/components/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { listAllBets } from 'web/lib/firebase/bets'
 import {
   contractPath,
@@ -88,18 +89,13 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
-  const { height: windowHeight } = useWindowSize()
-  const { setElem, height: topSectionHeight } = useMeasureSize()
-  const paddingBottom = 8
+  const { setElem, height: graphHeight } = useMeasureSize()
 
-  const graphHeight =
-    windowHeight && topSectionHeight
-      ? windowHeight - topSectionHeight - paddingBottom
-      : 0
+  const [betPanelOpen, setBetPanelOpen] = useState(false)
 
   return (
-    <Col className="w-full flex-1 bg-white">
-      <div className="relative flex flex-col pt-2" ref={setElem}>
+    <Col className="h-[100vh] w-full bg-white">
+      <div className="relative flex flex-col pt-2">
         <div className="px-3 text-xl text-indigo-700 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
         </div>
@@ -114,25 +110,19 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             disabled
           />
 
-          {isBinary && (
-            <Row className="items-center gap-4">
-              {tradingAllowed(contract) && (
-                <BetButton
-                  contract={contract as CPMMBinaryContract}
-                  betPanelClassName="scale-75"
-                />
-              )}
-              <BinaryResolutionOrChance contract={contract} />
-            </Row>
+          {(isBinary || isPseudoNumeric) && tradingAllowed(contract) && (
+            <Button
+              color="gradient"
+              onClick={() => setBetPanelOpen((open) => !open)}
+            >
+              {betPanelOpen ? 'Cancel' : 'Bet'}
+            </Button>
           )}
 
+          {isBinary && <BinaryResolutionOrChance contract={contract} />}
+
           {isPseudoNumeric && (
-            <Row className="items-center gap-4">
-              {tradingAllowed(contract) && (
-                <BetButton contract={contract} betPanelClassName="scale-75" />
-              )}
-              <PseudoNumericResolutionOrExpectation contract={contract} />
-            </Row>
+            <PseudoNumericResolutionOrExpectation contract={contract} />
           )}
 
           {outcomeType === 'FREE_RESPONSE' && (
@@ -150,7 +140,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         <Spacer h={2} />
       </div>
 
-      <div className="mx-1" style={{ paddingBottom }}>
+      <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
         {(isBinary || isPseudoNumeric) && (
           <ContractProbGraph
             contract={contract}
@@ -167,6 +157,9 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           <NumericGraph contract={contract} height={graphHeight} />
         )}
       </div>
+      {(isBinary || isPseudoNumeric) && betPanelOpen && (
+        <BetInline contract={contract as any} />
+      )}
     </Col>
   )
 }
