@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getValues, isProd, log } from './utils'
 import { filterDefined } from '../../common/util/array'
-import { sendThreeContractsEmail } from './emails'
+import { sendSixContractsEmail } from './emails'
 import { createRNG, shuffle } from '../../common/util/random'
 import { DAY_MS } from '../../common/util/time'
 
@@ -31,6 +31,7 @@ async function getTrendingContracts() {
 }
 
 async function sendTrendingMarketsEmailsToAllUsers() {
+  const numEmailsToSend = 6
   // const privateUsers = await getAllPrivateUsers()
   // uses dev ian's private user for testing
   const privateUser = await getPrivateUser(
@@ -50,14 +51,17 @@ async function sendTrendingMarketsEmailsToAllUsers() {
     const contractsAvailableToSend = trendingContracts.filter((contract) => {
       return !contract.uniqueBettorIds?.includes(privateUser.id)
     })
-    if (contractsAvailableToSend.length < 3) {
+    if (contractsAvailableToSend.length < numEmailsToSend) {
       log('not enough new, unbet-on contracts to send to user', privateUser.id)
       continue
     }
     // choose random subset of contracts to send to user
-    const contractsToSend = chooseRandomSubset(contractsAvailableToSend, 3)
+    const contractsToSend = chooseRandomSubset(
+      contractsAvailableToSend,
+      numEmailsToSend
+    )
 
-    await sendThreeContractsEmail(privateUser, contractsToSend)
+    await sendSixContractsEmail(privateUser, contractsToSend)
   }
 }
 

@@ -392,16 +392,22 @@ export const sendNewAnswerEmail = async (
   )
 }
 
-export const sendThreeContractsEmail = async (
+export const sendSixContractsEmail = async (
   privateUser: PrivateUser,
   contractsToSend: Contract[]
 ) => {
   const emailType = 'weekly-trending'
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${privateUser.id}&type=${emailType}`
-  if (!privateUser || !privateUser.email) return
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser?.unsubscribedFromWeeklyTrendingEmails
+  )
+    return
   await sendTemplateEmail(
     privateUser.email,
-    contractsToSend[0].question + ' and 2 more questions for you.',
+    contractsToSend[0].question + ' and 5 more questions for you.',
+    // used to be 3 and I can't change the template name!
     '3-trending-markets',
     {
       question1Title: contractsToSend[0].question,
@@ -416,7 +422,18 @@ export const sendThreeContractsEmail = async (
       question3Description: getTextDescription(contractsToSend[2]),
       question3Link: contractUrl(contractsToSend[2]),
       question3ImgSrc: imageSourceUrl(contractsToSend[2]),
-
+      question4Title: contractsToSend[3].question,
+      question4Description: getTextDescription(contractsToSend[3]),
+      question4Link: contractUrl(contractsToSend[3]),
+      question4ImgSrc: imageSourceUrl(contractsToSend[3]),
+      question5Title: contractsToSend[4].question,
+      question5Description: getTextDescription(contractsToSend[4]),
+      question5Link: contractUrl(contractsToSend[4]),
+      question5ImgSrc: imageSourceUrl(contractsToSend[4]),
+      question6Title: contractsToSend[5].question,
+      question6Description: getTextDescription(contractsToSend[5]),
+      question6Link: contractUrl(contractsToSend[5]),
+      question6ImgSrc: imageSourceUrl(contractsToSend[5]),
       unsubscribeLink: unsubscribeUrl,
     }
   )
