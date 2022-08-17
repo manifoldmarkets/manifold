@@ -9,6 +9,8 @@ import { BuyAmountInput } from './amount-input'
 import { Button } from './button'
 import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
+import { useUser } from 'web/hooks/use-user'
+import { SignUpPrompt } from './sign-up-prompt'
 
 export function BetInline(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -16,8 +18,9 @@ export function BetInline(props: {
 }) {
   const { contract, className } = props
 
-  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const user = useUser()
 
+  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
   const [amount, setAmount] = useState<number>()
   const [error, setError] = useState<string>()
 
@@ -64,18 +67,21 @@ export function BetInline(props: {
         error="" // handle error ourselves
         setError={setError}
       />
-      <Button
-        color={({ YES: 'green', NO: 'red' } as const)[outcome]}
-        size="xs"
-        disabled={betDisabled}
-        onClick={() => submitBet.mutate()}
-      >
-        {submitBet.isLoading
-          ? 'Submitting'
-          : submitBet.isSuccess
-          ? 'Success!'
-          : 'Submit'}
-      </Button>
+      {user && (
+        <Button
+          color={({ YES: 'green', NO: 'red' } as const)[outcome]}
+          size="xs"
+          disabled={betDisabled}
+          onClick={() => submitBet.mutate()}
+        >
+          {submitBet.isLoading
+            ? 'Submitting'
+            : submitBet.isSuccess
+            ? 'Success!'
+            : 'Submit'}
+        </Button>
+      )}
+      <SignUpPrompt size="xs" />
     </Row>
   )
 }
