@@ -236,6 +236,37 @@ export const sendOneWeekBonusEmail = async (
   )
 }
 
+export const sendCreatorGuideEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromGenericEmails
+  )
+    return
+
+  const { name, id: userId } = user
+  const firstName = name.split(' ')[0]
+
+  const emailType = 'generic'
+  const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
+
+  return await sendTemplateEmail(
+    privateUser.email,
+    'Market creation guide',
+    'creating-market',
+    {
+      name: firstName,
+      unsubscribeLink,
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
+
 export const sendThankYouEmail = async (
   user: User,
   privateUser: PrivateUser
