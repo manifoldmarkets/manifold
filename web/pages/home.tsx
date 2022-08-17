@@ -4,19 +4,23 @@ import { PlusSmIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
-import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
-import { ContractSearch, DEFAULT_SORT } from 'web/components/contract-search'
+import { ContractSearch } from 'web/components/contract-search'
 import { Contract } from 'common/contract'
+import { User } from 'common/user'
 import { ContractPageContent } from './[username]/[contractSlug]'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 
-export const getServerSideProps = redirectIfLoggedOut('/')
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+})
 
-const Home = () => {
+const Home = (props: { auth: { user: User } }) => {
+  const { user } = props.auth
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
@@ -29,10 +33,9 @@ const Home = () => {
       <Page suspend={!!contract}>
         <Col className="mx-auto w-full p-2">
           <ContractSearch
-            querySortOptions={{
-              shouldLoadFromStorage: true,
-              defaultSort: getSavedSort() ?? DEFAULT_SORT,
-            }}
+            user={user}
+            useQuerySortLocalStorage={true}
+            useQuerySortUrlParams={true}
             onContractClick={(c) => {
               // Show contract without navigating to contract page.
               setContract(c)
@@ -56,6 +59,7 @@ const Home = () => {
       {contract && (
         <ContractPageContent
           contract={contract}
+          user={user}
           username={contract.creatorUsername}
           slug={contract.slug}
           bets={[]}
@@ -97,13 +101,19 @@ const useContractPage = () => {
 
     window.history.pushState = function () {
       // eslint-disable-next-line prefer-rest-params
-      pushState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      pushState.apply(history, args)
       updateContract()
     }
 
     window.history.replaceState = function () {
       // eslint-disable-next-line prefer-rest-params
-      replaceState.apply(history, arguments as any)
+      const args = [...(arguments as any)] as any
+      // Discard NextJS router state.
+      args[0] = null
+      replaceState.apply(history, args)
       updateContract()
     }
 

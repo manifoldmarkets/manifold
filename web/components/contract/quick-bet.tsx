@@ -138,7 +138,7 @@ export function QuickBet(props: {
   return (
     <Col
       className={clsx(
-        'relative -my-4 -mr-5 min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle'
+        'relative min-w-[5.5rem] justify-center gap-2 pr-5 pl-1 align-middle'
         // Use this for colored QuickBet panes
         // `bg-opacity-10 bg-${color}`
       )}
@@ -319,7 +319,7 @@ function getProb(contract: Contract) {
     ? getBinaryProb(contract)
     : outcomeType === 'PSEUDO_NUMERIC'
     ? getProbability(contract)
-    : outcomeType === 'FREE_RESPONSE'
+    : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
     ? getOutcomeProbability(contract, getTopAnswer(contract)?.id || '')
     : outcomeType === 'NUMERIC'
     ? getNumericScale(contract)

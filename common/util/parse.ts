@@ -22,6 +22,8 @@ import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
+import TiptapTweet from './tiptap-tweet-type'
+import { uniq } from 'lodash'
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
@@ -61,6 +63,15 @@ const checkAgainstQuery = (query: string, corpus: string) =>
 export const searchInAny = (query: string, ...fields: string[]) =>
   fields.some((field) => checkAgainstQuery(query, field))
 
+/** @return user ids of all \@mentions */
+export function parseMentions(data: JSONContent): string[] {
+  const mentions = data.content?.flatMap(parseMentions) ?? [] //dfs
+  if (data.type === 'mention' && data.attrs) {
+    mentions.push(data.attrs.id as string)
+  }
+  return uniq(mentions)
+}
+
 // can't just do [StarterKit, Image...] because it doesn't work with cjs imports
 export const exhibitExts = [
   Blockquote,
@@ -84,6 +95,7 @@ export const exhibitExts = [
   Link,
   Mention,
   Iframe,
+  TiptapTweet,
 ]
 
 export function richTextToString(text?: JSONContent) {

@@ -1,27 +1,35 @@
 import * as mailgun from 'mailgun-js'
+import { tryOrLogError } from './utils'
 
 const initMailgun = () => {
   const apiKey = process.env.MAILGUN_KEY as string
   return mailgun({ apiKey, domain: 'mg.manifold.markets' })
 }
 
-export const sendTextEmail = (to: string, subject: string, text: string) => {
+export const sendTextEmail = async (
+  to: string,
+  subject: string,
+  text: string,
+  options?: Partial<mailgun.messages.SendData>
+) => {
   const data: mailgun.messages.SendData = {
-    from: 'Manifold Markets <info@manifold.markets>',
+    ...options,
+    from: options?.from ?? 'Manifold Markets <info@manifold.markets>',
     to,
     subject,
     text,
     // Don't rewrite urls in plaintext emails
     'o:tracking-clicks': 'htmlonly',
   }
-  const mg = initMailgun()
-  return mg.messages().send(data, (error) => {
-    if (error) console.log('Error sending email', error)
-    else console.log('Sent text email', to, subject)
-  })
+  const mg = initMailgun().messages()
+  const result = await tryOrLogError(mg.send(data))
+  if (result != null) {
+    console.log('Sent text email', to, subject)
+  }
+  return result
 }
 
-export const sendTemplateEmail = (
+export const sendTemplateEmail = async (
   to: string,
   subject: string,
   templateId: string,
@@ -35,11 +43,13 @@ export const sendTemplateEmail = (
     subject,
     template: templateId,
     'h:X-Mailgun-Variables': JSON.stringify(templateData),
+    'o:tag': templateId,
+    'o:tracking': true,
   }
-  const mg = initMailgun()
-
-  return mg.messages().send(data, (error) => {
-    if (error) console.log('Error sending email', error)
-    else console.log('Sent template email', templateId, to, subject)
-  })
+  const mg = initMailgun().messages()
+  const result = await tryOrLogError(mg.send(data))
+  if (result != null) {
+    console.log('Sent template email', templateId, to, subject)
+  }
+  return result
 }

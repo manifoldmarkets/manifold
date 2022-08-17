@@ -31,9 +31,9 @@ export function FeedAnswerCommentGroup(props: {
   const { answer, contract, comments, tips, bets, user } = props
   const { username, avatarUrl, name, text } = answer
 
-  const [replyToUsername, setReplyToUsername] = useState('')
+  const [replyToUser, setReplyToUser] =
+    useState<Pick<User, 'id' | 'username'>>()
   const [showReply, setShowReply] = useState(false)
-  const [inputRef, setInputRef] = useState<HTMLTextAreaElement | null>(null)
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
 
@@ -70,9 +70,14 @@ export function FeedAnswerCommentGroup(props: {
 
   const scrollAndOpenReplyInput = useEvent(
     (comment?: Comment, answer?: Answer) => {
-      setReplyToUsername(comment?.userUsername ?? answer?.username ?? '')
+      setReplyToUser(
+        comment
+          ? { id: comment.userId, username: comment.userUsername }
+          : answer
+          ? { id: answer.userId, username: answer.username }
+          : undefined
+      )
       setShowReply(true)
-      inputRef?.focus()
     }
   )
 
@@ -80,7 +85,7 @@ export function FeedAnswerCommentGroup(props: {
     // Only show one comment input for a bet at a time
     if (
       betsByCurrentUser.length > 1 &&
-      inputRef?.textContent?.length === 0 &&
+      // inputRef?.textContent?.length === 0 && //TODO: editor.isEmpty
       betsByCurrentUser.sort((a, b) => b.createdTime - a.createdTime)[0]
         ?.outcome !== answer.number.toString()
     )
@@ -88,10 +93,6 @@ export function FeedAnswerCommentGroup(props: {
     // Even if we pass memoized bets this still runs on every render, which we don't want
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [betsByCurrentUser.length, user, answer.number])
-
-  useEffect(() => {
-    if (showReply && inputRef) inputRef.focus()
-  }, [inputRef, showReply])
 
   useEffect(() => {
     if (router.asPath.endsWith(`#${answerElementId}`)) {
@@ -154,7 +155,6 @@ export function FeedAnswerCommentGroup(props: {
         commentsList={commentsList}
         betsByUserId={betsByUserId}
         smallAvatar={true}
-        truncate={false}
         bets={bets}
         tips={tips}
         scrollAndOpenReplyInput={scrollAndOpenReplyInput}
@@ -172,12 +172,8 @@ export function FeedAnswerCommentGroup(props: {
             betsByCurrentUser={betsByCurrentUser}
             commentsByCurrentUser={commentsByCurrentUser}
             parentAnswerOutcome={answer.number.toString()}
-            replyToUsername={replyToUsername}
-            setRef={setInputRef}
-            onSubmitComment={() => {
-              setShowReply(false)
-              setReplyToUsername('')
-            }}
+            replyToUser={replyToUser}
+            onSubmitComment={() => setShowReply(false)}
           />
         </div>
       )}

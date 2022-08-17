@@ -35,6 +35,13 @@ export function contractPath(contract: Contract) {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
+export function contractPathWithoutContract(
+  creatorUsername: string,
+  slug: string
+) {
+  return `/${creatorUsername}/${slug}`
+}
+
 export function homeContractPath(contract: Contract) {
   return `/home?c=${contract.slug}`
 }
@@ -259,12 +266,16 @@ export function listenForHotContracts(
   })
 }
 
-export async function getHotContracts() {
-  const data = await getValues<Contract>(hotContractsQuery)
-  return sortBy(
-    chooseRandomSubset(data, 10),
-    (contract) => -1 * contract.volume24Hours
-  )
+const trendingContractsQuery = query(
+  contracts,
+  where('isResolved', '==', false),
+  where('visibility', '==', 'public'),
+  orderBy('popularityScore', 'desc'),
+  limit(10)
+)
+
+export async function getTrendingContracts() {
+  return await getValues<Contract>(trendingContractsQuery)
 }
 
 export async function getContractsBySlugs(slugs: string[]) {

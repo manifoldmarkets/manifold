@@ -10,11 +10,14 @@ import { UsersIcon } from '@heroicons/react/solid'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import React, { Fragment } from 'react'
+import React, { Fragment, useEffect } from 'react'
 import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
 import { UserLink } from '../user-page'
 import { formatNumericProbability } from 'common/pseudo-numeric'
+import { SiteLink } from 'web/components/site-link'
+import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
+import { Challenge } from 'common/challenge'
 
 export function FeedBet(props: {
   contract: Contract
@@ -33,38 +36,33 @@ export function FeedBet(props: {
   const isSelf = user?.id === userId
 
   return (
-    <>
-      <Row className={'flex w-full gap-2 pt-3'}>
-        {isSelf ? (
-          <Avatar
-            className={clsx(smallAvatar && 'ml-1')}
-            size={smallAvatar ? 'sm' : undefined}
-            avatarUrl={user.avatarUrl}
-            username={user.username}
-          />
-        ) : bettor ? (
-          <Avatar
-            className={clsx(smallAvatar && 'ml-1')}
-            size={smallAvatar ? 'sm' : undefined}
-            avatarUrl={bettor.avatarUrl}
-            username={bettor.username}
-          />
-        ) : (
-          <div className="relative px-1">
-            <EmptyAvatar />
-          </div>
-        )}
-        <div className={'min-w-0 flex-1 py-1.5'}>
-          <BetStatusText
-            bet={bet}
-            contract={contract}
-            isSelf={isSelf}
-            bettor={bettor}
-            hideOutcome={hideOutcome}
-          />
-        </div>
-      </Row>
-    </>
+    <Row className={'flex w-full items-center gap-2 pt-3'}>
+      {isSelf ? (
+        <Avatar
+          className={clsx(smallAvatar && 'ml-1')}
+          size={smallAvatar ? 'sm' : undefined}
+          avatarUrl={user.avatarUrl}
+          username={user.username}
+        />
+      ) : bettor ? (
+        <Avatar
+          className={clsx(smallAvatar && 'ml-1')}
+          size={smallAvatar ? 'sm' : undefined}
+          avatarUrl={bettor.avatarUrl}
+          username={bettor.username}
+        />
+      ) : (
+        <EmptyAvatar className="mx-1" />
+      )}
+      <BetStatusText
+        bet={bet}
+        contract={contract}
+        isSelf={isSelf}
+        bettor={bettor}
+        hideOutcome={hideOutcome}
+        className="flex-1"
+      />
+    </Row>
   )
 }
 
@@ -74,12 +72,21 @@ export function BetStatusText(props: {
   isSelf: boolean
   bettor?: User
   hideOutcome?: boolean
+  className?: string
 }) {
-  const { bet, contract, bettor, isSelf, hideOutcome } = props
+  const { bet, contract, bettor, isSelf, hideOutcome, className } = props
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
-  const { amount, outcome, createdTime } = bet
+  const { amount, outcome, createdTime, challengeSlug } = bet
+  const [challenge, setChallenge] = React.useState<Challenge>()
+  useEffect(() => {
+    if (challengeSlug) {
+      getChallenge(challengeSlug, contract.id).then((c) => {
+        setChallenge(c)
+      })
+    }
+  }, [challengeSlug, contract.id])
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const outOfTotalAmount =
@@ -112,7 +119,7 @@ export function BetStatusText(props: {
       : formatPercent(bet.limitProb ?? bet.probAfter)
 
   return (
-    <div className="text-sm text-gray-500">
+    <div className={clsx('text-sm text-gray-500', className)}>
       {bettor ? (
         <UserLink name={bettor.name} username={bettor.username} />
       ) : (
@@ -133,6 +140,14 @@ export function BetStatusText(props: {
           {fromProb === toProb
             ? `at ${fromProb}`
             : `from ${fromProb} to ${toProb}`}
+          {challengeSlug && (
+            <SiteLink
+              href={challenge ? getChallengeUrl(challenge) : ''}
+              className={'mx-1'}
+            >
+              [challenge]
+            </SiteLink>
+          )}
         </>
       )}
       <RelativeTimestamp time={createdTime} />

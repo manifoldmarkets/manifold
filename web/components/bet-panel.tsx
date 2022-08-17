@@ -16,8 +16,7 @@ import {
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
-import { APIError, placeBet } from 'web/lib/firebase/api'
-import { sellShares } from 'web/lib/firebase/api'
+import { APIError, placeBet, sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
 import { InfoTooltip } from './info-tooltip'
 import {
@@ -255,6 +254,7 @@ function BuyPanel(props: {
   const resultProb = getCpmmProbability(newPool, newP)
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
+  const probChange = Math.abs(resultProb - initialProb)
 
   const currentPayout = newBet.shares
 
@@ -306,6 +306,19 @@ function BuyPanel(props: {
         ''
       )}
 
+      {(betAmount ?? 0) > 10 && probChange >= 0.3 ? (
+        <AlertBox
+          title="Whoa, there!"
+          text={`Are you sure you want to move the market ${
+            isPseudoNumeric && contract.isLogScale
+              ? 'this much'
+              : format(probChange)
+          }?`}
+        />
+      ) : (
+        ''
+      )}
+
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">
@@ -351,7 +364,7 @@ function BuyPanel(props: {
       {user && (
         <button
           className={clsx(
-            'btn flex-1',
+            'btn mb-2 flex-1',
             betDisabled
               ? 'btn-disabled'
               : outcome === 'YES'
@@ -435,8 +448,6 @@ function LimitOrderPanel(props: {
   const yesAmount = shares * (yesLimitProb ?? 1)
   const noAmount = shares * (1 - (noLimitProb ?? 0))
 
-  const profitIfBothFilled = shares - (yesAmount + noAmount)
-
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
@@ -485,6 +496,8 @@ function LimitOrderPanel(props: {
         setIsSubmitting(false)
         setWasSubmitted(true)
         setBetAmount(undefined)
+        setLowLimitProb(undefined)
+        setHighLimitProb(undefined)
         if (onBuySuccess) onBuySuccess()
       })
 
@@ -543,6 +556,8 @@ function LimitOrderPanel(props: {
     unfilledBets as LimitBet[]
   )
   const noReturnPercent = formatPercent(noReturn)
+
+  const profitIfBothFilled = shares - (yesAmount + noAmount) - yesFees - noFees
 
   return (
     <Col className={hidden ? 'hidden' : ''}>

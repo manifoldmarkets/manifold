@@ -14,18 +14,21 @@ export type Bet = {
   probBefore: number
   probAfter: number
 
-  sale?: {
-    amount: number // amount user makes from sale
-    betId: string // id of bet being sold
-    // TODO: add sale time?
-  }
-
   fees: Fees
 
-  isSold?: boolean // true if this BUY bet has been sold
   isAnte?: boolean
   isLiquidityProvision?: boolean
   isRedemption?: boolean
+  challengeSlug?: string
+
+  // Props for bets in DPM contract below.
+  // A bet is either a BUY or a SELL that sells all of a previous buy.
+  isSold?: boolean // true if this BUY bet has been sold
+  // This field marks a SELL bet.
+  sale?: {
+    amount: number // amount user makes from sale
+    betId: string // id of BUY bet being sold
+  }
 } & Partial<LimitProps>
 
 export type NumericBet = Bet & {

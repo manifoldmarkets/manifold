@@ -25,6 +25,10 @@ export function isAdmin(email: string) {
   return ENV_CONFIG.adminEmails.includes(email)
 }
 
+export function isManifoldId(userId: string) {
+  return userId === 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2'
+}
+
 export const DOMAIN = ENV_CONFIG.domain
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId

@@ -1,3 +1,6 @@
+import React from 'react'
+import clsx from 'clsx'
+
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
@@ -5,11 +8,9 @@ import { ContractProbGraph } from './contract-prob-graph'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
-import clsx from 'clsx'
-
 import {
-  FreeResponseResolutionOrChance,
   BinaryResolutionOrChance,
+  FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
@@ -19,8 +20,8 @@ import { AnswersGraph } from '../answers/answers-graph'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
-import { ShareMarket } from '../share-market'
 import { NumericGraph } from './numeric-graph'
+import { ShareRow } from './share-row'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -32,6 +33,7 @@ export const ContractOverview = (props: {
 
   const user = useUser()
   const isCreator = user?.id === creatorId
+
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
@@ -116,8 +118,7 @@ export const ContractOverview = (props: {
         <AnswersGraph contract={contract} bets={bets} />
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
-      {(contract.description || isCreator) && <Spacer h={6} />}
-      {isCreator && <ShareMarket className="px-2" contract={contract} />}
+      <ShareRow user={user} contract={contract} />
       <ContractDescription
         className="px-2"
         contract={contract}

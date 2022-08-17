@@ -30,7 +30,8 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "2.0.0-beta.17",
-    "@tsconfig/docusaurus": "^1.0.4"
+    "@tsconfig/docusaurus": "^1.0.4",
+    "@types/react": "^17.0.2"
   },
   "browserslist": {
     "production": [

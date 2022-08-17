@@ -13,6 +13,7 @@ import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Button } from '../button'
 import { Spacer } from '../layout/spacer'
 import { Editor, Content as ContentType } from '@tiptap/react'
+import { insertContent } from '../editor/utils'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -94,12 +95,8 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
           size="xs"
           onClick={() => {
             setEditing(true)
-            editor
-              ?.chain()
-              .setContent(contract.description)
-              .focus('end')
-              .insertContent(`<p>${editTimestamp()}</p>`)
-              .run()
+            editor?.commands.focus('end')
+            insertContent(editor, `<p>${editTimestamp()}</p>`)
           }}
         >
           Edit description
@@ -131,7 +128,7 @@ function EditQuestion(props: {
 
   function joinContent(oldContent: ContentType, newContent: string) {
     const editor = new Editor({ content: oldContent, extensions: exhibitExts })
-    editor.chain().focus('end').insertContent(newContent).run()
+    insertContent(editor, newContent)
     return editor.getJSON()
   }
 

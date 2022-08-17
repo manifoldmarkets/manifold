@@ -64,6 +64,8 @@ import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
+import { acceptchallenge } from './accept-challenge'
+import { getcustomtoken } from './get-custom-token'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -87,6 +89,8 @@ const unsubscribeFunction = toCloudFunction(unsubscribe)
 const stripeWebhookFunction = toCloudFunction(stripewebhook)
 const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
 const getCurrentUserFunction = toCloudFunction(getcurrentuser)
+const acceptChallenge = toCloudFunction(acceptchallenge)
+const getCustomTokenFunction = toCloudFunction(getcustomtoken)
 
 export {
   healthFunction as health,
@@ -108,4 +112,6 @@ export {
   stripeWebhookFunction as stripewebhook,
   createCheckoutSessionFunction as createcheckoutsession,
   getCurrentUserFunction as getcurrentuser,
+  acceptChallenge as acceptchallenge,
+  getCustomTokenFunction as getcustomtoken,
 }

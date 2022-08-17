@@ -4,7 +4,7 @@ import { Contract } from 'common/contract'
 
 import { Spacer } from './layout/spacer'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { ContractsGrid } from './contract/contracts-list'
+import { ContractsGrid } from './contract/contracts-grid'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { withTracking } from 'web/lib/service/analytics'
@@ -59,11 +59,7 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
         <SparklesIcon className="inline h-5 w-5" aria-hidden="true" />
         Trending markets
       </Row>
-      <ContractsGrid
-        contracts={hotContracts?.slice(0, 10) || []}
-        loadMore={() => {}}
-        hasMore={false}
-      />
+      <ContractsGrid contracts={hotContracts?.slice(0, 10) || []} />
     </>
   )
 }

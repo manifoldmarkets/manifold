@@ -1,31 +1,19 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext } from 'react'
 import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
 import { QueryClient } from 'react-query'
 
 import { doc, DocumentData } from 'firebase/firestore'
-import { PrivateUser } from 'common/user'
-import {
-  getUser,
-  listenForPrivateUser,
-  User,
-  users,
-} from 'web/lib/firebase/users'
+import { getUser, User, users } from 'web/lib/firebase/users'
 import { AuthContext } from 'web/components/auth-context'
 
 export const useUser = () => {
-  return useContext(AuthContext)
+  const authUser = useContext(AuthContext)
+  return authUser ? authUser.user : authUser
 }
 
-export const usePrivateUser = (userId?: string) => {
-  const [privateUser, setPrivateUser] = useState<
-    PrivateUser | null | undefined
-  >(undefined)
-
-  useEffect(() => {
-    if (userId) return listenForPrivateUser(userId, setPrivateUser)
-  }, [userId])
-
-  return privateUser
+export const usePrivateUser = () => {
+  const authUser = useContext(AuthContext)
+  return authUser ? authUser.privateUser : authUser
 }
 
 export const useUserById = (userId = '_') => {
