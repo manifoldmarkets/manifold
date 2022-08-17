@@ -2,13 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import {
-  getAllPrivateUsers,
-  getPrivateUser,
-  getValues,
-  isProd,
-  log,
-} from './utils'
+import { getPrivateUser, getValues, isProd, log } from './utils'
 import { filterDefined } from '../../common/util/array'
 import { sendThreeContractsEmail } from './emails'
 import { createRNG, shuffle } from '../../common/util/random'
