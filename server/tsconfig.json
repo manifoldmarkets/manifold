@@ -1,21 +1,4 @@
-// {
-//   "compilerOptions": {
-//     "module": "ES2020",
-//     "moduleResolution": "Node",
-//     "outDir": "./dist",
-//     "allowSyntheticDefaultImports": true,
-//     "rootDir": "src"
-//   },
-//   "references": [
-//     {
-//       "path": "../common",
-//       // add 'prepend' if you want to include the referenced project in your output file
-//       // "prepend": true,
-//     }
-//   ]
-// }
 {
-    // "extends": "@tsconfig/node16/tsconfig.json",
     "compilerOptions": {
         "baseUrl": "../",
         "lib": ["ES2022"], // ES2020 in earlier versions
@@ -23,25 +6,7 @@
         "moduleResolution": "Node",
         "target": "ES2022", // ES2020 in earlier versions
         "esModuleInterop": true,
-        "outDir": "dist",
+        "outDir": "dist"
     },
-    "include": [
-      "src/**/*",
-      "../common/**/*",
-    ],
-    // "compilerOptions": {
-    //     "module": "CommonJS",
-    //     "esModuleInterop": true,
-    //     "allowSyntheticDefaultImports": true,
-    //     "target": "es6",
-    //     "noImplicitAny": true,
-    //     "moduleResolution": "node",
-    //     "sourceMap": true,
-    //     "outDir": "dist",
-    //     "baseUrl": ".",
-    //     "paths": {
-    //         "*": ["node_modules/*"]
-    //     }
-    // },
-    // "include": ["src/**/*"],
+    "include": ["src/**/*", "../common/**/*"]
 }
