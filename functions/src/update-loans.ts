@@ -1,21 +1,19 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { getValues, log, writeAsync } from './utils'
-import { Bet, LimitBet } from 'common/bet'
+import { getValues, log, payUser, writeAsync } from './utils'
+import { Bet } from 'common/bet'
 import { Contract, CPMMContract, FreeResponseContract } from 'common/contract'
-import { User } from 'common/user'
+import { PortfolioMetrics, User } from 'common/user'
 import { Dictionary, groupBy, keyBy, minBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { getContractBetMetrics } from 'common/calculate'
-import { calculateCpmmSale } from 'common/calculate-cpmm'
-import { calculateDpmSaleAmount } from 'common/calculate-dpm'
 
 const firestore = admin.firestore()
 
 export const updateLoans = functions
   .runWith({ memory: '1GB', timeoutSeconds: 540 })
-  // Run every Sunday, at 11:59pm.
-  .pubsub.schedule('59 11 * * 0')
+  // Run every Monday morning.
+  .pubsub.schedule('0 2 * * 1')
   .timeZone('America/Los_Angeles')
   .onRun(updateLoansCore)
 
@@ -31,10 +29,20 @@ async function updateLoansCore() {
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
   )
 
+  const eligibleUsers = filterDefined(
+    await Promise.all(
+      users.map((user) =>
+        isUserEligibleForLoan(user).then((isEligible) =>
+          isEligible ? user : undefined
+        )
+      )
+    )
+  )
+
   const contractsById = keyBy(contracts, (contract) => contract.id)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
 
-  const userLoanUpdates = users
+  const userLoanUpdates = eligibleUsers
     .map(
       (user) =>
         getUserLoanUpdates(betsByUser[user.id] ?? [], contractsById).betUpdates
@@ -53,6 +61,35 @@ async function updateLoansCore() {
   }))
 
   await writeAsync(firestore, betUpdates)
+
+  const userPayouts = eligibleUsers
+    .map((user) => {
+      const updates = userLoanUpdates.filter(
+        (update) => update.userId === user.id
+      )
+      return {
+        userId: user.id,
+        delta: sumBy(updates, (update) => update.newLoan),
+      }
+    })
+    .filter((update) => update.delta > 0)
+
+  await Promise.all(
+    userPayouts.map(({ userId, delta }) => payUser(userId, delta))
+  )
+}
+
+const isUserEligibleForLoan = async (user: User) => {
+  const [portfolio] = await getValues<PortfolioMetrics>(
+    firestore
+      .collection(`users/${user.id}/portfolioHistory`)
+      .orderBy('timestamp', 'desc')
+      .limit(1)
+  )
+  if (!portfolio) return true
+
+  const { balance, investmentValue } = portfolio
+  return balance + investmentValue > 0
 }
 
 const getUserLoanUpdates = (
@@ -87,23 +124,11 @@ const getUserLoanUpdates = (
 }
 
 const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
-  const { totalShares } = getContractBetMetrics(contract, bets)
-  const { YES, NO } = totalShares
-
-  const shares = YES || NO
-  const outcome = YES ? 'YES' : 'NO'
-
-  const unfilledBets: LimitBet[] = []
-  const { saleValue } = calculateCpmmSale(
-    contract,
-    shares,
-    outcome,
-    unfilledBets
-  )
+  const { invested } = getContractBetMetrics(contract, bets)
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
-  const newLoan = calculateNewLoan(saleValue, loanAmount)
+  const newLoan = calculateNewLoan(invested, loanAmount)
   if (newLoan <= 0 || !oldestBet) return undefined
 
   const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
@@ -121,10 +146,11 @@ const getFreeResponseContractLoanUpdate = (
   contract: FreeResponseContract,
   bets: Bet[]
 ) => {
-  return bets.map((bet) => {
-    const saleValue = calculateDpmSaleAmount(contract, bet)
+  const openBets = bets.filter((bet) => bet.isSold || bet.sale)
+
+  return openBets.map((bet) => {
     const loanAmount = bet.loanAmount ?? 0
-    const newLoan = calculateNewLoan(saleValue, loanAmount)
+    const newLoan = calculateNewLoan(bet.amount, loanAmount)
     const loanTotal = loanAmount + newLoan
 
     return {
@@ -139,7 +165,7 @@ const getFreeResponseContractLoanUpdate = (
 
 const LOAN_WEEKLY_RATE = 0.05
 
-const calculateNewLoan = (saleValue: number, loanTotal: number) => {
-  const netValue = saleValue - loanTotal
+const calculateNewLoan = (investedValue: number, loanTotal: number) => {
+  const netValue = investedValue - loanTotal
   return netValue * LOAN_WEEKLY_RATE
 }
