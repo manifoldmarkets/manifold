@@ -22,7 +22,7 @@ async function getTrendingContracts() {
     firestore
       .collection('contracts')
       .where('isResolved', '==', false)
-      .where('closeTime', '>', Date.now() - DAY_MS)
+      .where('closeTime', '>', Date.now() + DAY_MS)
       .where('visibility', '==', 'public')
       .orderBy('popularityScore', 'desc')
       .limit(50)
