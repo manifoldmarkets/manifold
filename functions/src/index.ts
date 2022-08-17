@@ -25,6 +25,7 @@ export * from './on-create-comment-on-group'
 export * from './on-create-txn'
 export * from './on-delete-group'
 export * from './score-contracts'
+export * from './weekly-markets-emails'
 
 // v2
 export * from './health'

@@ -2,13 +2,20 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import { getAllPrivateUsers, getPrivateUser, getValues, log } from './utils'
-import { sendTemplateEmail } from './send-email'
-import { createRNG, shuffle } from '../../common/util/random'
+import {
+  getAllPrivateUsers,
+  getPrivateUser,
+  getValues,
+  isProd,
+  log,
+} from './utils'
 import { filterDefined } from '../../common/util/array'
+import { sendThreeContractsEmail } from './emails'
+import { createRNG, shuffle } from '../../common/util/random'
 
-export const weeklyMarketsEmails = functions.pubsub
-  .schedule('every 1 minutes')
+export const weeklyMarketsEmails = functions
+  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .pubsub.schedule('every 1 minutes')
   .onRun(async () => {
     await sendTrendingMarketsEmailsToAllUsers()
   })
@@ -27,10 +34,11 @@ async function getTrendingContracts() {
 }
 
 async function sendTrendingMarketsEmailsToAllUsers() {
-  const numMarketsToSend = 3
   // const privateUsers = await getAllPrivateUsers()
   // uses dev ian's private user for testing
-  const privateUser = await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')
+  const privateUser = await getPrivateUser(
+    isProd() ? 'AJwLWoo3xue32XIiAVrL5SyR1WB2' : '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
+  )
   const privateUsers = filterDefined([privateUser])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
@@ -45,44 +53,15 @@ async function sendTrendingMarketsEmailsToAllUsers() {
     const contractsAvailableToSend = trendingContracts.filter((contract) => {
       return !contract.uniqueBettorIds?.includes(privateUser.id)
     })
-    if (contractsAvailableToSend.length < numMarketsToSend) {
+    if (contractsAvailableToSend.length < 3) {
       log('not enough new, unbet-on contracts to send to user', privateUser.id)
       continue
     }
     // choose random subset of contracts to send to user
-    const contractsToSend = chooseRandomSubset(
-      contractsAvailableToSend,
-      numMarketsToSend
-    )
+    const contractsToSend = chooseRandomSubset(contractsAvailableToSend, 3)
 
-    await sendTemplateEmail(
-      privateUser.email,
-      contractsToSend[0].question,
-      '3-trending-markets',
-      {
-        question1title: contractsToSend[0].question,
-        question1Description: getTextDescription(contractsToSend[0]),
-        question1link: contractUrl(contractsToSend[0]),
-        question2title: contractsToSend[1].question,
-        question2Description: getTextDescription(contractsToSend[1]),
-        question2link: contractUrl(contractsToSend[1]),
-        question3title: contractsToSend[2].question,
-        question3Description: getTextDescription(contractsToSend[2]),
-        question3link: contractUrl(contractsToSend[2]),
-      }
-    )
+    await sendThreeContractsEmail(privateUser, contractsToSend)
   }
-}
-
-function getTextDescription(contract: Contract) {
-  // if the contract.description is of type string, return it, otherwise return the text of the json content
-  return typeof contract.description === 'string'
-    ? contract.description
-    : contract.description.text ?? ''
-}
-
-function contractUrl(contract: Contract) {
-  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
 }
 
 function chooseRandomSubset(contracts: Contract[], count: number) {

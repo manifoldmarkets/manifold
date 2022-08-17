@@ -18,6 +18,7 @@ import { sendTemplateEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 import { getFunctionUrl } from '../../common/api'
 import { richTextToString } from '../../common/util/parse'
+import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
 
 const UNSUBSCRIBE_ENDPOINT = getFunctionUrl('unsubscribe')
 
@@ -389,4 +390,54 @@ export const sendNewAnswerEmail = async (
     },
     { from }
   )
+}
+
+export const sendThreeContractsEmail = async (
+  privateUser: PrivateUser,
+  contractsToSend: Contract[]
+) => {
+  const emailType = 'weekly-trending'
+  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${privateUser.id}&type=${emailType}`
+  if (!privateUser || !privateUser.email) return
+  await sendTemplateEmail(
+    privateUser.email,
+    contractsToSend[0].question + ' and 2 more questions for you.',
+    '3-trending-markets',
+    {
+      question1Title: contractsToSend[0].question,
+      question1Description: getTextDescription(contractsToSend[0]),
+      question1Link: contractUrl(contractsToSend[0]),
+      question1ImgSrc: imageSourceUrl(contractsToSend[0]),
+      question2Title: contractsToSend[1].question,
+      question2Description: getTextDescription(contractsToSend[1]),
+      question2Link: contractUrl(contractsToSend[1]),
+      question2ImgSrc: imageSourceUrl(contractsToSend[1]),
+      question3Title: contractsToSend[2].question,
+      question3Description: getTextDescription(contractsToSend[2]),
+      question3Link: contractUrl(contractsToSend[2]),
+      question3ImgSrc: imageSourceUrl(contractsToSend[2]),
+
+      unsubscribeLink: unsubscribeUrl,
+    }
+  )
+}
+
+function getTextDescription(contract: Contract) {
+  const { description } = contract
+  let text = ''
+  if (typeof description === 'string') text = description
+  else text = richTextToString(description)
+
+  if (text.length > 300) {
+    return text.substring(0, 300) + '...'
+  }
+  return text
+}
+
+function contractUrl(contract: Contract) {
+  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+}
+
+function imageSourceUrl(contract: Contract) {
+  return buildCardUrl(getOpenGraphProps(contract))
 }

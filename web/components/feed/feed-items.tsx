@@ -11,7 +11,6 @@ import clsx from 'clsx'
 import { OutcomeLabel } from '../outcome-label'
 import {
   Contract,
-  contractMetrics,
   contractPath,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
@@ -38,6 +37,7 @@ import { FeedLiquidity } from './feed-liquidity'
 import { SignUpPrompt } from '../sign-up-prompt'
 import { User } from 'common/user'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
+import { contractMetrics } from 'common/contract-details'
 
 export function FeedItems(props: {
   contract: Contract

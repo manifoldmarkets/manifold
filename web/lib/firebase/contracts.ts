@@ -26,6 +26,7 @@ import { MAX_FEED_CONTRACTS } from 'common/recommended-contracts'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { getBinaryProb } from 'common/contract-details'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -50,37 +51,12 @@ export function contractUrl(contract: Contract) {
   return `https://${ENV_CONFIG.domain}${contractPath(contract)}`
 }
 
-export function contractMetrics(contract: Contract) {
-  const { createdTime, resolutionTime, isResolved } = contract
-
-  const createdDate = dayjs(createdTime).format('MMM D')
-
-  const resolvedDate = isResolved
-    ? dayjs(resolutionTime).format('MMM D')
-    : undefined
-
-  const volumeLabel = `${formatMoney(contract.volume)} bet`
-
-  return { volumeLabel, createdDate, resolvedDate }
-}
-
 export function contractPool(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
     ? formatMoney(contract.totalLiquidity)
     : contract.mechanism === 'dpm-2'
     ? formatMoney(sum(Object.values(contract.pool)))
     : 'Empty pool'
-}
-
-export function getBinaryProb(contract: BinaryContract) {
-  const { pool, resolutionProbability, mechanism } = contract
-
-  return (
-    resolutionProbability ??
-    (mechanism === 'cpmm-1'
-      ? getCpmmProbability(pool, contract.p)
-      : getDpmProbability(contract.totalShares))
-  )
 }
 
 export function getBinaryProbPercent(contract: BinaryContract) {
