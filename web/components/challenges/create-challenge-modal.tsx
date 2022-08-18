@@ -256,11 +256,11 @@ function CreateChallengeForm(props: {
             <span>
               {!contract && (
                 <span>
-                  You'll be charged an additional{' '}
-                  <span className={'font-semibold'}>
+                  Because there's no market yet, you'll be charged
+                  <span className={'mx-1 font-semibold'}>
                     {formatMoney(FIXED_ANTE)}
-                  </span>{' '}
-                  to create the underlying market
+                  </span>
+                  to create it.
                 </span>
               )}
             </span>
