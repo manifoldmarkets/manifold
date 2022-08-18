@@ -30,12 +30,6 @@ export default function Home(props: { hotContracts: Contract[] }) {
       <Col className="items-center">
         <Col className="max-w-3xl">
           <LandingPagePanel hotContracts={hotContracts ?? []} />
-          {/* <p className="mt-6 text-gray-500">
-            View{' '}
-            <SiteLink href="/markets" className="font-bold text-gray-700">
-              all markets
-            </SiteLink>
-          </p> */}
         </Col>
       </Col>
     </Page>
