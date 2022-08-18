@@ -26,6 +26,7 @@ import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { SignUpPrompt } from '../sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
+import { AlertBox } from '../alert-box'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -113,6 +114,8 @@ export function AnswerBetPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
+  const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+
   return (
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
@@ -139,6 +142,22 @@ export function AnswerBetPanel(props: {
         disabled={isSubmitting}
         inputRef={inputRef}
       />
+
+      {(betAmount ?? 0) > 10 &&
+      bankrollFraction >= 0.5 &&
+      bankrollFraction <= 1 ? (
+        <AlertBox
+          title="Whoa, there!"
+          text={`You might not want to spend ${formatPercent(
+            bankrollFraction
+          )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
+            user?.balance ?? 0
+          )}`}
+        />
+      ) : (
+        ''
+      )}
+
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
           <div className="text-gray-500">Probability</div>

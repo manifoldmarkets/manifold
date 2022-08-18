@@ -1,13 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { uniq } from 'lodash'
-
+import { compact, uniq } from 'lodash'
 import { getContract, getUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { createNotification } from './create-notification'
+import { parseMentions, richTextToString } from '../../common/util/parse'
 
 const firestore = admin.firestore()
 
@@ -23,6 +23,11 @@ export const onCreateCommentOnContract = functions
     const contract = await getContract(contractId)
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
+
+    await change.ref.update({
+      contractSlug: contract.slug,
+      contractQuestion: contract.question,
+    })
 
     const comment = change.data() as Comment
     const lastCommentTime = comment.createdTime
@@ -71,7 +76,10 @@ export const onCreateCommentOnContract = functions
     const repliedUserId = comment.replyToCommentId
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
-    const recipients = repliedUserId ? [repliedUserId] : []
+
+    const recipients = uniq(
+      compact([...parseMentions(comment.content), repliedUserId])
+    )
 
     await createNotification(
       comment.id,
@@ -79,7 +87,7 @@ export const onCreateCommentOnContract = functions
       'created',
       commentCreator,
       eventId,
-      comment.text,
+      richTextToString(comment.content),
       { contract, relatedSourceType, recipients }
     )
 

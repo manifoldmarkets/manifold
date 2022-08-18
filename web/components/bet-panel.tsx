@@ -254,6 +254,7 @@ function BuyPanel(props: {
   const resultProb = getCpmmProbability(newPool, newP)
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
+  const probChange = Math.abs(resultProb - initialProb)
 
   const currentPayout = newBet.shares
 
@@ -300,6 +301,19 @@ function BuyPanel(props: {
           )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
             user?.balance ?? 0
           )}`}
+        />
+      ) : (
+        ''
+      )}
+
+      {(betAmount ?? 0) > 10 && probChange >= 0.3 ? (
+        <AlertBox
+          title="Whoa, there!"
+          text={`Are you sure you want to move the market ${
+            isPseudoNumeric && contract.isLogScale
+              ? 'this much'
+              : format(probChange)
+          }?`}
         />
       ) : (
         ''
@@ -434,8 +448,6 @@ function LimitOrderPanel(props: {
   const yesAmount = shares * (yesLimitProb ?? 1)
   const noAmount = shares * (1 - (noLimitProb ?? 0))
 
-  const profitIfBothFilled = shares - (yesAmount + noAmount)
-
   function onBetChange(newAmount: number | undefined) {
     setWasSubmitted(false)
     setBetAmount(newAmount)
@@ -484,6 +496,8 @@ function LimitOrderPanel(props: {
         setIsSubmitting(false)
         setWasSubmitted(true)
         setBetAmount(undefined)
+        setLowLimitProb(undefined)
+        setHighLimitProb(undefined)
         if (onBuySuccess) onBuySuccess()
       })
 
@@ -542,6 +556,8 @@ function LimitOrderPanel(props: {
     unfilledBets as LimitBet[]
   )
   const noReturnPercent = formatPercent(noReturn)
+
+  const profitIfBothFilled = shares - (yesAmount + noAmount) - yesFees - noFees
 
   return (
     <Col className={hidden ? 'hidden' : ''}>

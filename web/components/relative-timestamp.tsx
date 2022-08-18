@@ -1,14 +1,16 @@
 import { DateTimeTooltip } from './datetime-tooltip'
-import { fromNow } from 'web/lib/util/time'
+import dayjs from 'dayjs'
 import React from 'react'
 
 export function RelativeTimestamp(props: { time: number }) {
   const { time } = props
+  const dayJsTime = dayjs(time)
   return (
-    <DateTimeTooltip time={time}>
-      <span className="ml-1 whitespace-nowrap text-gray-400">
-        {fromNow(time)}
-      </span>
+    <DateTimeTooltip
+      className="ml-1 whitespace-nowrap text-gray-400"
+      time={dayJsTime}
+    >
+      {dayJsTime.fromNow()}
     </DateTimeTooltip>
   )
 }

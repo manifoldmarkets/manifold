@@ -33,6 +33,8 @@ import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
+import { insertContent } from '../editor/utils'
+import clsx from 'clsx'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -56,13 +58,13 @@ export function MiscDetails(props: {
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
 
   return (
-    <Row className="items-center gap-3 text-sm text-gray-400">
+    <Row className="items-center gap-3 truncate text-sm text-gray-400">
       {showHotVolume ? (
         <Row className="gap-0.5">
           <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
         </Row>
       ) : showTime === 'close-date' ? (
-        <Row className="gap-0.5">
+        <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
@@ -82,30 +84,33 @@ export function MiscDetails(props: {
       {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
         <SiteLink
           href={groupPath(groupLinks[0].slug)}
-          className="text-sm text-gray-400"
+          className="truncate text-sm text-gray-400"
         >
-          <Row className={'line-clamp-1 flex-wrap items-center '}>
-            <UserGroupIcon className="mx-1 mb-0.5 inline h-4 w-4 shrink-0" />
-            {groupLinks[0].name}
-          </Row>
+          {groupLinks[0].name}
         </SiteLink>
       )}
     </Row>
   )
 }
 
-export function AvatarDetails(props: { contract: Contract }) {
-  const { contract } = props
+export function AvatarDetails(props: {
+  contract: Contract
+  className?: string
+  short?: boolean
+}) {
+  const { contract, short, className } = props
   const { creatorName, creatorUsername } = contract
 
   return (
-    <Row className="items-center gap-2 text-sm text-gray-400">
+    <Row
+      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
+    >
       <Avatar
         username={creatorUsername}
         avatarUrl={contract.creatorAvatarUrl}
         size={6}
       />
-      <UserLink name={creatorName} username={creatorUsername} />
+      <UserLink name={creatorName} username={creatorUsername} short={short} />
     </Row>
   )
 }
@@ -148,7 +153,7 @@ export function ContractDetails(props: {
   const groupInfo = (
     <Row>
       <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-      <span className={'line-clamp-1'}>
+      <span className="truncate">
         {groupToDisplay ? groupToDisplay.name : 'No group'}
       </span>
     </Row>
@@ -210,7 +215,7 @@ export function ContractDetails(props: {
             <>
               <DateTimeTooltip
                 text="Market resolved:"
-                time={contract.resolutionTime}
+                time={dayjs(contract.resolutionTime)}
               >
                 {resolvedDate}
               </DateTimeTooltip>
@@ -266,13 +271,16 @@ function EditableCloseDate(props: {
 }) {
   const { closeTime, contract, isCreator } = props
 
+  const dayJsCloseTime = dayjs(closeTime)
+  const dayJsNow = dayjs()
+
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const [closeDate, setCloseDate] = useState(
-    closeTime && dayjs(closeTime).format('YYYY-MM-DDTHH:mm')
+    closeTime && dayJsCloseTime.format('YYYY-MM-DDTHH:mm')
   )
 
-  const isSameYear = dayjs(closeTime).isSame(dayjs(), 'year')
-  const isSameDay = dayjs(closeTime).isSame(dayjs(), 'day')
+  const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
+  const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
 
   const onSave = () => {
     const newCloseTime = dayjs(closeDate).valueOf()
@@ -282,12 +290,11 @@ function EditableCloseDate(props: {
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
       const editor = new Editor({ content, extensions: exhibitExts })
-      editor
-        .chain()
-        .focus('end')
-        .insertContent('<br /><br />')
-        .insertContent(`Close date updated to ${formattedCloseDate}`)
-        .run()
+      editor.commands.focus('end')
+      insertContent(
+        editor,
+        `<br><p>Close date updated to ${formattedCloseDate}</p>`
+      )
 
       updateContract(contract.id, {
         closeTime: newCloseTime,
@@ -314,11 +321,11 @@ function EditableCloseDate(props: {
       ) : (
         <DateTimeTooltip
           text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-          time={closeTime}
+          time={dayJsCloseTime}
         >
           {isSameYear
-            ? dayjs(closeTime).format('MMM D')
-            : dayjs(closeTime).format('MMM D, YYYY')}
+            ? dayJsCloseTime.format('MMM D')
+            : dayJsCloseTime.format('MMM D, YYYY')}
           {isSameDay && <> ({fromNow(closeTime)})</>}
         </DateTimeTooltip>
       )}

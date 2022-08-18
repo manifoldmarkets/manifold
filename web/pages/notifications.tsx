@@ -1,5 +1,4 @@
 import { Tabs } from 'web/components/layout/tabs'
-import { usePrivateUser } from 'web/hooks/use-user'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
@@ -13,9 +12,8 @@ import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USERNAME,
   PrivateUser,
-  User,
 } from 'common/user'
-import { getUser } from 'web/lib/firebase/users'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
@@ -35,34 +33,27 @@ import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
 import { groupBy, sum, uniq } from 'lodash'
-import Custom404 from 'web/pages/404'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { safeLocalStorage } from 'web/lib/util/local'
-import {
-  getServerAuthenticatedUid,
-  redirectIfLoggedOut,
-} from 'web/lib/firebase/server-auth'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
+import { SEO } from 'web/components/SEO'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (ctx) => {
-  const uid = await getServerAuthenticatedUid(ctx)
-  if (!uid) {
-    return { props: { user: null } }
-  }
-  const user = await getUser(uid)
-  return { props: { user } }
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
 })
 
-export default function Notifications(props: { user: User }) {
-  const { user } = props
-  const privateUser = usePrivateUser(user?.id)
+export default function Notifications(props: {
+  auth: { privateUser: PrivateUser }
+}) {
+  const { privateUser } = props.auth
   const local = safeLocalStorage()
   let localNotifications = [] as Notification[]
   const localSavedNotificationGroups = local?.getItem('notification-groups')
@@ -74,11 +65,12 @@ export default function Notifications(props: { user: User }) {
       .flat()
   }
 
-  if (!user) return <Custom404 />
   return (
     <Page>
       <div className={'px-2 pt-4 sm:px-4 lg:pt-0'}>
         <Title text={'Notifications'} className={'hidden md:block'} />
+        <SEO title="Notifications" description="Manifold user notifications" />
+
         <div>
           <Tabs
             currentPageForAnalytics={'notifications'}
@@ -88,17 +80,11 @@ export default function Notifications(props: { user: User }) {
             tabs={[
               {
                 title: 'Notifications',
-                content: privateUser ? (
+                content: (
                   <NotificationsList
                     privateUser={privateUser}
                     cachedNotifications={localNotifications}
                   />
-                ) : (
-                  <div className={'min-h-[100vh]'}>
-                    <RenderNotificationGroups
-                      notificationGroups={localNotificationGroups}
-                    />
-                  </div>
                 ),
               },
               {
@@ -454,7 +440,7 @@ function IncomeNotificationItem(props: {
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
                     className={'mr-1 flex-shrink-0'}
-                    justFirstName={true}
+                    short={true}
                   />
                 ))}
               {getReasonForShowingIncomeNotification(false)} {' on'}
@@ -623,7 +609,7 @@ function NotificationItem(props: {
               name={sourceUserName || ''}
               username={sourceUserUsername || ''}
               className={'mr-0 flex-shrink-0'}
-              justFirstName={true}
+              short={true}
             />
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
               <span className={'flex-shrink-0'}>
@@ -695,7 +681,7 @@ function NotificationItem(props: {
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
                     className={'relative mr-1 flex-shrink-0'}
-                    justFirstName={true}
+                    short={true}
                   />
                 )}
                 {getReasonForShowingNotification(

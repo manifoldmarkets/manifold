@@ -1,5 +1,14 @@
 import Link from 'next/link'
-import { groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
+import {
+  Dictionary,
+  keyBy,
+  groupBy,
+  mapValues,
+  sortBy,
+  partition,
+  sumBy,
+  uniq,
+} from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
@@ -19,6 +28,7 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
+  getContractFromId,
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { UserLink } from './user-page'
@@ -41,10 +51,12 @@ import { trackLatency } from 'web/lib/firebase/tracking'
 import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
+import { useUserBets } from 'web/hooks/use-user-bets'
 import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
+import { filterDefined } from 'common/util/array'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
 
@@ -52,24 +64,34 @@ type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const CONTRACTS_PER_PAGE = 50
+const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 
-export function BetsList(props: {
-  user: User
-  bets: Bet[] | undefined
-  contractsById: { [id: string]: Contract } | undefined
-  hideBetsBefore?: number
-}) {
-  const { user, bets: allBets, contractsById, hideBetsBefore } = props
+export function BetsList(props: { user: User }) {
+  const { user } = props
 
   const signedInUser = useUser()
   const isYourBets = user.id === signedInUser?.id
+  const hideBetsBefore = isYourBets ? 0 : JUNE_1_2022
+  const userBets = useUserBets(user.id, { includeRedemptions: true })
+  const [contractsById, setContractsById] = useState<
+    Dictionary<Contract> | undefined
+  >()
 
   // Hide bets before 06-01-2022 if this isn't your own profile
   // NOTE: This means public profits also begin on 06-01-2022 as well.
   const bets = useMemo(
-    () => allBets?.filter((bet) => bet.createdTime >= (hideBetsBefore ?? 0)),
-    [allBets, hideBetsBefore]
+    () => userBets?.filter((bet) => bet.createdTime >= (hideBetsBefore ?? 0)),
+    [userBets, hideBetsBefore]
   )
+
+  useEffect(() => {
+    if (bets) {
+      const contractIds = uniq(bets.map((b) => b.contractId))
+      Promise.all(contractIds.map(getContractFromId)).then((contracts) => {
+        setContractsById(keyBy(filterDefined(contracts), 'id'))
+      })
+    }
+  }, [bets])
 
   const [sort, setSort] = useState<BetSort>('newest')
   const [filter, setFilter] = useState<BetFilter>('open')
@@ -406,95 +428,105 @@ export function BetsSummary(props: {
       : 'NO'
     : 'YES'
 
+  const canSell =
+    isYourBets &&
+    isCpmm &&
+    (isBinary || isPseudoNumeric) &&
+    !isClosed &&
+    !resolution &&
+    hasShares &&
+    sharesOutcome &&
+    user
+
   return (
-    <Row className={clsx('flex-wrap gap-4 sm:flex-nowrap sm:gap-6', className)}>
-      {!isCpmm && (
+    <Col className={clsx(className, 'gap-4')}>
+      <Row className="flex-wrap gap-4 sm:flex-nowrap sm:gap-6">
         <Col>
           <div className="whitespace-nowrap text-sm text-gray-500">
             Invested
           </div>
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
-      )}
-      {resolution ? (
         <Col>
-          <div className="text-sm text-gray-500">Payout</div>
+          <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
           <div className="whitespace-nowrap">
-            {formatMoney(payout)} <ProfitBadge profitPercent={profitPercent} />
+            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
           </div>
         </Col>
-      ) : isBinary ? (
-        <>
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if <YesLabel />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
-          </Col>
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if <NoLabel />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-          </Col>
-        </>
-      ) : isPseudoNumeric ? (
-        <>
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if {'>='} {formatLargeNumber(contract.max)}
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(yesWinnings)}</div>
-          </Col>
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Payout if {'<='} {formatLargeNumber(contract.min)}
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-          </Col>
-        </>
-      ) : (
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
-            Current value
-          </div>
-          <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-        </Col>
-      )}
-      <Col>
-        <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
-        <div className="whitespace-nowrap">
-          {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
-          {isYourBets &&
-            isCpmm &&
-            (isBinary || isPseudoNumeric) &&
-            !isClosed &&
-            !resolution &&
-            hasShares &&
-            sharesOutcome &&
-            user && (
-              <>
-                <button
-                  className="btn btn-sm ml-2"
-                  onClick={() => setShowSellModal(true)}
-                >
-                  Sell
-                </button>
-                {showSellModal && (
-                  <SellSharesModal
-                    contract={contract}
-                    user={user}
-                    userBets={bets}
-                    shares={totalShares[sharesOutcome]}
-                    sharesOutcome={sharesOutcome}
-                    setOpen={setShowSellModal}
-                  />
-                )}
-              </>
+        {canSell && (
+          <>
+            <button
+              className="btn btn-sm self-end"
+              onClick={() => setShowSellModal(true)}
+            >
+              Sell
+            </button>
+            {showSellModal && (
+              <SellSharesModal
+                contract={contract}
+                user={user}
+                userBets={bets}
+                shares={totalShares[sharesOutcome]}
+                sharesOutcome={sharesOutcome}
+                setOpen={setShowSellModal}
+              />
             )}
-        </div>
-      </Col>
-    </Row>
+          </>
+        )}
+      </Row>
+      <Row className="flex-wrap-none gap-4">
+        {resolution ? (
+          <Col>
+            <div className="text-sm text-gray-500">Payout</div>
+            <div className="whitespace-nowrap">
+              {formatMoney(payout)}{' '}
+              <ProfitBadge profitPercent={profitPercent} />
+            </div>
+          </Col>
+        ) : isBinary ? (
+          <>
+            <Col>
+              <div className="whitespace-nowrap text-sm text-gray-500">
+                Payout if <YesLabel />
+              </div>
+              <div className="whitespace-nowrap">
+                {formatMoney(yesWinnings)}
+              </div>
+            </Col>
+            <Col>
+              <div className="whitespace-nowrap text-sm text-gray-500">
+                Payout if <NoLabel />
+              </div>
+              <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
+            </Col>
+          </>
+        ) : isPseudoNumeric ? (
+          <>
+            <Col>
+              <div className="whitespace-nowrap text-sm text-gray-500">
+                Payout if {'>='} {formatLargeNumber(contract.max)}
+              </div>
+              <div className="whitespace-nowrap">
+                {formatMoney(yesWinnings)}
+              </div>
+            </Col>
+            <Col>
+              <div className="whitespace-nowrap text-sm text-gray-500">
+                Payout if {'<='} {formatLargeNumber(contract.min)}
+              </div>
+              <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
+            </Col>
+          </>
+        ) : (
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Current value
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+          </Col>
+        )}
+      </Row>
+    </Col>
   )
 }
 

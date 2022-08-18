@@ -1,5 +1,4 @@
 import { debounce, sortBy, take } from 'lodash'
-import PlusSmIcon from '@heroicons/react/solid/PlusSmIcon'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
@@ -16,7 +15,7 @@ import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/user-page'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
 import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
@@ -30,16 +29,13 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import React, { useState } from 'react'
-import { GroupChatInBubble } from 'web/components/groups/group-chat'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
-import { getSavedSort } from 'web/hooks/use-sort-and-query-params'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import { REFERRAL_AMOUNT } from 'common/user'
 import { ContractSearch } from 'web/components/contract-search'
-import clsx from 'clsx'
 import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
@@ -51,6 +47,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { Comment } from 'common/comment'
+import { GroupChat } from 'web/components/groups/group-chat'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -157,15 +154,11 @@ export default function GroupPage(props: {
   const messages = useCommentsOnGroup(group?.id) ?? props.messages
 
   const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
     groupId: group?.id,
   })
-
-  const chatDisabled = !group || group.chatDisabled
-  const showChatBubble = !chatDisabled
 
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
@@ -201,13 +194,15 @@ export default function GroupPage(props: {
 
   const questionsTab = (
     <ContractSearch
-      querySortOptions={{
-        shouldLoadFromStorage: true,
-        defaultSort: getSavedSort() ?? 'newest',
-        defaultFilter: 'open',
-      }}
+      user={user}
+      defaultSort={'newest'}
+      defaultFilter={'open'}
       additionalFilter={{ groupSlug: group.slug }}
     />
+  )
+
+  const chatTab = (
+    <GroupChat messages={messages} group={group} user={user} tips={tips} />
   )
 
   const tabs = [
@@ -215,6 +210,11 @@ export default function GroupPage(props: {
       title: 'Markets',
       content: questionsTab,
       href: groupPath(group.slug, 'markets'),
+    },
+    {
+      title: 'Chat',
+      content: chatTab,
+      href: groupPath(group.slug, 'chat'),
     },
     {
       title: 'Leaderboards',
@@ -228,7 +228,9 @@ export default function GroupPage(props: {
     },
   ]
 
-  const tabIndex = tabs.map((t) => t.title).indexOf(page ?? GROUP_CHAT_SLUG)
+  const tabIndex = tabs
+    .map((t) => t.title.toLowerCase())
+    .indexOf(page ?? 'markets')
 
   return (
     <Page>
@@ -260,19 +262,10 @@ export default function GroupPage(props: {
       </Col>
       <Tabs
         currentPageForAnalytics={groupPath(group.slug)}
-        className={'mb-0 sm:mb-2'}
+        className={'mx-2 mb-0 sm:mb-2'}
         defaultIndex={tabIndex > 0 ? tabIndex : 0}
         tabs={tabs}
       />
-      {showChatBubble && (
-        <GroupChatInBubble
-          group={group}
-          user={user}
-          privateUser={privateUser}
-          tips={tips}
-          messages={messages}
-        />
-      )}
     </Page>
   )
 }
@@ -558,32 +551,29 @@ function AddContractButton(props: { group: Group; user: User }) {
   return (
     <>
       <div className={'flex justify-center'}>
-        <button
-          className={clsx('btn btn-sm btn-outline')}
-          onClick={() => setOpen(true)}
-        >
-          <PlusSmIcon className="h-6 w-6" aria-hidden="true" /> question
-        </button>
+        <Button size="sm" color="gradient" onClick={() => setOpen(true)}>
+          Add market
+        </Button>
       </div>
 
       <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
         <Col className={' w-full gap-4 rounded-md bg-white'}>
           <Col className="p-8 pb-0">
             <div className={'text-xl text-indigo-700'}>
-              Add a question to your group
+              Add a market to your group
             </div>
 
             {contracts.length === 0 ? (
               <Col className="items-center justify-center">
                 <CreateQuestionButton
                   user={user}
-                  overrideText={'New question'}
+                  overrideText={'New market'}
                   className={'w-48 flex-shrink-0 '}
                   query={`?groupId=${group.id}`}
                 />
 
                 <div className={'mt-1 text-lg text-gray-600'}>
-                  (or select old questions)
+                  (or select old markets)
                 </div>
               </Col>
             ) : (
@@ -614,12 +604,12 @@ function AddContractButton(props: { group: Group; user: User }) {
 
           <div className={'overflow-y-scroll sm:px-8'}>
             <ContractSearch
+              user={user}
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
               overrideGridClassName={
                 'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
               }
-              showPlaceHolder={true}
               cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
               additionalFilter={{ excludeContractIds: group.contractIds }}
               highlightOptions={{

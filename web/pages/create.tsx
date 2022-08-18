@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
-import { useUser } from 'web/hooks/use-user'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
 import { FIXED_ANTE } from 'common/antes'
@@ -33,7 +33,9 @@ import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 
-export const getServerSideProps = redirectIfLoggedOut('/')
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+})
 
 type NewQuestionParams = {
   groupId?: string
@@ -49,8 +51,9 @@ type NewQuestionParams = {
   initValue?: string
 }
 
-export default function Create() {
+export default function Create(props: { auth: { user: User } }) {
   useTracking('view create page')
+  const { user } = props.auth
   const router = useRouter()
   const params = router.query as NewQuestionParams
   // TODO: Not sure why Question is pulled out as its own component;
@@ -60,8 +63,7 @@ export default function Create() {
     setQuestion(params.q ?? '')
   }, [params.q])
 
-  const creator = useUser()
-  if (!router.isReady || !creator) return <div />
+  if (!router.isReady) return <div />
 
   return (
     <Page>
@@ -93,7 +95,7 @@ export default function Create() {
             </div>
           </form>
           <Spacer h={6} />
-          <NewContract question={question} params={params} creator={creator} />
+          <NewContract question={question} params={params} creator={user} />
         </div>
       </div>
     </Page>
@@ -102,7 +104,7 @@ export default function Create() {
 
 // Allow user to create a new contract
 export function NewContract(props: {
-  creator?: User | null
+  creator: User
   question: string
   params?: NewQuestionParams
 }) {
@@ -117,17 +119,18 @@ export function NewContract(props: {
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
 
-  const [answers, setAnswers] = useState<string[]>([]) // for multiple choice
+  // for multiple choice, init to 3 empty answers
+  const [answers, setAnswers] = useState(['', '', ''])
 
   useEffect(() => {
-    if (groupId && creator)
+    if (groupId)
       getGroup(groupId).then((group) => {
         if (group && canModifyGroupContracts(group, creator.id)) {
           setSelectedGroup(group)
           setShowGroupSelector(false)
         }
       })
-  }, [creator, groupId])
+  }, [creator.id, groupId])
   const [ante, _setAnte] = useState(FIXED_ANTE)
 
   // If params.closeTime is set, extract out the specified date and time
@@ -152,7 +155,7 @@ export function NewContract(props: {
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
 
-  const balance = creator?.balance || 0
+  const balance = creator.balance || 0
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -214,7 +217,7 @@ export function NewContract(props: {
 
   async function submit() {
     // TODO: Tell users why their contract is invalid
-    if (!creator || !isValid) return
+    if (!isValid) return
     setIsSubmitting(true)
     try {
       const result = await createMarket(
@@ -249,8 +252,6 @@ export function NewContract(props: {
     }
   }
 
-  if (!creator) return <></>
-
   return (
     <div>
       <label className="label">
@@ -284,7 +285,7 @@ export function NewContract(props: {
       <Spacer h={6} />
 
       {outcomeType === 'MULTIPLE_CHOICE' && (
-        <MultipleChoiceAnswers setAnswers={setAnswers} />
+        <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
       )}
 
       {outcomeType === 'PSEUDO_NUMERIC' && (
@@ -298,7 +299,7 @@ export function NewContract(props: {
             <Row className="gap-2">
               <input
                 type="number"
-                className="input input-bordered"
+                className="input input-bordered w-32"
                 placeholder="MIN"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
@@ -309,7 +310,7 @@ export function NewContract(props: {
               />
               <input
                 type="number"
-                className="input input-bordered"
+                className="input input-bordered w-32"
                 placeholder="MAX"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}

@@ -31,6 +31,7 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
+import { Tooltip } from '../tooltip'
 
 export function ContractCard(props: {
   contract: Contract
@@ -65,114 +66,118 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <div>
-      <Col
+    <Row
+      className={clsx(
+        'relative gap-3 self-start rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
+        className
+      )}
+    >
+      <Col className="group relative flex-1 gap-3 py-4 pb-12  pl-6">
+        {onClick ? (
+          <a
+            className="absolute top-0 left-0 right-0 bottom-0"
+            href={contractPath(contract)}
+            onClick={(e) => {
+              // Let the browser handle the link click (opens in new tab).
+              if (e.ctrlKey || e.metaKey) return
+
+              e.preventDefault()
+              track('click market card', {
+                slug: contract.slug,
+                contractId: contract.id,
+              })
+              onClick()
+            }}
+          />
+        ) : (
+          <Link href={contractPath(contract)}>
+            <a
+              onClick={trackCallback('click market card', {
+                slug: contract.slug,
+                contractId: contract.id,
+              })}
+              className="absolute top-0 left-0 right-0 bottom-0"
+            />
+          </Link>
+        )}
+        <AvatarDetails
+          contract={contract}
+          className={'hidden md:inline-flex'}
+        />
+        <p
+          className="break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2"
+          style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+        >
+          {question}
+        </p>
+
+        {(outcomeType === 'FREE_RESPONSE' ||
+          outcomeType === 'MULTIPLE_CHOICE') &&
+          (resolution ? (
+            <FreeResponseOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+              truncate={'long'}
+            />
+          ) : (
+            <FreeResponseTopAnswer contract={contract} truncate="long" />
+          ))}
+      </Col>
+      {showQuickBet ? (
+        <QuickBet contract={contract} user={user} />
+      ) : (
+        <>
+          {outcomeType === 'BINARY' && (
+            <BinaryResolutionOrChance
+              className="items-center self-center pr-5"
+              contract={contract}
+            />
+          )}
+
+          {outcomeType === 'PSEUDO_NUMERIC' && (
+            <PseudoNumericResolutionOrExpectation
+              className="items-center self-center pr-5"
+              contract={contract}
+            />
+          )}
+
+          {outcomeType === 'NUMERIC' && (
+            <NumericResolutionOrExpectation
+              className="items-center self-center pr-5"
+              contract={contract}
+            />
+          )}
+
+          {(outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') && (
+            <FreeResponseResolutionOrChance
+              className="items-center self-center pr-5 text-gray-600"
+              contract={contract}
+              truncate="long"
+            />
+          )}
+          <ProbBar contract={contract} />
+        </>
+      )}
+      <Row
         className={clsx(
-          'relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:cursor-pointer hover:bg-gray-100',
-          className
+          'absolute bottom-3 gap-2 truncate px-5 md:gap-0',
+          showQuickBet ? 'w-[85%]' : 'w-full'
         )}
       >
-        <Row>
-          <Col className="relative flex-1 gap-3 pr-1">
-            <div
-              className={clsx(
-                'peer absolute -left-6 -top-4 -bottom-4 right-0 z-10'
-              )}
-            >
-              {onClick ? (
-                <a
-                  className="absolute top-0 left-0 right-0 bottom-0"
-                  href={contractPath(contract)}
-                  onClick={(e) => {
-                    // Let the browser handle the link click (opens in new tab).
-                    if (e.ctrlKey || e.metaKey) return
-
-                    e.preventDefault()
-                    track('click market card', {
-                      slug: contract.slug,
-                      contractId: contract.id,
-                    })
-                    onClick()
-                  }}
-                />
-              ) : (
-                <Link href={contractPath(contract)}>
-                  <a
-                    onClick={trackCallback('click market card', {
-                      slug: contract.slug,
-                      contractId: contract.id,
-                    })}
-                    className="absolute top-0 left-0 right-0 bottom-0"
-                  />
-                </Link>
-              )}
-            </div>
-            <AvatarDetails contract={contract} />
-            <p
-              className="break-words font-semibold text-indigo-700 peer-hover:underline peer-hover:decoration-indigo-400 peer-hover:decoration-2"
-              style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-            >
-              {question}
-            </p>
-
-            {(outcomeType === 'FREE_RESPONSE' ||
-              outcomeType === 'MULTIPLE_CHOICE') &&
-              (resolution ? (
-                <FreeResponseOutcomeLabel
-                  contract={contract}
-                  resolution={resolution}
-                  truncate={'long'}
-                />
-              ) : (
-                <FreeResponseTopAnswer contract={contract} truncate="long" />
-              ))}
-
-            <MiscDetails
-              contract={contract}
-              showHotVolume={showHotVolume}
-              showTime={showTime}
-              hideGroupLink={hideGroupLink}
-            />
-          </Col>
-          {showQuickBet ? (
-            <QuickBet contract={contract} user={user} />
-          ) : (
-            <Col className="m-auto pl-2">
-              {outcomeType === 'BINARY' && (
-                <BinaryResolutionOrChance
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {outcomeType === 'PSEUDO_NUMERIC' && (
-                <PseudoNumericResolutionOrExpectation
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {outcomeType === 'NUMERIC' && (
-                <NumericResolutionOrExpectation
-                  className="items-center"
-                  contract={contract}
-                />
-              )}
-
-              {(outcomeType === 'FREE_RESPONSE' ||
-                outcomeType === 'MULTIPLE_CHOICE') && (
-                <FreeResponseResolutionOrChance
-                  className="self-end text-gray-600"
-                  contract={contract}
-                  truncate="long"
-                />
-              )}
-              <ProbBar contract={contract} />
-            </Col>
-          )}
-        </Row>
-      </Col>
-    </div>
+        <AvatarDetails
+          contract={contract}
+          short={true}
+          className={'block md:hidden'}
+        />
+        <MiscDetails
+          contract={contract}
+          showHotVolume={showHotVolume}
+          showTime={showTime}
+          hideGroupLink={hideGroupLink}
+        />
+      </Row>
+    </Row>
   )
 }
 
@@ -332,22 +337,19 @@ export function PseudoNumericResolutionOrExpectation(props: {
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <div
-              className={clsx('tooltip', textColor)}
-              data-tip={value.toFixed(2)}
-            >
+            <Tooltip className={textColor} text={value.toFixed(2)}>
               {formatLargeNumber(value)}
-            </div>
+            </Tooltip>
           )}
         </>
       ) : (
         <>
-          <div
-            className={clsx('tooltip text-3xl', textColor)}
-            data-tip={value.toFixed(2)}
+          <Tooltip
+            className={clsx('text-3xl', textColor)}
+            text={value.toFixed(2)}
           >
             {formatLargeNumber(value)}
-          </div>
+          </Tooltip>
           <div className={clsx('text-base', textColor)}>expected</div>
         </>
       )}

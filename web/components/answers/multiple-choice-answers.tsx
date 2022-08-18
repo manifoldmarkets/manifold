@@ -1,26 +1,23 @@
 import { MAX_ANSWER_LENGTH } from 'common/answer'
-import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 import { XIcon } from '@heroicons/react/solid'
-
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 
 export function MultipleChoiceAnswers(props: {
+  answers: string[]
   setAnswers: (answers: string[]) => void
 }) {
-  const [answers, setInternalAnswers] = useState(['', '', ''])
+  const { answers, setAnswers } = props
 
   const setAnswer = (i: number, answer: string) => {
     const newAnswers = setElement(answers, i, answer)
-    setInternalAnswers(newAnswers)
-    props.setAnswers(newAnswers)
+    setAnswers(newAnswers)
   }
 
   const removeAnswer = (i: number) => {
     const newAnswers = answers.slice(0, i).concat(answers.slice(i + 1))
-    setInternalAnswers(newAnswers)
-    props.setAnswers(newAnswers)
+    setAnswers(newAnswers)
   }
 
   const addAnswer = () => setAnswer(answers.length, '')
@@ -28,7 +25,7 @@ export function MultipleChoiceAnswers(props: {
   return (
     <Col>
       {answers.map((answer, i) => (
-        <Row className="mb-2 items-center align-middle">
+        <Row className="mb-2 items-center gap-2 align-middle">
           {i + 1}.{' '}
           <Textarea
             value={answer}
@@ -40,17 +37,22 @@ export function MultipleChoiceAnswers(props: {
           />
           {answers.length > 2 && (
             <button
-              className="btn btn-xs btn-outline ml-2"
               onClick={() => removeAnswer(i)}
+              type="button"
+              className="inline-flex items-center rounded-full border border-gray-300 bg-white p-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              <XIcon className="h-4 w-4 flex-shrink-0" />
+              <XIcon className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
         </Row>
       ))}
 
       <Row className="justify-end">
-        <button className="btn btn-outline btn-xs" onClick={addAnswer}>
+        <button
+          type="button"
+          onClick={addAnswer}
+          className="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
           Add answer
         </button>
       </Row>

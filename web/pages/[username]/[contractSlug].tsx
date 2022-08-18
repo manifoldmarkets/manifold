@@ -25,8 +25,7 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import Confetti from 'react-confetti'
+import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { NumericBetPanel } from 'web/components/numeric-bet-panel'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -36,7 +35,6 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
-import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 import { User } from 'common/user'
@@ -92,6 +90,7 @@ export default function ContractPage(props: {
     slug: '',
   }
 
+  const user = useUser()
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
@@ -103,46 +102,15 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  return <ContractPageContent {...{ ...props, contract }} />
+  return <ContractPageContent {...{ ...props, contract, user }} />
 }
 
-export function ContractPageContent(
-  props: Parameters<typeof ContractPage>[0] & { contract: Contract }
-) {
-  const { backToHome, comments } = props
-
-  const contract = useContractWithPreload(props.contract) ?? props.contract
-
-  useTracking('view market', {
-    slug: contract.slug,
-    contractId: contract.id,
-    creatorId: contract.creatorId,
-  })
-
-  const bets = useBets(contract.id) ?? props.bets
-  const liquidityProvisions =
-    useLiquidity(contract.id)?.filter((l) => !l.isAnte && l.amount > 0) ?? []
-  // Sort for now to see if bug is fixed.
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-
-  const tips = useTipTxns({ contractId: contract.id })
-
-  const user = useUser()
-
-  const { width, height } = useWindowSize()
-
-  const [showConfetti, setShowConfetti] = useState(false)
-
-  useEffect(() => {
-    const shouldSeeConfetti = !!(
-      user &&
-      contract.creatorId === user.id &&
-      Date.now() - contract.createdTime < 10 * 1000
-    )
-    setShowConfetti(shouldSeeConfetti)
-  }, [contract, user])
-
-  const { creatorId, isResolved, question, outcomeType } = contract
+export function ContractPageSidebar(props: {
+  user: User | null | undefined
+  contract: Contract
+}) {
+  const { contract, user } = props
+  const { creatorId, isResolved, outcomeType } = contract
 
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
@@ -153,14 +121,7 @@ export function ContractPageContent(
   const hasSidePanel =
     (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
 
-  const ogCardProps = getOpenGraphProps(contract)
-
-  useSaveReferral(user, {
-    defaultReferrerUsername: contract.creatorUsername,
-    contractId: contract.id,
-  })
-
-  const rightSidebar = hasSidePanel ? (
+  return hasSidePanel ? (
     <Col className="gap-4">
       {allowTrade &&
         (isNumeric ? (
@@ -179,16 +140,58 @@ export function ContractPageContent(
         ))}
     </Col>
   ) : null
+}
 
+export function ContractPageContent(
+  props: Parameters<typeof ContractPage>[0] & {
+    contract: Contract
+    user?: User | null
+  }
+) {
+  const { backToHome, comments, user } = props
+
+  const contract = useContractWithPreload(props.contract) ?? props.contract
+
+  useTracking('view market', {
+    slug: contract.slug,
+    contractId: contract.id,
+    creatorId: contract.creatorId,
+  })
+
+  const bets = useBets(contract.id) ?? props.bets
+
+  // Sort for now to see if bug is fixed.
+  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+
+  const tips = useTipTxns({ contractId: contract.id })
+
+  const [showConfetti, setShowConfetti] = useState(false)
+
+  useEffect(() => {
+    const shouldSeeConfetti = !!(
+      user &&
+      contract.creatorId === user.id &&
+      Date.now() - contract.createdTime < 10 * 1000
+    )
+    setShowConfetti(shouldSeeConfetti)
+  }, [contract, user])
+
+  const { isResolved, question, outcomeType } = contract
+
+  const allowTrade = tradingAllowed(contract)
+
+  const ogCardProps = getOpenGraphProps(contract)
+
+  useSaveReferral(user, {
+    defaultReferrerUsername: contract.creatorUsername,
+    contractId: contract.id,
+  })
+
+  const rightSidebar = <ContractPageSidebar user={user} contract={contract} />
   return (
     <Page rightSidebar={rightSidebar}>
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
       {ogCardProps && (
@@ -216,7 +219,7 @@ export function ContractPageContent(
           bets={bets.filter((b) => !b.challengeSlug)}
         />
 
-        {isNumeric && (
+        {outcomeType === 'NUMERIC' && (
           <AlertBox
             title="Warning"
             text="Distributional numeric markets were introduced as an experimental feature and are now deprecated."
@@ -232,7 +235,7 @@ export function ContractPageContent(
           </>
         )}
 
-        {isNumeric && allowTrade && (
+        {outcomeType === 'NUMERIC' && allowTrade && (
           <NumericBetPanel className="xl:hidden" contract={contract} />
         )}
 
@@ -254,7 +257,6 @@ export function ContractPageContent(
         <ContractTabs
           contract={contract}
           user={user}
-          liquidityProvisions={liquidityProvisions}
           bets={bets}
           tips={tips}
           comments={comments}
@@ -354,7 +356,6 @@ function ContractTopTrades(props: {
               comment={commentsById[topCommentId]}
               tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
-              truncate={false}
               smallAvatar={false}
             />
           </div>

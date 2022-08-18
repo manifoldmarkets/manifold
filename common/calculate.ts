@@ -1,4 +1,4 @@
-import { maxBy } from 'lodash'
+import { maxBy, sortBy, sum, sumBy } from 'lodash'
 import { Bet, LimitBet } from './bet'
 import {
   calculateCpmmSale,
@@ -133,10 +133,46 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
     : calculateDpmPayout(contract, bet, outcome)
 }
 
+function getCpmmInvested(yourBets: Bet[]) {
+  const totalShares: { [outcome: string]: number } = {}
+  const totalSpent: { [outcome: string]: number } = {}
+
+  const sortedBets = sortBy(yourBets, 'createdTime')
+  for (const bet of sortedBets) {
+    const { outcome, shares, amount } = bet
+    if (amount > 0) {
+      totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
+      totalSpent[outcome] = (totalSpent[outcome] ?? 0) + amount
+    } else if (amount < 0) {
+      const averagePrice = totalSpent[outcome] / totalShares[outcome]
+      totalShares[outcome] = totalShares[outcome] + shares
+      totalSpent[outcome] = totalSpent[outcome] + averagePrice * shares
+    }
+  }
+
+  return sum(Object.values(totalSpent))
+}
+
+function getDpmInvested(yourBets: Bet[]) {
+  const sortedBets = sortBy(yourBets, 'createdTime')
+
+  return sumBy(sortedBets, (bet) => {
+    const { amount, sale } = bet
+
+    if (sale) {
+      const originalBet = sortedBets.find((b) => b.id === sale.betId)
+      if (originalBet) return -originalBet.amount
+      return 0
+    }
+
+    return amount
+  })
+}
+
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
+  const isCpmm = contract.mechanism === 'cpmm-1'
 
-  let currentInvested = 0
   let totalInvested = 0
   let payout = 0
   let loan = 0
@@ -162,7 +198,6 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
         saleValue -= amount
       }
 
-      currentInvested += amount
       loan += loanAmount ?? 0
       payout += resolution
         ? calculatePayout(contract, bet, resolution)
@@ -174,12 +209,13 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const profit = payout + saleValue + redeemed - totalInvested
   const profitPercent = (profit / totalInvested) * 100
 
+  const invested = isCpmm ? getCpmmInvested(yourBets) : getDpmInvested(yourBets)
   const hasShares = Object.values(totalShares).some(
     (shares) => !floatingEqual(shares, 0)
   )
 
   return {
-    invested: Math.max(0, currentInvested),
+    invested,
     payout,
     netPayout,
     profit,

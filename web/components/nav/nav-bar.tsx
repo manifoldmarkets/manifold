@@ -33,7 +33,7 @@ function getNavigation() {
 
 const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/markets', icon: SearchIcon },
+  { name: 'Explore', href: '/home', icon: SearchIcon },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
@@ -44,7 +44,7 @@ export function BottomNavBar() {
   const currentPage = router.pathname
 
   const user = useUser()
-  const privateUser = usePrivateUser(user?.id)
+  const privateUser = usePrivateUser()
 
   const isIframe = useIsIframe()
   if (isIframe) {

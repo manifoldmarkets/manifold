@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ShareIcon } from '@heroicons/react/outline'
+import { LinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 
 import { copyToClipboard } from 'web/lib/util/copy'
@@ -40,7 +40,7 @@ export function ShareIconButton(props: {
           setTimeout(() => setShowToast(false), 2000)
         }}
       >
-        <ShareIcon
+        <LinkIcon
           className={clsx(iconClassName ? iconClassName : 'h-[24px] w-5')}
           aria-hidden="true"
         />

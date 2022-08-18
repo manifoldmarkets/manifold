@@ -135,7 +135,8 @@ Requires no authorization.
     // Market attributes. All times are in milliseconds since epoch
     closeTime?: number // Min of creator's chosen date, and resolutionTime
     question: string
-    description: string
+    description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
+    textDescription: string // string description without formatting, images, or embeds
 
     // A list of tags on each market. Any user can add tags to any market.
     // This list also includes the predefined categories shown as filters on the home page.
@@ -162,6 +163,8 @@ Requires no authorization.
     resolutionTime?: number
     resolution?: string
     resolutionProbability?: number // Used for BINARY markets resolved to MKT
+
+    lastUpdatedTime?: number
   }
   ```
 
@@ -528,6 +531,10 @@ $ curl https://manifold.markets/api/v0/bet -X POST -H 'Content-Type: application
                  "contractId":"{...}"}'
 ```
 
+### `POST /v0/bet/cancel/[id]`
+
+Cancel the limit order of a bet with the specified id. If the bet was unfilled, it will be cancelled so that no other bets will match with it. This is action irreversable.
+
 ### `POST /v0/market`
 
 Creates a new market on behalf of the authorized user.
@@ -537,6 +544,7 @@ Parameters:
 - `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, or `NUMERIC`.
 - `question`: Required. The headline question for the market.
 - `description`: Required. A long description describing the rules for the market.
+  - Note: string descriptions do **not** turn into links, mentions, formatted text. Instead, rich text descriptions must be in [TipTap json](https://tiptap.dev/guide/output#option-1-json).
 - `closeTime`: Required. The time at which the market will close, represented as milliseconds since the epoch.
 - `tags`: Optional. An array of string tags for the market.
 

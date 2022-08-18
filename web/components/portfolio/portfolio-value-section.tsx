@@ -1,20 +1,27 @@
 import { PortfolioMetrics } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import { memo, useState } from 'react'
-import { Period } from 'web/lib/firebase/users'
+import { memo, useEffect, useState } from 'react'
+import { Period, getPortfolioHistory } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PortfolioValueGraph } from './portfolio-value-graph'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
-    portfolioHistory: PortfolioMetrics[]
+    userId: string
     disableSelector?: boolean
   }) {
-    const { portfolioHistory, disableSelector } = props
-    const lastPortfolioMetrics = last(portfolioHistory)
+    const { disableSelector, userId } = props
+
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('allTime')
+    const [portfolioHistory, setUsersPortfolioHistory] = useState<
+      PortfolioMetrics[]
+    >([])
+    useEffect(() => {
+      getPortfolioHistory(userId).then(setUsersPortfolioHistory)
+    }, [userId])
+    const lastPortfolioMetrics = last(portfolioHistory)
 
     if (portfolioHistory.length === 0 || !lastPortfolioMetrics) {
       return <></>

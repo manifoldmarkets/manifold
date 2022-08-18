@@ -22,7 +22,10 @@ export function ChoicesToggleGroup(props: {
   } = props
   return (
     <RadioGroup
-      className={clsx(className, 'flex flex-row flex-wrap items-center gap-3')}
+      className={clsx(
+        className,
+        'flex flex-row flex-wrap items-center gap-2 sm:gap-3'
+      )}
       value={currentChoice.toString()}
       onChange={setChoice}
     >

@@ -7,6 +7,7 @@ import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { JSONContent } from '@tiptap/core'
+import { richTextToString } from 'common/util/parse'
 
 export type LiteMarket = {
   // Unique identifer for this market
@@ -22,6 +23,7 @@ export type LiteMarket = {
   closeTime?: number
   question: string
   description: string | JSONContent
+  textDescription: string // string version of description
   tags: string[]
   url: string
   outcomeType: string
@@ -40,6 +42,8 @@ export type LiteMarket = {
   resolution?: string
   resolutionTime?: number
   resolutionProbability?: number
+
+  lastUpdatedTime?: number
 }
 
 export type ApiAnswer = Answer & {
@@ -90,12 +94,18 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
     resolutionProbability,
+    lastUpdatedTime,
   } = contract
 
   const { p, totalLiquidity } = contract as any
 
   const probability =
     contract.outcomeType === 'BINARY' ? getProbability(contract) : undefined
+
+  let min, max, isLogScale: any
+  if (contract.outcomeType === 'PSEUDO_NUMERIC') {
+    ;({ min, max, isLogScale } = contract)
+  }
 
   return removeUndefinedProps({
     id,
@@ -109,6 +119,10 @@ export function toLiteMarket(contract: Contract): LiteMarket {
         : closeTime,
     question,
     description,
+    textDescription:
+      typeof description === 'string'
+        ? description
+        : richTextToString(description),
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
     pool,
@@ -124,6 +138,10 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     resolution,
     resolutionTime,
     resolutionProbability,
+    lastUpdatedTime,
+    min,
+    max,
+    isLogScale,
   })
 }
 

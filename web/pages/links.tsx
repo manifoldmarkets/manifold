@@ -11,10 +11,11 @@ import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import { Subtitle } from 'web/components/subtitle'
-import { useUser } from 'web/hooks/use-user'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useUserManalinks } from 'web/lib/firebase/manalinks'
 import { useUserById } from 'web/hooks/use-user'
 import { ManalinkTxn } from 'common/txn'
+import { User } from 'common/user'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserLink } from 'web/components/user-page'
@@ -25,17 +26,21 @@ import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/pagination'
 import { Manalink } from 'common/manalink'
 import { REFERRAL_AMOUNT } from 'common/user'
+import { SiteLink } from 'web/components/site-link'
 
 const LINKS_PER_PAGE = 24
-export const getServerSideProps = redirectIfLoggedOut('/')
+
+export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
+  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+})
 
 export function getManalinkUrl(slug: string) {
   return `${location.protocol}//${location.host}/link/${slug}`
 }
 
-export default function LinkPage() {
-  const user = useUser()
-  const links = useUserManalinks(user?.id ?? '')
+export default function LinkPage(props: { auth: { user: User } }) {
+  const { user } = props.auth
+  const links = useUserManalinks(user.id ?? '')
   // const manalinkTxns = useManalinkTxns(user?.id ?? '')
   const [highlightedSlug, setHighlightedSlug] = useState('')
   const unclaimedLinks = links.filter(
@@ -43,10 +48,6 @@ export default function LinkPage() {
       (l.maxUses == null || l.claimedUserIds.length < l.maxUses) &&
       (l.expiresTime == null || l.expiresTime > Date.now())
   )
-
-  if (user == null) {
-    return null
-  }
 
   return (
     <Page>
@@ -68,9 +69,11 @@ export default function LinkPage() {
         </Row>
         <p>
           You can use manalinks to send mana (M$) to other people, even if they
-          don&apos;t yet have a Manifold account. Manalinks are also eligible
-          for the referral bonus. Invite a new user to Manifold and get M$
-          {REFERRAL_AMOUNT} if they sign up!
+          don&apos;t yet have a Manifold account.{' '}
+          <SiteLink href="/referrals">
+            Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
+            user signs up!
+          </SiteLink>
         </p>
         <Subtitle text="Your Manalinks" />
         <ManalinksDisplay
