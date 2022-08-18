@@ -79,12 +79,34 @@ export function ContractsGrid(props: {
     <Col className="gap-8">
       <div
         className={clsx(
-          'w-full columns-1 gap-4 space-y-4 md:columns-2',
+          'hidden w-full gap-4 space-y-4 md:block md:columns-2',
           gridClassName
         )}
       >
-        {/* TODO: When columns-1, don't reorder the contracts */}
         {twoColContracts.map((contract) => (
+          <ContractCard
+            contract={contract}
+            key={contract.id}
+            showTime={showTime}
+            onClick={
+              onContractClick ? () => onContractClick(contract) : undefined
+            }
+            hideQuickBet={hideQuickBet}
+            hideGroupLink={hideGroupLink}
+            className={clsx(
+              'break-inside-avoid-column',
+              contractIds?.includes(contract.id) && highlightClassName
+            )}
+          />
+        ))}
+      </div>
+      <div
+        className={clsx(
+          'w-full columns-1 gap-4 space-y-4 md:hidden',
+          gridClassName
+        )}
+      >
+        {contracts.map((contract) => (
           <ContractCard
             contract={contract}
             key={contract.id}
