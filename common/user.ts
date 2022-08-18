@@ -41,6 +41,8 @@ export type User = {
   referredByGroupId?: string
   lastPingTime?: number
   shouldShowWelcome?: boolean
+  lastBetTime?: number
+  currentBettingStreak?: number
 }
 
 export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000

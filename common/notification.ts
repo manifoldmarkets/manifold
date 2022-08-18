@@ -38,6 +38,7 @@ export type notification_source_types =
   | 'user'
   | 'bonus'
   | 'challenge'
+  | 'betting_streak_bonus'
 
 export type notification_source_update_types =
   | 'created'
@@ -66,3 +67,4 @@ export type notification_reason_types =
   | 'bet_fill'
   | 'user_joined_from_your_group_invite'
   | 'challenge_accepted'
+  | 'betting_streak_incremented'

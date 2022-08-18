@@ -31,7 +31,10 @@ import {
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
-import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/numeric-constants'
+import {
+  BETTING_STREAK_BONUS_AMOUNT,
+  UNIQUE_BETTOR_BONUS_AMOUNT,
+} from 'common/numeric-constants'
 import { groupBy, sum, uniq } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
@@ -229,39 +232,39 @@ function IncomeNotificationGroupItem(props: {
       (n) => n.sourceType
     )
     for (const sourceType in groupedNotificationsBySourceType) {
-      // Source title splits by contracts and groups
+      // Source title splits by contracts, groups, betting streak bonus
       const groupedNotificationsBySourceTitle = groupBy(
         groupedNotificationsBySourceType[sourceType],
         (notification) => {
           return notification.sourceTitle ?? notification.sourceContractTitle
         }
       )
-      for (const contractId in groupedNotificationsBySourceTitle) {
-        const notificationsForContractId =
-          groupedNotificationsBySourceTitle[contractId]
-        if (notificationsForContractId.length === 1) {
-          newNotifications.push(notificationsForContractId[0])
+      for (const sourceTitle in groupedNotificationsBySourceTitle) {
+        const notificationsForSourceTitle =
+          groupedNotificationsBySourceTitle[sourceTitle]
+        if (notificationsForSourceTitle.length === 1) {
+          newNotifications.push(notificationsForSourceTitle[0])
           continue
         }
         let sum = 0
-        notificationsForContractId.forEach(
+        notificationsForSourceTitle.forEach(
           (notification) =>
             notification.sourceText &&
             (sum = parseInt(notification.sourceText) + sum)
         )
         const uniqueUsers = uniq(
-          notificationsForContractId.map((notification) => {
+          notificationsForSourceTitle.map((notification) => {
             return notification.sourceUserUsername
           })
         )
 
         const newNotification = {
-          ...notificationsForContractId[0],
+          ...notificationsForSourceTitle[0],
           sourceText: sum.toString(),
           sourceUserUsername:
             uniqueUsers.length > 1
               ? MULTIPLE_USERS_KEY
-              : notificationsForContractId[0].sourceType,
+              : notificationsForSourceTitle[0].sourceType,
         }
         newNotifications.push(newNotification)
       }
@@ -362,7 +365,8 @@ function IncomeNotificationItem(props: {
   justSummary?: boolean
 }) {
   const { notification, justSummary } = props
-  const { sourceType, sourceUserName, sourceUserUsername } = notification
+  const { sourceType, sourceUserName, sourceUserUsername, sourceText } =
+    notification
   const [highlighted] = useState(!notification.isSeen)
   const { width } = useWindowSize()
   const isMobile = (width && width < 768) || false
@@ -370,19 +374,74 @@ function IncomeNotificationItem(props: {
     setNotificationsAsSeen([notification])
   }, [notification])
 
-  function getReasonForShowingIncomeNotification(simple: boolean) {
+  function reasonAndLink(simple: boolean) {
     const { sourceText } = notification
     let reasonText = ''
     if (sourceType === 'bonus' && sourceText) {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } unique traders`
+          } unique traders on`
         : 'bonus on'
     } else if (sourceType === 'tip') {
-      reasonText = !simple ? `tipped you` : `in tips on`
+      reasonText = !simple ? `tipped you on` : `in tips on`
+    } else if (sourceType === 'betting_streak_bonus' && sourceText) {
+      reasonText = `for your ${
+        parseInt(sourceText) / BETTING_STREAK_BONUS_AMOUNT
+      } day`
     }
-    return reasonText
+    return (
+      <>
+        {reasonText}
+        {sourceType === 'betting_streak_bonus' ? (
+          simple ? (
+            <span className={'ml-1 font-bold'}>Betting Streak</span>
+          ) : (
+            <SiteLink
+              className={'ml-1 font-bold'}
+              href={'/betting-streak-bonus'}
+            >
+              Betting Streak
+            </SiteLink>
+          )
+        ) : (
+          <QuestionOrGroupLink
+            notification={notification}
+            ignoreClick={isMobile}
+          />
+        )}
+      </>
+    )
+  }
+
+  const incomeNotificationLabel = () => {
+    return sourceText ? (
+      <span className="text-primary">
+        {'+' + formatMoney(parseInt(sourceText))}
+      </span>
+    ) : (
+      <div />
+    )
+  }
+
+  const getIncomeSourceUrl = () => {
+    const {
+      sourceId,
+      sourceContractCreatorUsername,
+      sourceContractSlug,
+      sourceSlug,
+    } = notification
+    if (sourceType === 'tip' && sourceContractSlug)
+      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
+    if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
+    if (sourceType === 'challenge') return `${sourceSlug}`
+    if (sourceType === 'betting_streak_bonus')
+      return `/${sourceUserUsername}/?show=betting-streak`
+    if (sourceContractCreatorUsername && sourceContractSlug)
+      return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+        sourceId ?? '',
+        sourceType
+      )}`
   }
 
   if (justSummary) {
@@ -392,19 +451,9 @@ function IncomeNotificationItem(props: {
           <div className={'flex pl-1 sm:pl-0'}>
             <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
               <div className={'mr-1 text-black'}>
-                <NotificationTextLabel
-                  className={'line-clamp-1'}
-                  notification={notification}
-                  justSummary={true}
-                />
+                {incomeNotificationLabel()}
               </div>
-              <span className={'flex truncate'}>
-                {getReasonForShowingIncomeNotification(true)}
-                <QuestionOrGroupLink
-                  notification={notification}
-                  ignoreClick={isMobile}
-                />
-              </span>
+              <span className={'flex truncate'}>{reasonAndLink(true)}</span>
             </div>
           </div>
         </div>
@@ -421,18 +470,16 @@ function IncomeNotificationItem(props: {
     >
       <div className={'relative'}>
         <SiteLink
-          href={getSourceUrl(notification) ?? ''}
+          href={getIncomeSourceUrl() ?? ''}
           className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
         />
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <div className={'line-clamp-2 flex max-w-xl shrink '}>
             <div className={'inline'}>
-              <span className={'mr-1'}>
-                <NotificationTextLabel notification={notification} />
-              </span>
+              <span className={'mr-1'}>{incomeNotificationLabel()}</span>
             </div>
             <span>
-              {sourceType != 'bonus' &&
+              {sourceType === 'tip' &&
                 (sourceUserUsername === MULTIPLE_USERS_KEY ? (
                   <span className={'mr-1 truncate'}>Multiple users</span>
                 ) : (
@@ -443,8 +490,7 @@ function IncomeNotificationItem(props: {
                     short={true}
                   />
                 ))}
-              {getReasonForShowingIncomeNotification(false)} {' on'}
-              <QuestionOrGroupLink notification={notification} />
+              {reasonAndLink(false)}
             </span>
           </div>
         </Row>
@@ -794,9 +840,6 @@ function getSourceUrl(notification: Notification) {
   // User referral:
   if (sourceType === 'user' && !sourceContractSlug)
     return `/${sourceUserUsername}`
-  if (sourceType === 'tip' && sourceContractSlug)
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${sourceSlug}`
-  if (sourceType === 'tip' && sourceSlug) return `${groupPath(sourceSlug)}`
   if (sourceType === 'challenge') return `${sourceSlug}`
   if (sourceContractCreatorUsername && sourceContractSlug)
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
@@ -884,12 +927,6 @@ function NotificationTextLabel(props: {
   } else if (sourceType === 'liquidity' && sourceText) {
     return (
       <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
-    )
-  } else if ((sourceType === 'bonus' || sourceType === 'tip') && sourceText) {
-    return (
-      <span className="text-primary">
-        {'+' + formatMoney(parseInt(sourceText))}
-      </span>
     )
   } else if (sourceType === 'bet' && sourceText) {
     return (

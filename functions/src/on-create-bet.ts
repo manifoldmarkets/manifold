@@ -6,18 +6,23 @@ import { Bet, LimitBet } from '../../common/bet'
 import { getContract, getUser, getValues, isProd, log } from './utils'
 import {
   createBetFillNotification,
+  createBettingStreakBonusNotification,
   createNotification,
 } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 import { Contract } from '../../common/contract'
 import { runTxn, TxnData } from './transact'
-import { UNIQUE_BETTOR_BONUS_AMOUNT } from '../../common/numeric-constants'
+import {
+  BETTING_STREAK_BONUS_AMOUNT,
+  UNIQUE_BETTOR_BONUS_AMOUNT,
+} from '../../common/numeric-constants'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { APIError } from '../../common/api'
 import { User } from '../../common/user'
+import { DAY_MS } from 'common/lib/util/time'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -38,37 +43,95 @@ export const onCreateBet = functions.firestore
       .doc(contractId)
       .update({ lastBetTime, lastUpdatedTime: Date.now() })
 
-    await notifyFills(bet, contractId, eventId)
-    await updateUniqueBettorsAndGiveCreatorBonus(
-      contractId,
-      eventId,
-      bet.userId
-    )
+    const userContractSnap = await firestore
+      .collection(`contracts`)
+      .doc(contractId)
+      .get()
+    const contract = userContractSnap.data() as Contract
+
+    if (!contract) {
+      log(`Could not find contract ${contractId}`)
+      return
+    }
+    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bet.userId)
+
+    const user = await getUser(bet.userId)
+    if (!user) return
+    await notifyFills(bet, contractId, eventId, user)
+    await updateBettingStreak(user, bet, contract, eventId)
+
+    await firestore.collection('users').doc(user.id).update({ lastBetTime })
   })
 
+const updateBettingStreak = async (
+  user: User,
+  bet: Bet,
+  contract: Contract,
+  eventId: string
+) => {
+  const betStreakResetTime = getPreviousBettingStreakResetTime()
+  // If they've already bet after the reset time, they've already gotten their streak bonus
+  if (user.lastBetTime ?? 0 > betStreakResetTime) return
+
+  const newBettingStreak = (user.currentBettingStreak ?? 0) + 1
+  // Otherwise, add 1 to their betting streak
+  await firestore.collection('users').doc(user.id).update({
+    currentBettingStreak: newBettingStreak,
+  })
+
+  // Send them the bonus times their streak
+  const bonusAmount = Math.min(
+    BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
+    100
+  )
+  const fromUserId = isProd()
+    ? HOUSE_LIQUIDITY_PROVIDER_ID
+    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+  const bonusTxnDetails = {
+    currentBettingStreak: newBettingStreak,
+  }
+  const result = await firestore.runTransaction(async (trans) => {
+    const bonusTxn: TxnData = {
+      fromId: fromUserId,
+      fromType: 'BANK',
+      toId: user.id,
+      toType: 'USER',
+      amount: bonusAmount,
+      token: 'M$',
+      category: 'BETTING_STREAK_BONUS',
+      description: JSON.stringify(bonusTxnDetails),
+    }
+    return await runTxn(trans, bonusTxn)
+  })
+  if (!result.txn) {
+    log("betting streak bonus txn couldn't be made")
+    return
+  }
+
+  await createBettingStreakBonusNotification(
+    user,
+    result.txn.id,
+    bet,
+    contract,
+    bonusAmount,
+    eventId
+  )
+}
+
 const updateUniqueBettorsAndGiveCreatorBonus = async (
-  contractId: string,
+  contract: Contract,
   eventId: string,
   bettorId: string
 ) => {
-  const userContractSnap = await firestore
-    .collection(`contracts`)
-    .doc(contractId)
-    .get()
-  const contract = userContractSnap.data() as Contract
-  if (!contract) {
-    log(`Could not find contract ${contractId}`)
-    return
-  }
   let previousUniqueBettorIds = contract.uniqueBettorIds
 
   if (!previousUniqueBettorIds) {
     const contractBets = (
-      await firestore.collection(`contracts/${contractId}/bets`).get()
+      await firestore.collection(`contracts/${contract.id}/bets`).get()
     ).docs.map((doc) => doc.data() as Bet)
 
     if (contractBets.length === 0) {
-      log(`No bets for contract ${contractId}`)
+      log(`No bets for contract ${contract.id}`)
       return
     }
 
@@ -86,7 +149,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   if (!contract.uniqueBettorIds || isNewUniqueBettor) {
     log(`Got ${previousUniqueBettorIds} unique bettors`)
     isNewUniqueBettor && log(`And a new unique bettor ${bettorId}`)
-    await firestore.collection(`contracts`).doc(contractId).update({
+    await firestore.collection(`contracts`).doc(contract.id).update({
       uniqueBettorIds: newUniqueBettorIds,
       uniqueBettorCount: newUniqueBettorIds.length,
     })
@@ -97,7 +160,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
 
   // Create combined txn for all new unique bettors
   const bonusTxnDetails = {
-    contractId: contractId,
+    contractId: contract.id,
     uniqueBettorIds: newUniqueBettorIds,
   }
   const fromUserId = isProd()
@@ -140,11 +203,14 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   }
 }
 
-const notifyFills = async (bet: Bet, contractId: string, eventId: string) => {
+const notifyFills = async (
+  bet: Bet,
+  contractId: string,
+  eventId: string,
+  user: User
+) => {
   if (!bet.fills) return
 
-  const user = await getUser(bet.userId)
-  if (!user) return
   const contract = await getContract(contractId)
   if (!contract) return
 
@@ -179,4 +245,13 @@ const notifyFills = async (bet: Bet, contractId: string, eventId: string) => {
       )
     })
   )
+}
+
+const getPreviousBettingStreakResetTime = () => {
+  const today = Date.now()
+  let betStreakResetTime = new Date().setUTCHours(9, 0, 0, 0)
+  if (today < betStreakResetTime) {
+    betStreakResetTime = betStreakResetTime - DAY_MS
+  }
+  return betStreakResetTime
 }
