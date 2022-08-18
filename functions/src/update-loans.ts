@@ -12,8 +12,8 @@ const firestore = admin.firestore()
 
 export const updateLoans = functions
   .runWith({ memory: '1GB', timeoutSeconds: 540 })
-  // Run every Monday morning.
-  .pubsub.schedule('0 2 * * 1')
+  // Run every Monday.
+  .pubsub.schedule('0 0 * * 1')
   .timeZone('America/Los_Angeles')
   .onRun(updateLoansCore)
 
