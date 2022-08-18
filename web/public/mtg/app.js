@@ -221,7 +221,9 @@ function setUpNewGame() {
   artDict = sampledData[0]
   let randomImages = Object.keys(artDict)
   shuffleArray(randomImages)
-  let namesList = Array.from(sampledData[1]).sort()
+  let namesList = Array.from(sampledData[1]).sort((a, b) =>
+    removeSymbol(a).localeCompare(removeSymbol(b))
+  )
   // fill in the new cards and names
   for (let cardIndex = 1; cardIndex <= k; cardIndex++) {
     let currCard = document.getElementById('card-' + cardIndex)
@@ -239,6 +241,11 @@ function setUpNewGame() {
   }
 }
 
+function removeSymbol(name) {
+  let arr = name.split('>')
+  return arr[arr.length - 1]
+}
+
 function checkAnswers() {
   let score = k
   // show the correct full cards
@@ -247,12 +254,12 @@ function checkAnswers() {
     let incorrect = true
     if (currCard.dataset.name) {
       // remove image text
-      let guess = document
-        .getElementById(currCard.dataset.name)
-        .innerText.split('>')
-      let ans = artDict[currCard.dataset.url][0].split('>')
+      let guess = removeSymbol(
+        document.getElementById(currCard.dataset.name).innerText
+      )
+      let ans = removeSymbol(artDict[currCard.dataset.url][0])
       window.console.log(ans, guess)
-      incorrect = ans[ans.length - 1] !== guess[guess.length - 1]
+      incorrect = ans !== guess
       // decide if their guess was correct
     }
     if (incorrect) currCard.classList.add('incorrect')
