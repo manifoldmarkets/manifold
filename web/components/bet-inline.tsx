@@ -61,11 +61,19 @@ export function BetInline(props: {
           outcome,
           isLimitOrder: false,
         })
+        setAmount(undefined)
       },
     }
   )
 
-  const betDisabled = submitBet.isLoading || submitBet.isError || !amount
+  // reset error / success state on user change
+  useEffect(() => {
+    amount && submitBet.reset()
+  }, [outcome, amount])
+
+  const tooFewFunds = error === 'Insufficient balance'
+
+  const betDisabled = submitBet.isLoading || tooFewFunds || !amount
 
   return (
     <Col className={clsx('items-center', className)}>
@@ -110,9 +118,7 @@ export function BetInline(props: {
       </Row>
       {error && (
         <div className="text-error my-1 text-sm">
-          {error}{' '}
-          {error === 'Insufficient balance' &&
-            `(${formatMoney(user?.balance ?? 0)})`}
+          {error} {tooFewFunds && `(${formatMoney(user?.balance ?? 0)})`}
         </div>
       )}
     </Col>
