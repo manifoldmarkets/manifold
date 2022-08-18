@@ -24,6 +24,6 @@ export default {
     externals: {
         bufferutil: "bufferutil",
         "utf-8-validate": "utf-8-validate",
-        express: { commonjs: "express" },
+        // express: { commonjs: "express" },
     },
 };
