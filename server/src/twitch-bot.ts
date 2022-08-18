@@ -190,7 +190,6 @@ export default class TwitchBot {
                 username: TWITCH_BOT_USERNAME,
                 password: TWITCH_BOT_OAUTH_TOKEN,
             },
-            channels: [...this.getRegisteredChannelListFromFile()],
         });
 
         this.client.on("message", async (channel, tags, message, self) => {
@@ -211,14 +210,15 @@ export default class TwitchBot {
                     basicCommands[commandString](tags.username, tags, args, channel);
                 } else {
                     try {
+                        const user = await this.app.getUserForTwitchUsername(tags.username);
+                        user.twitchDisplayName = userDisplayName;
+
                         const market = app.getMarketForTwitchChannel(channel);
                         if (!market && commandString !== "select" && commandString !== "balance" && commandString !== "create" && commandString !== "setdefaultgroup" && commandString !== "feature") {
                             this.client.say(channel, MSG_NO_MARKET_SELECTED(userDisplayName));
                             return;
                         }
 
-                        const user = this.app.getUserForTwitchUsername(tags.username);
-                        user.twitchDisplayName = userDisplayName;
                         if (userCommands[commandString]) {
                             await userCommands[commandString](user, tags, args, channel, market);
                         } else if (modUserCommands[commandString]) {
@@ -257,28 +257,13 @@ export default class TwitchBot {
     }
 
     public async connect() {
+        this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
+
         try {
             await this.client.connect();
         } catch (e) {
             throw new TwitchBotInitializationException(e);
         }
-    }
-
-    private getRegisteredChannelListFromFile(): string[] {
-        try {
-            const rawChannelListData = fs.readFileSync("data/channels.json");
-            const rawDataString = rawChannelListData.toString();
-            if (rawDataString.length > 0) {
-                const data = JSON.parse(rawDataString);
-                return data.channels;
-            }
-        } catch (e) {
-            return [];
-        }
-    }
-
-    private saveRegisteredChannelListToFile(): void {
-        fs.writeFileSync("data/channels.json", JSON.stringify({ channels: this.client.getChannels() }));
     }
 
     public joinChannel(channelName: string) {
@@ -296,7 +281,7 @@ export default class TwitchBot {
                 }
                 this.client.say(channelName, message);
 
-                this.saveRegisteredChannelListToFile();
+                this.app.firestore.registerTwitchChannel(channelName);
             })
             .catch((e) => log.trace(e));
     }
@@ -305,7 +290,7 @@ export default class TwitchBot {
         if (this.client.getChannels().indexOf(`#${channelName}`) >= 0) {
             this.client.say(channelName, "Goodbye cruel world.");
             this.client.part(channelName).then(() => {
-                this.saveRegisteredChannelListToFile();
+                this.app.firestore.unregisterTwitchChannel(channelName);
             });
         } else {
             throw new Error(`Bot not in channel '${channelName}'`);

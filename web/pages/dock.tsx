@@ -206,8 +206,8 @@ export default () => {
                         <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
                     </Transition>
                     {selectedContract && (
-                        <div className="fixed inset-0 flex flex-col items-center">
-                            <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 translate-y-4" enterTo="opacity-100 translate-y-0">
+                        <div className="fixed inset-0 flex flex-col items-center overflow-y-auto">
+                            <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
                                 <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
                                     <ResolutionPanel contract={selectedContract} onCancelClick={() => setSelectedContract(undefined)} onUnfeatureMarket={() => setSelectedContract(undefined)} />
                                 </div>

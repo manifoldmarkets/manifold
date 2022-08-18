@@ -13,6 +13,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
+    "firebase": "^9.9.2",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "node-fetch": "^3.2.7",
