@@ -14,15 +14,17 @@ import {
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser, getContract } from './utils'
+import { chargeUser, getContract, isProd } from './utils'
 import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   FIXED_ANTE,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
   getNumericAnte,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
@@ -211,7 +213,9 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     }
   }
 
-  const providerId = user.id
+  const providerId = isProd()
+    ? HOUSE_LIQUIDITY_PROVIDER_ID
+    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
 
   if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore
