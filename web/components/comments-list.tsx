@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { Comment } from 'common/comment'
+import { Comment, ContractComment } from 'common/comment'
 import { groupConsecutive } from 'common/util/array'
 import { getUsersComments } from 'web/lib/firebase/comments'
 import { SiteLink } from './site-link'
@@ -15,12 +15,6 @@ import { Pagination } from './pagination'
 import { LoadingIndicator } from './loading-indicator'
 
 const COMMENTS_PER_PAGE = 50
-
-type ContractComment = Comment & {
-  contractId: string
-  contractSlug: string
-  contractQuestion: string
-}
 
 function contractPath(slug: string) {
   // by convention this includes the contract creator username, but we don't
@@ -38,7 +32,9 @@ export function UserCommentsList(props: { user: User }) {
   useEffect(() => {
     getUsersComments(user.id).then((cs) => {
       // we don't show comments in groups here atm, just comments on contracts
-      setComments(cs.filter((c) => c.contractId) as ContractComment[])
+      setComments(
+        cs.filter((c) => c.commentType == 'contract') as ContractComment[]
+      )
     })
   }, [user.id])
 

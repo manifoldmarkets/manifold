@@ -1,5 +1,5 @@
 import * as functions from 'firebase-functions'
-import { Comment } from '../../common/comment'
+import { GroupComment } from '../../common/comment'
 import * as admin from 'firebase-admin'
 import { Group } from '../../common/group'
 import { User } from '../../common/user'
@@ -14,7 +14,7 @@ export const onCreateCommentOnGroup = functions.firestore
       groupId: string
     }
 
-    const comment = change.data() as Comment
+    const comment = change.data() as GroupComment
     const creatorSnapshot = await firestore
       .collection('users')
       .doc(comment.userId)

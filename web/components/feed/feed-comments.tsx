@@ -1,5 +1,5 @@
 import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
@@ -32,9 +32,9 @@ import { Editor } from '@tiptap/react'
 
 export function FeedCommentThread(props: {
   contract: Contract
-  comments: Comment[]
+  comments: ContractComment[]
   tips: CommentTipMap
-  parentComment: Comment
+  parentComment: ContractComment
   bets: Bet[]
   smallAvatar?: boolean
 }) {
@@ -50,7 +50,7 @@ export function FeedCommentThread(props: {
   )
   commentsList.unshift(parentComment)
 
-  function scrollAndOpenReplyInput(comment: Comment) {
+  function scrollAndOpenReplyInput(comment: ContractComment) {
     setReplyToUser({ id: comment.userId, username: comment.userUsername })
     setShowReply(true)
   }
@@ -95,10 +95,10 @@ export function FeedCommentThread(props: {
 
 export function CommentRepliesList(props: {
   contract: Contract
-  commentsList: Comment[]
+  commentsList: ContractComment[]
   betsByUserId: Dictionary<Bet[]>
   tips: CommentTipMap
-  scrollAndOpenReplyInput: (comment: Comment) => void
+  scrollAndOpenReplyInput: (comment: ContractComment) => void
   bets: Bet[]
   treatFirstIndexEqually?: boolean
   smallAvatar?: boolean
@@ -156,12 +156,12 @@ export function CommentRepliesList(props: {
 
 export function FeedComment(props: {
   contract: Contract
-  comment: Comment
+  comment: ContractComment
   tips: CommentTips
   betsBySameUser: Bet[]
   probAtCreatedTime?: number
   smallAvatar?: boolean
-  onReplyClick?: (comment: Comment) => void
+  onReplyClick?: (comment: ContractComment) => void
 }) {
   const {
     contract,
@@ -274,7 +274,7 @@ export function FeedComment(props: {
 
 export function getMostRecentCommentableBet(
   betsByCurrentUser: Bet[],
-  commentsByCurrentUser: Comment[],
+  commentsByCurrentUser: ContractComment[],
   user?: User | null,
   answerOutcome?: string
 ) {
@@ -319,7 +319,7 @@ function CommentStatus(props: {
 export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
-  commentsByCurrentUser: Comment[]
+  commentsByCurrentUser: ContractComment[]
   replyToUser?: { id: string; username: string }
   // Reply to a free response answer
   parentAnswerOutcome?: string
