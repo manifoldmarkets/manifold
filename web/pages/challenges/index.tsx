@@ -71,7 +71,16 @@ export default function ChallengesListPage() {
         <Row className="items-center justify-between">
           <Title text="Challenges" />
         </Row>
-        <p>Find or create a question to challenge someone to a bet.</p>
+        <p>
+          <SiteLink className={'font-bold'} href={'/home'}>
+            Find
+          </SiteLink>{' '}
+          or{' '}
+          <SiteLink className={'font-bold'} href={'/create'}>
+            create
+          </SiteLink>{' '}
+          a market to challenge someone to a bet.
+        </p>
 
         <Tabs tabs={[...userTab, ...publicTab]} />
       </Col>
