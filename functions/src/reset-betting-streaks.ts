@@ -25,7 +25,12 @@ const resetBettingStreaksInternal = async () => {
 const resetBettingStreakForUser = async (user: User) => {
   const betStreakResetTime = Date.now() - DAY_MS
   // if they made a bet within the last day, don't reset their streak
-  if (user.lastBetTime ?? 0 > betStreakResetTime) return
+  if (
+    (user.lastBetTime ?? 0 > betStreakResetTime) ||
+    !user.currentBettingStreak ||
+    user.currentBettingStreak === 0
+  )
+    return
   await firestore.collection('users').doc(user.id).update({
     currentBettingStreak: 0,
   })
