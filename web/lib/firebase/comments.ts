@@ -33,6 +33,7 @@ export async function createCommentOnContract(
     : doc(getCommentsCollection(contractId))
   const comment: Comment = removeUndefinedProps({
     id: ref.id,
+    commentType: 'contract',
     contractId,
     userId: commenter.id,
     content: content,
@@ -61,6 +62,7 @@ export async function createCommentOnGroup(
   const ref = doc(getCommentsOnGroupCollection(groupId))
   const comment: Comment = removeUndefinedProps({
     id: ref.id,
+    commentType: 'group',
     groupId,
     userId: user.id,
     content: content,
