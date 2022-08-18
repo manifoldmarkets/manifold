@@ -1,6 +1,5 @@
-import { XIcon } from '@heroicons/react/solid'
 import { Bet } from 'common/bet'
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useState } from 'react'
 import { AnswersGraph } from 'web/components/answers/answers-graph'

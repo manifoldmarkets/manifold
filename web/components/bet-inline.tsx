@@ -44,7 +44,7 @@ export function BetInline(props: {
     unfilledBets
   )
   const resultProb = getCpmmProbability(newPool, newP)
-  useEffect(() => setProbAfter(resultProb), [resultProb])
+  useEffect(() => setProbAfter(resultProb), [setProbAfter, resultProb])
 
   const submitBet = useMutation(
     () => placeBet({ outcome, amount, contractId: contract.id }),
@@ -69,6 +69,7 @@ export function BetInline(props: {
   // reset error / success state on user change
   useEffect(() => {
     amount && submitBet.reset()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, amount])
 
   const tooFewFunds = error === 'Insufficient balance'
