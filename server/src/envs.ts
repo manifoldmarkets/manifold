@@ -8,3 +8,5 @@ export const TWITCH_APP_CLIENT_SECRET = process.env.TWITCH_APP_CLIENT_SECRET;
 
 export const TWITCH_BOT_USERNAME = process.env.TWITCH_BOT_USERNAME;
 export const TWITCH_BOT_OAUTH_TOKEN = process.env.TWITCH_BOT_OAUTH_TOKEN;
+
+export const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;

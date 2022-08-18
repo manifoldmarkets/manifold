@@ -8,7 +8,6 @@ import cors from "cors";
 import path from "path";
 
 import * as Packet from "common/packet-ids";
-import { UserNotRegisteredException } from "common/exceptions";
 import { buildURL, getParamsFromURL } from "./utils";
 
 import * as Manifold from "./manifold-api";
@@ -19,16 +18,14 @@ import User from "./user";
 import { Market } from "./market";
 import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
 import { ResolutionOutcome } from "common/manifold-defs";
-import { PUBLIC_FACING_URL, TWITCH_BOT_OAUTH_TOKEN, TWTICH_APP_CLIENT_ID } from "./envs";
-
-const USER_FILE_GUID = "5481a349-20d3-4a85-a6e1-b7831c2f21e4"; // 30/07/2022
+import { PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
+import AppFirestore from "./firestore";
 
 export default class App {
     private readonly app: Express;
     private io: Server;
     readonly bot: TwitchBot;
-
-    private userList: User[] = [];
+    readonly firestore: AppFirestore;
 
     private linksInProgress: { [sessionToken: string]: { manifoldUsername: string; apiKey: string } } = {};
 
@@ -66,7 +63,7 @@ export default class App {
             fs.mkdirSync("data");
         }
 
-        this.loadUsersFromFile();
+        this.firestore = new AppFirestore();
     }
 
     public getMarketForTwitchChannel(channel: string) {
@@ -115,55 +112,8 @@ export default class App {
         }
     }
 
-    private loadUsersFromFile() {
-        try {
-            const rawData = fs.readFileSync("data/users.json");
-            const rawDataString = rawData.toString();
-            if (rawDataString.length > 0) {
-                const data = JSON.parse(rawDataString);
-                if (data.version === USER_FILE_GUID) {
-                    const users = data.userData;
-                    for (const u of users) {
-                        const user = new User(u.twitchLogin, u.manifoldUsername, u.APIKey);
-                        this.userList.push(user);
-                    }
-                } else if (data.version === "5d7b6761-0719-4819-a9b9-4dd600f45369") {
-                    log.warn("Loading out of date user data file.");
-                    const users = data.userData;
-                    for (const twitchName in users) {
-                        const userData = users[twitchName];
-                        const user = new User(twitchName, userData.manifoldUsername, userData.APIKey);
-                        this.userList.push(user);
-                    }
-                } else {
-                    log.error("User data file version mismatch. Data not loaded.");
-                }
-            }
-        } catch (e) {
-            if (e.code === "ENOENT") {
-                // File not found - this is OK
-            } else throw e;
-        }
-    }
-
-    private saveUsersToFile() {
-        const data = {
-            version: USER_FILE_GUID,
-            userData: this.userList,
-        };
-        fs.writeFile("data/users.json", JSON.stringify(data, null, 2), { flag: "w+" }, (err) => {
-            if (err) {
-                log.trace(err);
-            }
-        });
-    }
-
-    getUserForTwitchUsername(twitchUsername: string): User {
-        twitchUsername = twitchUsername.toLocaleLowerCase();
-        for (const user of this.userList) {
-            if (user.twitchLogin == twitchUsername) return user;
-        }
-        throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
+    async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
+        return this.firestore.getUserForTwitchUsername(twitchUsername);
     }
 
     async launch() {
@@ -208,14 +158,14 @@ export default class App {
                 const outcome = o === "YES" ? ResolutionOutcome.YES : o === "NO" ? ResolutionOutcome.NO : ResolutionOutcome.CANCEL; //!!!
 
                 if (this.selectedMarket) {
-                    const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
+                    const pseudoUser = await this.getUserForTwitchUsername("philbladen"); //!!!
                     if (!pseudoUser) throw new Error("Pseudo user not found"); //!!!
                     await Manifold.resolveBinaryMarket(this.selectedMarket.data.id, pseudoUser.APIKey, outcome);
                 }
             });
 
             socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
-                const pseudoUser = this.getUserForTwitchUsername("philbladen"); //!!!
+                const pseudoUser = await this.getUserForTwitchUsername("philbladen"); //!!!
                 if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
                 const newMarket = await Manifold.createBinaryMarket(pseudoUser.APIKey, packet.question, undefined, 50, packet.groupId);
                 socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
@@ -320,17 +270,16 @@ export default class App {
                 log.info(`Authorized Twitch user ${twitchLogin}`);
 
                 const user = new User(twitchLogin, sessionData.manifoldUsername, sessionData.apiKey);
-                for (;;) {
-                    try {
-                        const existingUser = this.getUserForTwitchUsername(twitchLogin);
-                        this.userList.splice(this.userList.indexOf(existingUser), 1);
-                        log.info("Replaced existing user " + existingUser.twitchLogin);
-                    } catch (e) {
-                        break;
-                    }
-                }
-                this.userList.push(user);
-                this.saveUsersToFile();
+                // for (;;) { !!! Remove duplicate user entries
+                //     try {
+                //         const existingUser = this.getUserForTwitchUsername(twitchLogin);
+                //         this.userList.splice(this.userList.indexOf(existingUser), 1);
+                //         log.info("Replaced existing user " + existingUser.twitchLogin);
+                //     } catch (e) {
+                //         break;
+                //     }
+                // }
+                this.firestore.addNewUser(user);
                 response.send("<html><head><script>close();</script></head><html>");
             } catch (e) {
                 log.trace(e);
