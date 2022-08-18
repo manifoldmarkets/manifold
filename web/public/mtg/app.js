@@ -136,7 +136,11 @@ function determineIfSkip(card) {
   }
   if (firstPrint) {
     if (whichGuesser == 'basic') {
-      if (card.set_type !== 'expansion' && card.set_type !== 'funny') {
+      if (
+        card.set_type !== 'expansion' &&
+        card.set_type !== 'funny' &&
+        card.set_type !== 'draft_innovation'
+      ) {
         return true
       }
     } else {
