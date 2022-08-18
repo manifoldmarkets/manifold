@@ -29,13 +29,11 @@ export async function createChallenge(data: {
   creatorAmount: number
   acceptorAmount: number
   expiresTime: number | null
-  message: string
 }) {
   const {
     creator,
     creatorAmount,
     expiresTime,
-    message,
     contract,
     outcome,
     acceptorAmount,
@@ -73,7 +71,7 @@ export async function createChallenge(data: {
     acceptedByUserIds: [],
     acceptances: [],
     isResolved: false,
-    message,
+    message: '',
   }
 
   await setDoc(doc(challenges(contract.id), slug), challenge)
