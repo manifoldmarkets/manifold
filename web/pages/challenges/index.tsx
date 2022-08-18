@@ -84,14 +84,12 @@ export default function ChallengesListPage() {
           )}
         </Row>
         <p>
-          <SiteLink className={'font-bold'} href={'/home'}>
+          Want to create your own challenge?
+          <SiteLink className={'mx-1 font-bold'} href={'/home'}>
             Find
-          </SiteLink>{' '}
-          or{' '}
-          <SiteLink className={'font-bold'} href={'/create'}>
-            create
-          </SiteLink>{' '}
-          a market to challenge someone to a bet.
+          </SiteLink>
+          a market you and a friend disagree on and hit the challenge button, or
+          tap the button above to create a new market & challenge in one.
         </p>
 
         <Tabs tabs={[...userTab, ...publicTab]} />
