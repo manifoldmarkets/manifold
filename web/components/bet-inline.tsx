@@ -14,14 +14,18 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { useUser } from 'web/hooks/use-user'
 import { SignUpPrompt } from './sign-up-prompt'
 import { getCpmmProbability } from 'common/calculate-cpmm'
+import { Col } from './layout/col'
+import { XIcon } from '@heroicons/react/solid'
+import { formatMoney } from 'common/util/format'
 
 // adapted from bet-panel.ts
 export function BetInline(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
   setProbAfter: (probAfter: number) => void
+  onClose: () => void
 }) {
-  const { contract, className, setProbAfter: setResult } = props
+  const { contract, className, setProbAfter, onClose } = props
 
   const user = useUser()
 
@@ -40,7 +44,7 @@ export function BetInline(props: {
     unfilledBets
   )
   const resultProb = getCpmmProbability(newPool, newP)
-  useEffect(() => setResult(resultProb), [resultProb])
+  useEffect(() => setProbAfter(resultProb), [resultProb])
 
   const submitBet = useMutation(
     () => placeBet({ outcome, amount, contractId: contract.id }),
@@ -64,41 +68,53 @@ export function BetInline(props: {
   const betDisabled = submitBet.isLoading || submitBet.isError || !amount
 
   return (
-    <Row className={clsx('h-8 items-stretch justify-center gap-3', className)}>
-      <div className="text-xl">Bet</div>
-      <YesNoSelector
-        className="space-x-0"
-        btnClassName="rounded-none first:rounded-l-2xl last:rounded-r-2xl"
-        selected={outcome}
-        onSelect={setOutcome}
-        isPseudoNumeric={isPseudoNumeric}
-      />
-      <BuyAmountInput
-        className="-mb-4"
-        inputClassName={clsx(
-          'input-sm w-[100px] !text-base',
-          error && 'input-error'
+    <Col className={clsx('items-center', className)}>
+      <Row className="h-12 items-stretch gap-3 rounded bg-indigo-200 py-2 px-3">
+        <div className="text-xl">Bet</div>
+        <YesNoSelector
+          className="space-x-0"
+          btnClassName="rounded-none first:rounded-l-2xl last:rounded-r-2xl"
+          selected={outcome}
+          onSelect={setOutcome}
+          isPseudoNumeric={isPseudoNumeric}
+        />
+        <BuyAmountInput
+          className="-mb-4"
+          inputClassName={clsx(
+            'input-sm w-[100px] !text-base',
+            error && 'input-error'
+          )}
+          amount={amount}
+          onChange={setAmount}
+          error="" // handle error ourselves
+          setError={setError}
+        />
+        {user && (
+          <Button
+            color={({ YES: 'green', NO: 'red' } as const)[outcome]}
+            size="xs"
+            disabled={betDisabled}
+            onClick={() => submitBet.mutate()}
+          >
+            {submitBet.isLoading
+              ? 'Submitting'
+              : submitBet.isSuccess
+              ? 'Success!'
+              : 'Submit'}
+          </Button>
         )}
-        amount={amount}
-        onChange={setAmount}
-        error="" // handle error ourselves
-        setError={setError}
-      />
-      {user && (
-        <Button
-          color={({ YES: 'green', NO: 'red' } as const)[outcome]}
-          size="xs"
-          disabled={betDisabled}
-          onClick={() => submitBet.mutate()}
-        >
-          {submitBet.isLoading
-            ? 'Submitting'
-            : submitBet.isSuccess
-            ? 'Success!'
-            : 'Submit'}
-        </Button>
+        <SignUpPrompt size="xs" />
+        <button onClick={onClose}>
+          <XIcon className="ml-1 h-6 w-6" />
+        </button>
+      </Row>
+      {error && (
+        <div className="text-error my-1 text-sm">
+          {error}{' '}
+          {error === 'Insufficient balance' &&
+            `(${formatMoney(user?.balance ?? 0)})`}
+        </div>
       )}
-      <SignUpPrompt size="xs" />
-    </Row>
+    </Col>
   )
 }

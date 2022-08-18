@@ -113,6 +113,8 @@ export function BuyAmountInput(props: {
       } else {
         setError(undefined)
       }
+    } else {
+      setError(undefined)
     }
   }
 

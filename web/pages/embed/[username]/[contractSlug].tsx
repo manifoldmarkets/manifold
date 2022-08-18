@@ -149,12 +149,12 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
       </div>
 
       {(isBinary || isPseudoNumeric) && betPanelOpen && (
-        <Row className="mb-2 items-center justify-center gap-4 self-center rounded bg-indigo-200 py-2 px-3">
-          <BetInline contract={contract as any} setProbAfter={setProbAfter}/>
-          <button onClick={() => setBetPanelOpen(false)}>
-            <XIcon className="h-6 w-6" />
-          </button>
-        </Row>
+        <BetInline
+          contract={contract as any}
+          setProbAfter={setProbAfter}
+          onClose={() => setBetPanelOpen(false)}
+          className="self-center"
+        />
       )}
 
       <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
