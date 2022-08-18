@@ -94,6 +94,8 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   const [betPanelOpen, setBetPanelOpen] = useState(false)
 
+  const [probAfter, setProbAfter] = useState<number>()
+
   return (
     <Col className="h-[100vh] w-full bg-white">
       <div className="relative flex flex-col pt-2">
@@ -119,7 +121,13 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
               </Button>
             )}
 
-          {isBinary && <BinaryResolutionOrChance contract={contract} />}
+          {isBinary && (
+            <BinaryResolutionOrChance
+              contract={contract}
+              probAfter={probAfter}
+              className="items-center"
+            />
+          )}
 
           {isPseudoNumeric && (
             <PseudoNumericResolutionOrExpectation contract={contract} />
@@ -142,7 +150,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
       {(isBinary || isPseudoNumeric) && betPanelOpen && (
         <Row className="mb-2 items-center justify-center gap-4 self-center rounded bg-indigo-200 py-2 px-3">
-          <BetInline contract={contract as any} />
+          <BetInline contract={contract as any} setProbAfter={setProbAfter}/>
           <button onClick={() => setBetPanelOpen(false)}>
             <XIcon className="h-6 w-6" />
           </button>
