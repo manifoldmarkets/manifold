@@ -27,7 +27,6 @@ import { useTextEditor } from 'web/components/editor'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 
-
 type challengeInfo = {
   amount: number
   expiresTime: number | null
@@ -79,14 +78,14 @@ export function CreateChallengeModal(props: {
                   outcome: newChallenge.outcome,
                   contract: challengeContract as BinaryContract,
                 })
-              if (challenge) {
-                setChallengeSlug(getChallengeUrl(challenge))
-                track('challenge created', {
-                  creator: user.username,
-                  amount: newChallenge.amount,
-                  contractId: contract.id,
-                })
-              }
+                if (challenge) {
+                  setChallengeSlug(getChallengeUrl(challenge))
+                  track('challenge created', {
+                    creator: user.username,
+                    amount: newChallenge.amount,
+                    contractId: challengeContract.id,
+                  })
+                }
               } catch (e) {
                 console.error("couldn't create market/challenge:", e)
               }
