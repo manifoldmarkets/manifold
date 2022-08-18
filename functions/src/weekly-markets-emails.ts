@@ -42,7 +42,13 @@ async function sendTrendingMarketsEmailsToAllUsers() {
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
     return !user.unsubscribedFromWeeklyTrendingEmails
   })
-  const trendingContracts = await getTrendingContracts()
+  const trendingContracts = (await getTrendingContracts()).filter(
+    (contract) =>
+      !(
+        contract.question.toLowerCase().includes('trump') &&
+        contract.question.toLowerCase().includes('president')
+      )
+  )
   for (const privateUser of privateUsersToSendEmailsTo) {
     if (!privateUser.email) {
       log(`No email for ${privateUser.username}`)
