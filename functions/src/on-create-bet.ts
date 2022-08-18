@@ -55,12 +55,13 @@ export const onCreateBet = functions.firestore
     }
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bet.userId)
 
-    const user = await getUser(bet.userId)
-    if (!user) return
-    await notifyFills(bet, contractId, eventId, user)
-    await updateBettingStreak(user, bet, contract, eventId)
+    const bettor = await getUser(bet.userId)
+    if (!bettor) return
 
-    await firestore.collection('users').doc(user.id).update({ lastBetTime })
+    await notifyFills(bet, contract, eventId, bettor)
+    await updateBettingStreak(bettor, bet, contract, eventId)
+
+    await firestore.collection('users').doc(bettor.id).update({ lastBetTime })
   })
 
 const updateBettingStreak = async (
@@ -205,14 +206,11 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
 
 const notifyFills = async (
   bet: Bet,
-  contractId: string,
+  contract: Contract,
   eventId: string,
   user: User
 ) => {
   if (!bet.fills) return
-
-  const contract = await getContract(contractId)
-  if (!contract) return
 
   const matchedFills = bet.fills.filter((fill) => fill.matchedBetId !== null)
   const matchedBets = (
