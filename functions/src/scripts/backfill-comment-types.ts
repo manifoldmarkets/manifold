@@ -8,7 +8,7 @@ if (require.main === module) {
   const firestore = app.firestore()
   const commentsRef = firestore.collectionGroup('comments')
   commentsRef.get().then(async (commentsSnaps) => {
-    log(`Loaded ${commentsSnaps.size} contracts.`)
+    log(`Loaded ${commentsSnaps.size} comments.`)
     const needsFilling = commentsSnaps.docs.filter((ct) => {
       return !('commentType' in ct.data())
     })
