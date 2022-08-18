@@ -45,6 +45,7 @@ const Home = (props: { auth: { user: User } | null }) => {
               // Update the url without switching pages in Nextjs.
               history.pushState(null, '', `/${c.creatorUsername}/${c.slug}`)
             }}
+            isWholePage
           />
         </Col>
         <button

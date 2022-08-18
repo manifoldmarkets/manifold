@@ -91,6 +91,7 @@ export function ContractSearch(props: {
   headerClassName?: string
   useQuerySortLocalStorage?: boolean
   useQuerySortUrlParams?: boolean
+  isWholePage?: boolean
 }) {
   const {
     user,
@@ -105,6 +106,7 @@ export function ContractSearch(props: {
     headerClassName,
     useQuerySortLocalStorage,
     useQuerySortUrlParams,
+    isWholePage,
   } = props
 
   const [numPages, setNumPages] = useState(1)
@@ -139,7 +141,7 @@ export function ContractSearch(props: {
           setNumPages(results.nbPages)
           if (freshQuery) {
             setPages([newPage])
-            window.scrollTo(0, 0)
+            if (isWholePage) window.scrollTo(0, 0)
           } else {
             setPages((pages) => [...pages, newPage])
           }
