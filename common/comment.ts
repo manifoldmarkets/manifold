@@ -4,6 +4,8 @@ import type { JSONContent } from '@tiptap/core'
 // They're uniquely identified by the pair contractId/betId.
 export type Comment = {
   id: string
+  commentType: 'contract' | 'group'
+
   contractId?: string
   groupId?: string
   betId?: string
