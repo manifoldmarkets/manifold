@@ -14,6 +14,7 @@ import { Contract } from '../../common/contract'
 import { runTxn, TxnData } from './transact'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
+  BETTING_STREAK_RESET_HOUR,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from '../../common/numeric-constants'
 import {
@@ -247,7 +248,12 @@ const notifyFills = async (
 
 const getPreviousBettingStreakResetTime = () => {
   const today = Date.now()
-  let betStreakResetTime = new Date().setUTCHours(9, 0, 0, 0)
+  let betStreakResetTime = new Date().setUTCHours(
+    BETTING_STREAK_RESET_HOUR,
+    0,
+    0,
+    0
+  )
   if (today < betStreakResetTime) {
     betStreakResetTime = betStreakResetTime - DAY_MS
   }

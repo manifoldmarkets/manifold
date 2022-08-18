@@ -5,3 +5,4 @@ export const NUMERIC_GRAPH_COLOR = '#5fa5f9'
 export const NUMERIC_TEXT_COLOR = 'text-blue-500'
 export const UNIQUE_BETTOR_BONUS_AMOUNT = 10
 export const BETTING_STREAK_BONUS_AMOUNT = 1
+export const BETTING_STREAK_RESET_HOUR = 9
