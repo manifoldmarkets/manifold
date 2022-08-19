@@ -6,4 +6,4 @@ export const NUMERIC_TEXT_COLOR = 'text-blue-500'
 export const UNIQUE_BETTOR_BONUS_AMOUNT = 10
 export const BETTING_STREAK_BONUS_AMOUNT = 5
 export const BETTING_STREAK_BONUS_MAX = 100
-export const BETTING_STREAK_RESET_HOUR = 9
+export const BETTING_STREAK_RESET_HOUR = 0
