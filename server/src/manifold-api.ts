@@ -2,57 +2,71 @@ import fetch, { Response } from "node-fetch";
 
 import * as ManifoldAPI from "common/manifold-defs";
 import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException } from "common/exceptions";
+import log from "./logger";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
 async function post(url: string, APIKey: string, requestData: unknown): Promise<Response> {
-    const r = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Key ${APIKey}`,
-        },
-        ...(requestData && {
-            body: JSON.stringify(requestData),
-        }),
-    });
-    if (r.status !== 200) {
-        let error: {message: string} = { message: "" };
-        try {
-           error = <{ message: string }>await r.json();
-        } catch (e) {
-            // Empty
+    try {
+        const r = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Key ${APIKey}`,
+            },
+            ...(requestData && {
+                body: JSON.stringify(requestData),
+            }),
+        });
+        if (r.status !== 200) {
+            let error: { message: string } = { message: "" };
+            try {
+                error = <{ message: string }>await r.json();
+            } catch (e) {
+                // Empty
+            }
+            const errorMessage = error.message;
+            if (errorMessage === "Insufficient balance.") throw new InsufficientBalanceException();
+            if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
+            if (r.status === 403) throw new ForbiddenException(errorMessage);
+            if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
+            throw new Error(errorMessage);
         }
-        const errorMessage = error.message;
-        if (errorMessage === "Insufficient balance.") throw new InsufficientBalanceException();
-        if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
-        if (r.status === 403) throw new ForbiddenException(errorMessage);
-        if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
-        throw new Error(errorMessage);
+        return r;
+    } catch (e) {
+        log.trace(e);
+        throw e;
     }
-    return r;
 }
 
 async function get(url: string): Promise<Response> {
-    const r = await fetch(url);
-    if (r.status != 200) {
-        let error: {error: string} = { error: "" };
-        try {
-           error = <{ error: string }>await r.json();
-        } catch (e) {
-            // Empty
+    try {
+        const r = await fetch(url);
+        if (r.status != 200) {
+            let error: { error: string } = { error: "" };
+            try {
+                error = <{ error: string }>await r.json();
+            } catch (e) {
+                // Empty
+            }
+            const errorMessage = error.error;
+            if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
+            throw new Error(errorMessage);
         }
-        const errorMessage = error.error;
-        if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
-        throw new Error(errorMessage);
+        return r;
+    } catch (e) {
+        log.trace(e);
+        throw e;
     }
-    return r;
-} 
+}
 
 export async function getUserByID(userID: string): Promise<ManifoldAPI.LiteUser> {
     return <Promise<ManifoldAPI.LiteUser>>(await get(`${APIBase}user/by-id/${userID}`)).json();
 }
 
+/**
+ * @deprecated Username is volatile. Aim to use user ID instead.
+ */
 export async function getUserByManifoldUsername(manifoldUsername: string): Promise<ManifoldAPI.LiteUser> {
     return <Promise<ManifoldAPI.LiteUser>>(await get(`${APIBase}user/${manifoldUsername}`)).json();
 }
@@ -108,7 +122,7 @@ export async function createBinaryMarket(APIKey: string, question: string, descr
         description: descriptionObject,
         closeTime: Date.now() + 1e12, // Arbitrarily long time in the future
         initialProb: initialProb_percent,
-        ...groupID && {groupId: groupID},
+        ...(groupID && { groupId: groupID }),
     };
     return <Promise<ManifoldAPI.LiteMarket>>(await post(`${APIBase}market`, APIKey, requestData)).json();
 }

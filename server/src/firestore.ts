@@ -1,8 +1,8 @@
 import { FirebaseApp, initializeApp } from "firebase/app";
-import { collection, addDoc, getFirestore, Firestore, getDocs, query, CollectionReference, where, setDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, getFirestore, Firestore, getDocs, query, CollectionReference, where, setDoc, doc, deleteDoc } from "firebase/firestore";
 import crypto from "crypto";
 import { FIREBASE_API_KEY, TWITCH_APP_CLIENT_SECRET } from "./envs";
-import User from "./user";
+import User, { UserData } from "./user";
 import log from "./logger";
 import { UserNotRegisteredException } from "common/exceptions";
 
@@ -36,11 +36,24 @@ export default class AppFirestore {
         const docs = await getDocs(query(this.userCollection, where("twitchLogin", "==", twitchUsername)));
         if (docs.size < 1) throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
         if (docs.size > 1) log.warn("More than one user found with Twitch username " + twitchUsername);
-        return <User>(<unknown>docs.docs[0].data());
+        const data = <UserData>docs.docs[0].data();
+        return new User(data);
+    }
+
+    async getTwitchAccountForControlToken(controlToken: string): Promise<string> {
+        console.log("Examining control token: " + controlToken);
+        if (!controlToken) {
+            return null;
+        }
+        const docs = await getDocs(query(this.userCollection, where("controlToken", "==", controlToken)));
+        if (docs.size < 1) return null;
+        const data = <UserData>docs.docs[0].data();
+        console.log(data);
+        return data.twitchLogin;
     }
 
     async addNewUser(user: User) {
-        await addDoc(this.userCollection, user);
+        await setDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), user.data);
     }
 
     async getRegisteredTwitchChannels(): Promise<string[]> {

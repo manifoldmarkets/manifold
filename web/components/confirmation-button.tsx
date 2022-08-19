@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ReactNode, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { Col } from "./layout/col";
 import { Modal } from "./layout/modal";
 import { Row } from "./layout/row";
@@ -26,6 +26,7 @@ export function ConfirmationButton(props: {
     const { openModalBtn, cancelBtn, submitBtn, onSubmit, children, onOpenChanged, onSubmitWithSuccess } = props;
 
     const [open, setOpen] = useState(false);
+    const completeButtonRef = useRef(null)
 
     function updateOpen(newOpen: boolean) {
         onOpenChanged?.(newOpen);
@@ -38,12 +39,12 @@ export function ConfirmationButton(props: {
                 <Col className="gap-4 rounded-md bg-white px-8 py-6">
                     {children}
                     <Row className="flex justify-between items-center gap-4">
-                        <div className={clsx("btn normal-case grow max-w-[15rem]", cancelBtn?.className)} onClick={() => updateOpen(false)}>
+                        <button ref={completeButtonRef} className={clsx("btn normal-case grow max-w-[15rem]", cancelBtn?.className)} onClick={() => updateOpen(false)}>
                             {cancelBtn?.label ?? "Cancel"}
-                        </div>
-                        <div className={clsx("btn normal-case grow max-w-[15rem]", submitBtn?.className)} onClick={onSubmitWithSuccess ? () => onSubmitWithSuccess().then((success) => updateOpen(!success)) : onSubmit}>
+                        </button>
+                        <button className={clsx("btn normal-case grow max-w-[15rem]", submitBtn?.className)} onClick={onSubmitWithSuccess ? () => onSubmitWithSuccess().then((success) => updateOpen(!success)) : onSubmit}>
                             {submitBtn?.label ?? "Submit"}
-                        </div>
+                        </button>
                     </Row>
                 </Col>
             </Modal>

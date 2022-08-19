@@ -1,15 +1,20 @@
-export class PacketResolved {
+export type PacketResolved = {
     outcome: "YES" | "NO" | "NA";
     uniqueTraders: number;
     topWinners: {displayName: string, profit: number}[];
     topLosers: {displayName: string, profit: number}[];
 }
 
-export class PacketCreateMarket {
+export type PacketCreateMarket = {
     question: string;
     groupId: string;
 }
 
-export class PacketMarketCreated {
+export type PacketMarketCreated = {
     id: string;
+}
+
+export type PacketTwitchLinkComplete = {
+    twitchName: string;
+    controlToken: string;
 }

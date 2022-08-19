@@ -1,4 +1,5 @@
 export const SELECT_MARKET_ID = "selectmarket";
+export const UNFEATURE_MARKET = "unfeaturemarket";
 export const CLEAR = "clear";
 export const ADD_BETS = "bets";
 export const RESOLVE = "resolve";

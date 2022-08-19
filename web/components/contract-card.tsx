@@ -8,8 +8,8 @@ import { ConfirmationButton } from "./confirmation-button";
 import { Col } from "./layout/col";
 import { Row } from "./layout/row";
 
-export default function ContractCard(props: { contract: LiteMarket; setSelectedContract: (c: LiteMarket | undefined) => void }) {
-    const { contract, setSelectedContract } = props;
+export default function ContractCard(props: { contract: LiteMarket; onFeature: () => void }) {
+    const { contract, onFeature } = props;
     return (
         <Col className={clsx("group relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:bg-gray-100")}>
             <Row>
@@ -67,7 +67,7 @@ export default function ContractCard(props: { contract: LiteMarket; setSelectedC
                                 className: clsx("border-none btn-primary"),
                             }}
                             onSubmitWithSuccess={async () => {
-                                setSelectedContract(contract);
+                                onFeature();
                                 return true;
                             }}
                         >

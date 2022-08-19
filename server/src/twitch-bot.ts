@@ -1,5 +1,4 @@
 import { ChatUserstate, Client } from "tmi.js";
-import fs from "fs";
 
 import { LiteUser, ResolutionOutcome } from "common/manifold-defs";
 import { InsufficientBalanceException, ResourceNotFoundException, UserNotRegisteredException } from "common/exceptions";

@@ -1,8 +1,7 @@
-import express, { Express } from "express";
+import express, { Express, Response } from "express";
 import { AddressInfo } from "net";
 import moment from "moment";
 import { Server } from "socket.io";
-import fs from "fs";
 import crypto from "crypto";
 import cors from "cors";
 import path from "path";
@@ -16,7 +15,7 @@ import TwitchBot from "./twitch-bot";
 import log from "./logger";
 import User from "./user";
 import { Market } from "./market";
-import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
+import { PacketCreateMarket, PacketMarketCreated, PacketTwitchLinkComplete } from "common/packets";
 import { ResolutionOutcome } from "common/manifold-defs";
 import { PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
 import AppFirestore from "./firestore";
@@ -27,7 +26,7 @@ export default class App {
     readonly bot: TwitchBot;
     readonly firestore: AppFirestore;
 
-    private linksInProgress: { [sessionToken: string]: { manifoldUsername: string; apiKey: string } } = {};
+    private linksInProgress: { [sessionToken: string]: { manifoldID: string; apiKey: string } } = {};
 
     // selectedMarketMap: { [twitchChannel: string]: Market } = {};
 
@@ -59,10 +58,6 @@ export default class App {
             },
         });
 
-        if (!fs.existsSync("data")){
-            fs.mkdirSync("data");
-        }
-
         this.firestore = new AppFirestore();
     }
 
@@ -93,8 +88,7 @@ export default class App {
             const market = new Market(this, marketData);
             // this.selectedMarketMap[channel] = market;
             this.selectedMarket = market;
-            this.io.emit(Packet.SELECT_MARKET_ID, market.data.id); //!!!
-            this.io.emit(Packet.ADD_BETS, market.bets);
+            this.io.emit(Packet.ADD_BETS, market.bets); //!!!
 
             if (market) {
                 setTimeout(() => {
@@ -126,9 +120,47 @@ export default class App {
             log.info("Webserver and websocket listening at http://%s:%s", host, port);
         });
 
-        // const server = http.createServer(this.app);
         this.io = new Server(server);
+        this.io.use(async (socket, next) => {
+            const type = socket.handshake.query.type;
+            const controlToken = socket.handshake.query.controlToken;
+            if (!(type === "dock" || type === "overlay")) {
+                next(new Error("Invalid connection type"));
+                return;
+            }
+            const connectedTwitchStream = await this.firestore.getTwitchAccountForControlToken(<string>controlToken);
+            if (!connectedTwitchStream) {
+                next(new Error("No account associated with this control token"));
+                return;
+            }
+            log.info("Twitch: " + connectedTwitchStream);
+            next();
+        });
         this.io.on("connection", (socket) => {
+            if (socket.handshake.query.type === "dock") {
+                log.info("Dock socket connected.");
+
+                socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
+                    log.info("Select market: " + marketID);
+                    const market = await this.selectMarket("#philbladen", marketID); //!!! Channel name
+                    if (market) {
+                        socket.broadcast.emit(Packet.SELECT_MARKET_ID, market.data.id); //!!!
+                    } else {
+                        socket.broadcast.emit(Packet.UNFEATURE_MARKET, market.data.id); //!!!
+                    }
+
+                    // const market = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
+                });
+
+                socket.on(Packet.UNFEATURE_MARKET, async () => {
+                    log.info("Market unfeatured.");
+                    await this.selectMarket("#philbladen", null); //!!! Channel name
+                    socket.broadcast.emit(Packet.UNFEATURE_MARKET); //!!!
+                });
+            } else if (socket.handshake.query.type === "overlay") {
+                log.info("Overlay socket connected.");
+            }
+
             socket.emit(Packet.CLEAR);
 
             // const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
@@ -145,13 +177,6 @@ export default class App {
             }
             //!!! Need some linking method
 
-            socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
-                console.log("Select market: " + marketID);
-                const market = await this.selectMarket("#philbladen", marketID); //!!! Channel name
-
-                // const market = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
-            });
-
             socket.on(Packet.RESOLVE, async (o: string) => {
                 log.info("Dock requested market resolve: " + o);
 
@@ -160,25 +185,18 @@ export default class App {
                 if (this.selectedMarket) {
                     const pseudoUser = await this.getUserForTwitchUsername("philbladen"); //!!!
                     if (!pseudoUser) throw new Error("Pseudo user not found"); //!!!
-                    await Manifold.resolveBinaryMarket(this.selectedMarket.data.id, pseudoUser.APIKey, outcome);
+                    await Manifold.resolveBinaryMarket(this.selectedMarket.data.id, pseudoUser.data.APIKey, outcome);
                 }
             });
 
             socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
                 const pseudoUser = await this.getUserForTwitchUsername("philbladen"); //!!!
                 if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
-                const newMarket = await Manifold.createBinaryMarket(pseudoUser.APIKey, packet.question, undefined, 50, packet.groupId);
+                const newMarket = await Manifold.createBinaryMarket(pseudoUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
                 socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
                 log.info("Created new market via dock: " + packet.question);
             });
         });
-        // this.io.on("disconnect", (socket) => {
-        //     console.log(socket.id);
-        // })
-        // server.listen(31452, () => {
-        //     const address = <AddressInfo>server.address();
-        //     log.info(`Websocket listening on ${address.address}:${address.port}`);
-        // });
 
         this.app.get("/unregisterchannel", (request, response) => {
             const params = getParamsFromURL(request.url);
@@ -194,6 +212,8 @@ export default class App {
                 response.status(400).json({ msg: `Failed to remove bot: ${e.message}` });
             }
         });
+
+        const registerTwitchReturnPromises: { [k: string]: Response } = {};
 
         this.app.get("/registerchanneltwitch", async (request, response) => {
             const params = getParamsFromURL(request.url);
@@ -213,14 +233,14 @@ export default class App {
         this.app.post("/api/linkInit", async (request, response) => {
             try {
                 const body = request.body;
-                const manifoldUsername = body.manifoldUsername;
+                const manifoldID = body.manifoldID;
                 const APIKey = body.apiKey;
-                if (!manifoldUsername || !APIKey) throw new Error("manifoldUsername and apiKey parameters are required.");
+                if (!manifoldID || !APIKey) throw new Error("manifoldID and apiKey parameters are required.");
                 if (!(await Manifold.verifyAPIKey(APIKey))) throw new Error("API key invalid.");
 
                 const sessionToken = crypto.randomBytes(24).toString("hex");
                 this.linksInProgress[sessionToken] = {
-                    manifoldUsername: manifoldUsername,
+                    manifoldID: manifoldID,
                     apiKey: APIKey,
                 };
 
@@ -240,6 +260,10 @@ export default class App {
             }
         });
 
+        this.app.get("/api/linkResult", async (request, response) => {
+            registerTwitchReturnPromises[<string>request.query.userID] = response;
+        });
+
         this.app.get("/api/botJoinURL", async (request, response) => {
             const params = {
                 client_id: TWTICH_APP_CLIENT_ID,
@@ -248,7 +272,7 @@ export default class App {
                 scope: "user:read:email",
             };
             const botURL = buildURL("https://id.twitch.tv/oauth2/authorize", params);
-            response.json({url: botURL});
+            response.json({ url: botURL });
         });
 
         this.app.get("/linkAccount", async (request, response) => {
@@ -269,16 +293,17 @@ export default class App {
                 const twitchLogin = twitchUser.login;
                 log.info(`Authorized Twitch user ${twitchLogin}`);
 
-                const user = new User(twitchLogin, sessionData.manifoldUsername, sessionData.apiKey);
-                // for (;;) { !!! Remove duplicate user entries
-                //     try {
-                //         const existingUser = this.getUserForTwitchUsername(twitchLogin);
-                //         this.userList.splice(this.userList.indexOf(existingUser), 1);
-                //         log.info("Replaced existing user " + existingUser.twitchLogin);
-                //     } catch (e) {
-                //         break;
-                //     }
-                // }
+                const user = new User({ twitchLogin: twitchLogin, manifoldID: sessionData.manifoldID, APIKey: sessionData.apiKey, controlToken: crypto.randomUUID() });
+
+                const waitingResponse = registerTwitchReturnPromises[sessionData.manifoldID];
+                if (waitingResponse) {
+                    log.info("Waiting response serviced");
+                    const waitingResponseData: PacketTwitchLinkComplete = { twitchName: twitchLogin, controlToken: user.data.controlToken };
+                    waitingResponse.json(waitingResponseData);
+                } else {
+                    log.info("No waiting response");
+                }
+
                 this.firestore.addNewUser(user);
                 response.send("<html><head><script>close();</script></head><html>");
             } catch (e) {

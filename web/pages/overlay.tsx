@@ -82,7 +82,7 @@ class Application {
         setInterval(() => this.updateBetTimes(), 1000);
 
         // let lastAddedTimestamp = 0;
-        this.socket = io();
+        this.socket = io({ query: { type: "overlay" } });
         this.socket.on("bets", (bets: FullBet[]) => {
             // console.log(bet);
             // bets.reverse();
@@ -258,7 +258,7 @@ enum Page {
 export default () => {
     const [page, setPage] = useState<Page>(Page.MAIN);
     const [resolvedData, setResolvedData] = useState<PacketResolved | undefined>(undefined);
-    const [overlayVisible, setOverlayVisible] = useState(true);
+    const [overlayVisible, setOverlayVisible] = useState(false);
 
     useEffect(() => {
         const app = new Application();
@@ -268,7 +268,11 @@ export default () => {
         });
         app.socket.on(Packet.CLEAR, () => {
             setResolvedData(undefined);
+            setOverlayVisible(false);
             console.log("Cleared");
+        });
+        app.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
+            setOverlayVisible(marketID ? true : false);
         });
     }, []);
 
@@ -312,7 +316,7 @@ export default () => {
                 as={Fragment}
                 show={overlayVisible}
                 unmount={false}
-                enter="ease-out duration-300"
+                enter="ease-out duration-300 delay-500"
                 enterFrom="opacity-0"
                 enterTo="opacity-100"
                 leave="ease-in duration-300"

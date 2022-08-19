@@ -28,6 +28,12 @@ async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
     return markets;
 }
 
+async function fetchMarketById(id: string): Promise<LiteMarket> {
+    const r = await fetch(`${APIBase}market/${id}`);
+    const market = (await r.json()) as LiteMarket;
+    return market;
+}
+
 async function getUserBalance(): Promise<number> {
     const username = "PhilBladen"; //!!!
     const r = await fetch(`${APIBase}user/${username}`);
@@ -45,6 +51,8 @@ export default () => {
     const [contracts, setContracts] = useState<LiteMarket[]>([]);
     const [selectedContract, setSelectedContract] = useState<LiteMarket | undefined>(undefined);
     const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState("Connecting to server...");
+    const [connectedToServer, setConnectedToServer] = useState(false);
 
     const ante = CONTRACT_ANTE;
     const onSubmitNewQuestion = async () => {
@@ -75,24 +83,48 @@ export default () => {
     };
 
     useEffect(() => {
-        socket = io();
+        const params = new Proxy(new URLSearchParams(window.location.search), {
+            get: (searchParams, prop) => searchParams.get(prop as string),
+        });
+        socket = io({ query: { type: "dock", controlToken: params["t"] } });
+        socket.on("connect_error", (err) => {
+            console.error(err);
+            setLoadingMessage(err.message);
+        });
+        socket.on("connect", () => {
+            console.debug("Socked connected to server.");
+            setConnectedToServer(true);
+        });
+        socket.on("disconnect", () => {
+            setConnectedToServer(false);
+        })
 
         socket.on(Packets.RESOLVED, () => {
             console.log("Market resolved");
             location.reload();
         });
 
+        socket.on(Packets.SELECT_MARKET_ID, async (marketID) => {
+            const market = await fetchMarketById(marketID);
+            setSelectedContract(market);
+        });
+
+        socket.on(Packets.UNFEATURE_MARKET, () => {
+            setSelectedContract(undefined);
+        });
+
         getUserBalance().then((b) => setBalance(b));
     }, []);
 
-    const firstRender = useRef(true);
-    useEffect(() => {
-        if (firstRender.current) {
-            firstRender.current = false;
-            return;
-        }
-        socket.emit(Packets.SELECT_MARKET_ID, selectedContract?.id);
-    }, [selectedContract]);
+    const onContractFeature = (contract: LiteMarket) => {
+        setSelectedContract(contract);
+        socket.emit(Packets.SELECT_MARKET_ID, contract?.id);
+    };
+
+    const onContractUnfeature = () => {
+        socket.emit(Packets.UNFEATURE_MARKET);
+        setSelectedContract(undefined);
+    };
 
     useEffect(() => {
         if (selectedGroup) {
@@ -112,6 +144,12 @@ export default () => {
             <Head>
                 <title>Dock</title>
             </Head>
+            {!connectedToServer && (<div className="fixed inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75 z-50">
+                <Row className="justify-center grow animate-fade items-center gap-4">
+                    <div style={{ borderTopColor: "transparent" }} className="w-10 h-10 border-4 border-white border-solid rounded-full animate-spin" />
+                    <div className="text-white">{loadingMessage}</div>
+                </Row>
+            </div>)}
             <div className="flex justify-center">
                 <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
                     <div className="p-2">
@@ -184,7 +222,7 @@ export default () => {
                             contracts.map((contract, index) => (
                                 <Transition key={contract.id} appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
                                     <div className="mb-2 hover:z-10" style={{ transitionDelay: index * 50 + "ms" }}>
-                                        <ContractCard contract={contract} setSelectedContract={setSelectedContract} />
+                                        <ContractCard contract={contract} onFeature={() => onContractFeature(contract)} />
                                     </div>
                                 </Transition>
                             ))
@@ -193,7 +231,7 @@ export default () => {
                         )}
                     </div>
                     <Transition
-                        unmount
+                        unmount={false}
                         as={Fragment}
                         show={selectedContract != undefined}
                         enter="ease-out duration-150"
@@ -205,22 +243,20 @@ export default () => {
                     >
                         <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
                     </Transition>
-                    {selectedContract && (
-                        <div className="fixed inset-0 flex flex-col items-center overflow-y-auto">
-                            <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
-                                <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
-                                    <ResolutionPanel contract={selectedContract} onCancelClick={() => setSelectedContract(undefined)} onUnfeatureMarket={() => setSelectedContract(undefined)} />
-                                </div>
-                            </Transition>
-                        </div>
-                    )}
+                    {selectedContract && (<div className={clsx("fixed inset-0 flex flex-col items-center overflow-y-auto", selectedContract ?? "pointer-events-none")}>
+                        <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
+                            <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
+                                <ResolutionPanel contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
+                            </div>
+                        </Transition>
+                    </div>)}
                 </div>
             </div>
         </>
     );
 };
 
-function ResolutionPanel(props: { contract: LiteMarket; onCancelClick: () => void; onUnfeatureMarket: () => void }) {
+function ResolutionPanel(props: { contract: LiteMarket; onUnfeatureMarket: () => void }) {
     const { contract, onUnfeatureMarket } = props;
 
     const [isSubmitting, setIsSubmitting] = useState(false);
