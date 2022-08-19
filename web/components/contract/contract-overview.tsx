@@ -15,7 +15,7 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetRow from '../bet-row'
+import BetButton from '../bet-button'
 import { AnswersGraph } from '../answers/answers-graph'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
@@ -73,18 +73,18 @@ export const ContractOverview = (props: {
             <BinaryResolutionOrChance contract={contract} />
 
             {tradingAllowed(contract) && (
-              <BetRow contract={contract as CPMMBinaryContract} />
+              <BetButton contract={contract as CPMMBinaryContract} />
             )}
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetRow contract={contract} />}
+            {tradingAllowed(contract) && <BetButton contract={contract} />}
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetRow contract={contract} />}
+            {tradingAllowed(contract) && <BetButton contract={contract} />}
           </Row>
         ) : (
           (outcomeType === 'FREE_RESPONSE' ||
