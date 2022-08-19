@@ -413,7 +413,7 @@ export const sendInterestingMarketsEmail = async (
 
   await sendTemplateEmail(
     privateUser.email,
-    'Interesting markets on Manifold',
+    `${contractsToSend[0].question} & 5 more interesting markets on Manifold`,
     'interesting-markets',
     {
       name: firstName,
