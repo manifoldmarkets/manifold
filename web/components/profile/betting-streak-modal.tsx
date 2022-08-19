@@ -15,7 +15,7 @@ export function BettingStreakModal(props: {
         <Col className={'gap-2'}>
           <span className={'text-indigo-700'}>• What are they?</span>
           <span className={'ml-2'}>
-            You get a reward for every day that you place a consecutive bet. The
+            You get a reward for every consecutive day that you place a bet. The
             more days you bet in a row, the more you earn!
           </span>
           <span className={'text-indigo-700'}>
