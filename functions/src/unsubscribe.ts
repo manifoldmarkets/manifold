@@ -21,6 +21,7 @@ export const unsubscribe: EndpointDefinition = {
         'market-comment',
         'market-answer',
         'generic',
+        'weekly-trending',
       ].includes(type)
     ) {
       res.status(400).send('Invalid type parameter.')
@@ -48,6 +49,9 @@ export const unsubscribe: EndpointDefinition = {
       }),
       ...(type === 'generic' && {
         unsubscribedFromGenericEmails: true,
+      }),
+      ...(type === 'weekly-trending' && {
+        unsubscribedFromWeeklyTrendingEmails: true,
       }),
     }
 

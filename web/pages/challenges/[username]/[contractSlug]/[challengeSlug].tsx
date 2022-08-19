@@ -28,11 +28,11 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import { SEO } from 'web/components/SEO'
-import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 import Custom404 from 'web/pages/404'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { BinaryContract } from 'common/contract'
 import { Title } from 'web/components/title'
+import { getOpenGraphProps } from 'common/contract-details'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 

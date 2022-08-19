@@ -36,13 +36,13 @@ import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { getOpenGraphProps } from 'web/components/contract/contract-card-preview'
 import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
 import { listUsers } from 'web/lib/firebase/users'
 import { FeedComment } from 'web/components/feed/feed-comments'
 import { Title } from 'web/components/title'
 import { FeedBet } from 'web/components/feed/feed-bets'
+import { getOpenGraphProps } from 'common/contract-details'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
