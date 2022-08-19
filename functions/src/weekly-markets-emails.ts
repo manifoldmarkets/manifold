@@ -2,15 +2,15 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import { getPrivateUser, getUser, getValues, isProd, log } from './utils'
-import { filterDefined } from '../../common/util/array'
+import { getAllPrivateUsers, getUser, getValues, log } from './utils'
 import { sendInterestingMarketsEmail } from './emails'
 import { createRNG, shuffle } from '../../common/util/random'
 import { DAY_MS } from '../../common/util/time'
 
 export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
-  .pubsub.schedule('every 1 minutes')
+  // every Monday at 12pm PT (UTC -07:00)
+  .pubsub.schedule('0 19 * * 1')
   .onRun(async () => {
     await sendTrendingMarketsEmailsToAllUsers()
   })
@@ -32,13 +32,8 @@ export async function getTrendingContracts() {
 }
 
 async function sendTrendingMarketsEmailsToAllUsers() {
-  const numEmailsToSend = 6
-  // const privateUsers = await getAllPrivateUsers()
-  // uses dev ian's private user for testing
-  const privateUser = await getPrivateUser(
-    isProd() ? 'AJwLWoo3xue32XIiAVrL5SyR1WB2' : '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
-  )
-  const privateUsers = filterDefined([privateUser])
+  const numContractsToSend = 6
+  const privateUsers = await getAllPrivateUsers()
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
     return !user.unsubscribedFromWeeklyTrendingEmails
@@ -60,14 +55,14 @@ async function sendTrendingMarketsEmailsToAllUsers() {
     const contractsAvailableToSend = trendingContracts.filter((contract) => {
       return !contract.uniqueBettorIds?.includes(privateUser.id)
     })
-    if (contractsAvailableToSend.length < numEmailsToSend) {
+    if (contractsAvailableToSend.length < numContractsToSend) {
       log('not enough new, unbet-on contracts to send to user', privateUser.id)
       continue
     }
     // choose random subset of contracts to send to user
     const contractsToSend = chooseRandomSubset(
       contractsAvailableToSend,
-      numEmailsToSend
+      numContractsToSend
     )
 
     const user = await getUser(privateUser.id)
