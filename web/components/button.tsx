@@ -1,20 +1,23 @@
 import { ReactNode } from 'react'
 import clsx from 'clsx'
 
+export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+export type ColorType =
+  | 'green'
+  | 'red'
+  | 'blue'
+  | 'indigo'
+  | 'yellow'
+  | 'gray'
+  | 'gradient'
+  | 'gray-white'
+
 export function Button(props: {
   className?: string
   onClick?: () => void
   children?: ReactNode
-  size?: '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-  color?:
-    | 'green'
-    | 'red'
-    | 'blue'
-    | 'indigo'
-    | 'yellow'
-    | 'gray'
-    | 'gradient'
-    | 'gray-white'
+  size?: SizeType
+  color?: ColorType
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
 }) {

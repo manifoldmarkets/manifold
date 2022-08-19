@@ -9,8 +9,8 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { Col } from './layout/col'
 
-// Inline version of a bet panel. Opens BetPanel in a new modal.
-export default function BetRow(props: {
+/** Button that opens BetPanel in a new modal */
+export default function BetButton(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
   btnClassName?: string
