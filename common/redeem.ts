@@ -13,8 +13,9 @@ export const getRedeemableAmount = (bets: RedeemableBet[]) => {
   const yesShares = sumBy(yesBets, (b) => b.shares)
   const noShares = sumBy(noBets, (b) => b.shares)
   const shares = Math.max(Math.min(yesShares, noShares), 0)
+  const soldFrac = shares > 0 ? Math.min(yesShares, noShares) / shares : 0
   const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
-  const loanPayment = Math.min(loanAmount, shares)
+  const loanPayment = loanAmount * soldFrac
   const netAmount = shares - loanPayment
   return { shares, loanPayment, netAmount }
 }
