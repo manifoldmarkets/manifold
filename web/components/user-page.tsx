@@ -131,9 +131,14 @@ export function UserPage(props: { user: User }) {
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}
       <Col className="mx-4 -mt-6">
-        <Row className={'justify-between'}>
+        <Row className={'flex-wrap justify-between'}>
           <Col>
-            <span className="text-2xl font-bold">{user.name}</span>
+            <span
+              className="text-2xl font-bold"
+              style={{ wordBreak: 'break-word' }}
+            >
+              {user.name}
+            </span>
             <span className="text-gray-500">@{user.username}</span>
           </Col>
           <Col className={'justify-center'}>
@@ -157,7 +162,9 @@ export function UserPage(props: { user: User }) {
                 <span>streak</span>
               </Col>
               <Col
-                className={'cursor-pointer items-center text-gray-500'}
+                className={
+                  'flex-shrink-0 cursor-pointer items-center text-gray-500'
+                }
                 onClick={() => setShowLoansModal(true)}
               >
                 <span className="text-green-600">🏦 {formatMoney(153)}</span>
