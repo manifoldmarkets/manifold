@@ -14,6 +14,7 @@ import { Contract } from '../../common/contract'
 import { runTxn, TxnData } from './transact'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
+  BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from '../../common/numeric-constants'
@@ -86,7 +87,7 @@ const updateBettingStreak = async (
   // Send them the bonus times their streak
   const bonusAmount = Math.min(
     BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
-    100
+    BETTING_STREAK_BONUS_MAX
   )
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID

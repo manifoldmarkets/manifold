@@ -22,11 +22,12 @@ export async function getTrendingContracts() {
     firestore
       .collection('contracts')
       .where('isResolved', '==', false)
-      .where('closeTime', '>', Date.now() + DAY_MS)
       .where('visibility', '==', 'public')
-      .orderBy('closeTime', 'asc')
+      // can't use multiple inequality (/orderBy) operators on different fields,
+      // so have to filter for closed contracts separately
       .orderBy('popularityScore', 'desc')
-      .limit(15)
+      // might as well go big and do a quick filter for closed ones later
+      .limit(500)
   )
 }
 
@@ -47,7 +48,7 @@ async function sendTrendingMarketsEmailsToAllUsers() {
       !(
         contract.question.toLowerCase().includes('trump') &&
         contract.question.toLowerCase().includes('president')
-      )
+      ) && (contract?.closeTime ?? 0) > Date.now() + DAY_MS
   )
   for (const privateUser of privateUsersToSendEmailsTo) {
     if (!privateUser.email) {
