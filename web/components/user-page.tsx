@@ -128,8 +128,8 @@ export function UserPage(props: { user: User }) {
             <span className="text-2xl font-bold">{user.name}</span>
             <span className="text-gray-500">@{user.username}</span>
           </Col>
-          <Col className={'justify-center gap-4'}>
-            <Row>
+          <Col className={'justify-center'}>
+            <Row className={'gap-3'}>
               <Col className={'items-center text-gray-500'}>
                 <span
                   className={clsx(
