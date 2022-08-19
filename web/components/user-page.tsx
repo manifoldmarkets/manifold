@@ -70,10 +70,25 @@ export function UserPage(props: { user: User }) {
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
-    setShowConfetti(claimedMana)
     const showBettingStreak = router.query['show'] === 'betting-streak'
     setShowBettingStreakModal(showBettingStreak)
-  }, [router])
+    setShowConfetti(claimedMana || showBettingStreak)
+
+    const query = { ...router.query }
+    if (query.claimedMana || query.show) {
+      delete query['claimed-mana']
+      delete query['show']
+      router.replace(
+        {
+          pathname: router.pathname,
+          query,
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const profit = user.profitCached.allTime
 
@@ -84,10 +99,9 @@ export function UserPage(props: { user: User }) {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-      {showConfetti ||
-        (showBettingStreakModal && (
-          <FullscreenConfetti recycle={false} numberOfPieces={300} />
-        ))}
+      {showConfetti && (
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
+      )}
       <BettingStreakModal
         isOpen={showBettingStreakModal}
         setOpen={setShowBettingStreakModal}
