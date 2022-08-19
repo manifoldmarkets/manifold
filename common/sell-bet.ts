@@ -79,8 +79,8 @@ export const getCpmmSellBetInfo = (
   shares: number,
   outcome: 'YES' | 'NO',
   contract: CPMMContract,
-  prevLoanAmount: number,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  loanPaid: number
 ) => {
   const { pool, p } = contract
 
@@ -91,7 +91,6 @@ export const getCpmmSellBetInfo = (
     unfilledBets
   )
 
-  const loanPaid = Math.min(prevLoanAmount, saleValue)
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
