@@ -66,7 +66,7 @@ export function ContractsGrid(props: {
   return (
     <Col className="gap-8">
       <Masonry
-        // Show only 1 column on tailwind md = 768px
+        // Show only 1 column on tailwind's md breakpoint (768px)
         breakpointCols={{ default: 2, 768: 1 }}
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
