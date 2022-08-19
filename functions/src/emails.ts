@@ -1,4 +1,3 @@
-import * as dayjs from 'dayjs'
 
 import { DOMAIN } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
@@ -170,7 +169,8 @@ export const sendWelcomeEmail = async (
 
 export const sendPersonalFollowupEmail = async (
   user: User,
-  privateUser: PrivateUser
+  privateUser: PrivateUser,
+  sendTime: string
 ) => {
   if (!privateUser || !privateUser.email) return
 
@@ -192,7 +192,6 @@ Cofounder of Manifold Markets
 https://manifold.markets
  `
 
-  const sendTime = dayjs().add(4, 'hours').toString()
 
   await sendTextEmail(
     privateUser.email,
