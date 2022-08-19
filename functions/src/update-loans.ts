@@ -1,17 +1,12 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { Dictionary, groupBy, keyBy, minBy, sumBy } from 'lodash'
+import { groupBy, keyBy, sumBy } from 'lodash'
 import { getValues, log, payUser, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
-import {
-  Contract,
-  CPMMContract,
-  FreeResponseContract,
-  MultipleChoiceContract,
-} from '../../common/contract'
+import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { filterDefined } from '../../common/util/array'
-import { getContractBetMetrics } from '../../common/calculate'
+import { getUserLoanUpdates } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 
 const firestore = admin.firestore()
@@ -111,88 +106,4 @@ const isUserEligibleForLoan = async (user: User) => {
 
   const { balance, investmentValue } = portfolio
   return balance + investmentValue > 0
-}
-
-const getUserLoanUpdates = (
-  bets: Bet[],
-  contractsById: Dictionary<Contract>
-) => {
-  const betsByContract = groupBy(bets, (bet) => bet.contractId)
-  const contracts = filterDefined(
-    Object.keys(betsByContract).map((contractId) => contractsById[contractId])
-  )
-
-  const betUpdates = filterDefined(
-    contracts
-      .map((c) => {
-        if (c.mechanism === 'cpmm-1') {
-          return getBinaryContractLoanUpdate(c, betsByContract[c.id])
-        } else if (
-          c.outcomeType === 'FREE_RESPONSE' ||
-          c.outcomeType === 'MULTIPLE_CHOICE'
-        )
-          return getFreeResponseContractLoanUpdate(c, betsByContract[c.id])
-        else {
-          // Unsupported contract / mechanism for loans.
-          return []
-        }
-      })
-      .flat()
-  )
-
-  const totalNewLoan = sumBy(betUpdates, (loanUpdate) => loanUpdate.loanTotal)
-
-  return {
-    totalNewLoan,
-    betUpdates,
-  }
-}
-
-const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
-  const { invested } = getContractBetMetrics(contract, bets)
-  const loanAmount = sumBy(bets, (bet) => bet.loanAmount ?? 0)
-  const oldestBet = minBy(bets, (bet) => bet.createdTime)
-
-  const newLoan = calculateNewLoan(invested, loanAmount)
-  if (isNaN(newLoan) || newLoan <= 0 || !oldestBet) return undefined
-
-  const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
-
-  return {
-    userId: oldestBet.userId,
-    contractId: contract.id,
-    betId: oldestBet.id,
-    newLoan,
-    loanTotal,
-  }
-}
-
-const getFreeResponseContractLoanUpdate = (
-  contract: FreeResponseContract | MultipleChoiceContract,
-  bets: Bet[]
-) => {
-  const openBets = bets.filter((bet) => bet.isSold || bet.sale)
-
-  return openBets.map((bet) => {
-    const loanAmount = bet.loanAmount ?? 0
-    const newLoan = calculateNewLoan(bet.amount, loanAmount)
-    const loanTotal = loanAmount + newLoan
-
-    if (isNaN(newLoan) || newLoan <= 0) return undefined
-
-    return {
-      userId: bet.userId,
-      contractId: contract.id,
-      betId: bet.id,
-      newLoan,
-      loanTotal,
-    }
-  })
-}
-
-const LOAN_WEEKLY_RATE = 0.05
-
-const calculateNewLoan = (investedValue: number, loanTotal: number) => {
-  const netValue = investedValue - loanTotal
-  return netValue * LOAN_WEEKLY_RATE
 }
