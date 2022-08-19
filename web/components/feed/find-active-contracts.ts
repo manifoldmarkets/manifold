@@ -1,6 +1,6 @@
 import { groupBy, mapValues, maxBy, sortBy } from 'lodash'
 import { Contract } from 'web/lib/firebase/contracts'
-import { Comment } from 'web/lib/firebase/comments'
+import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 
 const MAX_ACTIVE_CONTRACTS = 75
@@ -19,7 +19,7 @@ function lastActivityTime(contract: Contract) {
 // - Bet on market
 export function findActiveContracts(
   allContracts: Contract[],
-  recentComments: Comment[],
+  recentComments: ContractComment[],
   recentBets: Bet[],
   seenContracts: { [contractId: string]: number }
 ) {
@@ -73,7 +73,7 @@ export function findActiveContracts(
   )
   const contractMostRecentComment = mapValues(
     contractComments,
-    (comments) => maxBy(comments, (c) => c.createdTime) as Comment
+    (comments) => maxBy(comments, (c) => c.createdTime) as ContractComment
   )
 
   const prioritizedContracts = sortBy(activeContracts, (c) => {

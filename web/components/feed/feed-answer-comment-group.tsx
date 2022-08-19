@@ -1,6 +1,6 @@
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -24,7 +24,7 @@ export function FeedAnswerCommentGroup(props: {
   contract: any
   user: User | undefined | null
   answer: Answer
-  comments: Comment[]
+  comments: ContractComment[]
   tips: CommentTipMap
   bets: Bet[]
 }) {
@@ -69,7 +69,7 @@ export function FeedAnswerCommentGroup(props: {
   ])
 
   const scrollAndOpenReplyInput = useEvent(
-    (comment?: Comment, answer?: Answer) => {
+    (comment?: ContractComment, answer?: Answer) => {
       setReplyToUser(
         comment
           ? { id: comment.userId, username: comment.userUsername }

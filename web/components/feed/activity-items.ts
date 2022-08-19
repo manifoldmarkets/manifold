@@ -3,7 +3,7 @@ import { uniq, sortBy } from 'lodash'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getOutcomeProbability } from 'common/calculate'
-import { Comment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { User } from 'common/user'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
@@ -28,7 +28,7 @@ type BaseActivityItem = {
 export type CommentInputItem = BaseActivityItem & {
   type: 'commentInput'
   betsByCurrentUser: Bet[]
-  commentsByCurrentUser: Comment[]
+  commentsByCurrentUser: ContractComment[]
 }
 
 export type DescriptionItem = BaseActivityItem & {
@@ -50,8 +50,8 @@ export type BetItem = BaseActivityItem & {
 
 export type CommentThreadItem = BaseActivityItem & {
   type: 'commentThread'
-  parentComment: Comment
-  comments: Comment[]
+  parentComment: ContractComment
+  comments: ContractComment[]
   tips: CommentTipMap
   bets: Bet[]
 }
@@ -60,7 +60,7 @@ export type AnswerGroupItem = BaseActivityItem & {
   type: 'answergroup'
   user: User | undefined | null
   answer: Answer
-  comments: Comment[]
+  comments: ContractComment[]
   tips: CommentTipMap
   bets: Bet[]
 }
@@ -84,7 +84,7 @@ export type LiquidityItem = BaseActivityItem & {
 function getAnswerAndCommentInputGroups(
   contract: FreeResponseContract,
   bets: Bet[],
-  comments: Comment[],
+  comments: ContractComment[],
   tips: CommentTipMap,
   user: User | undefined | null
 ) {
@@ -116,7 +116,7 @@ function getAnswerAndCommentInputGroups(
 
 function getCommentThreads(
   bets: Bet[],
-  comments: Comment[],
+  comments: ContractComment[],
   tips: CommentTipMap,
   contract: Contract
 ) {
@@ -135,7 +135,7 @@ function getCommentThreads(
   return items
 }
 
-function commentIsGeneralComment(comment: Comment, contract: Contract) {
+function commentIsGeneralComment(comment: ContractComment, contract: Contract) {
   return (
     comment.answerOutcome === undefined &&
     (contract.outcomeType === 'FREE_RESPONSE'
@@ -147,7 +147,7 @@ function commentIsGeneralComment(comment: Comment, contract: Contract) {
 export function getSpecificContractActivityItems(
   contract: Contract,
   bets: Bet[],
-  comments: Comment[],
+  comments: ContractComment[],
   liquidityProvisions: LiquidityProvision[],
   tips: CommentTipMap,
   user: User | null | undefined,
