@@ -66,17 +66,17 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
 
               <tr>
                 <td>Payout</td>
-                <td>
+                <td className="flex gap-1">
                   {mechanism === 'cpmm-1' ? (
                     <>
                       Fixed{' '}
                       <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
                     </>
                   ) : (
-                    <div>
+                    <>
                       Parimutuel{' '}
                       <InfoTooltip text="Each share is a fraction of the pool. " />
-                    </div>
+                    </>
                   )}
                 </td>
               </tr>
