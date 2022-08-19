@@ -19,7 +19,6 @@ import { BinaryContract, Contract } from 'common/contract'
 import { createRNG, shuffle } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import { MAX_FEED_CONTRACTS } from 'common/recommended-contracts'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -256,16 +255,6 @@ export async function getContractsBySlugs(slugs: string[]) {
   const snapshot = await getDocs(q)
   const data = snapshot.docs.map((doc) => doc.data())
   return sortBy(data, (contract) => -1 * contract.volume24Hours)
-}
-
-const topWeeklyQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  orderBy('volume7Days', 'desc'),
-  limit(MAX_FEED_CONTRACTS)
-)
-export async function getTopWeeklyContracts() {
-  return await getValues<Contract>(topWeeklyQuery)
 }
 
 const closingSoonQuery = query(

@@ -11,6 +11,7 @@ import { CandidateBet } from '../../common/new-bet'
 import { createChallengeAcceptedNotification } from './create-notification'
 import { noFees } from '../../common/fees'
 import { formatMoney, formatPercent } from '../../common/util/format'
+import { redeemShares } from './redeem-shares'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -162,6 +163,8 @@ export const acceptchallenge = newEndpoint({}, async (req, auth) => {
     log('Done, sent notification.')
     return yourNewBetDoc
   })
+
+  await redeemShares(auth.uid, contractId)
 
   return { betId: result.id }
 })

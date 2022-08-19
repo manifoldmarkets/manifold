@@ -14,15 +14,17 @@ import {
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser, getContract } from './utils'
+import { chargeUser, getContract, isProd } from './utils'
 import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
 import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   FIXED_ANTE,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
   getNumericAnte,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
@@ -59,7 +61,7 @@ const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-  description: descScehma.optional(),
+  description: descScehma.or(z.string()).optional(),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
   closeTime: zTimestamp().refine(
     (date) => date.getTime() > new Date().getTime(),
@@ -165,13 +167,27 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     ante || 0
   )
 
+  // convert string descriptions into JSONContent
+  const newDescription =
+    typeof description === 'string'
+      ? {
+          type: 'doc',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: description }],
+            },
+          ],
+        }
+      : description ?? {}
+
   const contract = getNewContract(
     contractRef.id,
     slug,
     user,
     question,
     outcomeType,
-    description ?? {},
+    newDescription,
     initialProb ?? 0,
     ante,
     closeTime.getTime(),
@@ -197,7 +213,9 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     }
   }
 
-  const providerId = user.id
+  const providerId = isProd()
+    ? HOUSE_LIQUIDITY_PROVIDER_ID
+    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
 
   if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore

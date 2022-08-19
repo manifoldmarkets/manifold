@@ -18,7 +18,7 @@ import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { UserLink } from '../user-page'
-import BetRow from '../bet-row'
+import BetButton from '../bet-button'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
 import { useUser } from 'web/hooks/use-user'
@@ -76,7 +76,7 @@ export function FeedItems(props: {
       ) : (
         outcomeType === 'BINARY' &&
         tradingAllowed(contract) && (
-          <BetRow
+          <BetButton
             contract={contract as CPMMBinaryContract}
             className={clsx('mb-2', betRowClassName)}
           />

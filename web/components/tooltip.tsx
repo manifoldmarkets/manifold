@@ -6,7 +6,6 @@ import {
   Placement,
   shift,
   useFloating,
-  useFocus,
   useHover,
   useInteractions,
   useRole,
@@ -48,7 +47,6 @@ export function Tooltip(props: {
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
     useHover(context, { mouseOnly: noTap }),
-    useFocus(context),
     useRole(context, { role: 'tooltip' }),
   ])
   // which side of tooltip arrow is on. like: if tooltip is top-left, arrow is on bottom of tooltip
@@ -64,7 +62,6 @@ export function Tooltip(props: {
       <div
         className={clsx('inline-block', className)}
         ref={reference}
-        tabIndex={noTap ? undefined : 0}
         {...getReferenceProps()}
       >
         {children}

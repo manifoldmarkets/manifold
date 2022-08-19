@@ -1,5 +1,5 @@
 import { Contract } from 'web/lib/firebase/contracts'
-import { Comment } from 'web/lib/firebase/comments'
+import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { useBets } from 'web/hooks/use-bets'
 import { getSpecificContractActivityItems } from './activity-items'
@@ -12,7 +12,7 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 export function ContractActivity(props: {
   contract: Contract
   bets: Bet[]
-  comments: Comment[]
+  comments: ContractComment[]
   liquidityProvisions: LiquidityProvision[]
   tips: CommentTipMap
   user: User | null | undefined

@@ -51,6 +51,7 @@ export const MentionList = forwardRef((props: SuggestionProps<User>, ref) => {
               selectedIndex === i ? 'bg-indigo-500 text-white' : 'text-gray-900'
             )}
             onClick={() => submitUser(i)}
+            key={user.id}
           >
             <Avatar avatarUrl={user.avatarUrl} size="xs" />
             {user.username}

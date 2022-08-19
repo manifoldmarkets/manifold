@@ -504,3 +504,38 @@ export const createChallengeAcceptedNotification = async (
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }
+
+export const createBettingStreakBonusNotification = async (
+  user: User,
+  txnId: string,
+  bet: Bet,
+  contract: Contract,
+  amount: number,
+  idempotencyKey: string
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${user.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: user.id,
+    reason: 'betting_streak_incremented',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'betting_streak_bonus',
+    sourceUpdateType: 'created',
+    sourceUserName: user.name,
+    sourceUserUsername: user.username,
+    sourceUserAvatarUrl: user.avatarUrl,
+    sourceText: amount.toString(),
+    sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
+    sourceTitle: 'Betting Streak Bonus',
+    // Perhaps not necessary, but just in case
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    sourceContractTitle: contract.question,
+    sourceContractCreatorUsername: contract.creatorUsername,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}

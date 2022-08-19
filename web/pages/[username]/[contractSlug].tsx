@@ -17,7 +17,7 @@ import {
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/page'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
-import { Comment, listAllComments } from 'web/lib/firebase/comments'
+import { listAllComments } from 'web/lib/firebase/comments'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -37,6 +37,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
+import { ContractComment } from 'common/comment'
 import { listUsers } from 'web/lib/firebase/users'
 import { FeedComment } from 'web/components/feed/feed-comments'
 import { Title } from 'web/components/title'
@@ -78,7 +79,7 @@ export default function ContractPage(props: {
   contract: Contract | null
   username: string
   bets: Bet[]
-  comments: Comment[]
+  comments: ContractComment[]
   slug: string
   backToHome?: () => void
 }) {
@@ -314,7 +315,7 @@ function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
 function ContractTopTrades(props: {
   contract: Contract
   bets: Bet[]
-  comments: Comment[]
+  comments: ContractComment[]
   tips: CommentTipMap
 }) {
   const { contract, bets, comments, tips } = props

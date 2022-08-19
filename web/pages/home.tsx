@@ -12,15 +12,18 @@ import { getContractFromSlug } from 'web/lib/firebase/contracts'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { GetServerSideProps } from 'next'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
-})
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const creds = await authenticateOnServer(ctx)
+  const auth = creds ? await getUserAndPrivateUser(creds.user.uid) : null
+  return { props: { auth } }
+}
 
-const Home = (props: { auth: { user: User } }) => {
-  const { user } = props.auth
+const Home = (props: { auth: { user: User } | null }) => {
+  const user = props.auth ? props.auth.user : null
   const [contract, setContract] = useContractPage()
 
   const router = useRouter()
@@ -42,6 +45,7 @@ const Home = (props: { auth: { user: User } }) => {
               // Update the url without switching pages in Nextjs.
               history.pushState(null, '', `/${c.creatorUsername}/${c.slug}`)
             }}
+            isWholePage
           />
         </Col>
         <button

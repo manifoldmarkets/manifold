@@ -83,7 +83,7 @@ export function ContractSearch(props: {
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
-  gridClassName?: string
+  overrideGridClassName?: string
   cardHideOptions?: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
@@ -91,6 +91,7 @@ export function ContractSearch(props: {
   headerClassName?: string
   useQuerySortLocalStorage?: boolean
   useQuerySortUrlParams?: boolean
+  isWholePage?: boolean
 }) {
   const {
     user,
@@ -98,13 +99,14 @@ export function ContractSearch(props: {
     defaultFilter,
     additionalFilter,
     onContractClick,
-    gridClassName,
+    overrideGridClassName,
     hideOrderSelector,
     cardHideOptions,
     highlightOptions,
     headerClassName,
     useQuerySortLocalStorage,
     useQuerySortUrlParams,
+    isWholePage,
   } = props
 
   const [numPages, setNumPages] = useState(1)
@@ -139,7 +141,7 @@ export function ContractSearch(props: {
           setNumPages(results.nbPages)
           if (freshQuery) {
             setPages([newPage])
-            window.scrollTo(0, 0)
+            if (isWholePage) window.scrollTo(0, 0)
           } else {
             setPages((pages) => [...pages, newPage])
           }
@@ -181,7 +183,7 @@ export function ContractSearch(props: {
         loadMore={performQuery}
         showTime={showTime}
         onContractClick={onContractClick}
-        gridClassName={gridClassName}
+        overrideGridClassName={overrideGridClassName}
         highlightOptions={highlightOptions}
         cardHideOptions={cardHideOptions}
       />
