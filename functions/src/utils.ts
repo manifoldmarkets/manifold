@@ -88,6 +88,12 @@ export const getPrivateUser = (userId: string) => {
   return getDoc<PrivateUser>('private-users', userId)
 }
 
+export const getAllPrivateUsers = async () => {
+  const firestore = admin.firestore()
+  const users = await firestore.collection('private-users').get()
+  return users.docs.map((doc) => doc.data() as PrivateUser)
+}
+
 export const getUserByUsername = async (username: string) => {
   const firestore = admin.firestore()
   const snap = await firestore

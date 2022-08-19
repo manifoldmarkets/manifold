@@ -20,6 +20,7 @@ import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 import { getFunctionUrl } from '../../common/api'
 import { richTextToString } from '../../common/util/parse'
+import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
 
 const UNSUBSCRIBE_ENDPOINT = getFunctionUrl('unsubscribe')
 
@@ -459,4 +460,62 @@ export const sendNewAnswerEmail = async (
     },
     { from }
   )
+}
+
+export const sendInterestingMarketsEmail = async (
+  user: User,
+  privateUser: PrivateUser,
+  contractsToSend: Contract[],
+  deliveryTime?: string
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser?.unsubscribedFromWeeklyTrendingEmails
+  )
+    return
+
+  const emailType = 'weekly-trending'
+  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${privateUser.id}&type=${emailType}`
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+
+  await sendTemplateEmail(
+    privateUser.email,
+    `${contractsToSend[0].question} & 5 more interesting markets on Manifold`,
+    'interesting-markets',
+    {
+      name: firstName,
+      unsubscribeLink: unsubscribeUrl,
+
+      question1Title: contractsToSend[0].question,
+      question1Link: contractUrl(contractsToSend[0]),
+      question1ImgSrc: imageSourceUrl(contractsToSend[0]),
+      question2Title: contractsToSend[1].question,
+      question2Link: contractUrl(contractsToSend[1]),
+      question2ImgSrc: imageSourceUrl(contractsToSend[1]),
+      question3Title: contractsToSend[2].question,
+      question3Link: contractUrl(contractsToSend[2]),
+      question3ImgSrc: imageSourceUrl(contractsToSend[2]),
+      question4Title: contractsToSend[3].question,
+      question4Link: contractUrl(contractsToSend[3]),
+      question4ImgSrc: imageSourceUrl(contractsToSend[3]),
+      question5Title: contractsToSend[4].question,
+      question5Link: contractUrl(contractsToSend[4]),
+      question5ImgSrc: imageSourceUrl(contractsToSend[4]),
+      question6Title: contractsToSend[5].question,
+      question6Link: contractUrl(contractsToSend[5]),
+      question6ImgSrc: imageSourceUrl(contractsToSend[5]),
+    },
+    deliveryTime ? { 'o:deliverytime': deliveryTime } : undefined
+  )
+}
+
+function contractUrl(contract: Contract) {
+  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+}
+
+function imageSourceUrl(contract: Contract) {
+  return buildCardUrl(getOpenGraphProps(contract))
 }
