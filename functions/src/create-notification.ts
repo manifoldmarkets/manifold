@@ -486,7 +486,14 @@ export const createLoanIncomeNotification = async (
     reason: 'loan_income',
     createdTime: Date.now(),
     isSeen: false,
-    sourceText: formatMoney(income),
+    sourceId: idempotencyKey,
+    sourceType: 'loan',
+    sourceUpdateType: 'updated',
+    sourceUserName: toUser.name,
+    sourceUserUsername: toUser.username,
+    sourceUserAvatarUrl: toUser.avatarUrl,
+    sourceText: income.toString(),
+    sourceTitle: 'Loan',
   }
   await notificationRef.set(removeUndefinedProps(notification))
 }

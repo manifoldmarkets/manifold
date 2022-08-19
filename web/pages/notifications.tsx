@@ -385,6 +385,8 @@ function IncomeNotificationItem(props: {
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
+    } else if (sourceType === 'loan' && sourceText) {
+      reasonText = `of your invested bets returned as`
     } else if (sourceType === 'betting_streak_bonus' && sourceText) {
       reasonText = `for your ${
         parseInt(sourceText) / BETTING_STREAK_BONUS_AMOUNT
@@ -393,7 +395,15 @@ function IncomeNotificationItem(props: {
     return (
       <>
         {reasonText}
-        {sourceType === 'betting_streak_bonus' ? (
+        {sourceType === 'loan' ? (
+          simple ? (
+            <span className={'ml-1 font-bold'}>Loan</span>
+          ) : (
+            <SiteLink className={'ml-1 font-bold'} href={'/loans'}>
+              Loan
+            </SiteLink>
+          )
+        ) : sourceType === 'betting_streak_bonus' ? (
           simple ? (
             <span className={'ml-1 font-bold'}>Betting Streak</span>
           ) : (
@@ -437,6 +447,7 @@ function IncomeNotificationItem(props: {
     if (sourceType === 'challenge') return `${sourceSlug}`
     if (sourceType === 'betting_streak_bonus')
       return `/${sourceUserUsername}/?show=betting-streak`
+    if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loan`
     if (sourceContractCreatorUsername && sourceContractSlug)
       return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
         sourceId ?? '',
@@ -1003,8 +1014,6 @@ function getReasonForShowingNotification(
     case 'challenge':
       reasonText = 'accepted your challenge'
       break
-    case 'loan':
-      reasonText = 'got a portion of your bet back'
     default:
       reasonText = ''
   }
