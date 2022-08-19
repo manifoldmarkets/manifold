@@ -11,6 +11,7 @@ export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
   // every Monday at 12pm PT (UTC -07:00)
   .pubsub.schedule('0 19 * * 1')
+  .timeZone('utc')
   .onRun(async () => {
     await sendTrendingMarketsEmailsToAllUsers()
   })
