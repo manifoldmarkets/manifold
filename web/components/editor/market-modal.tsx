@@ -65,7 +65,6 @@ export function MarketModal(props: {
           <ContractSearch
             hideOrderSelector
             onContractClick={addContract}
-            gridClassName="gap-3 space-y-3"
             cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
             highlightOptions={{
               contractIds: contracts.map((c) => c.id),

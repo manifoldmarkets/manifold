@@ -21,7 +21,6 @@ export function ContractsGrid(props: {
   loadMore?: () => void
   showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
-  gridClassName?: string
   cardHideOptions?: {
     hideQuickBet?: boolean
     hideGroupLink?: boolean
@@ -33,7 +32,6 @@ export function ContractsGrid(props: {
     showTime,
     loadMore,
     onContractClick,
-    gridClassName,
     cardHideOptions,
     highlightOptions,
   } = props
