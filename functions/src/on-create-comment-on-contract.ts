@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { compact, uniq } from 'lodash'
 import { getContract, getUser, getValues } from './utils'
-import { Comment } from '../../common/comment'
+import { ContractComment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
@@ -24,7 +24,12 @@ export const onCreateCommentOnContract = functions
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
 
-    const comment = change.data() as Comment
+    await change.ref.update({
+      contractSlug: contract.slug,
+      contractQuestion: contract.question,
+    })
+
+    const comment = change.data() as ContractComment
     const lastCommentTime = comment.createdTime
 
     const commentCreator = await getUser(comment.userId)
@@ -59,7 +64,7 @@ export const onCreateCommentOnContract = functions
           : undefined
     }
 
-    const comments = await getValues<Comment>(
+    const comments = await getValues<ContractComment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
     const relatedSourceType = comment.replyToCommentId

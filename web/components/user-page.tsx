@@ -58,8 +58,6 @@ export function UserLink(props: {
   )
 }
 
-export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
-
 export function UserPage(props: { user: User }) {
   const { user } = props
   const router = useRouter()
@@ -103,10 +101,10 @@ export function UserPage(props: { user: User }) {
         </div>
 
         {/* Top right buttons (e.g. edit, follow) */}
-        <div className="absolute right-0 top-0 mt-4 mr-4">
+        <div className="absolute right-0 top-0 mt-2 mr-4">
           {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
-            <SiteLink className="btn" href="/profile">
+            <SiteLink className="sm:btn-md btn-sm btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}
               <div className="ml-2">Edit</div>
             </SiteLink>
@@ -116,19 +114,22 @@ export function UserPage(props: { user: User }) {
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}
       <Col className="mx-4 -mt-6">
-        <span className="text-2xl font-bold">{user.name}</span>
+        <Row className={'items-center gap-2'}>
+          <span className="text-2xl font-bold">{user.name}</span>
+          <span className="mt-1 text-gray-500">
+            <span
+              className={clsx(
+                'text-md',
+                profit >= 0 ? 'text-green-600' : 'text-red-400'
+              )}
+            >
+              {formatMoney(profit)}
+            </span>{' '}
+            profit
+          </span>
+        </Row>
         <span className="text-gray-500">@{user.username}</span>
-        <span className="text-gray-500">
-          <span
-            className={clsx(
-              'text-md',
-              profit >= 0 ? 'text-green-600' : 'text-red-400'
-            )}
-          >
-            {formatMoney(profit)}
-          </span>{' '}
-          profit
-        </span>
+
         <Spacer h={4} />
         {user.bio && (
           <>
@@ -138,17 +139,7 @@ export function UserPage(props: { user: User }) {
             <Spacer h={4} />
           </>
         )}
-        <Col className="flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <Row className="gap-4">
-            <FollowingButton user={user} />
-            <FollowersButton user={user} />
-            {currentUser &&
-              ['ian', 'Austin', 'SG', 'JamesGrugett'].includes(
-                currentUser.username
-              ) && <ReferralsButton user={user} />}
-            <GroupsButton user={user} />
-          </Row>
-
+        <Row className="flex-wrap items-center gap-2 sm:gap-4">
           {user.website && (
             <SiteLink
               href={
@@ -198,7 +189,7 @@ export function UserPage(props: { user: User }) {
               </Row>
             </SiteLink>
           )}
-        </Col>
+        </Row>
         <Spacer h={5} />
         {currentUser?.id === user.id && (
           <Row
@@ -208,7 +199,7 @@ export function UserPage(props: { user: User }) {
           >
             <span>
               <SiteLink href="/referrals">
-                Refer a friend and earn {formatMoney(500)} when they sign up!
+                Earn {formatMoney(500)} when you refer a friend!
               </SiteLink>{' '}
               You have <ReferralsButton user={user} currentUser={currentUser} />
             </span>
@@ -242,6 +233,22 @@ export function UserPage(props: { user: User }) {
                   <PortfolioValueSection userId={user.id} />
                   <BetsList user={user} />
                 </>
+              ),
+            },
+            {
+              title: 'Social',
+              content: (
+                <Row
+                  className={'mt-2 flex-wrap items-center justify-center gap-6'}
+                >
+                  <FollowingButton user={user} />
+                  <FollowersButton user={user} />
+                  {currentUser &&
+                    ['ian', 'Austin', 'SG', 'JamesGrugett'].includes(
+                      currentUser.username
+                    ) && <ReferralsButton user={user} />}
+                  <GroupsButton user={user} />
+                </Row>
               ),
             },
           ]}

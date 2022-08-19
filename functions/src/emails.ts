@@ -1,3 +1,5 @@
+import * as dayjs from 'dayjs'
+
 import { DOMAIN } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
@@ -14,7 +16,7 @@ import {
 import { getValueFromBucket } from '../../common/calculate-dpm'
 import { formatNumericProbability } from '../../common/pseudo-numeric'
 
-import { sendTemplateEmail } from './send-email'
+import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 import { getFunctionUrl } from '../../common/api'
 import { richTextToString } from '../../common/util/parse'
@@ -74,9 +76,8 @@ export const sendMarketResolutionEmail = async (
 
   // Modify template here:
   // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved/initial
-  // Mailgun username: james@mantic.markets
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     subject,
     'market-resolved',
@@ -152,7 +153,7 @@ export const sendWelcomeEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Welcome to Manifold Markets!',
     'welcome',
@@ -162,6 +163,43 @@ export const sendWelcomeEmail = async (
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
+
+export const sendPersonalFollowupEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  if (!privateUser || !privateUser.email) return
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+
+  const emailBody = `Hi ${firstName},
+
+Thanks for signing up! I'm one of the cofounders of Manifold Markets, and was wondering how you've found your exprience on the platform so far?
+
+If you haven't already, I encourage you to try creating your own prediction market (https://manifold.markets/create) and joining our Discord chat (https://discord.com/invite/eHQBNBqXuh).
+
+Feel free to reply to this email with any questions or concerns you have.
+
+Cheers,
+
+James
+Cofounder of Manifold Markets
+https://manifold.markets
+ `
+
+  const sendTime = dayjs().add(4, 'hours').toString()
+
+  await sendTextEmail(
+    privateUser.email,
+    'How are you finding Manifold?',
+    emailBody,
+    {
+      from: 'James from Manifold <james@manifold.markets>',
+      'o:deliverytime': sendTime,
     }
   )
 }
@@ -183,7 +221,7 @@ export const sendOneWeekBonusEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Manifold Markets one week anniversary gift',
     'one-week',
@@ -191,6 +229,37 @@ export const sendOneWeekBonusEmail = async (
       name: firstName,
       unsubscribeLink,
       manalink: 'https://manifold.markets/link/lj4JbBvE',
+    },
+    {
+      from: 'David from Manifold <david@manifold.markets>',
+    }
+  )
+}
+
+export const sendCreatorGuideEmail = async (
+  user: User,
+  privateUser: PrivateUser
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    privateUser.unsubscribedFromGenericEmails
+  )
+    return
+
+  const { name, id: userId } = user
+  const firstName = name.split(' ')[0]
+
+  const emailType = 'generic'
+  const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
+
+  return await sendTemplateEmail(
+    privateUser.email,
+    'Market creation guide',
+    'creating-market',
+    {
+      name: firstName,
+      unsubscribeLink,
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
@@ -215,7 +284,7 @@ export const sendThankYouEmail = async (
   const emailType = 'generic'
   const unsubscribeLink = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Thanks for your Manifold purchase',
     'thank-you',
@@ -250,7 +319,7 @@ export const sendMarketCloseEmail = async (
   const emailType = 'market-resolve'
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     'Your market has closed',
     'market-close',
@@ -309,7 +378,7 @@ export const sendNewCommentEmail = async (
   if (contract.outcomeType === 'FREE_RESPONSE' && answerId && answerText) {
     const answerNumber = `#${answerId}`
 
-    await sendTemplateEmail(
+    return await sendTemplateEmail(
       privateUser.email,
       subject,
       'market-answer-comment',
@@ -332,7 +401,7 @@ export const sendNewCommentEmail = async (
         bet.outcome
       )}`
     }
-    await sendTemplateEmail(
+    return await sendTemplateEmail(
       privateUser.email,
       subject,
       'market-comment',
@@ -377,7 +446,7 @@ export const sendNewAnswerEmail = async (
   const subject = `New answer on ${question}`
   const from = `${name} <info@manifold.markets>`
 
-  await sendTemplateEmail(
+  return await sendTemplateEmail(
     privateUser.email,
     subject,
     'market-answer',

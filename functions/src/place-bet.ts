@@ -30,15 +30,7 @@ const bodySchema = z.object({
 
 const binarySchema = z.object({
   outcome: z.enum(['YES', 'NO']),
-  limitProb: z
-    .number()
-    .gte(0.001)
-    .lte(0.999)
-    .refine(
-      (p) => Math.round(p * 100) === p * 100,
-      'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
-    )
-    .optional(),
+  limitProb: z.number().gte(0.001).lte(0.999).optional(),
 })
 
 const freeResponseSchema = z.object({
@@ -89,7 +81,22 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         (outcomeType == 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
         mechanism == 'cpmm-1'
       ) {
-        const { outcome, limitProb } = validate(binarySchema, req.body)
+        // eslint-disable-next-line prefer-const
+        let { outcome, limitProb } = validate(binarySchema, req.body)
+
+        if (limitProb !== undefined && outcomeType === 'BINARY') {
+          const isRounded = floatingEqual(
+            Math.round(limitProb * 100),
+            limitProb * 100
+          )
+          if (!isRounded)
+            throw new APIError(
+              400,
+              'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+            )
+
+          limitProb = Math.round(limitProb * 100) / 100
+        }
 
         const unfilledBetsSnap = await trans.get(
           getUnfilledBetsQuery(contractDoc)

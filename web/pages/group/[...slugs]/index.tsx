@@ -46,7 +46,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
-import { Comment } from 'common/comment'
+import { GroupComment } from 'common/comment'
 import { GroupChat } from 'web/components/groups/group-chat'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -123,7 +123,7 @@ export default function GroupPage(props: {
   topTraders: User[]
   creatorScores: { [userId: string]: number }
   topCreators: User[]
-  messages: Comment[]
+  messages: GroupComment[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -607,7 +607,9 @@ function AddContractButton(props: { group: Group; user: User }) {
               user={user}
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
-              gridClassName="gap-3 space-y-3"
+              overrideGridClassName={
+                'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
+              }
               cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
               additionalFilter={{ excludeContractIds: group.contractIds }}
               highlightOptions={{

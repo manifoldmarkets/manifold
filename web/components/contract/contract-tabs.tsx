@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { Comment } from 'web/lib/firebase/comments'
+import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { ContractActivity } from '../feed/contract-activity'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
@@ -15,7 +15,7 @@ export function ContractTabs(props: {
   contract: Contract
   user: User | null | undefined
   bets: Bet[]
-  comments: Comment[]
+  comments: ContractComment[]
   tips: CommentTipMap
 }) {
   const { contract, user, bets, tips } = props

@@ -1,5 +1,5 @@
 import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
+import { ContractComment } from 'common/comment'
 import { resolvedPayout } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
@@ -65,7 +65,7 @@ export function ContractLeaderboard(props: {
 export function ContractTopTrades(props: {
   contract: Contract
   bets: Bet[]
-  comments: Comment[]
+  comments: ContractComment[]
   tips: CommentTipMap
 }) {
   const { contract, bets, comments, tips } = props
