@@ -1,12 +1,16 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { getValues, log, payUser, writeAsync } from './utils'
-import { Bet } from 'common/bet'
-import { Contract, CPMMContract, FreeResponseContract } from 'common/contract'
-import { PortfolioMetrics, User } from 'common/user'
 import { Dictionary, groupBy, keyBy, minBy, sumBy } from 'lodash'
-import { filterDefined } from 'common/util/array'
-import { getContractBetMetrics } from 'common/calculate'
+import { getValues, log, payUser, writeAsync } from './utils'
+import { Bet } from '../../common/bet'
+import {
+  Contract,
+  CPMMContract,
+  FreeResponseContract,
+} from '../../common/contract'
+import { PortfolioMetrics, User } from '../../common/user'
+import { filterDefined } from '../../common/util/array'
+import { getContractBetMetrics } from '../../common/calculate'
 import { createLoanIncomeNotification } from './create-notification'
 
 const firestore = admin.firestore()

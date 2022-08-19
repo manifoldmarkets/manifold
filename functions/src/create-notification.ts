@@ -18,7 +18,7 @@ import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 import { Challenge } from '../../common/challenge'
 import { richTextToString } from '../../common/util/parse'
-import { formatMoney } from 'common/util/format'
+import { formatMoney } from '../../common/util/format'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
