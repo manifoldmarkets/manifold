@@ -29,6 +29,7 @@ import { formatMoney } from 'common/util/format'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
+import { LoansModal } from './profile/loans-modal'
 
 export function UserLink(props: {
   name: string
@@ -67,12 +68,16 @@ export function UserPage(props: { user: User }) {
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
+  const [showLoansModal, setShowLoansModal] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
     setShowConfetti(claimedMana)
     const showBettingStreak = router.query['show'] === 'betting-streak'
     setShowBettingStreakModal(showBettingStreak)
+
+    const showLoansModel = router.query['show'] === 'loans'
+    setShowLoansModal(showLoansModel)
   }, [router])
 
   const profit = user.profitCached.allTime
@@ -92,6 +97,9 @@ export function UserPage(props: { user: User }) {
         isOpen={showBettingStreakModal}
         setOpen={setShowBettingStreakModal}
       />
+      {showLoansModal && (
+        <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
+      )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
@@ -145,8 +153,15 @@ export function UserPage(props: { user: User }) {
                 className={'cursor-pointer items-center text-gray-500'}
                 onClick={() => setShowBettingStreakModal(true)}
               >
-                <span>🔥{user.currentBettingStreak ?? 0}</span>
+                <span>🔥 {user.currentBettingStreak ?? 0}</span>
                 <span>streak</span>
+              </Col>
+              <Col
+                className={'cursor-pointer items-center text-gray-500'}
+                onClick={() => setShowLoansModal(true)}
+              >
+                <span className="text-green-600">🏦 {formatMoney(153)}</span>
+                <span>next loan</span>
               </Col>
             </Row>
           </Col>

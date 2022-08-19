@@ -447,7 +447,7 @@ function IncomeNotificationItem(props: {
     if (sourceType === 'challenge') return `${sourceSlug}`
     if (sourceType === 'betting_streak_bonus')
       return `/${sourceUserUsername}/?show=betting-streak`
-    if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loan`
+    if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
     if (sourceContractCreatorUsername && sourceContractSlug)
       return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
         sourceId ?? '',
