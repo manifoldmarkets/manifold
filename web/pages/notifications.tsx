@@ -388,7 +388,7 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'betting_streak_bonus' && sourceText) {
       reasonText = `for your ${
         parseInt(sourceText) / BETTING_STREAK_BONUS_AMOUNT
-      } day`
+      }-day`
     }
     return (
       <>

@@ -130,7 +130,7 @@ export function UserPage(props: { user: User }) {
           </Col>
           <Col className={'justify-center gap-4'}>
             <Row>
-              <Col className={'w-20 items-center text-gray-500'}>
+              <Col className={'items-center text-gray-500'}>
                 <span
                   className={clsx(
                     'text-md',
@@ -142,7 +142,7 @@ export function UserPage(props: { user: User }) {
                 <span>profit</span>
               </Col>
               <Col
-                className={'w-20 cursor-pointer items-center text-gray-500'}
+                className={'cursor-pointer items-center text-gray-500'}
                 onClick={() => setShowBettingStreakModal(true)}
               >
                 <span>🔥{user.currentBettingStreak ?? 0}</span>

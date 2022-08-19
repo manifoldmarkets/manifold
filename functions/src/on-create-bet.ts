@@ -23,7 +23,6 @@ import {
 } from '../../common/antes'
 import { APIError } from '../../common/api'
 import { User } from '../../common/user'
-import { DAY_MS } from 'common/lib/util/time'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -71,11 +70,14 @@ const updateBettingStreak = async (
   contract: Contract,
   eventId: string
 ) => {
-  const betStreakResetTime = getPreviousBettingStreakResetTime()
-  // If they've already bet after the reset time, they've already gotten their streak bonus
-  if (user.lastBetTime ?? 0 > betStreakResetTime) return
+  const betStreakResetTime = getTodaysBettingStreakResetTime()
+  const lastBetTime = user?.lastBetTime ?? 0
 
-  const newBettingStreak = (user.currentBettingStreak ?? 0) + 1
+  // If they've already bet after the reset time, or if we haven't hit the reset time yet
+  if (lastBetTime > betStreakResetTime || bet.createdTime < betStreakResetTime)
+    return
+
+  const newBettingStreak = (user?.currentBettingStreak ?? 0) + 1
   // Otherwise, add 1 to their betting streak
   await firestore.collection('users').doc(user.id).update({
     currentBettingStreak: newBettingStreak,
@@ -246,16 +248,6 @@ const notifyFills = async (
   )
 }
 
-const getPreviousBettingStreakResetTime = () => {
-  const today = Date.now()
-  let betStreakResetTime = new Date().setUTCHours(
-    BETTING_STREAK_RESET_HOUR,
-    0,
-    0,
-    0
-  )
-  if (today < betStreakResetTime) {
-    betStreakResetTime = betStreakResetTime - DAY_MS
-  }
-  return betStreakResetTime
+const getTodaysBettingStreakResetTime = () => {
+  return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
 }
