@@ -50,11 +50,12 @@ export const sellbet = newEndpoint({}, async (req, auth) => {
 
     /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
     const saleAmount = newBet.sale!.amount
-    const newBalance = user.balance + saleAmount - (bet.loanAmount ?? 0)
+    const newBalance = user.balance + saleAmount + (newBet.loanAmount ?? 0)
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
 
     transaction.update(userDoc, { balance: newBalance })
     transaction.update(betDoc, { isSold: true })
+    // Note: id should have been newBetDoc.id! But leaving it for now so it's consistent.
     transaction.create(newBetDoc, { id: betDoc.id, userId: user.id, ...newBet })
     transaction.update(
       contractDoc,

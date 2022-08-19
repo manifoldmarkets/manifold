@@ -1,8 +1,20 @@
 import { Dictionary, groupBy, sumBy, minBy } from 'lodash'
 import { Bet } from './bet'
 import { getContractBetMetrics } from './calculate'
-import { Contract, CPMMContract, FreeResponseContract, MultipleChoiceContract } from './contract'
+import {
+  Contract,
+  CPMMContract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from './contract'
 import { filterDefined } from './util/array'
+
+const LOAN_WEEKLY_RATE = 0.05
+
+const calculateNewLoan = (investedValue: number, loanTotal: number) => {
+  const netValue = investedValue - loanTotal
+  return netValue * LOAN_WEEKLY_RATE
+}
 
 export const getUserLoanUpdates = (
   bets: Bet[],
@@ -79,11 +91,4 @@ const getFreeResponseContractLoanUpdate = (
       loanTotal,
     }
   })
-}
-
-const LOAN_WEEKLY_RATE = 0.05
-
-const calculateNewLoan = (investedValue: number, loanTotal: number) => {
-  const netValue = investedValue - loanTotal
-  return netValue * LOAN_WEEKLY_RATE
 }
