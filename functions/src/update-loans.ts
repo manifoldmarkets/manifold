@@ -7,6 +7,7 @@ import {
   Contract,
   CPMMContract,
   FreeResponseContract,
+  MultipleChoiceContract,
 } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { filterDefined } from '../../common/util/array'
@@ -23,6 +24,8 @@ export const updateLoans = functions
   .onRun(updateLoansCore)
 
 async function updateLoansCore() {
+  log('Updating loans...')
+
   const [users, contracts, bets] = await Promise.all([
     getValues<User>(firestore.collection('users')),
     getValues<Contract>(
@@ -43,6 +46,7 @@ async function updateLoansCore() {
       )
     )
   )
+  log(`${eligibleUsers.length} users are eligible for loans.`)
 
   const contractsById = keyBy(contracts, (contract) => contract.id)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
@@ -53,6 +57,8 @@ async function updateLoansCore() {
         getUserLoanUpdates(betsByUser[user.id] ?? [], contractsById).betUpdates
     )
     .flat()
+
+  log(`${userLoanUpdates.length} bet updates.`)
 
   const betUpdates = userLoanUpdates.map((update) => ({
     doc: firestore
@@ -79,17 +85,21 @@ async function updateLoansCore() {
     })
     .filter((update) => update.payout > 0)
 
+  log(`${userPayouts.length} user payouts`)
+
   await Promise.all(
     userPayouts.map(({ user, payout }) => payUser(user.id, payout))
   )
 
-  const today = new Date().toDateString().replace(' ', '_')
-  const key = `loan-notifications/${today}`
+  const today = new Date().toDateString().replace(' ', '-')
+  const key = `loan-notifications-${today}`
   await Promise.all(
     userPayouts.map(({ user, payout }) =>
       createLoanIncomeNotification(user, key, payout)
     )
   )
+
+  log('Notifications sent!')
 }
 
 const isUserEligibleForLoan = async (user: User) => {
@@ -117,12 +127,16 @@ const getUserLoanUpdates = (
   const betUpdates = filterDefined(
     contracts
       .map((c) => {
-        if (c.outcomeType === 'BINARY' && c.mechanism === 'cpmm-1') {
+        if (c.mechanism === 'cpmm-1') {
           return getBinaryContractLoanUpdate(c, betsByContract[c.id])
-        } else if (c.outcomeType === 'FREE_RESPONSE')
+        } else if (
+          c.outcomeType === 'FREE_RESPONSE' ||
+          c.outcomeType === 'MULTIPLE_CHOICE'
+        )
           return getFreeResponseContractLoanUpdate(c, betsByContract[c.id])
         else {
-          throw new Error(`Unsupported contract type: ${c.outcomeType}`)
+          // Unsupported contract / mechanism for loans.
+          return []
         }
       })
       .flat()
@@ -156,7 +170,7 @@ const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
 }
 
 const getFreeResponseContractLoanUpdate = (
-  contract: FreeResponseContract,
+  contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
 ) => {
   const openBets = bets.filter((bet) => bet.isSold || bet.sale)
