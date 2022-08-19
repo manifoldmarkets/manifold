@@ -966,6 +966,8 @@ function getReasonForShowingNotification(
     case 'challenge':
       reasonText = 'accepted your challenge'
       break
+    case 'loan':
+      reasonText = 'got a portion of your bet back'
     default:
       reasonText = ''
   }

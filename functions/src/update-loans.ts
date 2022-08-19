@@ -7,6 +7,7 @@ import { PortfolioMetrics, User } from 'common/user'
 import { Dictionary, groupBy, keyBy, minBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { getContractBetMetrics } from 'common/calculate'
+import { createLoanIncomeNotification } from './create-notification'
 
 const firestore = admin.firestore()
 
@@ -68,14 +69,22 @@ async function updateLoansCore() {
         (update) => update.userId === user.id
       )
       return {
-        userId: user.id,
-        delta: sumBy(updates, (update) => update.newLoan),
+        user,
+        payout: sumBy(updates, (update) => update.newLoan),
       }
     })
-    .filter((update) => update.delta > 0)
+    .filter((update) => update.payout > 0)
 
   await Promise.all(
-    userPayouts.map(({ userId, delta }) => payUser(userId, delta))
+    userPayouts.map(({ user, payout }) => payUser(user.id, payout))
+  )
+
+  const today = new Date().toDateString().replace(' ', '_')
+  const key = `loan-notifications/${today}`
+  await Promise.all(
+    userPayouts.map(({ user, payout }) =>
+      createLoanIncomeNotification(user, key, payout)
+    )
   )
 }
 

@@ -18,6 +18,7 @@ import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 import { Challenge } from '../../common/challenge'
 import { richTextToString } from '../../common/util/parse'
+import { formatMoney } from 'common/util/format'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -467,6 +468,25 @@ export const createReferralNotification = async (
     sourceTitle: referredByGroup
       ? referredByGroup.name
       : referredByContract?.question,
+  }
+  await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createLoanIncomeNotification = async (
+  toUser: User,
+  idempotencyKey: string,
+  income: number
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: 'loan_income',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceText: formatMoney(income),
   }
   await notificationRef.set(removeUndefinedProps(notification))
 }
