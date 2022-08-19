@@ -16,7 +16,13 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   amount: number
   token: 'M$' // | 'USD' | MarketOutcome
 
-  category: 'CHARITY' | 'MANALINK' | 'TIP' | 'REFERRAL' | 'UNIQUE_BETTOR_BONUS'
+  category:
+    | 'CHARITY'
+    | 'MANALINK'
+    | 'TIP'
+    | 'REFERRAL'
+    | 'UNIQUE_BETTOR_BONUS'
+    | 'BETTING_STREAK_BONUS'
 
   // Any extra data
   data?: { [key: string]: any }
@@ -57,7 +63,7 @@ type Referral = {
 type Bonus = {
   fromType: 'BANK'
   toType: 'USER'
-  category: 'UNIQUE_BETTOR_BONUS'
+  category: 'UNIQUE_BETTOR_BONUS' | 'BETTING_STREAK_BONUS'
 }
 
 export type DonationTxn = Txn & Donation

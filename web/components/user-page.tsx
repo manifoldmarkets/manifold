@@ -28,6 +28,7 @@ import { ReferralsButton } from 'web/components/referrals-button'
 import { formatMoney } from 'common/util/format'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
 
 export function UserLink(props: {
   name: string
@@ -65,10 +66,13 @@ export function UserPage(props: { user: User }) {
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
     setShowConfetti(claimedMana)
+    const showBettingStreak = router.query['show'] === 'betting-streak'
+    setShowBettingStreakModal(showBettingStreak)
   }, [router])
 
   const profit = user.profitCached.allTime
@@ -80,9 +84,14 @@ export function UserPage(props: { user: User }) {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-      {showConfetti && (
-        <FullscreenConfetti recycle={false} numberOfPieces={300} />
-      )}
+      {showConfetti ||
+        (showBettingStreakModal && (
+          <FullscreenConfetti recycle={false} numberOfPieces={300} />
+        ))}
+      <BettingStreakModal
+        isOpen={showBettingStreakModal}
+        setOpen={setShowBettingStreakModal}
+      />
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
@@ -114,22 +123,34 @@ export function UserPage(props: { user: User }) {
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}
       <Col className="mx-4 -mt-6">
-        <Row className={'items-center gap-2'}>
-          <span className="text-2xl font-bold">{user.name}</span>
-          <span className="mt-1 text-gray-500">
-            <span
-              className={clsx(
-                'text-md',
-                profit >= 0 ? 'text-green-600' : 'text-red-400'
-              )}
-            >
-              {formatMoney(profit)}
-            </span>{' '}
-            profit
-          </span>
+        <Row className={'justify-between'}>
+          <Col>
+            <span className="text-2xl font-bold">{user.name}</span>
+            <span className="text-gray-500">@{user.username}</span>
+          </Col>
+          <Col className={'justify-center gap-4'}>
+            <Row>
+              <Col className={'items-center text-gray-500'}>
+                <span
+                  className={clsx(
+                    'text-md',
+                    profit >= 0 ? 'text-green-600' : 'text-red-400'
+                  )}
+                >
+                  {formatMoney(profit)}
+                </span>
+                <span>profit</span>
+              </Col>
+              <Col
+                className={'cursor-pointer items-center text-gray-500'}
+                onClick={() => setShowBettingStreakModal(true)}
+              >
+                <span>🔥{user.currentBettingStreak ?? 0}</span>
+                <span>streak</span>
+              </Col>
+            </Row>
+          </Col>
         </Row>
-        <span className="text-gray-500">@{user.username}</span>
-
         <Spacer h={4} />
         {user.bio && (
           <>
