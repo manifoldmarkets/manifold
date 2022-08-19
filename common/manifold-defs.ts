@@ -103,13 +103,6 @@ export type LiteUser = {
     creatorVolumeCached: number;
 };
 
-export enum ResolutionOutcome {
-    YES = "YES",
-    NO = "NO",
-    PROB = "MKT",
-    CANCEL = "CANCEL",
-}
-
 export type Group = {
     id: string;
     slug: string;

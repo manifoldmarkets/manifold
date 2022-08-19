@@ -1,4 +1,4 @@
-import { LiteMarket, Bet, LiteUser, ResolutionOutcome, FullMarket } from "common/manifold-defs";
+import { LiteMarket, Bet, LiteUser, FullMarket } from "common/manifold-defs";
 import { FullBet } from "common/transaction";
 import App from "./app";
 import log from "./logger";
@@ -11,6 +11,7 @@ import { PacketResolved } from "common/packets";
 const { keyBy, mapValues, sumBy, groupBy } = lodash;
 import * as Packet from "common/packet-ids";
 import _ from "lodash";
+import { ResolutionOutcome } from "common/outcome";
 
 export class Market {
     private readonly app: App;

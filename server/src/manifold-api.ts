@@ -3,6 +3,7 @@ import fetch, { Response } from "node-fetch";
 import * as ManifoldAPI from "common/manifold-defs";
 import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException } from "common/exceptions";
 import log from "./logger";
+import { ResolutionOutcome } from "common/outcome";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -127,7 +128,7 @@ export async function createBinaryMarket(APIKey: string, question: string, descr
     return <Promise<ManifoldAPI.LiteMarket>>(await post(`${APIBase}market`, APIKey, requestData)).json();
 }
 
-export async function resolveBinaryMarket(marketID: string, APIKey: string, outcome: ManifoldAPI.ResolutionOutcome): Promise<Response> {
+export async function resolveBinaryMarket(marketID: string, APIKey: string, outcome: ResolutionOutcome): Promise<Response> {
     return post(`${APIBase}market/${marketID}/resolve`, APIKey, { outcome: outcome });
 }
 

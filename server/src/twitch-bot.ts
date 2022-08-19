@@ -1,6 +1,6 @@
 import { ChatUserstate, Client } from "tmi.js";
 
-import { LiteUser, ResolutionOutcome } from "common/manifold-defs";
+import { LiteUser } from "common/manifold-defs";
 import { InsufficientBalanceException, ResourceNotFoundException, UserNotRegisteredException } from "common/exceptions";
 
 import App from "./app";
@@ -9,6 +9,7 @@ import User from "./user";
 import { Market } from "./market";
 import * as Manifold from "./manifold-api";
 import { PUBLIC_FACING_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from "./envs";
+import { ResolutionOutcome } from "common/outcome";
 
 const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 

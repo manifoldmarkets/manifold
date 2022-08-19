@@ -40,16 +40,13 @@ export default class AppFirestore {
         return new User(data);
     }
 
-    async getTwitchAccountForControlToken(controlToken: string): Promise<string> {
-        console.log("Examining control token: " + controlToken);
-        if (!controlToken) {
-            return null;
-        }
+    async getUserForControlToken(controlToken: string): Promise<User> {
+        log.debug(`Examining control token: ${controlToken}`);
+        if (!controlToken) return null;
         const docs = await getDocs(query(this.userCollection, where("controlToken", "==", controlToken)));
         if (docs.size < 1) return null;
         const data = <UserData>docs.docs[0].data();
-        console.log(data);
-        return data.twitchLogin;
+        return new User(data);
     }
 
     async addNewUser(user: User) {

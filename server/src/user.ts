@@ -1,4 +1,5 @@
 import * as ManifoldAPI from "common/manifold-defs";
+import { ResolutionOutcome } from "common/outcome";
 import { Response } from "node-fetch";
 import * as Manifold from "./manifold-api";
 
@@ -33,7 +34,7 @@ export default class User {
         return Manifold.createBinaryMarket(this.data.APIKey, question, description, initialProb_percent, groupID);
     }
 
-    public async resolveBinaryMarket(marketID: string, outcome: ManifoldAPI.ResolutionOutcome) {
+    public async resolveBinaryMarket(marketID: string, outcome: ResolutionOutcome) {
         return Manifold.resolveBinaryMarket(marketID, this.data.APIKey, outcome);
     }
 

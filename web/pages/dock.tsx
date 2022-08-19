@@ -1,21 +1,21 @@
-import { GroupSelector } from "../components/group-selector";
-import { LiteMarket, LiteUser } from "common/manifold-defs";
-import { Group } from "common/group";
-import clsx from "clsx";
-import { ConfirmationButton } from "../components/confirmation-button";
-import { Title } from "web/components/title";
-import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
-import Textarea from "react-expanding-textarea";
-import { InfoTooltip } from "web/components/info-tooltip";
-import { Row } from "web/components/layout/row";
-import { Col } from "web/components/layout/col";
 import { Transition } from "@headlessui/react";
-import ContractCard from "web/components/contract-card";
-import { CONTRACT_ANTE, formatMoney, Resolution } from "web/utils/utils";
-import io, { Socket } from "socket.io-client";
+import clsx from "clsx";
+import { Group } from "common/group";
+import { LiteMarket, LiteUser } from "common/manifold-defs";
 import * as Packets from "common/packet-ids";
 import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
 import Head from "next/head";
+import { Fragment, ReactNode, useEffect, useState } from "react";
+import Textarea from "react-expanding-textarea";
+import io, { Socket } from "socket.io-client";
+import ContractCard from "web/components/contract-card";
+import { InfoTooltip } from "web/components/info-tooltip";
+import { Col } from "web/components/layout/col";
+import { Row } from "web/components/layout/row";
+import { Title } from "web/components/title";
+import { CONTRACT_ANTE, formatMoney, Resolution } from "web/utils/utils";
+import { ConfirmationButton } from "../components/confirmation-button";
+import { GroupSelector } from "../components/group-selector";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -94,6 +94,7 @@ export default () => {
         socket.on("connect", () => {
             console.debug("Socked connected to server.");
             setConnectedToServer(true);
+            setSelectedContract(undefined);
         });
         socket.on("disconnect", () => {
             setConnectedToServer(false);
@@ -105,6 +106,7 @@ export default () => {
         });
 
         socket.on(Packets.SELECT_MARKET_ID, async (marketID) => {
+            console.debug("Selecting market: " + marketID);
             const market = await fetchMarketById(marketID);
             setSelectedContract(market);
         });
@@ -305,15 +307,15 @@ function ResolutionPanel(props: { contract: LiteMarket; onUnfeatureMarket: () =>
                 {outcome === "YES" ? (
                     <>
                         Winnings will be paid out to YES bettors.
-                        <br />
-                        <br />
+                        {/* <br /> */}
+                        {/* <br /> */}
                         {/* You will earn {earnedFees}. */}
                     </>
                 ) : outcome === "NO" ? (
                     <>
                         Winnings will be paid out to NO bettors.
-                        <br />
-                        <br />
+                        {/* <br /> */}
+                        {/* <br /> */}
                         {/* You will earn {earnedFees}. */}
                     </>
                 ) : outcome === "CANCEL" ? (
@@ -326,7 +328,7 @@ function ResolutionPanel(props: { contract: LiteMarket; onUnfeatureMarket: () =>
                     //         You will earn {earnedFees}.
                     //     </Col>
                     // )
-                    <p className="text-sm">Resolving this market will immediately pay out traders.</p>
+                    <p>Resolving this market will immediately pay out traders.</p>
                 )}
             </div>
 

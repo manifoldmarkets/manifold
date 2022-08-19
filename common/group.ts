@@ -14,6 +14,7 @@ export type Group = {
     mostRecentChatActivityTime?: number;
     mostRecentContractAddedTime?: number;
 };
+
 export const MAX_GROUP_NAME_LENGTH = 75;
 export const MAX_ABOUT_LENGTH = 140;
 export const MAX_ID_LENGTH = 60;
