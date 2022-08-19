@@ -392,63 +392,54 @@ export const sendNewAnswerEmail = async (
   )
 }
 
-export const sendSixContractsEmail = async (
+export const sendInterestingMarketsEmail = async (
+  user: User,
   privateUser: PrivateUser,
-  contractsToSend: Contract[]
+  contractsToSend: Contract[],
+  deliveryTime?: string
 ) => {
-  const emailType = 'weekly-trending'
-  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${privateUser.id}&type=${emailType}`
   if (
     !privateUser ||
     !privateUser.email ||
     privateUser?.unsubscribedFromWeeklyTrendingEmails
   )
     return
+
+  const emailType = 'weekly-trending'
+  const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${privateUser.id}&type=${emailType}`
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+
   await sendTemplateEmail(
     privateUser.email,
-    contractsToSend[0].question + ' and 5 more questions for you.',
-    // used to be 3 and I can't change the template name!
-    '3-trending-markets',
+    'Interesting markets on Manifold',
+    'interesting-markets',
     {
+      name: firstName,
+      unsubscribeLink: unsubscribeUrl,
+
       question1Title: contractsToSend[0].question,
-      question1Description: getTextDescription(contractsToSend[0]),
       question1Link: contractUrl(contractsToSend[0]),
       question1ImgSrc: imageSourceUrl(contractsToSend[0]),
       question2Title: contractsToSend[1].question,
-      question2Description: getTextDescription(contractsToSend[1]),
       question2Link: contractUrl(contractsToSend[1]),
       question2ImgSrc: imageSourceUrl(contractsToSend[1]),
       question3Title: contractsToSend[2].question,
-      question3Description: getTextDescription(contractsToSend[2]),
       question3Link: contractUrl(contractsToSend[2]),
       question3ImgSrc: imageSourceUrl(contractsToSend[2]),
       question4Title: contractsToSend[3].question,
-      question4Description: getTextDescription(contractsToSend[3]),
       question4Link: contractUrl(contractsToSend[3]),
       question4ImgSrc: imageSourceUrl(contractsToSend[3]),
       question5Title: contractsToSend[4].question,
-      question5Description: getTextDescription(contractsToSend[4]),
       question5Link: contractUrl(contractsToSend[4]),
       question5ImgSrc: imageSourceUrl(contractsToSend[4]),
       question6Title: contractsToSend[5].question,
-      question6Description: getTextDescription(contractsToSend[5]),
       question6Link: contractUrl(contractsToSend[5]),
       question6ImgSrc: imageSourceUrl(contractsToSend[5]),
-      unsubscribeLink: unsubscribeUrl,
-    }
+    },
+    deliveryTime ? { 'o:deliverytime': deliveryTime } : undefined
   )
-}
-
-function getTextDescription(contract: Contract) {
-  const { description } = contract
-  let text = ''
-  if (typeof description === 'string') text = description
-  else text = richTextToString(description)
-
-  if (text.length > 300) {
-    return text.substring(0, 300) + '...'
-  }
-  return text
 }
 
 function contractUrl(contract: Contract) {

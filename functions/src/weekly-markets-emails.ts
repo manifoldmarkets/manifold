@@ -2,9 +2,9 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import { getPrivateUser, getValues, isProd, log } from './utils'
+import { getPrivateUser, getUser, getValues, isProd, log } from './utils'
 import { filterDefined } from '../../common/util/array'
-import { sendSixContractsEmail } from './emails'
+import { sendInterestingMarketsEmail } from './emails'
 import { createRNG, shuffle } from '../../common/util/random'
 import { DAY_MS } from '../../common/util/time'
 
@@ -17,7 +17,7 @@ export const weeklyMarketsEmails = functions
 
 const firestore = admin.firestore()
 
-async function getTrendingContracts() {
+export async function getTrendingContracts() {
   return await getValues<Contract>(
     firestore
       .collection('contracts')
@@ -26,7 +26,7 @@ async function getTrendingContracts() {
       .where('visibility', '==', 'public')
       .orderBy('closeTime', 'asc')
       .orderBy('popularityScore', 'desc')
-      .limit(50)
+      .limit(15)
   )
 }
 
@@ -67,7 +67,10 @@ async function sendTrendingMarketsEmailsToAllUsers() {
       numEmailsToSend
     )
 
-    await sendSixContractsEmail(privateUser, contractsToSend)
+    const user = await getUser(privateUser.id)
+    if (!user) continue
+
+    await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
   }
 }
 
