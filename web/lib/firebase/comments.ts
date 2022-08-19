@@ -11,7 +11,7 @@ import {
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
 import { User } from 'common/user'
-import { Comment } from 'common/comment'
+import { Comment, ContractComment, GroupComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { track } from '@amplitude/analytics-browser'
 import { JSONContent } from '@tiptap/react'
@@ -31,7 +31,8 @@ export async function createCommentOnContract(
   const ref = betId
     ? doc(getCommentsCollection(contractId), betId)
     : doc(getCommentsCollection(contractId))
-  const comment: Comment = removeUndefinedProps({
+  // contract slug and question are set via trigger
+  const comment = removeUndefinedProps({
     id: ref.id,
     commentType: 'contract',
     contractId,
@@ -60,7 +61,7 @@ export async function createCommentOnGroup(
   replyToCommentId?: string
 ) {
   const ref = doc(getCommentsOnGroupCollection(groupId))
-  const comment: Comment = removeUndefinedProps({
+  const comment = removeUndefinedProps({
     id: ref.id,
     commentType: 'group',
     groupId,
@@ -96,7 +97,7 @@ export async function listAllComments(contractId: string) {
 }
 
 export async function listAllCommentsOnGroup(groupId: string) {
-  const comments = await getValues<Comment>(
+  const comments = await getValues<GroupComment>(
     getCommentsOnGroupCollection(groupId)
   )
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
@@ -105,9 +106,9 @@ export async function listAllCommentsOnGroup(groupId: string) {
 
 export function listenForCommentsOnContract(
   contractId: string,
-  setComments: (comments: Comment[]) => void
+  setComments: (comments: ContractComment[]) => void
 ) {
-  return listenForValues<Comment>(
+  return listenForValues<ContractComment>(
     getCommentsCollection(contractId),
     (comments) => {
       comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
@@ -117,9 +118,9 @@ export function listenForCommentsOnContract(
 }
 export function listenForCommentsOnGroup(
   groupId: string,
-  setComments: (comments: Comment[]) => void
+  setComments: (comments: GroupComment[]) => void
 ) {
-  return listenForValues<Comment>(
+  return listenForValues<GroupComment>(
     getCommentsOnGroupCollection(groupId),
     (comments) => {
       comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
