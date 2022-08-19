@@ -565,6 +565,30 @@ Improve the lives of the world's most vulnerable people.
 Reduce the number of easily preventable deaths worldwide.
 Work towards sustainable, systemic change.`,
   },
+  {
+    name: 'YIMBY Law',
+    website: 'https://www.yimbylaw.org/',
+    photo: 'https://i.imgur.com/zlzp21Z.png',
+    preview:
+      'YIMBY Law works to make housing in California more accessible and affordable, by enforcing state housing laws.',
+    description: `
+    YIMBY Law works to make housing in California more accessible and affordable. Our method is to enforce state housing laws, and some examples are outlined below. We send letters to cities considering zoning or general plan compliant housing developments informing them of their duties under state law, and sue them when they do not comply.
+
+If you would like to support our work, you can do so by getting involved or by donating.`,
+  },
+    {
+    name: 'CaRLA',
+    website: 'https://carlaef.org/',
+    photo: 'https://i.imgur.com/IsNVTOY.png',
+    preview:
+      'The California Renters Legal Advocacy and Education Fund’s core mission is to make lasting impacts to improve the affordability and accessibility of housing to current and future Californians, especially low- and moderate-income people and communities of color.',
+    description: `
+    The California Renters Legal Advocacy and Education Fund’s core mission is to make lasting impacts to improve the affordability and accessibility of housing to current and future Californians, especially low- and moderate-income people and communities of color.
+
+CaRLA uses legal advocacy and education to ensure all cities comply with their own zoning and state housing laws and do their part to help solve the state’s housing shortage.
+
+In addition to housing impact litigation, we provide free legal aid, education and workshops, counseling and advocacy to advocates, homeowners, small developers, and city and state government officials.`,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
