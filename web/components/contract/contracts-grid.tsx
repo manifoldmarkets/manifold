@@ -9,6 +9,7 @@ import { useCallback } from 'react'
 import clsx from 'clsx'
 import { LoadingIndicator } from '../loading-indicator'
 import { VisibilityObserver } from '../visibility-observer'
+import Masonry from 'react-masonry-css'
 
 export type ContractHighlightOptions = {
   contractIds?: string[]
@@ -61,50 +62,14 @@ export function ContractsGrid(props: {
       </p>
     )
   }
-  // Reorganize the contracts so that the masonry layout shows them in the original order
-  // E.g. from [0, 1, 2, 3] => [0, 2, 1, 3]
-  // E.g. from [0, 1, 2, 3, 4, 5, 6] => [0, 2, 4, 1, 3, 5, 6]
-  const halfway = Math.floor(contracts.length / 2)
-  function reorder(i: number) {
-    return i < halfway
-      ? i * 2
-      : Math.min((i - halfway) * 2 + 1, (contracts?.length ?? 1) - 1)
-  }
-  const twoColContracts = Array.from(
-    { length: contracts.length },
-    (_, i) => contracts[reorder(i)]
-  )
 
   return (
     <Col className="gap-8">
-      <div
-        className={clsx(
-          'hidden w-full gap-4 space-y-4 md:block md:columns-2',
-          gridClassName
-        )}
-      >
-        {twoColContracts.map((contract) => (
-          <ContractCard
-            contract={contract}
-            key={contract.id}
-            showTime={showTime}
-            onClick={
-              onContractClick ? () => onContractClick(contract) : undefined
-            }
-            hideQuickBet={hideQuickBet}
-            hideGroupLink={hideGroupLink}
-            className={clsx(
-              'break-inside-avoid-column',
-              contractIds?.includes(contract.id) && highlightClassName
-            )}
-          />
-        ))}
-      </div>
-      <div
-        className={clsx(
-          'w-full columns-1 gap-4 space-y-4 md:hidden',
-          gridClassName
-        )}
+      <Masonry
+        // Show only 1 column on tailwind md = 768px
+        breakpointCols={{ default: 2, 768: 1 }}
+        className="-ml-4 flex w-auto"
+        columnClassName="pl-4 bg-clip-padding"
       >
         {contracts.map((contract) => (
           <ContractCard
@@ -117,12 +82,12 @@ export function ContractsGrid(props: {
             hideQuickBet={hideQuickBet}
             hideGroupLink={hideGroupLink}
             className={clsx(
-              'break-inside-avoid-column',
+              'mb-4 break-inside-avoid-column',
               contractIds?.includes(contract.id) && highlightClassName
             )}
           />
         ))}
-      </div>
+      </Masonry>
       <VisibilityObserver
         onVisibilityUpdated={onVisibilityUpdated}
         className="relative -top-96 h-1"
