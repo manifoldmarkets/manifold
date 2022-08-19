@@ -19,6 +19,7 @@ import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
+import { Row } from 'web/components/layout/row'
 
 function getNavigation() {
   return [
@@ -69,13 +70,20 @@ export function BottomNavBar() {
             trackingEventName: 'profile',
             href: `/${user.username}?tab=bets`,
             icon: () => (
-              <Avatar
-                className="mx-auto my-1"
-                size="xs"
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-                noLink
-              />
+              <Row className={'flex-wrap items-center justify-center'}>
+                <Avatar
+                  className="my-1"
+                  size="xs"
+                  username={user.username}
+                  avatarUrl={user.avatarUrl}
+                  noLink
+                />
+                {user.currentBettingStreak && user.currentBettingStreak > 0 && (
+                  <div className={'absolute ml-14 mb-3 text-xs'}>
+                    <span>🔥{user.currentBettingStreak}</span>
+                  </div>
+                )}
+              </Row>
             ),
           }}
         />
