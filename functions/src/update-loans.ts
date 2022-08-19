@@ -73,17 +73,15 @@ async function updateLoansCore() {
 
   await writeAsync(firestore, betUpdates)
 
-  const userPayouts = eligibleUsers
-    .map((user) => {
-      const updates = userLoanUpdates.filter(
-        (update) => update.userId === user.id
-      )
-      return {
-        user,
-        payout: sumBy(updates, (update) => update.newLoan),
-      }
-    })
-    .filter((update) => update.payout > 0)
+  const userPayouts = eligibleUsers.map((user) => {
+    const updates = userLoanUpdates.filter(
+      (update) => update.userId === user.id
+    )
+    return {
+      user,
+      payout: sumBy(updates, (update) => update.newLoan),
+    }
+  })
 
   log(`${userPayouts.length} user payouts`)
 
@@ -156,7 +154,7 @@ const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
   const newLoan = calculateNewLoan(invested, loanAmount)
-  if (newLoan <= 0 || !oldestBet) return undefined
+  if (isNaN(newLoan) || newLoan <= 0 || !oldestBet) return undefined
 
   const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
 
@@ -179,6 +177,8 @@ const getFreeResponseContractLoanUpdate = (
     const loanAmount = bet.loanAmount ?? 0
     const newLoan = calculateNewLoan(bet.amount, loanAmount)
     const loanTotal = loanAmount + newLoan
+
+    if (isNaN(newLoan) || newLoan <= 0) return undefined
 
     return {
       userId: bet.userId,
