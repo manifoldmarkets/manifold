@@ -9,11 +9,7 @@ import {
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
-import {
-  Contract,
-  contractMetrics,
-  updateContract,
-} from 'web/lib/firebase/contracts'
+import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
@@ -35,6 +31,7 @@ import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import clsx from 'clsx'
+import { contractMetrics } from 'common/contract-details'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -242,25 +239,6 @@ export function ContractDetails(props: {
 
       {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
     </Row>
-  )
-}
-
-// String version of the above, to send to the OpenGraph image generator
-export function contractTextDetails(contract: Contract) {
-  const { closeTime, tags } = contract
-  const { createdDate, resolvedDate, volumeLabel } = contractMetrics(contract)
-
-  const hashtags = tags.map((tag) => `#${tag}`)
-
-  return (
-    `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +
-    (closeTime
-      ? ` • ${closeTime > Date.now() ? 'Closes' : 'Closed'} ${dayjs(
-          closeTime
-        ).format('MMM D, h:mma')}`
-      : '') +
-    ` • ${volumeLabel}` +
-    (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
   )
 }
 

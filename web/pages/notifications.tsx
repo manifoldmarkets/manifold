@@ -377,6 +377,7 @@ function IncomeNotificationItem(props: {
   function reasonAndLink(simple: boolean) {
     const { sourceText } = notification
     let reasonText = ''
+
     if (sourceType === 'bonus' && sourceText) {
       reasonText = !simple
         ? `Bonus for ${
@@ -385,13 +386,20 @@ function IncomeNotificationItem(props: {
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
+    } else if (sourceType === 'betting_streak_bonus') {
+      reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested bets returned as`
-    } else if (sourceType === 'betting_streak_bonus' && sourceText) {
-      reasonText = `for your ${
-        parseInt(sourceText) / BETTING_STREAK_BONUS_AMOUNT
-      }-day`
     }
+
+    const bettingStreakText =
+      sourceType === 'betting_streak_bonus' &&
+      (sourceText
+        ? `🔥 ${
+            parseInt(sourceText) / BETTING_STREAK_BONUS_AMOUNT
+          } day Betting Streak`
+        : 'Betting Streak')
+
     return (
       <>
         {reasonText}
@@ -405,13 +413,13 @@ function IncomeNotificationItem(props: {
           )
         ) : sourceType === 'betting_streak_bonus' ? (
           simple ? (
-            <span className={'ml-1 font-bold'}>Betting Streak</span>
+            <span className={'ml-1 font-bold'}>{bettingStreakText}</span>
           ) : (
             <SiteLink
               className={'ml-1 font-bold'}
               href={'/betting-streak-bonus'}
             >
-              Betting Streak
+              {bettingStreakText}
             </SiteLink>
           )
         ) : (

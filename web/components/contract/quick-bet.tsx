@@ -23,7 +23,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api'
-import { getBinaryProb, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon'
 import { Col } from '../layout/col'
@@ -34,6 +34,7 @@ import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUnfilledBets } from 'web/hooks/use-bets'
+import { getBinaryProb } from 'common/contract-details'
 
 const BET_SIZE = 10
 

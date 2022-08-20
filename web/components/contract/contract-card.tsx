@@ -120,7 +120,7 @@ export function ContractCard(props: {
               truncate={'long'}
             />
           ) : (
-            <FreeResponseTopAnswer contract={contract} truncate="long" />
+            <FreeResponseTopAnswer contract={contract} />
           ))}
       </Col>
       {showQuickBet ? (
@@ -230,10 +230,9 @@ export function BinaryResolutionOrChance(props: {
 
 function FreeResponseTopAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  truncate: 'short' | 'long' | 'none'
   className?: string
 }) {
-  const { contract, truncate } = props
+  const { contract } = props
 
   const topAnswer = getTopAnswer(contract)
 
@@ -241,7 +240,7 @@ function FreeResponseTopAnswer(props: {
     <AnswerLabel
       className="!text-gray-600"
       answer={topAnswer}
-      truncate={truncate}
+      truncate="long"
     />
   ) : null
 }

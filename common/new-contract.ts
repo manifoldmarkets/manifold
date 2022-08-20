@@ -9,6 +9,7 @@ import {
   Numeric,
   outcomeType,
   PseudoNumeric,
+  visibility,
 } from './contract'
 import { User } from './user'
 import { parseTags, richTextToString } from './util/parse'
@@ -34,7 +35,8 @@ export function getNewContract(
   isLogScale: boolean,
 
   // for multiple choice
-  answers: string[]
+  answers: string[],
+  visibility: visibility
 ) {
   const tags = parseTags(
     [
@@ -70,7 +72,7 @@ export function getNewContract(
     description,
     tags,
     lowercaseTags,
-    visibility: 'public',
+    visibility,
     isResolved: false,
     createdTime: Date.now(),
     closeTime,

@@ -551,7 +551,12 @@ function AddContractButton(props: { group: Group; user: User }) {
   return (
     <>
       <div className={'flex justify-center'}>
-        <Button size="sm" color="gradient" onClick={() => setOpen(true)}>
+        <Button
+          className="whitespace-nowrap"
+          size="sm"
+          color="gradient"
+          onClick={() => setOpen(true)}
+        >
           Add market
         </Button>
       </div>
@@ -607,9 +612,6 @@ function AddContractButton(props: { group: Group; user: User }) {
               user={user}
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
-              overrideGridClassName={
-                'flex grid grid-cols-1 sm:grid-cols-2 flex-col gap-3 p-1'
-              }
               cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
               additionalFilter={{ excludeContractIds: group.contractIds }}
               highlightOptions={{

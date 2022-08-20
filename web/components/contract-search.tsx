@@ -83,7 +83,6 @@ export function ContractSearch(props: {
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
-  overrideGridClassName?: string
   cardHideOptions?: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
@@ -99,7 +98,6 @@ export function ContractSearch(props: {
     defaultFilter,
     additionalFilter,
     onContractClick,
-    overrideGridClassName,
     hideOrderSelector,
     cardHideOptions,
     highlightOptions,
@@ -183,7 +181,6 @@ export function ContractSearch(props: {
         loadMore={performQuery}
         showTime={showTime}
         onContractClick={onContractClick}
-        overrideGridClassName={overrideGridClassName}
         highlightOptions={highlightOptions}
         cardHideOptions={cardHideOptions}
       />
@@ -258,9 +255,12 @@ function ContractSearchControls(props: {
     ? additionalFilters
     : [
         ...additionalFilters,
+        additionalFilter ? '' : 'visibility:public',
+
         filter === 'open' ? 'isResolved:false' : '',
         filter === 'closed' ? 'isResolved:false' : '',
         filter === 'resolved' ? 'isResolved:true' : '',
+
         pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
           ? `groupLinks.slug:${pillFilter}`
           : '',

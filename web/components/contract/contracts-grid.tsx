@@ -9,6 +9,7 @@ import { useCallback } from 'react'
 import clsx from 'clsx'
 import { LoadingIndicator } from '../loading-indicator'
 import { VisibilityObserver } from '../visibility-observer'
+import Masonry from 'react-masonry-css'
 
 export type ContractHighlightOptions = {
   contractIds?: string[]
@@ -20,7 +21,6 @@ export function ContractsGrid(props: {
   loadMore?: () => void
   showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
-  overrideGridClassName?: string
   cardHideOptions?: {
     hideQuickBet?: boolean
     hideGroupLink?: boolean
@@ -32,7 +32,6 @@ export function ContractsGrid(props: {
     showTime,
     loadMore,
     onContractClick,
-    overrideGridClassName,
     cardHideOptions,
     highlightOptions,
   } = props
@@ -64,12 +63,11 @@ export function ContractsGrid(props: {
 
   return (
     <Col className="gap-8">
-      <ul
-        className={clsx(
-          overrideGridClassName
-            ? overrideGridClassName
-            : 'grid w-full grid-cols-1 gap-4 md:grid-cols-2'
-        )}
+      <Masonry
+        // Show only 1 column on tailwind's md breakpoint (768px)
+        breakpointCols={{ default: 2, 768: 1 }}
+        className="-ml-4 flex w-auto"
+        columnClassName="pl-4 bg-clip-padding"
       >
         {contracts.map((contract) => (
           <ContractCard
@@ -81,14 +79,13 @@ export function ContractsGrid(props: {
             }
             hideQuickBet={hideQuickBet}
             hideGroupLink={hideGroupLink}
-            className={
-              contractIds?.includes(contract.id)
-                ? highlightClassName
-                : undefined
-            }
+            className={clsx(
+              'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
+              contractIds?.includes(contract.id) && highlightClassName
+            )}
           />
         ))}
-      </ul>
+      </Masonry>
       <VisibilityObserver
         onVisibilityUpdated={onVisibilityUpdated}
         className="relative -top-96 h-1"

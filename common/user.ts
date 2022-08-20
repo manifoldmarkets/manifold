@@ -59,6 +59,7 @@ export type PrivateUser = {
   unsubscribedFromCommentEmails?: boolean
   unsubscribedFromAnswerEmails?: boolean
   unsubscribedFromGenericEmails?: boolean
+  unsubscribedFromWeeklyTrendingEmails?: boolean
   manaBonusEmailSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string

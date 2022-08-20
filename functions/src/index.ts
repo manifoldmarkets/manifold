@@ -5,6 +5,7 @@ import { EndpointDefinition } from './api'
 admin.initializeApp()
 
 // v1
+export * from './on-create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-view'
@@ -26,6 +27,7 @@ export * from './on-create-comment-on-group'
 export * from './on-create-txn'
 export * from './on-delete-group'
 export * from './score-contracts'
+export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
 
 // v2

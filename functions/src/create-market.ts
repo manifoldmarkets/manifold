@@ -10,6 +10,7 @@ import {
   MultipleChoiceContract,
   NumericContract,
   OUTCOME_TYPES,
+  VISIBILITIES,
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
@@ -69,6 +70,7 @@ const bodySchema = z.object({
   ),
   outcomeType: z.enum(OUTCOME_TYPES),
   groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+  visibility: z.enum(VISIBILITIES).optional(),
 })
 
 const binarySchema = z.object({
@@ -90,8 +92,15 @@ const multipleChoiceSchema = z.object({
 })
 
 export const createmarket = newEndpoint({}, async (req, auth) => {
-  const { question, description, tags, closeTime, outcomeType, groupId } =
-    validate(bodySchema, req.body)
+  const {
+    question,
+    description,
+    tags,
+    closeTime,
+    outcomeType,
+    groupId,
+    visibility = 'public',
+  } = validate(bodySchema, req.body)
 
   let min, max, initialProb, isLogScale, answers
 
@@ -196,7 +205,8 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     min ?? 0,
     max ?? 0,
     isLogScale ?? false,
-    answers ?? []
+    answers ?? [],
+    visibility
   )
 
   if (ante) await chargeUser(user.id, ante, true)
