@@ -551,7 +551,12 @@ function AddContractButton(props: { group: Group; user: User }) {
   return (
     <>
       <div className={'flex justify-center'}>
-        <Button size="sm" color="gradient" onClick={() => setOpen(true)}>
+        <Button
+          className="whitespace-nowrap"
+          size="sm"
+          color="gradient"
+          onClick={() => setOpen(true)}
+        >
           Add market
         </Button>
       </div>
