@@ -255,12 +255,11 @@ function ContractSearchControls(props: {
     ? additionalFilters
     : [
         ...additionalFilters,
+        'visibility:public',
+
         filter === 'open' ? 'isResolved:false' : '',
         filter === 'closed' ? 'isResolved:false' : '',
         filter === 'resolved' ? 'isResolved:true' : '',
-
-        // Newest sort requires public visibility.
-        sort === 'newest' ? 'visibility:public' : '',
 
         pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
           ? `groupLinks.slug:${pillFilter}`

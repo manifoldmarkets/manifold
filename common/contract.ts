@@ -31,7 +31,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   description: string | JSONContent // More info about what the contract is about
   tags: string[]
   lowercaseTags: string[]
-  visibility: 'public' | 'unlisted'
+  visibility: visibility
 
   createdTime: number // Milliseconds since epoch
   lastUpdatedTime?: number // Updated on new bet or comment
@@ -143,3 +143,6 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 export const MAX_TAG_LENGTH = 60
 
 export const CPMM_MIN_POOL_QTY = 0.01
+
+export type visibility = 'public' | 'unlisted'
+export const VISIBILITIES = ['public', 'unlisted'] as const

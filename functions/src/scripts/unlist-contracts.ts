@@ -22,7 +22,7 @@ async function unlistContracts() {
     const contractRef = firestore.doc(`contracts/${contract.id}`)
 
     console.log('Updating', contract.question)
-    await contractRef.update({ visibility: 'soft-unlisted' })
+    await contractRef.update({ visibility: 'unlisted' })
   }
 }
 
