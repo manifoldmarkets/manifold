@@ -1,4 +1,3 @@
-
 import { DOMAIN } from '../../common/envs/constants'
 import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
@@ -192,7 +191,6 @@ Cofounder of Manifold Markets
 https://manifold.markets
  `
 
-
   await sendTextEmail(
     privateUser.email,
     'How are you finding Manifold?',
@@ -238,7 +236,8 @@ export const sendOneWeekBonusEmail = async (
 
 export const sendCreatorGuideEmail = async (
   user: User,
-  privateUser: PrivateUser
+  privateUser: PrivateUser,
+  sendTime: string
 ) => {
   if (
     !privateUser ||
@@ -255,7 +254,7 @@ export const sendCreatorGuideEmail = async (
 
   return await sendTemplateEmail(
     privateUser.email,
-    'Market creation guide',
+    'Create your own prediction market',
     'creating-market',
     {
       name: firstName,
@@ -263,6 +262,7 @@ export const sendCreatorGuideEmail = async (
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
+      'o:deliverytime': sendTime,
     }
   )
 }
