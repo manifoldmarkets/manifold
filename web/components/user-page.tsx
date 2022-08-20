@@ -124,7 +124,7 @@ export function UserPage(props: { user: User }) {
         </div>
 
         {/* Top right buttons (e.g. edit, follow) */}
-        <div className="absolute right-0 top-0 mt-1 mr-4">
+        <div className="absolute right-0 top-0 mt-2 mr-4">
           {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
             <SiteLink className="sm:btn-md btn-sm btn" href="/profile">
