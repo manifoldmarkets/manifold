@@ -90,9 +90,11 @@ service cloud.firestore {
                                                                  .hasOnly(['description', 'closeTime', 'question'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
-          match /comments/{commentId} {
-            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data);
-          }
+
+      // TODO: This runs afoul of FirebaseError: Missing or insufficient permissions
+      match /comments/{commentId} {
+        allow create, update: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data);
+      }
     }
 
     match /{somePath=**}/bets/{betId} {

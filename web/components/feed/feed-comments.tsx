@@ -16,6 +16,7 @@ import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-ti
 import { firebaseLogin } from 'web/lib/firebase/users'
 import {
   createCommentOnContract,
+  editCommentOnContract,
   MAX_COMMENT_LENGTH,
 } from 'web/lib/firebase/comments'
 import { BetStatusText } from 'web/components/feed/feed-bets'
@@ -28,7 +29,7 @@ import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Content, TextEditor, useTextEditor } from '../editor'
-import { Editor } from '@tiptap/react'
+import { Editor, JSONContent } from '@tiptap/react'
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -113,6 +114,8 @@ export function CommentRepliesList(props: {
     scrollAndOpenReplyInput,
     treatFirstIndexEqually,
   } = props
+  const [editCommentId, setEditCommentId] = useState<string | undefined>()
+  const user = useUser()
   return (
     <>
       {commentsList.map((comment, commentIdx) => (
@@ -131,23 +134,36 @@ export function CommentRepliesList(props: {
               aria-hidden="true"
             />
           )}
-          <FeedComment
-            contract={contract}
-            comment={comment}
-            tips={tips[comment.id]}
-            betsBySameUser={betsByUserId[comment.userId] ?? []}
-            onReplyClick={scrollAndOpenReplyInput}
-            probAtCreatedTime={
-              contract.outcomeType === 'BINARY'
-                ? minBy(bets, (bet) => {
-                    return bet.createdTime < comment.createdTime
-                      ? comment.createdTime - bet.createdTime
-                      : comment.createdTime
-                  })?.probAfter
-                : undefined
-            }
-            smallAvatar={smallAvatar}
-          />
+          {editCommentId === comment.id ? (
+            <CommentInput
+              contract={contract}
+              // TODO: These were Copilot-generated, examine more closely
+              betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
+              commentsByCurrentUser={commentsList.filter(
+                (c) => c.userId === user?.id
+              )}
+              toEdit={comment}
+            />
+          ) : (
+            <FeedComment
+              contract={contract}
+              comment={comment}
+              tips={tips[comment.id]}
+              betsBySameUser={betsByUserId[comment.userId] ?? []}
+              onReplyClick={scrollAndOpenReplyInput}
+              onEditClick={() => setEditCommentId(comment.id)}
+              probAtCreatedTime={
+                contract.outcomeType === 'BINARY'
+                  ? minBy(bets, (bet) => {
+                      return bet.createdTime < comment.createdTime
+                        ? comment.createdTime - bet.createdTime
+                        : comment.createdTime
+                    })?.probAfter
+                  : undefined
+              }
+              smallAvatar={smallAvatar}
+            />
+          )}
         </div>
       ))}
     </>
@@ -162,6 +178,7 @@ export function FeedComment(props: {
   probAtCreatedTime?: number
   smallAvatar?: boolean
   onReplyClick?: (comment: ContractComment) => void
+  onEditClick?: (comment: ContractComment) => void
 }) {
   const {
     contract,
@@ -170,6 +187,7 @@ export function FeedComment(props: {
     betsBySameUser,
     probAtCreatedTime,
     onReplyClick,
+    onEditClick,
   } = props
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
@@ -198,6 +216,9 @@ export function FeedComment(props: {
     comment.createdTime,
     matchedBet ? [] : betsBySameUser
   )
+
+  const self = useUser()
+  const canEdit = self?.id === comment.userId
 
   return (
     <Row
@@ -266,6 +287,14 @@ export function FeedComment(props: {
               Reply
             </button>
           )}
+          {canEdit && onEditClick ? (
+            <button
+              className="font-bold hover:underline"
+              onClick={() => onEditClick(comment)}
+            >
+              Edit
+            </button>
+          ) : null}
         </Row>
       </div>
     </Row>
@@ -326,6 +355,7 @@ export function CommentInput(props: {
   // Reply to another comment
   parentCommentId?: string
   onSubmitComment?: () => void
+  toEdit?: ContractComment
 }) {
   const {
     contract,
@@ -335,6 +365,7 @@ export function CommentInput(props: {
     parentCommentId,
     replyToUser,
     onSubmitComment,
+    toEdit,
   } = props
   const user = useUser()
   const { editor, upload } = useTextEditor({
@@ -344,6 +375,7 @@ export function CommentInput(props: {
       !!parentCommentId || !!parentAnswerOutcome
         ? 'Write a reply...'
         : 'Write a comment...',
+    defaultValue: toEdit?.content,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -362,14 +394,19 @@ export function CommentInput(props: {
     }
     if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
-    await createCommentOnContract(
-      contract.id,
-      editor.getJSON(),
-      user,
-      betId,
-      parentAnswerOutcome,
-      parentCommentId
-    )
+    if (toEdit) {
+      await editCommentOnContract(toEdit, editor.getJSON())
+    } else {
+      await createCommentOnContract(
+        contract.id,
+        editor.getJSON(),
+        user,
+        betId,
+        parentAnswerOutcome,
+        parentCommentId
+      )
+    }
+
     onSubmitComment?.()
     setIsSubmitting(false)
   }

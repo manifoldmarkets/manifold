@@ -20,6 +20,15 @@ export type { Comment }
 
 export const MAX_COMMENT_LENGTH = 10000
 
+export async function editCommentOnContract(
+  toEdit: ContractComment,
+  newContent: JSONContent
+) {
+  const { id, contractId } = toEdit
+  const ref = doc(getCommentsCollection(contractId), id)
+  await setDoc(ref, { content: newContent })
+}
+
 export async function createCommentOnContract(
   contractId: string,
   content: JSONContent,
