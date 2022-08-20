@@ -23,13 +23,8 @@ type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
 type KeyCredentials = { kind: 'key'; data: string }
 type Credentials = JwtCredentials | KeyCredentials
 
-const auth = admin.auth()
-const firestore = admin.firestore()
-const privateUsers = firestore.collection(
-  'private-users'
-) as admin.firestore.CollectionReference<PrivateUser>
-
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
+  const auth = admin.auth()
   const authHeader = req.get('Authorization')
   if (!authHeader) {
     throw new APIError(403, 'Missing Authorization header.')
@@ -57,6 +52,8 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
 }
 
 export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
+  const firestore = admin.firestore()
+  const privateUsers = firestore.collection('private-users')
   switch (creds.kind) {
     case 'jwt': {
       if (typeof creds.data.user_id !== 'string') {
@@ -70,7 +67,7 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
       if (privateUserQ.empty) {
         throw new APIError(403, `No private user exists with API key ${key}.`)
       }
-      const privateUser = privateUserQ.docs[0].data()
+      const privateUser = privateUserQ.docs[0].data() as PrivateUser
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
     default:
