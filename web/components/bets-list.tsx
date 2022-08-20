@@ -534,9 +534,8 @@ export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
-  className?: string
 }) {
-  const { contract, className, isYourBets } = props
+  const { contract, isYourBets } = props
 
   const bets = sortBy(
     props.bets.filter((b) => !b.isAnte && b.amount !== 0),
@@ -568,7 +567,7 @@ export function ContractBetsTable(props: {
   const unfilledBets = useUnfilledBets(contract.id) ?? []
 
   return (
-    <div className={clsx('overflow-x-auto', className)}>
+    <div className="overflow-x-auto">
       {amountRedeemed > 0 && (
         <>
           <div className="pl-2 text-sm text-gray-500">
@@ -771,7 +770,7 @@ function SellButton(props: {
         setIsSubmitting(false)
       }}
     >
-      <div className="mb-4 text-2xl">
+      <div className="mb-4 text-xl">
         Sell {formatWithCommas(shares)} shares of{' '}
         <OutcomeLabel outcome={outcome} contract={contract} truncate="long" />{' '}
         for {formatMoney(saleAmount)}?
