@@ -26,7 +26,9 @@ import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
-  const txns = await getAllCharityTxns()
+  let txns = await getAllCharityTxns()
+  // Sort by newest txns first
+  txns = sortBy(txns, 'createdTime').reverse()
   const totals = mapValues(groupBy(txns, 'toId'), (txns) =>
     sumBy(txns, (txn) => txn.amount)
   )
@@ -37,7 +39,8 @@ export async function getStaticProps() {
   ])
   const matches = quadraticMatches(txns, totalRaised)
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
-  const mostRecentDonor = await getUser(txns[txns.length - 1].fromId)
+  const mostRecentDonor = await getUser(txns[0].fromId)
+  const mostRecentCharity = txns[0].toId
 
   return {
     props: {
@@ -47,6 +50,7 @@ export async function getStaticProps() {
       txns,
       numDonors,
       mostRecentDonor,
+      mostRecentCharity,
     },
     revalidate: 60,
   }
@@ -71,7 +75,7 @@ function DonatedStats(props: { stats: Stat[] }) {
             {stat.name}
           </dt>
 
-          <dd className="mt-1 text-3xl font-semibold text-gray-900">
+          <dd className="mt-1 text-2xl font-semibold text-gray-900">
             {stat.url ? (
               <SiteLink href={stat.url}>{stat.stat}</SiteLink>
             ) : (
@@ -91,11 +95,21 @@ export default function Charity(props: {
   txns: Txn[]
   numDonors: number
   mostRecentDonor: User
+  mostRecentCharity: string
 }) {
-  const { totalRaised, charities, matches, numDonors, mostRecentDonor } = props
+  const {
+    totalRaised,
+    charities,
+    matches,
+    mostRecentCharity,
+    mostRecentDonor,
+  } = props
 
   const [query, setQuery] = useState('')
   const debouncedQuery = debounce(setQuery, 50)
+  const recentCharityName =
+    charities.find((charity) => charity.id === mostRecentCharity)?.name ??
+    'Nobody'
 
   const filterCharities = useMemo(
     () =>
@@ -144,13 +158,14 @@ export default function Charity(props: {
                 stat: manaToUSD(totalRaised),
               },
               {
-                name: 'Number of donors',
-                stat: `${numDonors}`,
-              },
-              {
                 name: 'Most recent donor',
                 stat: mostRecentDonor.name ?? 'Nobody',
                 url: `/${mostRecentDonor.username}`,
+              },
+              {
+                name: 'Most recent donation',
+                stat: recentCharityName,
+                url: `/charity/${mostRecentCharity}`,
               },
             ]}
           />
