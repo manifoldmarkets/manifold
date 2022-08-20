@@ -4,7 +4,6 @@ import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import { trackCallback } from 'web/lib/service/analytics'
-import { Row } from 'web/components/layout/row'
 
 export function ProfileSummary(props: { user: User }) {
   const { user } = props
@@ -18,14 +17,7 @@ export function ProfileSummary(props: { user: User }) {
 
         <div className="truncate">
           <div>{user.name}</div>
-          <Row className="gap-1 text-sm">
-            {formatMoney(Math.floor(user.balance))}
-            {user.currentBettingStreak && user.currentBettingStreak > 0 && (
-              <div className={'mt-0.5 text-xs'}>
-                <span>🔥{user.currentBettingStreak}</span>
-              </div>
-            )}
-          </Row>
+          <div className="text-sm">{formatMoney(Math.floor(user.balance))}</div>
         </div>
       </a>
     </Link>
