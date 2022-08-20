@@ -255,7 +255,7 @@ function ContractSearchControls(props: {
     ? additionalFilters
     : [
         ...additionalFilters,
-        'visibility:public',
+        additionalFilter ? '' : 'visibility:public',
 
         filter === 'open' ? 'isResolved:false' : '',
         filter === 'closed' ? 'isResolved:false' : '',

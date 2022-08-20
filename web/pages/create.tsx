@@ -373,6 +373,7 @@ export function NewContract(props: {
       <div className="form-control mb-1 items-start gap-1">
         <label className="label gap-2">
           <span className="mb-1">Visibility</span>
+          <InfoTooltip text="Whether the market will be listed on the home page." />
         </label>
         <ChoicesToggleGroup
           currentChoice={visibility}
