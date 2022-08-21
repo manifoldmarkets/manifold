@@ -11,7 +11,7 @@ export function LoansModal(props: {
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="items-center gap-4 rounded-md bg-white px-8 py-6">
         <span className={'text-8xl'}>🏦</span>
-        <span>Loans are here!</span>
+        <span className="text-xl">Loans on your bets</span>
         <Col className={'gap-2'}>
           <span className={'text-indigo-700'}>• What are loans?</span>
           <span className={'ml-2'}>
@@ -21,15 +21,15 @@ export function LoansModal(props: {
             • Do I have to pay back a loan?
           </span>
           <span className={'ml-2'}>
-            Yes, of course! You will automatically pay back loans when the
-            market resolves or you sell your bet.
+            Yes, don't worry! You will automatically pay back loans when the market resolves
+            or you sell your bet.
           </span>
           <span className={'text-indigo-700'}>
             • What is the purpose of loans?
           </span>
           <span className={'ml-2'}>
             Loans make it worthwhile to bet on markets that won't resolve for
-            months or years.
+            months or years, because your investment won't be locked up as long.
           </span>
           <span className={'text-indigo-700'}>• What is an example?</span>
           <span className={'ml-2'}>
