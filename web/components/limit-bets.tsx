@@ -163,13 +163,15 @@ export function OrderBookButton(props: {
   const { limitBets, contract, className } = props
   const [open, setOpen] = useState(false)
 
-  const yesBets = sortBy(
-    limitBets.filter((bet) => bet.outcome === 'YES'),
+  const sortedBets = sortBy(
+    limitBets,
     (bet) => -1 * bet.limitProb,
     (bet) => bet.createdTime
   )
+
+  const yesBets = sortedBets.filter((bet) => bet.outcome === 'YES')
   const noBets = sortBy(
-    limitBets.filter((bet) => bet.outcome === 'NO'),
+    sortedBets.filter((bet) => bet.outcome === 'NO'),
     (bet) => bet.limitProb,
     (bet) => bet.createdTime
   )
@@ -202,7 +204,7 @@ export function OrderBookButton(props: {
           </Row>
           <Col className="md:hidden">
             <LimitOrderTable
-              limitBets={limitBets}
+              limitBets={sortedBets}
               contract={contract}
               isYou={false}
             />
