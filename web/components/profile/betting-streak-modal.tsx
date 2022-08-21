@@ -3,7 +3,7 @@ import { Col } from 'web/components/layout/col'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
-} from 'common/numeric-constants'
+} from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
 export function BettingStreakModal(props: {
