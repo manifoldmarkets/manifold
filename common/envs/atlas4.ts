@@ -1,15 +1,15 @@
 import { EnvConfig } from './prod'
 
-export const ATLAS3_CONFIG: EnvConfig = {
-  domain: 'atlas3.manifold.markets',
+export const ATLAS4_CONFIG: EnvConfig = {
+  domain: 'atlas4.manifold.markets',
   firebaseConfig: {
-    apiKey: 'AIzaSyAAsJPN_4HAvmWtsdW2EIY2iRRbyTxEZQI',
-    authDomain: 'atlas3-manifold.firebaseapp.com',
-    projectId: 'atlas3-manifold',
-    storageBucket: 'atlas3-manifold.appspot.com',
-    messagingSenderId: '453445191752',
-    appId: '1:453445191752:web:f7a899553e702d6d48b07d',
-    measurementId: 'G-0F3F5X37YN',
+    apiKey: 'AIzaSyDVS2IyYbBprFw2_EjzD7FIiyY67AsiffE',
+    authDomain: 'atlas4.firebaseapp.com',
+    projectId: 'atlas4',
+    storageBucket: 'atlas4.appspot.com',
+    messagingSenderId: '213852207227',
+    appId: '1:213852207227:web:4e2d6d089c7571037a0ade',
+    measurementId: 'G-8C26BB7JJG',
   },
 
   cloudRunId: 'o7zdjo5hka',
