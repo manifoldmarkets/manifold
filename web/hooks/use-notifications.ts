@@ -71,11 +71,15 @@ export function groupNotifications(notifications: Notification[]) {
     const notificationsGroupedByDay = notificationGroupsByDay[day]
     const incomeNotifications = notificationsGroupedByDay.filter(
       (notification) =>
-        notification.sourceType === 'bonus' || notification.sourceType === 'tip'
+        notification.sourceType === 'bonus' ||
+        notification.sourceType === 'tip' ||
+        notification.sourceType === 'betting_streak_bonus'
     )
     const normalNotificationsGroupedByDay = notificationsGroupedByDay.filter(
       (notification) =>
-        notification.sourceType !== 'bonus' && notification.sourceType !== 'tip'
+        notification.sourceType !== 'bonus' &&
+        notification.sourceType !== 'tip' &&
+        notification.sourceType !== 'betting_streak_bonus'
     )
     if (incomeNotifications.length > 0) {
       notificationGroups = notificationGroups.concat({

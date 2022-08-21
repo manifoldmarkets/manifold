@@ -11,7 +11,6 @@ import clsx from 'clsx'
 import { OutcomeLabel } from '../outcome-label'
 import {
   Contract,
-  contractMetrics,
   contractPath,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
@@ -19,7 +18,7 @@ import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { UserLink } from '../user-page'
-import BetRow from '../bet-row'
+import BetButton from '../bet-button'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
 import { useUser } from 'web/hooks/use-user'
@@ -38,6 +37,7 @@ import { FeedLiquidity } from './feed-liquidity'
 import { SignUpPrompt } from '../sign-up-prompt'
 import { User } from 'common/user'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
+import { contractMetrics } from 'common/contract-details'
 
 export function FeedItems(props: {
   contract: Contract
@@ -76,7 +76,7 @@ export function FeedItems(props: {
       ) : (
         outcomeType === 'BINARY' &&
         tradingAllowed(contract) && (
-          <BetRow
+          <BetButton
             contract={contract as CPMMBinaryContract}
             className={clsx('mb-2', betRowClassName)}
           />

@@ -3,7 +3,6 @@ import React from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
-import { Spacer } from './layout/spacer'
 import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 
@@ -37,7 +36,7 @@ export function AmountInput(props: {
 
   return (
     <Col className={className}>
-      <label className="input-group">
+      <label className="input-group mb-4">
         <span className="bg-gray-200 text-sm">{label}</span>
         <input
           className={clsx(
@@ -56,8 +55,6 @@ export function AmountInput(props: {
           onChange={(e) => onAmountChange(e.target.value)}
         />
       </label>
-
-      <Spacer h={4} />
 
       {error && (
         <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
@@ -115,6 +112,8 @@ export function BuyAmountInput(props: {
       } else {
         setError(undefined)
       }
+    } else {
+      setError(undefined)
     }
   }
 

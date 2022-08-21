@@ -120,7 +120,7 @@ export function ContractCard(props: {
               truncate={'long'}
             />
           ) : (
-            <FreeResponseTopAnswer contract={contract} truncate="long" />
+            <FreeResponseTopAnswer contract={contract} />
           ))}
       </Col>
       {showQuickBet ? (
@@ -185,10 +185,15 @@ export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
   large?: boolean
   className?: string
+  probAfter?: number // 0 to 1
 }) {
-  const { contract, large, className } = props
+  const { contract, large, className, probAfter } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
+
+  const before = getBinaryProbPercent(contract)
+  const after = probAfter && formatPercent(probAfter)
+  const probChanged = before !== after
 
   return (
     <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
@@ -206,7 +211,14 @@ export function BinaryResolutionOrChance(props: {
         </>
       ) : (
         <>
-          <div className={textColor}>{getBinaryProbPercent(contract)}</div>
+          {probAfter && probChanged ? (
+            <div>
+              <span className="text-gray-500 line-through">{before}</span>
+              <span className={textColor}>{after}</span>
+            </div>
+          ) : (
+            <div className={textColor}>{before}</div>
+          )}
           <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
             chance
           </div>
@@ -218,10 +230,9 @@ export function BinaryResolutionOrChance(props: {
 
 function FreeResponseTopAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
-  truncate: 'short' | 'long' | 'none'
   className?: string
 }) {
-  const { contract, truncate } = props
+  const { contract } = props
 
   const topAnswer = getTopAnswer(contract)
 
@@ -229,7 +240,7 @@ function FreeResponseTopAnswer(props: {
     <AnswerLabel
       className="!text-gray-600"
       answer={topAnswer}
-      truncate={truncate}
+      truncate="long"
     />
   ) : null
 }

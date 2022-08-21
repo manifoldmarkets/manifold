@@ -18,6 +18,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [manifold-markets-python](https://github.com/vluzko/manifold-markets-python) - Python tools for working with Manifold Markets (including various accuracy metrics)
 - [ManifoldMarketManager](https://github.com/gappleto97/ManifoldMarketManager) - Python script and library to automatically manage markets
 - [manifeed](https://github.com/joy-void-joy/manifeed) - Tool that creates an RSS feed for new Manifold markets
+- [manifold-sdk](https://github.com/keriwarr/manifold-sdk) - TypeScript/JavaScript client for the Manifold API
 
 ## Bots
 

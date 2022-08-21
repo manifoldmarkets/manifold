@@ -28,6 +28,7 @@ import { ReferralsButton } from 'web/components/referrals-button'
 import { formatMoney } from 'common/util/format'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
 
 export function UserLink(props: {
   name: string
@@ -58,8 +59,6 @@ export function UserLink(props: {
   )
 }
 
-export const TAB_IDS = ['markets', 'comments', 'bets', 'groups']
-
 export function UserPage(props: { user: User }) {
   const { user } = props
   const router = useRouter()
@@ -67,11 +66,29 @@ export function UserPage(props: { user: User }) {
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
-    setShowConfetti(claimedMana)
-  }, [router])
+    const showBettingStreak = router.query['show'] === 'betting-streak'
+    setShowBettingStreakModal(showBettingStreak)
+    setShowConfetti(claimedMana || showBettingStreak)
+
+    const query = { ...router.query }
+    if (query.claimedMana || query.show) {
+      delete query['claimed-mana']
+      delete query['show']
+      router.replace(
+        {
+          pathname: router.pathname,
+          query,
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const profit = user.profitCached.allTime
 
@@ -85,6 +102,10 @@ export function UserPage(props: { user: User }) {
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
+      <BettingStreakModal
+        isOpen={showBettingStreakModal}
+        setOpen={setShowBettingStreakModal}
+      />
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
@@ -103,10 +124,10 @@ export function UserPage(props: { user: User }) {
         </div>
 
         {/* Top right buttons (e.g. edit, follow) */}
-        <div className="absolute right-0 top-0 mt-4 mr-4">
+        <div className="absolute right-0 top-0 mt-2 mr-4">
           {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
-            <SiteLink className="btn" href="/profile">
+            <SiteLink className="sm:btn-md btn-sm btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}
               <div className="ml-2">Edit</div>
             </SiteLink>
@@ -116,19 +137,34 @@ export function UserPage(props: { user: User }) {
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}
       <Col className="mx-4 -mt-6">
-        <span className="text-2xl font-bold">{user.name}</span>
-        <span className="text-gray-500">@{user.username}</span>
-        <span className="text-gray-500">
-          <span
-            className={clsx(
-              'text-md',
-              profit >= 0 ? 'text-green-600' : 'text-red-400'
-            )}
-          >
-            {formatMoney(profit)}
-          </span>{' '}
-          profit
-        </span>
+        <Row className={'justify-between'}>
+          <Col>
+            <span className="text-2xl font-bold">{user.name}</span>
+            <span className="text-gray-500">@{user.username}</span>
+          </Col>
+          <Col className={'justify-center'}>
+            <Row className={'gap-3'}>
+              <Col className={'items-center text-gray-500'}>
+                <span
+                  className={clsx(
+                    'text-md',
+                    profit >= 0 ? 'text-green-600' : 'text-red-400'
+                  )}
+                >
+                  {formatMoney(profit)}
+                </span>
+                <span>profit</span>
+              </Col>
+              <Col
+                className={'cursor-pointer items-center text-gray-500'}
+                onClick={() => setShowBettingStreakModal(true)}
+              >
+                <span>🔥{user.currentBettingStreak ?? 0}</span>
+                <span>streak</span>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
         <Spacer h={4} />
         {user.bio && (
           <>
@@ -138,17 +174,7 @@ export function UserPage(props: { user: User }) {
             <Spacer h={4} />
           </>
         )}
-        <Col className="flex-wrap gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <Row className="gap-4">
-            <FollowingButton user={user} />
-            <FollowersButton user={user} />
-            {currentUser &&
-              ['ian', 'Austin', 'SG', 'JamesGrugett'].includes(
-                currentUser.username
-              ) && <ReferralsButton user={user} />}
-            <GroupsButton user={user} />
-          </Row>
-
+        <Row className="flex-wrap items-center gap-2 sm:gap-4">
           {user.website && (
             <SiteLink
               href={
@@ -198,7 +224,7 @@ export function UserPage(props: { user: User }) {
               </Row>
             </SiteLink>
           )}
-        </Col>
+        </Row>
         <Spacer h={5} />
         {currentUser?.id === user.id && (
           <Row
@@ -208,7 +234,7 @@ export function UserPage(props: { user: User }) {
           >
             <span>
               <SiteLink href="/referrals">
-                Refer a friend and earn {formatMoney(500)} when they sign up!
+                Earn {formatMoney(500)} when you refer a friend!
               </SiteLink>{' '}
               You have <ReferralsButton user={user} currentUser={currentUser} />
             </span>
@@ -242,6 +268,22 @@ export function UserPage(props: { user: User }) {
                   <PortfolioValueSection userId={user.id} />
                   <BetsList user={user} />
                 </>
+              ),
+            },
+            {
+              title: 'Social',
+              content: (
+                <Row
+                  className={'mt-2 flex-wrap items-center justify-center gap-6'}
+                >
+                  <FollowingButton user={user} />
+                  <FollowersButton user={user} />
+                  {currentUser &&
+                    ['ian', 'Austin', 'SG', 'JamesGrugett'].includes(
+                      currentUser.username
+                    ) && <ReferralsButton user={user} />}
+                  <GroupsButton user={user} />
+                </Row>
               ),
             },
           ]}

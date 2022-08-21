@@ -4,7 +4,8 @@ import { PrivateUser, User } from 'common/user'
 import React, { useEffect, memo, useState, useMemo } from 'react'
 import { Avatar } from 'web/components/avatar'
 import { Group } from 'common/group'
-import { Comment, createCommentOnGroup } from 'web/lib/firebase/comments'
+import { Comment, GroupComment } from 'common/comment'
+import { createCommentOnGroup } from 'web/lib/firebase/comments'
 import { CommentInputTextArea } from 'web/components/feed/feed-comments'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -24,7 +25,7 @@ import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { usePrivateUser } from 'web/hooks/use-user'
 
 export function GroupChat(props: {
-  messages: Comment[]
+  messages: GroupComment[]
   user: User | null | undefined
   group: Group
   tips: CommentTipMap
@@ -58,7 +59,7 @@ export function GroupChat(props: {
   // array of groups, where each group is an array of messages that are displayed as one
   const groupedMessages = useMemo(() => {
     // Group messages with createdTime within 2 minutes of each other.
-    const tempGrouped: Comment[][] = []
+    const tempGrouped: GroupComment[][] = []
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i]
       if (i === 0) tempGrouped.push([message])
@@ -193,7 +194,7 @@ export function GroupChat(props: {
 }
 
 export function GroupChatInBubble(props: {
-  messages: Comment[]
+  messages: GroupComment[]
   user: User | null | undefined
   privateUser: PrivateUser | null | undefined
   group: Group
@@ -309,7 +310,7 @@ function GroupChatNotificationsIcon(props: {
 
 const GroupMessage = memo(function GroupMessage_(props: {
   user: User | null | undefined
-  comments: Comment[]
+  comments: GroupComment[]
   group: Group
   onReplyClick?: (comment: Comment) => void
   setRef?: (ref: HTMLDivElement) => void

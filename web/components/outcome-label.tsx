@@ -90,13 +90,11 @@ export function FreeResponseOutcomeLabel(props: {
   const chosen = contract.answers?.find((answer) => answer.id === resolution)
   if (!chosen) return <AnswerNumberLabel number={resolution} />
   return (
-    <Tooltip text={chosen.text}>
-      <AnswerLabel
-        answer={chosen}
-        truncate={truncate}
-        className={answerClassName}
-      />
-    </Tooltip>
+    <AnswerLabel
+      answer={chosen}
+      truncate={truncate}
+      className={answerClassName}
+    />
   )
 }
 
@@ -165,11 +163,13 @@ export function AnswerLabel(props: {
   }
 
   return (
-    <span
-      style={{ wordBreak: 'break-word' }}
-      className={clsx('whitespace-pre-line break-words', className)}
-    >
-      {truncated}
-    </span>
+    <Tooltip text={truncated === text ? false : text}>
+      <span
+        style={{ wordBreak: 'break-word' }}
+        className={clsx('whitespace-pre-line break-words', className)}
+      >
+        {truncated}
+      </span>
+    </Tooltip>
   )
 }

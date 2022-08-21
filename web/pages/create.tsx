@@ -15,6 +15,7 @@ import {
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   outcomeType,
+  visibility,
 } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
@@ -150,6 +151,7 @@ export function NewContract(props: {
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
+  const [visibility, setVisibility] = useState<visibility>('public')
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -234,6 +236,7 @@ export function NewContract(props: {
           isLogScale,
           answers,
           groupId: selectedGroup?.id,
+          visibility,
         })
       )
       track('create market', {
@@ -367,14 +370,30 @@ export function NewContract(props: {
         </>
       )}
 
-      <div className={'mt-2'}>
-        <GroupSelector
-          selectedGroup={selectedGroup}
-          setSelectedGroup={setSelectedGroup}
-          creator={creator}
-          options={{ showSelector: showGroupSelector, showLabel: true }}
+      <div className="form-control mb-1 items-start gap-1">
+        <label className="label gap-2">
+          <span className="mb-1">Visibility</span>
+          <InfoTooltip text="Whether the market will be listed on the home page." />
+        </label>
+        <ChoicesToggleGroup
+          currentChoice={visibility}
+          setChoice={(choice) => setVisibility(choice as visibility)}
+          choicesMap={{
+            Public: 'public',
+            Unlisted: 'unlisted',
+          }}
+          isSubmitting={isSubmitting}
         />
       </div>
+
+      <Spacer h={6} />
+
+      <GroupSelector
+        selectedGroup={selectedGroup}
+        setSelectedGroup={setSelectedGroup}
+        creator={creator}
+        options={{ showSelector: showGroupSelector, showLabel: true }}
+      />
 
       <Spacer h={6} />
 

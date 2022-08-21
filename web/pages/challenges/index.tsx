@@ -16,7 +16,7 @@ import {
   useAcceptedChallenges,
   useUserChallenges,
 } from 'web/lib/firebase/challenges'
-import { Challenge } from 'common/challenge'
+import { Challenge, CHALLENGES_ENABLED } from 'common/challenge'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/site-link'
 import { UserLink } from 'web/components/user-page'
@@ -29,6 +29,7 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import toast from 'react-hot-toast'
 import { Modal } from 'web/components/layout/modal'
 import { QRCode } from 'web/components/qr-code'
+import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 
 dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'
@@ -37,6 +38,7 @@ const amountClass = columnClass + ' max-w-[75px] font-bold'
 export default function ChallengesListPage() {
   const user = useUser()
   const challenges = useAcceptedChallenges()
+  const [open, setOpen] = React.useState(false)
   const userChallenges = useUserChallenges(user?.id)
     .concat(
       user ? challenges.filter((c) => c.acceptances[0].userId === user.id) : []
@@ -70,8 +72,25 @@ export default function ChallengesListPage() {
       <Col className="w-full px-8">
         <Row className="items-center justify-between">
           <Title text="Challenges" />
+          {CHALLENGES_ENABLED && (
+            <Button size="lg" color="gradient" onClick={() => setOpen(true)}>
+              Create Challenge
+              <CreateChallengeModal
+                isOpen={open}
+                setOpen={setOpen}
+                user={user}
+              />
+            </Button>
+          )}
         </Row>
-        <p>Find or create a question to challenge someone to a bet.</p>
+        <p>
+          Want to create your own challenge?
+          <SiteLink className={'mx-1 font-bold'} href={'/home'}>
+            Find
+          </SiteLink>
+          a market you and a friend disagree on and hit the challenge button, or
+          tap the button above to create a new market & challenge in one.
+        </p>
 
         <Tabs tabs={[...userTab, ...publicTab]} />
       </Col>

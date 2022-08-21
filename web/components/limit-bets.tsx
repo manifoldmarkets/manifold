@@ -22,20 +22,20 @@ export function LimitBets(props: {
   className?: string
 }) {
   const { contract, bets, className } = props
-  const sortedBets = sortBy(
-    bets,
-    (bet) => -1 * bet.limitProb,
-    (bet) => -1 * bet.createdTime
-  )
   const user = useUser()
-  const yourBets = sortedBets.filter((bet) => bet.userId === user?.id)
+
+  const yourBets = sortBy(
+    bets.filter((bet) => bet.userId === user?.id),
+    (bet) => -1 * bet.limitProb,
+    (bet) => bet.createdTime
+  )
 
   return (
     <Col className={className}>
       {yourBets.length === 0 && (
         <OrderBookButton
           className="self-end"
-          limitBets={sortedBets}
+          limitBets={bets}
           contract={contract}
         />
       )}
@@ -49,7 +49,7 @@ export function LimitBets(props: {
 
             <OrderBookButton
               className="self-end"
-              limitBets={sortedBets}
+              limitBets={bets}
               contract={contract}
             />
           </Row>
@@ -163,8 +163,16 @@ export function OrderBookButton(props: {
   const { limitBets, contract, className } = props
   const [open, setOpen] = useState(false)
 
-  const yesBets = limitBets.filter((bet) => bet.outcome === 'YES')
-  const noBets = limitBets.filter((bet) => bet.outcome === 'NO').reverse()
+  const yesBets = sortBy(
+    limitBets.filter((bet) => bet.outcome === 'YES'),
+    (bet) => -1 * bet.limitProb,
+    (bet) => bet.createdTime
+  )
+  const noBets = sortBy(
+    limitBets.filter((bet) => bet.outcome === 'NO'),
+    (bet) => bet.limitProb,
+    (bet) => bet.createdTime
+  )
 
   return (
     <>

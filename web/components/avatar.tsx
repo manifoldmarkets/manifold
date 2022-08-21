@@ -1,6 +1,6 @@
 import Router from 'next/router'
 import clsx from 'clsx'
-import { MouseEvent, useState } from 'react'
+import { MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 
 export function Avatar(props: {
@@ -12,6 +12,7 @@ export function Avatar(props: {
 }) {
   const { username, noLink, size, className } = props
   const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
+  useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
   const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
 
   const onClick =
