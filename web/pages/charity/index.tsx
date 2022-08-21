@@ -6,7 +6,6 @@ import {
   sortBy,
   debounce,
   uniqBy,
-  last,
 } from 'lodash'
 import { useState, useMemo } from 'react'
 import { charities, Charity as CharityType } from 'common/charity'
