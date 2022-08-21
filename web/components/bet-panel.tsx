@@ -272,6 +272,7 @@ function BuyPanel(props: {
       <div className="my-3 text-left text-sm text-gray-500">
         {isPseudoNumeric ? 'Direction' : 'Outcome'}
       </div>
+
       <YesNoSelector
         className="mb-4"
         btnClassName="flex-1"

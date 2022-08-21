@@ -6,6 +6,7 @@ import {
   sortBy,
   debounce,
   uniqBy,
+  last,
 } from 'lodash'
 import { useState, useMemo } from 'react'
 import { charities, Charity as CharityType } from 'common/charity'
@@ -159,8 +160,8 @@ export default function Charity(props: {
               },
               {
                 name: 'Most recent donor',
-                stat: mostRecentDonor.name ?? 'Nobody',
-                url: `/${mostRecentDonor.username}`,
+                stat: mostRecentDonor?.name ?? 'Nobody',
+                url: `/${mostRecentDonor?.username}`,
               },
               {
                 name: 'Most recent donation',
