@@ -40,7 +40,7 @@ export default function UserProfile(props: { user: User | null }) {
 
   useTracking('view user profile', { username })
 
-  if (user === undefined) return <div />
+  if (user === undefined || user?.username !== username) return <div />
 
   return user ? (
     <UserPage user={user} currentUser={currentUser || undefined} />
