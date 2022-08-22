@@ -15,7 +15,6 @@
     "start": "next start",
     "lint": "next lint",
     "format": "npx prettier --write .",
-    "postbuild": "next-sitemap",
     "verify": "(cd .. && yarn verify)",
     "verify:dir": "npx prettier --check .; yarn lint --max-warnings 0; tsc --pretty --project tsconfig.json --noEmit"
   },
