@@ -138,11 +138,10 @@ export default function Leaderboards(_props: {
             title: 'All Time',
             content: LeaderboardWithPeriod('allTime'),
           },
-          // TODO: Enable this near the end of July!
-          // {
-          //   title: 'Monthly',
-          //   content: LeaderboardWithPeriod('monthly'),
-          // },
+          {
+            title: 'Monthly',
+            content: LeaderboardWithPeriod('monthly'),
+          },
           {
             title: 'Weekly',
             content: LeaderboardWithPeriod('weekly'),
