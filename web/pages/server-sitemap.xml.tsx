@@ -8,12 +8,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const score = (popularity: number) => Math.tanh(Math.log10(popularity + 1))
 
-  const fields = contracts.map((market) => ({
-    loc: `https://manifold.markets/${market.creatorUsername}/${market.slug}`,
-    changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
-    priority: score(market.popularityScore ?? 0),
-    lastmod: market.lastUpdatedTime,
-  })) as ISitemapField[]
+  const fields = contracts
+    .sort((x) => x.popularityScore ?? 0)
+    .map((market) => ({
+      loc: `https://manifold.markets/${market.creatorUsername}/${market.slug}`,
+      changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
+      priority: score(market.popularityScore ?? 0),
+      lastmod: market.lastUpdatedTime,
+    })) as ISitemapField[]
 
   return await getServerSideSitemap(ctx, fields)
 }
