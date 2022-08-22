@@ -3,7 +3,8 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { PrivateUser, STARTING_BALANCE, User } from '../../../common/user'
+import { PrivateUser, User } from 'common/user'
+import { STARTING_BALANCE } from 'common/economy'
 
 const firestore = admin.firestore()
 

@@ -25,8 +25,8 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/pagination'
 import { Manalink } from 'common/manalink'
-import { REFERRAL_AMOUNT } from 'common/user'
 import { SiteLink } from 'web/components/site-link'
+import { REFERRAL_AMOUNT } from 'common/economy'
 
 const LINKS_PER_PAGE = 24
 
