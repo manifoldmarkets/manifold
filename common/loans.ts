@@ -101,7 +101,7 @@ const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
   const newLoan = calculateNewLoan(invested, loanAmount)
-  if (isNaN(newLoan) || newLoan <= 0 || !oldestBet) return undefined
+  if (!isFinite(newLoan) || newLoan <= 0 || !oldestBet) return undefined
 
   const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
 
@@ -125,7 +125,7 @@ const getFreeResponseContractLoanUpdate = (
     const newLoan = calculateNewLoan(bet.amount, loanAmount)
     const loanTotal = loanAmount + newLoan
 
-    if (isNaN(newLoan) || newLoan <= 0) return undefined
+    if (!isFinite(newLoan) || newLoan <= 0) return undefined
 
     return {
       userId: bet.userId,
