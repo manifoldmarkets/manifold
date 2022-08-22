@@ -21,6 +21,7 @@ const bodySchema = z.object({
 })
 
 export const creategroup = newEndpoint({}, async (req, auth) => {
+  const firestore = admin.firestore()
   const { name, about, memberIds, anyoneCanJoin } = validate(
     bodySchema,
     req.body
@@ -67,7 +68,7 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
   return { status: 'success', group: group }
 })
 
-const getSlug = async (name: string) => {
+export const getSlug = async (name: string) => {
   const proposedSlug = slugify(name)
 
   const preexistingGroup = await getGroupFromSlug(proposedSlug)
@@ -75,9 +76,8 @@ const getSlug = async (name: string) => {
   return preexistingGroup ? proposedSlug + '-' + randomString() : proposedSlug
 }
 
-const firestore = admin.firestore()
-
 export async function getGroupFromSlug(slug: string) {
+  const firestore = admin.firestore()
   const snap = await firestore
     .collection('groups')
     .where('slug', '==', slug)

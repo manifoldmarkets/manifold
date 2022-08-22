@@ -6,6 +6,7 @@ dayjs.extend(utc)
 import { getPrivateUser } from './utils'
 import { User } from 'common/user'
 import {
+  sendCreatorGuideEmail,
   sendInterestingMarketsEmail,
   sendPersonalFollowupEmail,
   sendWelcomeEmail,
@@ -22,7 +23,10 @@ export const onCreateUser = functions
 
     await sendWelcomeEmail(user, privateUser)
 
-    const followupSendTime = dayjs().add(4, 'hours').toString()
+    const guideSendTime = dayjs().add(28, 'hours').toString()
+    await sendCreatorGuideEmail(user, privateUser, guideSendTime)
+
+    const followupSendTime = dayjs().add(48, 'hours').toString()
     await sendPersonalFollowupEmail(user, privateUser, followupSendTime)
 
     // skip email if weekly email is about to go out

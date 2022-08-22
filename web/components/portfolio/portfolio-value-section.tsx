@@ -14,7 +14,7 @@ export const PortfolioValueSection = memo(
   }) {
     const { disableSelector, userId } = props
 
-    const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('allTime')
+    const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const [portfolioHistory, setUsersPortfolioHistory] = useState<
       PortfolioMetrics[]
     >([])
@@ -53,13 +53,15 @@ export const PortfolioValueSection = memo(
           {!disableSelector && (
             <select
               className="select select-bordered self-start"
+              value={portfolioPeriod}
               onChange={(e) => {
                 setPortfolioPeriod(e.target.value as Period)
               }}
             >
               <option value="allTime">{allTimeLabel}</option>
-              <option value="weekly">7 days</option>
-              <option value="daily">24 hours</option>
+              <option value="weekly">Last 7d</option>
+              {/* Note: 'daily' seems to be broken? */}
+              {/* <option value="daily">Last 24h</option> */}
             </select>
           )}
         </Row>
