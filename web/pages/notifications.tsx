@@ -34,7 +34,7 @@ import { groupPath } from 'web/lib/firebase/groups'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/numeric-constants'
+} from 'common/economy'
 import { groupBy, sum, uniq } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
