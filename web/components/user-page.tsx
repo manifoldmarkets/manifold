@@ -303,10 +303,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <FollowingButton user={user} />
                   <FollowersButton user={user} />
-                  {currentUser &&
-                    ['ian', 'Austin', 'SG', 'JamesGrugett'].includes(
-                      currentUser.username
-                    ) && <ReferralsButton user={user} />}
+                  <ReferralsButton user={user} />
                   <GroupsButton user={user} />
                 </Row>
               ),
