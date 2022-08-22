@@ -21,8 +21,8 @@ export function LoansModal(props: {
             • Do I have to pay back a loan?
           </span>
           <span className={'ml-2'}>
-            Yes, don't worry! You will automatically pay back loans when the market resolves
-            or you sell your bet.
+            Yes, don't worry! You will automatically pay back loans when the
+            market resolves or you sell your bet.
           </span>
           <span className={'text-indigo-700'}>
             • What is the purpose of loans?
