@@ -58,7 +58,14 @@ function getNavigation() {
 
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+    return [
+      { name: 'Leaderboards', href: '/leaderboards' },
+      {
+        name: 'Sign out',
+        href: '#',
+        onClick: logout,
+      },
+    ]
   }
 
   if (!user) {
