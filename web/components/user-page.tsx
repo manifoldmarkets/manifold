@@ -135,7 +135,7 @@ export function UserPage(props: { user: User }) {
         <div className="absolute right-0 top-0 mt-2 mr-4">
           {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
-            <SiteLink className="sm:btn-md btn-sm btn" href="/profile">
+            <SiteLink className="btn-sm btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}
               <div className="ml-2">Edit</div>
             </SiteLink>
@@ -145,7 +145,7 @@ export function UserPage(props: { user: User }) {
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}
       <Col className="mx-4 -mt-6">
-        <Row className={'flex-wrap justify-between'}>
+        <Row className={'flex-wrap justify-between gap-y-2'}>
           <Col>
             <span
               className="text-2xl font-bold"
