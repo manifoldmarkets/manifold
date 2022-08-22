@@ -39,8 +39,8 @@ export async function getStaticProps() {
   ])
   const matches = quadraticMatches(txns, totalRaised)
   const numDonors = uniqBy(txns, (txn) => txn.fromId).length
-  const mostRecentDonor = await getUser(txns[0].fromId)
-  const mostRecentCharity = txns[0].toId
+  const mostRecentDonor = txns[0] ? await getUser(txns[0].fromId) : null
+  const mostRecentCharity = txns[0]?.toId ?? ''
 
   return {
     props: {
@@ -94,8 +94,8 @@ export default function Charity(props: {
   matches: { [charityId: string]: number }
   txns: Txn[]
   numDonors: number
-  mostRecentDonor: User
-  mostRecentCharity: string
+  mostRecentDonor?: User | null
+  mostRecentCharity?: string
 }) {
   const {
     totalRaised,
