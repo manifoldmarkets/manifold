@@ -1,12 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, keyBy, sumBy } from 'lodash'
+import { groupBy, keyBy } from 'lodash'
 import { getValues, log, payUser, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
-import { filterDefined } from '../../common/util/array'
-import { getUserLoanUpdates } from '../../common/loans'
+import { getLoanUpdates } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 
 const firestore = admin.firestore()
@@ -31,31 +30,34 @@ async function updateLoansCore() {
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
   )
-
-  const eligibleUsers = filterDefined(
-    await Promise.all(
-      users.map((user) =>
-        isUserEligibleForLoan(user).then((isEligible) =>
-          isEligible ? user : undefined
-        )
+  const userPortfolios = await Promise.all(
+    users.map(async (user) => {
+      const portfolio = await getValues<PortfolioMetrics>(
+        firestore
+          .collection(`users/${user.id}/portfolioHistory`)
+          .orderBy('timestamp', 'desc')
+          .limit(1)
       )
-    )
+      return portfolio[0]
+    })
   )
-  log(`${eligibleUsers.length} users are eligible for loans.`)
+  log(`Loaded ${userPortfolios.length} portfolios`)
+  const portfolioByUser = keyBy(userPortfolios, (portfolio) => portfolio.userId)
 
-  const contractsById = keyBy(contracts, (contract) => contract.id)
+  const contractsById = Object.fromEntries(
+    contracts.map((contract) => [contract.id, contract])
+  )
   const betsByUser = groupBy(bets, (bet) => bet.userId)
+  const { betUpdates, userPayouts } = getLoanUpdates(
+    users,
+    contractsById,
+    portfolioByUser,
+    betsByUser
+  )
 
-  const userLoanUpdates = eligibleUsers
-    .map(
-      (user) =>
-        getUserLoanUpdates(betsByUser[user.id] ?? [], contractsById).betUpdates
-    )
-    .flat()
+  log(`${betUpdates.length} bet updates.`)
 
-  log(`${userLoanUpdates.length} bet updates.`)
-
-  const betUpdates = userLoanUpdates.map((update) => ({
+  const betDocUpdates = betUpdates.map((update) => ({
     doc: firestore
       .collection('contracts')
       .doc(update.contractId)
@@ -66,17 +68,7 @@ async function updateLoansCore() {
     },
   }))
 
-  await writeAsync(firestore, betUpdates)
-
-  const userPayouts = eligibleUsers.map((user) => {
-    const updates = userLoanUpdates.filter(
-      (update) => update.userId === user.id
-    )
-    return {
-      user,
-      payout: sumBy(updates, (update) => update.newLoan),
-    }
-  })
+  await writeAsync(firestore, betDocUpdates)
 
   log(`${userPayouts.length} user payouts`)
 
@@ -93,17 +85,4 @@ async function updateLoansCore() {
   )
 
   log('Notifications sent!')
-}
-
-const isUserEligibleForLoan = async (user: User) => {
-  const [portfolio] = await getValues<PortfolioMetrics>(
-    firestore
-      .collection(`users/${user.id}/portfolioHistory`)
-      .orderBy('timestamp', 'desc')
-      .limit(1)
-  )
-  if (!portfolio) return true
-
-  const { balance, investmentValue } = portfolio
-  return balance + investmentValue > 0
 }

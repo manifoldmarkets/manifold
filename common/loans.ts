@@ -7,6 +7,7 @@ import {
   FreeResponseContract,
   MultipleChoiceContract,
 } from './contract'
+import { PortfolioMetrics, User } from './user'
 import { filterDefined } from './util/array'
 
 const LOAN_WEEKLY_RATE = 0.05
@@ -16,7 +17,50 @@ const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   return netValue * LOAN_WEEKLY_RATE
 }
 
-export const getUserLoanUpdates = (
+export const getLoanUpdates = (
+  users: User[],
+  contractsById: { [contractId: string]: Contract },
+  portfolioByUser: { [userId: string]: PortfolioMetrics | undefined },
+  betsByUser: { [userId: string]: Bet[] }
+) => {
+  const eligibleUsers = filterDefined(
+    users.map((user) =>
+      isUserEligibleForLoan(portfolioByUser[user.id]) ? user : undefined
+    )
+  )
+
+  const betUpdates = eligibleUsers
+    .map((user) => {
+      const updates = calculateLoanBetUpdates(
+        betsByUser[user.id] ?? [],
+        contractsById
+      ).betUpdates
+      return updates.map((update) => ({ ...update, user }))
+    })
+    .flat()
+
+  const updatesByUser = groupBy(betUpdates, (update) => update.userId)
+  const userPayouts = Object.values(updatesByUser).map((updates) => {
+    return {
+      user: updates[0].user,
+      payout: sumBy(updates, (update) => update.newLoan),
+    }
+  })
+
+  return {
+    betUpdates,
+    userPayouts,
+  }
+}
+
+const isUserEligibleForLoan = (portfolio: PortfolioMetrics | undefined) => {
+  if (!portfolio) return true
+
+  const { balance, investmentValue } = portfolio
+  return balance + investmentValue > 0
+}
+
+const calculateLoanBetUpdates = (
   bets: Bet[],
   contractsById: Dictionary<Contract>
 ) => {

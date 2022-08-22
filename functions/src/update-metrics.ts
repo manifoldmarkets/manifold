@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEmpty, sum, sumBy } from 'lodash'
+import { groupBy, isEmpty, keyBy, mapValues, maxBy, sum, sumBy } from 'lodash'
 import { getValues, log, logMemory, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
@@ -8,6 +8,7 @@ import { PortfolioMetrics, User } from '../../common/user'
 import { calculatePayout } from '../../common/calculate'
 import { DAY_MS } from '../../common/util/time'
 import { last } from 'lodash'
+import { getLoanUpdates } from '../../common/loans'
 
 const firestore = admin.firestore()
 
@@ -71,6 +72,18 @@ export const updateMetricsCore = async () => {
   const contractsByUser = groupBy(contracts, (contract) => contract.creatorId)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
   const portfolioHistoryByUser = groupBy(allPortfolioHistories, (p) => p.userId)
+
+  const portfolioByUser = mapValues(portfolioHistoryByUser, (history) =>
+    maxBy(history, (portfolio) => portfolio.timestamp)
+  )
+  const { userPayouts } = getLoanUpdates(
+    users,
+    contractsById,
+    portfolioByUser,
+    betsByUser
+  )
+  const nextLoanByUser = keyBy(userPayouts, (payout) => payout.user.id)
+
   const userUpdates = users.map((user) => {
     const currentBets = betsByUser[user.id] ?? []
     const portfolioHistory = portfolioHistoryByUser[user.id] ?? []
@@ -93,6 +106,7 @@ export const updateMetricsCore = async () => {
       newPortfolio,
       didProfitChange
     )
+    const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
 
     return {
       fieldUpdates: {
@@ -102,6 +116,7 @@ export const updateMetricsCore = async () => {
           ...(didProfitChange && {
             profitCached: newProfit,
           }),
+          nextLoanCached,
         },
       },
 

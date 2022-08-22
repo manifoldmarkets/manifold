@@ -181,7 +181,9 @@ export function UserPage(props: { user: User }) {
                 }
                 onClick={() => setShowLoansModal(true)}
               >
-                <span className="text-green-600">🏦 {formatMoney(153)}</span>
+                <span className="text-green-600">
+                  🏦 {formatMoney(user.nextLoanCached ?? 0)}
+                </span>
                 <span>next loan</span>
               </Col>
             </Row>
