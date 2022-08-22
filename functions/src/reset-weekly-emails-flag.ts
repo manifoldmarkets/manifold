@@ -4,7 +4,7 @@ import { getAllPrivateUsers } from './utils'
 
 export const resetWeeklyEmailsFlag = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
-  // every Monday at 1 am PT (UTC -07:00) ( 12 hours before the emails will be sent)
+  // every Monday at 12 am PT (UTC -07:00) ( 12 hours before the emails will be sent)
   .pubsub.schedule('0 7 * * 1')
   .timeZone('Etc/UTC')
   .onRun(async () => {
