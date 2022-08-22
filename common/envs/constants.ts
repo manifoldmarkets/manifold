@@ -44,3 +44,7 @@ export const CORS_ORIGIN_VERCEL = new RegExp(
 )
 // Any localhost server on any port
 export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
+
+export function firestoreConsolePath(contractId: string) {
+  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fcontracts~2F${contractId}`
+}
