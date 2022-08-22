@@ -39,6 +39,11 @@ async function sendTrendingMarketsEmailsToAllUsers() {
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
     return !user.unsubscribedFromWeeklyTrendingEmails
   })
+  log(
+    'Sending weekly trending emails to',
+    privateUsersToSendEmailsTo.length,
+    'users'
+  )
   const trendingContracts = (await getTrendingContracts())
     .filter(
       (contract) =>
@@ -48,6 +53,10 @@ async function sendTrendingMarketsEmailsToAllUsers() {
         ) && (contract?.closeTime ?? 0) > Date.now() + DAY_MS
     )
     .slice(0, 20)
+  log(
+    `Found ${trendingContracts.length} trending contracts:\n`,
+    trendingContracts.map((c) => c.question).join('\n ')
+  )
   for (const privateUser of privateUsersToSendEmailsTo) {
     if (!privateUser.email) {
       log(`No email for ${privateUser.username}`)
