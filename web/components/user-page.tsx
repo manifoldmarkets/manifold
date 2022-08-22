@@ -30,6 +30,7 @@ import { ShareIconButton } from 'web/components/share-icon-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from './profile/loans-modal'
+import { REFERRAL_AMOUNT } from 'common/user'
 
 export function UserLink(props: {
   name: string
@@ -250,7 +251,7 @@ export function UserPage(props: { user: User }) {
           )}
         </Row>
         <Spacer h={5} />
-        {currentUser?.id === user.id && (
+        {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
           <Row
             className={
               'w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
@@ -258,7 +259,7 @@ export function UserPage(props: { user: User }) {
           >
             <span>
               <SiteLink href="/referrals">
-                Earn {formatMoney(500)} when you refer a friend!
+                Earn {formatMoney(REFERRAL_AMOUNT)} when you refer a friend!
               </SiteLink>{' '}
               You have <ReferralsButton user={user} currentUser={currentUser} />
             </span>
