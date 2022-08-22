@@ -13,6 +13,9 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../title'
 import { InfoTooltip } from '../info-tooltip'
+import { useAdmin, useDev } from 'web/hooks/use-admin'
+import { SiteLink } from '../site-link'
+import { firestoreConsolePath } from 'common/envs/constants'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -21,10 +24,12 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
 
   const [open, setOpen] = useState(false)
+  const isDev = useDev()
+  const isAdmin = useAdmin()
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
 
-  const { createdTime, closeTime, resolutionTime, mechanism, outcomeType } =
+  const { createdTime, closeTime, resolutionTime, mechanism, outcomeType, id } =
     contract
 
   const tradersCount = uniqBy(
@@ -121,6 +126,18 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
                 </td>
                 <td>{contractPool(contract)}</td>
               </tr>
+
+              {/* Show a path to Firebase if user is an admin, or we're on localhost */}
+              {(isAdmin || isDev) && (
+                <tr>
+                  <td>[DEV] Firestore</td>
+                  <td>
+                    <SiteLink href={firestoreConsolePath(id)}>
+                      Console link
+                    </SiteLink>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
