@@ -2,7 +2,6 @@ import * as functions from 'firebase-functions'
 import { getUser } from './utils'
 import { createNotification } from './create-notification'
 import { Contract } from '../../common/contract'
-import { isEqual } from 'lodash'
 
 export const onUpdateContract = functions.firestore
   .document('contracts/{contractId}')
@@ -41,8 +40,7 @@ export const onUpdateContract = functions.firestore
       )
     } else if (
       previousValue.closeTime !== contract.closeTime ||
-      previousValue.question !== contract.question ||
-      !isEqual(previousValue.description, contract.description)
+      previousValue.question !== contract.question
     ) {
       let sourceText = ''
       if (
@@ -52,8 +50,6 @@ export const onUpdateContract = functions.firestore
         sourceText = contract.closeTime.toString()
       } else if (previousValue.question !== contract.question) {
         sourceText = contract.question
-      } else {
-        sourceText = 'the market description'
       }
 
       await createNotification(
