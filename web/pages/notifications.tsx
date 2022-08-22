@@ -413,10 +413,10 @@ function IncomeNotificationItem(props: {
         {reasonText}
         {sourceType === 'loan' ? (
           simple ? (
-            <span className={'ml-1 font-bold'}>Loan</span>
+            <span className={'ml-1 font-bold'}>🏦 Loan</span>
           ) : (
             <SiteLink className={'ml-1 font-bold'} href={'/loans'}>
-              Loan
+              🏦 Loan
             </SiteLink>
           )
         ) : sourceType === 'betting_streak_bonus' ? (
