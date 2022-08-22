@@ -3,10 +3,11 @@ import { Socket } from "socket.io";
 import * as Packet from "common/packet-ids";
 import { getOutcomeForString } from "common/outcome";
 
-import App from "./app";
-import * as ManifoldAPI from "./manifold-api";
-import User from "./user";
-import log from "./logger";
+import App from "../app";
+import * as ManifoldAPI from "../manifold-api";
+import User from "../user";
+import log from "../logger";
+import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
 
 export default class DockClient {
     readonly socket: Socket;
@@ -23,8 +24,7 @@ export default class DockClient {
     }
 
     async init() {
-        const controlToken = this.socket.handshake.query.controlToken;
-        this.connectedUserAccount = await this.app.firestore.getUserForControlToken(<string>controlToken);
+        this.connectedUserAccount = <User>this.socket.data;
 
         const connectedTwitchStream = this.connectedUserAccount.data.twitchLogin;
 
@@ -67,6 +67,14 @@ export default class DockClient {
             } catch (e) {
                 log.trace(e);
             }
+        });
+
+        this.socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
+            const pseudoUser = await this.app.getUserForTwitchUsername("philbladen"); //!!!
+            if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
+            const newMarket = await ManifoldAPI.createBinaryMarket(pseudoUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
+            this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
+            log.debug("Created new market via dock: " + packet.question);
         });
 
         this.socket.on("disconnect", () => {

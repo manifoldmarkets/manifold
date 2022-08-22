@@ -12,8 +12,10 @@ import ContractCard from "web/components/contract-card";
 import { InfoTooltip } from "web/components/info-tooltip";
 import { Col } from "web/components/layout/col";
 import { Row } from "web/components/layout/row";
+import { LoadingOverlay } from "web/components/loading-overlay";
 import { Title } from "web/components/title";
-import { CONTRACT_ANTE, formatMoney, Resolution } from "web/utils/utils";
+import { ConnectionState } from "web/lib/connection-state";
+import { CONTRACT_ANTE, formatMoney, Resolution } from "web/lib/utils";
 import { ConfirmationButton } from "../components/confirmation-button";
 import { GroupSelector } from "../components/group-selector";
 
@@ -52,7 +54,7 @@ export default () => {
     const [selectedContract, setSelectedContract] = useState<LiteMarket | undefined>(undefined);
     const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState("Connecting to server...");
-    const [connectedToServer, setConnectedToServer] = useState(false);
+    const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
 
     const ante = CONTRACT_ANTE;
     const onSubmitNewQuestion = async () => {
@@ -90,15 +92,16 @@ export default () => {
         socket.on("connect_error", (err) => {
             console.error(err);
             setLoadingMessage(err.message);
+            setConnectionState(ConnectionState.FAILED);
         });
         socket.on("connect", () => {
             console.debug("Socked connected to server.");
-            setConnectedToServer(true);
+            setConnectionState(ConnectionState.CONNECTED);
             setSelectedContract(undefined);
         });
         socket.on("disconnect", () => {
-            setConnectedToServer(false);
-        })
+            setConnectionState(ConnectionState.CONNECTING);
+        });
 
         socket.on(Packets.RESOLVED, () => {
             console.log("Market resolved");
@@ -146,12 +149,7 @@ export default () => {
             <Head>
                 <title>Dock</title>
             </Head>
-            {!connectedToServer && (<div className="fixed inset-0 flex justify-center items-center bg-gray-500 bg-opacity-75 z-50">
-                <Row className="justify-center grow animate-fade items-center gap-4">
-                    <div style={{ borderTopColor: "transparent" }} className="w-10 h-10 border-4 border-white border-solid rounded-full animate-spin" />
-                    <div className="text-white">{loadingMessage}</div>
-                </Row>
-            </div>)}
+            <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} />
             <div className="flex justify-center">
                 <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
                     <div className="p-2">

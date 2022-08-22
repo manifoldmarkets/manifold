@@ -9,7 +9,8 @@ import { Server } from "socket.io";
 import * as Packet from "common/packet-ids";
 import { buildURL, getParamsFromURL } from "./utils";
 
-import { PacketCreateMarket, PacketMarketCreated, PacketTwitchLinkComplete } from "common/packets";
+import { PacketTwitchLinkComplete } from "common/packets";
+import OverlayClient from "./clients/overlay";
 import { PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
 import AppFirestore from "./firestore";
 import log from "./logger";
@@ -18,7 +19,7 @@ import { Market } from "./market";
 import * as Twitch from "./twitch-api";
 import TwitchBot from "./twitch-bot";
 import User from "./user";
-import DockClient from "./dock-client";
+import DockClient from "./clients/dock";
 
 export default class App {
     private readonly app: Express;
@@ -36,6 +37,7 @@ export default class App {
         this.app.use(express.json());
 
         this.bot = new TwitchBot(this);
+        this.firestore = new AppFirestore();
 
         moment.updateLocale("en", {
             relativeTime: {
@@ -55,8 +57,6 @@ export default class App {
                 yy: "%dY",
             },
         });
-
-        this.firestore = new AppFirestore();
     }
 
     public getMarketForTwitchChannel(channel: string) {
@@ -129,38 +129,30 @@ export default class App {
                 next(new Error("No account associated with this control token"));
                 return;
             }
+            socket.data = connectedUser;
             next();
         });
         this.io.on("connection", (socket) => {
             if (socket.handshake.query.type === "dock") {
                 new DockClient(this, socket);
             } else if (socket.handshake.query.type === "overlay") {
-                log.info("Overlay socket connected.");
+                new OverlayClient(this, socket);
+
+                socket.emit(Packet.CLEAR);
+                // socket.emit(Packet.SELECT_MARKET_ID, "iiFWwKwC5tlKa5uG8mku"); ///!!! Remove
+
+                // const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
+                // if (mkt) { //!!! Remove
+                //     socket.emit(Packet.SELECT_MARKET_ID, mkt.data.id);
+                //     socket.emit(Packet.ADD_BETS, mkt.bets);
+
+                //     mkt.overlaySockets.push(socket);
+
+                //     if (mkt.resolveData) {
+                //         socket.emit(Packet.RESOLVE, mkt.resolveData); //!!!
+                //     }
+                // }
             }
-
-            socket.emit(Packet.CLEAR);
-
-            // const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
-
-            // if (this.selectedMarket) {!!!
-            //     socket.emit(Packet.SELECT_MARKET_ID, this.selectedMarket.data.id);
-            //     socket.emit(Packet.ADD_BETS, this.selectedMarket.bets);
-
-            //     this.selectedMarket.overlaySockets.push(socket);
-
-            //     if (this.selectedMarket.resolveData) {
-            //         socket.emit(Packet.RESOLVE, this.selectedMarket.resolveData); //!!!
-            //     }
-            // }
-            //!!! Need some linking method
-
-            socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
-                const pseudoUser = await this.getUserForTwitchUsername("philbladen"); //!!!
-                if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
-                const newMarket = await Manifold.createBinaryMarket(pseudoUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
-                socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
-                log.info("Created new market via dock: " + packet.question);
-            });
         });
 
         this.app.get("/unregisterchannel", (request, response) => {

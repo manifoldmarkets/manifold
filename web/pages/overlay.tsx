@@ -8,7 +8,7 @@ import moment from "moment";
 
 import Chart, { Point } from "../components/chart";
 
-import { getCanvasFont, getTextWidth } from "../utils/utils";
+import { getCanvasFont, getTextWidth } from "../lib/utils";
 
 import io, { Socket } from "socket.io-client";
 import { Col } from "web/components/layout/col";
@@ -22,6 +22,8 @@ import * as Manifold from "common/manifold-defs";
 import * as Packet from "common/packet-ids";
 import { FullBet } from "common/transaction";
 import { PacketResolved } from "common/packets";
+import { ConnectionState } from "web/lib/connection-state";
+import { LoadingOverlay } from "web/components/loading-overlay";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -82,8 +84,11 @@ class Application {
         setInterval(() => this.updateBetTimes(), 1000);
 
         // let lastAddedTimestamp = 0;
-        this.socket = io({ query: { type: "overlay" } });
-        this.socket.on("bets", (bets: FullBet[]) => {
+        const params = new Proxy(new URLSearchParams(window.location.search), {
+            get: (searchParams, prop) => searchParams.get(prop as string),
+        });
+        this.socket = io({ query: { type: "overlay", controlToken: params["t"] } });
+        this.socket.on(Packet.ADD_BETS, (bets: FullBet[]) => {
             // console.log(bet);
             // bets.reverse();
             if (bets.length > 3) {
@@ -258,10 +263,24 @@ enum Page {
 export default () => {
     const [page, setPage] = useState<Page>(Page.MAIN);
     const [resolvedData, setResolvedData] = useState<PacketResolved | undefined>(undefined);
-    const [overlayVisible, setOverlayVisible] = useState(false);
+    const [overlayVisible, setOverlayVisible] = useState(true); //!!! false
+    const [loadingMessage, setLoadingMessage] = useState("Connecting to server...");
+    const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
 
     useEffect(() => {
         const app = new Application();
+        app.socket.on("connect_error", (err) => {
+            console.error(err);
+            setLoadingMessage(err.message);
+            setConnectionState(ConnectionState.FAILED);
+        });
+        app.socket.on("connect", () => {
+            console.debug("Socked connected to server.");
+            setConnectionState(ConnectionState.CONNECTED);
+        });
+        app.socket.on("disconnect", () => {
+            setConnectionState(ConnectionState.CONNECTING);
+        });
         app.socket.on(Packet.RESOLVE, (packet: PacketResolved) => {
             setResolvedData(packet);
             console.log(packet);
@@ -273,6 +292,9 @@ export default () => {
         });
         app.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
             setOverlayVisible(marketID ? true : false);
+        });
+        app.socket.on(Packet.UNFEATURE_MARKET, () => {
+            setOverlayVisible(false);
         });
     }, []);
 
@@ -303,8 +325,7 @@ export default () => {
         <>
             <Head>
                 <title>Overlay</title>
-                {/* <meta name="viewport" /> */}
-                {/* <meta name="viewport" content="initial-scale=1.0, width=device-width" /> */}
+                <meta name="viewport" content="initial-scale=1.0, width=device-width" />
                 <style>{`
                     body,:root {
                         background-color: transparent !important;
@@ -323,8 +344,9 @@ export default () => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
             >
-                <div className="fixed inset-0">
-                    <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0", styles.border)} style={{ fontSize: "calc(min(70px, 4.5vw))" }}>
+                <div id="content" className={clsx("fixed inset-0 overflow-hidden", styles.border)}>
+                    <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} />
+                    <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0")} style={{ fontSize: "calc(min(70px, 4.5vw))" }}>
                         <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
                             <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
                             <Col className="items-center justify-center justify-self-end">
