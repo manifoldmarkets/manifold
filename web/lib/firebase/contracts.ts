@@ -125,9 +125,10 @@ export async function listTaggedContractsCaseInsensitive(
 
 export async function listAllContracts(
   n: number,
-  before?: string
+  before?: string,
+  sortDescBy = 'createdTime'
 ): Promise<Contract[]> {
-  let q = query(contracts, orderBy('popularityScore', 'desc'), limit(n))
+  let q = query(contracts, orderBy(sortDescBy, 'desc'), limit(n))
   if (before != null) {
     const snap = await getDoc(doc(contracts, before))
     q = query(q, startAfter(snap))
