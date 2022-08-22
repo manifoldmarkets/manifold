@@ -9,7 +9,7 @@ const firestore = admin.firestore()
 
 export const resetBettingStreaksForUsers = functions.pubsub
   .schedule(`0 ${BETTING_STREAK_RESET_HOUR} * * *`)
-  .timeZone('utc')
+  .timeZone('Etc/UTC')
   .onRun(async () => {
     await resetBettingStreaksInternal()
   })
