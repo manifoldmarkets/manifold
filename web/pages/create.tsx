@@ -272,9 +272,9 @@ export function NewContract(props: {
         }}
         choicesMap={{
           'Yes / No': 'BINARY',
-          'Multiple choice': 'MULTIPLE_CHOICE',
-          'Free response': 'FREE_RESPONSE',
-          Numeric: 'PSEUDO_NUMERIC',
+          // 'Multiple choice': 'MULTIPLE_CHOICE',
+          // 'Free response': 'FREE_RESPONSE',
+          // Numeric: 'PSEUDO_NUMERIC',
         }}
         isSubmitting={isSubmitting}
         className={'col-span-4'}

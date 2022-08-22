@@ -8,9 +8,9 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth.token.email in [
         'akrolsmir@gmail.com',
-        'jahooma@gmail.com',
-        'taowell@gmail.com',
-        'manticmarkets@gmail.com'
+        'ricki.heicklen@gmail.com',
+        'ross@ftx.org',
+        'gpimpale29@gmail.com'
       ]
     }
 

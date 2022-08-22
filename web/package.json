@@ -11,6 +11,7 @@
     "dev:the": "cross-env NEXT_PUBLIC_FIREBASE_ENV=THEOREMONE yarn dev",
     "dev:local": "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8080 yarn devdev",
     "dev:emulate": "cross-env NEXT_PUBLIC_FIREBASE_EMULATE=TRUE yarn devdev",
+    "dev:atlas4": "cross-env NEXT_PUBLIC_FIREBASE_ENV=ATLAS4 yarn dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
