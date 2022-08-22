@@ -32,6 +32,7 @@ export type User = {
     allTime: number
   }
 
+  nextLoanCached: number
   followerCountCached: number
 
   followedCategories?: string[]

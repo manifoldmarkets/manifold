@@ -5,7 +5,7 @@ import {
   getNotificationsQuery,
   listenForNotifications,
 } from 'web/lib/firebase/notifications'
-import { groupBy, map } from 'lodash'
+import { groupBy, map, partition } from 'lodash'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 
@@ -67,19 +67,14 @@ export function groupNotifications(notifications: Notification[]) {
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()
   )
+  const incomeSourceTypes = ['bonus', 'tip', 'loan', 'betting_streak_bonus']
+
   Object.keys(notificationGroupsByDay).forEach((day) => {
     const notificationsGroupedByDay = notificationGroupsByDay[day]
-    const incomeNotifications = notificationsGroupedByDay.filter(
+    const [incomeNotifications, normalNotificationsGroupedByDay] = partition(
+      notificationsGroupedByDay,
       (notification) =>
-        notification.sourceType === 'bonus' ||
-        notification.sourceType === 'tip' ||
-        notification.sourceType === 'betting_streak_bonus'
-    )
-    const normalNotificationsGroupedByDay = notificationsGroupedByDay.filter(
-      (notification) =>
-        notification.sourceType !== 'bonus' &&
-        notification.sourceType !== 'tip' &&
-        notification.sourceType !== 'betting_streak_bonus'
+        incomeSourceTypes.includes(notification.sourceType ?? '')
     )
     if (incomeNotifications.length > 0) {
       notificationGroups = notificationGroups.concat({

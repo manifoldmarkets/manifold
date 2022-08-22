@@ -61,5 +61,3 @@ export type fill = {
   // I.e. -fill.shares === matchedBet.shares
   isSale?: boolean
 }
-
-export const MAX_LOAN_PER_CONTRACT = 20
