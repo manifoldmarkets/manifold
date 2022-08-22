@@ -271,9 +271,17 @@ function IncomeNotificationGroupItem(props: {
     }
     return newNotifications
   }
-
-  const combinedNotifs =
-    combineNotificationsByAddingNumericSourceTexts(notifications)
+  const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
+    notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
+  )
+  // Because the server's reset time will never align with the client's, we may
+  // erroneously sum 2 betting streak bonuses, therefore just show the most recent
+  const mostRecentBettingStreakBonus = notifications
+    .filter((n) => n.sourceType === 'betting_streak_bonus')
+    .sort((a, b) => a.createdTime - b.createdTime)
+    .pop()
+  if (mostRecentBettingStreakBonus)
+    combinedNotifs.unshift(mostRecentBettingStreakBonus)
 
   return (
     <div

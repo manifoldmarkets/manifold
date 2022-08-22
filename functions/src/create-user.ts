@@ -27,7 +27,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
-import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
+import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
