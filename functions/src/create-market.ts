@@ -18,7 +18,7 @@ import { randomString } from '../../common/util/random'
 import { chargeUser, getContract } from './utils'
 import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
-import { FIXED_ANTE } from 'common/economy'
+import { FIXED_ANTE } from '../../common/economy'
 import {
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,

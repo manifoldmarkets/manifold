@@ -5,10 +5,10 @@ import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
 import { createReferralNotification } from './create-notification'
 import { ReferralTxn } from '../../common/txn'
 import { Contract } from '../../common/contract'
-import { LimitBet } from 'common/bet'
+import { LimitBet } from '../../common/bet'
 import { QuerySnapshot } from 'firebase-admin/firestore'
-import { Group } from 'common/group'
-import { REFERRAL_AMOUNT } from 'common/economy'
+import { Group } from '../../common/group'
+import { REFERRAL_AMOUNT } from '../../common/economy'
 const firestore = admin.firestore()
 
 export const onUpdateUser = functions.firestore
