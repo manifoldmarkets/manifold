@@ -11,7 +11,7 @@ import { createLoanIncomeNotification } from './create-notification'
 const firestore = admin.firestore()
 
 export const updateLoans = functions
-  .runWith({ memory: '1GB', timeoutSeconds: 540 })
+  .runWith({ memory: '2GB', timeoutSeconds: 540 })
   // Run every Monday.
   .pubsub.schedule('0 0 * * 1')
   .timeZone('America/Los_Angeles')

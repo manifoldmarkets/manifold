@@ -262,6 +262,6 @@ const calculateNewProfit = (
 }
 
 export const updateMetrics = functions
-  .runWith({ memory: '1GB', timeoutSeconds: 540 })
+  .runWith({ memory: '2GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 15 minutes')
   .onRun(updateMetricsCore)
