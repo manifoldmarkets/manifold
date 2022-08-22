@@ -11,10 +11,7 @@ import {
 import { User } from './user'
 import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
-import { ENV_CONFIG } from './envs/constants'
 import { Answer } from './answer'
-
-export const FIXED_ANTE = ENV_CONFIG.fixedAnte ?? 100
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
 export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id

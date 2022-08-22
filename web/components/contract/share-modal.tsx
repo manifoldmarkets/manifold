@@ -14,9 +14,10 @@ import { Button } from '../button'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { REFERRAL_AMOUNT, User } from 'common/user'
+import { User } from 'common/user'
 import { SiteLink } from '../site-link'
 import { formatMoney } from 'common/util/format'
+import { REFERRAL_AMOUNT } from 'common/economy'
 
 export function ShareModal(props: {
   contract: Contract

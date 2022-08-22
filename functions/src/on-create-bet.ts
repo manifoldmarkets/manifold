@@ -17,7 +17,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
   UNIQUE_BETTOR_BONUS_AMOUNT,
-} from '../../common/numeric-constants'
+} from '../../common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,

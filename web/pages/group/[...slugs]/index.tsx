@@ -34,7 +34,6 @@ import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
 import { useCommentsOnGroup } from 'web/hooks/use-comments'
-import { REFERRAL_AMOUNT } from 'common/user'
 import { ContractSearch } from 'web/components/contract-search'
 import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
@@ -48,6 +47,7 @@ import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { GroupChat } from 'web/components/groups/group-chat'
+import { REFERRAL_AMOUNT } from 'common/economy'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
