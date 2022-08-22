@@ -67,7 +67,7 @@ const calculateLoanBetUpdates = (
   const betsByContract = groupBy(bets, (bet) => bet.contractId)
   const contracts = filterDefined(
     Object.keys(betsByContract).map((contractId) => contractsById[contractId])
-  )
+  ).filter((c) => !c.isResolved)
 
   const betUpdates = filterDefined(
     contracts
