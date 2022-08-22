@@ -10,7 +10,7 @@ import { DAY_MS } from '../../common/util/time'
 export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
   // every minute on Monday for an hour at 12pm PT (UTC -07:00)
-  .pubsub.schedule('* 18 * * 1')
+  .pubsub.schedule('* 19 * * 1')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendTrendingMarketsEmailsToAllUsers()
