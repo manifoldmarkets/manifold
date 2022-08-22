@@ -13,7 +13,7 @@ export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
 
 export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
   const { pool, totalShares, totalBets } = contract
-  const { id: betId, amount, shares, outcome } = bet
+  const { id: betId, amount, shares, outcome, loanAmount } = bet
 
   const adjShareValue = calculateDpmShareValue(contract, bet)
 
@@ -64,6 +64,7 @@ export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
       betId,
     },
     fees,
+    loanAmount: -(loanAmount ?? 0),
   }
 
   return {
@@ -79,8 +80,8 @@ export const getCpmmSellBetInfo = (
   shares: number,
   outcome: 'YES' | 'NO',
   contract: CPMMContract,
-  prevLoanAmount: number,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  loanPaid: number
 ) => {
   const { pool, p } = contract
 
@@ -91,7 +92,6 @@ export const getCpmmSellBetInfo = (
     unfilledBets
   )
 
-  const loanPaid = Math.min(prevLoanAmount, saleValue)
   const probBefore = getCpmmProbability(pool, p)
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 

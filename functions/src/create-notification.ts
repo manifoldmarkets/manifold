@@ -471,6 +471,32 @@ export const createReferralNotification = async (
   await notificationRef.set(removeUndefinedProps(notification))
 }
 
+export const createLoanIncomeNotification = async (
+  toUser: User,
+  idempotencyKey: string,
+  income: number
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: 'loan_income',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: idempotencyKey,
+    sourceType: 'loan',
+    sourceUpdateType: 'updated',
+    sourceUserName: toUser.name,
+    sourceUserUsername: toUser.username,
+    sourceUserAvatarUrl: toUser.avatarUrl,
+    sourceText: income.toString(),
+    sourceTitle: 'Loan',
+  }
+  await notificationRef.set(removeUndefinedProps(notification))
+}
+
 const groupPath = (groupSlug: string) => `/group/${groupSlug}`
 
 export const createChallengeAcceptedNotification = async (

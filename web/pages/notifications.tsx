@@ -388,6 +388,8 @@ function IncomeNotificationItem(props: {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
       reasonText = 'for your'
+    } else if (sourceType === 'loan' && sourceText) {
+      reasonText = `of your invested bets returned as`
     }
 
     const bettingStreakText =
@@ -401,7 +403,15 @@ function IncomeNotificationItem(props: {
     return (
       <>
         {reasonText}
-        {sourceType === 'betting_streak_bonus' ? (
+        {sourceType === 'loan' ? (
+          simple ? (
+            <span className={'ml-1 font-bold'}>Loan</span>
+          ) : (
+            <SiteLink className={'ml-1 font-bold'} href={'/loans'}>
+              Loan
+            </SiteLink>
+          )
+        ) : sourceType === 'betting_streak_bonus' ? (
           simple ? (
             <span className={'ml-1 font-bold'}>{bettingStreakText}</span>
           ) : (
@@ -445,6 +455,7 @@ function IncomeNotificationItem(props: {
     if (sourceType === 'challenge') return `${sourceSlug}`
     if (sourceType === 'betting_streak_bonus')
       return `/${sourceUserUsername}/?show=betting-streak`
+    if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
     if (sourceContractCreatorUsername && sourceContractSlug)
       return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
         sourceId ?? '',

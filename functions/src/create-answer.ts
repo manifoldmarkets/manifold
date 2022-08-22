@@ -75,10 +75,8 @@ export const createanswer = newEndpoint(opts, async (req, auth) => {
     }
     transaction.create(newAnswerDoc, answer)
 
-    const loanAmount = 0
-
     const { newBet, newPool, newTotalShares, newTotalBets } =
-      getNewMultiBetInfo(answerId, amount, contract, loanAmount)
+      getNewMultiBetInfo(answerId, amount, contract)
 
     const newBalance = user.balance - amount
     const betDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
