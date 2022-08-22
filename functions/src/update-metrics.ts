@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEmpty, keyBy, mapValues, maxBy, sum, sumBy } from 'lodash'
+import { groupBy, isEmpty, keyBy, sum, sumBy } from 'lodash'
 import { getValues, log, logMemory, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
@@ -22,7 +22,9 @@ const computeInvestmentValue = (
     if (bet.sale || bet.isSold) return 0
 
     const payout = calculatePayout(contract, bet, 'MKT')
-    return payout - (bet.loanAmount ?? 0)
+    const value = payout - (bet.loanAmount ?? 0)
+    if (isNaN(value)) return 0
+    return value
   })
 }
 
@@ -73,18 +75,7 @@ export const updateMetricsCore = async () => {
   const betsByUser = groupBy(bets, (bet) => bet.userId)
   const portfolioHistoryByUser = groupBy(allPortfolioHistories, (p) => p.userId)
 
-  const portfolioByUser = mapValues(portfolioHistoryByUser, (history) =>
-    maxBy(history, (portfolio) => portfolio.timestamp)
-  )
-  const { userPayouts } = getLoanUpdates(
-    users,
-    contractsById,
-    portfolioByUser,
-    betsByUser
-  )
-  const nextLoanByUser = keyBy(userPayouts, (payout) => payout.user.id)
-
-  const userUpdates = users.map((user) => {
+  const userMetrics = users.map((user) => {
     const currentBets = betsByUser[user.id] ?? []
     const portfolioHistory = portfolioHistoryByUser[user.id] ?? []
     const userContracts = contractsByUser[user.id] ?? []
@@ -106,34 +97,56 @@ export const updateMetricsCore = async () => {
       newPortfolio,
       didProfitChange
     )
-    const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
-
     return {
-      fieldUpdates: {
-        doc: firestore.collection('users').doc(user.id),
-        fields: {
-          creatorVolumeCached: newCreatorVolume,
-          ...(didProfitChange && {
-            profitCached: newProfit,
-          }),
-          nextLoanCached,
-        },
-      },
-
-      subcollectionUpdates: {
-        doc: firestore
-          .collection('users')
-          .doc(user.id)
-          .collection('portfolioHistory')
-          .doc(),
-        fields: {
-          ...(didProfitChange && {
-            ...newPortfolio,
-          }),
-        },
-      },
+      user,
+      newCreatorVolume,
+      newPortfolio,
+      newProfit,
+      didProfitChange,
     }
   })
+
+  const portfolioByUser = Object.fromEntries(
+    userMetrics.map(({ user, newPortfolio }) => [user.id, newPortfolio])
+  )
+  const { userPayouts } = getLoanUpdates(
+    users,
+    contractsById,
+    portfolioByUser,
+    betsByUser
+  )
+  const nextLoanByUser = keyBy(userPayouts, (payout) => payout.user.id)
+
+  const userUpdates = userMetrics.map(
+    ({ user, newCreatorVolume, newPortfolio, newProfit, didProfitChange }) => {
+      const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
+      return {
+        fieldUpdates: {
+          doc: firestore.collection('users').doc(user.id),
+          fields: {
+            creatorVolumeCached: newCreatorVolume,
+            ...(didProfitChange && {
+              profitCached: newProfit,
+            }),
+            nextLoanCached,
+          },
+        },
+
+        subcollectionUpdates: {
+          doc: firestore
+            .collection('users')
+            .doc(user.id)
+            .collection('portfolioHistory')
+            .doc(),
+          fields: {
+            ...(didProfitChange && {
+              ...newPortfolio,
+            }),
+          },
+        },
+      }
+    }
+  )
   await writeAsync(
     firestore,
     userUpdates.map((u) => u.fieldUpdates)
