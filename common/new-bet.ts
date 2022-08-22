@@ -1,6 +1,6 @@
 import { sortBy, sum, sumBy } from 'lodash'
 
-import { Bet, fill, LimitBet, MAX_LOAN_PER_CONTRACT, NumericBet } from './bet'
+import { Bet, fill, LimitBet, NumericBet } from './bet'
 import {
   calculateDpmShares,
   getDpmProbability,
@@ -276,8 +276,7 @@ export const getBinaryBetStats = (
 export const getNewBinaryDpmBetInfo = (
   outcome: 'YES' | 'NO',
   amount: number,
-  contract: DPMBinaryContract,
-  loanAmount: number
+  contract: DPMBinaryContract
 ) => {
   const { YES: yesPool, NO: noPool } = contract.pool
 
@@ -308,7 +307,7 @@ export const getNewBinaryDpmBetInfo = (
   const newBet: CandidateBet = {
     contractId: contract.id,
     amount,
-    loanAmount,
+    loanAmount: 0,
     shares,
     outcome,
     probBefore,
@@ -324,7 +323,6 @@ export const getNewMultiBetInfo = (
   outcome: string,
   amount: number,
   contract: FreeResponseContract | MultipleChoiceContract,
-  loanAmount: number
 ) => {
   const { pool, totalShares, totalBets } = contract
 
@@ -345,7 +343,7 @@ export const getNewMultiBetInfo = (
   const newBet: CandidateBet = {
     contractId: contract.id,
     amount,
-    loanAmount,
+    loanAmount: 0,
     shares,
     outcome,
     probBefore,
@@ -398,14 +396,4 @@ export const getNumericBetsInfo = (
   }
 
   return { newBet, newPool, newTotalShares, newTotalBets }
-}
-
-export const getLoanAmount = (yourBets: Bet[], newBetAmount: number) => {
-  const openBets = yourBets.filter((bet) => !bet.isSold && !bet.sale)
-  const prevLoanAmount = sumBy(openBets, (bet) => bet.loanAmount ?? 0)
-  const loanAmount = Math.min(
-    newBetAmount,
-    MAX_LOAN_PER_CONTRACT - prevLoanAmount
-  )
-  return loanAmount
 }

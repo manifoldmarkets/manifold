@@ -39,6 +39,7 @@ export type notification_source_types =
   | 'bonus'
   | 'challenge'
   | 'betting_streak_bonus'
+  | 'loan'
 
 export type notification_source_update_types =
   | 'created'
@@ -68,3 +69,4 @@ export type notification_reason_types =
   | 'user_joined_from_your_group_invite'
   | 'challenge_accepted'
   | 'betting_streak_incremented'
+  | 'loan_income'

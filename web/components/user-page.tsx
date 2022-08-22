@@ -29,6 +29,7 @@ import { formatMoney } from 'common/util/format'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
+import { LoansModal } from './profile/loans-modal'
 import { REFERRAL_AMOUNT } from 'common/user'
 
 export function UserLink(props: {
@@ -68,12 +69,16 @@ export function UserPage(props: { user: User }) {
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
+  const [showLoansModal, setShowLoansModal] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
     const showBettingStreak = router.query['show'] === 'betting-streak'
     setShowBettingStreakModal(showBettingStreak)
     setShowConfetti(claimedMana || showBettingStreak)
+
+    const showLoansModel = router.query['show'] === 'loans'
+    setShowLoansModal(showLoansModel)
 
     const query = { ...router.query }
     if (query.claimedMana || query.show) {
@@ -107,6 +112,9 @@ export function UserPage(props: { user: User }) {
         isOpen={showBettingStreakModal}
         setOpen={setShowBettingStreakModal}
       />
+      {showLoansModal && (
+        <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
+      )}
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
@@ -128,7 +136,7 @@ export function UserPage(props: { user: User }) {
         <div className="absolute right-0 top-0 mt-2 mr-4">
           {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
-            <SiteLink className="sm:btn-md btn-sm btn" href="/profile">
+            <SiteLink className="btn-sm btn" href="/profile">
               <PencilIcon className="h-5 w-5" />{' '}
               <div className="ml-2">Edit</div>
             </SiteLink>
@@ -138,9 +146,14 @@ export function UserPage(props: { user: User }) {
 
       {/* Profile details: name, username, bio, and link to twitter/discord */}
       <Col className="mx-4 -mt-6">
-        <Row className={'justify-between'}>
+        <Row className={'flex-wrap justify-between gap-y-2'}>
           <Col>
-            <span className="text-2xl font-bold">{user.name}</span>
+            <span
+              className="text-2xl font-bold"
+              style={{ wordBreak: 'break-word' }}
+            >
+              {user.name}
+            </span>
             <span className="text-gray-500">@{user.username}</span>
           </Col>
           <Col className={'justify-center'}>
@@ -160,8 +173,19 @@ export function UserPage(props: { user: User }) {
                 className={'cursor-pointer items-center text-gray-500'}
                 onClick={() => setShowBettingStreakModal(true)}
               >
-                <span>🔥{user.currentBettingStreak ?? 0}</span>
+                <span>🔥 {user.currentBettingStreak ?? 0}</span>
                 <span>streak</span>
+              </Col>
+              <Col
+                className={
+                  'flex-shrink-0 cursor-pointer items-center text-gray-500'
+                }
+                onClick={() => setShowLoansModal(true)}
+              >
+                <span className="text-green-600">
+                  🏦 {formatMoney(user.nextLoanCached ?? 0)}
+                </span>
+                <span>next loan</span>
               </Col>
             </Row>
           </Col>
