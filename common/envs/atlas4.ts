@@ -23,9 +23,6 @@ export const ATLAS4_CONFIG: EnvConfig = {
   ],
   whitelistEmail: '',
   moneyMoniker: '📎',
-  fixedAnte: 25,
-  startingBalance: 250,
-  referralBonus: 0,
   visibility: 'PRIVATE',
   navbarLogoPath: '/atlas/atlas-logo-white.svg',
   newQuestionPlaceholders: [
@@ -34,4 +31,11 @@ export const ATLAS4_CONFIG: EnvConfig = {
     'Will we sign on 3 or more new clients this month?',
     'Will Paul shave his beard by the end of the month?',
   ],
+
+  economy: {
+    FIXED_ANTE: 25,
+    STARTING_BALANCE: 250,
+    REFERRAL_AMOUNT: 0,
+    BETTING_STREAK_BONUS_AMOUNT: 0,
+  },
 }
