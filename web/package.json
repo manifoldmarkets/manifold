@@ -10,7 +10,7 @@
     "build": "next build && next export"
   },
   "dependencies": {
-    "@headlessui/react": "1.6.1",
+    "@headlessui/react": "^1.6.6",
     "@heroicons/react": "1.0.5",
     "clsx": "1.1.1",
     "daisyui": "1.16.4",

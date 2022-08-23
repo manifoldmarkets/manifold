@@ -23,7 +23,7 @@ import DockClient from "./clients/dock";
 
 export default class App {
     private readonly app: Express;
-    private io: Server;
+    io: Server;
     readonly bot: TwitchBot;
     readonly firestore: AppFirestore;
 
@@ -82,7 +82,7 @@ export default class App {
 
         if (id) {
             const marketData = await Manifold.getFullMarketByID(id);
-            const market = new Market(this, marketData);
+            const market = new Market(this, marketData, channel);
             this.selectedMarketMap[channel] = market;
             // this.io.to(channel).emit(Packet.ADD_BETS, market.bets);
 

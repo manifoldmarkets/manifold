@@ -31,7 +31,7 @@ export default class DockClient {
         this.socket.join(connectedTwitchStream);
 
         const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
-        this.socket.emit(Packet.USER_INFO, <PacketUserInfo> { manifoldID: this.connectedUser.data.manifoldID });
+        this.socket.emit(Packet.USER_INFO, <PacketUserInfo>{ manifoldID: this.connectedUser.data.manifoldID });
         if (market) {
             this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
         }
@@ -72,9 +72,13 @@ export default class DockClient {
 
         this.socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
             //!!! Uncomment
-            // const newMarket = await ManifoldAPI.createBinaryMarket(this.connectedUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
-            // this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
-            // log.debug("Created new market via dock: " + packet.question);
+            try {
+                const newMarket = await ManifoldAPI.createBinaryMarket(this.connectedUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
+                this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
+                log.debug("Created new market via dock: " + packet.question);
+            } catch (e) {
+                this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ failReason: e.message });
+            }
         });
 
         this.socket.on("disconnect", () => {

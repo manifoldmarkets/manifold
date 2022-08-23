@@ -11,7 +11,8 @@ export type PacketCreateMarket = {
 }
 
 export type PacketMarketCreated = {
-    id: string;
+    id?: string;
+    failReason?: string;
 }
 
 export type PacketTwitchLinkComplete = {

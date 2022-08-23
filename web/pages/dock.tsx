@@ -65,6 +65,7 @@ export default () => {
     const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(undefined);
     const [balance, setBalance] = useState(0);
     const [question, setQuestion] = useState("");
+    const [questionCreateError, setQuestionCreateError] = useState<string | undefined>(undefined);
     const [loadingContracts, setLoadingContracts] = useState<boolean>(false);
     const [contracts, setContracts] = useState<LiteMarket[]>([]);
     const [selectedContract, setSelectedContract] = useState<LiteMarket | undefined>(undefined);
@@ -80,6 +81,10 @@ export default () => {
             await new Promise<void>((resolve, reject) => {
                 socket.emit(Packets.CREATE_MARKET, { groupId: selectedGroup.id, question: question } as PacketCreateMarket);
                 socket.once(Packets.MARKET_CREATED, async (packet: PacketMarketCreated) => {
+                    if (packet.failReason) {
+                        reject(new Error(packet.failReason));
+                        return;
+                    }
                     //!!! Need to refresh groups
                     const markets = await fetchMarketsInGroup(selectedGroup);
                     setContracts(markets);
@@ -91,11 +96,12 @@ export default () => {
                     }
                     resolve();
                 });
-                setTimeout(() => reject("Timeout"), 5000); //!!! Handle errors nicely
+                setTimeout(() => reject(new Error("Timeout")), 5000);
             });
             return true;
         } catch (e) {
-            console.log(e);
+            console.trace(e);
+            setQuestionCreateError(e.message);
             return false;
         } finally {
             setIsSubmittingQuestion(false);
@@ -108,7 +114,6 @@ export default () => {
         });
         socket = io({ query: { type: "dock", controlToken: params["t"] } });
         socket.on("connect_error", (err) => {
-            console.error(err);
             setLoadingMessage("Failed to connect to server: " + err.message);
             setConnectionState(ConnectionState.FAILED);
         });
@@ -125,6 +130,7 @@ export default () => {
         socket.on(Packets.USER_INFO, (p: PacketUserInfo) => {
             console.debug("Received user info: " + p.manifoldID);
             setManifoldUserID(p.manifoldID);
+            getUserBalance(p.manifoldID).then((b) => setBalance(b));
         });
 
         socket.on(Packets.RESOLVED, () => {
@@ -141,8 +147,6 @@ export default () => {
         socket.on(Packets.UNFEATURE_MARKET, () => {
             setSelectedContract(undefined);
         });
-
-        getUserBalance(manifoldUserID).then((b) => setBalance(b));
     }, []);
 
     const onContractFeature = (contract: LiteMarket) => {
@@ -222,7 +226,7 @@ export default () => {
                                     </div>
                                 </form>
 
-                                <Row className="form-control mb-1 items-start">
+                                <Row className="form-control items-start">
                                     <Row className="gap-2 grow items-center justify-items-start flex">
                                         <span>Cost:</span>
                                         <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} /> {/*!!!*/}
@@ -233,6 +237,11 @@ export default () => {
                                 {ante > balance && (
                                     <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
                                         <span className="mr-2 text-red-500">Insufficient balance ({formatMoney(balance)})</span>
+                                    </div>
+                                )}
+                                {questionCreateError && (
+                                    <div className="-mt-1 mr-auto self-center whitespace-nowrap text-sm font-medium tracking-wide">
+                                        <span className="mr-2 text-red-500">Failed to create question: {questionCreateError}</span>
                                     </div>
                                 )}
                             </ConfirmationButton>

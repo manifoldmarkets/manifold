@@ -11,7 +11,7 @@ import { PacketResolved } from "common/packets";
 const { keyBy, mapValues, sumBy, groupBy } = lodash;
 import * as Packet from "common/packet-ids";
 import _ from "lodash";
-import { ResolutionOutcome } from "common/outcome";
+import { getOutcomeForString, ResolutionOutcome } from "common/outcome";
 
 export class Market {
     private readonly app: App;
@@ -29,9 +29,13 @@ export class Market {
 
     resolveData: PacketResolved = null;
 
-    constructor(app: App, data: FullMarket) {
+    readonly twitchChannel: string;
+
+    constructor(app: App, data: FullMarket, twitchChannel: string) {
         this.app = app;
         this.data = data;
+
+        this.twitchChannel = twitchChannel;
 
         for (const bet of this.data.bets) {
             // const fullBet: FullBet = {
@@ -77,15 +81,18 @@ export class Market {
                     topLosers.sort(sortFunction);
 
                     this.resolveData = {
-                        outcome: this.data.resolution === "YES" ? "YES" : this.data.resolution === "NO" ? "NO" : "NA", //!!! Proper outcomes
+                        outcome: getOutcomeForString(this.data.resolution),
                         uniqueTraders: uniqueTraderCount,
                         topWinners: topWinners,
                         topLosers: topLosers,
                     };
-                    for (const socket of this.overlaySockets) {
-                        socket.emit(Packet.RESOLVE, this.resolveData); //!!!
-                        socket.emit(Packet.RESOLVED); //!!!
-                    }
+                    // for (const socket of this.overlaySockets) {
+                    //     socket.emit(Packet.RESOLVE, this.resolveData); //!!!
+                    //     socket.emit(Packet.RESOLVED); //!!!
+                    // }
+
+                    app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData); //!!!
+                    app.io.to(this.twitchChannel).emit(Packet.RESOLVED); //!!!
                 }
             } catch (e) {
                 log.trace(e);

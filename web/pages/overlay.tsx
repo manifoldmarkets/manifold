@@ -188,12 +188,7 @@ class Application {
     }
 
     addBet(bet: FullBet) {
-        // const maxNameLength = 20; //!!! hack
-        let name = bet.username; //!!!
-        // if (name.length > maxNameLength) {
-        //     name = name.substring(0, maxNameLength - 3);
-        //     name += "...";
-        // }
+        let name = bet.username;
 
         const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
 
@@ -263,7 +258,7 @@ enum Page {
 export default () => {
     const [page, setPage] = useState<Page>(Page.MAIN);
     const [resolvedData, setResolvedData] = useState<PacketResolved | undefined>(undefined);
-    const [overlayVisible, setOverlayVisible] = useState(true); //!!! false
+    const [overlayVisible, setOverlayVisible] = useState(true);
     const [loadingMessage, setLoadingMessage] = useState("Connecting to server...");
     const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
 
@@ -271,24 +266,26 @@ export default () => {
         const app = new Application();
         app.socket.on("connect_error", (err) => {
             console.error(err);
-            setLoadingMessage(err.message);
-            setConnectionState(ConnectionState.FAILED);
+            if (err.message !== "xhr poll error") {
+                setLoadingMessage(err.message);
+                setConnectionState(ConnectionState.FAILED);
+            }
         });
         app.socket.on("connect", () => {
             console.debug("Socked connected to server.");
             setConnectionState(ConnectionState.CONNECTED);
         });
         app.socket.on("disconnect", () => {
+            setLoadingMessage("Connecting to server...");
             setConnectionState(ConnectionState.CONNECTING);
         });
         app.socket.on(Packet.RESOLVE, (packet: PacketResolved) => {
             setResolvedData(packet);
-            console.log(packet);
         });
         app.socket.on(Packet.CLEAR, () => {
             setResolvedData(undefined);
             setOverlayVisible(false);
-            console.log("Cleared");
+            console.debug("Received clear packet");
         });
         app.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
             setOverlayVisible(marketID ? true : false);
@@ -301,7 +298,10 @@ export default () => {
     useEffect(() => {
         if (resolvedData) {
             setPage(Page.RESOLVED_TRADERS);
+            let counter = 0;
             const interval = setInterval(() => {
+                counter++;
+                console.log(counter); ///!!! To become auto-hide
                 // setOverlayVisible(o => !o);
                 setPage((page) => {
                     console.log("Change page: " + page);
@@ -345,7 +345,7 @@ export default () => {
                 leaveTo="opacity-0"
             >
                 <div id="content" className={clsx("fixed inset-0 overflow-hidden", styles.border)}>
-                    <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} />
+                    <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} className="bg-opacity-100" />
                     <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0")} style={{ fontSize: "calc(min(70px, 4.5vw))" }}>
                         <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
                             <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
