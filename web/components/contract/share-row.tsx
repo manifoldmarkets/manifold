@@ -10,7 +10,7 @@ import { User } from 'common/user'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { ShareModal } from './share-modal'
 import { withTracking } from 'web/lib/service/analytics'
-import { collection, deleteDoc, doc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { useContractFollows } from 'web/hooks/use-follows'
 
 export function ShareRow(props: {
@@ -70,12 +70,16 @@ export function ShareRow(props: {
           size={'lg'}
           color={'gray-white'}
           onClick={async () => {
-            // remove user doc from contract follows collection
             const followDoc = doc(
               collection(contracts, contract.id, 'follows'),
               user.id
             )
-            await deleteDoc(followDoc)
+            if (followers?.includes(user.id)) await deleteDoc(followDoc)
+            else
+              await setDoc(followDoc, {
+                id: user.id,
+                createdTime: Date.now(),
+              })
           }}
         >
           {followers?.includes(user.id) ? (
