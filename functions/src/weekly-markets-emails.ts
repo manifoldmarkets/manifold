@@ -92,9 +92,11 @@ async function sendTrendingMarketsEmailsToAllUsers() {
   }
 }
 
+const fiveMinutes = 5 * 60 * 1000
+const seed = Math.round(Date.now() / fiveMinutes).toString()
+const rng = createRNG(seed)
+
 function chooseRandomSubset(contracts: Contract[], count: number) {
-  const fiveMinutes = 5 * 60 * 1000
-  const seed = Math.round(Date.now() / fiveMinutes).toString()
-  shuffle(contracts, createRNG(seed))
+  shuffle(contracts, rng)
   return contracts.slice(0, count)
 }
