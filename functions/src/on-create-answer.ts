@@ -1,7 +1,8 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser } from './utils'
-import { createNotification } from './create-notification'
+import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { Answer } from '../../common/answer'
+import { addUserToContractFollowers } from './follow-market'
 
 export const onCreateAnswer = functions.firestore
   .document('contracts/{contractId}/answers/{answerNumber}')
@@ -20,14 +21,14 @@ export const onCreateAnswer = functions.firestore
 
     const answerCreator = await getUser(answer.userId)
     if (!answerCreator) throw new Error('Could not find answer creator')
-
-    await createNotification(
+    await addUserToContractFollowers(contract, answerCreator)
+    await createCommentOrAnswerOrUpdatedContractNotification(
       answer.id,
       'answer',
       'created',
       answerCreator,
       eventId,
       answer.text,
-      { contract }
+      contract
     )
   })

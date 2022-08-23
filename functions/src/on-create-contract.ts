@@ -5,6 +5,7 @@ import { createNotification } from './create-notification'
 import { Contract } from '../../common/contract'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { JSONContent } from '@tiptap/core'
+import { addUserToContractFollowers } from './follow-market'
 
 export const onCreateContract = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
@@ -18,6 +19,7 @@ export const onCreateContract = functions
 
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
+    await addUserToContractFollowers(contract, contractCreator)
 
     await createNotification(
       contract.id,

@@ -70,3 +70,4 @@ export type notification_reason_types =
   | 'challenge_accepted'
   | 'betting_streak_incremented'
   | 'loan_income'
+  | 'you_follow_contract'

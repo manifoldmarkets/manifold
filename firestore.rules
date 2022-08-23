@@ -44,6 +44,11 @@ service cloud.firestore {
       allow read;
     }
 
+    match /contracts/{contractId}/follows/{userId} {
+      allow read;
+      allow create, delete: if userId == request.auth.uid;
+    }
+
     match /contracts/{contractId}/challenges/{challengeId}{
       allow read;
       allow create: if request.auth.uid == request.resource.data.creatorId;

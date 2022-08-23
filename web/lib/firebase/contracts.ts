@@ -23,6 +23,7 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
+import { users } from 'web/lib/firebase/users'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -210,6 +211,16 @@ export function listenForContract(
 ) {
   const contractRef = doc(contracts, contractId)
   return listenForValue<Contract>(contractRef, setContract)
+}
+
+export function listenForContractFollows(
+  contractId: string,
+  setFollowIds: (followIds: string[]) => void
+) {
+  const follows = collection(contracts, contractId, 'follows')
+  return listenForValues<{ id: string }>(follows, (docs) =>
+    setFollowIds(docs.map(({ id }) => id))
+  )
 }
 
 function chooseRandomSubset(contracts: Contract[], count: number) {

@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import { getUser } from './utils'
-import { createNotification } from './create-notification'
+import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { Contract } from '../../common/contract'
 
 export const onUpdateContract = functions.firestore
@@ -29,14 +29,14 @@ export const onUpdateContract = functions.firestore
           resolutionText = `${contract.resolutionValue}`
       }
 
-      await createNotification(
+      await createCommentOrAnswerOrUpdatedContractNotification(
         contract.id,
         'contract',
         'resolved',
         contractUpdater,
         eventId,
         resolutionText,
-        { contract }
+        contract
       )
     } else if (
       previousValue.closeTime !== contract.closeTime ||
@@ -52,14 +52,14 @@ export const onUpdateContract = functions.firestore
         sourceText = contract.question
       }
 
-      await createNotification(
+      await createCommentOrAnswerOrUpdatedContractNotification(
         contract.id,
         'contract',
         'updated',
         contractUpdater,
         eventId,
         sourceText,
-        { contract }
+        contract
       )
     }
   })
