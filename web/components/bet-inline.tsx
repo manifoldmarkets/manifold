@@ -22,7 +22,7 @@ import { formatMoney } from 'common/util/format'
 export function BetInline(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
-  setProbAfter: (probAfter: number) => void
+  setProbAfter: (probAfter: number | undefined) => void
   onClose: () => void
 }) {
   const { contract, className, setProbAfter, onClose } = props
@@ -113,7 +113,12 @@ export function BetInline(props: {
           </Button>
         )}
         <SignUpPrompt size="xs" />
-        <button onClick={onClose}>
+        <button
+          onClick={() => {
+            setProbAfter(undefined)
+            onClose()
+          }}
+        >
           <XIcon className="ml-1 h-6 w-6" />
         </button>
       </Row>
