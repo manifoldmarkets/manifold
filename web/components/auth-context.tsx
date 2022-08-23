@@ -13,6 +13,7 @@ import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
+import { handleRedirectAfterSignup } from 'web/hooks/use-redirect-after-signup'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -62,11 +63,13 @@ export function AuthProvider(props: {
         // Note: Cap on localStorage size is ~5mb
         localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
         setCachedReferralInfoForUser(current.user)
+        handleRedirectAfterSignup(current.user)
       } else {
         // User logged out; reset to null
         deleteTokenCookies()
         setAuthUser(null)
         localStorage.removeItem(CACHED_USER_KEY)
+        handleRedirectAfterSignup(null)
       }
     })
   }, [setAuthUser])

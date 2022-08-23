@@ -9,8 +9,10 @@ import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/button'
 import { useTracking } from 'web/hooks/use-tracking'
+import { useRedirectAfterSignup } from 'web/hooks/use-redirect-after-signup'
 
 export default function TwitchLandingPage() {
+  useRedirectAfterSignup('twitch')
   useSaveReferral()
   useTracking('view twitch landing page')
 
