@@ -165,7 +165,7 @@ function NotificationsList(props: {
   if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
 
   return (
-    <div className={'min-h-[100vh]'}>
+    <div className={'min-h-[100vh] text-sm'}>
       {paginatedGroupedNotifications.length === 0 && (
         <div className={'mt-2'}>
           You don't have any notifications. Try changing your settings to see
