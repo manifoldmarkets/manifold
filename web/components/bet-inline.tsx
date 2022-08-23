@@ -82,7 +82,7 @@ export function BetInline(props: {
         <div className="text-xl">Bet</div>
         <YesNoSelector
           className="space-x-0"
-          btnClassName="rounded-none first:rounded-l-2xl last:rounded-r-2xl"
+          btnClassName="rounded-l-none rounded-r-none first:rounded-l-2xl last:rounded-r-2xl"
           selected={outcome}
           onSelect={setOutcome}
           isPseudoNumeric={isPseudoNumeric}
