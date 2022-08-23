@@ -49,8 +49,6 @@ module.exports = {
     }),
   ],
   daisyui: {
-    // base: false,
-    // styled: false,
     themes: [
       {
         mantic: {
