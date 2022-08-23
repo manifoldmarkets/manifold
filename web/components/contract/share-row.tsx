@@ -11,7 +11,6 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import { ShareModal } from './share-modal'
 import { withTracking } from 'web/lib/service/analytics'
 import { collection, deleteDoc, doc } from 'firebase/firestore'
-import { users } from 'web/lib/firebase/users'
 import { useContractFollows } from 'web/hooks/use-follows'
 
 export function ShareRow(props: {

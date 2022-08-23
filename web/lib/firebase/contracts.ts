@@ -23,7 +23,6 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
-import { users } from 'web/lib/firebase/users'
 
 export const contracts = coll<Contract>('contracts')
 
