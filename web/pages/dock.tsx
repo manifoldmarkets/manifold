@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { Group } from "common/group";
 import { LiteMarket, LiteUser } from "common/manifold-defs";
 import * as Packets from "common/packet-ids";
-import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
+import { PacketCreateMarket, PacketMarketCreated, PacketUserInfo } from "common/packets";
 import Head from "next/head";
 import { Fragment, ReactNode, useEffect, useState } from "react";
 import Textarea from "react-expanding-textarea";
@@ -21,12 +21,29 @@ import { GroupSelector } from "../components/group-selector";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
+async function fetchAllMarkets(): Promise<LiteMarket[]> {
+    const allMarkets: LiteMarket[] = [];
+    for (;;) {
+        const r = await fetch(`${APIBase}markets?limit=1000${allMarkets.length > 0 ? "&before=" + allMarkets[allMarkets.length - 1].id : ""}`);
+        const markets = (await r.json()) as LiteMarket[];
+        allMarkets.push(...markets);
+        if (markets.length < 1000) {
+            break;
+        }
+    }
+    return allMarkets;
+}
+
 async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
-    const r = await fetch(`${APIBase}markets`);
-    let markets = (await r.json()) as LiteMarket[];
+    let markets = await fetchAllMarkets();
+    console.debug(`Fetched ${markets.length} markets`);
     markets = markets.filter((market) => {
         return group.contractIds.indexOf(market.id) >= 0 && !market.isResolved;
     });
+    const now = Date.now();
+    markets.sort((a, b) => {
+        return (a.closeTime < now ? 1 : -1) - (b.closeTime < now ? 1 : -1);
+    })
     return markets;
 }
 
@@ -36,9 +53,8 @@ async function fetchMarketById(id: string): Promise<LiteMarket> {
     return market;
 }
 
-async function getUserBalance(): Promise<number> {
-    const username = "PhilBladen"; //!!!
-    const r = await fetch(`${APIBase}user/${username}`);
+async function getUserBalance(userID: string): Promise<number> {
+    const r = await fetch(`${APIBase}user/by-id/${userID}`);
     const user = (await r.json()) as LiteUser;
     return user.balance;
 }
@@ -55,6 +71,7 @@ export default () => {
     const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState("Connecting to server...");
     const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
+    const [manifoldUserID, setManifoldUserID] = useState<string>(undefined);
 
     const ante = CONTRACT_ANTE;
     const onSubmitNewQuestion = async () => {
@@ -74,10 +91,11 @@ export default () => {
                     }
                     resolve();
                 });
-                setTimeout(reject, 5000); //!!! Handle errors nicely
+                setTimeout(() => reject("Timeout"), 5000); //!!! Handle errors nicely
             });
             return true;
         } catch (e) {
+            console.log(e);
             return false;
         } finally {
             setIsSubmittingQuestion(false);
@@ -91,7 +109,7 @@ export default () => {
         socket = io({ query: { type: "dock", controlToken: params["t"] } });
         socket.on("connect_error", (err) => {
             console.error(err);
-            setLoadingMessage(err.message);
+            setLoadingMessage("Failed to connect to server: " + err.message);
             setConnectionState(ConnectionState.FAILED);
         });
         socket.on("connect", () => {
@@ -100,7 +118,13 @@ export default () => {
             setSelectedContract(undefined);
         });
         socket.on("disconnect", () => {
+            console.debug("Lost connection to server.");
             setConnectionState(ConnectionState.CONNECTING);
+        });
+
+        socket.on(Packets.USER_INFO, (p: PacketUserInfo) => {
+            console.debug("Received user info: " + p.manifoldID);
+            setManifoldUserID(p.manifoldID);
         });
 
         socket.on(Packets.RESOLVED, () => {
@@ -118,7 +142,7 @@ export default () => {
             setSelectedContract(undefined);
         });
 
-        getUserBalance().then((b) => setBalance(b));
+        getUserBalance(manifoldUserID).then((b) => setBalance(b));
     }, []);
 
     const onContractFeature = (contract: LiteMarket) => {
@@ -141,6 +165,8 @@ export default () => {
                 .finally(() => {
                     setTimeout(() => setLoadingContracts(false), 0);
                 });
+        } else {
+            setContracts([]);
         }
     }, [selectedGroup]);
 
@@ -153,7 +179,7 @@ export default () => {
             <div className="flex justify-center">
                 <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
                     <div className="p-2">
-                        <GroupSelector selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} />
+                        <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} />
                         <div className="w-full flex justify-center">
                             <ConfirmationButton
                                 openModalBtn={{
@@ -172,7 +198,7 @@ export default () => {
                                 }}
                                 onSubmitWithSuccess={onSubmitNewQuestion}
                                 onOpenChanged={() => {
-                                    getUserBalance().then((b) => setBalance(b));
+                                    getUserBalance(manifoldUserID).then((b) => setBalance(b));
                                 }}
                             >
                                 <Title className="!my-0" text={`Create a new question  ${selectedGroup ? `in '${selectedGroup.name}'` : ""}`} />

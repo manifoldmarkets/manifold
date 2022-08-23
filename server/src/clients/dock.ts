@@ -7,12 +7,12 @@ import App from "../app";
 import * as ManifoldAPI from "../manifold-api";
 import User from "../user";
 import log from "../logger";
-import { PacketCreateMarket, PacketMarketCreated } from "common/packets";
+import { PacketCreateMarket, PacketMarketCreated, PacketUserInfo } from "common/packets";
 
 export default class DockClient {
     readonly socket: Socket;
     readonly app: App;
-    connectedUserAccount: User;
+    connectedUser: User;
 
     constructor(app: App, socket: Socket) {
         this.app = app;
@@ -24,13 +24,14 @@ export default class DockClient {
     }
 
     async init() {
-        this.connectedUserAccount = <User>this.socket.data;
+        this.connectedUser = <User>this.socket.data;
 
-        const connectedTwitchStream = this.connectedUserAccount.data.twitchLogin;
+        const connectedTwitchStream = this.connectedUser.data.twitchLogin;
 
         this.socket.join(connectedTwitchStream);
 
         const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
+        this.socket.emit(Packet.USER_INFO, <PacketUserInfo> { manifoldID: this.connectedUser.data.manifoldID });
         if (market) {
             this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
         }
@@ -63,18 +64,17 @@ export default class DockClient {
             }
 
             try {
-                await ManifoldAPI.resolveBinaryMarket(currentMarket.data.id, this.connectedUserAccount.data.APIKey, outcome);
+                await ManifoldAPI.resolveBinaryMarket(currentMarket.data.id, this.connectedUser.data.APIKey, outcome);
             } catch (e) {
                 log.trace(e);
             }
         });
 
         this.socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
-            const pseudoUser = await this.app.getUserForTwitchUsername("philbladen"); //!!!
-            if (!pseudoUser) throw new Error("Pesudo user not found"); //!!!
-            const newMarket = await ManifoldAPI.createBinaryMarket(pseudoUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
-            this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
-            log.debug("Created new market via dock: " + packet.question);
+            //!!! Uncomment
+            // const newMarket = await ManifoldAPI.createBinaryMarket(this.connectedUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
+            // this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });
+            // log.debug("Created new market via dock: " + packet.question);
         });
 
         this.socket.on("disconnect", () => {

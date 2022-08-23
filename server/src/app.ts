@@ -137,21 +137,6 @@ export default class App {
                 new DockClient(this, socket);
             } else if (socket.handshake.query.type === "overlay") {
                 new OverlayClient(this, socket);
-
-                socket.emit(Packet.CLEAR);
-                // socket.emit(Packet.SELECT_MARKET_ID, "iiFWwKwC5tlKa5uG8mku"); ///!!! Remove
-
-                // const mkt = this.selectedMarketMap[Object.keys(this.selectedMarketMap)[0]];
-                // if (mkt) { //!!! Remove
-                //     socket.emit(Packet.SELECT_MARKET_ID, mkt.data.id);
-                //     socket.emit(Packet.ADD_BETS, mkt.bets);
-
-                //     mkt.overlaySockets.push(socket);
-
-                //     if (mkt.resolveData) {
-                //         socket.emit(Packet.RESOLVE, mkt.resolveData); //!!!
-                //     }
-                // }
             }
         });
 

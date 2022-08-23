@@ -18,3 +18,7 @@ export type PacketTwitchLinkComplete = {
     twitchName: string;
     controlToken: string;
 }
+
+export type PacketUserInfo = {
+    manifoldID: string;
+}

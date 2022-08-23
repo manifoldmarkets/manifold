@@ -28,8 +28,10 @@ export default class OverlayClient {
         this.socket.join(connectedTwitchStream);
 
         const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
+        this.socket.emit(Packet.CLEAR);
         if (market) {
             this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
+            //!!! Need to send relevant bets
         }
 
         this.socket.on("disconnect", () => {

@@ -10,14 +10,16 @@ import { Row } from "./layout/row";
 
 export default function ContractCard(props: { contract: LiteMarket; onFeature: () => void }) {
     const { contract, onFeature } = props;
+    const isClosed = contract.closeTime < Date.now();
+    const isFeatureable = !isClosed || contract.outcomeType !== "BINARY";
     return (
-        <Col className={clsx("group relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md hover:bg-gray-100")}>
+        <Col className={clsx("group relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md", !isFeatureable && "bg-gray-100")}>
             <Row>
                 <Col className="relative flex-1 gap-3 pr-1">
                     <div className={clsx("absolute -left-6 -top-4 -bottom-4 right-0")}></div>
                     <AvatarDetails contract={contract} />
                     <p
-                        className="break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2"
+                        className={clsx("break-words font-semibold text-indigo-700")}
                         style={{
                             wordBreak: "break-word" /* For iOS safari */,
                         }}
@@ -48,7 +50,7 @@ export default function ContractCard(props: { contract: LiteMarket; onFeature: (
                                 <InformationCircleIcon className="h-5 w-5 text-gray-500" />
                             </div>
                         ) : (
-                            contract.closeTime < Date.now() && (
+                            isClosed && (
                                 <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={"This market is currently closed"}>
                                     <InformationCircleIcon className="h-5 w-5 text-gray-500" />
                                 </div>
@@ -56,7 +58,7 @@ export default function ContractCard(props: { contract: LiteMarket; onFeature: (
                         )}
                         <ConfirmationButton
                             openModalBtn={{
-                                className: clsx("z-40 btn btn-sm border-2 rounded-lg", (contract.outcomeType !== "BINARY" || contract.closeTime < Date.now()) ? "btn-disabled" : "btn-outline btn-secondary"),
+                                className: clsx("z-40 btn btn-sm border-2 rounded-lg", (contract.outcomeType !== "BINARY" || isClosed) ? "btn-disabled" : "btn-outline btn-secondary"),
                                 label: "Feature",
                             }}
                             cancelBtn={{
