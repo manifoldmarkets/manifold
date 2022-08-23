@@ -6,6 +6,7 @@ import {
   JSONContent,
   Content,
   Editor,
+  mergeAttributes,
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
@@ -38,7 +39,16 @@ const DisplayImage = Image.configure({
   },
 })
 
-const DisplayLink = Link.configure({
+const DisplayLink = Link.extend({
+  renderHTML({ HTMLAttributes }) {
+    delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
+    return [
+      'a',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      0,
+    ]
+  },
+}).configure({
   HTMLAttributes: {
     class: clsx('no-underline !text-indigo-700', linkClass),
   },
