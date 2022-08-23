@@ -21,6 +21,7 @@ export const addUserToContractFollowers = async (
       id: user.id,
       createdTime: Date.now(),
     })
+  // TODO: decrement for unfollows
   await firestore
     .collection(`contracts`)
     .doc(contract.id)
