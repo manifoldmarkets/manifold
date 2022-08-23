@@ -97,7 +97,6 @@ Requires no authorization.
       "creatorAvatarUrl":"https://lh3.googleusercontent.com/a-/AOh14GiZyl1lBehuBMGyJYJhZd-N-mstaUtgE4xdI22lLw=s96-c",
       "closeTime":1653893940000,
       "question":"Will I write a new blog post today?",
-      "description":"I'm supposed to, or else Beeminder charges me $90.\nTentative topic ideas:\n- \"Manifold funding, a history\"\n- \"Markets and bounties allow trades through time\"\n- \"equity vs money vs time\"\n\nClose date updated to 2022-05-29 11:59 pm",
       "tags":[
         "personal",
         "commitments"
@@ -135,8 +134,6 @@ Requires no authorization.
     // Market attributes. All times are in milliseconds since epoch
     closeTime?: number // Min of creator's chosen date, and resolutionTime
     question: string
-    description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
-    textDescription: string // string description without formatting, images, or embeds
 
     // A list of tags on each market. Any user can add tags to any market.
     // This list also includes the predefined categories shown as filters on the home page.
@@ -398,6 +395,8 @@ Requires no authorization.
     bets: Bet[]
     comments: Comment[]
     answers?: Answer[]
+    description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
+    textDescription: string // string description without formatting, images, or embeds
   }
 
   type Bet = {
