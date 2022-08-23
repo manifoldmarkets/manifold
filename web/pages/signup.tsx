@@ -3,7 +3,6 @@ import Head from "next/head";
 import { Fragment, useEffect, useState } from "react";
 import { Col } from "web/components/layout/col";
 import { Row } from "web/components/layout/row";
-import styles from "../styles/signup.module.scss";
 import { PaperAirplaneIcon, RefreshIcon } from "@heroicons/react/solid";
 import { Transition } from "@headlessui/react";
 
@@ -12,32 +11,28 @@ export default () => {
     const [toastMessage, setToastMessage] = useState("");
     let currentTimeout: NodeJS.Timeout = null;
 
+    const [inputError, setInputError] = useState(0);
+
     async function signup() {
-        const errorClass = styles.error;
+        setInputError(0);
 
         let error = false;
-        const musernameElement = document.getElementById("musername") as HTMLInputElement;
-        musernameElement.classList.remove(errorClass);
-        if (musernameElement.value.length <= 0) {
-            if (!musernameElement.classList.contains(errorClass)) {
-                musernameElement.classList.add(errorClass);
-                error = true;
-            }
+        const mUsernameElement = document.getElementById("musername") as HTMLInputElement;
+        if (mUsernameElement.value.length <= 0) {
+            setInputError(i => i | 0x1);
+            error = true;
         }
 
-        const apikeyElement = document.getElementById("apikey") as HTMLInputElement;
-        apikeyElement.classList.remove(errorClass);
-        if (apikeyElement.value.length <= 0) {
-            if (!apikeyElement.classList.contains(errorClass)) {
-                apikeyElement.classList.add(errorClass);
-                error = true;
-            }
+        const apiKeyElement = document.getElementById("apikey") as HTMLInputElement;
+        if (apiKeyElement.value.length <= 0) {
+            setInputError(i => i | 0x2);
+            error = true;
         }
 
         if (!error) {
             try {
-                musernameElement.disabled = true;
-                apikeyElement.disabled = true;
+                mUsernameElement.disabled = true;
+                apiKeyElement.disabled = true;
                 (document.getElementById("signup") as HTMLButtonElement).disabled = true;
                 document.getElementById("errorMessage").innerHTML = "";
 
@@ -47,8 +42,8 @@ export default () => {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        manifoldUsername: musernameElement.value,
-                        apiKey: apikeyElement.value,
+                        manifoldUsername: mUsernameElement.value,
+                        apiKey: apiKeyElement.value,
                     }),
                 });
                 const responseData = await response.json();
@@ -59,8 +54,8 @@ export default () => {
                 }                
                 window.open(responseData.twitchAuthURL);
             } finally {
-                musernameElement.disabled = false;
-                apikeyElement.disabled = false;
+                mUsernameElement.disabled = false;
+                apiKeyElement.disabled = false;
                 (document.getElementById("signup") as HTMLButtonElement).disabled = false;
             }
         }
@@ -106,10 +101,10 @@ export default () => {
                     <Col className="rounded-lg p-2.5 border">
                         <p className="text-2xl pb-2.5 m-0 w-full text-center text-gray-500">Link Twitch and Manifold account</p>
                         <Row className="gap-4">
-                            <input id="musername" placeholder="Manifold username" className="input input-bordered w-full" />
-                            <input id="apikey" placeholder="Manifold API key" className="input input-bordered w-full" />
+                            <input id="musername" placeholder="Manifold username" className={clsx("input rounded input-bordered w-full placeholder:text-gray-300", (inputError & 0x1) && "border-red-400")} />
+                            <input id="apikey" placeholder="Manifold API key" className={clsx("input rounded input-bordered w-full placeholder:text-gray-300", (inputError & 0x2) && "border-red-400")} />
                         </Row>
-                        <p id="errorMessage" className="text-[rgb(224, 75, 75)] text-[0.3em] pb-2.5 m-0"></p>
+                        <p id="errorMessage" className="text-red-400 text-sm pb-2.5 m-0"></p>
                         <Row className={clsx("mt-[0.1em] justify-center")}>
                             <button id="signup" className="btn btn-primary">
                                 Signup
