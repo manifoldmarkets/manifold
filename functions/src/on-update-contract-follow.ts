@@ -22,3 +22,24 @@ export const onDeleteContractFollow = functions.firestore
         followerCount: FieldValue.increment(-1),
       })
   })
+
+export const onCreateContractFollow = functions.firestore
+  .document('contracts/{contractId}/follows/{userId}')
+  .onCreate(async (change, context) => {
+    const { contractId } = context.params as {
+      contractId: string
+    }
+    const firestore = admin.firestore()
+    const contract = await firestore
+      .collection(`contracts`)
+      .doc(contractId)
+      .get()
+    if (!contract.exists) throw new Error('Could not find contract')
+
+    await firestore
+      .collection(`contracts`)
+      .doc(contractId)
+      .update({
+        followerCount: FieldValue.increment(1),
+      })
+  })

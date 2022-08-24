@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
 
 const firestore = admin.firestore()
 
@@ -19,12 +18,6 @@ export const addUserToContractFollowers = async (
       id: userId,
       createdTime: Date.now(),
     })
-  await firestore
-    .collection(`contracts`)
-    .doc(contractId)
-    .update({
-      followerCount: FieldValue.increment(1),
-    })
 }
 
 export const removeUserFromContractFollowers = async (
@@ -40,10 +33,4 @@ export const removeUserFromContractFollowers = async (
     .collection(`contracts/${contractId}/follows`)
     .doc(userId)
     .delete()
-  await firestore
-    .collection(`contracts`)
-    .doc(contractId)
-    .update({
-      followerCount: FieldValue.increment(-1),
-    })
 }
