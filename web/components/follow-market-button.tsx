@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { useContractFollows } from 'web/hooks/use-follows'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
 
 export const FollowMarketButton = (props: {
   contract: Contract
@@ -29,10 +30,16 @@ export const FollowMarketButton = (props: {
           toast('Notifications from this market are now silenced.', {
             icon: <CheckIcon className={'text-primary h-5 w-5'} />,
           })
+          track('Unfollow Market', {
+            slug: contract.slug,
+          })
         } else {
           await followContract(contract.id, user.id)
           toast('You are now following this market!', {
             icon: <CheckIcon className={'text-primary h-5 w-5'} />,
+          })
+          track('Follow Market', {
+            slug: contract.slug,
           })
         }
       }}
