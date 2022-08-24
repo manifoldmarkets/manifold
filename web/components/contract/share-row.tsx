@@ -26,7 +26,7 @@ export function ShareRow(props: {
   const [isShareOpen, setShareOpen] = useState(false)
 
   return (
-    <Row className="mt-2">
+    <Row className="mt-0.5 sm:mt-2">
       <Button
         size="lg"
         color="gray-white"
