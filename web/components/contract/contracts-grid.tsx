@@ -86,10 +86,12 @@ export function ContractsGrid(props: {
           />
         ))}
       </Masonry>
-      <VisibilityObserver
-        onVisibilityUpdated={onVisibilityUpdated}
-        className="relative -top-96 h-1"
-      />
+      {loadMore && (
+        <VisibilityObserver
+          onVisibilityUpdated={onVisibilityUpdated}
+          className="relative -top-96 h-1"
+        />
+      )}
     </Col>
   )
 }
