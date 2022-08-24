@@ -19,7 +19,7 @@ export const onCreateLiquidityProvision = functions.firestore
 
     const liquidityProvider = await getUser(liquidity.userId)
     if (!liquidityProvider) throw new Error('Could not find liquidity provider')
-    await addUserToContractFollowers(contract, liquidityProvider)
+    await addUserToContractFollowers(contract.id, liquidityProvider.id)
 
     await createNotification(
       contract.id,

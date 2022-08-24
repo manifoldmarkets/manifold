@@ -21,7 +21,7 @@ export const onCreateAnswer = functions.firestore
 
     const answerCreator = await getUser(answer.userId)
     if (!answerCreator) throw new Error('Could not find answer creator')
-    await addUserToContractFollowers(contract, answerCreator)
+    await addUserToContractFollowers(contract.id, answerCreator.id)
     await createCommentOrAnswerOrUpdatedContractNotification(
       answer.id,
       'answer',

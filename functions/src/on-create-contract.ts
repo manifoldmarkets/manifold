@@ -19,7 +19,7 @@ export const onCreateContract = functions
 
     const desc = contract.description as JSONContent
     const mentioned = parseMentions(desc)
-    await addUserToContractFollowers(contract, contractCreator)
+    await addUserToContractFollowers(contract.id, contractCreator.id)
 
     await createNotification(
       contract.id,

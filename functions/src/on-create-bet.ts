@@ -58,7 +58,7 @@ export const onCreateBet = functions.firestore
     const bettor = await getUser(bet.userId)
     if (!bettor) return
 
-    await addUserToContractFollowers(contract, bettor)
+    await addUserToContractFollowers(contract.id, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bet.userId)
     await notifyFills(bet, contract, eventId, bettor)
     await updateBettingStreak(bettor, bet, contract, eventId)

@@ -13,6 +13,7 @@ import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsQuery, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { redeemShares } from './redeem-shares'
+import { removeUserFromContractFollowers } from 'functions/src/follow-market'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -123,9 +124,12 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       })
     )
 
-    return { newBet, makers }
+    return { newBet, makers, maxShares, soldShares }
   })
 
+  if (result.maxShares === result.soldShares) {
+    await removeUserFromContractFollowers(contractId, auth.uid)
+  }
   const userIds = uniq(result.makers.map((maker) => maker.bet.userId))
   await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
   log('Share redemption transaction finished.')
