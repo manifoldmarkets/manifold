@@ -5,7 +5,7 @@ import {
   unFollowContract,
 } from 'web/lib/firebase/contracts'
 import toast from 'react-hot-toast'
-import { CheckIcon, HeartIcon } from '@heroicons/react/outline'
+import { CheckIcon, EyeIcon, EyeOffIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useContractFollows } from 'web/hooks/use-follows'
@@ -13,6 +13,7 @@ import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
 import { useState } from 'react'
+import { Row } from 'web/components/layout/row'
 
 export const FollowMarketButton = (props: {
   contract: Contract
@@ -30,7 +31,7 @@ export const FollowMarketButton = (props: {
         if (!user) return firebaseLogin()
         if (followers?.includes(user.id)) {
           await unFollowContract(contract.id, user.id)
-          toast('Notifications from this market are now silenced.', {
+          toast("You'll no longer receive notifications from this market", {
             icon: <CheckIcon className={'text-primary h-5 w-5'} />,
           })
           track('Unfollow Market', {
@@ -38,7 +39,7 @@ export const FollowMarketButton = (props: {
           })
         } else {
           await followContract(contract.id, user.id)
-          toast('You are now following this market!', {
+          toast("You'll now receive notifications from this market!", {
             icon: <CheckIcon className={'text-primary h-5 w-5'} />,
           })
           track('Follow Market', {
@@ -54,15 +55,21 @@ export const FollowMarketButton = (props: {
       }}
     >
       {followers?.includes(user?.id ?? 'nope') ? (
-        <HeartIcon
-          className={clsx('h-6 w-6  fill-red-600 stroke-red-600 xl:h-7 xl:w-7')}
-          aria-hidden="true"
-        />
+        <Row className={'gap-2'}>
+          <EyeOffIcon
+            className={clsx('h-6 w-6 xl:h-7 xl:w-7')}
+            aria-hidden="true"
+          />
+          Unfollow
+        </Row>
       ) : (
-        <HeartIcon
-          className={clsx('h-6 w-6 xl:h-7 xl:w-7')}
-          aria-hidden="true"
-        />
+        <Row className={'gap-2'}>
+          <EyeIcon
+            className={clsx('h-6 w-6 xl:h-7 xl:w-7')}
+            aria-hidden="true"
+          />
+          Follow
+        </Row>
       )}
       <FollowMarketModal
         open={open}
