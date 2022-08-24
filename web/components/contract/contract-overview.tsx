@@ -38,7 +38,7 @@ export const ContractOverview = (props: {
 
   return (
     <Col className={clsx('mb-6', className)}>
-      <Col className="gap-4 px-2">
+      <Col className="gap-3 px-2 sm:gap-4">
         <Row className="justify-between gap-4">
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
