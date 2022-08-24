@@ -295,6 +295,26 @@ export async function getClosingSoonContracts() {
   return sortBy(chooseRandomSubset(data, 2), (contract) => contract.closeTime)
 }
 
+export const getRandTopCreatorContracts = async (
+  creatorId: string,
+  count: number,
+  excluding: string[] = []
+) => {
+  const creatorContractsQuery = query(
+    contracts,
+    where('isResolved', '==', false),
+    where('creatorId', '==', creatorId),
+    orderBy('popularityScore', 'desc'),
+    limit(Math.max(count * 2, 15))
+  )
+  const data = await getValues<Contract>(creatorContractsQuery)
+  const open = data
+    .filter((c) => c.closeTime && c.closeTime > Date.now())
+    .filter((c) => !excluding.includes(c.id))
+
+  return chooseRandomSubset(open, count)
+}
+
 export async function getRecentBetsAndComments(contract: Contract) {
   const contractDoc = doc(contracts, contract.id)
 
