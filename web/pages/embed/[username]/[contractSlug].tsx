@@ -109,6 +109,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             contract={contract}
             bets={bets}
             isCreator={false}
+            user={null}
             disabled
           />
 
