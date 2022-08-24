@@ -91,6 +91,8 @@ export function ContractSearch(props: {
   useQuerySortLocalStorage?: boolean
   useQuerySortUrlParams?: boolean
   isWholePage?: boolean
+  maxItems?: number
+  noControls?: boolean
 }) {
   const {
     user,
@@ -105,6 +107,8 @@ export function ContractSearch(props: {
     useQuerySortLocalStorage,
     useQuerySortUrlParams,
     isWholePage,
+    maxItems,
+    noControls,
   } = props
 
   const [numPages, setNumPages] = useState(1)
@@ -158,6 +162,8 @@ export function ContractSearch(props: {
   const contracts = pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
+  const renderedContracts =
+    pages.length === 0 ? undefined : contracts.slice(0, maxItems)
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -175,10 +181,11 @@ export function ContractSearch(props: {
         useQuerySortUrlParams={useQuerySortUrlParams}
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
+        noControls={noControls}
       />
       <ContractsGrid
-        contracts={pages.length === 0 ? undefined : contracts}
-        loadMore={performQuery}
+        contracts={renderedContracts}
+        loadMore={noControls ? undefined : performQuery}
         showTime={showTime}
         onContractClick={onContractClick}
         highlightOptions={highlightOptions}
@@ -198,6 +205,7 @@ function ContractSearchControls(props: {
   useQuerySortLocalStorage?: boolean
   useQuerySortUrlParams?: boolean
   user?: User | null
+  noControls?: boolean
 }) {
   const {
     className,
@@ -209,6 +217,7 @@ function ContractSearchControls(props: {
     useQuerySortLocalStorage,
     useQuerySortUrlParams,
     user,
+    noControls,
   } = props
 
   const savedSort = useQuerySortLocalStorage ? getSavedSort() : null
@@ -328,6 +337,10 @@ function ContractSearchControls(props: {
         sort === 'close-date' || sort === 'resolve-date' ? sort : undefined,
     })
   }, [query, index, searchIndex, filter, JSON.stringify(facetFilters)])
+
+  if (noControls) {
+    return <></>
+  }
 
   return (
     <Col
