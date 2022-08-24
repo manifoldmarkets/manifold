@@ -1,9 +1,7 @@
 import {
   ClockIcon,
   DatabaseIcon,
-  LinkIcon,
   PencilIcon,
-  ShareIcon,
   TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
@@ -11,11 +9,7 @@ import {
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
-import {
-  Contract,
-  contractPath,
-  updateContract,
-} from 'web/lib/firebase/contracts'
+import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
@@ -39,10 +33,6 @@ import { insertContent } from '../editor/utils'
 import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
-import { copyToClipboard } from 'web/lib/util/copy'
-import toast from 'react-hot-toast'
-import { track } from 'web/lib/service/analytics'
-import { ENV_CONFIG } from 'common/envs/constants'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -158,11 +148,7 @@ export function ContractDetails(props: {
     groupLinks?.sort((a, b) => a.createdTime - b.createdTime)[0] ?? null
   const user = useUser()
   const [open, setOpen] = useState(false)
-  const shareUrl = `https://${ENV_CONFIG.domain}${contractPath(contract)}${
-    user?.username && contract.creatorUsername !== user?.username
-      ? '?referrer=' + user?.username
-      : ''
-  }`
+
   const groupInfo = (
     <Row>
       <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
@@ -221,25 +207,7 @@ export function ContractDetails(props: {
           />
         </Col>
       </Modal>
-      {!user && (
-        <Row className={'items-center justify-end'}>
-          <Button
-            size="xs"
-            color="gray-white"
-            className={'flex'}
-            onClick={() => {
-              copyToClipboard(shareUrl)
-              toast('Link copied!', {
-                icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
-              })
-              track('copy share link')
-            }}
-          >
-            <ShareIcon className={clsx('mr-2 h-5 w-5')} aria-hidden="true" />
-            Share
-          </Button>
-        </Row>
-      )}
+
       {(!!closeTime || !!resolvedDate) && (
         <Row className="items-center gap-1">
           {resolvedDate && contract.resolutionTime ? (

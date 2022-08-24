@@ -3,7 +3,6 @@ import clsx from 'clsx'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
@@ -76,7 +75,7 @@ export const ContractOverview = (props: {
               <Col>
                 <BetButton contract={contract as CPMMBinaryContract} />
                 {!user && (
-                  <div className="text-sm text-gray-500">
+                  <div className="mt-1 text-sm text-gray-500">
                     (Don't worry, it's play money!)
                   </div>
                 )}
@@ -112,7 +111,7 @@ export const ContractOverview = (props: {
           user={user}
         />
       </Col>
-      <Spacer h={4} />
+      <div className={'my-1 md:my-2'}></div>
       {(isBinary || isPseudoNumeric) && (
         <ContractProbGraph contract={contract} bets={bets} />
       )}{' '}
