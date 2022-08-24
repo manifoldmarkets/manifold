@@ -227,8 +227,6 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
 
   const user = useUser()
-  const privateUser = usePrivateUser()
-  // usePing(user?.id)
 
   const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
@@ -236,11 +234,9 @@ export default function Sidebar(props: { className?: string }) {
     : signedInMobileNavigation
 
   const memberItems = (
-    useMemberGroups(
-      user?.id,
-      { withChatEnabled: true },
-      { by: 'mostRecentChatActivityTime' }
-    ) ?? []
+    useMemberGroups(user?.id, undefined, {
+      by: 'mostRecentContractAddedTime',
+    }) ?? []
   ).map((group: Group) => ({
     name: group.name,
     href: `${groupPath(group.slug)}`,
@@ -274,13 +270,7 @@ export default function Sidebar(props: { className?: string }) {
         {memberItems.length > 0 && (
           <hr className="!my-4 mr-2 border-gray-300" />
         )}
-        {privateUser && (
-          <GroupsList
-            currentPage={router.asPath}
-            memberItems={memberItems}
-            privateUser={privateUser}
-          />
-        )}
+        <GroupsList currentPage={router.asPath} memberItems={memberItems} />
       </div>
 
       {/* Desktop navigation */}
@@ -295,23 +285,13 @@ export default function Sidebar(props: { className?: string }) {
 
         {/* Spacer if there are any groups */}
         {memberItems.length > 0 && <hr className="!my-4 border-gray-300" />}
-        {privateUser && (
-          <GroupsList
-            currentPage={router.asPath}
-            memberItems={memberItems}
-            privateUser={privateUser}
-          />
-        )}
+        <GroupsList currentPage={router.asPath} memberItems={memberItems} />
       </div>
     </nav>
   )
 }
 
-function GroupsList(props: {
-  currentPage: string
-  memberItems: Item[]
-  privateUser: PrivateUser
-}) {
+function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
   const { currentPage, memberItems } = props
 
   const { height } = useWindowSize()
