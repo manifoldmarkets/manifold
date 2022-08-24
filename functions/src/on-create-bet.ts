@@ -54,12 +54,14 @@ export const onCreateBet = functions.firestore
       log(`Could not find contract ${contractId}`)
       return
     }
+    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bet.userId)
+
     const bettor = await getUser(bet.userId)
     if (!bettor) return
 
-    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bet.userId)
     await notifyFills(bet, contract, eventId, bettor)
     await updateBettingStreak(bettor, bet, contract, eventId)
+
     await firestore.collection('users').doc(bettor.id).update({ lastBetTime })
   })
 
