@@ -2,13 +2,8 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { uniq } from 'lodash'
 
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USERNAME,
-  PrivateUser,
-  User,
-} from '../../common/user'
-import { getUser, getUserByUsername, getValues, isProd } from './utils'
+import { PrivateUser, User } from '../../common/user'
+import { getUser, getUserByUsername, getValues } from './utils'
 import { randomString } from '../../common/util/random'
 import {
   cleanDisplayName,
@@ -23,10 +18,6 @@ import {
 import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
 import { Group, NEW_USER_GROUP_SLUGS } from '../../common/group'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
 
 const bodySchema = z.object({
