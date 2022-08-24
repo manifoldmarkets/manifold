@@ -94,7 +94,8 @@ export default class App {
         }
 
         if (id) {
-            const marketData = await Manifold.getFullMarketByID(id); //!!! What if invalid market
+            const marketData = await Manifold.getFullMarketByID(id);
+            if (!marketData || marketData.isResolved) throw new Error("Attempted to feature invalid market");
             const market = new Market(this, marketData, channel);
             this.selectedMarketMap[channel] = market;
             log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);

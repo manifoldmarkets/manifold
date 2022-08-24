@@ -158,7 +158,7 @@ export default class Chart {
             // ctx.translate(-0.5, -0.5);
             if (numDataPoints > 0) {
                 ctx.save();
-                ctx.rect(-0.5, 0.5, graphWidth_px + padding_px, graphHeight_px + padding_px);
+                ctx.rect(-0.5, -padding_px - 0.5, graphWidth_px + padding_px, graphHeight_px + padding_px);
                 ctx.clip();
                 {
                     ctx.strokeStyle = "#49C99F";

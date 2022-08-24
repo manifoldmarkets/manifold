@@ -43,7 +43,7 @@ async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
     const now = Date.now();
     markets.sort((a, b) => {
         return (a.closeTime < now ? 1 : -1) - (b.closeTime < now ? 1 : -1);
-    })
+    });
     return markets;
 }
 
@@ -97,7 +97,7 @@ export default () => {
                     // }
                     resolve();
                 });
-                setTimeout(() => reject(new Error("Timeout")), 5000);
+                setTimeout(() => reject(new Error("Timeout")), 10000);
             });
             return true;
         } catch (e) {
@@ -135,8 +135,18 @@ export default () => {
         });
 
         socket.on(Packets.RESOLVED, () => {
-            console.log("Market resolved");
+            console.debug("Market resolved");
             setSelectedContract(undefined);
+            if (selectedGroup) {
+                setLoadingContracts(true);
+                fetchMarketsInGroup(selectedGroup)
+                    .then((markets) => {
+                        setContracts(markets);
+                    })
+                    .finally(() => {
+                        setLoadingContracts(false);
+                    });
+            }
         });
 
         socket.on(Packets.SELECT_MARKET_ID, async (marketID) => {
@@ -168,7 +178,7 @@ export default () => {
                     setContracts(markets);
                 })
                 .finally(() => {
-                    setTimeout(() => setLoadingContracts(false), 0);
+                    setLoadingContracts(false);
                 });
         } else {
             setContracts([]);
@@ -279,13 +289,15 @@ export default () => {
                     >
                         <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
                     </Transition>
-                    {selectedContract && (<div className={clsx("fixed inset-0 flex flex-col items-center overflow-y-auto", selectedContract ?? "pointer-events-none")}>
-                        <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
-                            <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
-                                <ResolutionPanel contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
-                            </div>
-                        </Transition>
-                    </div>)}
+                    {selectedContract && (
+                        <div className={clsx("fixed inset-0 flex flex-col items-center overflow-y-auto", selectedContract ?? "pointer-events-none")}>
+                            <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
+                                <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
+                                    <ResolutionPanel contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
+                                </div>
+                            </Transition>
+                        </div>
+                    )}
                 </div>
             </div>
         </>
@@ -401,7 +413,7 @@ export function ResolveConfirmationButton(props: { onResolve: () => Promise<bool
     return (
         <ConfirmationButton
             openModalBtn={{
-                className: clsx("border-none self-start", openModalButtonClass, isSubmitting && "btn-disabled loading"),
+                className: clsx("border-none self-start", openModalButtonClass, isSubmitting && "!btn-disabled loading"),
                 label: "Resolve",
             }}
             cancelBtn={{

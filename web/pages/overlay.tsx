@@ -175,7 +175,7 @@ class Application {
                     data.push(new Point(t.createdTime, t.probAfter));
                 }
                 this.chart.data = data;
-                
+
                 for (const bet of this.betsToAddOnceLoadedHistory) {
                     this.addBet(bet);
                 }
@@ -288,9 +288,11 @@ export default () => {
             console.debug("Received clear packet");
         });
         app.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
+            setResolvedData(undefined);
             setOverlayVisible(marketID ? true : false);
         });
         app.socket.on(Packet.UNFEATURE_MARKET, () => {
+            setResolvedData(undefined);
             setOverlayVisible(false);
         });
     }, []);
@@ -356,10 +358,10 @@ export default () => {
                                 <div id="spinner" className={clsx("absolute", styles.spinner)}></div>
                             </Col>
                         </Row>
-                        <Col className="relative grow shrink items-stretch min-h-0">
+                        <Col className={clsx("relative grow shrink items-stretch min-h-0", resolvedData && "mb-1")}>
                             <canvas id="chart" className="absolute" style={{ aspectRatio: "unset" }}></canvas>
                         </Col>
-                        <Row className="justify-end items-center p-[0.2em]">
+                        <Row className={clsx("justify-end items-center p-[0.2em]", resolvedData && "hidden")}>
                             <Col id="transactions" className="grow shrink h-full items-start justify-end">
                                 <div id="transaction-template" className={styles.bet}>
                                     <div className="name font-bold"></div>
