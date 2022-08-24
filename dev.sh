@@ -24,7 +24,7 @@ then
   npx concurrently \
       -n FIRESTORE,FUNCTIONS,NEXT,TS \
       -c green,white,magenta,cyan \
-      "yarn --cwd=functions firestore" \
+      "yarn --cwd=functions localDbScript" \
       "cross-env FIRESTORE_EMULATOR_HOST=localhost:8080 yarn --cwd=functions dev" \
       "cross-env NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8088 \
                NEXT_PUBLIC_FIREBASE_EMULATE=TRUE \

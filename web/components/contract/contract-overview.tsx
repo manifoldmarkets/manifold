@@ -45,6 +45,13 @@ export const ContractOverview = (props: {
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
+          {(outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') &&
+            !resolution && (
+              <div className={'xl:hidden'}>
+                <FollowMarketButton contract={contract} user={user} />
+              </div>
+            )}
           <Row className={'hidden gap-3 xl:flex'}>
             <FollowMarketButton contract={contract} user={user} />
 
@@ -85,12 +92,10 @@ export const ContractOverview = (props: {
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetButton contract={contract} />}
-          </Row>
-        ) : isPseudoNumeric ? (
-          <Row className="items-center justify-between gap-4 xl:hidden">
-            <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetButton contract={contract} />}
+            <Row className={'items-start gap-2'}>
+              <FollowMarketButton contract={contract} user={user} />
+              {tradingAllowed(contract) && <BetButton contract={contract} />}
+            </Row>
           </Row>
         ) : (
           (outcomeType === 'FREE_RESPONSE' ||
