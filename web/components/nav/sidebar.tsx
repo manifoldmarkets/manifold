@@ -93,7 +93,7 @@ function getMoreNavigation(user?: User | null) {
         href: 'https://salemcenter.manifold.markets/',
       },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-      { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
+      { name: 'Help & About', href: 'https://help.manifold.markets/' },
       {
         name: 'Sign out',
         href: '#',
@@ -107,16 +107,16 @@ const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Explore', href: '/home', icon: SearchIcon },
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
 ]
 
 const signedOutMobileNavigation = [
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
@@ -130,8 +130,8 @@ const signedInMobileNavigation = [
     ? []
     : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
 ]
