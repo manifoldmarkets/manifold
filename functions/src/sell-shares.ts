@@ -13,7 +13,7 @@ import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsQuery, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { redeemShares } from './redeem-shares'
-import { removeUserFromContractFollowers } from 'functions/src/follow-market'
+import { removeUserFromContractFollowers } from './follow-market'
 
 const bodySchema = z.object({
   contractId: z.string(),
