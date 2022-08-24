@@ -1,9 +1,9 @@
 export const PLATFORM_FEE = 0
-export const CREATOR_FEE = 0.1
+export const CREATOR_FEE = 0
 export const LIQUIDITY_FEE = 0
 
-export const DPM_PLATFORM_FEE = 0.01
-export const DPM_CREATOR_FEE = 0.04
+export const DPM_PLATFORM_FEE = 0.0
+export const DPM_CREATOR_FEE = 0.0
 export const DPM_FEES = DPM_PLATFORM_FEE + DPM_CREATOR_FEE
 
 export type Fees = {
