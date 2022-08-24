@@ -11,6 +11,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import {
   Contract,
   getContractFromSlug,
+  getRandTopCreatorContracts,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
@@ -39,6 +40,8 @@ import {
   ContractLeaderboard,
   ContractTopTrades,
 } from 'web/components/contract/contract-leaderboard'
+import { Subtitle } from 'web/components/subtitle'
+import { ContractsGrid } from 'web/components/contract/contracts-grid'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -48,9 +51,12 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
-  const [bets, comments] = await Promise.all([
+  const [bets, comments, recommendedContracts] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
+    contract
+      ? getRandTopCreatorContracts(contract.creatorId, 4, [contract?.id])
+      : [],
   ])
 
   return {
@@ -61,6 +67,7 @@ export async function getStaticPropz(props: {
       // Limit the data sent to the client. Client will still load all bets and comments directly.
       bets: bets.slice(0, 5000),
       comments: comments.slice(0, 1000),
+      recommendedContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -77,6 +84,7 @@ export default function ContractPage(props: {
   bets: Bet[]
   comments: ContractComment[]
   slug: string
+  recommendedContracts: Contract[]
   backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -84,6 +92,7 @@ export default function ContractPage(props: {
     username: '',
     comments: [],
     bets: [],
+    recommendedContracts: [],
     slug: '',
   }
 
@@ -145,7 +154,7 @@ export function ContractPageContent(
     user?: User | null
   }
 ) {
-  const { backToHome, comments, user } = props
+  const { backToHome, comments, user, recommendedContracts } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
 
@@ -258,6 +267,13 @@ export function ContractPageContent(
           tips={tips}
           comments={comments}
         />
+
+        {recommendedContracts?.length > 0 && (
+          <Col className="mx-2 gap-2 sm:mx-0">
+            <Subtitle text="Recommended" />
+            <ContractsGrid contracts={recommendedContracts} />
+          </Col>
+        )}
       </Col>
     </Page>
   )
