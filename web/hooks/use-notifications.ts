@@ -147,6 +147,7 @@ export function useUnseenPreferredNotifications(
 const lessPriorityReasons = [
   'on_contract_with_users_comment',
   'on_contract_with_users_answer',
+  // Notifications not currently generated for users who've sold their shares
   'on_contract_with_users_shares_out',
   // Not sure if users will want to see these w/ less:
   // 'on_contract_with_users_shares_in',

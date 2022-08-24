@@ -6,8 +6,9 @@ import { ContractComment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
-import { createNotification } from './create-notification'
+import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
+import { addUserToContractFollowers } from './follow-market'
 
 const firestore = admin.firestore()
 
@@ -34,6 +35,8 @@ export const onCreateCommentOnContract = functions
 
     const commentCreator = await getUser(comment.userId)
     if (!commentCreator) throw new Error('Could not find comment creator')
+
+    await addUserToContractFollowers(contract.id, commentCreator.id)
 
     await firestore
       .collection('contracts')
@@ -77,18 +80,19 @@ export const onCreateCommentOnContract = functions
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
 
-    const recipients = uniq(
-      compact([...parseMentions(comment.content), repliedUserId])
-    )
-
-    await createNotification(
+    await createCommentOrAnswerOrUpdatedContractNotification(
       comment.id,
       'comment',
       'created',
       commentCreator,
       eventId,
       richTextToString(comment.content),
-      { contract, relatedSourceType, recipients }
+      contract,
+      {
+        relatedSourceType,
+        repliedUserId,
+        taggedUserIds: compact(parseMentions(comment.content)),
+      }
     )
 
     const recipientUserIds = uniq([

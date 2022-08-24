@@ -23,7 +23,7 @@ service cloud.firestore {
       allow read;
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome']);
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -42,6 +42,11 @@ service cloud.firestore {
 
     match /{somePath=**}/challenges/{challengeId}{
       allow read;
+    }
+
+    match /contracts/{contractId}/follows/{userId} {
+      allow read;
+      allow create, delete: if userId == request.auth.uid;
     }
 
     match /contracts/{contractId}/challenges/{challengeId}{
