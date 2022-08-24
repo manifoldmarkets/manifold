@@ -22,7 +22,7 @@ import { LimitBet } from '../../common/bet'
 import { floatingEqual } from '../../common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
-import { addUserToContractFollowers } from 'functions/src/follow-market'
+import { addUserToContractFollowers } from './follow-market'
 
 const bodySchema = z.object({
   contractId: z.string(),
