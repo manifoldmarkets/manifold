@@ -298,11 +298,7 @@ export default () => {
     useEffect(() => {
         if (resolvedData) {
             setPage(Page.RESOLVED_TRADERS);
-            let counter = 0;
             const interval = setInterval(() => {
-                counter++;
-                console.log(counter); ///!!! To become auto-hide
-                // setOverlayVisible(o => !o);
                 setPage((page) => {
                     console.log("Change page: " + page);
                     switch (page) {
@@ -408,7 +404,7 @@ export default () => {
                                 leaveFrom="opacity-100"
                                 leaveTo="opacity-0"
                             >
-                                <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0", styles.border)}>
+                                <Col className="absolute text-white bg-[#212121] leading-[normal] inset-0">
                                     <Col className="flex items-center text-6xl justify-center font-bold grow">
                                         <div>Resolved</div>
                                         {resolvedData.outcome == "YES" ? (
@@ -431,7 +427,7 @@ export default () => {
                                 leaveFrom="opacity-100"
                                 leaveTo="opacity-0"
                             >
-                                <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0 p-4 font-bold", styles.border)}>
+                                <Col className="absolute text-white bg-[#212121] leading-[normal] inset-0 p-4 font-bold">
                                     <Row className="justify-between">
                                         <Row className="items-center text-4xl">
                                             <div>Resolved</div>

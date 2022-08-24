@@ -85,15 +85,16 @@ export default () => {
                         reject(new Error(packet.failReason));
                         return;
                     }
+                    onContractFeature(await fetchMarketById(packet.id));
                     //!!! Need to refresh groups
-                    const markets = await fetchMarketsInGroup(selectedGroup);
-                    setContracts(markets);
-                    for (const market of markets) {
-                        if (market.id === packet.id) {
-                            setSelectedContract(market);
-                            break;
-                        }
-                    }
+                    // const markets = await fetchMarketsInGroup(selectedGroup);
+                    // setContracts(markets);
+                    // for (const market of markets) {
+                    //     if (market.id === packet.id) {
+                    //         onContractFeature(market);
+                    //         break;
+                    //     }
+                    // }
                     resolve();
                 });
                 setTimeout(() => reject(new Error("Timeout")), 5000);
@@ -135,7 +136,7 @@ export default () => {
 
         socket.on(Packets.RESOLVED, () => {
             console.log("Market resolved");
-            location.reload();
+            setSelectedContract(undefined);
         });
 
         socket.on(Packets.SELECT_MARKET_ID, async (marketID) => {
@@ -229,7 +230,7 @@ export default () => {
                                 <Row className="form-control items-start">
                                     <Row className="gap-2 grow items-center justify-items-start flex">
                                         <span>Cost:</span>
-                                        <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} /> {/*!!!*/}
+                                        <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
                                     </Row>
 
                                     <div className="label-text text-neutral pl-1 justify-self-end self-center">{`M$${ante}`} </div>

@@ -41,12 +41,13 @@ export class Market {
                     this.data = await Manifold.getFullMarketByID(this.data.id);
 
                     this.continuePolling = false;
-                    const winners = await this.calculateWinners();
 
-                    winners.filter(w => Math.abs(w.profit) != 0); // Ignore profit/losses of 0
+                    let winners = await this.calculateWinners();
+                    winners = winners.filter(w => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
 
                     const channel = this.app.getChannelForMarketID(this.data.id);
-                    this.app.bot.resolveMarket(channel, getOutcomeForString(data.resolution), winners);
+
+                    this.app.marketResolved(channel, getOutcomeForString(this.data.resolution), winners);
 
                     const uniqueTraderCount = _(this.data.bets).groupBy("userId").size();
 
@@ -71,8 +72,8 @@ export class Market {
                         topLosers: topLosers,
                     };
 
-                    app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData); //!!!
-                    app.io.to(this.twitchChannel).emit(Packet.RESOLVED); //!!!
+                    app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData);
+                    app.io.to(this.twitchChannel).emit(Packet.RESOLVED);
                 }
             } catch (e) {
                 log.trace(e);

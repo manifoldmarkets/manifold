@@ -8,6 +8,9 @@ import { Server } from "socket.io";
 
 import { buildURL, getParamsFromURL } from "./utils";
 
+import { LiteUser } from "common/manifold-defs";
+import { ResolutionOutcome } from "common/outcome";
+import { UNFEATURE_MARKET } from "common/packet-ids";
 import { PacketTwitchLinkComplete } from "common/packets";
 import DockClient from "./clients/dock";
 import OverlayClient from "./clients/overlay";
@@ -29,6 +32,8 @@ export default class App {
     private linksInProgress: { [sessionToken: string]: { manifoldID: string; apiKey: string } } = {};
 
     selectedMarketMap: { [twitchChannel: string]: Market } = {};
+    
+    autoUnfeatureTimer: NodeJS.Timeout = null;
 
     constructor() {
         this.app = express();
@@ -77,6 +82,11 @@ export default class App {
     }
 
     public async selectMarket(channel: string, id: string): Promise<Market> {
+        if (this.autoUnfeatureTimer) {
+            clearTimeout(this.autoUnfeatureTimer);
+            this.autoUnfeatureTimer = null;
+        }
+
         const existingMarket = this.getMarketForTwitchChannel(channel);
         if (existingMarket) {
             existingMarket.continuePolling = false;
@@ -94,6 +104,14 @@ export default class App {
 
     async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
         return this.firestore.getUserForTwitchUsername(twitchUsername);
+    }
+
+    public marketResolved(channel: string, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
+        this.autoUnfeatureTimer = setTimeout(() => {
+            this.selectMarket(channel, null);
+            this.io.to(channel).emit(UNFEATURE_MARKET);
+        }, 24000);
+        this.bot.resolveMarket(channel, outcome, winners);
     }
 
     async launch() {
