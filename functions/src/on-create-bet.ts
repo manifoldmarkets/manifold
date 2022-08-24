@@ -24,7 +24,6 @@ import {
 } from '../../common/antes'
 import { APIError } from '../../common/api'
 import { User } from '../../common/user'
-import { addUserToContractFollowers } from './follow-market'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -58,7 +57,6 @@ export const onCreateBet = functions.firestore
     const bettor = await getUser(bet.userId)
     if (!bettor) return
 
-    await addUserToContractFollowers(contract.id, bettor.id)
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bet.userId)
     await notifyFills(bet, contract, eventId, bettor)
     await updateBettingStreak(bettor, bet, contract, eventId)
