@@ -53,7 +53,9 @@ export const ContractOverview = (props: {
               </div>
             )}
           <Row className={'hidden gap-3 xl:flex'}>
-            <FollowMarketButton contract={contract} user={user} />
+            <div className={'mt-2'}>
+              <FollowMarketButton contract={contract} user={user} />
+            </div>
 
             {isBinary && (
               <BinaryResolutionOrChance
