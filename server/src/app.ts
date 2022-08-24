@@ -6,10 +6,10 @@ import { AddressInfo } from "net";
 import path from "path";
 import { Server } from "socket.io";
 
-import * as Packet from "common/packet-ids";
 import { buildURL, getParamsFromURL } from "./utils";
 
 import { PacketTwitchLinkComplete } from "common/packets";
+import DockClient from "./clients/dock";
 import OverlayClient from "./clients/overlay";
 import { PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
 import AppFirestore from "./firestore";
@@ -19,7 +19,6 @@ import { Market } from "./market";
 import * as Twitch from "./twitch-api";
 import TwitchBot from "./twitch-bot";
 import User from "./user";
-import DockClient from "./clients/dock";
 
 export default class App {
     private readonly app: Express;
@@ -60,7 +59,13 @@ export default class App {
     }
 
     public getMarketForTwitchChannel(channel: string) {
-        return this.selectedMarketMap[channel];
+        const market = this.selectedMarketMap[channel];
+        if (market) {
+            log.debug(`Found market '${market.data.question}' for channel '${channel}'`);
+        } else {
+            log.debug(`Found no market for channel '${channel}'`);
+        }
+        return market;
     }
 
     public getChannelForMarketID(marketID: string) {
@@ -78,26 +83,11 @@ export default class App {
             delete this.selectedMarketMap[channel];
         }
 
-        // this.io.emit(Packet.CLEAR); //!!!
-
         if (id) {
-            const marketData = await Manifold.getFullMarketByID(id);
+            const marketData = await Manifold.getFullMarketByID(id); //!!! What if invalid market
             const market = new Market(this, marketData, channel);
             this.selectedMarketMap[channel] = market;
-            // this.io.to(channel).emit(Packet.ADD_BETS, market.bets);
-
-            if (market) {
-                setTimeout(() => {
-                    for (const socket of this.io.sockets.sockets) {
-                        if (market.overlaySockets.indexOf(socket[1]) < 0) {
-                            market.overlaySockets.push(socket[1]);
-                        }
-                    }
-                    this.io.to(channel).emit(Packet.ADD_BETS, market.bets);
-                    log.info("Pushed market socket");
-                }, 2000); //!!! This is horrible
-            }
-
+            log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
             return market;
         }
     }

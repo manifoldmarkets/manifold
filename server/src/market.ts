@@ -5,13 +5,11 @@ import log from "./logger";
 import * as Manifold from "./manifold-api";
 import moment from "moment";
 import lodash from "lodash";
-import { Socket } from "socket.io";
-import { ADD_BETS } from "common/packet-ids";
 import { PacketResolved } from "common/packets";
 const { keyBy, mapValues, sumBy, groupBy } = lodash;
 import * as Packet from "common/packet-ids";
 import _ from "lodash";
-import { getOutcomeForString, ResolutionOutcome } from "common/outcome";
+import { getOutcomeForString } from "common/outcome";
 
 export class Market {
     private readonly app: App;
@@ -23,9 +21,8 @@ export class Market {
     pendingFetches = {};
     userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
 
-    overlaySockets: Socket[] = [];
-
     continuePolling = false;
+    readonly pollTask: () => void;
 
     resolveData: PacketResolved = null;
 
@@ -37,19 +34,7 @@ export class Market {
 
         this.twitchChannel = twitchChannel;
 
-        for (const bet of this.data.bets) {
-            // const fullBet: FullBet = {
-            //     ...bet,
-            //     username: "Bob", //!!!
-            // };
-            // this.bets.push(fullBet);
-
-            this.pendingBets.push(bet);
-            this.loadUser(bet.userId);
-        }
-
-        this.continuePolling = true;
-        const pollTask = async () => {
+        this.pollTask = async () => {
             try {
                 this.pollBets();
                 if (await this.detectResolution()) {
@@ -58,8 +43,10 @@ export class Market {
                     this.continuePolling = false;
                     const winners = await this.calculateWinners();
 
+                    winners.filter(w => Math.abs(w.profit) != 0); // Ignore profit/losses of 0
+
                     const channel = this.app.getChannelForMarketID(this.data.id);
-                    this.app.bot.resolveMarket(channel, this.data.resolution === "YES" ? ResolutionOutcome.YES : this.data.resolution === "NO" ? ResolutionOutcome.NO : ResolutionOutcome.CANCEL, winners); //!!! Proper outcomes
+                    this.app.bot.resolveMarket(channel, getOutcomeForString(data.resolution), winners);
 
                     const uniqueTraderCount = _(this.data.bets).groupBy("userId").size();
 
@@ -67,9 +54,6 @@ export class Market {
                     const topWinners: Result[] = [];
                     const topLosers: Result[] = [];
                     for (const winner of winners) {
-                        if (Math.abs(winner.profit) == 0) {
-                            continue; // Ignore profit/losses of 0
-                        }
                         if (winner.profit > 0) {
                             topWinners.push({ displayName: winner.user.name, profit: winner.profit });
                         } else {
@@ -86,10 +70,6 @@ export class Market {
                         topWinners: topWinners,
                         topLosers: topLosers,
                     };
-                    // for (const socket of this.overlaySockets) {
-                    //     socket.emit(Packet.RESOLVE, this.resolveData); //!!!
-                    //     socket.emit(Packet.RESOLVED); //!!!
-                    // }
 
                     app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData); //!!!
                     app.io.to(this.twitchChannel).emit(Packet.RESOLVED); //!!!
@@ -98,13 +78,32 @@ export class Market {
                 log.trace(e);
             } finally {
                 if (this.continuePolling) {
-                    setTimeout(pollTask, 1000);
+                    setTimeout(this.pollTask, 1000);
                 } else {
                     log.info("Market poll task terminated.");
                 }
             }
         };
-        setTimeout(pollTask, 1000);
+
+        this.loadInitialBets().then(() => {
+            this.continuePolling = true;
+            setTimeout(this.pollTask, 1000);
+        });
+    }
+
+    async loadInitialBets() {
+        // Load last few bets:
+        for (let i = Math.max(0, this.data.bets.length - 3); i < this.data.bets.length; i++) {
+            const bet = this.data.bets[i];
+            this.pendingBets.push(bet);
+            await this.loadUser(bet.userId);
+        }
+        log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
+        if (this.data.bets.length > 0) {
+            const mostRecentBet = this.data.bets[this.data.bets.length - 1];
+            this.latestLoadedBetId = mostRecentBet.id;
+            log.debug(`Latest loaded bet: ${this.userIdToNameMap[mostRecentBet.userId]} : ${mostRecentBet.id}`);
+        }
     }
 
     calculateFixedPayout(contract: LiteMarket, bet: Bet, outcome: string) {
@@ -204,12 +203,7 @@ export class Market {
         this.bets.push(bet);
         // this.io.emit(Packet.ADD_BETS, [bet]); //!!!
 
-        for (const socket of this.overlaySockets) {
-            if (!socket.disconnected) {
-                //!!!
-                socket.emit(ADD_BETS, [bet]);
-            }
-        }
+        this.app.io.to(this.twitchChannel).emit(Packet.ADD_BETS, [bet]); //!!!
 
         log.info(
             `${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(
@@ -242,9 +236,6 @@ export class Market {
                 }
                 this.pendingBets.splice(0, 1);
             }
-            // this.pendingBets = this.pendingBets.filter((e) => {
-            //     return betsToRemove.indexOf(e) < 0;
-            // });
         } catch (e) {
             log.trace(e);
         }

@@ -44,12 +44,17 @@ class Application {
 
     currentMarket: Manifold.LiteMarket = null;
 
+    loadedHistory: boolean;
+    betsToAddOnceLoadedHistory: FullBet[];
+
     constructor() {
         this.transactionTemplate = document.getElementById("transaction-template");
         this.transactionTemplate.removeAttribute("id");
         this.transactionTemplate.parentElement.removeChild(this.transactionTemplate);
 
         this.chart = new Chart(document.getElementById("chart") as HTMLCanvasElement);
+
+        this.resetUI();
 
         moment.relativeTimeThreshold("s", 60);
         moment.updateLocale("en", {
@@ -80,33 +85,26 @@ class Application {
         };
         window.requestAnimationFrame(animationFrame);
 
-        // Update bet times:
-        setInterval(() => this.updateBetTimes(), 1000);
-
-        // let lastAddedTimestamp = 0;
         const params = new Proxy(new URLSearchParams(window.location.search), {
             get: (searchParams, prop) => searchParams.get(prop as string),
         });
         this.socket = io({ query: { type: "overlay", controlToken: params["t"] } });
-        this.socket.on(Packet.ADD_BETS, (bets: FullBet[]) => {
-            // console.log(bet);
-            // bets.reverse();
-            if (bets.length > 3) {
-                bets.splice(0, bets.length - 3);
-            }
-            for (const bet of bets) {
-                // if (bet.createdTime <= lastAddedTimestamp) {
-                //     continue;
-                // }
-                this.addBet(bet);
-                // lastAddedTimestamp = bet.createdTime;
-            }
+        this.registerPacketHandlers();
+    }
 
-            console.log(bets);
+    registerPacketHandlers() {
+        this.socket.on(Packet.ADD_BETS, (bets: FullBet[]) => {
+            for (const bet of bets) {
+                if (this.loadedHistory) {
+                    this.addBet(bet);
+                } else {
+                    this.betsToAddOnceLoadedHistory.push(bet);
+                }
+            }
         });
         this.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
+            this.resetUI();
             this.loadMarketByID(marketID);
-            console.log("Selecting market by ID: " + marketID);
         });
         this.socket.on(Packet.CLEAR, () => {
             this.resetUI();
@@ -123,22 +121,20 @@ class Application {
         document.getElementById("question").innerHTML = "";
         document.getElementById("spinner").style.display = "";
         this.chart.canvasElement.style.display = "none";
+        this.chart.data = [];
         document
             .getElementById("chance")
             .parentElement.querySelectorAll("div")
             .forEach((r) => {
                 if (r.id !== "spinner") r.classList.add("invisible");
             });
-    }
+        this.betElements.forEach((b) => {
+            b?.element?.remove();
+        });
+        this.betElements = [];
 
-    updateBetTimes() {
-        try {
-            this.betElements.forEach((t) => {
-                t.element.querySelector(".time").innerHTML = moment(t.bet.createdTime).fromNow();
-            });
-        } catch (e) {
-            // Empty
-        }
+        this.loadedHistory = false;
+        this.betsToAddOnceLoadedHistory = [];
     }
 
     loadMarketByID(id: string) {
@@ -147,8 +143,6 @@ class Application {
             .then((market) => {
                 this.currentMarket = market;
                 this.currentMarket["slug"] = this.currentMarket.url.substring(this.currentMarket.url.lastIndexOf("/") + 1, this.currentMarket.url.length); //!!!
-
-                this.chart.canvasElement.style.display = "";
 
                 document.getElementById("question").innerHTML = this.currentMarket.question;
                 this.currentProbability_percent = this.currentMarket.probability * 100;
@@ -170,8 +164,8 @@ class Application {
             });
     }
 
-    loadBettingHistory() {
-        fetch(`${APIBase}bets?market=${this.currentMarket["slug"]}&limit=1000`)
+    async loadBettingHistory() {
+        await fetch(`${APIBase}bets?market=${this.currentMarket["slug"]}&limit=1000`) //!!! Doesn't load entire history
             .then((r) => r.json() as Promise<Manifold.Bet[]>)
             .then((r) => {
                 const data: Point[] = [];
@@ -181,13 +175,21 @@ class Application {
                     data.push(new Point(t.createdTime, t.probAfter));
                 }
                 this.chart.data = data;
+                
+                for (const bet of this.betsToAddOnceLoadedHistory) {
+                    this.addBet(bet);
+                }
+
+                this.chart.canvasElement.style.display = "";
+
+                this.loadedHistory = true;
             })
-            .catch((r) => {
-                console.error(r);
-            });
+            .catch(console.error);
     }
 
     addBet(bet: FullBet) {
+        console.debug("Add bet");
+
         let name = bet.username;
 
         const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
@@ -243,8 +245,6 @@ class Application {
             this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
             this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
         }
-
-        this.updateBetTimes();
     }
 }
 
@@ -345,7 +345,12 @@ export default () => {
                 leaveTo="opacity-0"
             >
                 <div id="content" className={clsx("fixed inset-0 overflow-hidden", styles.border)}>
-                    <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} className="bg-opacity-100" />
+                    <LoadingOverlay
+                        visible={connectionState != ConnectionState.CONNECTED}
+                        message={loadingMessage}
+                        loading={connectionState == ConnectionState.CONNECTING}
+                        className="bg-opacity-100"
+                    />
                     <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0")} style={{ fontSize: "calc(min(70px, 4.5vw))" }}>
                         <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
                             <div id="question" className="pr-[0.5em] grow shrink text-center"></div>

@@ -31,7 +31,7 @@ export default class OverlayClient {
         this.socket.emit(Packet.CLEAR);
         if (market) {
             this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
-            //!!! Need to send relevant bets
+            this.socket.emit(Packet.ADD_BETS, market.bets.slice(0, 3)); //!!! Need to send relevant bets
         }
 
         this.socket.on("disconnect", () => {

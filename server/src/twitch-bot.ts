@@ -10,25 +10,28 @@ import { Market } from "./market";
 import * as Manifold from "./manifold-api";
 import { PUBLIC_FACING_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from "./envs";
 import { ResolutionOutcome } from "common/outcome";
+import { sanitizeTwitchChannelName } from "./twitch-api";
 
 const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
-const SIGNUP_LINK = `${PUBLIC_FACING_URL}/profile`; //!!!
+const SIGNUP_LINK = `${PUBLIC_FACING_URL}/profile`; //!!! Update to correct link
 
 const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) => `Sorry ${username}, you don't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a market LUL`;
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${SIGNUP_LINK}!`;
 const MSG_HELP = () => `Check out the full list of commands and how to play here: ${SIGNUP_LINK}`;
 const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) => {
-    // winners.reverse();
     const maxWinners = 10;
-    let message = `The market has resolved to ${outcome}! The top ${maxWinners} bettors are`;
-    for (let index = 0; index < Math.min(winners.length, maxWinners); index++) {
-        const winner = winners[index];
-        message += ` ${winner.user.name} (${winner.profit > 0 ? "+" : ""}${winner.profit.toFixed(0)}),`; //!!! Use Twitch usernames
-    }
-    if (message.endsWith(",")) {
-        message = message.substring(0, message.length - 1);
+    let message = `The market has resolved to ${outcome === ResolutionOutcome.CANCEL ? "N/A" : outcome}!`;
+    if (winners.length > 0) {
+        message += ` The top ${maxWinners} bettors are`;
+        for (let index = 0; index < Math.min(winners.length, maxWinners); index++) {
+            const winner = winners[index];
+            message += ` ${winner.user.name} (${winner.profit > 0 ? "+" : ""}${winner.profit.toFixed(0)}),`; //!!! Use Twitch usernames
+        }
+        if (message.endsWith(",")) {
+            message = message.substring(0, message.length - 1);
+        }
     }
     return message;
 };
@@ -195,6 +198,8 @@ export default class TwitchBot {
         this.client.on("message", async (channel, tags, message, self) => {
             if (self) return; // Ignore echoed messages.
 
+            channel = sanitizeTwitchChannelName(channel);
+
             const groups = message.match(COMMAND_REGEXP);
             if (!groups) return;
             if (groups.length < 2) return;
@@ -214,7 +219,7 @@ export default class TwitchBot {
                         user.twitchDisplayName = userDisplayName;
 
                         const market = app.getMarketForTwitchChannel(channel);
-                        if (!market && commandString !== "select" && commandString !== "balance" && commandString !== "create" && commandString !== "setdefaultgroup" && commandString !== "feature") {
+                        if (!market && ["select", "feature", "balance", "create", "setdefaultgroup"].indexOf(commandString) < 0) {
                             this.client.say(channel, MSG_NO_MARKET_SELECTED(userDisplayName));
                             return;
                         }
@@ -252,7 +257,7 @@ export default class TwitchBot {
         }
     }
 
-    public resolveMarket(channel, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
+    public resolveMarket(channel: string, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
         this.client.say(channel, MSG_RESOLVED(outcome, winners));
     }
 

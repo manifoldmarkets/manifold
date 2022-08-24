@@ -39,3 +39,11 @@ export async function getTwitchDetailsFromLinkCode(code: string): Promise<Twitch
     json = await raw.json();
     return <TwitchUser> json["data"][0];
 }
+
+export function sanitizeTwitchChannelName(channel: string) {
+    channel = channel.toLocaleLowerCase();
+    if (channel.startsWith("#")) {
+        channel = channel.substring(1);
+    }
+    return channel;
+}
