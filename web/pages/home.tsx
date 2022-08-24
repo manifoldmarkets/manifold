@@ -71,6 +71,7 @@ const Home = (props: { auth: { user: User } | null }) => {
           backToHome={() => {
             history.back()
           }}
+          recommendedContracts={[]}
         />
       )}
     </>
