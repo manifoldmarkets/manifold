@@ -10,6 +10,7 @@
     "lint": "eslint src --ext ts"
   },
   "dependencies": {
+    "bufferutil": "^4.0.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
@@ -19,7 +20,8 @@
     "node-fetch": "^3.2.7",
     "pino": "^8.3.1",
     "socket.io": "^4.5.1",
-    "tmi.js": "^1.5.0"
+    "tmi.js": "^1.5.0",
+    "utf-8-validate": "^5.0.9"
   },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",

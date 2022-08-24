@@ -21,9 +21,10 @@ export default {
         path: path.resolve("./dist"),
         clean: true,
     },
-    externals: {
-        bufferutil: "bufferutil",
-        "utf-8-validate": "utf-8-validate",
-        // express: { commonjs: "express" },
-    },
+    ignoreWarnings: [
+        {
+            module: /node_modules\/express\/lib\/view\.js/,
+            message: /the request of a dependency is an expression/,
+        },
+    ],
 };
