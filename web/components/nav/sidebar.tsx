@@ -331,7 +331,7 @@ function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
           <a
             href={item.href}
             key={item.name}
-            onClick={trackCallback('sidebar: ' + item.name)}
+            onClick={trackCallback('click sidebar group', { name: item.name })}
             className={clsx(
               'cursor-pointer truncate',
               'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900'
