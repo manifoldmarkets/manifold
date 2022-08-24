@@ -8,10 +8,8 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { ProbabilitySelector } from './probability-selector'
-import { DPM_CREATOR_FEE } from 'common/fees'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
-import { formatMoney } from 'common/util/format'
 
 export function ResolutionPanel(props: {
   creator: User
@@ -20,10 +18,10 @@ export function ResolutionPanel(props: {
 }) {
   const { contract, className } = props
 
-  const earnedFees =
-    contract.mechanism === 'dpm-2'
-      ? `${DPM_CREATOR_FEE * 100}% of trader profits`
-      : `${formatMoney(contract.collectedFees.creatorFee)} in fees`
+  // const earnedFees =
+  //   contract.mechanism === 'dpm-2'
+  //     ? `${DPM_CREATOR_FEE * 100}% of trader profits`
+  //     : `${formatMoney(contract.collectedFees.creatorFee)} in fees`
 
   const [outcome, setOutcome] = useState<resolution | undefined>()
 
@@ -86,16 +84,16 @@ export function ResolutionPanel(props: {
         {outcome === 'YES' ? (
           <>
             Winnings will be paid out to YES bettors.
+            {/* <br />
             <br />
-            <br />
-            You will earn {earnedFees}.
+            You will earn {earnedFees}. */}
           </>
         ) : outcome === 'NO' ? (
           <>
             Winnings will be paid out to NO bettors.
+            {/* <br />
             <br />
-            <br />
-            You will earn {earnedFees}.
+            You will earn {earnedFees}. */}
           </>
         ) : outcome === 'CANCEL' ? (
           <>All trades will be returned with no fees.</>
@@ -106,7 +104,7 @@ export function ResolutionPanel(props: {
               probabilityInt={Math.round(prob)}
               setProbabilityInt={setProb}
             />
-            You will earn {earnedFees}.
+            {/* You will earn {earnedFees}. */}
           </Col>
         ) : (
           <>Resolving this market will immediately pay out traders.</>
