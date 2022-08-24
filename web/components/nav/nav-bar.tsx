@@ -9,7 +9,7 @@ import {
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
 import Sidebar, { Item } from './sidebar'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import clsx from 'clsx'
@@ -17,8 +17,6 @@ import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
-import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
-import { PrivateUser } from 'common/user'
 
 function getNavigation() {
   return [
@@ -44,7 +42,6 @@ export function BottomNavBar() {
   const currentPage = router.pathname
 
   const user = useUser()
-  const privateUser = usePrivateUser()
 
   const isIframe = useIsIframe()
   if (isIframe) {
@@ -85,11 +82,7 @@ export function BottomNavBar() {
         onClick={() => setSidebarOpen(true)}
       >
         <MenuAlt3Icon className=" my-1 mx-auto h-6 w-6" aria-hidden="true" />
-        {privateUser ? (
-          <MoreMenuWithGroupNotifications privateUser={privateUser} />
-        ) : (
-          'More'
-        )}
+        More
       </div>
 
       <MobileSidebar
@@ -97,22 +90,6 @@ export function BottomNavBar() {
         setSidebarOpen={setSidebarOpen}
       />
     </nav>
-  )
-}
-
-function MoreMenuWithGroupNotifications(props: { privateUser: PrivateUser }) {
-  const { privateUser } = props
-  const preferredNotifications = useUnseenPreferredNotifications(privateUser, {
-    customHref: '/group/',
-  })
-  return (
-    <span
-      className={
-        preferredNotifications.length > 0 ? 'font-bold' : 'font-normal'
-      }
-    >
-      More
-    </span>
   )
 }
 
