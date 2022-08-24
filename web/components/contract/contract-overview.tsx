@@ -22,7 +22,6 @@ import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 import { ShareRow } from './share-row'
-import { FollowMarketButton } from 'web/components/follow-market-button'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -45,18 +44,7 @@ export const ContractOverview = (props: {
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
-          {(outcomeType === 'FREE_RESPONSE' ||
-            outcomeType === 'MULTIPLE_CHOICE') &&
-            !resolution && (
-              <div className={'xl:hidden'}>
-                <FollowMarketButton contract={contract} user={user} />
-              </div>
-            )}
           <Row className={'hidden gap-3 xl:flex'}>
-            <div className={'mt-2'}>
-              <FollowMarketButton contract={contract} user={user} />
-            </div>
-
             {isBinary && (
               <BinaryResolutionOrChance
                 className="items-end"
@@ -84,20 +72,14 @@ export const ContractOverview = (props: {
         {isBinary ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
-            <Row className={'items-start gap-2'}>
-              <FollowMarketButton contract={contract} user={user} />
-              {tradingAllowed(contract) && (
-                <BetButton contract={contract as CPMMBinaryContract} />
-              )}
-            </Row>
+            {tradingAllowed(contract) && (
+              <BetButton contract={contract as CPMMBinaryContract} />
+            )}
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            <Row className={'items-start gap-2'}>
-              <FollowMarketButton contract={contract} user={user} />
-              {tradingAllowed(contract) && <BetButton contract={contract} />}
-            </Row>
+            {tradingAllowed(contract) && <BetButton contract={contract} />}
           </Row>
         ) : (
           (outcomeType === 'FREE_RESPONSE' ||
