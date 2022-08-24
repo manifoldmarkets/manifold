@@ -18,15 +18,14 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
-import { Group, GROUP_CHAT_SLUG } from 'common/group'
+import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
-import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { CHALLENGES_ENABLED } from 'common/challenge'
@@ -313,29 +312,29 @@ function GroupsList(props: {
   memberItems: Item[]
   privateUser: PrivateUser
 }) {
-  const { currentPage, memberItems, privateUser } = props
-  const preferredNotifications = useUnseenPreferredNotifications(
-    privateUser,
-    {
-      customHref: '/group/',
-    },
-    memberItems.length > 0 ? memberItems.length : undefined
-  )
+  const { currentPage, memberItems } = props
 
   const { height } = useWindowSize()
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   const remainingHeight = (height ?? 0) - (containerRef?.offsetTop ?? 0)
 
-  const notifIsForThisItem = useMemo(
-    () => (itemHref: string) =>
-      preferredNotifications.some(
-        (n) =>
-          !n.isSeen &&
-          (n.isSeenOnHref === itemHref ||
-            n.isSeenOnHref?.replace('/chat', '') === itemHref)
-      ),
-    [preferredNotifications]
-  )
+  // const preferredNotifications = useUnseenPreferredNotifications(
+  //   privateUser,
+  //   {
+  //     customHref: '/group/',
+  //   },
+  //   memberItems.length > 0 ? memberItems.length : undefined
+  // )
+  // const notifIsForThisItem = useMemo(
+  //   () => (itemHref: string) =>
+  //     preferredNotifications.some(
+  //       (n) =>
+  //         !n.isSeen &&
+  //         (n.isSeenOnHref === itemHref ||
+  //           n.isSeenOnHref?.replace('/chat', '') === itemHref)
+  //     ),
+  //   [preferredNotifications]
+  // )
 
   return (
     <>
@@ -351,16 +350,12 @@ function GroupsList(props: {
       >
         {memberItems.map((item) => (
           <a
-            href={
-              item.href +
-              (notifIsForThisItem(item.href) ? '/' + GROUP_CHAT_SLUG : '')
-            }
+            href={item.href}
             key={item.name}
             onClick={trackCallback('sidebar: ' + item.name)}
             className={clsx(
               'cursor-pointer truncate',
-              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-              notifIsForThisItem(item.href) && 'font-bold'
+              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             )}
           >
             {item.name}

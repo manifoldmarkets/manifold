@@ -144,24 +144,5 @@ const addUserToDefaultGroups = async (user: User) => {
       .update({
         memberIds: uniq(group.memberIds.concat(user.id)),
       })
-    const manifoldAccount = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-
-    if (slug === 'welcome') {
-      const welcomeCommentDoc = firestore
-        .collection(`groups/${group.id}/comments`)
-        .doc()
-      await welcomeCommentDoc.create({
-        id: welcomeCommentDoc.id,
-        groupId: group.id,
-        userId: manifoldAccount,
-        text: `Welcome, @${user.username} aka ${user.name}!`,
-        createdTime: Date.now(),
-        userName: 'Manifold Markets',
-        userUsername: MANIFOLD_USERNAME,
-        userAvatarUrl: MANIFOLD_AVATAR_URL,
-      })
-    }
   }
 }

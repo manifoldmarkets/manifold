@@ -33,11 +33,9 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { toast } from 'react-hot-toast'
-import { useCommentsOnGroup } from 'web/hooks/use-comments'
 import { ContractSearch } from 'web/components/contract-search'
 import { FollowList } from 'web/components/follow-list'
 import { SearchIcon } from '@heroicons/react/outline'
-import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { CopyLinkButton } from 'web/components/copy-link-button'
@@ -46,7 +44,6 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
-import { GroupChat } from 'web/components/groups/group-chat'
 import { REFERRAL_AMOUNT } from 'common/economy'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -149,9 +146,6 @@ export default function GroupPage(props: {
   const page = slugs?.[1] as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
-  const tips = useTipTxns({ groupId: group?.id })
-
-  const messages = useCommentsOnGroup(group?.id) ?? props.messages
 
   const user = useUser()
 
@@ -201,20 +195,11 @@ export default function GroupPage(props: {
     />
   )
 
-  const chatTab = (
-    <GroupChat messages={messages} group={group} user={user} tips={tips} />
-  )
-
   const tabs = [
     {
       title: 'Markets',
       content: questionsTab,
       href: groupPath(group.slug, 'markets'),
-    },
-    {
-      title: 'Chat',
-      content: chatTab,
-      href: groupPath(group.slug, 'chat'),
     },
     {
       title: 'Leaderboards',
