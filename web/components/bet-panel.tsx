@@ -9,7 +9,6 @@ import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import {
   formatMoney,
-  formatMoneyWithDecimals,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
@@ -18,7 +17,6 @@ import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
 import { APIError, placeBet, sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
-import { InfoTooltip } from './info-tooltip'
 import {
   BinaryOutcomeLabel,
   HigherLabel,
@@ -346,9 +344,9 @@ function BuyPanel(props: {
                 </>
               )}
             </div>
-            <InfoTooltip
+            {/* <InfoTooltip
               text={`Includes ${formatMoneyWithDecimals(totalFees)} in fees`}
-            />
+            /> */}
           </Row>
           <div>
             <span className="mr-2 whitespace-nowrap">
@@ -665,9 +663,9 @@ function LimitOrderPanel(props: {
                   </>
                 )}
               </div>
-              <InfoTooltip
+              {/* <InfoTooltip
                 text={`Includes ${formatMoneyWithDecimals(yesFees)} in fees`}
-              />
+              /> */}
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
@@ -689,9 +687,9 @@ function LimitOrderPanel(props: {
                   </>
                 )}
               </div>
-              <InfoTooltip
+              {/* <InfoTooltip
                 text={`Includes ${formatMoneyWithDecimals(noFees)} in fees`}
-              />
+              /> */}
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
