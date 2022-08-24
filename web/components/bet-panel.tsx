@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { clamp, partition, sum, sumBy } from 'lodash'
+import { clamp, partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
