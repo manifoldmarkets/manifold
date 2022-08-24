@@ -56,19 +56,13 @@ export const FollowMarketButton = (props: {
     >
       {followers?.includes(user?.id ?? 'nope') ? (
         <Row className={'gap-2'}>
-          <EyeOffIcon
-            className={clsx('h-6 w-6 xl:h-7 xl:w-7')}
-            aria-hidden="true"
-          />
-          Unfollow
+          <EyeOffIcon className={clsx('h-6 w-6')} aria-hidden="true" />
+          Unwatch
         </Row>
       ) : (
         <Row className={'gap-2'}>
-          <EyeIcon
-            className={clsx('h-6 w-6 xl:h-7 xl:w-7')}
-            aria-hidden="true"
-          />
-          Follow
+          <EyeIcon className={clsx('h-6 w-6')} aria-hidden="true" />
+          Watch
         </Row>
       )}
       <FollowMarketModal
