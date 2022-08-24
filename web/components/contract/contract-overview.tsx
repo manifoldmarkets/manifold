@@ -22,6 +22,7 @@ import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 import { ShareRow } from './share-row'
+import { FollowMarketButton } from 'web/components/follow-market-button'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -44,37 +45,42 @@ export const ContractOverview = (props: {
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
+          <Row className={'hidden gap-3 xl:flex'}>
+            <FollowMarketButton contract={contract} user={user} />
 
-          {isBinary && (
-            <BinaryResolutionOrChance
-              className="hidden items-end xl:flex"
-              contract={contract}
-              large
-            />
-          )}
+            {isBinary && (
+              <BinaryResolutionOrChance
+                className="items-end"
+                contract={contract}
+                large
+              />
+            )}
 
-          {isPseudoNumeric && (
-            <PseudoNumericResolutionOrExpectation
-              contract={contract}
-              className="hidden items-end xl:flex"
-            />
-          )}
+            {isPseudoNumeric && (
+              <PseudoNumericResolutionOrExpectation
+                contract={contract}
+                className="items-end"
+              />
+            )}
 
-          {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation
-              contract={contract}
-              className="hidden items-end xl:flex"
-            />
-          )}
+            {outcomeType === 'NUMERIC' && (
+              <NumericResolutionOrExpectation
+                contract={contract}
+                className="items-end"
+              />
+            )}
+          </Row>
         </Row>
 
         {isBinary ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
-
-            {tradingAllowed(contract) && (
-              <BetButton contract={contract as CPMMBinaryContract} />
-            )}
+            <Row className={'items-start gap-2'}>
+              <FollowMarketButton contract={contract} user={user} />
+              {tradingAllowed(contract) && (
+                <BetButton contract={contract as CPMMBinaryContract} />
+              )}
+            </Row>
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">

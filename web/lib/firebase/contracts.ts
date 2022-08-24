@@ -222,6 +222,19 @@ export function listenForContractFollows(
   )
 }
 
+export async function followContract(contractId: string, userId: string) {
+  const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
+  return await setDoc(followDoc, {
+    id: userId,
+    createdTime: Date.now(),
+  })
+}
+
+export async function unFollowContract(contractId: string, userId: string) {
+  const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
+  await deleteDoc(followDoc)
+}
+
 function chooseRandomSubset(contracts: Contract[], count: number) {
   const fiveMinutes = 5 * 60 * 1000
   const seed = Math.round(Date.now() / fiveMinutes).toString()
