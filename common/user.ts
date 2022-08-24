@@ -42,6 +42,7 @@ export type User = {
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  hasSeenContractFollowModal?: boolean
 }
 
 export type PrivateUser = {
