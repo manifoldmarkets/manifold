@@ -8,6 +8,8 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { Col } from './layout/col'
+import { Button } from 'web/components/button'
+import { firebaseLogin } from 'web/lib/firebase/users'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -30,23 +32,27 @@ export default function BetButton(props: {
   return (
     <>
       <Col className={clsx('items-center', className)}>
-        <button
-          className={clsx(
-            'btn btn-lg btn-outline my-auto inline-flex h-10 min-h-0 w-24',
-            btnClassName
-          )}
-          onClick={() => setOpen(true)}
+        <Button
+          size={'lg'}
+          className={clsx('my-auto inline-flex min-w-[75px] ', btnClassName)}
+          onClick={() => {
+            !user ? firebaseLogin() : setOpen(true)
+          }}
         >
-          Bet
-        </button>
+          {user ? 'Bet' : 'Sign up to Bet'}
+        </Button>
 
-        <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
-          {hasYesShares
-            ? `(${Math.floor(yesShares)} ${isPseudoNumeric ? 'HIGHER' : 'YES'})`
-            : hasNoShares
-            ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'NO'})`
-            : ''}
-        </div>
+        {user && (
+          <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
+            {hasYesShares
+              ? `(${Math.floor(yesShares)} ${
+                  isPseudoNumeric ? 'HIGHER' : 'YES'
+                })`
+              : hasNoShares
+              ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'NO'})`
+              : ''}
+          </div>
+        )}
       </Col>
 
       <Modal open={open} setOpen={setOpen}>

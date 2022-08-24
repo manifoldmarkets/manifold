@@ -27,23 +27,25 @@ export function ShareRow(props: {
 
   return (
     <Row className="mt-2">
-      <Button
-        size="lg"
-        color="gray-white"
-        className={'flex'}
-        onClick={() => {
-          setShareOpen(true)
-        }}
-      >
-        <ShareIcon className={clsx('mr-2 h-[24px] w-5')} aria-hidden="true" />
-        Share
-        <ShareModal
-          isOpen={isShareOpen}
-          setOpen={setShareOpen}
-          contract={contract}
-          user={user}
-        />
-      </Button>
+      {user && (
+        <Button
+          size="lg"
+          color="gray-white"
+          className={'flex'}
+          onClick={() => {
+            setShareOpen(true)
+          }}
+        >
+          <ShareIcon className={clsx('mr-2 h-[24px] w-5')} aria-hidden="true" />
+          Share
+          <ShareModal
+            isOpen={isShareOpen}
+            setOpen={setShareOpen}
+            contract={contract}
+            user={user}
+          />
+        </Button>
+      )}
 
       {showChallenge && (
         <Button

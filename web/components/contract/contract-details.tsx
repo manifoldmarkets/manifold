@@ -1,7 +1,9 @@
 import {
   ClockIcon,
   DatabaseIcon,
+  LinkIcon,
   PencilIcon,
+  ShareIcon,
   TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
@@ -9,7 +11,11 @@ import {
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
-import { Contract, updateContract } from 'web/lib/firebase/contracts'
+import {
+  Contract,
+  contractPath,
+  updateContract,
+} from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
@@ -32,6 +38,11 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
+import { User } from 'common/user'
+import { copyToClipboard } from 'web/lib/util/copy'
+import toast from 'react-hot-toast'
+import { track } from 'web/lib/service/analytics'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -134,6 +145,7 @@ export function AbbrContractDetails(props: {
 export function ContractDetails(props: {
   contract: Contract
   bets: Bet[]
+  user: User | null | undefined
   isCreator?: boolean
   disabled?: boolean
 }) {
@@ -146,7 +158,11 @@ export function ContractDetails(props: {
     groupLinks?.sort((a, b) => a.createdTime - b.createdTime)[0] ?? null
   const user = useUser()
   const [open, setOpen] = useState(false)
-
+  const shareUrl = `https://${ENV_CONFIG.domain}${contractPath(contract)}${
+    user?.username && contract.creatorUsername !== user?.username
+      ? '?referrer=' + user?.username
+      : ''
+  }`
   const groupInfo = (
     <Row>
       <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
@@ -157,7 +173,7 @@ export function ContractDetails(props: {
   )
 
   return (
-    <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+    <Row className="flex-1 flex-wrap items-center gap-2 text-sm text-gray-500 md:gap-x-4 md:gap-y-2">
       <Row className="items-center gap-2">
         <Avatar
           username={creatorUsername}
@@ -179,6 +195,8 @@ export function ContractDetails(props: {
       <Row>
         {disabled ? (
           groupInfo
+        ) : !groupToDisplay && !user ? (
+          <div />
         ) : (
           <Button
             size={'xs'}
@@ -203,13 +221,30 @@ export function ContractDetails(props: {
           />
         </Col>
       </Modal>
-
+      {!user && (
+        <Row className={'items-center justify-end'}>
+          <Button
+            size="xs"
+            color="gray-white"
+            className={'flex'}
+            onClick={() => {
+              copyToClipboard(shareUrl)
+              toast('Link copied!', {
+                icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
+              })
+              track('copy share link')
+            }}
+          >
+            <ShareIcon className={clsx('mr-2 h-5 w-5')} aria-hidden="true" />
+            Share
+          </Button>
+        </Row>
+      )}
       {(!!closeTime || !!resolvedDate) && (
         <Row className="items-center gap-1">
-          <ClockIcon className="h-5 w-5" />
-
           {resolvedDate && contract.resolutionTime ? (
             <>
+              <ClockIcon className="h-5 w-5" />
               <DateTimeTooltip
                 text="Market resolved:"
                 time={dayjs(contract.resolutionTime)}
@@ -219,8 +254,9 @@ export function ContractDetails(props: {
             </>
           ) : null}
 
-          {!resolvedDate && closeTime && (
+          {!resolvedDate && closeTime && user && (
             <>
+              <ClockIcon className="h-5 w-5" />
               <EditableCloseDate
                 closeTime={closeTime}
                 contract={contract}
@@ -230,14 +266,15 @@ export function ContractDetails(props: {
           )}
         </Row>
       )}
-
-      <Row className="items-center gap-1">
-        <DatabaseIcon className="h-5 w-5" />
-
-        <div className="whitespace-nowrap">{volumeLabel}</div>
-      </Row>
-
-      {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+      {user && (
+        <>
+          <Row className="items-center gap-1">
+            <DatabaseIcon className="h-5 w-5" />
+            <div className="whitespace-nowrap">{volumeLabel}</div>
+          </Row>
+          {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+        </>
+      )}
     </Row>
   )
 }

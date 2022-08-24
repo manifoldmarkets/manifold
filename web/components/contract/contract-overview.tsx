@@ -73,7 +73,14 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
             {tradingAllowed(contract) && (
-              <BetButton contract={contract as CPMMBinaryContract} />
+              <Col>
+                <BetButton contract={contract as CPMMBinaryContract} />
+                {!user && (
+                  <div className="text-sm text-gray-500">
+                    (Don't worry, it's play money!)
+                  </div>
+                )}
+              </Col>
             )}
           </Row>
         ) : isPseudoNumeric ? (
@@ -102,6 +109,7 @@ export const ContractOverview = (props: {
           contract={contract}
           bets={bets}
           isCreator={isCreator}
+          user={user}
         />
       </Col>
       <Spacer h={4} />
