@@ -9,8 +9,10 @@ import { CheckIcon, HeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useContractFollows } from 'web/hooks/use-follows'
-import { firebaseLogin } from 'web/lib/firebase/users'
+import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
+import { useState } from 'react'
 
 export const FollowMarketButton = (props: {
   contract: Contract
@@ -18,6 +20,7 @@ export const FollowMarketButton = (props: {
 }) => {
   const { contract, user } = props
   const followers = useContractFollows(contract.id)
+  const [open, setOpen] = useState(false)
 
   return (
     <Button
@@ -42,6 +45,12 @@ export const FollowMarketButton = (props: {
             slug: contract.slug,
           })
         }
+        if (!user.hasSeenContractFollowModal) {
+          await updateUser(user.id, {
+            hasSeenContractFollowModal: true,
+          })
+          setOpen(true)
+        }
       }}
     >
       {followers?.includes(user?.id ?? 'nope') ? (
@@ -55,6 +64,13 @@ export const FollowMarketButton = (props: {
           aria-hidden="true"
         />
       )}
+      <FollowMarketModal
+        open={open}
+        setOpen={setOpen}
+        title={`You ${
+          followers?.includes(user?.id ?? 'nope') ? 'followed' : 'unfollowed'
+        } a question!`}
+      />
     </Button>
   )
 }
