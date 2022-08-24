@@ -259,8 +259,6 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const totalFees = sum(Object.values(newBet.fees))
-
   const format = getFormattedMappedValue(contract)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
