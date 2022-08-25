@@ -4,6 +4,7 @@ import { chunk } from 'lodash'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
+import { Dashboard } from 'common/dashboard'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -78,6 +79,10 @@ export const getContract = (contractId: string) => {
 
 export const getGroup = (groupId: string) => {
   return getDoc<Group>('groups', groupId)
+}
+
+export const getDashboard = (dashboardId: string) => {
+  return getDoc<Dashboard>('dashboards', dashboardId)
 }
 
 export const getUser = (userId: string) => {
