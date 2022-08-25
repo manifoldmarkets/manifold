@@ -1,16 +1,14 @@
 // Run with `npx ts-node src/scripts/contest/create-markets.ts`
-const API_KEY = 'e0f4561c-59c3-453e-bf58-52a17e750099'
+
+import { CEP_SUBMISSIONS } from './submissions'
+
+// Dev API key for Cause Exploration Prizes
+const API_KEY = '188f014c-0ba2-4c35-9e6d-88252e281dbf'
 
 type CEPSubmission = {
   title: string
   author: string
   link: string
-}
-
-const SUBMISSION_1: CEPSubmission = {
-  title: 'New cause area: Violence against women and girls',
-  author: 'Akhil',
-  link: 'https://forum.effectivealtruism.org/posts/majcwf7i8pW8eMJ3v/new-cause-area-violence-against-women-and-girls',
 }
 
 // Use the API to create a new market for this Cause Exploration Prize submission
@@ -24,21 +22,26 @@ async function postMarket(submission: CEPSubmission) {
     },
     body: JSON.stringify({
       outcomeType: 'BINARY',
-      question: `"${title}" by ${author}` + 'DEV1',
+      question: `"${title}" by ${author}`,
       description: makeDescription(submission),
-      closeTime: 1700000000000,
-      initialProb: 25,
+      closeTime: Date.parse('2022-09-08').valueOf(),
+      initialProb: 10,
       // Super secret options:
-      groupId: 'aW0904dRtCc6FVOTCEpf',
+      groupId: 'y2hcaGybXT1UfobK3XTx', // CEP Tournament
       visibility: 'unlisted',
       // TODO: Increase liquidity?
     }),
   })
   const data = await response.json()
-  console.log(data)
+  console.log('Created market:', data.slug)
 }
 
-postMarket(SUBMISSION_1)
+async function postAll() {
+  for (const submission of CEP_SUBMISSIONS.slice(10)) {
+    await postMarket(submission)
+  }
+}
+postAll()
 
 /* Example curl request:
 $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: application/json' \
@@ -97,7 +100,7 @@ function makeDescription(submission: CEPSubmission) {
         type: 'iframe',
         attrs: {
           allowfullscreen: true,
-          src: 'https://forum.effectivealtruism.org/posts/majcwf7i8pW8eMJ3v/new-cause-area-violence-against-women-and-girls',
+          src: link,
           frameborder: 0,
         },
       },
