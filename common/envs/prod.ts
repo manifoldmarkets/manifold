@@ -35,6 +35,7 @@ export type Economy = {
   BETTING_STREAK_BONUS_AMOUNT?: number
   BETTING_STREAK_BONUS_MAX?: number
   BETTING_STREAK_RESET_HOUR?: number
+  FREE_MARKETS_PER_USER_MAX?: number
 }
 
 type FirebaseConfig = {

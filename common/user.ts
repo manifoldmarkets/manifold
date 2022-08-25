@@ -43,6 +43,7 @@ export type User = {
   lastBetTime?: number
   currentBettingStreak?: number
   hasSeenContractFollowModal?: boolean
+  freeMarketsCreated?: number
 }
 
 export type PrivateUser = {
