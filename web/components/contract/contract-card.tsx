@@ -68,7 +68,7 @@ export function ContractCard(props: {
   return (
     <Row
       className={clsx(
-        'relative gap-3 self-start rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
+        'relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
         className
       )}
     >
@@ -165,11 +165,7 @@ export function ContractCard(props: {
           showQuickBet ? 'w-[85%]' : 'w-full'
         )}
       >
-        <AvatarDetails
-          contract={contract}
-          short={true}
-          className={'block md:hidden'}
-        />
+        <AvatarDetails contract={contract} short={true} className="md:hidden" />
         <MiscDetails
           contract={contract}
           showHotVolume={showHotVolume}

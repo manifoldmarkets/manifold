@@ -9,7 +9,7 @@ import { Contract } from 'common/contract'
 import { formatLargeNumber } from 'common/util/format'
 import dayjs, { Dayjs } from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
-import { throttle } from 'lodash'
+import { identity, keyBy, throttle } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
@@ -21,6 +21,9 @@ import { useContracts } from 'web/hooks/use-contracts'
 import { useGroup } from 'web/hooks/use-group'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { getGroup } from 'web/lib/firebase/groups'
+import { listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -33,18 +36,18 @@ type Tourney = {
   blurb: string // actual description in the click-through
   award?: number
   endTime?: Dayjs
-  // TODO: somehow get the markets
-  groupId?: string
+  groupId: string
 }
 
+const Salem = {
+  title: 'CSPI/Salem Tournament',
+  blurb:
+    'Forecasting contest - top 5 can become Salem Center’s next research fellow.',
+  url: 'https://salemcenter.manifold.markets/',
+  award: 25_000,
+} as const
+
 const tourneys: Tourney[] = [
-  {
-    title: 'CSPI/Salem Tournament',
-    blurb:
-      'Forecasting contest - top 5 can become Salem Center’s next research fellow.',
-    url: 'https://salemcenter.manifold.markets/',
-    award: 25_000,
-  },
   {
     title: 'Fantasy Football Stock Exchange',
     blurb: 'How many points will each NFL player score?',
@@ -59,25 +62,43 @@ const tourneys: Tourney[] = [
       'Which new charity ideas will Open Philanthropy find most promising?',
     award: 100_000,
     endTime: toDate('Sep 9, 2022'),
+    groupId: 'znYsWa9eZRkBvSHwmaNz',
   },
   {
     title: 'Clearer Thinking Regrant Project',
     blurb: 'Something amazing',
     award: 1_000_000,
     endTime: toDate('Sep 22, 2022'),
+    groupId: '2VsVVFGhKtIdJnQRAXVb',
   },
 ]
 
-export default function TournamentPage() {
-  const ffsx = useGroup('SxGRqXRpV3RAQKudbcNb')
-  const markets = useContracts() ?? []
-  const ffsxMarkets = markets
-    .filter((m) => (ffsx?.contractIds ?? []).includes(m.id))
-    .slice(0, 50)
+export async function getStaticProps() {
+  const groupIds = tourneys
+    .map((data) => data.groupId)
+    .filter((id) => id != undefined) as string[]
+  const groups = await Promise.all(groupIds.map(getGroup))
 
-  const ffsxLength = ffsx?.memberIds.length
+  const contracts = await Promise.all(
+    groups.map((g) => listContractsByGroupSlug(g?.slug ?? ''))
+  )
 
-  useEffect(() => console.log(tourneys), [])
+  const markets = Object.fromEntries(
+    groupIds.map((id, i) => [id, contracts[i]])
+  )
+
+  const numPeople = Object.fromEntries(
+    groups.map((g) => [g?.id, g?.memberIds.length])
+  )
+
+  return { props: { markets, numPeople }, revalidate: 60 * 10 }
+}
+
+export default function TournamentPage(props: {
+  markets: { [groupId: string]: Contract[] }
+  numPeople: { [groupId: string]: number }
+}) {
+  const { markets = {}, numPeople = {} } = props
 
   return (
     <Page>
@@ -87,8 +108,14 @@ export default function TournamentPage() {
       />
       <Col className="mx-4 sm:mx-10 xl:w-[125%]">
         <h1 className="my-4 text-2xl text-indigo-700">Tournaments</h1>
+        <Section {...Salem} markets={[]} />
+
         {tourneys.map(({ groupId, ...data }) => (
-          <Section {...data} markets={groupId ? ffsxMarkets : []} />
+          <Section
+            {...data}
+            ppl={numPeople[groupId]}
+            markets={markets[groupId]}
+          />
         ))}
       </Col>
     </Page>
@@ -100,10 +127,11 @@ function Section(props: {
   url?: string
   blurb: string
   award?: number
+  ppl?: number
   endTime?: Dayjs
   markets: Contract[]
 }) {
-  const { title, url, blurb, award, endTime, markets } = props
+  const { title, url, blurb, award, ppl, endTime, markets } = props
 
   return (
     <div className="my-4">
@@ -117,10 +145,12 @@ function Section(props: {
               🏆 ${formatLargeNumber(award)}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <UsersIcon className="h-4" />
-            400
-          </span>
+          {!!ppl && (
+            <span className="flex items-center gap-1">
+              <UsersIcon className="h-4" />
+              {ppl}
+            </span>
+          )}
           {endTime && (
             <DateTimeTooltip time={endTime} text="Ends">
               <span className="flex items-center gap-1">
