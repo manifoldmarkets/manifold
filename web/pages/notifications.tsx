@@ -397,7 +397,7 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'betting_streak_bonus') {
       reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
-      reasonText = `of your invested bets returned as`
+      reasonText = `of your invested bets returned as a`
     }
 
     const bettingStreakText =
