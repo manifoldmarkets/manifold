@@ -9,9 +9,9 @@ import { DAY_MS } from '../../common/util/time'
 
 export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
-  // every Monday at 12pm PT (UTC -07:00)
-  .pubsub.schedule('0 19 * * 1')
-  .timeZone('utc')
+  // every minute on Monday for an hour at 12pm PT (UTC -07:00)
+  .pubsub.schedule('* 19 * * 1')
+  .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendTrendingMarketsEmailsToAllUsers()
   })
@@ -37,17 +37,33 @@ async function sendTrendingMarketsEmailsToAllUsers() {
   const privateUsers = await getAllPrivateUsers()
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
-    return !user.unsubscribedFromWeeklyTrendingEmails
+    return (
+      !user.unsubscribedFromWeeklyTrendingEmails &&
+      !user.weeklyTrendingEmailSent
+    )
   })
+  log(
+    'Sending weekly trending emails to',
+    privateUsersToSendEmailsTo.length,
+    'users'
+  )
   const trendingContracts = (await getTrendingContracts())
     .filter(
       (contract) =>
         !(
           contract.question.toLowerCase().includes('trump') &&
           contract.question.toLowerCase().includes('president')
-        ) && (contract?.closeTime ?? 0) > Date.now() + DAY_MS
+        ) &&
+        (contract?.closeTime ?? 0) > Date.now() + DAY_MS &&
+        !contract.groupSlugs?.includes('manifold-features') &&
+        !contract.groupSlugs?.includes('manifold-6748e065087e')
     )
     .slice(0, 20)
+  log(
+    `Found ${trendingContracts.length} trending contracts:\n`,
+    trendingContracts.map((c) => c.question).join('\n ')
+  )
+
   for (const privateUser of privateUsersToSendEmailsTo) {
     if (!privateUser.email) {
       log(`No email for ${privateUser.username}`)
@@ -70,12 +86,17 @@ async function sendTrendingMarketsEmailsToAllUsers() {
     if (!user) continue
 
     await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
+    await firestore.collection('private-users').doc(user.id).update({
+      weeklyTrendingEmailSent: true,
+    })
   }
 }
 
+const fiveMinutes = 5 * 60 * 1000
+const seed = Math.round(Date.now() / fiveMinutes).toString()
+const rng = createRNG(seed)
+
 function chooseRandomSubset(contracts: Contract[], count: number) {
-  const fiveMinutes = 5 * 60 * 1000
-  const seed = Math.round(Date.now() / fiveMinutes).toString()
-  shuffle(contracts, createRNG(seed))
+  shuffle(contracts, rng)
   return contracts.slice(0, count)
 }

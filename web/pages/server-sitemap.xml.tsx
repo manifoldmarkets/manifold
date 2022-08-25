@@ -1,24 +1,21 @@
-import { sortBy } from 'lodash'
 import { GetServerSideProps } from 'next'
 import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
 
-import { DOMAIN } from 'common/envs/constants'
-import { LiteMarket } from './api/v0/_types'
+import { listAllContracts } from 'web/lib/firebase/contracts'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  // Fetching data from https://manifold.markets/api
-  const response = await fetch(`https://${DOMAIN}/api/v0/markets`)
+  const contracts = await listAllContracts(1000, undefined, 'popularityScore')
 
-  const liteMarkets = (await response.json()) as LiteMarket[]
-  const sortedMarkets = sortBy(liteMarkets, (m) => -m.volume24Hours)
+  const score = (popularity: number) => Math.tanh(Math.log10(popularity + 1))
 
-  const fields = sortedMarkets.map((market) => ({
-    // See https://www.sitemaps.org/protocol.html
-    loc: market.url,
-    changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
-    priority: market.volume24Hours + market.volume7Days > 100 ? 0.7 : 0.1,
-    // TODO: Add `lastmod` aka last modified time
-  })) as ISitemapField[]
+  const fields = contracts
+    .sort((x) => x.popularityScore ?? 0)
+    .map((market) => ({
+      loc: `https://manifold.markets/${market.creatorUsername}/${market.slug}`,
+      changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
+      priority: score(market.popularityScore ?? 0),
+      lastmod: market.lastUpdatedTime,
+    })) as ISitemapField[]
 
   return await getServerSideSitemap(ctx, fields)
 }

@@ -1,17 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
-import { groupBy, keyBy, mapValues, sortBy, sumBy } from 'lodash'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet-panel'
 import { Col } from 'web/components/layout/col'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Spacer } from 'web/components/layout/spacer'
 import {
   Contract,
   getContractFromSlug,
+  getRandTopCreatorContracts,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
@@ -21,9 +21,6 @@ import { listAllComments } from 'web/lib/firebase/comments'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { Leaderboard } from 'web/components/leaderboard'
-import { resolvedPayout } from 'common/calculate'
-import { formatMoney } from 'common/util/format'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
 import { NumericBetPanel } from 'web/components/numeric-bet-panel'
@@ -34,15 +31,17 @@ import { useBets } from 'web/hooks/use-bets'
 import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
-import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
+import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
-import { listUsers } from 'web/lib/firebase/users'
-import { FeedComment } from 'web/components/feed/feed-comments'
-import { Title } from 'web/components/title'
-import { FeedBet } from 'web/components/feed/feed-bets'
 import { getOpenGraphProps } from 'common/contract-details'
+import {
+  ContractLeaderboard,
+  ContractTopTrades,
+} from 'web/components/contract/contract-leaderboard'
+import { Subtitle } from 'web/components/subtitle'
+import { ContractsGrid } from 'web/components/contract/contracts-grid'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -52,9 +51,12 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
-  const [bets, comments] = await Promise.all([
+  const [bets, comments, recommendedContracts] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
+    contract
+      ? getRandTopCreatorContracts(contract.creatorId, 4, [contract?.id])
+      : [],
   ])
 
   return {
@@ -65,6 +67,7 @@ export async function getStaticPropz(props: {
       // Limit the data sent to the client. Client will still load all bets and comments directly.
       bets: bets.slice(0, 5000),
       comments: comments.slice(0, 1000),
+      recommendedContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -81,6 +84,7 @@ export default function ContractPage(props: {
   bets: Bet[]
   comments: ContractComment[]
   slug: string
+  recommendedContracts: Contract[]
   backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -88,6 +92,7 @@ export default function ContractPage(props: {
     username: '',
     comments: [],
     bets: [],
+    recommendedContracts: [],
     slug: '',
   }
 
@@ -149,7 +154,7 @@ export function ContractPageContent(
     user?: User | null
   }
 ) {
-  const { backToHome, comments, user } = props
+  const { backToHome, comments, user, recommendedContracts } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
 
@@ -263,128 +268,13 @@ export function ContractPageContent(
           comments={comments}
         />
       </Col>
+
+      {recommendedContracts.length > 0 && (
+        <Col className="gap-2 px-2 sm:px-0">
+          <Subtitle text="Recommended" />
+          <ContractsGrid contracts={recommendedContracts} />
+        </Col>
+      )}
     </Page>
-  )
-}
-
-function ContractLeaderboard(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
-  const [users, setUsers] = useState<User[]>()
-
-  const { userProfits, top5Ids } = useMemo(() => {
-    // Create a map of userIds to total profits (including sales)
-    const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
-    const betsByUser = groupBy(openBets, 'userId')
-
-    const userProfits = mapValues(betsByUser, (bets) =>
-      sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
-    )
-    // Find the 5 users with the most profits
-    const top5Ids = Object.entries(userProfits)
-      .sort(([_i1, p1], [_i2, p2]) => p2 - p1)
-      .filter(([, p]) => p > 0)
-      .slice(0, 5)
-      .map(([id]) => id)
-    return { userProfits, top5Ids }
-  }, [contract, bets])
-
-  useEffect(() => {
-    if (top5Ids.length > 0) {
-      listUsers(top5Ids).then((users) => {
-        const sortedUsers = sortBy(users, (user) => -userProfits[user.id])
-        setUsers(sortedUsers)
-      })
-    }
-  }, [userProfits, top5Ids])
-
-  return users && users.length > 0 ? (
-    <Leaderboard
-      title="🏅 Top bettors"
-      users={users || []}
-      columns={[
-        {
-          header: 'Total profit',
-          renderCell: (user) => formatMoney(userProfits[user.id] || 0),
-        },
-      ]}
-      className="mt-12 max-w-sm"
-    />
-  ) : null
-}
-
-function ContractTopTrades(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: ContractComment[]
-  tips: CommentTipMap
-}) {
-  const { contract, bets, comments, tips } = props
-  const commentsById = keyBy(comments, 'id')
-  const betsById = keyBy(bets, 'id')
-
-  // If 'id2' is the sale of 'id1', both are logged with (id2 - id1) of profit
-  // Otherwise, we record the profit at resolution time
-  const profitById: Record<string, number> = {}
-  for (const bet of bets) {
-    if (bet.sale) {
-      const originalBet = betsById[bet.sale.betId]
-      const profit = bet.sale.amount - originalBet.amount
-      profitById[bet.id] = profit
-      profitById[originalBet.id] = profit
-    } else {
-      profitById[bet.id] = resolvedPayout(contract, bet) - bet.amount
-    }
-  }
-
-  // Now find the betId with the highest profit
-  const topBetId = sortBy(bets, (b) => -profitById[b.id])[0]?.id
-  const topBettor = useUserById(betsById[topBetId]?.userId)
-
-  // And also the commentId of the comment with the highest profit
-  const topCommentId = sortBy(
-    comments,
-    (c) => c.betId && -profitById[c.betId]
-  )[0]?.id
-
-  return (
-    <div className="mt-12 max-w-sm">
-      {topCommentId && profitById[topCommentId] > 0 && (
-        <>
-          <Title text="💬 Proven correct" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedComment
-              contract={contract}
-              comment={commentsById[topCommentId]}
-              tips={tips[topCommentId]}
-              betsBySameUser={[betsById[topCommentId]]}
-              smallAvatar={false}
-            />
-          </div>
-          <div className="mt-2 text-sm text-gray-500">
-            {commentsById[topCommentId].userName} made{' '}
-            {formatMoney(profitById[topCommentId] || 0)}!
-          </div>
-          <Spacer h={16} />
-        </>
-      )}
-
-      {/* If they're the same, only show the comment; otherwise show both */}
-      {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
-        <>
-          <Title text="💸 Smartest money" className="!mt-0" />
-          <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedBet
-              contract={contract}
-              bet={betsById[topBetId]}
-              hideOutcome={false}
-              smallAvatar={false}
-            />
-          </div>
-          <div className="mt-2 text-sm text-gray-500">
-            {topBettor?.name} made {formatMoney(profitById[topBetId] || 0)}!
-          </div>
-        </>
-      )}
-    </div>
   )
 }

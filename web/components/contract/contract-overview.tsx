@@ -3,7 +3,6 @@ import clsx from 'clsx'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { Spacer } from '../layout/spacer'
 import { ContractProbGraph } from './contract-prob-graph'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
@@ -39,52 +38,63 @@ export const ContractOverview = (props: {
 
   return (
     <Col className={clsx('mb-6', className)}>
-      <Col className="gap-4 px-2">
+      <Col className="gap-3 px-2 sm:gap-4">
         <Row className="justify-between gap-4">
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
+          <Row className={'hidden gap-3 xl:flex'}>
+            {isBinary && (
+              <BinaryResolutionOrChance
+                className="items-end"
+                contract={contract}
+                large
+              />
+            )}
 
-          {isBinary && (
-            <BinaryResolutionOrChance
-              className="hidden items-end xl:flex"
-              contract={contract}
-              large
-            />
-          )}
+            {isPseudoNumeric && (
+              <PseudoNumericResolutionOrExpectation
+                contract={contract}
+                className="items-end"
+              />
+            )}
 
-          {isPseudoNumeric && (
-            <PseudoNumericResolutionOrExpectation
-              contract={contract}
-              className="hidden items-end xl:flex"
-            />
-          )}
-
-          {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation
-              contract={contract}
-              className="hidden items-end xl:flex"
-            />
-          )}
+            {outcomeType === 'NUMERIC' && (
+              <NumericResolutionOrExpectation
+                contract={contract}
+                className="items-end"
+              />
+            )}
+          </Row>
         </Row>
 
         {isBinary ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
-
             {tradingAllowed(contract) && (
-              <BetButton contract={contract as CPMMBinaryContract} />
+              <Col>
+                <BetButton contract={contract as CPMMBinaryContract} />
+                {!user && (
+                  <div className="mt-1 text-center text-sm text-gray-500">
+                    (with play money!)
+                  </div>
+                )}
+              </Col>
             )}
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetButton contract={contract} />}
-          </Row>
-        ) : isPseudoNumeric ? (
-          <Row className="items-center justify-between gap-4 xl:hidden">
-            <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetButton contract={contract} />}
+            {tradingAllowed(contract) && (
+              <Col>
+                <BetButton contract={contract} />
+                {!user && (
+                  <div className="mt-1 text-center text-sm text-gray-500">
+                    (with play money!)
+                  </div>
+                )}
+              </Col>
+            )}
           </Row>
         ) : (
           (outcomeType === 'FREE_RESPONSE' ||
@@ -107,9 +117,10 @@ export const ContractOverview = (props: {
           contract={contract}
           bets={bets}
           isCreator={isCreator}
+          user={user}
         />
       </Col>
-      <Spacer h={4} />
+      <div className={'my-1 md:my-2'}></div>
       {(isBinary || isPseudoNumeric) && (
         <ContractProbGraph contract={contract} bets={bets} />
       )}{' '}

@@ -125,9 +125,10 @@ export async function listTaggedContractsCaseInsensitive(
 
 export async function listAllContracts(
   n: number,
-  before?: string
+  before?: string,
+  sortDescBy = 'createdTime'
 ): Promise<Contract[]> {
-  let q = query(contracts, orderBy('createdTime', 'desc'), limit(n))
+  let q = query(contracts, orderBy(sortDescBy, 'desc'), limit(n))
   if (before != null) {
     const snap = await getDoc(doc(contracts, before))
     q = query(q, startAfter(snap))
@@ -211,6 +212,29 @@ export function listenForContract(
   return listenForValue<Contract>(contractRef, setContract)
 }
 
+export function listenForContractFollows(
+  contractId: string,
+  setFollowIds: (followIds: string[]) => void
+) {
+  const follows = collection(contracts, contractId, 'follows')
+  return listenForValues<{ id: string }>(follows, (docs) =>
+    setFollowIds(docs.map(({ id }) => id))
+  )
+}
+
+export async function followContract(contractId: string, userId: string) {
+  const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
+  return await setDoc(followDoc, {
+    id: userId,
+    createdTime: Date.now(),
+  })
+}
+
+export async function unFollowContract(contractId: string, userId: string) {
+  const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
+  await deleteDoc(followDoc)
+}
+
 function chooseRandomSubset(contracts: Contract[], count: number) {
   const fiveMinutes = 5 * 60 * 1000
   const seed = Math.round(Date.now() / fiveMinutes).toString()
@@ -269,6 +293,26 @@ const closingSoonQuery = query(
 export async function getClosingSoonContracts() {
   const data = await getValues<Contract>(closingSoonQuery)
   return sortBy(chooseRandomSubset(data, 2), (contract) => contract.closeTime)
+}
+
+export const getRandTopCreatorContracts = async (
+  creatorId: string,
+  count: number,
+  excluding: string[] = []
+) => {
+  const creatorContractsQuery = query(
+    contracts,
+    where('isResolved', '==', false),
+    where('creatorId', '==', creatorId),
+    orderBy('popularityScore', 'desc'),
+    limit(Math.max(count * 2, 15))
+  )
+  const data = await getValues<Contract>(creatorContractsQuery)
+  const open = data
+    .filter((c) => c.closeTime && c.closeTime > Date.now())
+    .filter((c) => !excluding.includes(c.id))
+
+  return chooseRandomSubset(open, count)
 }
 
 export async function getRecentBetsAndComments(contract: Contract) {

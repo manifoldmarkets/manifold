@@ -10,6 +10,7 @@ import { User } from 'common/user'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { ShareModal } from './share-modal'
 import { withTracking } from 'web/lib/service/analytics'
+import { FollowMarketButton } from 'web/components/follow-market-button'
 
 export function ShareRow(props: {
   contract: Contract
@@ -25,7 +26,7 @@ export function ShareRow(props: {
   const [isShareOpen, setShareOpen] = useState(false)
 
   return (
-    <Row className="mt-2">
+    <Row className="mt-0.5 sm:mt-2">
       <Button
         size="lg"
         color="gray-white"
@@ -62,6 +63,7 @@ export function ShareRow(props: {
           />
         </Button>
       )}
+      <FollowMarketButton contract={contract} user={user} />
     </Row>
   )
 }

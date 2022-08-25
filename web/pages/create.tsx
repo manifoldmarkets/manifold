@@ -7,7 +7,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
-import { FIXED_ANTE } from 'common/antes'
+import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from 'common/economy'
 import { InfoTooltip } from 'web/components/info-tooltip'
 import { Page } from 'web/components/page'
 import { Row } from 'web/components/layout/row'
@@ -158,6 +158,8 @@ export function NewContract(props: {
     : undefined
 
   const balance = creator.balance || 0
+  const deservesFreeMarket =
+    (creator.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -177,7 +179,7 @@ export function NewContract(props: {
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
-    ante <= balance &&
+    (ante <= balance || deservesFreeMarket) &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
@@ -207,6 +209,7 @@ export function NewContract(props: {
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     disabled: isSubmitting,
+    defaultValue: JSON.parse(params?.description ?? '{}'),
   })
 
   const isEditorFilled = editor != null && !editor.isEmpty
@@ -460,12 +463,25 @@ export function NewContract(props: {
               text={`Cost to create your question. This amount is used to subsidize betting.`}
             />
           </label>
+          {!deservesFreeMarket ? (
+            <div className="label-text text-neutral pl-1">
+              {formatMoney(ante)}
+            </div>
+          ) : (
+            <div>
+              <div className="label-text text-primary pl-1">
+                FREE{' '}
+                <span className="label-text pl-1 text-gray-500">
+                  (You have{' '}
+                  {FREE_MARKETS_PER_USER_MAX -
+                    (creator?.freeMarketsCreated ?? 0)}{' '}
+                  free markets left)
+                </span>
+              </div>
+            </div>
+          )}
 
-          <div className="label-text text-neutral pl-1">
-            {formatMoney(ante)}
-          </div>
-
-          {ante > balance && (
+          {ante > balance && !deservesFreeMarket && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
               <span className="mr-2 text-red-500">Insufficient balance</span>
               <button

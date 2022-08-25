@@ -19,10 +19,23 @@ export type EnvConfig = {
   navbarLogoPath?: string
   newQuestionPlaceholders: string[]
 
-  // Currency controls
-  fixedAnte?: number
-  startingBalance?: number
-  referralBonus?: number
+  economy?: Economy
+}
+
+export type Economy = {
+  FIXED_ANTE?: number
+
+  STARTING_BALANCE?: number
+  SUS_STARTING_BALANCE?: number
+
+  REFERRAL_AMOUNT?: number
+
+  UNIQUE_BETTOR_BONUS_AMOUNT?: number
+
+  BETTING_STREAK_BONUS_AMOUNT?: number
+  BETTING_STREAK_BONUS_MAX?: number
+  BETTING_STREAK_RESET_HOUR?: number
+  FREE_MARKETS_PER_USER_MAX?: number
 }
 
 type FirebaseConfig = {
@@ -58,6 +71,8 @@ export const PROD_CONFIG: EnvConfig = {
     'taowell@gmail.com', // Stephen
     'abc.sinclair@gmail.com', // Sinclair
     'manticmarkets@gmail.com', // Manifold
+    'iansphilips@gmail.com', // Ian
+    'd4vidchee@gmail.com', // D4vid
   ],
   visibility: 'PUBLIC',
 

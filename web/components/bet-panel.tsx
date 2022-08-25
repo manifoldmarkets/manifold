@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React, { useEffect, useState } from 'react'
-import { clamp, partition, sum, sumBy } from 'lodash'
+import { clamp, partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
@@ -9,7 +9,6 @@ import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import {
   formatMoney,
-  formatMoneyWithDecimals,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
@@ -18,7 +17,6 @@ import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
 import { APIError, placeBet, sellShares } from 'web/lib/firebase/api'
 import { AmountInput, BuyAmountInput } from './amount-input'
-import { InfoTooltip } from './info-tooltip'
 import {
   BinaryOutcomeLabel,
   HigherLabel,
@@ -261,8 +259,6 @@ function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const totalFees = sum(Object.values(newBet.fees))
-
   const format = getFormattedMappedValue(contract)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
@@ -346,9 +342,9 @@ function BuyPanel(props: {
                 </>
               )}
             </div>
-            <InfoTooltip
+            {/* <InfoTooltip
               text={`Includes ${formatMoneyWithDecimals(totalFees)} in fees`}
-            />
+            /> */}
           </Row>
           <div>
             <span className="mr-2 whitespace-nowrap">
@@ -665,9 +661,9 @@ function LimitOrderPanel(props: {
                   </>
                 )}
               </div>
-              <InfoTooltip
+              {/* <InfoTooltip
                 text={`Includes ${formatMoneyWithDecimals(yesFees)} in fees`}
-              />
+              /> */}
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
@@ -689,9 +685,9 @@ function LimitOrderPanel(props: {
                   </>
                 )}
               </div>
-              <InfoTooltip
+              {/* <InfoTooltip
                 text={`Includes ${formatMoneyWithDecimals(noFees)} in fees`}
-              />
+              /> */}
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">

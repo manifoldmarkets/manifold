@@ -58,7 +58,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   const { width } = useWindowSize()
 
   const numXTickValues = !width || width < 800 ? 2 : 5
-  const hoursAgo = latestTime.subtract(5, 'hours')
+  const hoursAgo = latestTime.subtract(1, 'hours')
   const startDate = dayjs(times[0]).isBefore(hoursAgo)
     ? times[0]
     : hoursAgo.toDate()

@@ -5,11 +5,11 @@ import { useUser } from 'web/hooks/use-user'
 import { Page } from 'web/components/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { REFERRAL_AMOUNT } from 'common/user'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoBox } from 'web/components/info-box'
 import { QRCode } from 'web/components/qr-code'
+import { REFERRAL_AMOUNT } from 'common/economy'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 

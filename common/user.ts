@@ -1,5 +1,3 @@
-import { ENV_CONFIG } from './envs/constants'
-
 export type User = {
   id: string
   createdTime: number
@@ -32,6 +30,7 @@ export type User = {
     allTime: number
   }
 
+  nextLoanCached: number
   followerCountCached: number
 
   followedCategories?: string[]
@@ -43,12 +42,9 @@ export type User = {
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  hasSeenContractFollowModal?: boolean
+  freeMarketsCreated?: number
 }
-
-export const STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 1000
-// for sus users, i.e. multiple sign ups for same person
-export const SUS_STARTING_BALANCE = ENV_CONFIG.startingBalance ?? 10
-export const REFERRAL_AMOUNT = ENV_CONFIG.referralBonus ?? 500
 
 export type PrivateUser = {
   id: string // same as User.id
@@ -60,6 +56,7 @@ export type PrivateUser = {
   unsubscribedFromAnswerEmails?: boolean
   unsubscribedFromGenericEmails?: boolean
   unsubscribedFromWeeklyTrendingEmails?: boolean
+  weeklyTrendingEmailSent?: boolean
   manaBonusEmailSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string

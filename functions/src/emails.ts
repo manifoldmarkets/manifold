@@ -53,10 +53,10 @@ export const sendMarketResolutionEmail = async (
 
   const subject = `Resolved ${outcome}: ${contract.question}`
 
-  const creatorPayoutText =
-    userId === creator.id
-      ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
-      : ''
+  // const creatorPayoutText =
+  //   userId === creator.id
+  //     ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
+  //     : ''
 
   const emailType = 'market-resolved'
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
@@ -68,7 +68,7 @@ export const sendMarketResolutionEmail = async (
     question: contract.question,
     outcome,
     investment: `${Math.floor(investment)}`,
-    payout: `${Math.floor(payout)}${creatorPayoutText}`,
+    payout: `${Math.floor(payout)}`,
     url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
     unsubscribeUrl,
   }
@@ -116,7 +116,9 @@ const toDisplayResolution = (
   }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    const { resolutionValue } = contract
+    const { resolution, resolutionValue } = contract
+
+    if (resolution === 'CANCEL') return 'N/A'
 
     return resolutionValue
       ? formatLargeNumber(resolutionValue)

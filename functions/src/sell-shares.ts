@@ -7,12 +7,13 @@ import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
 import { User } from '../../common/user'
 import { getCpmmSellBetInfo } from '../../common/sell-bet'
 import { addObjects, removeUndefinedProps } from '../../common/util/object'
-import { getValues, log } from './utils'
+import { log } from './utils'
 import { Bet } from '../../common/bet'
 import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsQuery, updateMakers } from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { redeemShares } from './redeem-shares'
+import { removeUserFromContractFollowers } from './follow-market'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -28,12 +29,16 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
-    const [[contractSnap, userSnap], userBets] = await Promise.all([
-      transaction.getAll(contractDoc, userDoc),
-      getValues<Bet>(betsQ), // TODO: why is this not in the transaction??
-    ])
+    const [[contractSnap, userSnap], userBetsSnap, unfilledBetsSnap] =
+      await Promise.all([
+        transaction.getAll(contractDoc, userDoc),
+        transaction.get(betsQ),
+        transaction.get(getUnfilledBetsQuery(contractDoc)),
+      ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
+    const userBets = userBetsSnap.docs.map((doc) => doc.data() as Bet)
+    const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
@@ -45,7 +50,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     if (closeTime && Date.now() > closeTime)
       throw new APIError(400, 'Trading is closed.')
 
-    const prevLoanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+    const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
     const betsByOutcome = groupBy(userBets, (bet) => bet.outcome)
     const sharesByOutcome = mapValues(betsByOutcome, (bets) =>
       sumBy(bets, (b) => b.shares)
@@ -77,18 +82,16 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
     const soldShares = Math.min(sharesToSell, maxShares)
-
-    const unfilledBetsSnap = await transaction.get(
-      getUnfilledBetsQuery(contractDoc)
-    )
-    const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
+    const saleFrac = soldShares / maxShares
+    let loanPaid = saleFrac * loanAmount
+    if (!isFinite(loanPaid)) loanPaid = 0
 
     const { newBet, newPool, newP, fees, makers } = getCpmmSellBetInfo(
       soldShares,
       chosenOutcome,
       contract,
-      prevLoanAmount,
-      unfilledBets
+      unfilledBets,
+      loanPaid
     )
 
     if (
@@ -104,7 +107,7 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     updateMakers(makers, newBetDoc.id, contractDoc, transaction)
 
     transaction.update(userDoc, {
-      balance: FieldValue.increment(-newBet.amount),
+      balance: FieldValue.increment(-newBet.amount + (newBet.loanAmount ?? 0)),
     })
     transaction.create(newBetDoc, {
       id: newBetDoc.id,
@@ -121,9 +124,12 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
       })
     )
 
-    return { newBet, makers }
+    return { newBet, makers, maxShares, soldShares }
   })
 
+  if (result.maxShares === result.soldShares) {
+    await removeUserFromContractFollowers(contractId, auth.uid)
+  }
   const userIds = uniq(result.makers.map((maker) => maker.bet.userId))
   await Promise.all(userIds.map((userId) => redeemShares(userId, contractId)))
   log('Share redemption transaction finished.')

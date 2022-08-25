@@ -1,9 +1,7 @@
 import { DuplicateIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { getMappedValue } from 'common/pseudo-numeric'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { trackCallback } from 'web/lib/service/analytics'
 
 export function DuplicateContractButton(props: {
@@ -33,21 +31,28 @@ export function DuplicateContractButton(props: {
 
 // Pass along the Uri to create a new contract
 function duplicateContractHref(contract: Contract) {
+  const descriptionString = JSON.stringify(contract.description)
+  // Don't set a closeTime that's in the past
+  const closeTime =
+    (contract?.closeTime ?? 0) <= Date.now() ? 0 : contract.closeTime
   const params = {
     q: contract.question,
-    closeTime: contract.closeTime || 0,
-    description:
-      (contract.description ? `${contract.description}\n\n` : '') +
-      `(Copied from https://${ENV_CONFIG.domain}${contractPath(contract)})`,
+    closeTime,
+    description: descriptionString,
     outcomeType: contract.outcomeType,
   } as Record<string, any>
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     params.min = contract.min
     params.max = contract.max
-    params.isLogScale = contract.isLogScale
+    if (contract.isLogScale) {
+      // Conditional, because `?isLogScale=false` evaluates to `true`
+      params.isLogScale = true
+    }
     params.initValue = getMappedValue(contract)(contract.initialProbability)
   }
+
+  // TODO: Support multiple choice markets?
 
   if (contract.groupLinks && contract.groupLinks.length > 0) {
     params.groupId = contract.groupLinks[0].groupId

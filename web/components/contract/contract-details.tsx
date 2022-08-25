@@ -32,6 +32,8 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
+import { User } from 'common/user'
+import { FeaturedContractBadge } from 'web/components/contract/FeaturedContractBadge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -72,6 +74,8 @@ export function MiscDetails(props: {
           {'Resolved '}
           {fromNow(resolutionTime || 0)}
         </Row>
+      ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
+        <FeaturedContractBadge />
       ) : volume > 0 || !isNew ? (
         <Row className={'shrink-0'}>{formatMoney(contract.volume)} bet</Row>
       ) : (
@@ -134,6 +138,7 @@ export function AbbrContractDetails(props: {
 export function ContractDetails(props: {
   contract: Contract
   bets: Bet[]
+  user: User | null | undefined
   isCreator?: boolean
   disabled?: boolean
 }) {
@@ -157,7 +162,7 @@ export function ContractDetails(props: {
   )
 
   return (
-    <Row className="flex-1 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+    <Row className="flex-1 flex-wrap items-center gap-2 text-sm text-gray-500 md:gap-x-4 md:gap-y-2">
       <Row className="items-center gap-2">
         <Avatar
           username={creatorUsername}
@@ -179,6 +184,8 @@ export function ContractDetails(props: {
       <Row>
         {disabled ? (
           groupInfo
+        ) : !groupToDisplay && !user ? (
+          <div />
         ) : (
           <Button
             size={'xs'}
@@ -206,10 +213,9 @@ export function ContractDetails(props: {
 
       {(!!closeTime || !!resolvedDate) && (
         <Row className="items-center gap-1">
-          <ClockIcon className="h-5 w-5" />
-
           {resolvedDate && contract.resolutionTime ? (
             <>
+              <ClockIcon className="h-5 w-5" />
               <DateTimeTooltip
                 text="Market resolved:"
                 time={dayjs(contract.resolutionTime)}
@@ -219,8 +225,9 @@ export function ContractDetails(props: {
             </>
           ) : null}
 
-          {!resolvedDate && closeTime && (
+          {!resolvedDate && closeTime && user && (
             <>
+              <ClockIcon className="h-5 w-5" />
               <EditableCloseDate
                 closeTime={closeTime}
                 contract={contract}
@@ -230,14 +237,15 @@ export function ContractDetails(props: {
           )}
         </Row>
       )}
-
-      <Row className="items-center gap-1">
-        <DatabaseIcon className="h-5 w-5" />
-
-        <div className="whitespace-nowrap">{volumeLabel}</div>
-      </Row>
-
-      {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+      {user && (
+        <>
+          <Row className="items-center gap-1">
+            <DatabaseIcon className="h-5 w-5" />
+            <div className="whitespace-nowrap">{volumeLabel}</div>
+          </Row>
+          {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+        </>
+      )}
     </Row>
   )
 }

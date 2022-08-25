@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import { getUser } from './utils'
-import { createNotification } from './create-notification'
+import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { Contract } from '../../common/contract'
 
 export const onUpdateContract = functions.firestore
@@ -29,40 +29,37 @@ export const onUpdateContract = functions.firestore
           resolutionText = `${contract.resolutionValue}`
       }
 
-      await createNotification(
+      await createCommentOrAnswerOrUpdatedContractNotification(
         contract.id,
         'contract',
         'resolved',
         contractUpdater,
         eventId,
         resolutionText,
-        { contract }
+        contract
       )
     } else if (
       previousValue.closeTime !== contract.closeTime ||
-      previousValue.description !== contract.description
+      previousValue.question !== contract.question
     ) {
       let sourceText = ''
-      if (previousValue.closeTime !== contract.closeTime && contract.closeTime)
+      if (
+        previousValue.closeTime !== contract.closeTime &&
+        contract.closeTime
+      ) {
         sourceText = contract.closeTime.toString()
-      else {
-        const oldTrimmedDescription = previousValue.description.trim()
-        const newTrimmedDescription = contract.description.trim()
-        if (oldTrimmedDescription === '') sourceText = newTrimmedDescription
-        else
-          sourceText = newTrimmedDescription
-            .split(oldTrimmedDescription)[1]
-            .trim()
+      } else if (previousValue.question !== contract.question) {
+        sourceText = contract.question
       }
 
-      await createNotification(
+      await createCommentOrAnswerOrUpdatedContractNotification(
         contract.id,
         'contract',
         'updated',
         contractUpdater,
         eventId,
         sourceText,
-        { contract }
+        contract
       )
     }
   })

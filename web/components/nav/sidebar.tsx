@@ -12,22 +12,20 @@ import {
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router, { useRouter } from 'next/router'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
-import { Group, GROUP_CHAT_SLUG } from 'common/group'
+import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
-import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
-import { PrivateUser } from 'common/user'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
@@ -58,7 +56,14 @@ function getNavigation() {
 
 function getMoreNavigation(user?: User | null) {
   if (IS_PRIVATE_MANIFOLD) {
-    return [{ name: 'Leaderboards', href: '/leaderboards' }]
+    return [
+      { name: 'Leaderboards', href: '/leaderboards' },
+      {
+        name: 'Sign out',
+        href: '#',
+        onClick: logout,
+      },
+    ]
   }
 
   if (!user) {
@@ -88,7 +93,7 @@ function getMoreNavigation(user?: User | null) {
         href: 'https://salemcenter.manifold.markets/',
       },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-      { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
+      { name: 'Help & About', href: 'https://help.manifold.markets/' },
       {
         name: 'Sign out',
         href: '#',
@@ -102,16 +107,16 @@ const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Explore', href: '/home', icon: SearchIcon },
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
 ]
 
 const signedOutMobileNavigation = [
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
@@ -125,8 +130,8 @@ const signedInMobileNavigation = [
     ? []
     : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
 ]
@@ -221,8 +226,6 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
 
   const user = useUser()
-  const privateUser = usePrivateUser()
-  // usePing(user?.id)
 
   const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
@@ -230,11 +233,9 @@ export default function Sidebar(props: { className?: string }) {
     : signedInMobileNavigation
 
   const memberItems = (
-    useMemberGroups(
-      user?.id,
-      { withChatEnabled: true },
-      { by: 'mostRecentChatActivityTime' }
-    ) ?? []
+    useMemberGroups(user?.id, undefined, {
+      by: 'mostRecentContractAddedTime',
+    }) ?? []
   ).map((group: Group) => ({
     name: group.name,
     href: `${groupPath(group.slug)}`,
@@ -268,13 +269,7 @@ export default function Sidebar(props: { className?: string }) {
         {memberItems.length > 0 && (
           <hr className="!my-4 mr-2 border-gray-300" />
         )}
-        {privateUser && (
-          <GroupsList
-            currentPage={router.asPath}
-            memberItems={memberItems}
-            privateUser={privateUser}
-          />
-        )}
+        <GroupsList currentPage={router.asPath} memberItems={memberItems} />
       </div>
 
       {/* Desktop navigation */}
@@ -289,46 +284,36 @@ export default function Sidebar(props: { className?: string }) {
 
         {/* Spacer if there are any groups */}
         {memberItems.length > 0 && <hr className="!my-4 border-gray-300" />}
-        {privateUser && (
-          <GroupsList
-            currentPage={router.asPath}
-            memberItems={memberItems}
-            privateUser={privateUser}
-          />
-        )}
+        <GroupsList currentPage={router.asPath} memberItems={memberItems} />
       </div>
     </nav>
   )
 }
 
-function GroupsList(props: {
-  currentPage: string
-  memberItems: Item[]
-  privateUser: PrivateUser
-}) {
-  const { currentPage, memberItems, privateUser } = props
-  const preferredNotifications = useUnseenPreferredNotifications(
-    privateUser,
-    {
-      customHref: '/group/',
-    },
-    memberItems.length > 0 ? memberItems.length : undefined
-  )
+function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
+  const { currentPage, memberItems } = props
 
   const { height } = useWindowSize()
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
   const remainingHeight = (height ?? 0) - (containerRef?.offsetTop ?? 0)
 
-  const notifIsForThisItem = useMemo(
-    () => (itemHref: string) =>
-      preferredNotifications.some(
-        (n) =>
-          !n.isSeen &&
-          (n.isSeenOnHref === itemHref ||
-            n.isSeenOnHref?.replace('/chat', '') === itemHref)
-      ),
-    [preferredNotifications]
-  )
+  // const preferredNotifications = useUnseenPreferredNotifications(
+  //   privateUser,
+  //   {
+  //     customHref: '/group/',
+  //   },
+  //   memberItems.length > 0 ? memberItems.length : undefined
+  // )
+  // const notifIsForThisItem = useMemo(
+  //   () => (itemHref: string) =>
+  //     preferredNotifications.some(
+  //       (n) =>
+  //         !n.isSeen &&
+  //         (n.isSeenOnHref === itemHref ||
+  //           n.isSeenOnHref?.replace('/chat', '') === itemHref)
+  //     ),
+  //   [preferredNotifications]
+  // )
 
   return (
     <>
@@ -344,16 +329,12 @@ function GroupsList(props: {
       >
         {memberItems.map((item) => (
           <a
-            href={
-              item.href +
-              (notifIsForThisItem(item.href) ? '/' + GROUP_CHAT_SLUG : '')
-            }
+            href={item.href}
             key={item.name}
-            onClick={trackCallback('sidebar: ' + item.name)}
+            onClick={trackCallback('click sidebar group', { name: item.name })}
             className={clsx(
               'cursor-pointer truncate',
-              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-              notifIsForThisItem(item.href) && 'font-bold'
+              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             )}
           >
             {item.name}

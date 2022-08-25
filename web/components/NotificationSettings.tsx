@@ -9,6 +9,8 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { CheckIcon, XIcon } from '@heroicons/react/outline'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
+import { Col } from 'web/components/layout/col'
+import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
 
 export function NotificationSettings() {
   const user = useUser()
@@ -17,6 +19,7 @@ export function NotificationSettings() {
   const [emailNotificationSettings, setEmailNotificationSettings] =
     useState<notification_subscribe_types>('all')
   const [privateUser, setPrivateUser] = useState<PrivateUser | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     if (user) listenForPrivateUser(user.id, setPrivateUser)
@@ -121,12 +124,20 @@ export function NotificationSettings() {
   }
 
   function NotificationSettingLine(props: {
-    label: string
+    label: string | React.ReactNode
     highlight: boolean
+    onClick?: () => void
   }) {
-    const { label, highlight } = props
+    const { label, highlight, onClick } = props
     return (
-      <Row className={clsx('my-1 text-gray-300', highlight && '!text-black')}>
+      <Row
+        className={clsx(
+          'my-1 gap-1 text-gray-300',
+          highlight && '!text-black',
+          onClick ? 'cursor-pointer' : ''
+        )}
+        onClick={onClick}
+      >
         {highlight ? <CheckIcon height={20} /> : <XIcon height={20} />}
         {label}
       </Row>
@@ -148,31 +159,45 @@ export function NotificationSettings() {
         toggleClassName={'w-24'}
       />
       <div className={'mt-4 text-sm'}>
-        <div>
-          <div className={''}>
-            You will receive notifications for:
-            <NotificationSettingLine
-              label={"Resolution of questions you've interacted with"}
-              highlight={notificationSettings !== 'none'}
-            />
-            <NotificationSettingLine
-              highlight={notificationSettings !== 'none'}
-              label={'Activity on your own questions, comments, & answers'}
-            />
-            <NotificationSettingLine
-              highlight={notificationSettings !== 'none'}
-              label={"Activity on questions you're betting on"}
-            />
-            <NotificationSettingLine
-              highlight={notificationSettings !== 'none'}
-              label={"Income & referral bonuses you've received"}
-            />
-            <NotificationSettingLine
-              label={"Activity on questions you've ever bet or commented on"}
-              highlight={notificationSettings === 'all'}
-            />
-          </div>
-        </div>
+        <Col className={''}>
+          <Row className={'my-1'}>
+            You will receive notifications for these general events:
+          </Row>
+          <NotificationSettingLine
+            highlight={notificationSettings !== 'none'}
+            label={"Income & referral bonuses you've received"}
+          />
+          <Row className={'my-1'}>
+            You will receive new comment, answer, & resolution notifications on
+            questions:
+          </Row>
+          <NotificationSettingLine
+            highlight={notificationSettings !== 'none'}
+            label={
+              <span>
+                That <span className={'font-bold'}>you watch </span>- you
+                auto-watch questions if:
+              </span>
+            }
+            onClick={() => setShowModal(true)}
+          />
+          <Col
+            className={clsx(
+              'mb-2 ml-8',
+              'gap-1 text-gray-300',
+              notificationSettings !== 'none' && '!text-black'
+            )}
+          >
+            <Row>• You create it</Row>
+            <Row>• You bet, comment on, or answer it</Row>
+            <Row>• You add liquidity to it</Row>
+            <Row>
+              • If you select 'Less' and you've commented on or answered a
+              question, you'll only receive notification on direct replies to
+              your comments or answers
+            </Row>
+          </Col>
+        </Col>
       </div>
       <div className={'mt-4'}>Email Notifications</div>
       <ChoicesToggleGroup
@@ -205,6 +230,7 @@ export function NotificationSettings() {
           />
         </div>
       </div>
+      <FollowMarketModal setOpen={setShowModal} open={showModal} />
     </div>
   )
 }

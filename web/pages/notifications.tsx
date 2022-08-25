@@ -34,7 +34,7 @@ import { groupPath } from 'web/lib/firebase/groups'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/numeric-constants'
+} from 'common/economy'
 import { groupBy, sum, uniq } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
@@ -44,6 +44,7 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
+import { useUser } from 'web/hooks/use-user'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -165,7 +166,7 @@ function NotificationsList(props: {
   if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
 
   return (
-    <div className={'min-h-[100vh]'}>
+    <div className={'min-h-[100vh] text-sm'}>
       {paginatedGroupedNotifications.length === 0 && (
         <div className={'mt-2'}>
           You don't have any notifications. Try changing your settings to see
@@ -271,9 +272,17 @@ function IncomeNotificationGroupItem(props: {
     }
     return newNotifications
   }
-
-  const combinedNotifs =
-    combineNotificationsByAddingNumericSourceTexts(notifications)
+  const combinedNotifs = combineNotificationsByAddingNumericSourceTexts(
+    notifications.filter((n) => n.sourceType !== 'betting_streak_bonus')
+  )
+  // Because the server's reset time will never align with the client's, we may
+  // erroneously sum 2 betting streak bonuses, therefore just show the most recent
+  const mostRecentBettingStreakBonus = notifications
+    .filter((n) => n.sourceType === 'betting_streak_bonus')
+    .sort((a, b) => a.createdTime - b.createdTime)
+    .pop()
+  if (mostRecentBettingStreakBonus)
+    combinedNotifs.unshift(mostRecentBettingStreakBonus)
 
   return (
     <div
@@ -370,6 +379,8 @@ function IncomeNotificationItem(props: {
   const [highlighted] = useState(!notification.isSeen)
   const { width } = useWindowSize()
   const isMobile = (width && width < 768) || false
+  const user = useUser()
+
   useEffect(() => {
     setNotificationsAsSeen([notification])
   }, [notification])
@@ -388,20 +399,30 @@ function IncomeNotificationItem(props: {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
       reasonText = 'for your'
+    } else if (sourceType === 'loan' && sourceText) {
+      reasonText = `of your invested bets returned as a`
     }
 
+    const streakInDays =
+      Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
+        ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
+        : user?.currentBettingStreak ?? 0
     const bettingStreakText =
       sourceType === 'betting_streak_bonus' &&
-      (sourceText
-        ? `🔥 ${
-            parseInt(sourceText) / BETTING_STREAK_BONUS_AMOUNT
-          } day Betting Streak`
-        : 'Betting Streak')
+      (sourceText ? `🔥 ${streakInDays} day Betting Streak` : 'Betting Streak')
 
     return (
       <>
         {reasonText}
-        {sourceType === 'betting_streak_bonus' ? (
+        {sourceType === 'loan' ? (
+          simple ? (
+            <span className={'ml-1 font-bold'}>🏦 Loan</span>
+          ) : (
+            <SiteLink className={'ml-1 font-bold'} href={'/loans'}>
+              🏦 Loan
+            </SiteLink>
+          )
+        ) : sourceType === 'betting_streak_bonus' ? (
           simple ? (
             <span className={'ml-1 font-bold'}>{bettingStreakText}</span>
           ) : (
@@ -445,6 +466,7 @@ function IncomeNotificationItem(props: {
     if (sourceType === 'challenge') return `${sourceSlug}`
     if (sourceType === 'betting_streak_bonus')
       return `/${sourceUserUsername}/?show=betting-streak`
+    if (sourceType === 'loan') return `/${sourceUserUsername}/?show=loans`
     if (sourceContractCreatorUsername && sourceContractSlug)
       return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
         sourceId ?? '',

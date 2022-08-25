@@ -22,6 +22,7 @@ import { LimitBet } from '../../common/bet'
 import { floatingEqual } from '../../common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
+import { addUserToContractFollowers } from './follow-market'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -59,7 +60,6 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(400, 'Insufficient balance.')
 
-    const loanAmount = 0
     const { closeTime, outcomeType, mechanism, collectedFees, volume } =
       contract
     if (closeTime && Date.now() > closeTime)
@@ -119,7 +119,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         const answerDoc = contractDoc.collection('answers').doc(outcome)
         const answerSnap = await trans.get(answerDoc)
         if (!answerSnap.exists) throw new APIError(400, 'Invalid answer')
-        return getNewMultiBetInfo(outcome, amount, contract, loanAmount)
+        return getNewMultiBetInfo(outcome, amount, contract)
       } else if (outcomeType == 'NUMERIC' && mechanism == 'dpm-2') {
         const { outcome, value } = validate(numericSchema, req.body)
         return getNumericBetsInfo(value, outcome, amount, contract)
@@ -167,6 +167,8 @@ export const placebet = newEndpoint({}, async (req, auth) => {
 
     return { betId: betDoc.id, makers, newBet }
   })
+
+  await addUserToContractFollowers(contractId, auth.uid)
 
   log('Main transaction finished.')
 

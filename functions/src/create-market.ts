@@ -15,15 +15,17 @@ import {
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser, getContract } from './utils'
+import { chargeUser, getContract, isProd } from './utils'
 import { APIError, newEndpoint, validate, zTimestamp } from './api'
 
+import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from '../../common/economy'
 import {
-  FIXED_ANTE,
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
   getNumericAnte,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
@@ -34,6 +36,7 @@ import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -137,9 +140,10 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
   const user = userDoc.data() as User
 
   const ante = FIXED_ANTE
-
+  const deservesFreeMarket =
+    (user?.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
   // TODO: this is broken because it's not in a transaction
-  if (ante > user.balance)
+  if (ante > user.balance && !deservesFreeMarket)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
   let group: Group | null = null
@@ -207,7 +211,18 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     visibility
   )
 
-  if (ante) await chargeUser(user.id, ante, true)
+  const providerId = deservesFreeMarket
+    ? isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+    : user.id
+
+  if (ante) await chargeUser(providerId, ante, true)
+  if (deservesFreeMarket)
+    await firestore
+      .collection('users')
+      .doc(user.id)
+      .update({ freeMarketsCreated: FieldValue.increment(1) })
 
   await contractRef.create(contract)
 
@@ -220,8 +235,6 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
       })
     }
   }
-
-  const providerId = user.id
 
   if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore

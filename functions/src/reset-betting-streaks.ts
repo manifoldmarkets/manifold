@@ -4,12 +4,12 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
-import { BETTING_STREAK_RESET_HOUR } from '../../common/numeric-constants'
+import { BETTING_STREAK_RESET_HOUR } from '../../common/economy'
 const firestore = admin.firestore()
 
 export const resetBettingStreaksForUsers = functions.pubsub
   .schedule(`0 ${BETTING_STREAK_RESET_HOUR} * * *`)
-  .timeZone('utc')
+  .timeZone('Etc/UTC')
   .onRun(async () => {
     await resetBettingStreaksInternal()
   })
