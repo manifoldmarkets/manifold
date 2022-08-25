@@ -48,6 +48,7 @@ export function AuthProvider(props: {
 
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
+      console.log('onIdTokenChanged', fbUser)
       if (fbUser) {
         setTokenCookies({
           id: await fbUser.getIdToken(),
