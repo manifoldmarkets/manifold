@@ -1,6 +1,8 @@
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
+import { EyeIcon } from '@heroicons/react/outline'
 import React from 'react'
+import clsx from 'clsx'
 
 export const FollowMarketModal = (props: {
   open: boolean
@@ -11,13 +13,18 @@ export const FollowMarketModal = (props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className="items-center gap-4 rounded-md bg-white px-8 py-6">
-        <span className={'text-8xl'}>❤️</span>
-        <span className="text-xl">{title ? title : 'Following questions'}</span>
+        <EyeIcon className={clsx('h-20 w-20')} aria-hidden="true" />
+        <span className="text-xl">{title ? title : 'Watching questions'}</span>
         <Col className={'gap-2'}>
-          <span className={'text-indigo-700'}>• What is following?</span>
+          <span className={'text-indigo-700'}>• What is watching?</span>
           <span className={'ml-2'}>
             You can receive notifications on questions you're interested in by
-            clicking the ❤️ button on a question.
+            clicking the
+            <EyeIcon
+              className={clsx('ml-1 inline h-6 w-6 align-top')}
+              aria-hidden="true"
+            />
+            ️ button on a question.
           </span>
           <span className={'text-indigo-700'}>
             • What types of notifications will I receive?
