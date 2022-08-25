@@ -71,6 +71,7 @@ export const PROD_CONFIG: EnvConfig = {
     'taowell@gmail.com', // Stephen
     'abc.sinclair@gmail.com', // Sinclair
     'manticmarkets@gmail.com', // Manifold
+    'iansphilips@gmail.com', // Ian
   ],
   visibility: 'PUBLIC',
 

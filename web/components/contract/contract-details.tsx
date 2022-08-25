@@ -33,6 +33,7 @@ import { insertContent } from '../editor/utils'
 import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
+import { FeaturedContractBadge } from 'web/components/contract/FeaturedContractBadge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -73,6 +74,8 @@ export function MiscDetails(props: {
           {'Resolved '}
           {fromNow(resolutionTime || 0)}
         </Row>
+      ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
+        <FeaturedContractBadge />
       ) : volume > 0 || !isNew ? (
         <Row className={'shrink-0'}>{formatMoney(contract.volume)} bet</Row>
       ) : (
