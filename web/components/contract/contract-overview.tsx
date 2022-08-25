@@ -76,7 +76,7 @@ export const ContractOverview = (props: {
                 <BetButton contract={contract as CPMMBinaryContract} />
                 {!user && (
                   <div className="mt-1 text-sm text-gray-500">
-                    (Don't worry, it's play money!)
+                    (with play money!)
                   </div>
                 )}
               </Col>
