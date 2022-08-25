@@ -6,7 +6,6 @@ export type Dashboard = {
   content: JSONContent
   creatorId: string // User id
   createdTime: number
-  lastUpdatedTime: number
   slug: string
 }
 
