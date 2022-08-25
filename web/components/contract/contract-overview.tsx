@@ -21,6 +21,7 @@ import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 import { ShareRow } from './share-row'
+import { LikeMarketButton } from 'web/components/contract/like-market-button'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -43,6 +44,9 @@ export const ContractOverview = (props: {
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
+          {(outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') &&
+            !resolution && <LikeMarketButton contract={contract} user={user} />}
           <Row className={'hidden gap-3 xl:flex'}>
             {isBinary && (
               <BinaryResolutionOrChance
@@ -71,21 +75,36 @@ export const ContractOverview = (props: {
         {isBinary ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
-            {tradingAllowed(contract) && (
-              <Col>
-                <BetButton contract={contract as CPMMBinaryContract} />
-                {!user && (
-                  <div className="mt-1 text-sm text-gray-500">
-                    (with play money!)
-                  </div>
-                )}
-              </Col>
-            )}
+            <Row className={'items-center justify-center'}>
+              <LikeMarketButton contract={contract} user={user} />
+              {tradingAllowed(contract) && (
+                <Col>
+                  <BetButton contract={contract as CPMMBinaryContract} />
+                  {!user && (
+                    <div className="mt-1 text-center text-sm text-gray-500">
+                      (with play money!)
+                    </div>
+                  )}
+                </Col>
+              )}
+            </Row>
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetButton contract={contract} />}
+            <Row className={'items-center justify-center'}>
+              <LikeMarketButton contract={contract} user={user} />
+              {tradingAllowed(contract) && (
+                <Col>
+                  <BetButton contract={contract} />
+                  {!user && (
+                    <div className="mt-1 text-center text-sm text-gray-500">
+                      (with play money!)
+                    </div>
+                  )}
+                </Col>
+              )}
+            </Row>
           </Row>
         ) : (
           (outcomeType === 'FREE_RESPONSE' ||

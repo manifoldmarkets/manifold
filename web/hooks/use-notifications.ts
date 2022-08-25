@@ -67,7 +67,13 @@ export function groupNotifications(notifications: Notification[]) {
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()
   )
-  const incomeSourceTypes = ['bonus', 'tip', 'loan', 'betting_streak_bonus']
+  const incomeSourceTypes = [
+    'bonus',
+    'tip',
+    'loan',
+    'betting_streak_bonus',
+    'tip_and_like',
+  ]
 
   Object.keys(notificationGroupsByDay).forEach((day) => {
     const notificationsGroupedByDay = notificationGroupsByDay[day]

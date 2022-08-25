@@ -401,6 +401,10 @@ function IncomeNotificationItem(props: {
       reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested bets returned as a`
+      // TODO: support just 'like' notification without a tip
+      // TODO: show who tip-liked your market
+    } else if (sourceType === 'tip_and_like' && sourceText) {
+      reasonText = `in likes on`
     }
 
     const streakInDays =
