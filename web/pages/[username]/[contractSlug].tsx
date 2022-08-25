@@ -267,14 +267,14 @@ export function ContractPageContent(
           tips={tips}
           comments={comments}
         />
-
-        {recommendedContracts?.length > 0 && (
-          <Col className="mx-2 gap-2 sm:mx-0">
-            <Subtitle text="Recommended" />
-            <ContractsGrid contracts={recommendedContracts} />
-          </Col>
-        )}
       </Col>
+
+      {recommendedContracts.length > 0 && (
+        <Col className="gap-2 px-2 sm:px-0">
+          <Subtitle text="Recommended" />
+          <ContractsGrid contracts={recommendedContracts} />
+        </Col>
+      )}
     </Page>
   )
 }
