@@ -75,7 +75,7 @@ export const ContractOverview = (props: {
               <Col>
                 <BetButton contract={contract as CPMMBinaryContract} />
                 {!user && (
-                  <div className="mt-1 text-sm text-gray-500">
+                  <div className="mt-1 text-center text-sm text-gray-500">
                     (with play money!)
                   </div>
                 )}
@@ -85,7 +85,16 @@ export const ContractOverview = (props: {
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            {tradingAllowed(contract) && <BetButton contract={contract} />}
+            {tradingAllowed(contract) && (
+              <Col>
+                <BetButton contract={contract} />
+                {!user && (
+                  <div className="mt-1 text-center text-sm text-gray-500">
+                    (with play money!)
+                  </div>
+                )}
+              </Col>
+            )}
           </Row>
         ) : (
           (outcomeType === 'FREE_RESPONSE' ||
