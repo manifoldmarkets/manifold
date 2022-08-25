@@ -27,8 +27,11 @@ export function scrapeEA(contestLink: string, fileName: string) {
           'https://forum.effectivealtruism.org' +
           item?.querySelector('a')?.getAttribute('href')
 
+        // Replace '&amp;' with '&'
+        const clean = (str: string | undefined) => str?.replace(/&amp;/g, '&')
+
         list.push({
-          title: item?.querySelector('a>span>span')?.innerHTML,
+          title: clean(item?.querySelector('a>span>span')?.innerHTML),
           author: item?.querySelector('a.UsersNameDisplay-userName')?.innerHTML,
           link: link,
         })
