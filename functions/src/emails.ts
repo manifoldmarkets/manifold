@@ -116,7 +116,9 @@ const toDisplayResolution = (
   }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    const { resolutionValue } = contract
+    const { resolution, resolutionValue } = contract
+
+    if (resolution === 'CANCEL') return 'N/A'
 
     return resolutionValue
       ? formatLargeNumber(resolutionValue)
