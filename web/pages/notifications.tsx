@@ -31,10 +31,7 @@ import {
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
-import {
-  BETTING_STREAK_BONUS_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
+import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { groupBy, sum, uniq } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
@@ -44,6 +41,7 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
+import { useUser } from 'web/hooks/use-user'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -378,6 +376,8 @@ function IncomeNotificationItem(props: {
   const [highlighted] = useState(!notification.isSeen)
   const { width } = useWindowSize()
   const isMobile = (width && width < 768) || false
+  const user = useUser()
+
   useEffect(() => {
     setNotificationsAsSeen([notification])
   }, [notification])
@@ -403,9 +403,7 @@ function IncomeNotificationItem(props: {
     const bettingStreakText =
       sourceType === 'betting_streak_bonus' &&
       (sourceText
-        ? `🔥 ${
-            parseInt(sourceText) / BETTING_STREAK_BONUS_AMOUNT
-          } day Betting Streak`
+        ? `🔥 ${user?.currentBettingStreak ?? 0} day Betting Streak`
         : 'Betting Streak')
 
     return (
