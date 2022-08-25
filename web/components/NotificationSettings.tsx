@@ -175,8 +175,8 @@ export function NotificationSettings() {
             highlight={notificationSettings !== 'none'}
             label={
               <span>
-                That <span className={'font-bold'}>you follow </span>- you
-                auto-follow questions if:
+                That <span className={'font-bold'}>you watch </span>- you
+                auto-watch questions if:
               </span>
             }
             onClick={() => setShowModal(true)}
