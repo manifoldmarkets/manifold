@@ -31,7 +31,10 @@ import {
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
-import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import {
+  BETTING_STREAK_BONUS_AMOUNT,
+  UNIQUE_BETTOR_BONUS_AMOUNT,
+} from 'common/economy'
 import { groupBy, sum, uniq } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
@@ -42,6 +45,7 @@ import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
+import { DAY_MS } from 'common/lib/util/time'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -400,11 +404,13 @@ function IncomeNotificationItem(props: {
       reasonText = `of your invested bets returned as a`
     }
 
+    const streakInDays =
+      Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
+        ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
+        : user?.currentBettingStreak ?? 0
     const bettingStreakText =
       sourceType === 'betting_streak_bonus' &&
-      (sourceText
-        ? `🔥 ${user?.currentBettingStreak ?? 0} day Betting Streak`
-        : 'Betting Streak')
+      (sourceText ? `🔥 ${streakInDays} day Betting Streak` : 'Betting Streak')
 
     return (
       <>
