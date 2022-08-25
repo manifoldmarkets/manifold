@@ -11,7 +11,8 @@ import dayjs, { Dayjs } from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import { throttle } from 'lodash'
+import { keyBy, mapValues, throttle } from 'lodash'
+import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
@@ -20,7 +21,7 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { listContractsByGroupSlug } from 'web/lib/firebase/contracts'
-import { getGroup } from 'web/lib/firebase/groups'
+import { getGroup, groupPath } from 'web/lib/firebase/groups'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -48,7 +49,6 @@ const tourneys: Tourney[] = [
   {
     title: 'Fantasy Football Stock Exchange',
     blurb: 'How many points will each NFL player score?',
-    url: 'https://manifold.markets/group/fantasy-football-stock-exchange',
     award: 500,
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
@@ -84,18 +84,19 @@ export async function getStaticProps() {
     groupIds.map((id, i) => [id, contracts[i]])
   )
 
-  const numPeople = Object.fromEntries(
-    groups.map((g) => [g?.id, g?.memberIds.length])
-  )
+  const groupMap = keyBy(groups, 'id')
+  const numPeople = mapValues(groupMap, (g) => g?.memberIds.length)
+  const slugs = mapValues(groupMap, 'slug')
 
-  return { props: { markets, numPeople }, revalidate: 60 * 10 }
+  return { props: { markets, numPeople, slugs }, revalidate: 60 * 10 }
 }
 
 export default function TournamentPage(props: {
   markets: { [groupId: string]: Contract[] }
   numPeople: { [groupId: string]: number }
+  slugs: { [groupId: string]: string }
 }) {
-  const { markets = {}, numPeople = {} } = props
+  const { markets = {}, numPeople = {}, slugs = {} } = props
 
   return (
     <Page>
@@ -110,6 +111,7 @@ export default function TournamentPage(props: {
         {tourneys.map(({ groupId, ...data }) => (
           <Section
             {...data}
+            url={groupPath(slugs[groupId])}
             ppl={numPeople[groupId]}
             markets={markets[groupId]}
           />
@@ -121,7 +123,7 @@ export default function TournamentPage(props: {
 
 function Section(props: {
   title: string
-  url?: string
+  url: string
   blurb: string
   award?: number
   ppl?: number
@@ -132,32 +134,34 @@ function Section(props: {
 
   return (
     <div className="my-4">
-      <Row className="mb-3 flex-wrap justify-between">
-        <h2 className="text-xl font-semibold hover:underline">
-          {url ? <a href={url}>{title}</a> : title}
-        </h2>
-        <Row className="items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
-          {!!award && (
-            <span className="flex items-center">
-              🏆 ${formatLargeNumber(award)}
-            </span>
-          )}
-          {!!ppl && (
-            <span className="flex items-center gap-1">
-              <UsersIcon className="h-4" />
-              {ppl}
-            </span>
-          )}
-          {endTime && (
-            <DateTimeTooltip time={endTime} text="Ends">
-              <span className="flex items-center gap-1">
-                <ClockIcon className="h-4" />
-                {endTime.format('MMM D')}
+      <Link href={url}>
+        <a className="group mb-3 flex flex-wrap justify-between">
+          <h2 className="text-xl font-semibold group-hover:underline">
+            {title}
+          </h2>
+          <Row className="items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
+            {!!award && (
+              <span className="flex items-center">
+                🏆 ${formatLargeNumber(award)}
               </span>
-            </DateTimeTooltip>
-          )}
-        </Row>
-      </Row>
+            )}
+            {!!ppl && (
+              <span className="flex items-center gap-1">
+                <UsersIcon className="h-4" />
+                {ppl}
+              </span>
+            )}
+            {endTime && (
+              <DateTimeTooltip time={endTime} text="Ends">
+                <span className="flex items-center gap-1">
+                  <ClockIcon className="h-4" />
+                  {endTime.format('MMM D')}
+                </span>
+              </DateTimeTooltip>
+            )}
+          </Row>
+        </a>
+      </Link>
       <span>{blurb}</span>
       <Carousel className="-mx-4 mt-2 sm:-mx-10">
         <div className="shrink-0 sm:w-6" />
