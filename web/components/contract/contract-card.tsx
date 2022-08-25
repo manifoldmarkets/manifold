@@ -107,7 +107,10 @@ export function ContractCard(props: {
           className={'hidden md:inline-flex'}
         />
         <p
-          className={clsx("break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2", questionClass)}
+          className={clsx(
+            'break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+            questionClass
+          )}
           style={{ /* For iOS safari */ wordBreak: 'break-word' }}
         >
           {question}
