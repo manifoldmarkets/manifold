@@ -43,10 +43,12 @@ export function AuthProvider(props: {
       const cachedUser = localStorage.getItem(CACHED_USER_KEY)
       setAuthUser(cachedUser && JSON.parse(cachedUser))
     }
+    console.log('local storage hook')
   }, [setAuthUser, serverUser])
 
   useEffect(() => {
     return onIdTokenChanged(auth, async (fbUser) => {
+      console.log('onIdTokenChanged', fbUser)
       if (fbUser) {
         setTokenCookies({
           id: await fbUser.getIdToken(),
