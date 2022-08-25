@@ -34,7 +34,7 @@ export const FollowMarketButton = (props: {
           toast("You'll no longer receive notifications from this market", {
             icon: <CheckIcon className={'text-primary h-5 w-5'} />,
           })
-          track('Unfollow Market', {
+          track('Unwatch Market', {
             slug: contract.slug,
           })
         } else {
@@ -42,7 +42,7 @@ export const FollowMarketButton = (props: {
           toast("You'll now receive notifications from this market!", {
             icon: <CheckIcon className={'text-primary h-5 w-5'} />,
           })
-          track('Follow Market', {
+          track('Watch Market', {
             slug: contract.slug,
           })
         }
@@ -69,7 +69,7 @@ export const FollowMarketButton = (props: {
         open={open}
         setOpen={setOpen}
         title={`You ${
-          followers?.includes(user?.id ?? 'nope') ? 'followed' : 'unfollowed'
+          followers?.includes(user?.id ?? 'nope') ? 'watched' : 'unwatched'
         } a question!`}
       />
     </Button>
