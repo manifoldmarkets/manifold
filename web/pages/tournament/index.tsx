@@ -167,7 +167,8 @@ function Section(props: {
               contract={m}
               showHotVolume
               hideGroupLink
-              className="shrink-0"
+              className="max-h-[148px] w-96 shrink-0"
+              questionClass="line-clamp-2"
             />
           ))
         ) : (
