@@ -5,7 +5,7 @@ import { LiteMarket, LiteUser } from "common/manifold-defs";
 import * as Packets from "common/packet-ids";
 import { PacketCreateMarket, PacketMarketCreated, PacketUserInfo } from "common/packets";
 import Head from "next/head";
-import { Fragment, ReactNode, useEffect, useState } from "react";
+import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
 import Textarea from "react-expanding-textarea";
 import io, { Socket } from "socket.io-client";
 import ContractCard from "web/components/contract-card";
@@ -162,7 +162,7 @@ export default () => {
 
     const onContractFeature = (contract: LiteMarket) => {
         setSelectedContract(contract);
-        socket.emit(Packets.SELECT_MARKET_ID, contract?.id);
+        socket.emit(Packets.SELECT_MARKET_ID, contract.id);
     };
 
     const onContractUnfeature = () => {
@@ -170,6 +170,7 @@ export default () => {
         setSelectedContract(undefined);
     };
 
+    const firstLoad = useRef(false);
     useEffect(() => {
         if (selectedGroup) {
             setLoadingContracts(true);
@@ -183,6 +184,10 @@ export default () => {
         } else {
             setContracts([]);
         }
+        if (firstLoad.current) {
+            localStorage.setItem("SELECTED_GROUP", selectedGroup?.id);
+        }
+        firstLoad.current = true;
     }, [selectedGroup]);
 
     return (

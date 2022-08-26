@@ -20,9 +20,9 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
     const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
     const [query, setQuery] = useState("");
 
-    const refreshGroupList = () => {
+    const refreshGroupList = async () => {
         setIsRefreshingGroups(true);
-        fetchGroups(userID)
+        return fetchGroups(userID)
             .then((groups) => {
                 setMemberGroups(groups);
                 for (const g of groups) {
@@ -33,11 +33,25 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
                     setSelectedGroup(undefined);
                 }
                 onRefresh?.();
+                return groups;
             })
             .finally(() => setIsRefreshingGroups(false));
     };
 
-    useEffect(() => refreshGroupList(), []);
+    useEffect(() => {
+        refreshGroupList().then((groups) => {
+            const previouslySelectedGroupID = localStorage.getItem("SELECTED_GROUP");
+            if (previouslySelectedGroupID && groups) {
+                console.debug("Found cache group: " + previouslySelectedGroupID);
+                for (const g of groups) {
+                    if (g.id === previouslySelectedGroupID) {
+                        setSelectedGroup(g);
+                        break;
+                    }
+                }
+            }
+        });
+    }, []);
 
     const filteredGroups =
         memberGroups?.filter((group) => {
@@ -83,7 +97,10 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
                                     )}
                                 </Combobox.Option>
                             ))}
-                            <div className="btn btn-sm normal-case w-full justify-start rounded-none border-0 bg-white pl-2 h-14 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white" onClick={() => window.open("https://dev.manifold.markets/groups") /*!!!*/}>
+                            <div
+                                className="btn btn-sm normal-case w-full justify-start rounded-none border-0 bg-white pl-2 h-14 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white"
+                                onClick={() => window.open("https://dev.manifold.markets/groups") /*!!!*/}
+                            >
                                 <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
                                 Create a new Group
                             </div>
