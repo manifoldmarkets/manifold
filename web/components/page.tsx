@@ -23,7 +23,7 @@ export function Page(props: {
         )}
       >
         <Toaster />
-        <Sidebar className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:block" />
+        <Sidebar className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex" />
         <main
           className={clsx(
             'lg:col-span-8 lg:pt-6',
