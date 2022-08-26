@@ -4,8 +4,6 @@
 
 import styles from "../styles/overlay.module.scss";
 
-import moment from "moment";
-
 import Chart, { Point } from "../components/chart";
 
 import io, { Socket } from "socket.io-client";
@@ -54,26 +52,6 @@ class Application {
         this.chart = new Chart(document.getElementById("chart") as HTMLCanvasElement);
 
         this.resetUI();
-
-        moment.relativeTimeThreshold("s", 60);
-        moment.updateLocale("en", {
-            relativeTime: {
-                future: "in %s",
-                past: "%s",
-                s: "%ds",
-                ss: "%ss",
-                m: "1m",
-                mm: "%dm",
-                h: "1h",
-                hh: "%dh",
-                d: "1d",
-                dd: "%dd",
-                M: "1m",
-                MM: "%dM",
-                y: "1y",
-                yy: "%dY",
-            },
-        });
 
         //!!! This all needs to move to another polling system for the market probability:
         const animationFrame = () => {
