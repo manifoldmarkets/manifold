@@ -48,8 +48,17 @@ export function MarketModal(props: {
                   {contracts.length > 1 && 's'}
                 </Button>
               )}
-              <Button onClick={() => setContracts([])} color="gray">
-                Cancel
+              <Button
+                onClick={() => {
+                  if (contracts.length > 0) {
+                    setContracts([])
+                  } else {
+                    setOpen(false)
+                  }
+                }}
+                color="gray"
+              >
+                {contracts.length > 0 ? 'Reset' : 'Cancel'}
               </Button>
             </Row>
           )}

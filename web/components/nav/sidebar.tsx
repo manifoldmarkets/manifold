@@ -6,7 +6,6 @@ import {
   CashIcon,
   HeartIcon,
   UserGroupIcon,
-  TrendingUpIcon,
   ChatIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
@@ -28,6 +27,7 @@ import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
 
 const logout = async () => {
   // log out, and then reload the page, in case SSR wants to boot them out
@@ -45,11 +45,12 @@ function getNavigation() {
       icon: NotificationsIcon,
     },
 
-    { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
-
     ...(IS_PRIVATE_MANIFOLD
       ? []
-      : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
+      : [
+          { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+          { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
+        ]),
   ]
 }
 
@@ -69,11 +70,9 @@ function getMoreNavigation(user?: User | null) {
     return buildArray(
       CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
       [
+        { name: 'Leaderboards', href: '/leaderboards' },
+        { name: 'Tournaments', href: '/tournaments' },
         { name: 'Charity', href: '/charity' },
-        {
-          name: 'Salem tournament',
-          href: 'https://salemcenter.manifold.markets/',
-        },
         { name: 'Blog', href: 'https://news.manifold.markets' },
         { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
@@ -85,12 +84,9 @@ function getMoreNavigation(user?: User | null) {
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
       { name: 'Referrals', href: '/referrals' },
+      { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
       { name: 'Send M$', href: '/links' },
-      {
-        name: 'Salem tournament',
-        href: 'https://salemcenter.manifold.markets/',
-      },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
       { name: 'Help & About', href: 'https://help.manifold.markets/' },
       {
@@ -119,12 +115,12 @@ const signedOutMobileNavigation = [
     icon: BookOpenIcon,
   },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+  { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
   { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
 ]
 
 const signedInMobileNavigation = [
-  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+  { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
   ...(IS_PRIVATE_MANIFOLD
     ? []
     : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
@@ -147,10 +143,7 @@ function getMoreMobileNav() {
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
       { name: 'Referrals', href: '/referrals' },
-      {
-        name: 'Salem tournament',
-        href: 'https://salemcenter.manifold.markets/',
-      },
+      { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
       { name: 'Send M$', href: '/links' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },

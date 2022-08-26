@@ -38,6 +38,7 @@ export function ContractCard(props: {
   showHotVolume?: boolean
   showTime?: ShowTime
   className?: string
+  questionClass?: string
   onClick?: () => void
   hideQuickBet?: boolean
   hideGroupLink?: boolean
@@ -46,6 +47,7 @@ export function ContractCard(props: {
     showHotVolume,
     showTime,
     className,
+    questionClass,
     onClick,
     hideQuickBet,
     hideGroupLink,
@@ -68,7 +70,7 @@ export function ContractCard(props: {
   return (
     <Row
       className={clsx(
-        'relative gap-3 self-start rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
+        'relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
         className
       )}
     >
@@ -104,7 +106,12 @@ export function ContractCard(props: {
           contract={contract}
           className={'hidden md:inline-flex'}
         />
-        <p className="break-anywhere font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2">
+        <p
+          className={clsx(
+            'break-anywhere font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+            questionClass
+          )}
+        >
           {question}
         </p>
 
@@ -162,11 +169,7 @@ export function ContractCard(props: {
           showQuickBet ? 'w-[85%]' : 'w-full'
         )}
       >
-        <AvatarDetails
-          contract={contract}
-          short={true}
-          className={'block md:hidden'}
-        />
+        <AvatarDetails contract={contract} short={true} className="md:hidden" />
         <MiscDetails
           contract={contract}
           showHotVolume={showHotVolume}
