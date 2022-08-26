@@ -5,12 +5,15 @@ import {
   TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
+import Router from 'next/router'
+import clsx from 'clsx'
+import { Editor } from '@tiptap/react'
+import dayjs from 'dayjs'
 
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { UserLink } from '../user-page'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
-import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../avatar'
@@ -21,7 +24,6 @@ import NewContractBadge from '../new-contract-badge'
 import { UserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
-import { Editor } from '@tiptap/react'
 import { exhibitExts } from 'common/util/parse'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
@@ -30,7 +32,6 @@ import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
-import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
@@ -191,7 +192,11 @@ export function ContractDetails(props: {
             size={'xs'}
             className={'max-w-[200px]'}
             color={'gray-white'}
-            onClick={() => setOpen(!open)}
+            onClick={() =>
+              groupToDisplay
+                ? Router.push(groupPath(groupToDisplay.slug))
+                : setOpen(!open)
+            }
           >
             {groupInfo}
           </Button>
