@@ -1,6 +1,8 @@
 import { User } from 'common/user'
 import dayjs from 'dayjs'
 import { useEffect } from 'react'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
+import { initLinkTwitchAccount } from 'web/lib/twitch/link-twitch-account'
 
 import { safeLocalStorage } from 'web/lib/util/local'
 
@@ -14,17 +16,30 @@ export const useRedirectAfterSignup = (page: page_redirects) => {
   }, [page])
 }
 
-export const handleRedirectAfterSignup = (user: User | null) => {
+export const handleRedirectAfterSignup = async (user: User | null) => {
   const redirect = safeLocalStorage()?.getItem(key)
-  safeLocalStorage()?.removeItem(key)
 
   if (!user || !redirect) return
+
+  safeLocalStorage()?.removeItem(key)
 
   const now = dayjs().utc()
   const userCreatedTime = dayjs(user.createdTime)
   if (now.diff(userCreatedTime, 'minute') > 5) return
 
   if (redirect === 'twitch') {
-    // TODO: actual Twitch redirect
+    const { privateUser } = await getUserAndPrivateUser(user.id)
+    if (!privateUser.apiKey) return // TODO: handle missing API key
+    try {
+      const [twitchAuthURL, linkSuccessPromise] = await initLinkTwitchAccount(
+        privateUser.id,
+        privateUser.apiKey
+      )
+      window.open(twitchAuthURL) // TODO: Handle browser pop-up block
+      const data = await linkSuccessPromise // TODO: Do something with result?
+      console.debug(`Successfully linked Twitch account '${data.twitchName}'`)
+    } catch (e) {
+      console.error(e)
+    }
   }
 }

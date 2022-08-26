@@ -21,6 +21,7 @@ import { defaultBannerUrl } from 'web/components/user-page'
 import { SiteLink } from 'web/components/site-link'
 import Textarea from 'react-expanding-textarea'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { TwitchPanel } from 'web/components/twitch-panel'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
@@ -242,6 +243,8 @@ export default function ProfilePage(props: {
               </button>
             </div>
           </div>
+
+          <TwitchPanel auth={props.auth} />
         </Col>
       </Col>
     </Page>
