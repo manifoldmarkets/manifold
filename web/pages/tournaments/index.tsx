@@ -7,7 +7,6 @@ import {
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
-import { formatLargeNumber } from 'common/util/format'
 import dayjs, { Dayjs } from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import timezone from 'dayjs/plugin/timezone'
@@ -33,39 +32,39 @@ type Tourney = {
   title: string
   url?: string
   blurb: string // actual description in the click-through
-  award?: number
+  award?: string
   endTime?: Dayjs
   groupId: string
 }
 
-const Salem = {
-  title: 'CSPI/Salem Tournament',
-  blurb:
-    'Forecasting contest - top 5 can become Salem Center’s next research fellow.',
-  url: 'https://salemcenter.manifold.markets/',
-  award: 25_000,
-} as const
+// const Salem = {
+//   title: 'CSPI/Salem Tournament',
+//   blurb:
+//     "Forecasting contest - top 5 can become Salem Center's next research fellow.",
+//   url: 'https://salemcenter.manifold.markets/',
+//   award: 25_000,
+// } as const
 
 const tourneys: Tourney[] = [
   {
+    title: 'Cause Exploration Prizes',
+    blurb:
+      'Which new charity ideas will Open Philanthropy find most promising?',
+    award: 'M$100k',
+    endTime: toDate('Sep 9, 2022'),
+    groupId: 'cMcpBQ2p452jEcJD2SFw',
+  },
+  {
     title: 'Fantasy Football Stock Exchange',
-    blurb: 'How many points will each NFL player score?',
-    award: 500,
+    blurb: 'How many points will each NFL player score this season?',
+    award: '$2,500',
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
   },
   {
-    title: 'Cause Exploration Prize',
-    blurb:
-      'Which new charity ideas will Open Philanthropy find most promising?',
-    award: 100_000,
-    endTime: toDate('Sep 9, 2022'),
-    groupId: 'znYsWa9eZRkBvSHwmaNz',
-  },
-  {
     title: 'Clearer Thinking Regrant Project',
     blurb: 'Something amazing',
-    award: 1_000_000,
+    award: '$10,000',
     endTime: toDate('Sep 22, 2022'),
     groupId: '2VsVVFGhKtIdJnQRAXVb',
   },
@@ -106,9 +105,6 @@ export default function TournamentPage(props: {
         description="Win money by betting in forecasting touraments on current events, sports, science, and more"
       />
       <Col className="mx-4 sm:mx-10 xl:w-[125%]">
-        <h1 className="my-4 text-2xl text-indigo-700">Tournaments</h1>
-        <Section {...Salem} markets={[]} />
-
         {tourneys.map(({ groupId, ...data }) => (
           <Section
             key={groupId}
@@ -127,7 +123,7 @@ function Section(props: {
   title: string
   url: string
   blurb: string
-  award?: number
+  award?: string
   ppl?: number
   endTime?: Dayjs
   markets: Contract[]
@@ -135,18 +131,14 @@ function Section(props: {
   const { title, url, blurb, award, ppl, endTime, markets } = props
 
   return (
-    <div className="my-4">
+    <div className="my-12">
       <Link href={url}>
         <a className="group mb-3 flex flex-wrap justify-between">
-          <h2 className="text-xl font-semibold group-hover:underline">
+          <h2 className="text-xl font-semibold group-hover:underline md:text-3xl">
             {title}
           </h2>
-          <Row className="items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
-            {!!award && (
-              <span className="flex items-center">
-                🏆 ${formatLargeNumber(award)}
-              </span>
-            )}
+          <Row className="my-2 items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
+            {!!award && <span className="flex items-center">🏆 {award}</span>}
             {!!ppl && (
               <span className="flex items-center gap-1">
                 <UsersIcon className="h-4" />
