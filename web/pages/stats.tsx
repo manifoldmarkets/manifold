@@ -375,11 +375,10 @@ export function FirebaseAnalytics() {
       </p>
       <Spacer h={4} />
       <iframe
-        className="w-full"
+        className="w-full border-0"
         height={2200}
         src="https://datastudio.google.com/embed/reporting/faeaf3a4-c8da-4275-b157-98dad017d305/page/Gg3"
         frameBorder="0"
-        style={{ border: 0 }}
         allowFullScreen
       />
     </>
@@ -400,11 +399,10 @@ export function WasabiCharts() {
       </p>
       <Spacer h={4} />
       <iframe
-        className="w-full"
+        className="w-full border-0"
         height={21000}
         src="https://wasabipesto.com/jupyter/manifold/"
         frameBorder="0"
-        style={{ border: 0 }}
         allowFullScreen
       />
     </>

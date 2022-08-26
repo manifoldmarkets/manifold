@@ -1,4 +1,5 @@
 import { Point, ResponsiveLine } from '@nivo/line'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { zip } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -26,8 +27,10 @@ export function DailyCountChart(props: {
 
   return (
     <div
-      className="w-full overflow-hidden"
-      style={{ height: !small && (!width || width >= 800) ? 400 : 250 }}
+      className={clsx(
+        'h-[250px] w-full overflow-hidden',
+        !small && 'md:h-[400px]'
+      )}
     >
       <ResponsiveLine
         data={data}
@@ -78,8 +81,10 @@ export function DailyPercentChart(props: {
 
   return (
     <div
-      className="w-full overflow-hidden"
-      style={{ height: !small && (!width || width >= 800) ? 400 : 250 }}
+      className={clsx(
+        'h-[250px] w-full overflow-hidden',
+        !small && 'md:h-[400px]'
+      )}
     >
       <ResponsiveLine
         data={data}

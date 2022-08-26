@@ -250,7 +250,7 @@ export default function Sidebar(props: { className?: string }) {
       <CreateQuestionButton user={user} />
       <Spacer h={4} />
       {user && (
-        <div className="w-full" style={{ minHeight: 80 }}>
+        <div className="min-h-[80px] w-full">
           <ProfileSummary user={user} />
         </div>
       )}
