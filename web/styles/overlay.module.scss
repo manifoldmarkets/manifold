@@ -4,10 +4,6 @@
 
 @use "sass:color";
 
-@import "./spinner.module.scss";
-
-$borderWidth: 8px;
-
 // Theme:
 // $themeBlue: #5682E7;
 // $themeGreen: #46C935;
@@ -16,6 +12,7 @@ $themeBlue: #6694ff;
 $themeGreen: #92ff83;
 $themeRed: #ff3d3d;
 
+$borderWidth: 8px;
 $backgroundColor: #212121;
 $borderColor: color.scale($backgroundColor, $lightness: 10%);
 
@@ -24,82 +21,16 @@ $borderColor: color.scale($backgroundColor, $lightness: 10%);
     border-radius: $borderWidth;
 }
 
-.content {
-    background-color: $backgroundColor;
-}
-
-#chance {
-    font-size: 150%;
-    &::after {
-        content: "%";
-    }
-}
-
 .bet {
-    $elementPadding: 0em;
-
-    transition: all 0.5s ease-in-out;
     height: 0;
     overflow: hidden;
-
-    // font-family: 'Roboto Condensed', sans-serif;
+    transition: height 0.5s ease-in-out;
     font-size: 0.7em;
-
-    // display: flex;
-
-    &.show {
-        height: 1.2em;
-    }
-
-    & div {
-        display: inline-block;
-    }
 
     & p {
         white-space: pre-wrap;
         margin: 0px;
         display: inline;
-        padding-right: $elementPadding;
-    }
-
-    .name {
-        // color: $themeBlue;
-        // font-style: ;
-        // min-width: 6em;
-        // flex-basis: 80em;
-        font-weight: 800;
-    }
-
-    .yes {
-        color: $themeGreen;
-        &::after {
-            padding-left: $elementPadding;
-            content: "YES";
-        }
-    }
-
-    .no {
-        color: $themeRed;
-        &::after {
-            padding-left: $elementPadding;
-            content: "NO";
-        }
-    }
-
-    // .amount {
-    // }
-
-    // .boughtSold {
-    // }
-
-    .time {
-        min-width: 3em;
-        text-align: end;
-        align-self: center;
-        justify-self: center;
-        font-size: 70%;
-        color: #fff;
-        transform: translate(0, -2px);
     }
 }
 

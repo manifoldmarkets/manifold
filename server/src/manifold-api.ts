@@ -8,36 +8,31 @@ import { ResolutionOutcome } from "common/outcome";
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
 async function post(url: string, APIKey: string, requestData: unknown): Promise<Response> {
-    try {
-        const r = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Key ${APIKey}`,
-            },
-            ...(requestData && {
-                body: JSON.stringify(requestData),
-            }),
-        });
-        if (r.status !== 200) {
-            let error: { message: string } = { message: "" };
-            try {
-                error = <{ message: string }>await r.json();
-            } catch (e) {
-                // Empty
-            }
-            const errorMessage = error.message;
-            if (errorMessage === "Insufficient balance.") throw new InsufficientBalanceException();
-            if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
-            if (r.status === 403) throw new ForbiddenException(errorMessage);
-            if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
-            throw new Error(errorMessage);
+    const r = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Key ${APIKey}`,
+        },
+        ...(requestData && {
+            body: JSON.stringify(requestData),
+        }),
+    });
+    if (r.status !== 200) {
+        let error: { message: string } = { message: "" };
+        try {
+            error = <{ message: string }>await r.json();
+        } catch (e) {
+            // Empty
         }
-        return r;
-    } catch (e) {
-        log.trace(e);
-        throw e;
+        const errorMessage = error.message;
+        if (errorMessage === "Insufficient balance.") throw new InsufficientBalanceException();
+        if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
+        if (r.status === 403) throw new ForbiddenException(errorMessage);
+        if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
+        throw new Error(errorMessage);
     }
+    return r;
 }
 
 async function get(url: string): Promise<Response> {

@@ -8,8 +8,6 @@ import moment from "moment";
 
 import Chart, { Point } from "../components/chart";
 
-import { getCanvasFont, getTextWidth } from "../lib/utils";
-
 import io, { Socket } from "socket.io-client";
 import { Col } from "web/components/layout/col";
 import { Fragment, useEffect, useState } from "react";
@@ -45,6 +43,7 @@ class Application {
     currentMarket: Manifold.LiteMarket = null;
 
     loadedHistory: boolean;
+    loadingMarket: boolean;
     betsToAddOnceLoadedHistory: FullBet[];
 
     constructor() {
@@ -115,25 +114,22 @@ class Application {
             }
             this.betElements = [];
         });
+        this.socket.on(Packet.MARKET_LOAD_COMPLETE, () => {
+            this.loadingMarket = false;
+        });
     }
 
     resetUI() {
         document.getElementById("question").innerHTML = "";
-        document.getElementById("spinner").style.display = "";
         this.chart.canvasElement.style.display = "none";
         this.chart.data = [];
-        document
-            .getElementById("chance")
-            .parentElement.querySelectorAll("div")
-            .forEach((r) => {
-                if (r.id !== "spinner") r.classList.add("invisible");
-            });
         this.betElements.forEach((b) => {
             b?.element?.remove();
         });
         this.betElements = [];
 
         this.loadedHistory = false;
+        this.loadingMarket = true;
         this.betsToAddOnceLoadedHistory = [];
     }
 
@@ -144,20 +140,20 @@ class Application {
                 this.currentMarket = market;
                 this.currentMarket["slug"] = this.currentMarket.url.substring(this.currentMarket.url.lastIndexOf("/") + 1, this.currentMarket.url.length); //!!!
 
-                document.getElementById("question").innerHTML = this.currentMarket.question;
+                const questionLength = this.currentMarket.question.length;
+                const questionDiv = document.getElementById("question");
+                if (questionLength > 70) {
+                    questionDiv.style.fontSize = "0.8em";
+                } else {
+                    questionDiv.style.fontSize = "";
+                }
+                questionDiv.innerHTML = this.currentMarket.question;
                 this.currentProbability_percent = this.currentMarket.probability * 100;
                 this.animatedProbability_percent = this.currentProbability_percent;
-                console.log(market);
-
-                document.getElementById("spinner").style.display = "none";
-                document
-                    .getElementById("chance")
-                    .parentElement.querySelectorAll("div")
-                    .forEach((r) => r.classList.remove("invisible"));
 
                 this.loadBettingHistory();
 
-                this.chart.resize();
+                setTimeout(() => this.chart.resize(), 10);
             })
             .catch((e) => {
                 console.error(e);
@@ -188,9 +184,7 @@ class Application {
     }
 
     addBet(bet: FullBet) {
-        console.debug("Add bet");
-
-        let name = bet.username;
+        const name = bet.username;
 
         const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
 
@@ -202,24 +196,10 @@ class Application {
         const t = this.transactionTemplate.cloneNode(true) as HTMLDivElement;
         document.getElementById("transactions").prepend(t);
         //
-        const nameDiv = t.querySelector(".name") as HTMLElement;
-        const divFont = getCanvasFont(nameDiv);
-        let isTruncated = false;
-        while (getTextWidth(name + (isTruncated ? "..." : ""), divFont) > 400) {
-            name = name.substring(0, name.length - 1);
-            isTruncated = true;
-        }
-        nameDiv.innerHTML = name + (isTruncated ? "..." : "");
-        //
+        t.querySelector("#name").innerHTML = name;
         t.querySelector(".amount").innerHTML = betAmountMagnitude.toFixed(0);
         t.querySelector(".boughtSold").innerHTML = (bet.amount < 0 ? "sold " : "") + ((bet.amount < 0 ? !positiveBet : positiveBet) ? "YES" : "NO");
         (t.querySelector(".color") as HTMLElement).style.color = positiveBet ? "#92ff83" : "#ff3d3d";
-
-        const response = document.createElement("p");
-        // response.classList.add(bet.outcome == "YES" ? "yes" : "no");
-        t.appendChild(response);
-
-        // t.innerHTML = bet.displayText; //!!! REMOVE
 
         const betElement = new BetElement();
         betElement.element = t;
@@ -239,7 +219,7 @@ class Application {
             }, 500);
         }
 
-        if (this.currentMarket) {
+        if (this.currentMarket && !this.loadingMarket) {
             this.currentMarket.probability = bet.probAfter;
             this.currentProbability_percent = this.currentMarket.probability * 100;
             this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
@@ -353,9 +333,8 @@ export default () => {
                         <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
                             <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
                             <Col className="items-center justify-center justify-self-end">
-                                <div id="chance" className="after:content-['%'] text-[1.5em] text-[#A5FF6E] invisible"></div>
-                                <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E] invisible">chance</div>
-                                <div id="spinner" className={clsx("absolute", styles.spinner)}></div>
+                                <div id="chance" className="after:content-['%'] text-[1.5em] text-[#A5FF6E]"></div>
+                                <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E]">chance</div>
                             </Col>
                         </Row>
                         <Col className={clsx("relative grow shrink items-stretch min-h-0", resolvedData && "mb-1")}>
@@ -363,10 +342,9 @@ export default () => {
                         </Col>
                         <Row className={clsx("justify-end items-center p-[0.2em]", resolvedData && "hidden")}>
                             <Col id="transactions" className="grow shrink h-full items-start justify-end">
-                                <div id="transaction-template" className={styles.bet}>
-                                    <div className="name font-bold"></div>
-                                    &nbsp;
-                                    <div className="color">
+                                <div id="transaction-template" className={clsx(styles.bet)}>
+                                    <div id="name" className="font-bold inline-block truncate max-w-[15em] align-bottom"></div>{" "}
+                                    <div className="color inline">
                                         <p className="boughtSold"></p> M$<p className="amount">1000</p>
                                     </div>
                                 </div>

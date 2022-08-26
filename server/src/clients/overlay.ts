@@ -32,6 +32,7 @@ export default class OverlayClient {
         if (market) {
             this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
             this.socket.emit(Packet.ADD_BETS, market.bets.slice(0, 3));
+            this.socket.emit(Packet.MARKET_LOAD_COMPLETE);
             if (market.resolveData) {
                 this.socket.emit(Packet.RESOLVE, market.resolveData); 
             }

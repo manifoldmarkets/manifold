@@ -105,6 +105,7 @@ export class Market {
             this.latestLoadedBetId = mostRecentBet.id;
             log.debug(`Latest loaded bet: ${this.userIdToNameMap[mostRecentBet.userId]} : ${mostRecentBet.id}`);
         }
+        this.app.io.to(this.twitchChannel).emit(Packet.MARKET_LOAD_COMPLETE);
     }
 
     calculateFixedPayout(contract: LiteMarket, bet: Bet, outcome: string) {
