@@ -104,10 +104,7 @@ export function ContractCard(props: {
           contract={contract}
           className={'hidden md:inline-flex'}
         />
-        <p
-          className="break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2"
-          style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-        >
+        <p className="break-anywhere font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2">
           {question}
         </p>
 
