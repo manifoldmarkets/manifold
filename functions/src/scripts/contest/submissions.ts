@@ -38,15 +38,15 @@ export const CEP_SUBMISSIONS = [
   },
   {
     title:
-      'War Between the US and China: A case study for epistemic challenges around China-related catastrophic risk',
-    author: 'Jordan_Schneider',
-    link: 'https://forum.effectivealtruism.org/posts/E2BghQq9pwPgtHgiH/war-between-the-us-and-china-a-case-study-for-epistemic',
-  },
-  {
-    title:
       'Cause exploration prize: organophosphate pesticides and other neurotoxicants',
     author: 'Ben Stewart',
     link: 'https://forum.effectivealtruism.org/posts/LSDZ22GFryC3dhWvd/cause-exploration-prize-organophosphate-pesticides-and-other',
+  },
+  {
+    title:
+      'War Between the US and China: A case study for epistemic challenges around China-related catastrophic risk',
+    author: 'Jordan_Schneider',
+    link: 'https://forum.effectivealtruism.org/posts/E2BghQq9pwPgtHgiH/war-between-the-us-and-china-a-case-study-for-epistemic',
   },
   {
     title: 'The (California) case for State Capacity as an EA cause area',
@@ -58,11 +58,6 @@ export const CEP_SUBMISSIONS = [
       'Directly Purchasing and Distributing Stunning Equipment to Fishing Boats Which Catch Enormous Amounts of Small Wild Fish',
     author: 'Enginar',
     link: 'https://forum.effectivealtruism.org/posts/tykEYESbJkqT39v64/directly-purchasing-and-distributing-stunning-equipment-to',
-  },
-  {
-    title: 'Fix Prison Telecom',
-    author: 'Benj Azose',
-    link: 'https://forum.effectivealtruism.org/posts/z9esvCk8oha69vkbA/fix-prison-telecom',
   },
   {
     title:
@@ -85,6 +80,11 @@ export const CEP_SUBMISSIONS = [
     title: 'Cause area proposal: International Macroeconomic Policy',
     author: 'arushigupta',
     link: 'https://forum.effectivealtruism.org/posts/gqzecJGYjqRF6c8o6/cause-area-proposal-international-macroeconomic-policy',
+  },
+  {
+    title: 'Fix Prison Telecom',
+    author: 'Benj Azose',
+    link: 'https://forum.effectivealtruism.org/posts/z9esvCk8oha69vkbA/fix-prison-telecom',
   },
   {
     title: 'Potential new cause area: Obesity',
@@ -155,15 +155,15 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/vFfoqL74kmZbydKjp/new-cause-area-demographic-collapse',
   },
   {
+    title: '[Cause Exploration Prizes] Economic Growth and State Capacity ',
+    author: 'Jeffrey Mason',
+    link: 'https://forum.effectivealtruism.org/posts/BkJepw5R2pFc55LEc/cause-exploration-prizes-economic-growth-and-state-capacity',
+  },
+  {
     title:
       'Energy Access in Sub-Saharan Africa: Open Philanthropy Cause Exploration Prize Submission',
     author: 'Tomer_Goloboy',
     link: 'https://forum.effectivealtruism.org/posts/ZPjMemurtzeumwcdw/energy-access-in-sub-saharan-africa-open-philanthropy-cause',
-  },
-  {
-    title: '[Cause Exploration Prizes] Economic Growth and State Capacity ',
-    author: 'Jeffrey Mason',
-    link: 'https://forum.effectivealtruism.org/posts/BkJepw5R2pFc55LEc/cause-exploration-prizes-economic-growth-and-state-capacity',
   },
   {
     title: 'Peacebuilding and Violent Conflict',
@@ -171,15 +171,20 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/dPx7LiNp5MX9RWdfa/peacebuilding-and-violent-conflict',
   },
   {
-    title:
-      'Targeted Treatment of Anemia in Adolescents in India as a Cause Area',
-    author: 'Akash Kulgod',
-    link: 'https://forum.effectivealtruism.org/posts/SgqBAeoCbQeLxmMoj/targeted-treatment-of-anemia-in-adolescents-in-india-as-a',
+    title: '[Cause Exploration Prizes] Training experts to be forecasters',
+    author: 'Sam Abbott',
+    link: 'https://forum.effectivealtruism.org/posts/WFbf2d4LHjgvWJCus/cause-exploration-prizes-training-experts-to-be-forecasters',
   },
   {
     title: 'Why Genetic Rescue',
     author: 'David Lang',
     link: 'https://forum.effectivealtruism.org/posts/ebBPcDxtSckRAoJfo/why-genetic-rescue',
+  },
+  {
+    title:
+      'Targeted Treatment of Anemia in Adolescents in India as a Cause Area',
+    author: 'Akash Kulgod',
+    link: 'https://forum.effectivealtruism.org/posts/SgqBAeoCbQeLxmMoj/targeted-treatment-of-anemia-in-adolescents-in-india-as-a',
   },
   {
     title: '[Cause Exploration Prizes] Fix the Money, Fix the world',
@@ -308,6 +313,11 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/nW7itcuaqb2CrC2mC/the-economic-benefits-of-promoting-and-protecting-the-rights-1',
   },
   {
+    title: '[Cause Exploration Prizes] Obstetric Violence',
+    author: 'Tracy Brinkerhoff',
+    link: 'https://forum.effectivealtruism.org/posts/MWWFiZfBvryY8buTw/cause-exploration-prizes-obstetric-violence',
+  },
+  {
     title: '[Cause Exploration Prizes] Trust and Science',
     author: 'Open Philanthropy',
     link: 'https://forum.effectivealtruism.org/posts/G6gzgAvrvjkjfBsQj/cause-exploration-prizes-trust-and-science',
@@ -351,6 +361,11 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/Kneivf7uokqqNTFAM/cause-exploration-prizes-voluntary-family-planning',
   },
   {
+    title: '[Cause Exploration Prizes] Antimicrobial Resistance',
+    author: 'rhi',
+    link: 'https://forum.effectivealtruism.org/posts/Jcnjwv6pHrqT2igRu/cause-exploration-prizes-antimicrobial-resistance',
+  },
+  {
     title:
       '[Cause Exploration Prizes] Natural Disaster Preparedness and Research',
     author: 'Open Philanthropy',
@@ -360,11 +375,6 @@ export const CEP_SUBMISSIONS = [
     title: '[Cause Exploration Prizes] Early Childhood Education',
     author: 'Anne Fitzpatrick',
     link: 'https://forum.effectivealtruism.org/posts/WiCEyhm2gp74pphHB/cause-exploration-prizes-early-childhood-education',
-  },
-  {
-    title: '[Cause Exploration Prizes] Obstetric Violence',
-    author: 'Tracy Brinkerhoff',
-    link: 'https://forum.effectivealtruism.org/posts/MWWFiZfBvryY8buTw/cause-exploration-prizes-obstetric-violence',
   },
   {
     title: '[Cause Exploration Prizes] Lessons from Covid',
@@ -383,9 +393,15 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/GiW8rvdcNHYJnSnK3/cause-exploration-prizes-measuring-civic-engagement-an',
   },
   {
-    title: '[Cause Exploration Prizes] Antimicrobial Resistance',
-    author: 'rhi',
-    link: 'https://forum.effectivealtruism.org/posts/Jcnjwv6pHrqT2igRu/cause-exploration-prizes-antimicrobial-resistance',
+    title: 'Movable Virtual Fencing Systems and Livestock Welfare',
+    author: 'Open Philanthropy',
+    link: 'https://forum.effectivealtruism.org/posts/WexugYE3z8xHhYw4r/movable-virtual-fencing-systems-and-livestock-welfare',
+  },
+  {
+    title:
+      '[Cause Exploration Prizes] Voluntary Male Circumcision in the prevention of HIV in Nyanza and Western Regions of Kenya',
+    author: 'Edward Kusewa',
+    link: 'https://forum.effectivealtruism.org/posts/6nxbe5AxtpH2Fjaqj/cause-exploration-prizes-voluntary-male-circumcision-in-the',
   },
   {
     title:
@@ -394,9 +410,9 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/LFFWkoeAhXRF4HBwW/cause-exploration-prizes-advanced-market-commitments-for',
   },
   {
-    title: 'Movable Virtual Fencing Systems and Livestock Welfare',
+    title: '[Cause Exploration Prizes] Antimicrobial Resistance',
     author: 'Open Philanthropy',
-    link: 'https://forum.effectivealtruism.org/posts/WexugYE3z8xHhYw4r/movable-virtual-fencing-systems-and-livestock-welfare',
+    link: 'https://forum.effectivealtruism.org/posts/DELryFuR7pNjwRZZC/cause-exploration-prizes-antimicrobial-resistance-1',
   },
   {
     title:
@@ -439,6 +455,12 @@ export const CEP_SUBMISSIONS = [
   },
   {
     title:
+      '[Cause Exploration Prizes] Emergence research as a high-impact cause area',
+    author: 'Open Philanthropy',
+    link: 'https://forum.effectivealtruism.org/posts/iapfxkhbE8vRk5rKX/cause-exploration-prizes-emergence-research-as-a-high-impact',
+  },
+  {
+    title:
       'Quality matters: Early childhood education and development in Nepal',
     author: 'Alisha Karki',
     link: 'https://forum.effectivealtruism.org/posts/nG8Ncf4AHCgreakzy/quality-matters-early-childhood-education-and-development-in',
@@ -473,12 +495,6 @@ export const CEP_SUBMISSIONS = [
   },
   {
     title:
-      '[Cause Exploration Prizes] Voluntary Male Circumcision in the prevention of HIV in Nyanza and Western Regions of Kenya',
-    author: 'Edward Kusewa',
-    link: 'https://forum.effectivealtruism.org/posts/6nxbe5AxtpH2Fjaqj/cause-exploration-prizes-voluntary-male-circumcision-in-the',
-  },
-  {
-    title:
       '[Cause Exploration Prizes] Investment in Fetal, Neonatal and Infant Development ',
     author: 'Sofia Panasiuk',
     link: 'https://forum.effectivealtruism.org/posts/DdGdEWHu8kebS6mJu/cause-exploration-prizes-investment-in-fetal-neonatal-and',
@@ -488,11 +504,6 @@ export const CEP_SUBMISSIONS = [
       '[Cause Exploration Prizes] Can purpose in life be a simple, powerful, and systemic leverage point for positive change?',
     author: 'Kokeb Solomon',
     link: 'https://forum.effectivealtruism.org/posts/KqffgESkpTQBeqaWy/cause-exploration-prizes-can-purpose-in-life-be-a-simple',
-  },
-  {
-    title: '[Cause Exploration Prizes] Antimicrobial Resistance',
-    author: 'Open Philanthropy',
-    link: 'https://forum.effectivealtruism.org/posts/DELryFuR7pNjwRZZC/cause-exploration-prizes-antimicrobial-resistance-1',
   },
   {
     title:
@@ -505,6 +516,11 @@ export const CEP_SUBMISSIONS = [
       '[Cause Exploration Prizes] Dynamic democracy to guard against authoritarian lock-in',
     author: 'Open Philanthropy',
     link: 'https://forum.effectivealtruism.org/posts/G5tF3TP7btJThcKoJ/cause-exploration-prizes-dynamic-democracy-to-guard-against',
+  },
+  {
+    title: '[Cause Exploration Prizes] Expanding Circles, Improving Lives',
+    author: 'Chad Patrick Osorio',
+    link: 'https://forum.effectivealtruism.org/posts/At5eJJxafx6kcQWty/cause-exploration-prizes-expanding-circles-improving-lives',
   },
   {
     title: 'Open Climate Data as a possible cause area,  Open Philanthropy',
@@ -543,10 +559,9 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/9t8c69fdrK9LycxxP/new-cause-area-the-meta-cause-cause-exploration-prize-10',
   },
   {
-    title:
-      'New cause area: Improving diagnosis and treatment of bipolar spectrum disorders',
-    author: 'Karolina Soltys',
-    link: 'https://forum.effectivealtruism.org/posts/ft7ChZnzyq2SwsgBa/new-cause-area-improving-diagnosis-and-treatment-of-bipolar',
+    title: 'Cause: biopharma R&D productivity',
+    author: 'BoxFan',
+    link: 'https://forum.effectivealtruism.org/posts/xzcdN6aGCGbii86BX/cause-biopharma-r-and-d-productivity',
   },
   {
     title: 'Cause Area Proposal: Paperwork Reduction',
@@ -564,9 +579,15 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/g7Rn2fiq52QN8pbJa/cause-exploration-adapting-to-extreme-heat-exposure-in-south',
   },
   {
-    title: 'Cause: biopharma R&D productivity',
-    author: 'BoxFan',
-    link: 'https://forum.effectivealtruism.org/posts/xzcdN6aGCGbii86BX/cause-biopharma-r-and-d-productivity',
+    title:
+      'New cause area: Improving diagnosis and treatment of bipolar spectrum disorders',
+    author: 'Karolina Soltys',
+    link: 'https://forum.effectivealtruism.org/posts/ft7ChZnzyq2SwsgBa/new-cause-area-improving-diagnosis-and-treatment-of-bipolar',
+  },
+  {
+    title: '[Cause Exploration Prizes] Transnational Surrogacy',
+    author: 'Kelly Geddes',
+    link: 'https://forum.effectivealtruism.org/posts/uRk85GQh4x8gTgMEm/cause-exploration-prizes-transnational-surrogacy',
   },
   {
     title:
@@ -685,6 +706,12 @@ export const CEP_SUBMISSIONS = [
     link: 'https://forum.effectivealtruism.org/posts/DC9AZSn4dpFptA8mS/cause-exploration-prize-unfettered-global-internet-access',
   },
   {
+    title:
+      'Reciprocity & the causes of diminishing returns: cause exploration submission',
+    author: 'LB',
+    link: 'https://forum.effectivealtruism.org/posts/x9towRLtvYidkXugk/reciprocity-and-the-causes-of-diminishing-returns-cause',
+  },
+  {
     title: 'Potential Risks of Advanced Gene Editing Technologies',
     author: 'Courtney Colston',
     link: 'https://forum.effectivealtruism.org/posts/EEgT2jHZSExBAPsTD/potential-risks-of-advanced-gene-editing-technologies',
@@ -694,11 +721,5 @@ export const CEP_SUBMISSIONS = [
       'The Economic Benefits of Promoting and Protecting the Rights of LGBTQ+ Communities in Developing Countries (cause exploration)',
     author: 'Susannah Hares',
     link: 'https://forum.effectivealtruism.org/posts/Xc7AH2Recks3RHteE/the-economic-benefits-of-promoting-and-protecting-the-rights',
-  },
-  {
-    title:
-      'Reciprocity & the causes of diminishing returns: cause exploration submission',
-    author: 'LB',
-    link: 'https://forum.effectivealtruism.org/posts/x9towRLtvYidkXugk/reciprocity-and-the-causes-of-diminishing-returns-cause',
   },
 ]
