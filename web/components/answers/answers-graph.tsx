@@ -71,10 +71,10 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
   const yTickValues = [0, 25, 50, 75, 100]
 
   const numXTickValues = isLargeWidth ? 5 : 2
-  const hoursAgo = latestTime.subtract(5, 'hours')
-  const startDate = dayjs(contract.createdTime).isBefore(hoursAgo)
+  const hourAgo = latestTime.subtract(1, 'hours')
+  const startDate = dayjs(contract.createdTime).isBefore(hourAgo)
     ? new Date(contract.createdTime)
-    : hoursAgo.toDate()
+    : hourAgo.toDate()
 
   const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
   const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
