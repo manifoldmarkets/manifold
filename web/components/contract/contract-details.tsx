@@ -188,18 +188,28 @@ export function ContractDetails(props: {
         ) : !groupToDisplay && !user ? (
           <div />
         ) : (
-          <Button
-            size={'xs'}
-            className={'max-w-[200px]'}
-            color={'gray-white'}
-            onClick={() =>
-              groupToDisplay
-                ? Router.push(groupPath(groupToDisplay.slug))
-                : setOpen(!open)
-            }
-          >
-            {groupInfo}
-          </Button>
+          <Row>
+            <Button
+              size={'xs'}
+              className={'max-w-[200px] pr-1'}
+              color={'gray-white'}
+              onClick={() =>
+                groupToDisplay
+                  ? Router.push(groupPath(groupToDisplay.slug))
+                  : setOpen(!open)
+              }
+            >
+              {groupInfo}
+            </Button>
+            <Button
+              size={'xs'}
+              className={'!px-2'}
+              color={'gray-white'}
+              onClick={() => setOpen(!open)}
+            >
+              <PencilIcon className="inline h-5 w-5 shrink-0" />
+            </Button>
+          </Row>
         )}
       </Row>
       <Modal open={open} setOpen={setOpen} size={'md'}>
