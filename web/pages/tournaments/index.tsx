@@ -37,13 +37,13 @@ type Tourney = {
   groupId: string
 }
 
-// const Salem = {
-//   title: 'CSPI/Salem Tournament',
-//   blurb:
-//     "Forecasting contest - top 5 can become Salem Center's next research fellow.",
-//   url: 'https://salemcenter.manifold.markets/',
-//   award: 25_000,
-// } as const
+const Salem = {
+  title: 'CSPI/Salem Forecasting Tournament',
+  blurb: 'Top 5 traders qualify for a UT Austin research fellowship.',
+  url: 'https://salemcenter.manifold.markets/',
+  award: '$25,000',
+  endTime: toDate('Jul 31, 2023'),
+} as const
 
 const tourneys: Tourney[] = [
   {
@@ -61,13 +61,13 @@ const tourneys: Tourney[] = [
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
   },
-  {
-    title: 'Clearer Thinking Regrant Project',
-    blurb: 'Something amazing',
-    award: '$10,000',
-    endTime: toDate('Sep 22, 2022'),
-    groupId: '2VsVVFGhKtIdJnQRAXVb',
-  },
+  // {
+  //   title: 'Clearer Thinking Regrant Project',
+  //   blurb: 'Something amazing',
+  //   award: '$10,000',
+  //   endTime: toDate('Sep 22, 2022'),
+  //   groupId: '2VsVVFGhKtIdJnQRAXVb',
+  // },
 ]
 
 export async function getStaticProps() {
@@ -104,7 +104,7 @@ export default function TournamentPage(props: {
         title="Tournaments"
         description="Win money by betting in forecasting touraments on current events, sports, science, and more"
       />
-      <Col className="mx-4 sm:mx-10 xl:w-[125%]">
+      <Col className="mx-4 mt-4 gap-20 sm:mx-10 xl:w-[125%]">
         {tourneys.map(({ groupId, ...data }) => (
           <Section
             key={groupId}
@@ -114,6 +114,7 @@ export default function TournamentPage(props: {
             markets={markets[groupId] ?? []}
           />
         ))}
+        <Section {...Salem} markets={[]} />
       </Col>
     </Page>
   )
@@ -131,7 +132,7 @@ function Section(props: {
   const { title, url, blurb, award, ppl, endTime, markets } = props
 
   return (
-    <div className="my-12">
+    <div>
       <Link href={url}>
         <a className="group mb-3 flex flex-wrap justify-between">
           <h2 className="text-xl font-semibold group-hover:underline md:text-3xl">
@@ -165,8 +166,8 @@ function Section(props: {
               contract={m}
               showHotVolume
               hideGroupLink
-              className="max-h-[148px] w-96 shrink-0"
-              questionClass="line-clamp-2"
+              className="max-h-[200px] w-96 shrink-0"
+              questionClass="line-clamp-3"
             />
           ))
         ) : (
