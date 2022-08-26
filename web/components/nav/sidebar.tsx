@@ -46,11 +46,12 @@ function getNavigation() {
       icon: NotificationsIcon,
     },
 
-    { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
-
     ...(IS_PRIVATE_MANIFOLD
       ? []
-      : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
+      : [
+          { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+          { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
+        ]),
   ]
 }
 
