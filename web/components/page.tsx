@@ -6,13 +6,11 @@ import { Toaster } from 'react-hot-toast'
 
 export function Page(props: {
   rightSidebar?: ReactNode
-  suspend?: boolean
   className?: string
   rightSidebarClassName?: string
   children?: ReactNode
 }) {
-  const { children, rightSidebar, suspend, className, rightSidebarClassName } =
-    props
+  const { children, rightSidebar, className, rightSidebarClassName } = props
 
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   return (
@@ -23,7 +21,6 @@ export function Page(props: {
           bottomBarPadding,
           'mx-auto w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:max-w-7xl xl:gap-x-8'
         )}
-        style={suspend ? visuallyHiddenStyle : undefined}
       >
         <Toaster />
         <Sidebar className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:block" />
@@ -46,22 +43,7 @@ export function Page(props: {
           </div>
         </aside>
       </div>
-
       <BottomNavBar />
     </>
   )
 }
-
-const visuallyHiddenStyle = {
-  clip: 'rect(0 0 0 0)',
-  clipPath: 'inset(50%)',
-  height: 1,
-  margin: -1,
-  overflow: 'hidden',
-  padding: 0,
-  position: 'absolute',
-  width: 1,
-  whiteSpace: 'nowrap',
-  userSelect: 'none',
-  visibility: 'hidden',
-} as const
