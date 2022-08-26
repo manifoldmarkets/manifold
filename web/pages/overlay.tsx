@@ -265,7 +265,6 @@ export default () => {
         app.socket.on(Packet.CLEAR, () => {
             setResolvedData(undefined);
             setOverlayVisible(false);
-            console.debug("Received clear packet");
         });
         app.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
             setResolvedData(undefined);
@@ -332,7 +331,7 @@ export default () => {
                     <Col className={clsx("absolute text-white bg-[#212121] leading-[normal] inset-0")} style={{ fontSize: "calc(min(70px, 4.5vw))" }}>
                         <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
                             <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
-                            <Col className="items-center justify-center justify-self-end">
+                            <Col className="items-center justify-center justify-self-end min-w-[3em]">
                                 <div id="chance" className="after:content-['%'] text-[1.5em] text-[#A5FF6E]"></div>
                                 <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E]">chance</div>
                             </Col>
