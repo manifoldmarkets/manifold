@@ -5,13 +5,19 @@ import clsx from 'clsx'
 export default function ShortToggle(props: {
   enabled: boolean
   setEnabled: (enabled: boolean) => void
+  onChange?: (enabled: boolean) => void
 }) {
   const { enabled, setEnabled } = props
 
   return (
     <Switch
       checked={enabled}
-      onChange={setEnabled}
+      onChange={(e: boolean) => {
+        setEnabled(e)
+        if (props.onChange) {
+          props.onChange(e)
+        }
+      }}
       className="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
     >
       <span className="sr-only">Use setting</span>
