@@ -200,7 +200,9 @@ function IncomeNotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
   const numSummaryLines = 3
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(
+    notifications.length <= numSummaryLines
+  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
@@ -398,7 +400,8 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
-      reasonText = 'for your'
+      if (sourceText && +sourceText === 50) reasonText = '(max) for your'
+      else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested bets returned as a`
     }
@@ -524,7 +527,7 @@ function IncomeNotificationItem(props: {
             </span>
           </div>
         </Row>
-        <div className={'mt-4 border-b border-gray-300'} />
+        <div className={'border-b border-gray-300 pt-4'} />
       </div>
     </div>
   )
@@ -541,7 +544,9 @@ function NotificationGroupItem(props: {
   const isMobile = (width && width < 768) || false
   const numSummaryLines = 3
 
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(
+    notifications.length <= numSummaryLines
+  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
