@@ -1,5 +1,6 @@
 import {
   deleteDoc,
+  deleteField,
   doc,
   getDocs,
   query,
@@ -17,6 +18,7 @@ import {
 } from './utils'
 import { Contract } from 'common/contract'
 import { updateContract } from 'web/lib/firebase/contracts'
+import * as admin from 'firebase-admin'
 
 export const groups = coll<Group>('groups')
 
@@ -28,12 +30,17 @@ export function groupPath(
     | 'about'
     | typeof GROUP_CHAT_SLUG
     | 'leaderboards'
+    | 'dashboard'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
 
 export function updateGroup(group: Group, updates: Partial<Group>) {
   return updateDoc(doc(groups, group.id), updates)
+}
+
+export function deleteFieldFromGroup(group: Group, field: string) {
+  return updateDoc(doc(groups, group.id), { [field]: deleteField() })
 }
 
 export function deleteGroup(group: Group) {

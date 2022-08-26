@@ -45,6 +45,10 @@ import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { GroupDashboard } from 'web/components/groups/group-dashboard'
+import { getDashboard } from 'web/lib/firebase/dashboards'
+import { Dashboard } from 'common/dashboard'
+import { Spacer } from 'web/components/layout/spacer'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -57,6 +61,10 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const contracts =
     (group && (await listContractsByGroupSlug(group.slug))) ?? []
 
+  const dashboard =
+    group &&
+    group.dashboardId != null &&
+    (await getDashboard(group.dashboardId))
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
   )
@@ -83,6 +91,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       creatorScores,
       topCreators,
       messages,
+      dashboard,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -121,6 +130,7 @@ export default function GroupPage(props: {
   creatorScores: { [userId: string]: number }
   topCreators: User[]
   messages: GroupComment[]
+  dashboard: Dashboard
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -139,6 +149,7 @@ export default function GroupPage(props: {
     topTraders,
     creatorScores,
     topCreators,
+    dashboard,
   } = props
 
   const router = useRouter()
@@ -176,6 +187,16 @@ export default function GroupPage(props: {
 
   const aboutTab = (
     <Col>
+      {group.dashboardId != null || isCreator ? (
+        <GroupDashboard
+          group={group}
+          isCreator={!!isCreator}
+          dashboard={dashboard}
+        />
+      ) : (
+        <div></div>
+      )}
+      <Spacer h={3} />
       <GroupOverview
         group={group}
         creator={creator}
@@ -292,7 +313,6 @@ function GroupOverview(props: {
       error: "Couldn't update group",
     })
   }
-
   const postFix = user ? '?referrer=' + user.username : ''
   const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
     group.slug
