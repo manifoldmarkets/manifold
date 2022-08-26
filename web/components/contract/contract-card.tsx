@@ -70,41 +70,14 @@ export function ContractCard(props: {
   return (
     <Row
       className={clsx(
-        'relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
+        'group  relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
         className
       )}
     >
-      <Col className="group relative flex-1 gap-3 py-4 pb-12  pl-6">
-        {onClick ? (
-          <a
-            className="absolute top-0 left-0 right-0 bottom-0"
-            href={contractPath(contract)}
-            onClick={(e) => {
-              // Let the browser handle the link click (opens in new tab).
-              if (e.ctrlKey || e.metaKey) return
-
-              e.preventDefault()
-              track('click market card', {
-                slug: contract.slug,
-                contractId: contract.id,
-              })
-              onClick()
-            }}
-          />
-        ) : (
-          <Link href={contractPath(contract)}>
-            <a
-              onClick={trackCallback('click market card', {
-                slug: contract.slug,
-                contractId: contract.id,
-              })}
-              className="absolute top-0 left-0 right-0 bottom-0"
-            />
-          </Link>
-        )}
+      <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
-          className={'hidden md:inline-flex'}
+          className={'z-10 hidden md:inline-flex'}
         />
         <p
           className={clsx(
@@ -128,7 +101,7 @@ export function ContractCard(props: {
           ))}
       </Col>
       {showQuickBet ? (
-        <QuickBet contract={contract} user={user} />
+        <QuickBet contract={contract} user={user} className="z-10" />
       ) : (
         <>
           {outcomeType === 'BINARY' && (
@@ -177,6 +150,35 @@ export function ContractCard(props: {
           hideGroupLink={hideGroupLink}
         />
       </Row>
+
+      {/* Add click layer */}
+      {onClick ? (
+        <a
+          className="absolute top-0 left-0 right-0 bottom-0"
+          href={contractPath(contract)}
+          onClick={(e) => {
+            // Let the browser handle the link click (opens in new tab).
+            if (e.ctrlKey || e.metaKey) return
+
+            e.preventDefault()
+            track('click market card', {
+              slug: contract.slug,
+              contractId: contract.id,
+            })
+            onClick()
+          }}
+        />
+      ) : (
+        <Link href={contractPath(contract)}>
+          <a
+            onClick={trackCallback('click market card', {
+              slug: contract.slug,
+              contractId: contract.id,
+            })}
+            className="absolute top-0 left-0 right-0 bottom-0"
+          />
+        </Link>
+      )}
     </Row>
   )
 }
