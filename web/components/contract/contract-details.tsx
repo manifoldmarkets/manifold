@@ -33,7 +33,7 @@ import { insertContent } from '../editor/utils'
 import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
-import { FeaturedContractBadge } from 'web/components/contract/FeaturedContractBadge'
+import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
