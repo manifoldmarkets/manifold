@@ -58,10 +58,11 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   const { width } = useWindowSize()
 
   const numXTickValues = !width || width < 800 ? 2 : 5
-  const hoursAgo = latestTime.subtract(1, 'hours')
-  const startDate = dayjs(times[0]).isBefore(hoursAgo)
-    ? times[0]
-    : hoursAgo.toDate()
+  const startDate = times[0]
+  const endDate = dayjs(startDate).add(1, 'hour').isAfter(latestTime)
+    ? latestTime.add(1, 'hours').toDate()
+    : latestTime.toDate()
+  const includeMinute = dayjs(endDate).diff(startDate, 'hours') < 2
 
   // Minimum number of points for the graph to have. For smooth tooltip movement
   // On first load, width is undefined, skip adding extra points to let page load faster
@@ -133,14 +134,15 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         xScale={{
           type: 'time',
           min: startDate,
-          max: latestTime.toDate(),
+          max: endDate,
         }}
         xFormat={(d) =>
           formatTime(+d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
         }
         axisBottom={{
           tickValues: numXTickValues,
-          format: (time) => formatTime(+time, multiYear, lessThanAWeek, false),
+          format: (time) =>
+            formatTime(+time, multiYear, lessThanAWeek, includeMinute),
         }}
         colors={{ datum: 'color' }}
         curve="stepAfter"
@@ -183,7 +185,11 @@ function formatTime(
 ) {
   const d = dayjs(time)
 
-  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
+  if (
+    d.add(1, 'minute').isAfter(Date.now()) &&
+    d.subtract(1, 'minute').isBefore(Date.now())
+  )
+    return 'Now'
 
   let format: string
   if (d.isSame(Date.now(), 'day')) {
