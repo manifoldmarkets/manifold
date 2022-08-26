@@ -12,6 +12,7 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { keyBy, mapValues, throttle } from 'lodash'
+import Image, { ImageProps, StaticImageData } from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { ContractCard } from 'web/components/contract/contract-card'
@@ -22,6 +23,11 @@ import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import { getGroup, groupPath } from 'web/lib/firebase/groups'
+import elon_pic from './_cspi/Will_Elon_Buy_Twitter.png'
+import china_pic from './_cspi/Chinese_Military_Action_against_Taiwan.png'
+import mpox_pic from './_cspi/Monkeypox_Cases.png'
+import race_pic from './_cspi/Supreme_Court_Ban_Race_in_College_Admissions.png'
+import { SiteLink } from 'web/components/site-link'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -43,7 +49,30 @@ const Salem = {
   url: 'https://salemcenter.manifold.markets/',
   award: '$25,000',
   endTime: toDate('Jul 31, 2023'),
-} as const
+  markets: [],
+  images: [
+    {
+      marketUrl:
+        'https://salemcenter.manifold.markets/SalemCenter/will-elon-musk-buy-twitter',
+      image: elon_pic,
+    },
+    {
+      marketUrl:
+        'https://salemcenter.manifold.markets/SalemCenter/chinese-military-action-against-tai',
+      image: china_pic,
+    },
+    {
+      marketUrl:
+        'https://salemcenter.manifold.markets/SalemCenter/over-100000-monkeypox-cases-in-2022',
+      image: mpox_pic,
+    },
+    {
+      marketUrl:
+        'https://salemcenter.manifold.markets/SalemCenter/over-100000-monkeypox-cases-in-2022',
+      image: race_pic,
+    },
+  ],
+}
 
 const tourneys: Tourney[] = [
   {
@@ -114,7 +143,7 @@ export default function TournamentPage(props: {
             markets={markets[groupId] ?? []}
           />
         ))}
-        <Section {...Salem} markets={[]} />
+        <Section {...Salem} />
       </Col>
     </Page>
   )
@@ -128,8 +157,9 @@ function Section(props: {
   ppl?: number
   endTime?: Dayjs
   markets: Contract[]
+  images?: { marketUrl: string; image: StaticImageData }[] // hack for cspi
 }) {
-  const { title, url, blurb, award, ppl, endTime, markets } = props
+  const { title, url, blurb, award, ppl, endTime, markets, images } = props
 
   return (
     <div>
@@ -171,12 +201,39 @@ function Section(props: {
             />
           ))
         ) : (
-          <div className="flex h-32 w-80 items-center justify-center rounded bg-white text-lg text-gray-700 shadow-md">
-            Coming Soon...
-          </div>
+          <>
+            {images?.map(({ marketUrl, image }) => (
+              <a href={marketUrl} className="hover:brightness-95">
+                <NaturalImage src={image} />
+              </a>
+            ))}
+            <SiteLink
+              className="ml-6 mr-10 flex shrink-0 items-center text-indigo-700"
+              href={url}
+            >
+              See more
+            </SiteLink>
+          </>
         )}
       </Carousel>
     </div>
+  )
+}
+
+// stole: https://stackoverflow.com/questions/66845889/next-js-image-how-to-maintain-aspect-ratio-and-add-letterboxes-when-needed
+const NaturalImage = (props: ImageProps) => {
+  const [ratio, setRatio] = useState(4 / 1)
+
+  return (
+    <Image
+      {...props}
+      width={148 * ratio}
+      height={148}
+      layout="fixed"
+      onLoadingComplete={({ naturalWidth, naturalHeight }) =>
+        setRatio(naturalWidth / naturalHeight)
+      }
+    />
   )
 }
 
