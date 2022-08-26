@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
+import { Group } from 'common/group'
 import { formatLargeNumber } from 'common/util/format'
 import dayjs, { Dayjs } from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
@@ -74,15 +75,15 @@ export async function getStaticProps() {
   const groupIds = tourneys
     .map((data) => data.groupId)
     .filter((id) => id != undefined) as string[]
-  const groups = await Promise.all(groupIds.map(getGroup))
+  const groups = (await Promise.all(groupIds.map(getGroup)))
+    // Then remove undefined groups
+    .filter(Boolean) as Group[]
 
   const contracts = await Promise.all(
     groups.map((g) => listContractsByGroupSlug(g?.slug ?? ''))
   )
 
-  const markets = Object.fromEntries(
-    groupIds.map((id, i) => [id, contracts[i]])
-  )
+  const markets = Object.fromEntries(groups.map((g, i) => [g.id, contracts[i]]))
 
   const groupMap = keyBy(groups, 'id')
   const numPeople = mapValues(groupMap, (g) => g?.memberIds.length)
@@ -110,10 +111,11 @@ export default function TournamentPage(props: {
 
         {tourneys.map(({ groupId, ...data }) => (
           <Section
+            key={groupId}
             {...data}
             url={groupPath(slugs[groupId])}
-            ppl={numPeople[groupId]}
-            markets={markets[groupId]}
+            ppl={numPeople[groupId] ?? 0}
+            markets={markets[groupId] ?? []}
           />
         ))}
       </Col>
