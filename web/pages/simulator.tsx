@@ -203,8 +203,7 @@ function NewBidTable(props: {
               <input
                 type="number"
                 placeholder="0"
-                className="input input-bordered"
-                style={{ maxWidth: 100 }}
+                className="input input-bordered max-w-[100px]"
                 value={newBid.toString()}
                 onChange={(e) => setNewBid(parseInt(e.target.value) || 0)}
                 onKeyUp={(e) => {
@@ -292,7 +291,7 @@ export default function Simulator() {
               YES
             </div>
           </h1>
-          <div className="mb-10 w-full" style={{ height: 500 }}>
+          <div className="mb-10 h-[500px] w-full">
             <ResponsiveLine
               data={data}
               yScale={{ min: 0, max: 100, type: 'linear' }}
