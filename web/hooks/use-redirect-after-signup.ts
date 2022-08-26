@@ -1,6 +1,7 @@
 import { User } from 'common/user'
 import dayjs from 'dayjs'
 import { useEffect } from 'react'
+import { generateNewApiKey } from 'web/lib/api/api-key'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { initLinkTwitchAccount } from 'web/lib/twitch/link-twitch-account'
 
@@ -29,11 +30,14 @@ export const handleRedirectAfterSignup = async (user: User | null) => {
 
   if (redirect === 'twitch') {
     const { privateUser } = await getUserAndPrivateUser(user.id)
-    if (!privateUser.apiKey) return // TODO: handle missing API key
+
+    const apiKey = privateUser.apiKey ?? (await generateNewApiKey(user.id))
+    if (!apiKey) return
+
     try {
       const [twitchAuthURL, linkSuccessPromise] = await initLinkTwitchAccount(
         privateUser.id,
-        privateUser.apiKey
+        apiKey
       )
       window.open(twitchAuthURL) // TODO: Handle browser pop-up block
       const data = await linkSuccessPromise // TODO: Do something with result?
