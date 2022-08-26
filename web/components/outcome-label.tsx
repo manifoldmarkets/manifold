@@ -164,10 +164,7 @@ export function AnswerLabel(props: {
 
   return (
     <Tooltip text={truncated === text ? false : text}>
-      <span
-        style={{ wordBreak: 'break-word' }}
-        className={clsx('whitespace-pre-line break-words', className)}
-      >
+      <span className={clsx('break-anywhere whitespace-pre-line', className)}>
         {truncated}
       </span>
     </Tooltip>

@@ -17,7 +17,7 @@ import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useState } from 'react'
+import React from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -25,7 +25,6 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
@@ -235,19 +234,22 @@ export default function Sidebar(props: { className?: string }) {
   }))
 
   return (
-    <nav aria-label="Sidebar" className={className}>
+    <nav
+      aria-label="Sidebar"
+      className={clsx('flex max-h-[100vh] flex-col', className)}
+    >
       <ManifoldLogo className="py-6" twoLine />
 
       <CreateQuestionButton user={user} />
       <Spacer h={4} />
       {user && (
-        <div className="w-full" style={{ minHeight: 80 }}>
+        <div className="min-h-[80px] w-full">
           <ProfileSummary user={user} />
         </div>
       )}
 
       {/* Mobile navigation */}
-      <div className="space-y-1 lg:hidden">
+      <div className="flex min-h-0 shrink flex-col gap-1 lg:hidden">
         {mobileNavigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
@@ -266,7 +268,7 @@ export default function Sidebar(props: { className?: string }) {
       </div>
 
       {/* Desktop navigation */}
-      <div className="hidden space-y-1 lg:block">
+      <div className="hidden min-h-0 shrink flex-col gap-1 lg:flex">
         {navigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
@@ -285,10 +287,6 @@ export default function Sidebar(props: { className?: string }) {
 
 function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
   const { currentPage, memberItems } = props
-
-  const { height } = useWindowSize()
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  const remainingHeight = (height ?? 0) - (containerRef?.offsetTop ?? 0)
 
   // const preferredNotifications = useUnseenPreferredNotifications(
   //   privateUser,
@@ -315,11 +313,7 @@ function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
         currentPage={currentPage}
       />
 
-      <div
-        className="flex-1 space-y-0.5 overflow-auto"
-        style={{ height: remainingHeight }}
-        ref={setContainerRef}
-      >
+      <div className="min-h-0 shrink space-y-0.5 overflow-auto">
         {memberItems.map((item) => (
           <a
             href={item.href}

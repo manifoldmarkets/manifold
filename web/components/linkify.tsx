@@ -38,10 +38,7 @@ export function Linkify(props: { text: string; gray?: boolean }) {
     )
   })
   return (
-    <span
-      className="break-words"
-      style={{ /* For iOS safari */ wordBreak: 'break-word' }}
-    >
+    <span className="break-anywhere">
       {text.split(regex).map((part, i) => (
         <Fragment key={i}>
           {part}

@@ -148,10 +148,7 @@ export function UserPage(props: { user: User }) {
       <Col className="mx-4 -mt-6">
         <Row className={'flex-wrap justify-between gap-y-2'}>
           <Col>
-            <span
-              className="text-2xl font-bold"
-              style={{ wordBreak: 'break-word' }}
-            >
+            <span className="break-anywhere text-2xl font-bold">
               {user.name}
             </span>
             <span className="text-gray-500">@{user.username}</span>

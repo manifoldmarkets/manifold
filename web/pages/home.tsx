@@ -33,7 +33,7 @@ const Home = (props: { auth: { user: User } | null }) => {
 
   return (
     <>
-      <Page suspend={!!contract}>
+      <Page className={contract ? 'sr-only' : ''}>
         <Col className="mx-auto w-full p-2">
           <ContractSearch
             user={user}
