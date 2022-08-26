@@ -1,5 +1,5 @@
 import { Combobox } from "@headlessui/react";
-import { CheckIcon, RefreshIcon, SelectorIcon } from "@heroicons/react/outline";
+import { CheckIcon, PlusCircleIcon, RefreshIcon, SelectorIcon } from "@heroicons/react/outline";
 import clsx from "clsx";
 import { Group } from "common/group";
 import { useEffect, useState } from "react";
@@ -9,7 +9,7 @@ const APIBase = "https://dev.manifold.markets/api/v0/";
 async function fetchGroups(userID: string): Promise<Group[]> {
     const r = await fetch(`${APIBase}groups`);
     let groups = (await r.json()) as Group[];
-    groups = groups.filter((g) => g.anyoneCanJoin || g.memberIds.indexOf(userID) >= 0); //!!!
+    groups = groups.filter((g) => g.anyoneCanJoin || g.memberIds.indexOf(userID) >= 0);
     return groups;
 }
 
@@ -54,7 +54,7 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
                             className="w-full border rounded-md border-gray-300 bg-white pl-4 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
                             onChange={(event) => setQuery(event.target.value)}
                             displayValue={(group: Group) => group && group.name}
-                            placeholder={"E.g. Science, Politics"}
+                            placeholder={"Group name"}
                             style={{ borderTopRightRadius: "0", borderBottomRightRadius: "0" }}
                         />
                         <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
@@ -62,30 +62,31 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
                         </Combobox.Button>
 
                         <Combobox.Options className="absolute z-50 mt-[3.2rem] max-h-96 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                            {filteredGroups.length > 0 ? (
-                                filteredGroups.map((group: Group) => (
-                                    <Combobox.Option
-                                        key={group.id}
-                                        value={group}
-                                        className={({ active }) => clsx("relative h-14 cursor-pointer select-none py-2 pl-4 pr-9", active ? "bg-indigo-500 text-white" : "text-gray-900")}
-                                    >
-                                        {({ active, selected }) => (
-                                            <>
-                                                {selected && (
-                                                    <span className={clsx("absolute inset-y-0 left-2 flex items-center pr-4", active ? "text-white" : "text-indigo-600")}>
-                                                        <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                                                    </span>
-                                                )}
-                                                <span className={clsx("ml-5 mt-1 block truncate", selected && "font-semibold")}>{group.name}<p className="text-gray-400 italic font-light text-xs">{group.slug}</p></span>
-                                            </>
-                                        )}
-                                    </Combobox.Option>
-                                ))
-                            ) : (
-                                <Combobox.Option value={undefined} className="relative h-12 cursor-pointer select-none py-2 pl-4 pr-9 text-gray-400">
-                                    <span className="ml-5 mt-1 block truncate">No groups available</span>
+                            {filteredGroups.map((group: Group) => (
+                                <Combobox.Option
+                                    key={group.id}
+                                    value={group}
+                                    className={({ active }) => clsx("relative h-14 cursor-pointer select-none py-2 pl-4 pr-9", active ? "bg-indigo-500 text-white" : "text-gray-900")}
+                                >
+                                    {({ active, selected }) => (
+                                        <>
+                                            {selected && (
+                                                <span className={clsx("absolute inset-y-0 left-2 flex items-center pr-4", active ? "text-white" : "text-indigo-600")}>
+                                                    <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                                                </span>
+                                            )}
+                                            <span className={clsx("ml-5 mt-1 block truncate", selected && "font-semibold")}>
+                                                {group.name}
+                                                <p className="text-gray-400 italic font-light text-xs">{group.slug}</p>
+                                            </span>
+                                        </>
+                                    )}
                                 </Combobox.Option>
-                            )}
+                            ))}
+                            <div className="btn btn-sm normal-case w-full justify-start rounded-none border-0 bg-white pl-2 h-14 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white" onClick={() => window.open("https://dev.manifold.markets/groups") /*!!!*/}>
+                                <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
+                                Create a new Group
+                            </div>
                         </Combobox.Options>
                     </div>
                     <button
