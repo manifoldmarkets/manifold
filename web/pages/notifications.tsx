@@ -400,7 +400,8 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
-      reasonText = 'for your'
+      if (sourceText && +sourceText === 50) reasonText = '(max) for your'
+      else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested bets returned as a`
     }
