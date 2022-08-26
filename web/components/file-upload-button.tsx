@@ -10,7 +10,11 @@ export function FileUploadButton(props: {
   const ref = useRef<HTMLInputElement>(null)
   return (
     <>
-      <button className={className} onClick={() => ref.current?.click()}>
+      <button
+        type={'button'}
+        className={className}
+        onClick={() => ref.current?.click()}
+      >
         {children}
       </button>
       <input

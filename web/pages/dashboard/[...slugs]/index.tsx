@@ -13,10 +13,10 @@ import clsx from 'clsx'
 import { Button } from 'web/components/button'
 import { useState } from 'react'
 import { ShareDashboardModal } from 'web/components/share-dashboard-modal'
-import { useRouter } from 'next/router'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
+import Custom404 from 'web/pages/404'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -47,20 +47,24 @@ export default function DashboardPage(props: {
   props = usePropz(props, getStaticPropz) ?? {
     dashboard: null,
   }
+  const [isShareOpen, setShareOpen] = useState(false)
+
+  if (props.dashboard === null) {
+    return <Custom404 />
+  }
 
   const shareUrl = `https://${ENV_CONFIG.domain}${dashboardPath(
     props?.dashboard.slug
   )}`
-  const [isShareOpen, setShareOpen] = useState(false)
 
   return (
     <Page>
       <div className="mx-auto w-full max-w-3xl ">
         <Spacer h={1} />
-        <Title className="!mt-0" text={props.dashboard?.name ?? ''} />
+        <Title className="!mt-0" text={props.dashboard.name} />
         <Row>
-          <Col className=" flex-1">
-            <div className={'items-right inline-flex'}>
+          <Col className="flex-1">
+            <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
               <UserLink
                 className="text-neutral"
@@ -91,14 +95,11 @@ export default function DashboardPage(props: {
             </Button>
           </Col>
         </Row>
-        <Spacer h={1} />
 
-        <Spacer h={1} />
+        <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
-          <div className="form-control w-full">
-            <Spacer h={6} />
-            <Content content={props.dashboard?.content ?? ''} />
-            <Spacer h={6} />
+          <div className="form-control w-full py-2">
+            <Content content={props.dashboard.content} />
           </div>
         </div>
       </div>

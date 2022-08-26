@@ -33,6 +33,5 @@ export function getDashboard(dashboardId: string) {
 export async function getDashboardBySlug(slug: string) {
   const q = query(dashboards, where('slug', '==', slug))
   const docs = (await getDocs(q)).docs
-  console.log(docs.length === 0 ? null : docs[0].data())
   return docs.length === 0 ? null : docs[0].data()
 }

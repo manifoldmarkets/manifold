@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin'
 
 import { getUser } from './utils'
-import { Contract } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 import { Dashboard, MAX_DASHBOARD_NAME_LENGTH } from '../../common/dashboard'
@@ -45,7 +44,7 @@ export const createdashboard = newEndpoint({}, async (req, auth) => {
   if (!creator)
     throw new APIError(400, 'No user exists with the authenticated user ID.')
 
-  console.log('creating dashboard for', creator.username, 'named', name)
+  console.log('creating dashboard owned by', creator.username, 'named', name)
 
   const slug = await getSlug(name)
 
@@ -82,5 +81,5 @@ export async function getDashboardFromSlug(slug: string) {
     .where('slug', '==', slug)
     .get()
 
-  return snap.empty ? undefined : (snap.docs[0].data() as Contract)
+  return snap.empty ? undefined : (snap.docs[0].data() as Dashboard)
 }

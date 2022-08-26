@@ -9,4 +9,4 @@ export type Dashboard = {
   slug: string
 }
 
-export const MAX_DASHBOARD_NAME_LENGTH = 75
+export const MAX_DASHBOARD_NAME_LENGTH = 480

@@ -4,25 +4,24 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import Textarea from 'react-expanding-textarea'
 
-import { useTracking } from 'web/hooks/use-tracking'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { createDashboard } from 'web/lib/firebase/api'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
-import { Dashboard } from 'common/dashboard'
+import { Dashboard, MAX_DASHBOARD_NAME_LENGTH } from 'common/dashboard'
 import { dashboardPath } from 'web/lib/firebase/dashboards'
 
 export default function CreateDashboard() {
-  useTracking('view create dashboards page')
   const [name, setName] = useState('')
+  const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
 
   const { editor, upload } = useTextEditor({
-    max: 1000,
-    defaultValue: '',
     disabled: isSubmitting,
   })
+
+  const isValid = editor && name.length > 0 && editor.isEmpty === false
 
   async function saveDashboard(name: string) {
     if (!editor) return
@@ -32,11 +31,13 @@ export default function CreateDashboard() {
     }
 
     const result = await createDashboard(newDashboard).catch((e) => {
-      console.error(e)
+      console.log(e)
+      setError('There was an error creating the dashboard, please try again')
       return e
     })
-    console.log(result.dashboard as Dashboard)
-    await router.push(dashboardPath((result.dashboard as Dashboard).slug))
+    if (result.dashboard) {
+      await router.push(dashboardPath((result.dashboard as Dashboard).slug))
+    }
   }
 
   return (
@@ -44,7 +45,6 @@ export default function CreateDashboard() {
       <div className="mx-auto w-full max-w-2xl">
         <div className="rounded-lg px-6 py-4 sm:py-0">
           <Title className="!mt-0" text="Create a dashboard" />
-
           <form>
             <div className="form-control w-full">
               <label className="label">
@@ -56,7 +56,7 @@ export default function CreateDashboard() {
                 placeholder="e.g. Elon Mania Dashboard"
                 className="input input-bordered resize-none"
                 autoFocus
-                maxLength={100}
+                maxLength={MAX_DASHBOARD_NAME_LENGTH}
                 value={name}
                 onChange={(e) => setName(e.target.value || '')}
               />
@@ -75,7 +75,7 @@ export default function CreateDashboard() {
                   'btn btn-primary normal-case',
                   isSubmitting && 'loading disabled'
                 )}
-                disabled={isSubmitting || upload.isLoading}
+                disabled={isSubmitting || !isValid || upload.isLoading}
                 onClick={async () => {
                   setIsSubmitting(true)
                   await saveDashboard(name)
@@ -84,9 +84,9 @@ export default function CreateDashboard() {
               >
                 {isSubmitting ? 'Creating...' : 'Create a dashboard'}
               </button>
+              {error !== '' && <div className="text-red-700">{error}</div>}
             </div>
           </form>
-          <Spacer h={6} />
         </div>
       </div>
     </Page>

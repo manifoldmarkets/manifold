@@ -31,7 +31,7 @@ export function ShareDashboardModal(props: {
             toast.success('Link copied!', {
               icon: linkIcon,
             })
-            track('copy share link')
+            track('copy share dashboard link')
           }}
         >
           {linkIcon} Copy link
