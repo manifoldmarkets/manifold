@@ -1,15 +1,12 @@
-import dayjs, { Dayjs } from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-import advanced from 'dayjs/plugin/advancedFormat'
 import { Tooltip } from './tooltip'
 
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.extend(advanced)
+const FORMATTER = new Intl.DateTimeFormat('default', {
+  dateStyle: 'medium',
+  timeStyle: 'long',
+})
 
 export function DateTimeTooltip(props: {
-  time: Dayjs
+  time: number
   text?: string
   className?: string
   children?: React.ReactNode
@@ -17,7 +14,7 @@ export function DateTimeTooltip(props: {
 }) {
   const { className, time, text, noTap } = props
 
-  const formattedTime = time.format('MMM DD, YYYY hh:mm a z')
+  const formattedTime = FORMATTER.format(time)
   const toolTip = text ? `${text} ${formattedTime}` : formattedTime
 
   return (

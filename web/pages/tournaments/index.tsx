@@ -188,7 +188,7 @@ function Section(props: {
               </span>
             )}
             {endTime && (
-              <DateTimeTooltip time={endTime} text="Ends">
+              <DateTimeTooltip time={endTime.valueOf()} text="Ends">
                 <span className="flex items-center gap-1">
                   <ClockIcon className="h-4" />
                   {endTime.format('MMM D')}

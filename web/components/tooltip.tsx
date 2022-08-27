@@ -11,7 +11,6 @@ import {
   useRole,
 } from '@floating-ui/react-dom-interactions'
 import { Transition } from '@headlessui/react'
-import clsx from 'clsx'
 import { ReactNode, useRef, useState } from 'react'
 
 // See https://floating-ui.com/docs/react-dom
@@ -58,14 +57,10 @@ export function Tooltip(props: {
   }[placement.split('-')[0]] as string
 
   return text ? (
-    <div className="contents">
-      <div
-        className={clsx('inline-block', className)}
-        ref={reference}
-        {...getReferenceProps()}
-      >
+    <>
+      <span className={className} ref={reference} {...getReferenceProps()}>
         {children}
-      </div>
+      </span>
       {/* conditionally render tooltip and fade in/out */}
       <Transition
         show={open}
@@ -95,7 +90,7 @@ export function Tooltip(props: {
           }}
         />
       </Transition>
-    </div>
+    </>
   ) : (
     <>{children}</>
   )
