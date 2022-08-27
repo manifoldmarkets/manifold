@@ -41,20 +41,16 @@ export const PortfolioValueSection = memo(
       return <></>
     }
 
+    const { balance, investmentValue } = lastPortfolioMetrics
+    const totalValue = balance + investmentValue
+
     return (
-      <div>
+      <>
         <Row className="gap-8">
-          <div className="mb-4 w-full">
-            <Col className="items-center justify-center">
-              <div className="text-sm text-gray-500">Portfolio value</div>
-              <div className="text-lg">
-                {formatMoney(
-                  lastPortfolioMetrics.balance +
-                    lastPortfolioMetrics.investmentValue
-                )}
-              </div>
-            </Col>
-          </div>
+          <Col className="flex-1 justify-center">
+            <div className="text-sm text-gray-500">Portfolio value</div>
+            <div className="text-lg">{formatMoney(totalValue)}</div>
+          </Col>
           <select
             className="select select-bordered self-start"
             value={portfolioPeriod}
@@ -72,7 +68,7 @@ export const PortfolioValueSection = memo(
           portfolioHistory={portfolioHistory}
           includeTime={portfolioPeriod == 'daily'}
         />
-      </div>
+      </>
     )
   }
 )
