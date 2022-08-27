@@ -1,16 +1,16 @@
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract, FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
+import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { useBets } from 'web/hooks/use-bets'
-import { getSpecificContractActivityItems } from './activity-items'
-import { FeedItems } from './feed-items'
+import { getOutcomeProbability } from 'common/calculate'
 import { FeedBet } from './feed-bets'
 import { FeedLiquidity } from './feed-liquidity'
+import { FeedAnswerCommentGroup } from './feed-answer-comment-group'
+import { FeedCommentThread, CommentInput } from './feed-comments'
 import { User } from 'common/user'
-import { useContractWithPreload } from 'web/hooks/use-contract'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { sortBy } from 'lodash'
+import { sortBy, uniq } from 'lodash'
 import { Col } from 'web/components/layout/col'
 
 export function ContractBetsActivity(props: {
@@ -20,12 +20,8 @@ export function ContractBetsActivity(props: {
 }) {
   const { contract, bets, liquidityProvisions } = props
 
-  // Remove first bet (which is the ante):
-  const displayedBets =
-    contract.outcomeType === 'FREE_RESPONSE' ? bets.slice(1) : bets
-
   const items = [
-    ...displayedBets.map((bet) => ({
+    ...bets.map((bet) => ({
       type: 'bet' as const,
       id: bet.id + '-' + bet.isSold,
       bet,
@@ -58,44 +54,100 @@ export function ContractBetsActivity(props: {
   )
 }
 
-export function ContractActivity(props: {
+export function ContractCommentsActivity(props: {
   contract: Contract
   bets: Bet[]
   comments: ContractComment[]
   tips: CommentTipMap
   user: User | null | undefined
-  mode: 'comments' | 'free-response-comment-answer-groups'
-  contractPath?: string
-  className?: string
-  betRowClassName?: string
 }) {
-  const { user, mode, tips, className, betRowClassName } = props
+  const { bets, contract, comments, user, tips } = props
 
-  const contract = useContractWithPreload(props.contract) ?? props.contract
-  const comments = props.comments
-  const updatedBets = useBets(contract.id, {
-    filterChallenges: false,
-    filterRedemptions: true,
-  })
-  const bets = (updatedBets ?? props.bets).filter(
-    (bet) => !bet.isRedemption && bet.amount !== 0
+  const nonFreeResponseComments = comments.filter(
+    (comment) =>
+      comment.answerOutcome === undefined &&
+      (contract.outcomeType === 'FREE_RESPONSE'
+        ? comment.betId === undefined
+        : true)
   )
-  const items = getSpecificContractActivityItems(
-    contract,
-    bets,
-    comments,
-    tips,
-    user,
-    { mode }
+  const nonFreeResponseBets =
+    contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
+
+  const betsByCurrentUser = nonFreeResponseBets.filter(
+    (bet) => bet.userId === user?.id
   )
+  const commentsByCurrentUser = nonFreeResponseComments.filter(
+    (comment) => comment.userId === user?.id
+  )
+
+  const parentComments = comments.filter((comment) => !comment.replyToCommentId)
 
   return (
-    <FeedItems
-      contract={contract}
-      items={items}
-      className={className}
-      betRowClassName={betRowClassName}
-      user={user}
-    />
+    <div>
+      <CommentInput
+        contract={contract}
+        betsByCurrentUser={betsByCurrentUser}
+        commentsByCurrentUser={commentsByCurrentUser}
+      />
+      {parentComments.map((parent, idx) => (
+        <div key={parent.id} className={'relative pb-4'}>
+          {idx !== parentComments.length - 1 ? (
+            <span
+              className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+          ) : null}
+          <FeedCommentThread
+            contract={contract}
+            parentComment={parent}
+            comments={comments}
+            tips={tips}
+            bets={bets}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function FreeResponseContractCommentsActivity(props: {
+  contract: FreeResponseContract
+  bets: Bet[]
+  comments: ContractComment[]
+  tips: CommentTipMap
+  user: User | null | undefined
+}) {
+  const { bets, contract, comments, user, tips } = props
+
+  let outcomes = uniq(bets.map((bet) => bet.outcome))
+  outcomes = sortBy(outcomes, (outcome) =>
+    getOutcomeProbability(contract, outcome)
+  )
+
+  const answers = outcomes
+    .map((outcome) => {
+      return contract.answers.find((answer) => answer.id === outcome) as Answer
+    })
+    .filter((answer) => answer != null)
+
+  return (
+    <div>
+      {answers.map((answer) => (
+        <div key={answer.id} className={'relative pb-4'}>
+          <span
+            className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+            aria-hidden="true"
+          />
+          <FeedAnswerCommentGroup
+            contract={contract}
+            user={user}
+            answer={answer}
+            comments={comments}
+            tips={tips}
+            bets={bets}
+          />
+        </div>
+      ))}
+    </div>
   )
 }

@@ -36,9 +36,8 @@ export function FeedCommentThread(props: {
   tips: CommentTipMap
   parentComment: ContractComment
   bets: Bet[]
-  smallAvatar?: boolean
 }) {
-  const { contract, comments, bets, tips, smallAvatar, parentComment } = props
+  const { contract, comments, bets, tips, parentComment } = props
   const [showReply, setShowReply] = useState(false)
   const [replyToUser, setReplyToUser] = useState<{
     id: string
@@ -58,7 +57,7 @@ export function FeedCommentThread(props: {
   }
 
   return (
-    <Col className={'w-full gap-3 pr-1'}>
+    <Col className={'relative w-full items-start gap-3 pr-1'}>
       <span
         className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
         aria-hidden="true"
@@ -68,7 +67,6 @@ export function FeedCommentThread(props: {
         commentsList={commentsList}
         betsByUserId={betsByUserId}
         tips={tips}
-        smallAvatar={smallAvatar}
         bets={bets}
         scrollAndOpenReplyInput={scrollAndOpenReplyInput}
       />

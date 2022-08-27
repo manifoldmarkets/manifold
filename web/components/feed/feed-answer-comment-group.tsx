@@ -101,7 +101,10 @@ export function FeedAnswerCommentGroup(props: {
   }, [answerElementId, router.asPath])
 
   return (
-    <Col className={'relative flex-1 gap-3'} key={answer.id + 'comment'}>
+    <Col
+      className={'relative flex-1 items-start gap-3'}
+      key={answer.id + 'comment'}
+    >
       <Row
         className={clsx(
           'flex gap-3 space-x-3 pt-4 transition-all duration-1000',
