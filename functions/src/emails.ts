@@ -53,13 +53,20 @@ export const sendMarketResolutionEmail = async (
 
   const subject = `Resolved ${outcome}: ${contract.question}`
 
-  // const creatorPayoutText =
-  //   userId === creator.id
-  //     ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
-  //     : ''
+  const creatorPayoutText =
+    creatorPayout >= 1 && userId === creator.id
+      ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
+      : ''
 
   const emailType = 'market-resolved'
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
+
+  const displayedInvestment =
+    Number.isNaN(investment) || investment < 0
+      ? formatMoney(0)
+      : formatMoney(investment)
+
+  const displayedPayout = formatMoney(payout)
 
   const templateData: market_resolved_template = {
     userId: user.id,
@@ -67,8 +74,8 @@ export const sendMarketResolutionEmail = async (
     creatorName: creator.name,
     question: contract.question,
     outcome,
-    investment: `${Math.floor(investment)}`,
-    payout: `${Math.floor(payout)}`,
+    investment: displayedInvestment,
+    payout: displayedPayout + creatorPayoutText,
     url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
     unsubscribeUrl,
   }
