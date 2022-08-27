@@ -1,6 +1,6 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
-  plugins: ['lodash'],
+  plugins: ['lodash', 'unused-imports'],
   extends: [
     'plugin:@typescript-eslint/recommended',
     'plugin:react-hooks/recommended',
@@ -22,6 +22,7 @@ module.exports = {
     '@next/next/no-typos': 'off',
     'linebreak-style': ['error', 'unix'],
     'lodash/import-scope': [2, 'member'],
+    'unused-imports/no-unused-imports': 'error',
   },
   env: {
     browser: true,
