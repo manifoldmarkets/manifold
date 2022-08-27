@@ -5,6 +5,7 @@ import { getRedeemableAmount, getRedemptionBets } from '../../common/redeem'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
+import { floatingEqual } from 'common/util/math'
 
 export const redeemShares = async (userId: string, contractId: string) => {
   return await firestore.runTransaction(async (trans) => {
@@ -21,7 +22,7 @@ export const redeemShares = async (userId: string, contractId: string) => {
     const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
     const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
     const { shares, loanPayment, netAmount } = getRedeemableAmount(bets)
-    if (netAmount === 0) {
+    if (floatingEqual(netAmount, 0)) {
       return { status: 'success' }
     }
     const [yesBet, noBet] = getRedemptionBets(shares, loanPayment, contract)
