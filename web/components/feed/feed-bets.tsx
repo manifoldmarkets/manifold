@@ -6,13 +6,10 @@ import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import clsx from 'clsx'
-import { UsersIcon } from '@heroicons/react/solid'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import React, { Fragment, useEffect } from 'react'
-import { uniqBy, partition, sumBy, groupBy } from 'lodash'
-import { JoinSpans } from 'web/components/join-spans'
+import React, { useEffect } from 'react'
 import { UserLink } from '../user-page'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { SiteLink } from 'web/components/site-link'
@@ -152,81 +149,5 @@ export function BetStatusText(props: {
       )}
       <RelativeTimestamp time={createdTime} />
     </div>
-  )
-}
-
-function BetGroupSpan(props: {
-  contract: Contract
-  bets: Bet[]
-  outcome?: string
-}) {
-  const { contract, bets, outcome } = props
-
-  const numberTraders = uniqBy(bets, (b) => b.userId).length
-
-  const [buys, sells] = partition(bets, (bet) => bet.amount >= 0)
-  const buyTotal = sumBy(buys, (b) => b.amount)
-  const sellTotal = sumBy(sells, (b) => -b.amount)
-
-  return (
-    <span>
-      {numberTraders} {numberTraders > 1 ? 'traders' : 'trader'}{' '}
-      <JoinSpans>
-        {buyTotal > 0 && <>bought {formatMoney(buyTotal)} </>}
-        {sellTotal > 0 && <>sold {formatMoney(sellTotal)} </>}
-      </JoinSpans>
-      {outcome && (
-        <>
-          {' '}
-          of{' '}
-          <OutcomeLabel
-            outcome={outcome}
-            contract={contract}
-            truncate="short"
-          />
-        </>
-      )}{' '}
-    </span>
-  )
-}
-
-export function FeedBetGroup(props: {
-  contract: Contract
-  bets: Bet[]
-  hideOutcome: boolean
-}) {
-  const { contract, bets, hideOutcome } = props
-
-  const betGroups = groupBy(bets, (bet) => bet.outcome)
-  const outcomes = Object.keys(betGroups)
-
-  // Use the time of the last bet for the entire group
-  const createdTime = bets[bets.length - 1].createdTime
-
-  return (
-    <>
-      <div>
-        <div className="relative px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-            <UsersIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-          </div>
-        </div>
-      </div>
-      <div className={clsx('min-w-0 flex-1', outcomes.length === 1 && 'mt-1')}>
-        <div className="text-sm text-gray-500">
-          {outcomes.map((outcome, index) => (
-            <Fragment key={outcome}>
-              <BetGroupSpan
-                contract={contract}
-                outcome={hideOutcome ? undefined : outcome}
-                bets={betGroups[outcome]}
-              />
-              {index !== outcomes.length - 1 && <br />}
-            </Fragment>
-          ))}
-          <RelativeTimestamp time={createdTime} />
-        </div>
-      </div>
-    </>
   )
 }
