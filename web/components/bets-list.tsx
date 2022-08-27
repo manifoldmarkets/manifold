@@ -405,7 +405,8 @@ export function BetsSummary(props: {
   const isClosed = closeTime && Date.now() > closeTime
 
   const bets = props.bets.filter((b) => !b.isAnte)
-  const { hasShares } = getContractBetMetrics(contract, bets)
+  const { hasShares, invested, profitPercent, payout, profit, totalShares } =
+    getContractBetMetrics(contract, bets)
 
   const excludeSalesAndAntes = bets.filter(
     (b) => !b.isAnte && !b.isSold && !b.sale
@@ -416,8 +417,6 @@ export function BetsSummary(props: {
   const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
-  const { invested, profitPercent, payout, profit, totalShares } =
-    getContractBetMetrics(contract, bets)
 
   const [showSellModal, setShowSellModal] = useState(false)
   const user = useUser()
