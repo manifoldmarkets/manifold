@@ -6,6 +6,21 @@ import { Period, getPortfolioHistory } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PortfolioValueGraph } from './portfolio-value-graph'
+import { DAY_MS } from 'common/util/time'
+
+const periodToCutoff = (now: number, period: Period) => {
+  switch (period) {
+    case 'daily':
+      return now - 1 * DAY_MS
+    case 'weekly':
+      return now - 7 * DAY_MS
+    case 'monthly':
+      return now - 30 * DAY_MS
+    case 'allTime':
+    default:
+      return new Date(0)
+  }
+}
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
@@ -18,21 +33,16 @@ export const PortfolioValueSection = memo(
     const [portfolioHistory, setUsersPortfolioHistory] = useState<
       PortfolioMetrics[]
     >([])
-    useEffect(() => {
-      getPortfolioHistory(userId).then(setUsersPortfolioHistory)
-    }, [userId])
-    const lastPortfolioMetrics = last(portfolioHistory)
 
+    useEffect(() => {
+      const cutoff = periodToCutoff(Date.now(), portfolioPeriod).valueOf()
+      getPortfolioHistory(userId, cutoff).then(setUsersPortfolioHistory)
+    }, [portfolioPeriod, userId])
+
+    const lastPortfolioMetrics = last(portfolioHistory)
     if (portfolioHistory.length === 0 || !lastPortfolioMetrics) {
       return <></>
     }
-
-    // PATCH: If portfolio history started on June 1st, then we label it as "Since June"
-    // instead of "All time"
-    const allTimeLabel =
-      lastPortfolioMetrics.timestamp < Date.parse('2022-06-20T00:00:00.000Z')
-        ? 'Since June'
-        : 'All time'
 
     return (
       <div>
@@ -58,7 +68,7 @@ export const PortfolioValueSection = memo(
                 setPortfolioPeriod(e.target.value as Period)
               }}
             >
-              <option value="allTime">{allTimeLabel}</option>
+              <option value="allTime">All time</option>
               <option value="weekly">Last 7d</option>
               {/* Note: 'daily' seems to be broken? */}
               {/* <option value="daily">Last 24h</option> */}
@@ -67,7 +77,7 @@ export const PortfolioValueSection = memo(
         </Row>
         <PortfolioValueGraph
           portfolioHistory={portfolioHistory}
-          period={portfolioPeriod}
+          includeTime={portfolioPeriod == 'daily'}
         />
       </div>
     )
