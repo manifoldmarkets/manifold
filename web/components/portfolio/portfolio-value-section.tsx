@@ -23,11 +23,8 @@ const periodToCutoff = (now: number, period: Period) => {
 }
 
 export const PortfolioValueSection = memo(
-  function PortfolioValueSection(props: {
-    userId: string
-    disableSelector?: boolean
-  }) {
-    const { disableSelector, userId } = props
+  function PortfolioValueSection(props: { userId: string }) {
+    const { userId } = props
 
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const [portfolioHistory, setUsersPortfolioHistory] = useState<
@@ -48,9 +45,7 @@ export const PortfolioValueSection = memo(
       <div>
         <Row className="gap-8">
           <div className="mb-4 w-full">
-            <Col
-              className={disableSelector ? 'items-center justify-center' : ''}
-            >
+            <Col className="items-center justify-center">
               <div className="text-sm text-gray-500">Portfolio value</div>
               <div className="text-lg">
                 {formatMoney(
@@ -60,20 +55,18 @@ export const PortfolioValueSection = memo(
               </div>
             </Col>
           </div>
-          {!disableSelector && (
-            <select
-              className="select select-bordered self-start"
-              value={portfolioPeriod}
-              onChange={(e) => {
-                setPortfolioPeriod(e.target.value as Period)
-              }}
-            >
-              <option value="allTime">All time</option>
-              <option value="weekly">Last 7d</option>
-              {/* Note: 'daily' seems to be broken? */}
-              {/* <option value="daily">Last 24h</option> */}
-            </select>
-          )}
+          <select
+            className="select select-bordered self-start"
+            value={portfolioPeriod}
+            onChange={(e) => {
+              setPortfolioPeriod(e.target.value as Period)
+            }}
+          >
+            <option value="allTime">All time</option>
+            <option value="weekly">Last 7d</option>
+            {/* Note: 'daily' seems to be broken? */}
+            {/* <option value="daily">Last 24h</option> */}
+          </select>
         </Row>
         <PortfolioValueGraph
           portfolioHistory={portfolioHistory}
