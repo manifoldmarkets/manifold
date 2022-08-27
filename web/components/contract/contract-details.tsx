@@ -233,7 +233,7 @@ export function ContractDetails(props: {
               <ClockIcon className="h-5 w-5" />
               <DateTimeTooltip
                 text="Market resolved:"
-                time={dayjs(contract.resolutionTime)}
+                time={contract.resolutionTime}
               >
                 {resolvedDate}
               </DateTimeTooltip>
@@ -322,7 +322,7 @@ function EditableCloseDate(props: {
       ) : (
         <DateTimeTooltip
           text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-          time={dayJsCloseTime}
+          time={closeTime}
         >
           {isSameYear
             ? dayJsCloseTime.format('MMM D')
