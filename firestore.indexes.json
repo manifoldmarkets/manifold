@@ -41,6 +41,10 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
+          "fieldPath": "commentType",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "userId",
           "order": "ASCENDING"
         },
