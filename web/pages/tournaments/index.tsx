@@ -8,7 +8,6 @@ import clsx from 'clsx'
 import {
   BinaryContract,
   Contract,
-  PseudoNumeric,
   PseudoNumericContract,
 } from 'common/contract'
 import { Group } from 'common/group'
