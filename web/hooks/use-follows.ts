@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { listenForFollowers, listenForFollows } from 'web/lib/firebase/users'
-import { listenForContractFollows } from 'web/lib/firebase/contracts'
+import {
+  listenForContractFollows,
+  getActiveContracts,
+} from 'web/lib/firebase/contracts'
 
 export const useFollows = (userId: string | null | undefined) => {
   const [followIds, setFollowIds] = useState<string[] | undefined>()
