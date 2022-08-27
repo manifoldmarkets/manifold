@@ -109,11 +109,11 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         }}
         colors={[
           '#fca5a5', // red-300
-          '#93c5fd', // blue-300
-          '#86efac', // green-300
-          '#f9a8d4', // pink-300
           '#a5b4fc', // indigo-300
-          '#fcd34d', // amber-300
+          '#86efac', // green-300
+          '#fef08a', // yellow-200
+          '#fdba74', // orange-300
+          '#c084fc', // purple-400
         ]}
         pointSize={0}
         curve="stepAfter"
