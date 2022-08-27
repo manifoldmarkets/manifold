@@ -5,7 +5,7 @@ import { getRedeemableAmount, getRedemptionBets } from '../../common/redeem'
 
 import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
-import { floatingEqual } from 'common/util/math'
+import { floatingEqual } from '../../common/util/math'
 
 export const redeemShares = async (userId: string, contractId: string) => {
   return await firestore.runTransaction(async (trans) => {
