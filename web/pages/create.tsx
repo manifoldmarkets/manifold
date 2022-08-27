@@ -33,6 +33,7 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
+import { MINUTE_MS } from 'common/util/time'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
@@ -427,7 +428,7 @@ export function NewContract(props: {
             className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseDate(e.target.value)}
-            min={Date.now()}
+            min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
             disabled={isSubmitting}
             value={closeDate}
           />
