@@ -210,7 +210,9 @@ export function NewContract(props: {
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     disabled: isSubmitting,
-    defaultValue: JSON.parse(params?.description ?? '{}'),
+    defaultValue: params?.description
+      ? JSON.parse(params.description)
+      : undefined,
   })
 
   const isEditorFilled = editor != null && !editor.isEmpty
