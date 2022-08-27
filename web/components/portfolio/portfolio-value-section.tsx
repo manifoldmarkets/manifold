@@ -6,70 +6,68 @@ import { Period, getPortfolioHistory } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PortfolioValueGraph } from './portfolio-value-graph'
+import { DAY_MS } from 'common/util/time'
+
+const periodToCutoff = (now: number, period: Period) => {
+  switch (period) {
+    case 'daily':
+      return now - 1 * DAY_MS
+    case 'weekly':
+      return now - 7 * DAY_MS
+    case 'monthly':
+      return now - 30 * DAY_MS
+    case 'allTime':
+    default:
+      return new Date(0)
+  }
+}
 
 export const PortfolioValueSection = memo(
-  function PortfolioValueSection(props: {
-    userId: string
-    disableSelector?: boolean
-  }) {
-    const { disableSelector, userId } = props
+  function PortfolioValueSection(props: { userId: string }) {
+    const { userId } = props
 
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const [portfolioHistory, setUsersPortfolioHistory] = useState<
       PortfolioMetrics[]
     >([])
-    useEffect(() => {
-      getPortfolioHistory(userId).then(setUsersPortfolioHistory)
-    }, [userId])
-    const lastPortfolioMetrics = last(portfolioHistory)
 
+    useEffect(() => {
+      const cutoff = periodToCutoff(Date.now(), portfolioPeriod).valueOf()
+      getPortfolioHistory(userId, cutoff).then(setUsersPortfolioHistory)
+    }, [portfolioPeriod, userId])
+
+    const lastPortfolioMetrics = last(portfolioHistory)
     if (portfolioHistory.length === 0 || !lastPortfolioMetrics) {
       return <></>
     }
 
-    // PATCH: If portfolio history started on June 1st, then we label it as "Since June"
-    // instead of "All time"
-    const allTimeLabel =
-      lastPortfolioMetrics.timestamp < Date.parse('2022-06-20T00:00:00.000Z')
-        ? 'Since June'
-        : 'All time'
+    const { balance, investmentValue } = lastPortfolioMetrics
+    const totalValue = balance + investmentValue
 
     return (
-      <div>
+      <>
         <Row className="gap-8">
-          <div className="mb-4 w-full">
-            <Col
-              className={disableSelector ? 'items-center justify-center' : ''}
-            >
-              <div className="text-sm text-gray-500">Portfolio value</div>
-              <div className="text-lg">
-                {formatMoney(
-                  lastPortfolioMetrics.balance +
-                    lastPortfolioMetrics.investmentValue
-                )}
-              </div>
-            </Col>
-          </div>
-          {!disableSelector && (
-            <select
-              className="select select-bordered self-start"
-              value={portfolioPeriod}
-              onChange={(e) => {
-                setPortfolioPeriod(e.target.value as Period)
-              }}
-            >
-              <option value="allTime">{allTimeLabel}</option>
-              <option value="weekly">Last 7d</option>
-              {/* Note: 'daily' seems to be broken? */}
-              {/* <option value="daily">Last 24h</option> */}
-            </select>
-          )}
+          <Col className="flex-1 justify-center">
+            <div className="text-sm text-gray-500">Portfolio value</div>
+            <div className="text-lg">{formatMoney(totalValue)}</div>
+          </Col>
+          <select
+            className="select select-bordered self-start"
+            value={portfolioPeriod}
+            onChange={(e) => {
+              setPortfolioPeriod(e.target.value as Period)
+            }}
+          >
+            <option value="allTime">All time</option>
+            <option value="weekly">Last 7d</option>
+            <option value="daily">Last 24h</option>
+          </select>
         </Row>
         <PortfolioValueGraph
           portfolioHistory={portfolioHistory}
-          period={portfolioPeriod}
+          includeTime={portfolioPeriod == 'daily'}
         />
-      </div>
+      </>
     )
   }
 )

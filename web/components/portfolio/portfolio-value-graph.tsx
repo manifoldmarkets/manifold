@@ -1,7 +1,6 @@
 import { ResponsiveLine } from '@nivo/line'
 import { PortfolioMetrics } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { DAY_MS } from 'common/util/time'
 import { last } from 'lodash'
 import { memo } from 'react'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -10,28 +9,12 @@ import { formatTime } from 'web/lib/util/time'
 export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
   portfolioHistory: PortfolioMetrics[]
   height?: number
-  period?: string
+  includeTime?: boolean
 }) {
-  const { portfolioHistory, height, period } = props
-
+  const { portfolioHistory, height, includeTime } = props
   const { width } = useWindowSize()
 
-  const portfolioHistoryFiltered = portfolioHistory.filter((p) => {
-    switch (period) {
-      case 'daily':
-        return p.timestamp > Date.now() - 1 * DAY_MS
-      case 'weekly':
-        return p.timestamp > Date.now() - 7 * DAY_MS
-      case 'monthly':
-        return p.timestamp > Date.now() - 30 * DAY_MS
-      case 'allTime':
-        return true
-      default:
-        return true
-    }
-  })
-
-  const points = portfolioHistoryFiltered.map((p) => {
+  const points = portfolioHistory.map((p) => {
     return {
       x: new Date(p.timestamp),
       y: p.balance + p.investmentValue,
@@ -41,7 +24,6 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
   const numXTickValues = !width || width < 800 ? 2 : 5
   const numYTickValues = 4
   const endDate = last(points)?.x
-  const includeTime = period === 'daily'
   return (
     <div
       className="w-full overflow-hidden"
@@ -66,7 +48,7 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         colors={{ datum: 'color' }}
         axisBottom={{
           tickValues: numXTickValues,
-          format: (time) => formatTime(+time, includeTime),
+          format: (time) => formatTime(+time, !!includeTime),
         }}
         pointBorderColor="#fff"
         pointSize={points.length > 100 ? 0 : 6}
