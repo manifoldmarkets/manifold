@@ -11,7 +11,7 @@ import { Linkify } from 'web/components/linkify'
 import clsx from 'clsx'
 import {
   CommentInput,
-  CommentRepliesList,
+  FeedComment,
   getMostRecentCommentableBet,
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
@@ -27,7 +27,6 @@ export function FeedAnswerCommentGroup(props: {
   answer: Answer
   answerComments: ContractComment[]
   tips: CommentTipMap
-  bets: Bet[]
   betsByUserId: Dictionary<Bet[]>
   commentsByUserId: Dictionary<ContractComment[]>
 }) {
@@ -36,7 +35,6 @@ export function FeedAnswerCommentGroup(props: {
     contract,
     answerComments,
     tips,
-    bets,
     betsByUserId,
     commentsByUserId,
     user,
@@ -160,17 +158,18 @@ export function FeedAnswerCommentGroup(props: {
           )}
         </Col>
       </Row>
-      <CommentRepliesList
-        contract={contract}
-        comments={answerComments}
-        betsByUserId={betsByUserId}
-        smallAvatar={true}
-        bets={bets}
-        tips={tips}
-        scrollAndOpenReplyInput={scrollAndOpenReplyInput}
-        treatFirstIndexEqually={true}
-      />
-
+      {answerComments.map((comment) => (
+        <FeedComment
+          key={comment.id}
+          indent={true}
+          contract={contract}
+          comment={comment}
+          tips={tips[comment.id]}
+          betsBySameUser={betsByUserId[comment.userId] ?? []}
+          onReplyClick={scrollAndOpenReplyInput}
+          smallAvatar={true}
+        />
+      ))}
       {showReply && (
         <div className={'ml-6'}>
           <span

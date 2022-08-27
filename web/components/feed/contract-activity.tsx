@@ -139,7 +139,6 @@ export function FreeResponseContractCommentsActivity(props: {
             answer={answer}
             answerComments={commentsByOutcome[answer.number.toString()]}
             tips={tips}
-            bets={bets}
             betsByUserId={betsByUserId}
             commentsByUserId={commentsByUserId}
           />

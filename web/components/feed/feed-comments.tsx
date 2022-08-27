@@ -64,14 +64,26 @@ export function FeedCommentThread(props: {
         className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
         aria-hidden="true"
       />
-      <CommentRepliesList
-        contract={contract}
-        comments={[parentComment].concat(threadComments)}
-        betsByUserId={betsByUserId}
-        tips={tips}
-        bets={bets}
-        scrollAndOpenReplyInput={scrollAndOpenReplyInput}
-      />
+      {[parentComment].concat(threadComments).map((comment, commentIdx) => (
+        <FeedComment
+          key={comment.id}
+          indent={commentIdx != 0}
+          contract={contract}
+          comment={comment}
+          tips={tips[comment.id]}
+          betsBySameUser={betsByUserId[comment.userId] ?? []}
+          onReplyClick={scrollAndOpenReplyInput}
+          probAtCreatedTime={
+            contract.outcomeType === 'BINARY'
+              ? minBy(bets, (bet) => {
+                  return bet.createdTime < comment.createdTime
+                    ? comment.createdTime - bet.createdTime
+                    : comment.createdTime
+                })?.probAfter
+              : undefined
+          }
+        />
+      ))}
       {showReply && (
         <Col className={'-pb-2 ml-6'}>
           <span
@@ -90,53 +102,6 @@ export function FeedCommentThread(props: {
         </Col>
       )}
     </Col>
-  )
-}
-
-export function CommentRepliesList(props: {
-  contract: Contract
-  comments: ContractComment[]
-  betsByUserId: Dictionary<Bet[]>
-  tips: CommentTipMap
-  scrollAndOpenReplyInput: (comment: ContractComment) => void
-  bets: Bet[]
-  treatFirstIndexEqually?: boolean
-  smallAvatar?: boolean
-}) {
-  const {
-    contract,
-    comments,
-    betsByUserId,
-    tips,
-    smallAvatar,
-    bets,
-    scrollAndOpenReplyInput,
-    treatFirstIndexEqually,
-  } = props
-  return (
-    <>
-      {comments.map((comment, commentIdx) => (
-        <FeedComment
-          key={comment.id}
-          indent={treatFirstIndexEqually || commentIdx != 0}
-          contract={contract}
-          comment={comment}
-          tips={tips[comment.id]}
-          betsBySameUser={betsByUserId[comment.userId] ?? []}
-          onReplyClick={scrollAndOpenReplyInput}
-          probAtCreatedTime={
-            contract.outcomeType === 'BINARY'
-              ? minBy(bets, (bet) => {
-                  return bet.createdTime < comment.createdTime
-                    ? comment.createdTime - bet.createdTime
-                    : comment.createdTime
-                })?.probAfter
-              : undefined
-          }
-          smallAvatar={smallAvatar}
-        />
-      ))}
-    </>
   )
 }
 
@@ -189,6 +154,7 @@ export function FeedComment(props: {
 
   return (
     <Row
+      id={comment.id}
       className={clsx(
         'relative flex space-x-1.5 sm:space-x-3',
         indent ? 'ml-6' : '',
