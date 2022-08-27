@@ -193,21 +193,19 @@ export function FeedComment(props: {
                 />
               </>
             )}
-          <>
-            {bought} {money}
-            {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
-              <>
-                {' '}
-                of{' '}
-                <OutcomeLabel
-                  outcome={betOutcome ? betOutcome : ''}
-                  value={(matchedBet as any).value}
-                  contract={contract}
-                  truncate="short"
-                />
-              </>
-            )}
-          </>
+          {bought} {money}
+          {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
+            <>
+              {' '}
+              of{' '}
+              <OutcomeLabel
+                outcome={betOutcome ? betOutcome : ''}
+                value={(matchedBet as any).value}
+                contract={contract}
+                truncate="short"
+              />
+            </>
+          )}
           <CopyLinkDateTimeComponent
             prefix={contract.creatorUsername}
             slug={contract.slug}
@@ -215,9 +213,11 @@ export function FeedComment(props: {
             elementId={comment.id}
           />
         </div>
-        <div className="mt-2 text-[15px] text-gray-700">
-          <Content content={content || text} smallImage />
-        </div>
+        <Content
+          className="mt-2 text-[15px] text-gray-700"
+          content={content || text}
+          smallImage
+        />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
