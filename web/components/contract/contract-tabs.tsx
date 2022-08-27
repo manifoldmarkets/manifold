@@ -54,6 +54,13 @@ export function ContractTabs(props: {
     />
   )
 
+  const generalBets = outcomeType === 'FREE_RESPONSE' ? [] : visibleBets
+  const generalComments = comments.filter(
+    (comment) =>
+      comment.answerOutcome === undefined &&
+      (outcomeType === 'FREE_RESPONSE' ? comment.betId === undefined : true)
+  )
+
   const commentActivity =
     outcomeType === 'FREE_RESPONSE' ? (
       <>
@@ -69,8 +76,8 @@ export function ContractTabs(props: {
           <div className={'mb-4 w-full border-b border-gray-200'} />
           <ContractCommentsActivity
             contract={contract}
-            bets={visibleBets}
-            comments={comments}
+            bets={generalBets}
+            comments={generalComments}
             tips={tips}
             user={user}
           />

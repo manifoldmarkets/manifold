@@ -1,5 +1,6 @@
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
+import { FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -15,20 +16,31 @@ import {
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
-import { groupBy } from 'lodash'
+import { Dictionary } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 
 export function FeedAnswerCommentGroup(props: {
-  contract: any
+  contract: FreeResponseContract
   user: User | undefined | null
   answer: Answer
-  comments: ContractComment[]
+  answerComments: ContractComment[]
   tips: CommentTipMap
   bets: Bet[]
+  betsByUserId: Dictionary<Bet[]>
+  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const { answer, contract, comments, tips, bets, user } = props
+  const {
+    answer,
+    contract,
+    answerComments,
+    tips,
+    bets,
+    betsByUserId,
+    commentsByUserId,
+    user,
+  } = props
   const { username, avatarUrl, name, text } = answer
 
   const [replyToUser, setReplyToUser] =
@@ -38,11 +50,6 @@ export function FeedAnswerCommentGroup(props: {
   const router = useRouter()
 
   const answerElementId = `answer-${answer.id}`
-  const betsByUserId = groupBy(bets, (bet) => bet.userId)
-  const commentsByUserId = groupBy(comments, (comment) => comment.userId)
-  const commentsList = comments.filter(
-    (comment) => comment.answerOutcome === answer.number.toString()
-  )
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
@@ -155,7 +162,7 @@ export function FeedAnswerCommentGroup(props: {
       </Row>
       <CommentRepliesList
         contract={contract}
-        commentsList={commentsList}
+        comments={answerComments}
         betsByUserId={betsByUserId}
         smallAvatar={true}
         bets={bets}

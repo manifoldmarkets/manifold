@@ -10,7 +10,7 @@ import { FeedCommentThread, CommentInput } from './feed-comments'
 import { User } from 'common/user'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { sortBy, uniq } from 'lodash'
+import { groupBy, sortBy, uniq } from 'lodash'
 import { Col } from 'web/components/layout/col'
 
 export function ContractBetsActivity(props: {
@@ -62,47 +62,35 @@ export function ContractCommentsActivity(props: {
   user: User | null | undefined
 }) {
   const { bets, contract, comments, user, tips } = props
-
-  const nonFreeResponseComments = comments.filter(
-    (comment) =>
-      comment.answerOutcome === undefined &&
-      (contract.outcomeType === 'FREE_RESPONSE'
-        ? comment.betId === undefined
-        : true)
-  )
-  const nonFreeResponseBets =
-    contract.outcomeType === 'FREE_RESPONSE' ? [] : bets
-
-  const betsByCurrentUser = nonFreeResponseBets.filter(
-    (bet) => bet.userId === user?.id
-  )
-  const commentsByCurrentUser = nonFreeResponseComments.filter(
-    (comment) => comment.userId === user?.id
-  )
-
-  const parentComments = comments.filter((comment) => !comment.replyToCommentId)
+  const betsByUserId = groupBy(bets, (bet) => bet.userId)
+  const commentsByUserId = groupBy(comments, (c) => c.userId)
+  const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
+  const topLevelComments = commentsByParentId['_'] ?? []
 
   return (
     <div>
       <CommentInput
         contract={contract}
-        betsByCurrentUser={betsByCurrentUser}
-        commentsByCurrentUser={commentsByCurrentUser}
+        betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
+        commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
       />
-      {parentComments.map((parent, idx) => (
+      {topLevelComments.map((parent, idx) => (
         <div key={parent.id} className={'relative pb-4'}>
-          {idx !== parentComments.length - 1 ? (
+          {idx !== topLevelComments.length - 1 ? (
             <span
               className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
               aria-hidden="true"
             />
           ) : null}
           <FeedCommentThread
+            user={user}
             contract={contract}
             parentComment={parent}
-            comments={comments}
+            threadComments={commentsByParentId[parent.id] ?? []}
             tips={tips}
             bets={bets}
+            betsByUserId={betsByUserId}
+            commentsByUserId={commentsByUserId}
           />
         </div>
       ))}
@@ -130,6 +118,10 @@ export function FreeResponseContractCommentsActivity(props: {
     })
     .filter((answer) => answer != null)
 
+  const betsByUserId = groupBy(bets, (bet) => bet.userId)
+  const commentsByUserId = groupBy(comments, (c) => c.userId)
+  const commentsByOutcome = groupBy(comments, (c) => c.answerOutcome ?? '_')
+
   return (
     <div>
       {answers.map((answer) => (
@@ -142,9 +134,11 @@ export function FreeResponseContractCommentsActivity(props: {
             contract={contract}
             user={user}
             answer={answer}
-            comments={comments}
+            answerComments={commentsByOutcome[answer.number.toString()]}
             tips={tips}
             bets={bets}
+            betsByUserId={betsByUserId}
+            commentsByUserId={commentsByUserId}
           />
         </div>
       ))}

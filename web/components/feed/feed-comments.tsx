@@ -3,7 +3,7 @@ import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
-import { minBy, maxBy, groupBy, partition, sumBy, Dictionary } from 'lodash'
+import { minBy, maxBy, partition, sumBy, Dictionary } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -31,28 +31,30 @@ import { Content, TextEditor, useTextEditor } from '../editor'
 import { Editor } from '@tiptap/react'
 
 export function FeedCommentThread(props: {
+  user: User | null | undefined
   contract: Contract
-  comments: ContractComment[]
+  threadComments: ContractComment[]
   tips: CommentTipMap
   parentComment: ContractComment
   bets: Bet[]
+  betsByUserId: Dictionary<Bet[]>
+  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const { contract, comments, bets, tips, parentComment } = props
+  const {
+    user,
+    contract,
+    threadComments,
+    commentsByUserId,
+    bets,
+    betsByUserId,
+    tips,
+    parentComment,
+  } = props
   const [showReply, setShowReply] = useState(false)
-  const [replyToUser, setReplyToUser] = useState<{
-    id: string
-    username: string
-  }>()
-  const betsByUserId = groupBy(bets, (bet) => bet.userId)
-  const user = useUser()
-  const commentsList = comments.filter(
-    (comment) =>
-      parentComment.id && comment.replyToCommentId === parentComment.id
-  )
-  commentsList.unshift(parentComment)
+  const [replyTo, setReplyTo] = useState<{ id: string; username: string }>()
 
   function scrollAndOpenReplyInput(comment: ContractComment) {
-    setReplyToUser({ id: comment.userId, username: comment.userUsername })
+    setReplyTo({ id: comment.userId, username: comment.userUsername })
     setShowReply(true)
   }
 
@@ -64,7 +66,7 @@ export function FeedCommentThread(props: {
       />
       <CommentRepliesList
         contract={contract}
-        commentsList={commentsList}
+        comments={[parentComment].concat(threadComments)}
         betsByUserId={betsByUserId}
         tips={tips}
         bets={bets}
@@ -79,12 +81,10 @@ export function FeedCommentThread(props: {
           <CommentInput
             contract={contract}
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
-            commentsByCurrentUser={comments.filter(
-              (c) => c.userId === user?.id
-            )}
+            commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
             parentCommentId={parentComment.id}
-            replyToUser={replyToUser}
-            parentAnswerOutcome={comments[0].answerOutcome}
+            replyToUser={replyTo}
+            parentAnswerOutcome={parentComment.answerOutcome}
             onSubmitComment={() => setShowReply(false)}
           />
         </Col>
@@ -95,7 +95,7 @@ export function FeedCommentThread(props: {
 
 export function CommentRepliesList(props: {
   contract: Contract
-  commentsList: ContractComment[]
+  comments: ContractComment[]
   betsByUserId: Dictionary<Bet[]>
   tips: CommentTipMap
   scrollAndOpenReplyInput: (comment: ContractComment) => void
@@ -105,7 +105,7 @@ export function CommentRepliesList(props: {
 }) {
   const {
     contract,
-    commentsList,
+    comments,
     betsByUserId,
     tips,
     smallAvatar,
@@ -115,7 +115,7 @@ export function CommentRepliesList(props: {
   } = props
   return (
     <>
-      {commentsList.map((comment, commentIdx) => (
+      {comments.map((comment, commentIdx) => (
         <div
           key={comment.id}
           id={comment.id}
