@@ -65,7 +65,10 @@ export function ContractCommentsActivity(props: {
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
-  const topLevelComments = commentsByParentId['_'] ?? []
+  const topLevelComments = sortBy(
+    commentsByParentId['_'] ?? [],
+    (c) => -c.createdTime
+  )
 
   return (
     <div>
