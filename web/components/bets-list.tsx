@@ -520,7 +520,7 @@ export function BetsSummary(props: {
         ) : (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
-              Current value
+              Expected value
             </div>
             <div className="whitespace-nowrap">{formatMoney(payout)}</div>
           </Col>
