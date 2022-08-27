@@ -60,8 +60,7 @@ export const PortfolioValueSection = memo(
           >
             <option value="allTime">All time</option>
             <option value="weekly">Last 7d</option>
-            {/* Note: 'daily' seems to be broken? */}
-            {/* <option value="daily">Last 24h</option> */}
+            <option value="daily">Last 24h</option>
           </select>
         </Row>
         <PortfolioValueGraph
