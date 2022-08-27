@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
@@ -165,6 +165,10 @@ export function ContractPageContent(
   })
 
   const bets = useBets(contract.id) ?? props.bets
+  const nonChallengeBets = useMemo(
+    () => bets.filter((b) => !b.challengeSlug),
+    [bets]
+  )
 
   // Sort for now to see if bug is fixed.
   comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
@@ -220,10 +224,7 @@ export function ContractPageContent(
           </button>
         )}
 
-        <ContractOverview
-          contract={contract}
-          bets={bets.filter((b) => !b.challengeSlug)}
-        />
+        <ContractOverview contract={contract} bets={nonChallengeBets} />
 
         {outcomeType === 'NUMERIC' && (
           <AlertBox
