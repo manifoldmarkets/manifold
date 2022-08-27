@@ -116,39 +116,25 @@ export function CommentRepliesList(props: {
   return (
     <>
       {comments.map((comment, commentIdx) => (
-        <div
+        <FeedComment
           key={comment.id}
-          id={comment.id}
-          className={clsx(
-            'relative',
-            !treatFirstIndexEqually && commentIdx === 0 ? '' : 'ml-6'
-          )}
-        >
-          {/*draw a gray line from the comment to the left:*/}
-          {(treatFirstIndexEqually || commentIdx != 0) && (
-            <span
-              className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
-              aria-hidden="true"
-            />
-          )}
-          <FeedComment
-            contract={contract}
-            comment={comment}
-            tips={tips[comment.id]}
-            betsBySameUser={betsByUserId[comment.userId] ?? []}
-            onReplyClick={scrollAndOpenReplyInput}
-            probAtCreatedTime={
-              contract.outcomeType === 'BINARY'
-                ? minBy(bets, (bet) => {
-                    return bet.createdTime < comment.createdTime
-                      ? comment.createdTime - bet.createdTime
-                      : comment.createdTime
-                  })?.probAfter
-                : undefined
-            }
-            smallAvatar={smallAvatar}
-          />
-        </div>
+          indent={treatFirstIndexEqually || commentIdx != 0}
+          contract={contract}
+          comment={comment}
+          tips={tips[comment.id]}
+          betsBySameUser={betsByUserId[comment.userId] ?? []}
+          onReplyClick={scrollAndOpenReplyInput}
+          probAtCreatedTime={
+            contract.outcomeType === 'BINARY'
+              ? minBy(bets, (bet) => {
+                  return bet.createdTime < comment.createdTime
+                    ? comment.createdTime - bet.createdTime
+                    : comment.createdTime
+                })?.probAfter
+              : undefined
+          }
+          smallAvatar={smallAvatar}
+        />
       ))}
     </>
   )
@@ -159,6 +145,7 @@ export function FeedComment(props: {
   comment: ContractComment
   tips: CommentTips
   betsBySameUser: Bet[]
+  indent?: boolean
   probAtCreatedTime?: number
   smallAvatar?: boolean
   onReplyClick?: (comment: ContractComment) => void
@@ -168,6 +155,7 @@ export function FeedComment(props: {
     comment,
     tips,
     betsBySameUser,
+    indent,
     probAtCreatedTime,
     onReplyClick,
   } = props
@@ -202,10 +190,18 @@ export function FeedComment(props: {
   return (
     <Row
       className={clsx(
-        'flex space-x-1.5 sm:space-x-3',
+        'relative flex space-x-1.5 sm:space-x-3',
+        indent ? 'ml-6' : '',
         highlighted ? `-m-1 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
     >
+      {/*draw a gray line from the comment to the left:*/}
+      {indent ? (
+        <span
+          className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+          aria-hidden="true"
+        />
+      ) : null}
       <Avatar
         className={'ml-1'}
         size={'sm'}
