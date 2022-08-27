@@ -4,13 +4,13 @@ export default function TrophyIcon(props: React.SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       stroke="currentcolor"
-      stroke-width="2"
+      strokeWidth="2"
       {...props}
     >
       <g>
         <path
           d="m6,5c0,4 1.4,7.8 3.5,8.5l0,2c-1.2,0.7 -1.2,1 -1.6,4l8,0c-0.4,-3 -0.4,-3.3 -1.6,-4l0,-2c2.1,-0.7 3.5,-4.5 3.5,-8.5z"
-          stroke-linejoin="round"
+          strokeLinejoin="round"
           fill="none"
         />
         <path
