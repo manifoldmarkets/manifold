@@ -77,7 +77,7 @@ export function ContractCard(props: {
       <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
-          className={'z-10 hidden md:inline-flex'}
+          className={'hidden md:inline-flex'}
         />
         <p
           className={clsx(

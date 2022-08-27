@@ -552,7 +552,9 @@ function AddContractButton(props: { group: Group; user: User }) {
         className={'max-w-4xl sm:p-0'}
         size={'xl'}
       >
-        <Col className={'min-h-screen w-full gap-4 rounded-md bg-white'}>
+        <Col
+          className={'min-h-screen w-full max-w-4xl gap-4 rounded-md bg-white'}
+        >
           <Col className="p-8 pb-0">
             <div className={'text-xl text-indigo-700'}>
               Add a market to your group
