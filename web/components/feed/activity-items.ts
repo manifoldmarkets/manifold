@@ -7,18 +7,15 @@ import { ContractComment } from 'common/comment'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { User } from 'common/user'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
-import { LiquidityProvision } from 'common/liquidity-provision'
 
 export type ActivityItem =
   | DescriptionItem
   | QuestionItem
-  | BetItem
   | AnswerGroupItem
   | CloseItem
   | ResolveItem
   | CommentInputItem
   | CommentThreadItem
-  | LiquidityItem
 
 type BaseActivityItem = {
   id: string
@@ -38,14 +35,6 @@ export type DescriptionItem = BaseActivityItem & {
 export type QuestionItem = BaseActivityItem & {
   type: 'question'
   contractPath?: string
-}
-
-export type BetItem = BaseActivityItem & {
-  type: 'bet'
-  bet: Bet
-  hideOutcome: boolean
-  smallAvatar: boolean
-  hideComment?: boolean
 }
 
 export type CommentThreadItem = BaseActivityItem & {
@@ -71,14 +60,6 @@ export type CloseItem = BaseActivityItem & {
 
 export type ResolveItem = BaseActivityItem & {
   type: 'resolve'
-}
-
-export type LiquidityItem = BaseActivityItem & {
-  type: 'liquidity'
-  liquidity: LiquidityProvision
-  hideOutcome: boolean
-  smallAvatar: boolean
-  hideComment?: boolean
 }
 
 function getAnswerAndCommentInputGroups(
@@ -148,50 +129,16 @@ export function getSpecificContractActivityItems(
   contract: Contract,
   bets: Bet[],
   comments: ContractComment[],
-  liquidityProvisions: LiquidityProvision[],
   tips: CommentTipMap,
   user: User | null | undefined,
   options: {
-    mode: 'comments' | 'bets' | 'free-response-comment-answer-groups'
+    mode: 'comments' | 'free-response-comment-answer-groups'
   }
 ) {
   const { mode } = options
   let items = [] as ActivityItem[]
 
   switch (mode) {
-    case 'bets':
-      // Remove first bet (which is the ante):
-      if (contract.outcomeType === 'FREE_RESPONSE') bets = bets.slice(1)
-      items.push(
-        ...bets.map((bet) => ({
-          type: 'bet' as const,
-          id: bet.id + '-' + bet.isSold,
-          bet,
-          contract,
-          hideOutcome: false,
-          smallAvatar: false,
-          hideComment: true,
-        }))
-      )
-      items.push(
-        ...liquidityProvisions.map((liquidity) => ({
-          type: 'liquidity' as const,
-          id: liquidity.id,
-          contract,
-          liquidity,
-          hideOutcome: false,
-          smallAvatar: false,
-        }))
-      )
-      items = sortBy(items, (item) =>
-        item.type === 'bet'
-          ? item.bet.createdTime
-          : item.type === 'liquidity'
-          ? item.liquidity.createdTime
-          : undefined
-      )
-      break
-
     case 'comments': {
       const nonFreeResponseComments = comments.filter((comment) =>
         commentIsGeneralComment(comment, contract)

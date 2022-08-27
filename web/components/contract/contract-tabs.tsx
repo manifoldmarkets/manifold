@@ -2,7 +2,10 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
-import { ContractActivity } from '../feed/contract-activity'
+import {
+  ContractActivity,
+  ContractBetsActivity,
+} from '../feed/contract-activity'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
@@ -34,15 +37,10 @@ export function ContractTabs(props: {
   const comments = updatedComments ?? props.comments
 
   const betActivity = (
-    <ContractActivity
+    <ContractBetsActivity
       contract={contract}
       bets={bets}
       liquidityProvisions={liquidityProvisions}
-      comments={comments}
-      tips={tips}
-      user={user}
-      mode="bets"
-      betRowClassName="!mt-0 xl:hidden"
     />
   )
 
@@ -51,7 +49,6 @@ export function ContractTabs(props: {
       <ContractActivity
         contract={contract}
         bets={bets}
-        liquidityProvisions={liquidityProvisions}
         comments={comments}
         tips={tips}
         user={user}
@@ -69,7 +66,6 @@ export function ContractTabs(props: {
           <ContractActivity
             contract={contract}
             bets={bets}
-            liquidityProvisions={liquidityProvisions}
             comments={comments}
             tips={tips}
             user={user}
