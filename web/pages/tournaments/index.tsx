@@ -5,13 +5,18 @@ import {
   UsersIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  PseudoNumeric,
+  PseudoNumericContract,
+} from 'common/contract'
 import { Group } from 'common/group'
 import dayjs, { Dayjs } from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import { keyBy, mapValues, throttle } from 'lodash'
+import { keyBy, mapValues, sortBy, throttle } from 'lodash'
 import Image, { ImageProps, StaticImageData } from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useEffect, useRef, useState } from 'react'
@@ -28,6 +33,7 @@ import china_pic from './_cspi/Chinese_Military_Action_against_Taiwan.png'
 import mpox_pic from './_cspi/Monkeypox_Cases.png'
 import race_pic from './_cspi/Supreme_Court_Ban_Race_in_College_Admissions.png'
 import { SiteLink } from 'web/components/site-link'
+import { getProbability } from 'common/calculate'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -159,7 +165,13 @@ function Section(props: {
   markets: Contract[]
   images?: { marketUrl: string; image: StaticImageData }[] // hack for cspi
 }) {
-  const { title, url, blurb, award, ppl, endTime, markets, images } = props
+  const { title, url, blurb, award, ppl, endTime, images } = props
+  // Sort markets by probability, highest % first
+  const markets = sortBy(props.markets, (c) =>
+    getProbability(c as BinaryContract | PseudoNumericContract)
+  )
+    .reverse()
+    .filter((c) => !c.isResolved)
 
   return (
     <div>
