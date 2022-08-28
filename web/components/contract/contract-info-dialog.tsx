@@ -150,7 +150,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               {/* Show a path to Firebase if user is an admin, or we're on localhost */}
               {(isAdmin || isDev) && (
                 <tr>
-                  <td>[DEV] Firestore</td>
+                  <td>[ADMIN] Firestore</td>
                   <td>
                     <SiteLink href={firestoreConsolePath(id)}>
                       Console link
