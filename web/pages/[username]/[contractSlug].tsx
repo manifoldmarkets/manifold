@@ -106,7 +106,9 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  return <ContractPageContent {...{ ...props, contract, user }} />
+  return (
+    <ContractPageContent key={contract.id} {...{ ...props, contract, user }} />
+  )
 }
 
 export function ContractPageSidebar(props: {
