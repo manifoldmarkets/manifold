@@ -167,7 +167,6 @@ export function FeedAnswerCommentGroup(props: {
           tips={tips[comment.id]}
           betsBySameUser={betsByUserId[comment.userId] ?? []}
           onReplyClick={scrollAndOpenReplyInput}
-          smallAvatar={true}
         />
       ))}
       {showReply && (

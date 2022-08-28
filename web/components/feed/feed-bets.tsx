@@ -28,7 +28,7 @@ export function FeedBet(props: { contract: Contract; bet: Bet }) {
   const isSelf = user?.id === userId
 
   return (
-    <Row className="flex w-full items-center gap-2 pt-3">
+    <Row className="items-center gap-2 pt-3">
       {isSelf ? (
         <Avatar avatarUrl={user.avatarUrl} username={user.username} />
       ) : bettor ? (

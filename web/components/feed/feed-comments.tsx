@@ -59,9 +59,9 @@ export function FeedCommentThread(props: {
   }
 
   return (
-    <Col className={'relative w-full items-start gap-3 pr-1'}>
+    <Col className="relative w-full items-stretch gap-3 pb-4">
       <span
-        className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+        className="absolute top-5 left-4 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
         aria-hidden="true"
       />
       {[parentComment].concat(threadComments).map((comment, commentIdx) => (
@@ -85,9 +85,9 @@ export function FeedCommentThread(props: {
         />
       ))}
       {showReply && (
-        <Col className={'-pb-2 ml-6'}>
+        <Col className="-pb-2 relative ml-6">
           <span
-            className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
           <CommentInput
@@ -112,7 +112,6 @@ export function FeedComment(props: {
   betsBySameUser: Bet[]
   indent?: boolean
   probAtCreatedTime?: number
-  smallAvatar?: boolean
   onReplyClick?: (comment: ContractComment) => void
 }) {
   const {
@@ -156,7 +155,7 @@ export function FeedComment(props: {
     <Row
       id={comment.id}
       className={clsx(
-        'relative flex space-x-1.5 sm:space-x-3',
+        'relative flex',
         indent ? 'ml-6' : '',
         highlighted ? `-m-1 rounded bg-indigo-500/[0.2] p-2` : ''
       )}
@@ -164,17 +163,12 @@ export function FeedComment(props: {
       {/*draw a gray line from the comment to the left:*/}
       {indent ? (
         <span
-          className="absolute -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+          className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
           aria-hidden="true"
         />
       ) : null}
-      <Avatar
-        className={'ml-1'}
-        size={'sm'}
-        username={userUsername}
-        avatarUrl={userAvatarUrl}
-      />
-      <div className="min-w-0 flex-1">
+      <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
+      <div className="ml-1.5 min-w-0 flex-1 sm:ml-3">
         <div className="mt-0.5 pl-0.5 text-sm text-gray-500">
           <UserLink
             className="text-gray-500"
@@ -282,6 +276,7 @@ export function CommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: ContractComment[]
+  className?: string
   replyToUser?: { id: string; username: string }
   // Reply to a free response answer
   parentAnswerOutcome?: string
@@ -293,6 +288,7 @@ export function CommentInput(props: {
     contract,
     betsByCurrentUser,
     commentsByCurrentUser,
+    className,
     parentAnswerOutcome,
     parentCommentId,
     replyToUser,
@@ -347,60 +343,51 @@ export function CommentInput(props: {
   if (user?.isBannedFromPosting) return <></>
 
   return (
-    <>
-      <Row className={'mb-2 gap-1 sm:gap-2'}>
-        <div className={'mt-2'}>
-          <Avatar
-            avatarUrl={user?.avatarUrl}
-            username={user?.username}
-            size={'sm'}
-            className={'ml-1'}
-          />
-        </div>
-        <div className={'min-w-0 flex-1'}>
-          <div className="pl-0.5 text-sm">
-            <div className="mb-1 text-gray-500">
-              {mostRecentCommentableBet && (
-                <BetStatusText
-                  contract={contract}
-                  bet={mostRecentCommentableBet}
-                  isSelf={true}
-                  hideOutcome={
-                    isNumeric || contract.outcomeType === 'FREE_RESPONSE'
-                  }
-                />
-              )}
-              {!mostRecentCommentableBet &&
-                user &&
-                userPosition > 0 &&
-                !isNumeric && (
-                  <>
-                    {"You're"}
-                    <CommentStatus
-                      outcome={outcome}
-                      contract={contract}
-                      prob={
-                        contract.outcomeType === 'BINARY'
-                          ? getProbability(contract)
-                          : undefined
-                      }
-                    />
-                  </>
-                )}
-            </div>
-            <CommentInputTextArea
-              editor={editor}
-              upload={upload}
-              replyToUser={replyToUser}
-              user={user}
-              submitComment={submitComment}
-              isSubmitting={isSubmitting}
-              presetId={id}
+    <Row className={clsx(className, 'mb-2 gap-1 sm:gap-2')}>
+      <Avatar
+        avatarUrl={user?.avatarUrl}
+        username={user?.username}
+        size="sm"
+        className="mt-2"
+      />
+      <div className="min-w-0 flex-1 pl-0.5 text-sm">
+        <div className="mb-1 text-gray-500">
+          {mostRecentCommentableBet && (
+            <BetStatusText
+              contract={contract}
+              bet={mostRecentCommentableBet}
+              isSelf={true}
+              hideOutcome={
+                isNumeric || contract.outcomeType === 'FREE_RESPONSE'
+              }
             />
-          </div>
+          )}
+          {!mostRecentCommentableBet && user && userPosition > 0 && !isNumeric && (
+            <>
+              {"You're"}
+              <CommentStatus
+                outcome={outcome}
+                contract={contract}
+                prob={
+                  contract.outcomeType === 'BINARY'
+                    ? getProbability(contract)
+                    : undefined
+                }
+              />
+            </>
+          )}
         </div>
-      </Row>
-    </>
+        <CommentInputTextArea
+          editor={editor}
+          upload={upload}
+          replyToUser={replyToUser}
+          user={user}
+          submitComment={submitComment}
+          isSubmitting={isSubmitting}
+          presetId={id}
+        />
+      </div>
+    </Row>
   )
 }
 
@@ -476,23 +463,21 @@ export function CommentInputTextArea(props: {
 
   return (
     <>
-      <div>
-        <TextEditor editor={editor} upload={upload}>
-          {user && !isSubmitting && (
-            <button
-              className="btn btn-ghost btn-sm px-2 disabled:bg-inherit disabled:text-gray-300"
-              disabled={!editor || editor.isEmpty}
-              onClick={submit}
-            >
-              <PaperAirplaneIcon className="m-0 h-[25px] min-w-[22px] rotate-90 p-0" />
-            </button>
-          )}
+      <TextEditor editor={editor} upload={upload}>
+        {user && !isSubmitting && (
+          <button
+            className="btn btn-ghost btn-sm px-2 disabled:bg-inherit disabled:text-gray-300"
+            disabled={!editor || editor.isEmpty}
+            onClick={submit}
+          >
+            <PaperAirplaneIcon className="m-0 h-[25px] min-w-[22px] rotate-90 p-0" />
+          </button>
+        )}
 
-          {isSubmitting && (
-            <LoadingIndicator spinnerClassName={'border-gray-500'} />
-          )}
-        </TextEditor>
-      </div>
+        {isSubmitting && (
+          <LoadingIndicator spinnerClassName={'border-gray-500'} />
+        )}
+      </TextEditor>
       <Row>
         {!user && (
           <button
@@ -517,10 +502,6 @@ function getBettorsLargestPositionBeforeTime(
     noShares = 0,
     noFloorShares = 0
 
-  const emptyReturn = {
-    userPosition: 0,
-    outcome: '',
-  }
   const previousBets = bets.filter(
     (prevBet) => prevBet.createdTime < createdTime && !prevBet.isAnte
   )
@@ -544,7 +525,7 @@ function getBettorsLargestPositionBeforeTime(
     }
   }
   if (bets.length === 0) {
-    return emptyReturn
+    return { userPosition: 0, outcome: '' }
   }
 
   const [yesBets, noBets] = partition(

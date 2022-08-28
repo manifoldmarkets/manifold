@@ -71,33 +71,27 @@ export function ContractCommentsActivity(props: {
   )
 
   return (
-    <div>
+    <>
       <CommentInput
+        className="mb-5"
         contract={contract}
         betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
         commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
       />
-      {topLevelComments.map((parent, idx) => (
-        <div key={parent.id} className={'relative pb-4'}>
-          {idx !== topLevelComments.length - 1 ? (
-            <span
-              className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-              aria-hidden="true"
-            />
-          ) : null}
-          <FeedCommentThread
-            user={user}
-            contract={contract}
-            parentComment={parent}
-            threadComments={commentsByParentId[parent.id] ?? []}
-            tips={tips}
-            bets={bets}
-            betsByUserId={betsByUserId}
-            commentsByUserId={commentsByUserId}
-          />
-        </div>
+      {topLevelComments.map((parent) => (
+        <FeedCommentThread
+          key={parent.id}
+          user={user}
+          contract={contract}
+          parentComment={parent}
+          threadComments={commentsByParentId[parent.id] ?? []}
+          tips={tips}
+          bets={bets}
+          betsByUserId={betsByUserId}
+          commentsByUserId={commentsByUserId}
+        />
       ))}
-    </div>
+    </>
   )
 }
 
@@ -126,7 +120,7 @@ export function FreeResponseContractCommentsActivity(props: {
   const commentsByOutcome = groupBy(comments, (c) => c.answerOutcome ?? '_')
 
   return (
-    <div>
+    <>
       {answers.map((answer) => (
         <div key={answer.id} className={'relative pb-4'}>
           <span
@@ -144,6 +138,6 @@ export function FreeResponseContractCommentsActivity(props: {
           />
         </div>
       ))}
-    </div>
+    </>
   )
 }
