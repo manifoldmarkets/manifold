@@ -18,6 +18,9 @@ export const CreateQuestionButton = (props: {
 
   const { user, overrideText, className, query } = props
   const router = useRouter()
+
+  if (user?.isBannedFromPosting) return <></>
+
   return (
     <div className={clsx('flex justify-center', className)}>
       {user ? (
