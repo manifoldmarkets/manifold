@@ -382,6 +382,8 @@ export function CommentInput(props: {
 
   const isNumeric = contract.outcomeType === 'NUMERIC'
 
+  if (user?.isBannedFromPosting) return <></>
+
   return (
     <>
       <Row className={'mb-2 gap-1 sm:gap-2'}>

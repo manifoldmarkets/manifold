@@ -115,6 +115,8 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = (currentReturn * 100).toFixed() + '%'
 
+  if (user?.isBannedFromPosting) return <></>
+
   return (
     <Col className="gap-4 rounded">
       <Col className="flex-1 gap-2">
