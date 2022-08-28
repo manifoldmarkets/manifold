@@ -30,17 +30,15 @@ export function ContractTabs(props: {
   const { contract, user, tips } = props
   const { outcomeType } = contract
 
-  const updatedBets = useBets(contract.id, {
-    filterChallenges: false,
-    filterRedemptions: true,
-  })
-  const bets = updatedBets ?? props.bets
-  const userBets = user && bets.filter((bet) => bet.userId === user.id)
+  const bets = useBets(contract.id) ?? props.bets
+  const lps = useLiquidity(contract.id) ?? []
+
+  const userBets =
+    user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
   const visibleBets = bets.filter(
     (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
   )
-  const liquidityProvisions =
-    useLiquidity(contract.id)?.filter((l) => !l.isAnte && l.amount > 0) ?? []
+  const visibleLps = lps.filter((l) => !l.isAnte && l.amount > 0)
 
   // Load comments here, so the badge count will be correct
   const updatedComments = useComments(contract.id)
@@ -50,7 +48,7 @@ export function ContractTabs(props: {
     <ContractBetsActivity
       contract={contract}
       bets={visibleBets}
-      liquidityProvisions={liquidityProvisions}
+      lps={visibleLps}
     />
   )
 

@@ -394,13 +394,11 @@ export function BetsSummary(props: {
   const { hasShares, invested, profitPercent, payout, profit, totalShares } =
     getContractBetMetrics(contract, bets)
 
-  const excludeSalesAndAntes = bets.filter(
-    (b) => !b.isAnte && !b.isSold && !b.sale
-  )
-  const yesWinnings = sumBy(excludeSalesAndAntes, (bet) =>
+  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
+  const yesWinnings = sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
+  const noWinnings = sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
 

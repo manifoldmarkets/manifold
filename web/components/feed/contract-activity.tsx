@@ -16,9 +16,9 @@ import { Col } from 'web/components/layout/col'
 export function ContractBetsActivity(props: {
   contract: Contract
   bets: Bet[]
-  liquidityProvisions: LiquidityProvision[]
+  lps: LiquidityProvision[]
 }) {
-  const { contract, bets, liquidityProvisions } = props
+  const { contract, bets, lps } = props
 
   const items = [
     ...bets.map((bet) => ({
@@ -26,10 +26,10 @@ export function ContractBetsActivity(props: {
       id: bet.id + '-' + bet.isSold,
       bet,
     })),
-    ...liquidityProvisions.map((liquidity) => ({
+    ...lps.map((lp) => ({
       type: 'liquidity' as const,
-      id: liquidity.id,
-      liquidity,
+      id: lp.id,
+      lp,
     })),
   ]
 
@@ -37,7 +37,7 @@ export function ContractBetsActivity(props: {
     item.type === 'bet'
       ? -item.bet.createdTime
       : item.type === 'liquidity'
-      ? -item.liquidity.createdTime
+      ? -item.lp.createdTime
       : undefined
   )
 
@@ -47,7 +47,7 @@ export function ContractBetsActivity(props: {
         item.type === 'bet' ? (
           <FeedBet key={item.id} contract={contract} bet={item.bet} />
         ) : (
-          <FeedLiquidity key={item.id} liquidity={item.liquidity} />
+          <FeedLiquidity key={item.id} liquidity={item.lp} />
         )
       )}
     </Col>
