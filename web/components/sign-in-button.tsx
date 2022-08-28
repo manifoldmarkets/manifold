@@ -1,7 +1,7 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 
-import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from './button'
 
 export const SignInButton = (props: {
