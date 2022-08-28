@@ -278,12 +278,16 @@ function GroupChatNotificationsIcon(props: {
 }) {
   const { privateUser, group, shouldSetAsSeen, hidden } = props
   const preferredNotificationsForThisGroup = useUnseenPreferredNotifications(
-    privateUser,
-    {
-      customHref: `/group/${group.slug}`,
-    }
+    privateUser
+    // Disabled tracking by customHref for now.
+    // {
+    //   customHref: `/group/${group.slug}`,
+    // }
   )
+
   useEffect(() => {
+    if (!preferredNotificationsForThisGroup) return
+
     preferredNotificationsForThisGroup.forEach((notification) => {
       if (
         (shouldSetAsSeen && notification.isSeenOnHref?.includes('chat')) ||
@@ -299,6 +303,7 @@ function GroupChatNotificationsIcon(props: {
     <div
       className={
         !hidden &&
+        preferredNotificationsForThisGroup &&
         preferredNotificationsForThisGroup.length > 0 &&
         !shouldSetAsSeen
           ? 'absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-white bg-red-500'
