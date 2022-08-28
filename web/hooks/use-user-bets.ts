@@ -13,7 +13,7 @@ export const useUserBets = (userId: string) => {
     { subscribe: true, includeMetadataChanges: true },
     // Temporary workaround for react-query bug:
     // https://github.com/invertase/react-query-firebase/issues/25
-    { cacheTime: 0 }
+    { refetchOnMount: 'always' }
   )
   return result.data
 }
