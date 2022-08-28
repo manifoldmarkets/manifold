@@ -50,9 +50,8 @@ type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 type SearchParameters = {
   query: string
   sort: Sort
-  numericFilters: SearchOptions['numericFilters']
+  openClosedFilter: 'open' | 'closed' | undefined
   facetFilters: SearchOptions['facetFilters']
-  showTime?: ShowTime
 }
 
 type AdditionalFilter = {
@@ -120,27 +119,10 @@ export function ContractSearch(props: {
   useLayoutEffect(() => {
     if (persistPrefix && store) {
       const parameters = loadState(getKey(persistPrefix, 'parameters'), store)
-      const scrollY = loadState(getKey(persistPrefix, 'scrollY'), store)
       if (parameters !== undefined) {
         console.log('Restoring search parameters: ', parameters)
         searchParameters.current = parameters as SearchParameters
       }
-      if (scrollY !== undefined) {
-        console.log('Restoring scroll position: ', scrollY)
-        window.scrollTo(0, scrollY as number)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (persistPrefix && store) {
-      const handleScroll = (e: Event) => {
-        const scrollY = (e.currentTarget as Window).scrollY
-        console.log('Saving scroll position: ', scrollY)
-        saveState(getKey(persistPrefix, 'scrollY'), scrollY, store)
-      }
-      window.addEventListener('scroll', handleScroll)
-      return () => window.removeEventListener('scroll', handleScroll)
     }
   }, [])
 
@@ -154,16 +136,23 @@ export function ContractSearch(props: {
     if (searchParameters.current == null) {
       return
     }
-    const params = searchParameters.current
+    const { query, sort, openClosedFilter, facetFilters } =
+      searchParameters.current
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : pages.length
     if (freshQuery || requestedPage < numPages) {
-      const index = params.query
+      const index = query
         ? searchIndex
-        : searchClient.initIndex(`${indexPrefix}contracts-${params.sort}`)
-      const results = await index.search(params.query, {
-        facetFilters: params.facetFilters,
-        numericFilters: params.numericFilters,
+        : searchClient.initIndex(`${indexPrefix}contracts-${sort}`)
+      const numericFilters = query
+        ? []
+        : [
+            openClosedFilter === 'open' ? `closeTime > ${Date.now()}` : '',
+            openClosedFilter === 'closed' ? `closeTime <= ${Date.now()}` : '',
+          ].filter((f) => f)
+      const results = await index.search(query, {
+        facetFilters,
+        numericFilters,
         page: requestedPage,
         hitsPerPage: 20,
       })
@@ -171,9 +160,7 @@ export function ContractSearch(props: {
       if (id === requestId.current) {
         const newPage = results.hits as any as Contract[]
         const showTime =
-          params.sort === 'close-date' || params.sort === 'resolve-date'
-            ? params.sort
-            : null
+          sort === 'close-date' || sort === 'resolve-date' ? sort : null
 
         // this spooky looking function is the easiest way to get react to
         // batch this and not do multiple renders. we can throw it out in react 18.
@@ -348,12 +335,8 @@ function ContractSearchControls(props: {
           : '',
       ].filter((f) => f)
 
-  const numericFilters = query
-    ? []
-    : [
-        filter === 'open' ? `closeTime > ${Date.now()}` : '',
-        filter === 'closed' ? `closeTime <= ${Date.now()}` : '',
-      ].filter((f) => f)
+  const openClosedFilter =
+    filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
 
   const selectPill = (pill: string | null) => () => {
     setPillFilter(pill)
@@ -380,10 +363,10 @@ function ContractSearchControls(props: {
     onSearchParametersChanged({
       query: query,
       sort: sort,
-      numericFilters: numericFilters,
+      openClosedFilter: openClosedFilter,
       facetFilters: facetFilters,
     })
-  }, [query, sort, filter, JSON.stringify(facetFilters)])
+  }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
   if (noControls) {
     return <></>
