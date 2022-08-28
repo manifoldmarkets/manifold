@@ -11,6 +11,7 @@ import {
   getDocs,
   getDoc,
   DocumentSnapshot,
+  Query,
 } from 'firebase/firestore'
 import { uniq } from 'lodash'
 
@@ -131,24 +132,12 @@ export async function getContractsOfUserBets(userId: string) {
   return filterDefined(contracts)
 }
 
-export function listenForUserBets(
-  userId: string,
-  setBets: (bets: Bet[]) => void,
-  options: { includeRedemptions: boolean }
-) {
-  const { includeRedemptions } = options
-  const userQuery = query(
+export function getUserBetsQuery(userId: string) {
+  return query(
     collectionGroup(db, 'bets'),
     where('userId', '==', userId),
     orderBy('createdTime', 'desc')
-  )
-  return listenForValues<Bet>(userQuery, (bets) => {
-    setBets(
-      bets.filter(
-        (bet) => (includeRedemptions || !bet.isRedemption) && !bet.isAnte
-      )
-    )
-  })
+  ) as Query<Bet>
 }
 
 export function listenForUserContractBets(

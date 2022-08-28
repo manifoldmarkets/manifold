@@ -72,7 +72,7 @@ export function BetsList(props: { user: User }) {
   const signedInUser = useUser()
   const isYourBets = user.id === signedInUser?.id
   const hideBetsBefore = isYourBets ? 0 : JUNE_1_2022
-  const userBets = useUserBets(user.id, { includeRedemptions: true })
+  const userBets = useUserBets(user.id)
   const [contractsById, setContractsById] = useState<
     Dictionary<Contract> | undefined
   >()
@@ -80,7 +80,10 @@ export function BetsList(props: { user: User }) {
   // Hide bets before 06-01-2022 if this isn't your own profile
   // NOTE: This means public profits also begin on 06-01-2022 as well.
   const bets = useMemo(
-    () => userBets?.filter((bet) => bet.createdTime >= (hideBetsBefore ?? 0)),
+    () =>
+      userBets?.filter(
+        (bet) => !bet.isAnte && bet.createdTime >= (hideBetsBefore ?? 0)
+      ),
     [userBets, hideBetsBefore]
   )
 
