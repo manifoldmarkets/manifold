@@ -25,6 +25,7 @@ import { Bet } from 'common/bet'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { lowerCase } from 'lodash'
+import { Button } from '../button'
 
 export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
@@ -203,12 +204,14 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
             </button>
           ) : (
             text && (
-              <button
-                className="btn self-end whitespace-nowrap border-none bg-gradient-to-r from-teal-500 to-green-500 px-10 text-lg font-medium normal-case hover:from-teal-600 hover:to-green-600"
+              <Button
+                color="green"
+                size="lg"
+                className="self-end whitespace-nowrap "
                 onClick={withTracking(firebaseLogin, 'answer panel sign in')}
               >
-                Sign in
-              </button>
+                Add my answer
+              </Button>
             )
           )}
         </Col>
