@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useLayoutEffect, useEffect } from 'react'
+import { useStateCheckEquality } from './use-state-check-equality'
 
 export type PersistenceOptions = {
   store?: Storage
@@ -30,20 +31,21 @@ export const loadState = (key: string, store: Storage) => {
 }
 
 export const usePersistentState = <T>(
-  defaultValue: T,
+  initial: T,
   persist?: PersistenceOptions
 ) => {
   const store = persist?.store
   const key = persist ? getKey(persist.prefix, persist.name) : null
-  let initialValue
-  if (key != null && store != null) {
-    const saved = loadState(key, store) as T
-    console.log('Loading state for: ', key, saved)
-    if (saved !== undefined) {
-      initialValue = saved
+  useLayoutEffect(() => {
+    if (key != null && store != null) {
+      const saved = loadState(key, store) as T
+      console.log('Loading state for: ', key, saved)
+      if (saved !== undefined) {
+        setState(saved)
+      }
     }
-  }
-  const [state, setState] = useState<T>(initialValue ?? defaultValue)
+  }, [])
+  const [state, setState] = useStateCheckEquality(initial)
   useEffect(() => {
     if (key != null && store != null) {
       console.log('Saving state for: ', key, state)

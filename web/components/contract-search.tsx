@@ -17,7 +17,6 @@ import {
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
 import { useEffect, useLayoutEffect, useRef, useMemo } from 'react'
-import { unstable_batchedUpdates } from 'react-dom'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
@@ -103,14 +102,13 @@ export function ContractSearch(props: {
     return persistPrefix ? { prefix: persistPrefix, name, store } : undefined
   }
 
-  const [numPages, setNumPages] = usePersistentState(1, persistAs('numPages'))
-  const [pages, setPages] = usePersistentState<Contract[][]>(
-    [],
-    persistAs('pages')
-  )
-  const [showTime, setShowTime] = usePersistentState<ShowTime | null>(
-    null,
-    persistAs('showTime')
+  const [state, setState] = usePersistentState(
+    {
+      numPages: 1,
+      pages: [] as Contract[][],
+      showTime: null as ShowTime | null,
+    },
+    persistAs('state')
   )
 
   const searchParameters = useRef<SearchParameters | null>(null)
@@ -139,8 +137,8 @@ export function ContractSearch(props: {
     const { query, sort, openClosedFilter, facetFilters } =
       searchParameters.current
     const id = ++requestId.current
-    const requestedPage = freshQuery ? 0 : pages.length
-    if (freshQuery || requestedPage < numPages) {
+    const requestedPage = freshQuery ? 0 : state.pages.length
+    if (freshQuery || requestedPage < state.numPages) {
       const index = query
         ? searchIndex
         : searchClient.initIndex(`${indexPrefix}contracts-${sort}`)
@@ -161,20 +159,11 @@ export function ContractSearch(props: {
         const newPage = results.hits as any as Contract[]
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
-
-        // this spooky looking function is the easiest way to get react to
-        // batch this and not do multiple renders. we can throw it out in react 18.
-        // see https://github.com/reactwg/react-18/discussions/21
-        unstable_batchedUpdates(() => {
-          setShowTime(showTime)
-          setNumPages(results.nbPages)
-          if (freshQuery) {
-            setPages([newPage])
-            if (isWholePage) window.scrollTo(0, 0)
-          } else {
-            setPages((pages) => [...pages, newPage])
-          }
+        setState((curr) => {
+          const pages = freshQuery ? [newPage] : [...curr.pages, newPage]
+          return { numPages: results.nbPages, pages, showTime }
         })
+        if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
   }
@@ -192,11 +181,13 @@ export function ContractSearch(props: {
     }, 100)
   ).current
 
-  const contracts = pages
+  const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
   const renderedContracts =
-    pages.length === 0 ? undefined : contracts.slice(0, maxItems)
+    state.pages.length === 0 ? undefined : contracts.slice(0, maxItems)
+
+  console.log('Rendering: ', renderedContracts)
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -219,7 +210,7 @@ export function ContractSearch(props: {
       <ContractsGrid
         contracts={renderedContracts}
         loadMore={noControls ? undefined : performQuery}
-        showTime={showTime ?? undefined}
+        showTime={state.showTime ?? undefined}
         onContractClick={onContractClick}
         highlightOptions={highlightOptions}
         cardHideOptions={cardHideOptions}
@@ -344,6 +335,7 @@ function ContractSearchControls(props: {
   }
 
   const updateQuery = (newQuery: string) => {
+    console.log('Calling updateQuery: ', newQuery)
     setQuery(newQuery)
   }
 
