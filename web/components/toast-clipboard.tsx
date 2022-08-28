@@ -10,7 +10,7 @@ export function ToastClipboard(props: { className?: string }) {
       className={clsx(
         'border-base-300 absolute items-center' +
           'gap-2 divide-x divide-gray-200 rounded-md border-2 bg-white ' +
-          'h-15 w-[15rem] p-2 pr-3 text-gray-500',
+          'h-15 z-10 w-[15rem] p-2 pr-3 text-gray-500',
         className
       )}
     >

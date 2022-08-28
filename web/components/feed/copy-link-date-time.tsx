@@ -37,7 +37,7 @@ export function CopyLinkDateTimeComponent(props: {
           }
         >
           {fromNow(createdTime)}
-          {showToast && <ToastClipboard className={'left-24 sm:-left-16'} />}
+          {showToast && <ToastClipboard />}
           <LinkIcon className="ml-1 mb-0.5 inline" height={13} />
         </a>
       </Link>
