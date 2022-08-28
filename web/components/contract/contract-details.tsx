@@ -201,13 +201,15 @@ export function ContractDetails(props: {
             >
               {groupInfo}
             </Button>
-            <Button
-              size={'xs'}
-              color={'gray-white'}
-              onClick={() => setOpen(!open)}
-            >
-              <PencilIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
-            </Button>
+            {user && (
+              <Button
+                size={'xs'}
+                color={'gray-white'}
+                onClick={() => setOpen(!open)}
+              >
+                <PencilIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
+              </Button>
+            )}
           </Row>
         )}
       </Row>
