@@ -32,7 +32,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const isDev = useDev()
   const isAdmin = useAdmin()
 
-  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
+  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
   const { createdTime, closeTime, resolutionTime, mechanism, outcomeType, id } =
     contract
