@@ -42,6 +42,7 @@ import {
 } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
+import { usePrefetch } from 'web/hooks/use-prefetch'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -157,6 +158,7 @@ export function ContractPageContent(
   const { backToHome, comments, user } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
+  usePrefetch(user?.id)
 
   useTracking('view market', {
     slug: contract.slug,

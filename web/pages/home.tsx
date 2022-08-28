@@ -15,6 +15,7 @@ import { track } from 'web/lib/service/analytics'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { GetServerSideProps } from 'next'
+import { usePrefetch } from 'web/hooks/use-prefetch'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -30,6 +31,7 @@ const Home = (props: { auth: { user: User } | null }) => {
   useTracking('view home')
 
   useSaveReferral()
+  usePrefetch(user?.id)
 
   return (
     <>
