@@ -537,7 +537,7 @@ export function CommentInputTextArea(props: {
             className={'btn btn-outline btn-sm mt-2 normal-case'}
             onClick={() => submitComment(presetId)}
           >
-            Sign in to comment
+            Add my comment
           </button>
         )}
       </Row>

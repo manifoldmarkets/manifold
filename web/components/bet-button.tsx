@@ -10,6 +10,7 @@ import { useSaveBinaryShares } from './use-save-binary-shares'
 import { Col } from './layout/col'
 import { Button } from 'web/components/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { BetSignUpPrompt } from './sign-up-prompt'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -32,15 +33,17 @@ export default function BetButton(props: {
   return (
     <>
       <Col className={clsx('items-center', className)}>
-        <Button
-          size={'lg'}
-          className={clsx('my-auto inline-flex min-w-[75px] ', btnClassName)}
-          onClick={() => {
-            !user ? firebaseLogin() : setOpen(true)
-          }}
-        >
-          {user ? 'Bet' : 'Sign up to Bet'}
-        </Button>
+        {user ? (
+          <Button
+            size="lg"
+            className={clsx('my-auto inline-flex min-w-[75px] ', btnClassName)}
+            onClick={() => setOpen(true)}
+          >
+            Bet
+          </Button>
+        ) : (
+          <BetSignUpPrompt />
+        )}
 
         {user && (
           <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
