@@ -26,7 +26,7 @@ import {
 } from 'web/components/outcome-label'
 import {
   NotificationGroup,
-  usePreferredGroupedNotifications,
+  useGroupedNotifications,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
@@ -45,6 +45,7 @@ import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const MULTIPLE_USERS_KEY = 'multipleUsers'
@@ -58,16 +59,6 @@ export default function Notifications(props: {
   auth: { privateUser: PrivateUser }
 }) {
   const { privateUser } = props.auth
-  const local = safeLocalStorage()
-  let localNotifications = [] as Notification[]
-  const localSavedNotificationGroups = local?.getItem('notification-groups')
-  let localNotificationGroups = [] as NotificationGroup[]
-  if (localSavedNotificationGroups) {
-    localNotificationGroups = JSON.parse(localSavedNotificationGroups)
-    localNotifications = localNotificationGroups
-      .map((g) => g.notifications)
-      .flat()
-  }
 
   return (
     <Page>
@@ -84,12 +75,7 @@ export default function Notifications(props: {
             tabs={[
               {
                 title: 'Notifications',
-                content: (
-                  <NotificationsList
-                    privateUser={privateUser}
-                    cachedNotifications={localNotifications}
-                  />
-                ),
+                content: <NotificationsList privateUser={privateUser} />,
               },
               {
                 title: 'Settings',
@@ -135,16 +121,10 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: {
-  privateUser: PrivateUser
-  cachedNotifications: Notification[]
-}) {
-  const { privateUser, cachedNotifications } = props
+function NotificationsList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
   const [page, setPage] = useState(0)
-  const allGroupedNotifications = usePreferredGroupedNotifications(
-    privateUser,
-    cachedNotifications
-  )
+  const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return
     const start = page * NOTIFICATIONS_PER_PAGE
@@ -163,7 +143,8 @@ function NotificationsList(props: {
     return maxNotificationsToShow
   }, [allGroupedNotifications, page])
 
-  if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
+  if (!paginatedGroupedNotifications || !allGroupedNotifications)
+    return <LoadingIndicator />
 
   return (
     <div className={'min-h-[100vh] text-sm'}>
