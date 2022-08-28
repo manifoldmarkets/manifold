@@ -26,7 +26,7 @@ import {
 } from 'web/components/outcome-label'
 import {
   NotificationGroup,
-  usePreferredGroupedNotifications,
+  useGroupedNotifications,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
@@ -124,7 +124,7 @@ function RenderNotificationGroups(props: {
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
   const [page, setPage] = useState(0)
-  const allGroupedNotifications = usePreferredGroupedNotifications(privateUser)
+  const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return
     const start = page * NOTIFICATIONS_PER_PAGE

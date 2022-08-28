@@ -19,7 +19,7 @@ import { sum } from 'lodash'
 import { formatMoney } from 'common/util/format'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Content, useTextEditor } from 'web/components/editor'
-import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
+import { useUnseenNotifications } from 'web/hooks/use-notifications'
 import { ChevronDownIcon, UsersIcon } from '@heroicons/react/outline'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { usePrivateUser } from 'web/hooks/use-user'
@@ -277,7 +277,7 @@ function GroupChatNotificationsIcon(props: {
   hidden: boolean
 }) {
   const { privateUser, group, shouldSetAsSeen, hidden } = props
-  const preferredNotificationsForThisGroup = useUnseenPreferredNotifications(
+  const notificationsForThisGroup = useUnseenNotifications(
     privateUser
     // Disabled tracking by customHref for now.
     // {
@@ -286,9 +286,9 @@ function GroupChatNotificationsIcon(props: {
   )
 
   useEffect(() => {
-    if (!preferredNotificationsForThisGroup) return
+    if (!notificationsForThisGroup) return
 
-    preferredNotificationsForThisGroup.forEach((notification) => {
+    notificationsForThisGroup.forEach((notification) => {
       if (
         (shouldSetAsSeen && notification.isSeenOnHref?.includes('chat')) ||
         // old style chat notif that simply ended with the group slug
@@ -297,14 +297,14 @@ function GroupChatNotificationsIcon(props: {
         setNotificationsAsSeen([notification])
       }
     })
-  }, [group.slug, preferredNotificationsForThisGroup, shouldSetAsSeen])
+  }, [group.slug, notificationsForThisGroup, shouldSetAsSeen])
 
   return (
     <div
       className={
         !hidden &&
-        preferredNotificationsForThisGroup &&
-        preferredNotificationsForThisGroup.length > 0 &&
+        notificationsForThisGroup &&
+        notificationsForThisGroup.length > 0 &&
         !shouldSetAsSeen
           ? 'absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-white bg-red-500'
           : 'hidden'

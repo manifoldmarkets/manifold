@@ -13,7 +13,7 @@ export type NotificationGroup = {
   type: 'income' | 'normal'
 }
 
-function usePreferredNotifications(privateUser: PrivateUser) {
+function useNotifications(privateUser: PrivateUser) {
   const result = useFirestoreQueryData(
     ['notifications-all', privateUser.id],
     getNotificationsQuery(privateUser.id),
@@ -35,24 +35,23 @@ function usePreferredNotifications(privateUser: PrivateUser) {
   return notifications
 }
 
-export function useUnseenPreferredNotifications(privateUser: PrivateUser) {
-  const notifications = usePreferredNotifications(privateUser)
-  const unseen = useMemo(
+export function useUnseenNotifications(privateUser: PrivateUser) {
+  const notifications = useNotifications(privateUser)
+  return useMemo(
     () => notifications && notifications.filter((n) => !n.isSeen),
     [notifications]
   )
-  return unseen
 }
 
-export function usePreferredGroupedNotifications(privateUser: PrivateUser) {
-  const notifications = usePreferredNotifications(privateUser)
+export function useGroupedNotifications(privateUser: PrivateUser) {
+  const notifications = useNotifications(privateUser)
   return useMemo(() => {
     if (notifications) return groupNotifications(notifications)
   }, [notifications])
 }
 
-export function useUnseenPreferredNotificationGroups(privateUser: PrivateUser) {
-  const notifications = useUnseenPreferredNotifications(privateUser)
+export function useUnseenGroupedNotification(privateUser: PrivateUser) {
+  const notifications = useUnseenNotifications(privateUser)
   return useMemo(() => {
     if (notifications) return groupNotifications(notifications)
   }, [notifications])
