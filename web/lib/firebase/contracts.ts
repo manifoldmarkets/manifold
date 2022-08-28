@@ -12,7 +12,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { sortBy, sum } from 'lodash'
+import { sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
@@ -305,7 +305,7 @@ export const getRandTopCreatorContracts = async (
     where('isResolved', '==', false),
     where('creatorId', '==', creatorId),
     orderBy('popularityScore', 'desc'),
-    limit(Math.max(count * 2, 15))
+    limit(count * 2)
   )
   const data = await getValues<Contract>(creatorContractsQuery)
   const open = data
@@ -313,6 +313,44 @@ export const getRandTopCreatorContracts = async (
     .filter((c) => !excluding.includes(c.id))
 
   return chooseRandomSubset(open, count)
+}
+
+export const getRandTopGroupContracts = async (
+  groupSlug: string,
+  count: number,
+  excluding: string[] = []
+) => {
+  const creatorContractsQuery = query(
+    contracts,
+    where('groupSlugs', 'array-contains', groupSlug),
+    where('isResolved', '==', false),
+    orderBy('popularityScore', 'desc'),
+    limit(count * 2)
+  )
+  const data = await getValues<Contract>(creatorContractsQuery)
+  const open = data
+    .filter((c) => c.closeTime && c.closeTime > Date.now())
+    .filter((c) => !excluding.includes(c.id))
+
+  return chooseRandomSubset(open, count)
+}
+
+export const getRecommendedContracts = async (
+  contract: Contract,
+  count: number
+) => {
+  const { creatorId, groupSlugs, id } = contract
+
+  const [userContracts, groupContracts] = await Promise.all([
+    getRandTopCreatorContracts(creatorId, count, [id]),
+    groupSlugs && groupSlugs[0]
+      ? getRandTopGroupContracts(groupSlugs[0], count, [id])
+      : [],
+  ])
+
+  const combined = uniqBy([...userContracts, ...groupContracts], (c) => c.id)
+
+  return chooseRandomSubset(combined, count)
 }
 
 export async function getRecentBetsAndComments(contract: Contract) {
