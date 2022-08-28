@@ -1,43 +1,26 @@
-import { PortfolioMetrics } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import { memo, useEffect, useState } from 'react'
-import { Period, getPortfolioHistory } from 'web/lib/firebase/users'
+import { memo, useRef, useState } from 'react'
+import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import { Period } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PortfolioValueGraph } from './portfolio-value-graph'
-import { DAY_MS } from 'common/util/time'
-
-const periodToCutoff = (now: number, period: Period) => {
-  switch (period) {
-    case 'daily':
-      return now - 1 * DAY_MS
-    case 'weekly':
-      return now - 7 * DAY_MS
-    case 'monthly':
-      return now - 30 * DAY_MS
-    case 'allTime':
-    default:
-      return new Date(0)
-  }
-}
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
     const { userId } = props
 
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
-    const [portfolioHistory, setUsersPortfolioHistory] = useState<
-      PortfolioMetrics[]
-    >([])
+    const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
 
-    useEffect(() => {
-      const cutoff = periodToCutoff(Date.now(), portfolioPeriod).valueOf()
-      getPortfolioHistory(userId, cutoff).then(setUsersPortfolioHistory)
-    }, [portfolioPeriod, userId])
+    // Remember the last defined portfolio history.
+    const portfolioRef = useRef(portfolioHistory)
+    if (portfolioHistory) portfolioRef.current = portfolioHistory
+    const currPortfolioHistory = portfolioRef.current
 
-    const lastPortfolioMetrics = last(portfolioHistory)
-    if (portfolioHistory.length === 0 || !lastPortfolioMetrics) {
+    const lastPortfolioMetrics = last(currPortfolioHistory)
+    if (!currPortfolioHistory || !lastPortfolioMetrics) {
       return <></>
     }
 
@@ -64,7 +47,7 @@ export const PortfolioValueSection = memo(
           </select>
         </Row>
         <PortfolioValueGraph
-          portfolioHistory={portfolioHistory}
+          portfolioHistory={currPortfolioHistory}
           includeTime={portfolioPeriod == 'daily'}
         />
       </>

@@ -6,6 +6,7 @@ import {
   getDocs,
   limit,
   orderBy,
+  Query,
   query,
   setDoc,
   startAfter,
@@ -154,6 +155,13 @@ export function listenForUserContracts(
     orderBy('createdTime', 'desc')
   )
   return listenForValues<Contract>(q, setContracts)
+}
+
+export function getUserBetContractsQuery(userId: string) {
+  return query(
+    contracts,
+    where('uniqueBettorIds', 'array-contains', userId)
+  ) as Query<Contract>
 }
 
 const activeContractsQuery = query(
