@@ -11,7 +11,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import {
   Contract,
   getContractFromSlug,
-  getRandTopCreatorContracts,
+  getRecommendedContracts,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
@@ -40,8 +40,8 @@ import {
   ContractLeaderboard,
   ContractTopTrades,
 } from 'web/components/contract/contract-leaderboard'
-import { Subtitle } from 'web/components/subtitle'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
+import { Title } from 'web/components/title'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -54,9 +54,7 @@ export async function getStaticPropz(props: {
   const [bets, comments, recommendedContracts] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
-    contract
-      ? getRandTopCreatorContracts(contract.creatorId, 4, [contract?.id])
-      : [],
+    contract ? getRecommendedContracts(contract, 6) : [],
   ])
 
   return {
@@ -190,12 +188,11 @@ export function ContractPageContent(
     props.recommendedContracts
   )
   useEffect(() => {
-    if (recommendedContracts.length === 0) {
-      getRandTopCreatorContracts(contract.creatorId, 4, [contract.id]).then(
-        setRecommendedMarkets
-      )
+    if (contract && recommendedContracts.length === 0) {
+      getRecommendedContracts(contract, 6).then(setRecommendedMarkets)
     }
-  }, [contract.id, contract.creatorId, recommendedContracts])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract.id, recommendedContracts])
 
   const { isResolved, question, outcomeType } = contract
 
@@ -282,8 +279,8 @@ export function ContractPageContent(
       </Col>
 
       {recommendedContracts.length > 0 && (
-        <Col className="gap-2 px-2 sm:px-0">
-          <Subtitle text="Recommended" />
+        <Col className="mt-2 gap-2 px-2 sm:px-0">
+          <Title className="text-gray-700" text="Recommended" />
           <ContractsGrid contracts={recommendedContracts} />
         </Col>
       )}
