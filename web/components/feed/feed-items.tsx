@@ -34,7 +34,7 @@ import {
 import { FeedBet } from 'web/components/feed/feed-bets'
 import { CPMMBinaryContract, NumericContract } from 'common/contract'
 import { FeedLiquidity } from './feed-liquidity'
-import { SignUpPrompt } from '../sign-up-prompt'
+import { BetSignUpPrompt } from '../sign-up-prompt'
 import { User } from 'common/user'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { contractMetrics } from 'common/contract-details'
@@ -70,7 +70,7 @@ export function FeedItems(props: {
 
       {!user ? (
         <Col className="mt-4 max-w-sm items-center xl:hidden">
-          <SignUpPrompt />
+          <BetSignUpPrompt />
           <PlayMoneyDisclaimer />
         </Col>
       ) : (

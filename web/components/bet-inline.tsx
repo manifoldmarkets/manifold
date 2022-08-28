@@ -12,7 +12,7 @@ import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { useUser } from 'web/hooks/use-user'
-import { SignUpPrompt } from './sign-up-prompt'
+import { BetSignUpPrompt } from './sign-up-prompt'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Col } from './layout/col'
 import { XIcon } from '@heroicons/react/solid'
@@ -112,7 +112,7 @@ export function BetInline(props: {
               : 'Submit'}
           </Button>
         )}
-        <SignUpPrompt size="xs" />
+        <BetSignUpPrompt size="xs" />
         <button
           onClick={() => {
             setProbAfter(undefined)

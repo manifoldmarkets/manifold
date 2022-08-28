@@ -31,7 +31,7 @@ import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from './use-save-binary-shares'
-import { SignUpPrompt } from './sign-up-prompt'
+import { BetSignUpPrompt } from './sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
 import { ProbabilityOrNumericInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
@@ -86,7 +86,7 @@ export function BetPanel(props: {
           unfilledBets={unfilledBets}
         />
 
-        <SignUpPrompt />
+        <BetSignUpPrompt />
 
         {!user && <PlayMoneyDisclaimer />}
       </Col>
@@ -146,7 +146,7 @@ export function SimpleBetPanel(props: {
           onBuySuccess={onBetSuccess}
         />
 
-        <SignUpPrompt />
+        <BetSignUpPrompt />
 
         {!user && <PlayMoneyDisclaimer />}
       </Col>

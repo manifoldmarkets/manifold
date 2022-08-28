@@ -24,7 +24,7 @@ import {
 } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
-import { SignUpPrompt } from '../sign-up-prompt'
+import { BetSignUpPrompt } from '../sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
 import { AlertBox } from '../alert-box'
 
@@ -204,7 +204,7 @@ export function AnswerBetPanel(props: {
           {isSubmitting ? 'Submitting...' : 'Submit trade'}
         </button>
       ) : (
-        <SignUpPrompt />
+        <BetSignUpPrompt />
       )}
     </Col>
   )
