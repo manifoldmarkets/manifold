@@ -154,7 +154,7 @@ export function ContractPageContent(
     user?: User | null
   }
 ) {
-  const { backToHome, comments, user, recommendedContracts } = props
+  const { backToHome, comments, user } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
 
@@ -185,6 +185,17 @@ export function ContractPageContent(
     )
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
+
+  const [recommendedContracts, setRecommendedMarkets] = useState(
+    props.recommendedContracts
+  )
+  useEffect(() => {
+    if (recommendedContracts.length === 0) {
+      getRandTopCreatorContracts(contract.creatorId, 4, [contract.id]).then(
+        setRecommendedMarkets
+      )
+    }
+  }, [contract.id, contract.creatorId, recommendedContracts])
 
   const { isResolved, question, outcomeType } = contract
 
