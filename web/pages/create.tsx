@@ -67,6 +67,18 @@ export default function Create(props: { auth: { user: User } }) {
 
   if (!router.isReady) return <div />
 
+  if (user.isBannedFromPosting)
+    return (
+      <Page>
+        <div className="mx-auto w-full max-w-2xl">
+          <div className="rounded-lg px-6 py-4 sm:py-0">
+            <Title className="!mt-0" text="Create a market" />
+            <p>Sorry, you are currently banned from creating a market.</p>
+          </div>
+        </div>
+      </Page>
+    )
+
   return (
     <Page>
       <SEO
