@@ -1,3 +1,4 @@
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { isEqual } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -8,6 +9,7 @@ import {
   listenForHotContracts,
   listenForInactiveContracts,
   listenForNewContracts,
+  getUserBetContractsQuery,
 } from 'web/lib/firebase/contracts'
 
 export const useContracts = () => {
@@ -88,4 +90,16 @@ export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
   return contracts && Object.keys(contractDict.current).length > 0
     ? contracts.map((c) => contractDict.current[c.id])
     : undefined
+}
+
+export const useUserBetContracts = (userId: string) => {
+  const result = useFirestoreQueryData(
+    ['contracts', 'bets', userId],
+    getUserBetContractsQuery(userId),
+    { subscribe: true, includeMetadataChanges: true },
+    // Temporary workaround for react-query bug:
+    // https://github.com/invertase/react-query-firebase/issues/25
+    { refetchOnMount: 'always' }
+  )
+  return result.data
 }
