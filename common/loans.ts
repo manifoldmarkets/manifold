@@ -10,7 +10,7 @@ import {
 import { PortfolioMetrics, User } from './user'
 import { filterDefined } from './util/array'
 
-const LOAN_DAILY_RATE = 0.01
+const LOAN_DAILY_RATE = 0.02
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
