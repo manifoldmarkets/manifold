@@ -317,7 +317,7 @@ function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
         {memberItems.map((item) => (
           <a
             href={item.href}
-            key={item.name}
+            key={item.href}
             onClick={trackCallback('click sidebar group', { name: item.name })}
             className={clsx(
               'cursor-pointer truncate',
