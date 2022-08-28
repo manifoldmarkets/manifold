@@ -170,6 +170,21 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
                   </td>
                 </tr>
               )}
+              {isAdmin && (
+                <tr>
+                  <td>[ADMIN] Unlisted</td>
+                  <td>
+                    <ShortToggle
+                      enabled={contract.visibility === 'unlisted'}
+                      setEnabled={(b) =>
+                        updateContract(id, {
+                          visibility: b ? 'unlisted' : 'public',
+                        })
+                      }
+                    />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
