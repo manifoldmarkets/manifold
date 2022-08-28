@@ -28,6 +28,7 @@ import { Spacer } from '../layout/spacer'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
+import { SignInButton } from '../sign-in-button'
 
 const logout = async () => {
   // log out, and then reload the page, in case SSR wants to boot them out
@@ -240,7 +241,8 @@ export default function Sidebar(props: { className?: string }) {
     >
       <ManifoldLogo className="py-6" twoLine />
 
-      <CreateQuestionButton user={user} />
+      {user ? <CreateQuestionButton user={user} /> : <SignInButton />}
+
       <Spacer h={4} />
       {user && (
         <div className="min-h-[80px] w-full">
