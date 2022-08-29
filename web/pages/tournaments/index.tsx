@@ -213,7 +213,7 @@ function Section(props: {
             <ContractCard
               contract={m}
               hideGroupLink
-              className="max-h-[200px] w-96 shrink-0"
+              className="mb-2 max-h-[200px] w-96 shrink-0"
               questionClass="line-clamp-3"
               trackingPostfix=" tournament"
             />
