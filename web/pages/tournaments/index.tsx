@@ -95,6 +95,13 @@ const tourneys: Tourney[] = [
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
   },
+  {
+    title: 'SF 2022 Ballot',
+    blurb: 'Which ballot initiatives will pass this year in SF and CA?',
+    award: '',
+    endTime: toDate('Nov 8, 2022'),
+    groupId: 'VkWZyS5yxs8XWUJrX9eq',
+  },
   // {
   //   title: 'Clearer Thinking Regrant Project',
   //   blurb: 'Something amazing',
