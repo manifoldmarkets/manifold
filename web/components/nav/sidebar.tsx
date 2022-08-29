@@ -20,10 +20,7 @@ import NotificationsIcon from 'web/components/notifications-icon'
 import React from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
-import { useMemberGroups } from 'web/hooks/use-group'
-import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
-import { Group } from 'common/group'
 import { Spacer } from '../layout/spacer'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
@@ -68,9 +65,11 @@ function getMoreNavigation(user?: User | null) {
   }
 
   if (!user) {
+    // Signed out "More"
     return buildArray(
       CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
       [
+        { name: 'Groups', href: '/groups' },
         { name: 'Leaderboards', href: '/leaderboards' },
         { name: 'Tournaments', href: '/tournaments' },
         { name: 'Charity', href: '/charity' },
@@ -81,9 +80,11 @@ function getMoreNavigation(user?: User | null) {
     )
   }
 
+  // Signed in "More"
   return buildArray(
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
+      { name: 'Groups', href: '/groups' },
       { name: 'Referrals', href: '/referrals' },
       { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
@@ -143,6 +144,7 @@ function getMoreMobileNav() {
   return buildArray<Item>(
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
+      { name: 'Groups', href: '/groups' },
       { name: 'Referrals', href: '/referrals' },
       { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
@@ -225,15 +227,6 @@ export default function Sidebar(props: { className?: string }) {
     ? signedOutMobileNavigation
     : signedInMobileNavigation
 
-  const memberItems = (
-    useMemberGroups(user?.id, undefined, {
-      by: 'mostRecentContractAddedTime',
-    }) ?? []
-  ).map((group: Group) => ({
-    name: group.name,
-    href: `${groupPath(group.slug)}`,
-  }))
-
   return (
     <nav
       aria-label="Sidebar"
@@ -262,11 +255,6 @@ export default function Sidebar(props: { className?: string }) {
             buttonContent={<MoreButton />}
           />
         )}
-        {/* Spacer if there are any groups */}
-        {memberItems.length > 0 && (
-          <hr className="!my-4 mr-2 border-gray-300" />
-        )}
-        <GroupsList currentPage={router.asPath} memberItems={memberItems} />
       </div>
 
       {/* Desktop navigation */}
@@ -278,58 +266,7 @@ export default function Sidebar(props: { className?: string }) {
           menuItems={getMoreNavigation(user)}
           buttonContent={<MoreButton />}
         />
-
-        {/* Spacer if there are any groups */}
-        {memberItems.length > 0 && <hr className="!my-4 border-gray-300" />}
-        <GroupsList currentPage={router.asPath} memberItems={memberItems} />
       </div>
     </nav>
-  )
-}
-
-function GroupsList(props: { currentPage: string; memberItems: Item[] }) {
-  const { currentPage, memberItems } = props
-
-  // const preferredNotifications = useUnseenPreferredNotifications(
-  //   privateUser,
-  //   {
-  //     customHref: '/group/',
-  //   },
-  //   memberItems.length > 0 ? memberItems.length : undefined
-  // )
-  // const notifIsForThisItem = useMemo(
-  //   () => (itemHref: string) =>
-  //     preferredNotifications.some(
-  //       (n) =>
-  //         !n.isSeen &&
-  //         (n.isSeenOnHref === itemHref ||
-  //           n.isSeenOnHref?.replace('/chat', '') === itemHref)
-  //     ),
-  //   [preferredNotifications]
-  // )
-
-  return (
-    <>
-      <SidebarItem
-        item={{ name: 'Groups', href: '/groups', icon: UserGroupIcon }}
-        currentPage={currentPage}
-      />
-
-      <div className="min-h-0 shrink space-y-0.5 overflow-auto">
-        {memberItems.map((item) => (
-          <a
-            href={item.href}
-            key={item.href}
-            onClick={trackCallback('click sidebar group', { name: item.name })}
-            className={clsx(
-              'cursor-pointer truncate',
-              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-            )}
-          >
-            {item.name}
-          </a>
-        ))}
-      </div>
-    </>
   )
 }
