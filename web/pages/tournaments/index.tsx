@@ -212,7 +212,6 @@ function Section(props: {
           markets.map((m) => (
             <ContractCard
               contract={m}
-              showHotVolume
               hideGroupLink
               className="max-h-[200px] w-96 shrink-0"
               questionClass="line-clamp-3"
