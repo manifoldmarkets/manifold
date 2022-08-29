@@ -560,7 +560,7 @@ function LimitOrderPanel(props: {
       <Row className="mt-1 items-center gap-4">
         <Col className="gap-2">
           <div className="relative ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} at
+            Bet {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -571,7 +571,7 @@ function LimitOrderPanel(props: {
         </Col>
         <Col className="gap-2">
           <div className="ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} at
+            Bet {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
