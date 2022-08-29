@@ -43,6 +43,7 @@ export function ContractCard(props: {
   onClick?: () => void
   hideQuickBet?: boolean
   hideGroupLink?: boolean
+  trackingPostfix?: string
 }) {
   const {
     showHotVolume,
@@ -52,6 +53,7 @@ export function ContractCard(props: {
     onClick,
     hideQuickBet,
     hideGroupLink,
+    trackingPostfix,
   } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
@@ -166,7 +168,7 @@ export function ContractCard(props: {
             if (e.ctrlKey || e.metaKey) return
 
             e.preventDefault()
-            track('click market card', {
+            track('click market card' + (trackingPostfix ?? ''), {
               slug: contract.slug,
               contractId: contract.id,
             })
@@ -176,10 +178,13 @@ export function ContractCard(props: {
       ) : (
         <Link href={contractPath(contract)}>
           <a
-            onClick={trackCallback('click market card', {
-              slug: contract.slug,
-              contractId: contract.id,
-            })}
+            onClick={trackCallback(
+              'click market card' + (trackingPostfix ?? ''),
+              {
+                slug: contract.slug,
+                contractId: contract.id,
+              }
+            )}
             className="absolute top-0 left-0 right-0 bottom-0"
           />
         </Link>
