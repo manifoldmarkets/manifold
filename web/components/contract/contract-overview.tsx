@@ -76,28 +76,34 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
             {tradingAllowed(contract) && (
-              <Col>
-                <BetButton contract={contract as CPMMBinaryContract} />
-                {!user && (
-                  <div className="mt-1 text-center text-sm text-gray-500">
-                    (with play money!)
-                  </div>
-                )}
-              </Col>
+              <Row>
+                <LikeMarketButton contract={contract} user={user} />
+                <Col>
+                  <BetButton contract={contract as CPMMBinaryContract} />
+                  {!user && (
+                    <div className="mt-1 text-center text-sm text-gray-500">
+                      (with play money!)
+                    </div>
+                  )}
+                </Col>
+              </Row>
             )}
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && (
-              <Col>
-                <BetButton contract={contract} />
-                {!user && (
-                  <div className="mt-1 text-center text-sm text-gray-500">
-                    (with play money!)
-                  </div>
-                )}
-              </Col>
+              <Row>
+                <LikeMarketButton contract={contract} user={user} />
+                <Col>
+                  <BetButton contract={contract} />
+                  {!user && (
+                    <div className="mt-1 text-center text-sm text-gray-500">
+                      (with play money!)
+                    </div>
+                  )}
+                </Col>
+              </Row>
             )}
           </Row>
         ) : (

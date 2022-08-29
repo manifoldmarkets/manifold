@@ -31,6 +31,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { LoansModal } from './profile/loans-modal'
+import { UserLikesButton } from 'web/components/profile/user-likes-button'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -273,6 +274,7 @@ export function UserPage(props: { user: User }) {
                   <FollowersButton user={user} />
                   <ReferralsButton user={user} />
                   <GroupsButton user={user} />
+                  <UserLikesButton user={user} />
                 </Row>
               ),
             },
