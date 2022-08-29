@@ -10,7 +10,6 @@ import { useRouter } from 'next/router'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-page'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -29,6 +28,7 @@ import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Content, TextEditor, useTextEditor } from '../editor'
 import { Editor } from '@tiptap/react'
+import { UserLink } from 'web/components/user-link'
 
 export function FeedCommentThread(props: {
   contract: Contract

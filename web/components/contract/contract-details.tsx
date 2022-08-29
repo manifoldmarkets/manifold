@@ -8,7 +8,6 @@ import {
 
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
-import { UserLink } from '../user-page'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
@@ -34,6 +33,7 @@ import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
 import { FeaturedContractBadge } from 'web/components/contract/FeaturedContractBadge'
+import { UserLink } from 'web/components/user-link'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 

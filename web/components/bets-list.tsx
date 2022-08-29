@@ -31,7 +31,6 @@ import {
   getContractFromId,
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
-import { UserLink } from './user-page'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
@@ -59,6 +58,7 @@ import { floatingEqual } from 'common/util/math'
 import { filterDefined } from 'common/util/array'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
+import { UserLink } from 'web/components/user-link'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'

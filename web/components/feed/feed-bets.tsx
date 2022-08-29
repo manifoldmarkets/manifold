@@ -13,11 +13,11 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React, { Fragment, useEffect } from 'react'
 import { uniqBy, partition, sumBy, groupBy } from 'lodash'
 import { JoinSpans } from 'web/components/join-spans'
-import { UserLink } from '../user-page'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { SiteLink } from 'web/components/site-link'
 import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
+import { UserLink } from 'web/components/user-link'
 
 export function FeedBet(props: {
   contract: Contract

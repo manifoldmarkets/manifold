@@ -32,35 +32,6 @@ import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { LoansModal } from './profile/loans-modal'
 
-export function UserLink(props: {
-  name: string
-  username: string
-  showUsername?: boolean
-  className?: string
-  short?: boolean
-}) {
-  const { name, username, showUsername, className, short } = props
-  const firstName = name.split(' ')[0]
-  const maxLength = 10
-  const shortName =
-    firstName.length >= 3
-      ? firstName.length < maxLength
-        ? firstName
-        : firstName.substring(0, maxLength - 3) + '...'
-      : name.length > maxLength
-      ? name.substring(0, maxLength) + '...'
-      : name
-  return (
-    <SiteLink
-      href={`/${username}`}
-      className={clsx('z-10 truncate', className)}
-    >
-      {short ? shortName : name}
-      {showUsername && ` (@${username})`}
-    </SiteLink>
-  )
-}
-
 export function UserPage(props: { user: User }) {
   const { user } = props
   const router = useRouter()

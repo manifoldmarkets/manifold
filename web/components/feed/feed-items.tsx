@@ -17,7 +17,6 @@ import {
 import { BinaryResolutionOrChance } from '../contract/contract-card'
 import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
-import { UserLink } from '../user-page'
 import BetButton from '../bet-button'
 import { Avatar } from '../avatar'
 import { ActivityItem } from './activity-items'
@@ -38,6 +37,7 @@ import { SignUpPrompt } from '../sign-up-prompt'
 import { User } from 'common/user'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { contractMetrics } from 'common/contract-details'
+import { UserLink } from 'web/components/user-link'
 
 export function FeedItems(props: {
   contract: Contract

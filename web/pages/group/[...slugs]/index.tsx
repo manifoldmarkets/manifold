@@ -12,7 +12,6 @@ import {
   updateGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
-import { UserLink } from 'web/components/user-page'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
@@ -45,6 +44,7 @@ import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { UserLink } from 'web/components/user-link'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {

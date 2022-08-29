@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import clsx from 'clsx'
 import {
@@ -19,6 +18,7 @@ import { groupBy } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { UserLink } from 'web/components/user-link'
 
 export function FeedAnswerCommentGroup(props: {
   contract: any
