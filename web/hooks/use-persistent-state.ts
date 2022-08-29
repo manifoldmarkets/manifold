@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect } from 'react'
+import { useLayoutEffect, useEffect, useState } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
 
 export type PersistenceOptions = {
@@ -28,6 +28,38 @@ export const loadState = (key: string, store: Storage) => {
   } else {
     return undefined
   }
+}
+
+const STATE_KEY = '__manifold'
+
+const getHistoryState = <T>(k: string) => {
+  if (typeof window !== 'undefined') {
+    return window.history.state?.options?.[STATE_KEY]?.[k] as T | undefined
+  } else {
+    return undefined
+  }
+}
+
+const setHistoryState = (k: string, v: any) => {
+  if (typeof window !== 'undefined') {
+    const state = window.history.state ?? {}
+    const options = state.options ?? {}
+    const inner = options[STATE_KEY] ?? {}
+    window.history.replaceState(
+      { ...state, options: { ...options, [STATE_KEY]: { ...inner, [k]: v } } },
+      ''
+    )
+  }
+}
+
+export const useHistoryState = <T>(key: string, initialValue: T) => {
+  const [state, setState] = useState(getHistoryState<T>(key) ?? initialValue)
+  const setter = (val: T) => {
+    console.log('Setting state: ', val)
+    setHistoryState(key, val)
+    setState(val)
+  }
+  return [state, setter] as const
 }
 
 export const usePersistentState = <T>(
