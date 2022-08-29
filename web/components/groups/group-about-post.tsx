@@ -8,72 +8,72 @@ import { Group } from 'common/group'
 import { deleteFieldFromGroup, updateGroup } from 'web/lib/firebase/groups'
 import PencilIcon from '@heroicons/react/solid/PencilIcon'
 import { DocumentRemoveIcon } from '@heroicons/react/solid'
-import { createDashboard } from 'web/lib/firebase/api'
-import { Dashboard } from 'common/dashboard'
-import { deleteDashboard, updateDashboard } from 'web/lib/firebase/dashboards'
+import { createPost } from 'web/lib/firebase/api'
+import { Post } from 'common/post'
+import { deletePost, updatePost } from 'web/lib/firebase/posts'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
-export function GroupDashboard(props: {
+export function GroupAboutPost(props: {
   group: Group
   isCreator: boolean
-  dashboard: Dashboard
+  post: Post
 }) {
-  const { group, isCreator, dashboard } = props
+  const { group, isCreator, post } = props
   const isAdmin = useAdmin()
 
-  if (group.dashboardId == null && !isCreator) {
-    return <p className="text-center">No dashboard has been created </p>
+  if (group.aboutPostId == null && !isCreator) {
+    return <p className="text-center">No post has been created </p>
   }
 
   return (
     <div className="rounded-md bg-white p-4">
       {isCreator || isAdmin ? (
-        <RichEditGroupDashboard group={group} dashboard={dashboard} />
+        <RichEditGroupAboutPost group={group} post={post} />
       ) : (
-        <Content content={dashboard.content} />
+        <Content content={post.content} />
       )}
     </div>
   )
 }
 
-function RichEditGroupDashboard(props: { group: Group; dashboard: Dashboard }) {
-  const { group, dashboard } = props
+function RichEditGroupAboutPost(props: { group: Group; post: Post }) {
+  const { group, post } = props
   const [editing, setEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
 
   const { editor, upload } = useTextEditor({
-    defaultValue: dashboard.content,
+    defaultValue: post.content,
     disabled: isSubmitting,
   })
 
-  async function saveDashboard() {
+  async function savePost() {
     if (!editor) return
-    const newDashboard = {
-      name: group.name,
+    const newPost = {
+      title: group.name,
       content: editor.getJSON(),
     }
 
-    if (group.dashboardId == null) {
-      const result = await createDashboard(newDashboard).catch((e) => {
+    if (group.aboutPostId == null) {
+      const result = await createPost(newPost).catch((e) => {
         console.error(e)
         return e
       })
       await updateGroup(group, {
-        dashboardId: result.dashboard.id,
+        aboutPostId: result.post.id,
       })
     } else {
-      await updateDashboard(dashboard, {
-        content: newDashboard.content,
+      await updatePost(post, {
+        content: newPost.content,
       })
     }
     await router.replace(router.asPath)
   }
 
-  async function deleteGroupDashboard() {
-    await deleteDashboard(dashboard)
-    await deleteFieldFromGroup(group, 'dashboardId')
+  async function deleteGroupAboutPost() {
+    await deletePost(post)
+    await deleteFieldFromGroup(group, 'aboutPostId')
     await router.replace(router.asPath)
   }
 
@@ -85,7 +85,7 @@ function RichEditGroupDashboard(props: { group: Group; dashboard: Dashboard }) {
         <Button
           onClick={async () => {
             setIsSubmitting(true)
-            await saveDashboard()
+            await savePost()
             setEditing(false)
             setIsSubmitting(false)
           }}
@@ -99,12 +99,12 @@ function RichEditGroupDashboard(props: { group: Group; dashboard: Dashboard }) {
     </>
   ) : (
     <>
-      {group.dashboardId == null ? (
+      {group.aboutPostId == null ? (
         <div className="text-center text-gray-500">
           <p className="text-sm">
-            No dashboard has been created yet.
+            No post has been added yet.
             <Spacer h={2} />
-            <Button onClick={() => setEditing(true)}>Create a dashboard</Button>
+            <Button onClick={() => setEditing(true)}>Add a post</Button>
           </p>
         </div>
       ) : (
@@ -126,7 +126,7 @@ function RichEditGroupDashboard(props: { group: Group; dashboard: Dashboard }) {
               color="gray"
               size="xs"
               onClick={() => {
-                deleteGroupDashboard()
+                deleteGroupAboutPost()
               }}
             >
               <DocumentRemoveIcon className="inline h-4 w-4" />
@@ -134,7 +134,7 @@ function RichEditGroupDashboard(props: { group: Group; dashboard: Dashboard }) {
             </Button>
           </div>
 
-          <Content content={dashboard.content} />
+          <Content content={post.content} />
           <Spacer h={2} />
         </div>
       )}

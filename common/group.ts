@@ -10,7 +10,7 @@ export type Group = {
   anyoneCanJoin: boolean
   contractIds: string[]
 
-  dashboardId?: string
+  aboutPostId?: string
   chatDisabled?: boolean
   mostRecentChatActivityTime?: number
   mostRecentContractAddedTime?: number

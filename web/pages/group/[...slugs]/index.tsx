@@ -45,9 +45,9 @@ import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import { GroupDashboard } from 'web/components/groups/group-dashboard'
-import { getDashboard } from 'web/lib/firebase/dashboards'
-import { Dashboard } from 'common/dashboard'
+import { GroupAboutPost } from 'web/components/groups/group-about-post'
+import { getPost } from 'web/lib/firebase/posts'
+import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -61,10 +61,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const contracts =
     (group && (await listContractsByGroupSlug(group.slug))) ?? []
 
-  const dashboard =
-    group &&
-    group.dashboardId != null &&
-    (await getDashboard(group.dashboardId))
+  const aboutPost =
+    group && group.aboutPostId != null && (await getPost(group.aboutPostId))
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
   )
@@ -91,7 +89,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       creatorScores,
       topCreators,
       messages,
-      dashboard,
+      aboutPost,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -130,7 +128,7 @@ export default function GroupPage(props: {
   creatorScores: { [userId: string]: number }
   topCreators: User[]
   messages: GroupComment[]
-  dashboard: Dashboard
+  aboutPost: Post
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -149,7 +147,7 @@ export default function GroupPage(props: {
     topTraders,
     creatorScores,
     topCreators,
-    dashboard,
+    aboutPost,
   } = props
 
   const router = useRouter()
@@ -187,11 +185,11 @@ export default function GroupPage(props: {
 
   const aboutTab = (
     <Col>
-      {group.dashboardId != null || isCreator ? (
-        <GroupDashboard
+      {group.aboutPostId != null || isCreator ? (
+        <GroupAboutPost
           group={group}
           isCreator={!!isCreator}
-          dashboard={dashboard}
+          post={aboutPost}
         />
       ) : (
         <div></div>

@@ -18,7 +18,6 @@ import {
 } from './utils'
 import { Contract } from 'common/contract'
 import { updateContract } from 'web/lib/firebase/contracts'
-import * as admin from 'firebase-admin'
 
 export const groups = coll<Group>('groups')
 
@@ -30,7 +29,6 @@ export function groupPath(
     | 'about'
     | typeof GROUP_CHAT_SLUG
     | 'leaderboards'
-    | 'dashboard'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
