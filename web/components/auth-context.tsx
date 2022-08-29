@@ -46,30 +46,35 @@ export function AuthProvider(props: {
   }, [setAuthUser, serverUser])
 
   useEffect(() => {
-    return onIdTokenChanged(auth, async (fbUser) => {
-      console.log('onIdTokenChanged', fbUser)
-      if (fbUser) {
-        setTokenCookies({
-          id: await fbUser.getIdToken(),
-          refresh: fbUser.refreshToken,
-        })
-        let current = await getUserAndPrivateUser(fbUser.uid)
-        if (!current.user || !current.privateUser) {
-          const deviceToken = ensureDeviceToken()
-          current = (await createUser({ deviceToken })) as UserAndPrivateUser
+    return onIdTokenChanged(
+      auth,
+      async (fbUser) => {
+        if (fbUser) {
+          setTokenCookies({
+            id: await fbUser.getIdToken(),
+            refresh: fbUser.refreshToken,
+          })
+          let current = await getUserAndPrivateUser(fbUser.uid)
+          if (!current.user || !current.privateUser) {
+            const deviceToken = ensureDeviceToken()
+            current = (await createUser({ deviceToken })) as UserAndPrivateUser
+          }
+          setAuthUser(current)
+          // Persist to local storage, to reduce login blink next time.
+          // Note: Cap on localStorage size is ~5mb
+          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
+          setCachedReferralInfoForUser(current.user)
+        } else {
+          // User logged out; reset to null
+          deleteTokenCookies()
+          setAuthUser(null)
+          localStorage.removeItem(CACHED_USER_KEY)
         }
-        setAuthUser(current)
-        // Persist to local storage, to reduce login blink next time.
-        // Note: Cap on localStorage size is ~5mb
-        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
-        setCachedReferralInfoForUser(current.user)
-      } else {
-        // User logged out; reset to null
-        deleteTokenCookies()
-        setAuthUser(null)
-        localStorage.removeItem(CACHED_USER_KEY)
+      },
+      (e) => {
+        console.error(e)
       }
-    })
+    )
   }, [setAuthUser])
 
   const uid = authUser?.user.id
