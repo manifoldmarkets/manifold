@@ -175,5 +175,14 @@ service cloud.firestore {
             allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
           }
         }
+
+      match /posts/{postId} {
+        allow read;
+        allow update: if request.auth.uid == resource.data.creatorId
+                         && request.resource.data.diff(resource.data)
+                         .affectedKeys()
+                         .hasOnly(['name', 'content']);
+        allow delete: if request.auth.uid == resource.data.creatorId;
+      }
   }
 }
