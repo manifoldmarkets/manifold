@@ -44,6 +44,7 @@ export type User = {
   currentBettingStreak?: number
   hasSeenContractFollowModal?: boolean
   freeMarketsCreated?: number
+  isBannedFromPosting?: boolean
 }
 
 export type PrivateUser = {

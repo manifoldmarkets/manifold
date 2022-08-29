@@ -33,6 +33,7 @@ import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
+import { MINUTE_MS } from 'common/util/time'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
@@ -65,6 +66,18 @@ export default function Create(props: { auth: { user: User } }) {
   }, [params.q])
 
   if (!router.isReady) return <div />
+
+  if (user.isBannedFromPosting)
+    return (
+      <Page>
+        <div className="mx-auto w-full max-w-2xl">
+          <div className="rounded-lg px-6 py-4 sm:py-0">
+            <Title className="!mt-0" text="Create a market" />
+            <p>Sorry, you are currently banned from creating a market.</p>
+          </div>
+        </div>
+      </Page>
+    )
 
   return (
     <Page>
@@ -209,7 +222,9 @@ export function NewContract(props: {
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     disabled: isSubmitting,
-    defaultValue: JSON.parse(params?.description ?? '{}'),
+    defaultValue: params?.description
+      ? JSON.parse(params.description)
+      : undefined,
   })
 
   const isEditorFilled = editor != null && !editor.isEmpty
@@ -427,7 +442,7 @@ export function NewContract(props: {
             className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseDate(e.target.value)}
-            min={Date.now()}
+            min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
             disabled={isSubmitting}
             value={closeDate}
           />

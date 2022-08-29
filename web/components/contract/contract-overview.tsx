@@ -75,36 +75,30 @@ export const ContractOverview = (props: {
         {isBinary ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
-            <Row className={'items-center justify-center'}>
-              <LikeMarketButton contract={contract} user={user} />
-              {tradingAllowed(contract) && (
-                <Col>
-                  <BetButton contract={contract as CPMMBinaryContract} />
-                  {!user && (
-                    <div className="mt-1 text-center text-sm text-gray-500">
-                      (with play money!)
-                    </div>
-                  )}
-                </Col>
-              )}
-            </Row>
+            {tradingAllowed(contract) && (
+              <Col>
+                <BetButton contract={contract as CPMMBinaryContract} />
+                {!user && (
+                  <div className="mt-1 text-center text-sm text-gray-500">
+                    (with play money!)
+                  </div>
+                )}
+              </Col>
+            )}
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
-            <Row className={'items-center justify-center'}>
-              <LikeMarketButton contract={contract} user={user} />
-              {tradingAllowed(contract) && (
-                <Col>
-                  <BetButton contract={contract} />
-                  {!user && (
-                    <div className="mt-1 text-center text-sm text-gray-500">
-                      (with play money!)
-                    </div>
-                  )}
-                </Col>
-              )}
-            </Row>
+            {tradingAllowed(contract) && (
+              <Col>
+                <BetButton contract={contract} />
+                {!user && (
+                  <div className="mt-1 text-center text-sm text-gray-500">
+                    (with play money!)
+                  </div>
+                )}
+              </Col>
+            )}
           </Row>
         ) : (
           (outcomeType === 'FREE_RESPONSE' ||

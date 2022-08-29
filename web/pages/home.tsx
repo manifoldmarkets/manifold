@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { PlusSmIcon } from '@heroicons/react/solid'
+import { PencilAltIcon } from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -15,6 +15,7 @@ import { track } from 'web/lib/service/analytics'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { GetServerSideProps } from 'next'
+import { usePrefetch } from 'web/hooks/use-prefetch'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -30,10 +31,11 @@ const Home = (props: { auth: { user: User } | null }) => {
   useTracking('view home')
 
   useSaveReferral()
+  usePrefetch(user?.id)
 
   return (
     <>
-      <Page suspend={!!contract}>
+      <Page className={contract ? 'sr-only' : ''}>
         <Col className="mx-auto w-full p-2">
           <ContractSearch
             user={user}
@@ -50,13 +52,13 @@ const Home = (props: { auth: { user: User } | null }) => {
         </Col>
         <button
           type="button"
-          className="fixed bottom-[70px] right-3 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-3 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+          className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
           onClick={() => {
             router.push('/create')
             track('mobile create button')
           }}
         >
-          <PlusSmIcon className="h-8 w-8" aria-hidden="true" />
+          <PencilAltIcon className="h-7 w-7" aria-hidden="true" />
         </button>
       </Page>
 

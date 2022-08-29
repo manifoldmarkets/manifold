@@ -4,7 +4,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button, SizeType } from './button'
 
-export function SignUpPrompt(props: {
+export function BetSignUpPrompt(props: {
   label?: string
   className?: string
   size?: SizeType

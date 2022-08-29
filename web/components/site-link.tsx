@@ -3,7 +3,7 @@ import { ReactNode } from 'react'
 import Link from 'next/link'
 
 export const linkClass =
-  'z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2'
+  'z-10 break-anywhere hover:underline hover:decoration-indigo-400 hover:decoration-2'
 
 export const SiteLink = (props: {
   href: string
@@ -19,7 +19,6 @@ export const SiteLink = (props: {
         className={clsx(linkClass, className)}
         href={href}
         target={href.startsWith('http') ? '_blank' : undefined}
-        style={{ /* For iOS safari */ wordBreak: 'break-word' }}
         onClick={(e) => {
           e.stopPropagation()
           if (onClick) onClick()

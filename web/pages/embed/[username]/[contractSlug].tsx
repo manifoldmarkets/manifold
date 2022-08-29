@@ -166,7 +166,8 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           />
         )}
 
-        {outcomeType === 'FREE_RESPONSE' && (
+        {(outcomeType === 'FREE_RESPONSE' ||
+          outcomeType === 'MULTIPLE_CHOICE') && (
           <AnswersGraph contract={contract} bets={bets} height={graphHeight} />
         )}
 

@@ -71,10 +71,11 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
   const yTickValues = [0, 25, 50, 75, 100]
 
   const numXTickValues = isLargeWidth ? 5 : 2
-  const hoursAgo = latestTime.subtract(5, 'hours')
-  const startDate = dayjs(contract.createdTime).isBefore(hoursAgo)
-    ? new Date(contract.createdTime)
-    : hoursAgo.toDate()
+  const startDate = new Date(contract.createdTime)
+  const endDate = dayjs(startDate).add(1, 'hour').isAfter(latestTime)
+    ? latestTime.add(1, 'hours').toDate()
+    : latestTime.toDate()
+  const includeMinute = dayjs(endDate).diff(startDate, 'hours') < 2
 
   const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
   const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
@@ -96,16 +97,24 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         xScale={{
           type: 'time',
           min: startDate,
-          max: latestTime.toDate(),
+          max: endDate,
         }}
         xFormat={(d) =>
           formatTime(+d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
         }
         axisBottom={{
           tickValues: numXTickValues,
-          format: (time) => formatTime(+time, multiYear, lessThanAWeek, false),
+          format: (time) =>
+            formatTime(+time, multiYear, lessThanAWeek, includeMinute),
         }}
-        colors={{ scheme: 'pastel1' }}
+        colors={[
+          '#fca5a5', // red-300
+          '#a5b4fc', // indigo-300
+          '#86efac', // green-300
+          '#fef08a', // yellow-200
+          '#fdba74', // orange-300
+          '#c084fc', // purple-400
+        ]}
         pointSize={0}
         curve="stepAfter"
         enableSlices="x"
@@ -156,7 +165,11 @@ function formatTime(
 ) {
   const d = dayjs(time)
 
-  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
+  if (
+    d.add(1, 'minute').isAfter(Date.now()) &&
+    d.subtract(1, 'minute').isBefore(Date.now())
+  )
+    return 'Now'
 
   let format: string
   if (d.isSame(Date.now(), 'day')) {

@@ -25,7 +25,7 @@ import {
 } from 'web/components/outcome-label'
 import {
   NotificationGroup,
-  usePreferredGroupedNotifications,
+  useGroupedNotifications,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
@@ -49,6 +49,7 @@ import {
   MultiUserLinkInfo,
   UserLink,
 } from 'web/components/user-link'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -61,16 +62,6 @@ export default function Notifications(props: {
   auth: { privateUser: PrivateUser }
 }) {
   const { privateUser } = props.auth
-  const local = safeLocalStorage()
-  let localNotifications = [] as Notification[]
-  const localSavedNotificationGroups = local?.getItem('notification-groups')
-  let localNotificationGroups = [] as NotificationGroup[]
-  if (localSavedNotificationGroups) {
-    localNotificationGroups = JSON.parse(localSavedNotificationGroups)
-    localNotifications = localNotificationGroups
-      .map((g) => g.notifications)
-      .flat()
-  }
 
   return (
     <Page>
@@ -87,12 +78,7 @@ export default function Notifications(props: {
             tabs={[
               {
                 title: 'Notifications',
-                content: (
-                  <NotificationsList
-                    privateUser={privateUser}
-                    cachedNotifications={localNotifications}
-                  />
-                ),
+                content: <NotificationsList privateUser={privateUser} />,
               },
               {
                 title: 'Settings',
@@ -138,16 +124,10 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: {
-  privateUser: PrivateUser
-  cachedNotifications: Notification[]
-}) {
-  const { privateUser, cachedNotifications } = props
+function NotificationsList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
   const [page, setPage] = useState(0)
-  const allGroupedNotifications = usePreferredGroupedNotifications(
-    privateUser,
-    cachedNotifications
-  )
+  const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return
     const start = page * NOTIFICATIONS_PER_PAGE
@@ -166,7 +146,8 @@ function NotificationsList(props: {
     return maxNotificationsToShow
   }, [allGroupedNotifications, page])
 
-  if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
+  if (!paginatedGroupedNotifications || !allGroupedNotifications)
+    return <LoadingIndicator />
 
   return (
     <div className={'min-h-[100vh] text-sm'}>
@@ -203,7 +184,9 @@ function IncomeNotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
   const numSummaryLines = 3
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(
+    notifications.length <= numSummaryLines
+  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
@@ -414,7 +397,8 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
-      reasonText = 'for your'
+      if (sourceText && +sourceText === 50) reasonText = '(max) for your'
+      else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested bets returned as a`
       // TODO: support just 'like' notification without a tip
@@ -545,7 +529,7 @@ function IncomeNotificationItem(props: {
             </span>
           </div>
         </Row>
-        <div className={'mt-4 border-b border-gray-300'} />
+        <div className={'border-b border-gray-300 pt-4'} />
       </div>
     </div>
   )
@@ -562,7 +546,9 @@ function NotificationGroupItem(props: {
   const isMobile = (width && width < 768) || false
   const numSummaryLines = 3
 
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(
+    notifications.length <= numSummaryLines
+  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )

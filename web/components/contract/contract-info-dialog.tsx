@@ -17,6 +17,7 @@ import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { SiteLink } from '../site-link'
 import { firestoreConsolePath } from 'common/envs/constants'
 import { deleteField } from 'firebase/firestore'
+import ShortToggle from '../widgets/short-toggle'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -31,7 +32,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const isDev = useDev()
   const isAdmin = useAdmin()
 
-  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a z')
+  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
   const { createdTime, closeTime, resolutionTime, mechanism, outcomeType, id } =
     contract
@@ -49,6 +50,21 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
       : 'Numeric'
+
+  const onFeaturedToggle = async (enabled: boolean) => {
+    if (
+      enabled &&
+      (contract.featuredOnHomeRank === 0 || !contract?.featuredOnHomeRank)
+    ) {
+      await updateContract(id, { featuredOnHomeRank: 1 })
+      setFeatured(true)
+    } else if (!enabled && (contract?.featuredOnHomeRank ?? 0) > 0) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      await updateContract(id, { featuredOnHomeRank: deleteField() })
+      setFeatured(false)
+    }
+  }
 
   return (
     <>
@@ -134,7 +150,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               {/* Show a path to Firebase if user is an admin, or we're on localhost */}
               {(isAdmin || isDev) && (
                 <tr>
-                  <td>[DEV] Firestore</td>
+                  <td>[ADMIN] Firestore</td>
                   <td>
                     <SiteLink href={firestoreConsolePath(id)}>
                       Console link
@@ -144,43 +160,28 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               )}
               {isAdmin && (
                 <tr>
-                  <td>Set featured</td>
+                  <td>[ADMIN] Featured</td>
                   <td>
-                    <select
-                      className="select select-bordered"
-                      value={featured ? 'true' : 'false'}
-                      onChange={(e) => {
-                        const newVal = e.target.value === 'true'
-                        if (
-                          newVal &&
-                          (contract.featuredOnHomeRank === 0 ||
-                            !contract?.featuredOnHomeRank)
-                        )
-                          updateContract(id, {
-                            featuredOnHomeRank: 1,
-                          })
-                            .then(() => {
-                              setFeatured(true)
-                            })
-                            .catch(console.error)
-                        else if (
-                          !newVal &&
-                          (contract?.featuredOnHomeRank ?? 0) > 0
-                        )
-                          updateContract(id, {
-                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                            // @ts-ignore
-                            featuredOnHomeRank: deleteField(),
-                          })
-                            .then(() => {
-                              setFeatured(false)
-                            })
-                            .catch(console.error)
-                      }}
-                    >
-                      <option value="false">false</option>
-                      <option value="true">true</option>
-                    </select>
+                    <ShortToggle
+                      enabled={featured}
+                      setEnabled={setFeatured}
+                      onChange={onFeaturedToggle}
+                    />
+                  </td>
+                </tr>
+              )}
+              {isAdmin && (
+                <tr>
+                  <td>[ADMIN] Unlisted</td>
+                  <td>
+                    <ShortToggle
+                      enabled={contract.visibility === 'unlisted'}
+                      setEnabled={(b) =>
+                        updateContract(id, {
+                          visibility: b ? 'unlisted' : 'public',
+                        })
+                      }
+                    />
                   </td>
                 </tr>
               )}

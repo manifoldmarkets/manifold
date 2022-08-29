@@ -5,11 +5,14 @@ import {
   TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
+import Router from 'next/router'
+import clsx from 'clsx'
+import { Editor } from '@tiptap/react'
+import dayjs from 'dayjs'
 
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
-import dayjs from 'dayjs'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../avatar'
@@ -20,7 +23,6 @@ import NewContractBadge from '../new-contract-badge'
 import { UserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
-import { Editor } from '@tiptap/react'
 import { exhibitExts } from 'common/util/parse'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
@@ -29,11 +31,10 @@ import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
 import { groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
-import clsx from 'clsx'
 import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
-import { FeaturedContractBadge } from 'web/components/contract/FeaturedContractBadge'
 import { UserLink } from 'web/components/user-link'
+import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -187,14 +188,29 @@ export function ContractDetails(props: {
         ) : !groupToDisplay && !user ? (
           <div />
         ) : (
-          <Button
-            size={'xs'}
-            className={'max-w-[200px]'}
-            color={'gray-white'}
-            onClick={() => setOpen(!open)}
-          >
-            {groupInfo}
-          </Button>
+          <Row>
+            <Button
+              size={'xs'}
+              className={'max-w-[200px] pr-2'}
+              color={'gray-white'}
+              onClick={() =>
+                groupToDisplay
+                  ? Router.push(groupPath(groupToDisplay.slug))
+                  : setOpen(!open)
+              }
+            >
+              {groupInfo}
+            </Button>
+            {user && (
+              <Button
+                size={'xs'}
+                color={'gray-white'}
+                onClick={() => setOpen(!open)}
+              >
+                <PencilIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
+              </Button>
+            )}
+          </Row>
         )}
       </Row>
       <Modal open={open} setOpen={setOpen} size={'md'}>
@@ -218,7 +234,7 @@ export function ContractDetails(props: {
               <ClockIcon className="h-5 w-5" />
               <DateTimeTooltip
                 text="Market resolved:"
-                time={dayjs(contract.resolutionTime)}
+                time={contract.resolutionTime}
               >
                 {resolvedDate}
               </DateTimeTooltip>
@@ -262,14 +278,22 @@ function EditableCloseDate(props: {
 
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const [closeDate, setCloseDate] = useState(
-    closeTime && dayJsCloseTime.format('YYYY-MM-DDTHH:mm')
+    closeTime && dayJsCloseTime.format('YYYY-MM-DD')
   )
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState(
+    closeTime && dayJsCloseTime.format('HH:mm')
+  )
+
+  const newCloseTime = closeDate
+    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
+    : undefined
 
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
 
   const onSave = () => {
-    const newCloseTime = dayjs(closeDate).valueOf()
+    if (!newCloseTime) return
+
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
     else if (newCloseTime > Date.now()) {
       const content = contract.description
@@ -294,20 +318,28 @@ function EditableCloseDate(props: {
   return (
     <>
       {isEditingCloseTime ? (
-        <div className="form-control mr-1 items-start">
+        <Row className="mr-1 items-start">
           <input
-            type="datetime-local"
+            type="date"
             className="input input-bordered"
             onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseDate(e.target.value || '')}
+            onChange={(e) => setCloseDate(e.target.value)}
             min={Date.now()}
             value={closeDate}
           />
-        </div>
+          <input
+            type="time"
+            className="input input-bordered ml-2"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setCloseHoursMinutes(e.target.value)}
+            min="00:00"
+            value={closeHoursMinutes}
+          />
+        </Row>
       ) : (
         <DateTimeTooltip
           text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-          time={dayJsCloseTime}
+          time={closeTime}
         >
           {isSameYear
             ? dayJsCloseTime.format('MMM D')
@@ -327,7 +359,7 @@ function EditableCloseDate(props: {
             color={'gray-white'}
             onClick={() => setIsEditingCloseTime(true)}
           >
-            <PencilIcon className="mr-0.5 inline h-4 w-4" /> Edit
+            <PencilIcon className="!container mr-0.5 mb-0.5 inline h-4 w-4" />
           </Button>
         ))}
     </>

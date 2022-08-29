@@ -1,14 +1,5 @@
 import Link from 'next/link'
-import {
-  Dictionary,
-  keyBy,
-  groupBy,
-  mapValues,
-  sortBy,
-  partition,
-  sumBy,
-  uniq,
-} from 'lodash'
+import { keyBy, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
@@ -28,7 +19,6 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
-  getContractFromId,
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { sellBet } from 'web/lib/firebase/api'
@@ -55,10 +45,10 @@ import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { filterDefined } from 'common/util/array'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
 import { UserLink } from 'web/components/user-link'
+import { useUserBetContracts } from 'web/hooks/use-contracts'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -72,26 +62,22 @@ export function BetsList(props: { user: User }) {
   const signedInUser = useUser()
   const isYourBets = user.id === signedInUser?.id
   const hideBetsBefore = isYourBets ? 0 : JUNE_1_2022
-  const userBets = useUserBets(user.id, { includeRedemptions: true })
-  const [contractsById, setContractsById] = useState<
-    Dictionary<Contract> | undefined
-  >()
+  const userBets = useUserBets(user.id)
 
   // Hide bets before 06-01-2022 if this isn't your own profile
   // NOTE: This means public profits also begin on 06-01-2022 as well.
   const bets = useMemo(
-    () => userBets?.filter((bet) => bet.createdTime >= (hideBetsBefore ?? 0)),
+    () =>
+      userBets?.filter(
+        (bet) => !bet.isAnte && bet.createdTime >= (hideBetsBefore ?? 0)
+      ),
     [userBets, hideBetsBefore]
   )
 
-  useEffect(() => {
-    if (bets) {
-      const contractIds = uniq(bets.map((b) => b.contractId))
-      Promise.all(contractIds.map(getContractFromId)).then((contracts) => {
-        setContractsById(keyBy(filterDefined(contracts), 'id'))
-      })
-    }
-  }, [bets])
+  const contractList = useUserBetContracts(user.id)
+  const contractsById = useMemo(() => {
+    return contractList ? keyBy(contractList, 'id') : undefined
+  }, [contractList])
 
   const [sort, setSort] = useState<BetSort>('newest')
   const [filter, setFilter] = useState<BetFilter>('open')
@@ -405,7 +391,8 @@ export function BetsSummary(props: {
   const isClosed = closeTime && Date.now() > closeTime
 
   const bets = props.bets.filter((b) => !b.isAnte)
-  const { hasShares } = getContractBetMetrics(contract, bets)
+  const { hasShares, invested, profitPercent, payout, profit, totalShares } =
+    getContractBetMetrics(contract, bets)
 
   const excludeSalesAndAntes = bets.filter(
     (b) => !b.isAnte && !b.isSold && !b.sale
@@ -416,8 +403,6 @@ export function BetsSummary(props: {
   const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
-  const { invested, profitPercent, payout, profit, totalShares } =
-    getContractBetMetrics(contract, bets)
 
   const [showSellModal, setShowSellModal] = useState(false)
   const user = useUser()
@@ -520,7 +505,7 @@ export function BetsSummary(props: {
         ) : (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
-              Current value
+              Expected value
             </div>
             <div className="whitespace-nowrap">{formatMoney(payout)}</div>
           </Col>

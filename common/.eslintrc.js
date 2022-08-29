@@ -1,5 +1,5 @@
 module.exports = {
-  plugins: ['lodash'],
+  plugins: ['lodash', 'unused-imports'],
   extends: ['eslint:recommended'],
   ignorePatterns: ['lib'],
   env: {
@@ -26,6 +26,7 @@ module.exports = {
             caughtErrorsIgnorePattern: '^_',
           },
         ],
+        'unused-imports/no-unused-imports': 'error',
       },
     },
   ],

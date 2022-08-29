@@ -1,4 +1,5 @@
 import {
+  Query,
   collection,
   collectionGroup,
   doc,
@@ -148,12 +149,10 @@ export function listenForRecentComments(
   return listenForValues<Comment>(recentCommentsQuery, setComments)
 }
 
-const getUsersCommentsQuery = (userId: string) =>
+export const getUserCommentsQuery = (userId: string) =>
   query(
     collectionGroup(db, 'comments'),
     where('userId', '==', userId),
+    where('commentType', '==', 'contract'),
     orderBy('createdTime', 'desc')
-  )
-export async function getUsersComments(userId: string) {
-  return await getValues<Comment>(getUsersCommentsQuery(userId))
-}
+  ) as Query<ContractComment>

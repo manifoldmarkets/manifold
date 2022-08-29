@@ -1,4 +1,9 @@
+import React, { useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { debounce, sortBy, take } from 'lodash'
+import { SearchIcon } from '@heroicons/react/outline'
+import { toast } from 'react-hot-toast'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
@@ -16,7 +21,6 @@ import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
-import { useRouter } from 'next/router'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
@@ -26,15 +30,11 @@ import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
-import { CreateQuestionButton } from 'web/components/create-question-button'
-import React, { useState } from 'react'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { toast } from 'react-hot-toast'
 import { ContractSearch } from 'web/components/contract-search'
 import { FollowList } from 'web/components/follow-list'
-import { SearchIcon } from '@heroicons/react/outline'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { CopyLinkButton } from 'web/components/copy-link-button'
@@ -538,35 +538,37 @@ function AddContractButton(props: { group: Group; user: User }) {
       <div className={'flex justify-center'}>
         <Button
           className="whitespace-nowrap"
-          size="sm"
-          color="gradient"
+          size="md"
+          color="indigo"
           onClick={() => setOpen(true)}
         >
           Add market
         </Button>
       </div>
 
-      <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
-        <Col className={' w-full gap-4 rounded-md bg-white'}>
+      <Modal
+        open={open}
+        setOpen={setOpen}
+        className={'max-w-4xl sm:p-0'}
+        size={'xl'}
+      >
+        <Col
+          className={'min-h-screen w-full max-w-4xl gap-4 rounded-md bg-white'}
+        >
           <Col className="p-8 pb-0">
-            <div className={'text-xl text-indigo-700'}>
-              Add a market to your group
+            <div className={'text-xl text-indigo-700'}>Add markets</div>
+
+            <div className={'text-md my-4 text-gray-600'}>
+              Add pre-existing markets to this group, or{' '}
+              <Link href={`/create?groupId=${group.id}`}>
+                <span className="cursor-pointer font-semibold underline">
+                  create a new one
+                </span>
+              </Link>
+              .
             </div>
 
-            {contracts.length === 0 ? (
-              <Col className="items-center justify-center">
-                <CreateQuestionButton
-                  user={user}
-                  overrideText={'New market'}
-                  className={'w-48 flex-shrink-0 '}
-                  query={`?groupId=${group.id}`}
-                />
-
-                <div className={'mt-1 text-lg text-gray-600'}>
-                  (or select old markets)
-                </div>
-              </Col>
-            ) : (
+            {contracts.length > 0 && (
               <Col className={'w-full '}>
                 {!loading ? (
                   <Row className={'justify-end gap-4'}>

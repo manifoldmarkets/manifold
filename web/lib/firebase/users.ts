@@ -12,6 +12,7 @@ import {
   deleteDoc,
   collectionGroup,
   onSnapshot,
+  Query,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
@@ -253,14 +254,13 @@ export async function unfollow(userId: string, unfollowedUserId: string) {
   await deleteDoc(followDoc)
 }
 
-export async function getPortfolioHistory(userId: string) {
-  return getValues<PortfolioMetrics>(
-    query(
-      collectionGroup(db, 'portfolioHistory'),
-      where('userId', '==', userId),
-      orderBy('timestamp', 'asc')
-    )
-  )
+export function getPortfolioHistoryQuery(userId: string, since: number) {
+  return query(
+    collectionGroup(db, 'portfolioHistory'),
+    where('userId', '==', userId),
+    where('timestamp', '>=', since),
+    orderBy('timestamp', 'asc')
+  ) as Query<PortfolioMetrics>
 }
 
 export function listenForFollows(

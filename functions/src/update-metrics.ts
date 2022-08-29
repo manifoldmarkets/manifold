@@ -55,16 +55,18 @@ export const updateMetricsCore = async () => {
 
   const now = Date.now()
   const betsByContract = groupBy(bets, (bet) => bet.contractId)
-  const contractUpdates = contracts.map((contract) => {
-    const contractBets = betsByContract[contract.id] ?? []
-    return {
-      doc: firestore.collection('contracts').doc(contract.id),
-      fields: {
-        volume24Hours: computeVolume(contractBets, now - DAY_MS),
-        volume7Days: computeVolume(contractBets, now - DAY_MS * 7),
-      },
-    }
-  })
+  const contractUpdates = contracts
+    .filter((contract) => contract.id)
+    .map((contract) => {
+      const contractBets = betsByContract[contract.id] ?? []
+      return {
+        doc: firestore.collection('contracts').doc(contract.id),
+        fields: {
+          volume24Hours: computeVolume(contractBets, now - DAY_MS),
+          volume7Days: computeVolume(contractBets, now - DAY_MS * 7),
+        },
+      }
+    })
   await writeAsync(firestore, contractUpdates)
   log(`Updated metrics for ${contracts.length} contracts.`)
 

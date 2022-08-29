@@ -8,7 +8,7 @@ export function RelativeTimestamp(props: { time: number }) {
   return (
     <DateTimeTooltip
       className="ml-1 whitespace-nowrap text-gray-400"
-      time={dayJsTime}
+      time={time}
     >
       {dayJsTime.fromNow()}
     </DateTimeTooltip>

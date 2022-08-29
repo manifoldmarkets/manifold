@@ -37,8 +37,8 @@ export function Button(props: {
     sm: 'px-3 py-2 text-sm',
     md: 'px-4 py-2 text-sm',
     lg: 'px-4 py-2 text-base',
-    xl: 'px-6 py-3 text-base',
-    '2xl': 'px-6 py-3 text-xl',
+    xl: 'px-6 py-2.5 text-base font-semibold',
+    '2xl': 'px-6 py-3 text-xl font-semibold',
   }[size]
 
   return (
@@ -52,9 +52,9 @@ export function Button(props: {
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
         color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
-        color === 'gray' && 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+        color === 'gray' && 'bg-gray-50 text-gray-600 hover:bg-gray-200',
         color === 'gradient' &&
-          'bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+          'border-none bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
         color === 'gray-white' &&
           'border-none bg-white text-gray-500 shadow-none hover:bg-gray-200',
         className
