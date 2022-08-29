@@ -76,7 +76,6 @@ export default class DockClient {
         });
 
         this.socket.on(Packet.CREATE_MARKET, async (packet: PacketCreateMarket) => {
-            //!!! Uncomment
             try {
                 const newMarket = await ManifoldAPI.createBinaryMarket(this.connectedUser.data.APIKey, packet.question, undefined, 50, packet.groupId);
                 this.socket.emit(Packet.MARKET_CREATED, <PacketMarketCreated>{ id: newMarket.id });

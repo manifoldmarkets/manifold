@@ -15,6 +15,7 @@ import { Row } from "web/components/layout/row";
 import { LoadingOverlay } from "web/components/loading-overlay";
 import { Title } from "web/components/title";
 import { ConnectionState } from "web/lib/connection-state";
+import { SelectedGroup } from "web/lib/selected-group";
 import { CONTRACT_ANTE, formatMoney, Resolution } from "web/lib/utils";
 import { ConfirmationButton } from "../components/confirmation-button";
 import { GroupSelector } from "../components/group-selector";
@@ -40,10 +41,18 @@ async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
     markets = markets.filter((market) => {
         return group.contractIds.indexOf(market.id) >= 0 && !market.isResolved;
     });
+
+    // Sort the markets such that the display order is Featureable markets > Closed markets > Unsupported markets:
     const now = Date.now();
+    const marketWeight = (a: LiteMarket) => {
+        if (a.outcomeType !== "BINARY") return 3;
+        if (a.closeTime < now) return 2;
+        return 1;
+    };
     markets.sort((a, b) => {
-        return (a.closeTime < now ? 1 : -1) - (b.closeTime < now ? 1 : -1);
+        return marketWeight(a) - marketWeight(b);
     });
+
     return markets;
 }
 
@@ -97,7 +106,7 @@ export default () => {
                     // }
                     resolve();
                 });
-                setTimeout(() => reject(new Error("Timeout")), 10000);
+                setTimeout(() => reject(new Error("Timeout")), 20000);
             });
             return true;
         } catch (e) {
@@ -185,7 +194,7 @@ export default () => {
             setContracts([]);
         }
         if (firstLoad.current) {
-            localStorage.setItem("SELECTED_GROUP", selectedGroup?.id);
+            localStorage.setItem("SELECTED_GROUP", selectedGroup && JSON.stringify({groupID: selectedGroup.id, groupName: selectedGroup.name} as SelectedGroup));
         }
         firstLoad.current = true;
     }, [selectedGroup]);
@@ -298,7 +307,7 @@ export default () => {
                         <div className={clsx("fixed inset-0 flex flex-col items-center overflow-y-auto", selectedContract ?? "pointer-events-none")}>
                             <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
                                 <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
-                                    <ResolutionPanel contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
+                                    <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
                                 </div>
                             </Transition>
                         </div>
@@ -309,8 +318,8 @@ export default () => {
     );
 };
 
-function ResolutionPanel(props: { contract: LiteMarket; onUnfeatureMarket: () => void }) {
-    const { contract, onUnfeatureMarket } = props;
+function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; onUnfeatureMarket: () => void }) {
+    const { controlUserID, contract, onUnfeatureMarket } = props;
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [outcome, setOutcome] = useState<Resolution | undefined>();
@@ -335,6 +344,8 @@ function ResolutionPanel(props: { contract: LiteMarket; onUnfeatureMarket: () =>
         return true;
     };
 
+    const canResolveMarket = true; //!!! Waiting for change to Manifold API: controlUserID === contract.creatorID;
+
     return (
         <Col className={"rounded-md bg-white px-8 py-6 cursor-default"} onClick={(e) => e.stopPropagation()}>
             <div className="whitespace-nowrap text-2xl">Resolve market</div>
@@ -348,46 +359,60 @@ function ResolutionPanel(props: { contract: LiteMarket; onUnfeatureMarket: () =>
                 {contract.question}
             </p>
 
-            <div className="mb-3 text-sm text-gray-500">Outcome</div>
+            {canResolveMarket ? (
+                <>
+                    <div className="mb-3 text-sm text-gray-500">Outcome</div>
 
-            <YesNoCancelSelector className="mx-auto my-2" selected={outcome} onSelect={setOutcome} btnClassName={isSubmitting ? "btn-disabled" : ""} />
+                    <YesNoCancelSelector className="mx-auto my-2" selected={outcome} onSelect={setOutcome} btnClassName={isSubmitting ? "btn-disabled" : ""} />
 
-            <div className="my-2" />
+                    <div className="my-2" />
 
-            <div>
-                {outcome === "YES" ? (
-                    <>
-                        Winnings will be paid out to YES bettors.
-                        {/* <br /> */}
-                        {/* <br /> */}
-                        {/* You will earn {earnedFees}. */}
-                    </>
-                ) : outcome === "NO" ? (
-                    <>
-                        Winnings will be paid out to NO bettors.
-                        {/* <br /> */}
-                        {/* <br /> */}
-                        {/* You will earn {earnedFees}. */}
-                    </>
-                ) : outcome === "CANCEL" ? (
-                    <>All trades will be returned with no fees.</>
-                ) : (
-                    //  : outcome === "MKT" ? (
-                    //     <Col className="gap-6">
-                    //         <div>Traders will be paid out at the probability you specify:</div>
-                    //         <ProbabilitySelector probabilityInt={Math.round(prob)} setProbabilityInt={setProb} />
-                    //         You will earn {earnedFees}.
-                    //     </Col>
-                    // )
-                    <p>Resolving this market will immediately pay out traders.</p>
-                )}
-            </div>
+                    <div>
+                        {outcome === "YES" ? (
+                            <>
+                                Winnings will be paid out to YES bettors.
+                                {/* <br /> */}
+                                {/* <br /> */}
+                                {/* You will earn {earnedFees}. */}
+                            </>
+                        ) : outcome === "NO" ? (
+                            <>
+                                Winnings will be paid out to NO bettors.
+                                {/* <br /> */}
+                                {/* <br /> */}
+                                {/* You will earn {earnedFees}. */}
+                            </>
+                        ) : outcome === "CANCEL" ? (
+                            <>All trades will be returned with no fees.</>
+                        ) : (
+                            //  : outcome === "MKT" ? (
+                            //     <Col className="gap-6">
+                            //         <div>Traders will be paid out at the probability you specify:</div>
+                            //         <ProbabilitySelector probabilityInt={Math.round(prob)} setProbabilityInt={setProb} />
+                            //         You will earn {earnedFees}.
+                            //     </Col>
+                            // )
+                            <p>Resolving this market will immediately pay out traders.</p>
+                        )}
+                    </div>
 
-            {/* <div className="my-4" /> */}
+                    {/* <div className="my-4" /> */}
 
-            {/* {!!error && <div className="text-red-500">{error}</div>} */}
+                    {/* {!!error && <div className="text-red-500">{error}</div>} */}
 
-            <ResolveConfirmationButton onResolve={resolveClicked} isSubmitting={isSubmitting} openModalButtonClass={clsx("w-full mt-2", submitButtonClass)} submitButtonClass={submitButtonClass} />
+                    <ResolveConfirmationButton
+                        onResolve={resolveClicked}
+                        isSubmitting={isSubmitting}
+                        openModalButtonClass={clsx("w-full mt-2", submitButtonClass)}
+                        submitButtonClass={submitButtonClass}
+                    />
+                </>
+            ) : (
+                <>
+                    <span>Please ask <p className="inline font-bold">{contract.creatorUsername}</p> to resolve this market.</span>
+                    <div className="my-1" />
+                </>
+            )}
             <ConfirmationButton
                 openModalBtn={{
                     className: clsx("border-none self-start w-full mt-2", isSubmitting ? "btn-disabled" : ""),

@@ -11,7 +11,7 @@ import { Row } from "./layout/row";
 export default function ContractCard(props: { contract: LiteMarket; onFeature: () => void }) {
     const { contract, onFeature } = props;
     const isClosed = contract.closeTime < Date.now();
-    const isFeatureable = !isClosed || contract.outcomeType !== "BINARY";
+    const isFeatureable = !isClosed && contract.outcomeType === "BINARY";
     return (
         <Col className={clsx("group relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md", !isFeatureable && "bg-gray-100")}>
             <Row>

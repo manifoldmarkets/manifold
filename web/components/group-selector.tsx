@@ -3,6 +3,7 @@ import { CheckIcon, PlusCircleIcon, RefreshIcon, SelectorIcon } from "@heroicons
 import clsx from "clsx";
 import { Group } from "common/group";
 import { useEffect, useState } from "react";
+import { SelectedGroup } from "web/lib/selected-group";
 
 const APIBase = "https://dev.manifold.markets/api/v0/";
 
@@ -38,13 +39,19 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
             .finally(() => setIsRefreshingGroups(false));
     };
 
+    let previouslySelectedGroup: SelectedGroup = undefined;
+    if (typeof window !== "undefined") {
+        try {
+            previouslySelectedGroup = JSON.parse(localStorage.getItem("SELECTED_GROUP")) as SelectedGroup;
+        } catch (e) {
+            // Empty
+        }
+    }
     useEffect(() => {
         refreshGroupList().then((groups) => {
-            const previouslySelectedGroupID = localStorage.getItem("SELECTED_GROUP");
-            if (previouslySelectedGroupID && groups) {
-                console.debug("Found cache group: " + previouslySelectedGroupID);
+            if (previouslySelectedGroup && groups) {
                 for (const g of groups) {
-                    if (g.id === previouslySelectedGroupID) {
+                    if (g.id === previouslySelectedGroup.groupID) {
                         setSelectedGroup(g);
                         break;
                     }
@@ -67,7 +74,7 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
                             spellCheck="false"
                             className="w-full border rounded-md border-gray-300 bg-white pl-4 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
                             onChange={(event) => setQuery(event.target.value)}
-                            displayValue={(group: Group) => group && group.name}
+                            displayValue={(group: Group) => (group ? group.name : previouslySelectedGroup && previouslySelectedGroup.groupName)}
                             placeholder={"Group name"}
                             style={{ borderTopRightRadius: "0", borderBottomRightRadius: "0" }}
                         />
