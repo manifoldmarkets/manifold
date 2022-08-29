@@ -128,6 +128,7 @@ function EditQuestion(props: {
 
   function joinContent(oldContent: ContentType, newContent: string) {
     const editor = new Editor({ content: oldContent, extensions: exhibitExts })
+    editor.commands.focus('end')
     insertContent(editor, newContent)
     return editor.getJSON()
   }
