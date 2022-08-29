@@ -238,7 +238,7 @@ export default function ProfilePage(props: {
             </div>
           </div>
 
-          <TwitchPanel auth={props.auth} />
+          <TwitchPanel />
         </Col>
       </Col>
     </Page>
