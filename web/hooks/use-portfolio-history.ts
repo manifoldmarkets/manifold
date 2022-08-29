@@ -8,11 +8,7 @@ export const usePortfolioHistory = (userId: string, period: Period) => {
 
   const result = useFirestoreQueryData(
     ['portfolio-history', userId, cutoff],
-    getPortfolioHistoryQuery(userId, cutoff),
-    { subscribe: true, includeMetadataChanges: true },
-    // Temporary workaround for react-query bug:
-    // https://github.com/invertase/react-query-firebase/issues/25
-    { refetchOnMount: 'always' }
+    getPortfolioHistoryQuery(userId, cutoff)
   )
   return result.data
 }
