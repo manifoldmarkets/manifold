@@ -253,8 +253,7 @@ function IncomeNotificationGroupItem(props: {
         let sum = 0
         notificationsForSourceTitle.forEach(
           (notification) =>
-            notification.sourceText &&
-            (sum = parseInt(notification.sourceText) + sum)
+            (sum = parseInt(notification.sourceText ?? '0') + sum)
         )
         const uniqueUsers = uniqBy(
           notificationsForSourceTitle.map((notification) => {
@@ -263,7 +262,9 @@ function IncomeNotificationGroupItem(props: {
               .filter(
                 (n) => n.sourceUserUsername === notification.sourceUserUsername
               )
-              .forEach((n) => (thisSum = parseInt(n.sourceText) + thisSum))
+              .forEach(
+                (n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum)
+              )
             return {
               username: notification.sourceUserUsername,
               name: notification.sourceUserName,
