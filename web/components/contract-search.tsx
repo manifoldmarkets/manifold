@@ -16,10 +16,10 @@ import { useFollows } from 'web/hooks/use-follows'
 import {
   storageStore,
   historyStore,
-  urlParamsStore,
+  urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeSessionStorage } from 'web/lib/util/local'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -81,8 +81,7 @@ export function ContractSearch(props: {
   }
   headerClassName?: string
   persistPrefix?: string
-  useQuerySortLocalStorage?: boolean
-  useQuerySortUrlParams?: boolean
+  useQueryUrlParam?: boolean
   isWholePage?: boolean
   maxItems?: number
   noControls?: boolean
@@ -98,7 +97,7 @@ export function ContractSearch(props: {
     highlightOptions,
     headerClassName,
     persistPrefix,
-    useQuerySortUrlParams,
+    useQueryUrlParam,
     isWholePage,
     maxItems,
     noControls,
@@ -110,7 +109,9 @@ export function ContractSearch(props: {
       pages: [] as Contract[][],
       showTime: null as ShowTime | null,
     },
-    { key: `${persistPrefix}-search`, store: historyStore() }
+    !persistPrefix
+      ? undefined
+      : { key: `${persistPrefix}-search`, store: historyStore() }
   )
 
   const searchParams = useRef<SearchParameters | null>(null)
@@ -202,7 +203,7 @@ export function ContractSearch(props: {
         additionalFilter={additionalFilter}
         hideOrderSelector={hideOrderSelector}
         persistPrefix={persistPrefix ? `${persistPrefix}-controls` : undefined}
-        useQuerySortUrlParams={useQuerySortUrlParams}
+        useQueryUrlParam={useQueryUrlParam}
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
@@ -227,7 +228,7 @@ function ContractSearchControls(props: {
   hideOrderSelector?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   persistPrefix?: string
-  useQuerySortUrlParams?: boolean
+  useQueryUrlParam?: boolean
   user?: User | null
   noControls?: boolean
 }) {
@@ -239,26 +240,34 @@ function ContractSearchControls(props: {
     hideOrderSelector,
     onSearchParametersChanged,
     persistPrefix,
-    useQuerySortUrlParams,
+    useQueryUrlParam,
     user,
     noControls,
   } = props
 
   const router = useRouter()
-  const [query, setQuery] = usePersistentState('', {
-    key: 'q',
-    store: urlParamsStore(router),
-  })
+  const [query, setQuery] = usePersistentState(
+    '',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'q',
+          store: urlParamStore(router),
+        }
+  )
+
   const [state, setState] = usePersistentState(
     {
       sort: defaultSort ?? 'score',
       filter: defaultFilter ?? 'open',
       pillFilter: null as string | null,
     },
-    {
-      key: `${persistPrefix}-params`,
-      store: storageStore(safeSessionStorage()),
-    }
+    !persistPrefix
+      ? undefined
+      : {
+          key: `${persistPrefix}-params`,
+          store: storageStore(safeLocalStorage()),
+        }
   )
 
   const follows = useFollows(user?.id)

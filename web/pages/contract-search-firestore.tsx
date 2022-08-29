@@ -6,7 +6,7 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useContracts } from 'web/hooks/use-contracts'
 import {
   usePersistentState,
-  urlParamsStore,
+  urlParamStore,
 } from 'web/hooks/use-persistent-state'
 
 const MAX_CONTRACTS_RENDERED = 100
@@ -19,10 +19,10 @@ export default function ContractSearchFirestore(props: {
     groupSlug?: string
   }
 }) {
-  const contracts = useContracts()
   const { additionalFilter } = props
+  const contracts = useContracts()
   const router = useRouter()
-  const store = urlParamsStore(router)
+  const store = urlParamStore(router)
   const [query, setQuery] = usePersistentState('', { key: 'q', store })
   const [sort, setSort] = usePersistentState('score', { key: 'sort', store })
 

@@ -48,7 +48,7 @@ export const storageStore = <T>(storage?: Storage): PersistentStore<T> => ({
   },
 })
 
-export const urlParamsStore = (router: NextRouter) => ({
+export const urlParamStore = (router: NextRouter): PersistentStore<string> => ({
   get: (k: string) => {
     const v = router.query[k]
     return typeof v === 'string' ? v : undefined
@@ -93,6 +93,8 @@ export const usePersistentState = <T>(
 ) => {
   const store = persist?.store
   const key = persist?.key
+  // note that it's important in some cases to get the state correct during the
+  // first render, or scroll restoration won't take into account the saved state
   const savedValue = key != null && store != null ? store.get(key) : undefined
   const [state, setState] = useStateCheckEquality(savedValue ?? initial)
   useEffect(() => {

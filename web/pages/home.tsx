@@ -34,8 +34,7 @@ const Home = (props: { auth: { user: User } | null }) => {
           <ContractSearch
             user={user}
             persistPrefix="home-search"
-            useQuerySortLocalStorage={true}
-            useQuerySortUrlParams={true}
+            useQueryUrlParam={true}
           />
         </Col>
         <button
