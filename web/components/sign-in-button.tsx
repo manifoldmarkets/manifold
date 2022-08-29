@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from './button'
 
-export const SignInButton = () => {
+export const SignInButton = (props: { className?: string }) => {
   const router = useRouter()
 
   return (
@@ -17,6 +17,7 @@ export const SignInButton = () => {
         await firebaseLogin()
         router.replace(router.asPath)
       }}
+      className={props.className}
     >
       Sign in
     </Button>
