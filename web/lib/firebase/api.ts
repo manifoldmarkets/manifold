@@ -89,6 +89,6 @@ export function getCurrentUser(params: any) {
   return call(getFunctionUrl('getcurrentuser'), 'GET', params)
 }
 
-export function createDashboard(params: any) {
-  return call(getFunctionUrl('createdashboard'), 'POST', params)
+export function createPost(params: any) {
+  return call(getFunctionUrl('createpost'), 'POST', params)
 }

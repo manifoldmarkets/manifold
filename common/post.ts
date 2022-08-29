@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 
-export type Dashboard = {
+export type Post = {
   id: string
   name: string
   content: JSONContent
@@ -9,4 +9,4 @@ export type Dashboard = {
   slug: string
 }
 
-export const MAX_DASHBOARD_NAME_LENGTH = 480
+export const MAX_POST_NAME_LENGTH = 480

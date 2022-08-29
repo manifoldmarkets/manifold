@@ -9,7 +9,7 @@ import { Button } from './button'
 import { TweetButton } from './tweet-button'
 import { Row } from './layout/row'
 
-export function ShareDashboardModal(props: {
+export function SharePostModal(props: {
   shareUrl: string
   isOpen: boolean
   setOpen: (open: boolean) => void
@@ -21,7 +21,7 @@ export function ShareDashboardModal(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
       <Col className="gap-4 rounded bg-white p-4">
-        <Title className="!mt-0 !mb-2" text="Share this dashboard" />
+        <Title className="!mt-0 !mb-2" text="Share this post" />
         <Button
           size="2xl"
           color="gradient"
@@ -31,7 +31,7 @@ export function ShareDashboardModal(props: {
             toast.success('Link copied!', {
               icon: linkIcon,
             })
-            track('copy share dashboard link')
+            track('copy share post link')
           }}
         >
           {linkIcon} Copy link

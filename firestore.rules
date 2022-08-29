@@ -170,7 +170,7 @@ service cloud.firestore {
           }
         }
 
-      match /dashboards/{dashboardId} {
+      match /posts/{postId} {
         allow read;
         allow update: if request.auth.uid == resource.data.creatorId
                          && request.resource.data.diff(resource.data)

@@ -1,8 +1,8 @@
 import { Page } from 'web/components/page'
 
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { dashboardPath, getDashboardBySlug } from 'web/lib/firebase/dashboards'
-import { Dashboard } from 'common/dashboard'
+import { postPath, getPostBySlug } from 'web/lib/firebase/posts'
+import { Post } from 'common/post'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
 import { Content } from 'web/components/editor'
@@ -12,7 +12,7 @@ import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Button } from 'web/components/button'
 import { useState } from 'react'
-import { ShareDashboardModal } from 'web/components/share-dashboard-modal'
+import { SharePostModal } from 'web/components/share-post-modal'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -22,13 +22,13 @@ export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
-  const dashboard = await getDashboardBySlug(slugs[0])
-  const creatorPromise = dashboard ? getUser(dashboard.creatorId) : null
+  const post = await getPostBySlug(slugs[0])
+  const creatorPromise = post ? getUser(post.creatorId) : null
   const creator = await creatorPromise
 
   return {
     props: {
-      dashboard: dashboard,
+      post: post,
       creator: creator,
     },
 
@@ -40,28 +40,23 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function DashboardPage(props: {
-  dashboard: Dashboard
-  creator: User
-}) {
+export default function PostPage(props: { post: Post; creator: User }) {
   props = usePropz(props, getStaticPropz) ?? {
-    dashboard: null,
+    post: null,
   }
   const [isShareOpen, setShareOpen] = useState(false)
 
-  if (props.dashboard === null) {
+  if (props.post === null) {
     return <Custom404 />
   }
 
-  const shareUrl = `https://${ENV_CONFIG.domain}${dashboardPath(
-    props?.dashboard.slug
-  )}`
+  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(props?.post.slug)}`
 
   return (
     <Page>
       <div className="mx-auto w-full max-w-3xl ">
         <Spacer h={1} />
-        <Title className="!mt-0" text={props.dashboard.name} />
+        <Title className="!mt-0" text={props.post.name} />
         <Row>
           <Col className="flex-1">
             <div className={'inline-flex'}>
@@ -87,7 +82,7 @@ export default function DashboardPage(props: {
                 aria-hidden="true"
               />
               Share
-              <ShareDashboardModal
+              <SharePostModal
                 isOpen={isShareOpen}
                 setOpen={setShareOpen}
                 shareUrl={shareUrl}
@@ -99,7 +94,7 @@ export default function DashboardPage(props: {
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <div className="form-control w-full py-2">
-            <Content content={props.dashboard.content} />
+            <Content content={props.post.content} />
           </div>
         </div>
       </div>
