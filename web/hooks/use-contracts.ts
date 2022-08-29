@@ -95,11 +95,7 @@ export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
 export const useUserBetContracts = (userId: string) => {
   const result = useFirestoreQueryData(
     ['contracts', 'bets', userId],
-    getUserBetContractsQuery(userId),
-    { subscribe: true, includeMetadataChanges: true },
-    // Temporary workaround for react-query bug:
-    // https://github.com/invertase/react-query-firebase/issues/25
-    { refetchOnMount: 'always' }
+    getUserBetContractsQuery(userId)
   )
   return result.data
 }
