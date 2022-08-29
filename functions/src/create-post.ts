@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { getUser } from './utils'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-import { Post, MAX_POST_NAME_LENGTH } from '../../common/post'
+import { Post, MAX_POST_TITLE_LENGTH } from '../../common/post'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
@@ -32,21 +32,21 @@ const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
 )
 
 const postSchema = z.object({
-  name: z.string().min(1).max(MAX_POST_NAME_LENGTH),
+  title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
   content: contentSchema,
 })
 
 export const createpost = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { name, content } = validate(postSchema, req.body)
+  const { title, content } = validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
   if (!creator)
     throw new APIError(400, 'No user exists with the authenticated user ID.')
 
-  console.log('creating post owned by', creator.username, 'named', name)
+  console.log('creating post owned by', creator.username, 'titled', title)
 
-  const slug = await getSlug(name)
+  const slug = await getSlug(title)
 
   const postRef = firestore.collection('posts').doc()
 
@@ -54,18 +54,18 @@ export const createpost = newEndpoint({}, async (req, auth) => {
     id: postRef.id,
     creatorId: creator.id,
     slug,
-    name,
+    title,
     createdTime: Date.now(),
     content: content,
   }
 
   await postRef.create(post)
 
-  return { status: 'success', post: post }
+  return { status: 'success', post }
 })
 
-export const getSlug = async (name: string) => {
-  const proposedSlug = slugify(name)
+export const getSlug = async (title: string) => {
+  const proposedSlug = slugify(title)
 
   const preexistingPost = await getPostFromSlug(proposedSlug)
 

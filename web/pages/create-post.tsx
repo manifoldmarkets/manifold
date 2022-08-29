@@ -7,26 +7,25 @@ import Textarea from 'react-expanding-textarea'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { createPost } from 'web/lib/firebase/api'
 import clsx from 'clsx'
-import { useRouter } from 'next/router'
-import { Post, MAX_POST_NAME_LENGTH } from 'common/post'
+import Router from 'next/router'
+import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { postPath } from 'web/lib/firebase/posts'
 
 export default function CreatePost() {
-  const [name, setName] = useState('')
+  const [title, setTitle] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const router = useRouter()
 
   const { editor, upload } = useTextEditor({
     disabled: isSubmitting,
   })
 
-  const isValid = editor && name.length > 0 && editor.isEmpty === false
+  const isValid = editor && title.length > 0 && editor.isEmpty === false
 
-  async function savePost(name: string) {
+  async function savePost(title: string) {
     if (!editor) return
     const newPost = {
-      name: name,
+      title: title,
       content: editor.getJSON(),
     }
 
@@ -36,7 +35,7 @@ export default function CreatePost() {
       return e
     })
     if (result.post) {
-      await router.push(postPath((result.post as Post).slug))
+      await Router.push(postPath(result.post.slug))
     }
   }
 
@@ -49,21 +48,21 @@ export default function CreatePost() {
             <div className="form-control w-full">
               <label className="label">
                 <span className="mb-1">
-                  Name<span className={'text-red-700'}>*</span>
+                  Title<span className={'text-red-700'}> *</span>
                 </span>
               </label>
               <Textarea
                 placeholder="e.g. Elon Mania Post"
                 className="input input-bordered resize-none"
                 autoFocus
-                maxLength={MAX_POST_NAME_LENGTH}
-                value={name}
-                onChange={(e) => setName(e.target.value || '')}
+                maxLength={MAX_POST_TITLE_LENGTH}
+                value={title}
+                onChange={(e) => setTitle(e.target.value || '')}
               />
               <Spacer h={6} />
               <label className="label">
                 <span className="mb-1">
-                  Content<span className={'text-red-700'}>*</span>
+                  Content<span className={'text-red-700'}> *</span>
                 </span>
               </label>
               <TextEditor editor={editor} upload={upload} />
@@ -78,7 +77,7 @@ export default function CreatePost() {
                 disabled={isSubmitting || !isValid || upload.isLoading}
                 onClick={async () => {
                   setIsSubmitting(true)
-                  await savePost(name)
+                  await savePost(title)
                   setIsSubmitting(false)
                 }}
               >

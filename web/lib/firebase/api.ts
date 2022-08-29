@@ -1,5 +1,6 @@
 import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
+import { JSONContent } from '@tiptap/core'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
@@ -89,6 +90,6 @@ export function getCurrentUser(params: any) {
   return call(getFunctionUrl('getcurrentuser'), 'GET', params)
 }
 
-export function createPost(params: any) {
+export function createPost(params: { title: string; content: JSONContent }) {
   return call(getFunctionUrl('createpost'), 'POST', params)
 }

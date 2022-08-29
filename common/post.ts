@@ -2,11 +2,11 @@ import { JSONContent } from '@tiptap/core'
 
 export type Post = {
   id: string
-  name: string
+  title: string
   content: JSONContent
   creatorId: string // User id
   createdTime: number
   slug: string
 }
 
-export const MAX_POST_NAME_LENGTH = 480
+export const MAX_POST_TITLE_LENGTH = 480

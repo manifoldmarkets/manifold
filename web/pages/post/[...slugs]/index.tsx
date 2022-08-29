@@ -1,6 +1,5 @@
 import { Page } from 'web/components/page'
 
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { postPath, getPostBySlug } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Title } from 'web/components/title'
@@ -18,13 +17,11 @@ import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
 
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz(props: { params: { slugs: string[] } }) {
+export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const post = await getPostBySlug(slugs[0])
-  const creatorPromise = post ? getUser(post.creatorId) : null
-  const creator = await creatorPromise
+  const creator = post ? await getUser(post.creatorId) : null
 
   return {
     props: {
@@ -41,12 +38,9 @@ export async function getStaticPaths() {
 }
 
 export default function PostPage(props: { post: Post; creator: User }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    post: null,
-  }
   const [isShareOpen, setShareOpen] = useState(false)
 
-  if (props.post === null) {
+  if (props.post == null) {
     return <Custom404 />
   }
 
@@ -56,7 +50,7 @@ export default function PostPage(props: { post: Post; creator: User }) {
     <Page>
       <div className="mx-auto w-full max-w-3xl ">
         <Spacer h={1} />
-        <Title className="!mt-0" text={props.post.name} />
+        <Title className="!mt-0" text={props.post.title} />
         <Row>
           <Col className="flex-1">
             <div className={'inline-flex'}>
