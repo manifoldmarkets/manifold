@@ -19,6 +19,15 @@ import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 type AuthUser = undefined | null | UserAndPrivateUser
 
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
+// Proxy localStorage in case it's not available (eg in incognito iframe)
+const localStorage =
+  typeof window !== 'undefined'
+    ? window.localStorage
+    : {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      }
 
 const ensureDeviceToken = () => {
   let deviceToken = localStorage.getItem('device-token')
@@ -59,7 +68,7 @@ export function AuthProvider(props: {
           current = (await createUser({ deviceToken })) as UserAndPrivateUser
         }
         setAuthUser(current)
-        // Persist to local storage, to reduce login blink next time.
+        // Persist to localStorage, to reduce login blink next time.
         // Note: Cap on localStorage size is ~5mb
         localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
         setCachedReferralInfoForUser(current.user)
