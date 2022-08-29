@@ -28,7 +28,7 @@ const resetBettingStreakForUser = async (user: User) => {
   const betStreakResetTime = Date.now() - DAY_MS
   // if they made a bet within the last day, don't reset their streak
   if (
-    (user.lastBetTime ?? 0 > betStreakResetTime) ||
+    (user?.lastBetTime ?? 0) > betStreakResetTime ||
     !user.currentBettingStreak ||
     user.currentBettingStreak === 0
   )
