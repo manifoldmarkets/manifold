@@ -20,7 +20,6 @@ import React from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
-import { Spacer } from '../layout/spacer'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
@@ -66,10 +65,10 @@ function getMoreNavigation(user?: User | null) {
   if (!user) {
     // Signed out "More"
     return buildArray(
+      { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Groups', href: '/groups' },
       CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
       [
-        { name: 'Groups', href: '/groups' },
-        { name: 'Leaderboards', href: '/leaderboards' },
         { name: 'Tournaments', href: '/tournaments' },
         { name: 'Charity', href: '/charity' },
         { name: 'Blog', href: 'https://news.manifold.markets' },
@@ -81,11 +80,11 @@ function getMoreNavigation(user?: User | null) {
 
   // Signed in "More"
   return buildArray(
+    { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Groups', href: '/groups' },
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
-      { name: 'Groups', href: '/groups' },
       { name: 'Referrals', href: '/referrals' },
-      { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
       { name: 'Send M$', href: '/links' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -233,9 +232,8 @@ export default function Sidebar(props: { className?: string }) {
     >
       <ManifoldLogo className="py-6" twoLine />
 
-      {user ? <CreateQuestionButton user={user} /> : <SignInButton />}
+      {!user && <SignInButton className="mb-4" />}
 
-      <Spacer h={4} />
       {user && (
         <div className="min-h-[80px] w-full">
           <ProfileSummary user={user} />
@@ -265,6 +263,8 @@ export default function Sidebar(props: { className?: string }) {
           menuItems={getMoreNavigation(user)}
           buttonContent={<MoreButton />}
         />
+
+        {user && <CreateQuestionButton user={user} />}
       </div>
     </nav>
   )
