@@ -1,88 +1,105 @@
-import { useLayoutEffect, useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
+import { NextRouter } from 'next/router'
 
-export type PersistenceOptions = {
-  store?: Storage
-  prefix: string
-  name: string
+export type PersistenceOptions<T> = { key: string; store: PersistentStore<T> }
+
+export interface PersistentStore<T> {
+  get: (k: string) => T | undefined
+  set: (k: string, v: T | undefined) => void
 }
 
-export const getKey = (prefix: string, name: string) => `${prefix}-${name}`
-
-export const saveState = (key: string, val: unknown, store: Storage) => {
-  if (val === undefined) {
-    store.removeItem(key)
+const withURLParam = (location: Location, k: string, v?: string) => {
+  const newParams = new URLSearchParams(location.search)
+  if (!v) {
+    newParams.delete(k)
   } else {
-    store.setItem(key, JSON.stringify(val))
+    newParams.set(k, v)
   }
+  const newUrl = new URL(location.href)
+  newUrl.search = newParams.toString()
+  return newUrl
 }
 
-export const loadState = (key: string, store: Storage) => {
-  const saved = store.getItem(key)
-  if (typeof saved === 'string') {
-    try {
-      return JSON.parse(saved) as unknown
-    } catch (e) {
-      console.error(e)
+export const storageStore = <T>(storage?: Storage): PersistentStore<T> => ({
+  get: (k: string) => {
+    if (!storage) {
+      return undefined
     }
-  } else {
-    return undefined
-  }
-}
+    const saved = storage.getItem(k)
+    if (typeof saved === 'string') {
+      try {
+        return JSON.parse(saved) as T
+      } catch (e) {
+        console.error(e)
+      }
+    } else {
+      return undefined
+    }
+  },
+  set: (k: string, v: T | undefined) => {
+    if (storage) {
+      if (v === undefined) {
+        storage.removeItem(k)
+      } else {
+        storage.setItem(k, JSON.stringify(v))
+      }
+    }
+  },
+})
 
-const STATE_KEY = '__manifold'
+export const urlParamsStore = (router: NextRouter) => ({
+  get: (k: string) => {
+    const v = router.query[k]
+    return typeof v === 'string' ? v : undefined
+  },
+  set: (k: string, v: string | undefined) => {
+    if (typeof window !== 'undefined') {
+      // see relevant discussion here https://github.com/vercel/next.js/discussions/18072
+      const url = withURLParam(window.location, k, v).toString()
+      const updatedState = { ...window.history.state, as: url, url }
+      window.history.replaceState(updatedState, '', url)
+    }
+  },
+})
 
-const getHistoryState = <T>(k: string) => {
-  if (typeof window !== 'undefined') {
-    return window.history.state?.options?.[STATE_KEY]?.[k] as T | undefined
-  } else {
-    return undefined
-  }
-}
-
-const setHistoryState = (k: string, v: any) => {
-  if (typeof window !== 'undefined') {
-    const state = window.history.state ?? {}
-    const options = state.options ?? {}
-    const inner = options[STATE_KEY] ?? {}
-    window.history.replaceState(
-      { ...state, options: { ...options, [STATE_KEY]: { ...inner, [k]: v } } },
-      ''
-    )
-  }
-}
-
-export const useHistoryState = <T>(key: string, initialValue: T) => {
-  const [state, setState] = useState(getHistoryState<T>(key) ?? initialValue)
-  const setter = (val: T) => {
-    console.log('Setting state: ', val)
-    setHistoryState(key, val)
-    setState(val)
-  }
-  return [state, setter] as const
-}
+export const historyStore = <T>(prefix = '__manifold'): PersistentStore<T> => ({
+  get: (k: string) => {
+    if (typeof window !== 'undefined') {
+      return window.history.state?.options?.[prefix]?.[k] as T | undefined
+    } else {
+      return undefined
+    }
+  },
+  set: (k: string, v: T | undefined) => {
+    if (typeof window !== 'undefined') {
+      const state = window.history.state ?? {}
+      const options = state.options ?? {}
+      const inner = options[prefix] ?? {}
+      window.history.replaceState(
+        {
+          ...state,
+          options: { ...options, [prefix]: { ...inner, [k]: v } },
+        },
+        ''
+      )
+    }
+  },
+})
 
 export const usePersistentState = <T>(
   initial: T,
-  persist?: PersistenceOptions
+  persist?: PersistenceOptions<T>
 ) => {
   const store = persist?.store
-  const key = persist ? getKey(persist.prefix, persist.name) : null
-  useLayoutEffect(() => {
-    if (key != null && store != null) {
-      const saved = loadState(key, store) as T
-      console.log('Loading state for: ', key, saved)
-      if (saved !== undefined) {
-        setState(saved)
-      }
-    }
-  }, [])
-  const [state, setState] = useStateCheckEquality(initial)
+  const key = persist?.key
+  const savedValue = key != null && store != null ? store.get(key) : undefined
+  const [state, setState] = useStateCheckEquality(savedValue ?? initial)
   useEffect(() => {
     if (key != null && store != null) {
       console.log('Saving state for: ', key, state)
-      saveState(key, state, store)
+      store.set(key, state)
     }
-  }, [key, state, store])
+  }, [key, state])
   return [state, setState] as const
 }

@@ -1,9 +1,13 @@
+import { useRouter } from 'next/router'
 import { Answer } from 'common/answer'
 import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useContracts } from 'web/hooks/use-contracts'
-import { Sort, useQuery, useSort } from 'web/hooks/use-sort-and-query-params'
+import {
+  usePersistentState,
+  urlParamsStore,
+} from 'web/hooks/use-persistent-state'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -17,8 +21,10 @@ export default function ContractSearchFirestore(props: {
 }) {
   const contracts = useContracts()
   const { additionalFilter } = props
-  const [query, setQuery] = useQuery('', { useUrl: true })
-  const [sort, setSort] = useSort('score', { useUrl: true })
+  const router = useRouter()
+  const store = urlParamsStore(router)
+  const [query, setQuery] = usePersistentState('', { key: 'q', store })
+  const [sort, setSort] = usePersistentState('score', { key: 'sort', store })
 
   let matches = (contracts ?? []).filter((c) =>
     searchInAny(
@@ -91,7 +97,7 @@ export default function ContractSearchFirestore(props: {
         <select
           className="select select-bordered"
           value={sort}
-          onChange={(e) => setSort(e.target.value as Sort)}
+          onChange={(e) => setSort(e.target.value)}
         >
           <option value="score">Trending</option>
           <option value="newest">Newest</option>

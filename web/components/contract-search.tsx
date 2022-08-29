@@ -1,15 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import algoliasearch from 'algoliasearch/lite'
 import { SearchOptions } from '@algolia/client-search'
-
+import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import {
-  SORTS,
-  Sort,
-  useQuery,
-  useSort,
-} from '../hooks/use-sort-and-query-params'
 import {
   ContractHighlightOptions,
   ContractsGrid,
@@ -20,12 +14,12 @@ import { useEffect, useLayoutEffect, useRef, useMemo } from 'react'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
-  getKey,
-  saveState,
-  loadState,
+  storageStore,
+  historyStore,
+  urlParamsStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
+import { safeSessionStorage } from 'web/lib/util/local'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -43,6 +37,19 @@ const searchClient = algoliasearch(
 
 const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
+
+const SORTS = [
+  { label: 'Newest', value: 'newest' },
+  { label: 'Trending', value: 'score' },
+  { label: 'Most traded', value: 'most-traded' },
+  { label: '24h volume', value: '24-hour-vol' },
+  { label: 'Last updated', value: 'last-updated' },
+  { label: 'Subsidy', value: 'liquidity' },
+  { label: 'Close date', value: 'close-date' },
+  { label: 'Resolve date', value: 'resolve-date' },
+] as const
+
+export type Sort = typeof SORTS[number]['value']
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
@@ -97,29 +104,25 @@ export function ContractSearch(props: {
     noControls,
   } = props
 
-  const store = safeSessionStorage()
-  const persistAs = (name: string) => {
-    return persistPrefix ? { prefix: persistPrefix, name, store } : undefined
-  }
-
   const [state, setState] = usePersistentState(
     {
       numPages: 1,
       pages: [] as Contract[][],
       showTime: null as ShowTime | null,
     },
-    persistAs('state')
+    { key: `${persistPrefix}-search`, store: historyStore() }
   )
 
-  const searchParameters = useRef<SearchParameters | null>(null)
+  const searchParams = useRef<SearchParameters | null>(null)
+  const searchParamsStore = historyStore<SearchParameters>()
   const requestId = useRef(0)
 
   useLayoutEffect(() => {
-    if (persistPrefix && store) {
-      const parameters = loadState(getKey(persistPrefix, 'parameters'), store)
-      if (parameters !== undefined) {
-        console.log('Restoring search parameters: ', parameters)
-        searchParameters.current = parameters as SearchParameters
+    if (persistPrefix) {
+      const params = searchParamsStore.get(`${persistPrefix}-params`)
+      if (params !== undefined) {
+        console.log('Restoring search parameters: ', params)
+        searchParams.current = params
       }
     }
   }, [])
@@ -131,11 +134,10 @@ export function ContractSearch(props: {
 
   const performQuery = async (freshQuery?: boolean) => {
     console.log('Performing query.')
-    if (searchParameters.current == null) {
+    if (searchParams.current == null) {
       return
     }
-    const { query, sort, openClosedFilter, facetFilters } =
-      searchParameters.current
+    const { query, sort, openClosedFilter, facetFilters } = searchParams.current
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : state.pages.length
     if (freshQuery || requestedPage < state.numPages) {
@@ -159,10 +161,8 @@ export function ContractSearch(props: {
         const newPage = results.hits as any as Contract[]
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
-        setState((curr) => {
-          const pages = freshQuery ? [newPage] : [...curr.pages, newPage]
-          return { numPages: results.nbPages, pages, showTime }
-        })
+        const pages = freshQuery ? [newPage] : [...state.pages, newPage]
+        setState({ numPages: results.nbPages, pages, showTime })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
@@ -170,12 +170,12 @@ export function ContractSearch(props: {
 
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParameters.current, params)) {
-        console.log('Old vs new:', searchParameters.current, params)
-        if (persistPrefix && store) {
-          saveState(getKey(persistPrefix, 'parameters'), params, store)
+      if (!isEqual(searchParams.current, params)) {
+        console.log('Old vs new:', searchParams.current, params)
+        if (persistPrefix) {
+          searchParamsStore.set(`${persistPrefix}-params`, params)
         }
-        searchParameters.current = params
+        searchParams.current = params
         performQuery(true)
       }
     }, 100)
@@ -244,28 +244,21 @@ function ContractSearchControls(props: {
     noControls,
   } = props
 
-  const localStore = safeLocalStorage()
-  const sessionStore = safeSessionStorage()
-  const persistAs = (name: string, store?: Storage) => {
-    return persistPrefix ? { prefix: persistPrefix, name, store } : undefined
-  }
-
-  const initialSort = defaultSort ?? 'score'
-  const [sort, setSort] = useSort(initialSort, {
-    useUrl: !!useQuerySortUrlParams,
-    persist: persistAs('sort', localStore),
+  const router = useRouter()
+  const [query, setQuery] = usePersistentState('', {
+    key: 'q',
+    store: urlParamsStore(router),
   })
-  const [query, setQuery] = useQuery('', {
-    useUrl: !!useQuerySortUrlParams,
-    persist: persistAs('query', sessionStore),
-  })
-  const [filter, setFilter] = usePersistentState<filter>(
-    defaultFilter ?? 'open',
-    persistAs('filter', sessionStore)
-  )
-  const [pillFilter, setPillFilter] = usePersistentState<string | null>(
-    null,
-    persistAs('pillFilter', sessionStore)
+  const [state, setState] = usePersistentState(
+    {
+      sort: defaultSort ?? 'score',
+      filter: defaultFilter ?? 'open',
+      pillFilter: null as string | null,
+    },
+    {
+      key: `${persistPrefix}-params`,
+      store: storageStore(safeSessionStorage()),
+    }
   )
 
   const follows = useFollows(user?.id)
@@ -300,14 +293,16 @@ function ContractSearchControls(props: {
         ...additionalFilters,
         additionalFilter ? '' : 'visibility:public',
 
-        filter === 'open' ? 'isResolved:false' : '',
-        filter === 'closed' ? 'isResolved:false' : '',
-        filter === 'resolved' ? 'isResolved:true' : '',
+        state.filter === 'open' ? 'isResolved:false' : '',
+        state.filter === 'closed' ? 'isResolved:false' : '',
+        state.filter === 'resolved' ? 'isResolved:true' : '',
 
-        pillFilter && pillFilter !== 'personal' && pillFilter !== 'your-bets'
-          ? `groupLinks.slug:${pillFilter}`
+        state.pillFilter &&
+        state.pillFilter !== 'personal' &&
+        state.pillFilter !== 'your-bets'
+          ? `groupLinks.slug:${state.pillFilter}`
           : '',
-        pillFilter === 'personal'
+        state.pillFilter === 'personal'
           ? // Show contracts in groups that the user is a member of
             memberGroupSlugs
               .map((slug) => `groupLinks.slug:${slug}`)
@@ -319,18 +314,24 @@ function ContractSearchControls(props: {
               )
           : '',
         // Subtract contracts you bet on from For you.
-        pillFilter === 'personal' && user ? `uniqueBettorIds:-${user.id}` : '',
-        pillFilter === 'your-bets' && user
+        state.pillFilter === 'personal' && user
+          ? `uniqueBettorIds:-${user.id}`
+          : '',
+        state.pillFilter === 'your-bets' && user
           ? // Show contracts bet on by the user
             `uniqueBettorIds:${user.id}`
           : '',
       ].filter((f) => f)
 
   const openClosedFilter =
-    filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
+    state.filter === 'open'
+      ? 'open'
+      : state.filter === 'closed'
+      ? 'closed'
+      : undefined
 
   const selectPill = (pill: string | null) => () => {
-    setPillFilter(pill)
+    setState({ ...state, pillFilter: pill })
     track('select search category', { category: pill ?? 'all' })
   }
 
@@ -340,25 +341,25 @@ function ContractSearchControls(props: {
   }
 
   const selectFilter = (newFilter: filter) => {
-    if (newFilter === filter) return
-    setFilter(newFilter)
+    if (newFilter === state.filter) return
+    setState({ ...state, filter: newFilter })
     track('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
-    if (newSort === sort) return
-    setSort(newSort)
+    if (newSort === state.sort) return
+    setState({ ...state, sort: newSort })
     track('select search sort', { sort: newSort })
   }
 
   useEffect(() => {
     onSearchParametersChanged({
       query: query,
-      sort: sort,
+      sort: state.sort,
       openClosedFilter: openClosedFilter,
       facetFilters: facetFilters,
     })
-  }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
+  }, [query, state.sort, openClosedFilter, JSON.stringify(facetFilters)])
 
   if (noControls) {
     return <></>
@@ -373,14 +374,14 @@ function ContractSearchControls(props: {
           type="text"
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
-          onBlur={trackCallback('search', { query })}
+          onBlur={trackCallback('search', { query: query })}
           placeholder={'Search'}
           className="input input-bordered w-full"
         />
         {!query && (
           <select
             className="select select-bordered"
-            value={filter}
+            value={state.filter}
             onChange={(e) => selectFilter(e.target.value as filter)}
           >
             <option value="open">Open</option>
@@ -392,7 +393,7 @@ function ContractSearchControls(props: {
         {!hideOrderSelector && !query && (
           <select
             className="select select-bordered"
-            value={sort}
+            value={state.sort}
             onChange={(e) => selectSort(e.target.value as Sort)}
           >
             {SORTS.map((option) => (
@@ -408,14 +409,14 @@ function ContractSearchControls(props: {
         <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
           <PillButton
             key={'all'}
-            selected={pillFilter === undefined}
+            selected={state.pillFilter === undefined}
             onSelect={selectPill(null)}
           >
             All
           </PillButton>
           <PillButton
             key={'personal'}
-            selected={pillFilter === 'personal'}
+            selected={state.pillFilter === 'personal'}
             onSelect={selectPill('personal')}
           >
             {user ? 'For you' : 'Featured'}
@@ -424,7 +425,7 @@ function ContractSearchControls(props: {
           {user && (
             <PillButton
               key={'your-bets'}
-              selected={pillFilter === 'your-bets'}
+              selected={state.pillFilter === 'your-bets'}
               onSelect={selectPill('your-bets')}
             >
               Your bets
@@ -435,7 +436,7 @@ function ContractSearchControls(props: {
             return (
               <PillButton
                 key={slug}
-                selected={pillFilter === slug}
+                selected={state.pillFilter === slug}
                 onSelect={selectPill(slug)}
               >
                 {name}
