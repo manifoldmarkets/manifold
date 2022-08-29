@@ -1,4 +1,4 @@
-import { User, PrivateUser } from 'common/lib/user'
+import { User, PrivateUser } from 'common/user'
 import { generateNewApiKey } from '../api/api-key'
 import { updatePrivateUser } from '../firebase/users'
 
