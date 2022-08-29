@@ -12,15 +12,13 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { User, PrivateUser } from 'common/user'
-import {
-  getUserAndPrivateUser,
-  updateUser,
-  updatePrivateUser,
-} from 'web/lib/firebase/users'
+import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
 import { defaultBannerUrl } from 'web/components/user-page'
 import { SiteLink } from 'web/components/site-link'
 import Textarea from 'react-expanding-textarea'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { generateNewApiKey } from 'web/lib/api/api-key'
+import { TwitchPanel } from 'web/components/profile/twitch-panel'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
@@ -96,11 +94,8 @@ export default function ProfilePage(props: {
   }
 
   const updateApiKey = async (e: React.MouseEvent) => {
-    const newApiKey = crypto.randomUUID()
-    setApiKey(newApiKey)
-    await updatePrivateUser(user.id, { apiKey: newApiKey }).catch(() => {
-      setApiKey(privateUser.apiKey || '')
-    })
+    const newApiKey = await generateNewApiKey(user.id)
+    setApiKey(newApiKey ?? '')
     e.preventDefault()
   }
 
@@ -242,6 +237,8 @@ export default function ProfilePage(props: {
               </button>
             </div>
           </div>
+
+          <TwitchPanel />
         </Col>
       </Col>
     </Page>

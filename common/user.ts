@@ -63,6 +63,10 @@ export type PrivateUser = {
   initialIpAddress?: string
   apiKey?: string
   notificationPreferences?: notification_subscribe_types
+  twitchInfo?: {
+    twitchName: string
+    controlToken: string
+  }
 }
 
 export type notification_subscribe_types = 'all' | 'less' | 'none'
