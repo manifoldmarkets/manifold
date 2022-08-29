@@ -1,20 +1,52 @@
+import { useState } from 'react'
+
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { SEO } from 'web/components/SEO'
 import { Spacer } from 'web/components/layout/spacer'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { withTracking } from 'web/lib/service/analytics'
+import { firebaseLogin, getUserAndPrivateUser } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/button'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useRedirectAfterSignup } from 'web/hooks/use-redirect-after-signup'
+import { linkTwitchAccount } from 'web/lib/twitch/link-twitch-account'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export default function TwitchLandingPage() {
-  useRedirectAfterSignup('twitch')
   useSaveReferral()
   useTracking('view twitch landing page')
+
+  const user = useUser()
+  const privateUser = usePrivateUser()
+  const twitchUser = privateUser?.twitchInfo?.twitchName
+
+  const callback =
+    user && privateUser
+      ? () => linkTwitchAccount(user, privateUser)
+      : async () => {
+          const result = await firebaseLogin()
+
+          const userId = result.user.uid
+          const { user, privateUser } = await getUserAndPrivateUser(userId)
+          if (!user || !privateUser) return
+
+          await linkTwitchAccount(user, privateUser)
+        }
+
+  const [isLoading, setLoading] = useState(false)
+
+  const getStarted = async () => {
+    setLoading(true)
+
+    const promise = callback()
+    track('twitch page button click')
+    await promise
+
+    setLoading(false)
+  }
 
   return (
     <Page>
@@ -48,15 +80,32 @@ export default function TwitchLandingPage() {
                 <br />
               </div>
             </div>
+
             <Spacer h={6} />
-            <Button
-              size="2xl"
-              color="gradient"
-              className="self-center"
-              onClick={withTracking(firebaseLogin, 'twitch page button click')}
-            >
-              Get started
-            </Button>
+
+            {twitchUser ? (
+              <div className="mt-3 self-center rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4 ">
+                <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+                  <div className="truncate text-sm font-medium text-gray-500">
+                    Twitch account linked
+                  </div>
+                  <div className="mt-1 text-2xl font-semibold text-gray-900">
+                    {twitchUser}
+                  </div>
+                </div>
+              </div>
+            ) : isLoading ? (
+              <LoadingIndicator spinnerClassName="w-16 h-16" />
+            ) : (
+              <Button
+                size="2xl"
+                color="gradient"
+                className="self-center"
+                onClick={getStarted}
+              >
+                Get started
+              </Button>
+            )}
           </Col>
         </Col>
       </Col>
