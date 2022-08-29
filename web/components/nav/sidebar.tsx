@@ -5,7 +5,6 @@ import {
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
-  UserGroupIcon,
   ChatIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
