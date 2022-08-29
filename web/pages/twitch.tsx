@@ -75,8 +75,9 @@ export default function TwitchLandingPage() {
               </h1>
               <Spacer h={6} />
               <div className="mb-4 px-2 ">
-                Get more out of Twitch with play-money betting markets. Click
-                the button below to link your Twitch account.
+                Get more out of Twitch with play-money betting markets.{' '}
+                {!twitchUser &&
+                  'Click the button below to link your Twitch account.'}
                 <br />
               </div>
             </div>
