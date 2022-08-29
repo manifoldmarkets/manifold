@@ -285,7 +285,10 @@ export function ContractPageContent(
       {recommendedContracts.length > 0 && (
         <Col className="mt-2 gap-2 px-2 sm:px-0">
           <Title className="text-gray-700" text="Recommended" />
-          <ContractsGrid contracts={recommendedContracts} />
+          <ContractsGrid
+            contracts={recommendedContracts}
+            trackingPostfix=" recommended"
+          />
         </Col>
       )}
     </Page>

@@ -26,6 +26,7 @@ export function ContractsGrid(props: {
     hideGroupLink?: boolean
   }
   highlightOptions?: ContractHighlightOptions
+  trackingPostfix?: string
 }) {
   const {
     contracts,
@@ -34,6 +35,7 @@ export function ContractsGrid(props: {
     onContractClick,
     cardHideOptions,
     highlightOptions,
+    trackingPostfix,
   } = props
   const { hideQuickBet, hideGroupLink } = cardHideOptions || {}
   const { contractIds, highlightClassName } = highlightOptions || {}
@@ -79,6 +81,7 @@ export function ContractsGrid(props: {
             }
             hideQuickBet={hideQuickBet}
             hideGroupLink={hideGroupLink}
+            trackingPostfix={trackingPostfix}
             className={clsx(
               'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
               contractIds?.includes(contract.id) && highlightClassName
