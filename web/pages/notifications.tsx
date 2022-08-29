@@ -532,7 +532,6 @@ function IncomeNotificationItem(props: {
                 (sourceUserUsername?.includes(',') ? (
                   <MultiUserTipLink
                     userInfos={JSON.parse(sourceUserUsername)}
-                    noLink={true}
                   />
                 ) : (
                   <UserLink
