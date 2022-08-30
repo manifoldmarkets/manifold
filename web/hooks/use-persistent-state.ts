@@ -99,7 +99,6 @@ export const usePersistentState = <T>(
   const [state, setState] = useStateCheckEquality(savedValue ?? initial)
   useEffect(() => {
     if (key != null && store != null) {
-      console.log('Saving state for: ', key, state)
       store.set(key, state)
     }
   }, [key, state])

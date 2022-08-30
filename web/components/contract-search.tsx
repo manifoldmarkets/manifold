@@ -122,7 +122,6 @@ export function ContractSearch(props: {
     if (persistPrefix) {
       const params = searchParamsStore.get(`${persistPrefix}-params`)
       if (params !== undefined) {
-        console.log('Restoring search parameters: ', params)
         searchParams.current = params
       }
     }
@@ -134,7 +133,6 @@ export function ContractSearch(props: {
   )
 
   const performQuery = async (freshQuery?: boolean) => {
-    console.log('Performing query.')
     if (searchParams.current == null) {
       return
     }
@@ -172,7 +170,6 @@ export function ContractSearch(props: {
   const onSearchParametersChanged = useRef(
     debounce((params) => {
       if (!isEqual(searchParams.current, params)) {
-        console.log('Old vs new:', searchParams.current, params)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
@@ -187,8 +184,6 @@ export function ContractSearch(props: {
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
   const renderedContracts =
     state.pages.length === 0 ? undefined : contracts.slice(0, maxItems)
-
-  console.log('Rendering: ', renderedContracts)
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -345,7 +340,6 @@ function ContractSearchControls(props: {
   }
 
   const updateQuery = (newQuery: string) => {
-    console.log('Calling updateQuery: ', newQuery)
     setQuery(newQuery)
   }
 
