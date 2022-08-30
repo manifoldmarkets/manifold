@@ -5,4 +5,4 @@ export type Like = {
   createdTime: number
   tipTxnId?: string
 }
-export const LIKE_TIP_AMOUNT = 2
+export const LIKE_TIP_AMOUNT = 5
