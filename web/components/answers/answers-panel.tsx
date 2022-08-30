@@ -11,7 +11,6 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
-import { ActivityItem } from '../feed/activity-items'
 import { User } from 'common/user'
 import { getOutcomeProbability } from 'common/calculate'
 import { Answer } from 'common/answer'
@@ -176,7 +175,6 @@ function getAnswerItems(
         type: 'answer' as const,
         contract,
         answer,
-        items: [] as ActivityItem[],
         user,
       }
     })
@@ -186,7 +184,6 @@ function getAnswerItems(
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
-  items: ActivityItem[]
   type: string
 }) {
   const { answer, contract } = props

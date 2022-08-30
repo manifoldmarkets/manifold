@@ -107,7 +107,6 @@ export function ContractTopTrades(props: {
               comment={commentsById[topCommentId]}
               tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
-              smallAvatar={false}
             />
           </div>
           <div className="mt-2 text-sm text-gray-500">
@@ -123,12 +122,7 @@ export function ContractTopTrades(props: {
         <>
           <Title text="💸 Smartest money" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedBet
-              contract={contract}
-              bet={betsById[topBetId]}
-              hideOutcome={false}
-              smallAvatar={false}
-            />
+            <FeedBet contract={contract} bet={betsById[topBetId]} />
           </div>
           <div className="mt-2 text-sm text-gray-500">
             {topBettor?.name} made {formatMoney(profitById[topBetId] || 0)}!
