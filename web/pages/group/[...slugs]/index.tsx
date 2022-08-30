@@ -45,6 +45,11 @@ import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { GroupAboutPost } from 'web/components/groups/group-about-post'
+import { getPost } from 'web/lib/firebase/posts'
+import { Post } from 'common/post'
+import { Spacer } from 'web/components/layout/spacer'
+import { usePost } from 'web/hooks/use-post'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -57,6 +62,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const contracts =
     (group && (await listContractsByGroupSlug(group.slug))) ?? []
 
+  const aboutPost =
+    group && group.aboutPostId != null && (await getPost(group.aboutPostId))
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
   )
@@ -83,6 +90,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       creatorScores,
       topCreators,
       messages,
+      aboutPost,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -121,6 +129,7 @@ export default function GroupPage(props: {
   creatorScores: { [userId: string]: number }
   topCreators: User[]
   messages: GroupComment[]
+  aboutPost: Post
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -146,6 +155,7 @@ export default function GroupPage(props: {
   const page = slugs?.[1] as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
+  const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
 
   const user = useUser()
 
@@ -176,6 +186,16 @@ export default function GroupPage(props: {
 
   const aboutTab = (
     <Col>
+      {group.aboutPostId != null || isCreator ? (
+        <GroupAboutPost
+          group={group}
+          isCreator={!!isCreator}
+          post={aboutPost}
+        />
+      ) : (
+        <div></div>
+      )}
+      <Spacer h={3} />
       <GroupOverview
         group={group}
         creator={creator}
@@ -292,7 +312,6 @@ function GroupOverview(props: {
       error: "Couldn't update group",
     })
   }
-
   const postFix = user ? '?referrer=' + user.username : ''
   const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
     group.slug

@@ -1,5 +1,6 @@
 import {
   deleteDoc,
+  deleteField,
   doc,
   getDocs,
   query,
@@ -34,6 +35,10 @@ export function groupPath(
 
 export function updateGroup(group: Group, updates: Partial<Group>) {
   return updateDoc(doc(groups, group.id), updates)
+}
+
+export function deleteFieldFromGroup(group: Group, field: string) {
+  return updateDoc(doc(groups, group.id), { [field]: deleteField() })
 }
 
 export function deleteGroup(group: Group) {
