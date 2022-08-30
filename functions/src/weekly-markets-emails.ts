@@ -2,10 +2,18 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import { getAllPrivateUsers, getUser, getValues, log } from './utils'
+import {
+  getAllPrivateUsers,
+  getPrivateUser,
+  getUser,
+  getValues,
+  isProd,
+  log,
+} from './utils'
 import { sendInterestingMarketsEmail } from './emails'
 import { createRNG, shuffle } from '../../common/util/random'
 import { DAY_MS } from '../../common/util/time'
+import { filterDefined } from '../../common/util/array'
 
 export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
@@ -34,7 +42,9 @@ export async function getTrendingContracts() {
 
 async function sendTrendingMarketsEmailsToAllUsers() {
   const numContractsToSend = 6
-  const privateUsers = await getAllPrivateUsers()
+  const privateUsers = isProd()
+    ? await getAllPrivateUsers()
+    : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
     return (
