@@ -16,7 +16,7 @@ import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useBets } from 'web/hooks/use-bets'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { SignUpPrompt } from '../sign-up-prompt'
+import { BetSignUpPrompt } from '../sign-up-prompt'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import BetButton from '../bet-button'
 
@@ -127,7 +127,7 @@ export function ContractTabs(props: {
       />
       {!user ? (
         <Col className="mt-4 max-w-sm items-center xl:hidden">
-          <SignUpPrompt />
+          <BetSignUpPrompt />
           <PlayMoneyDisclaimer />
         </Col>
       ) : (
