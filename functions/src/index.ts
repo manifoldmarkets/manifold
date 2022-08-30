@@ -53,6 +53,7 @@ export * from './resolve-market'
 export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-bonus-email'
+export * from './save-twitch-credentials'
 
 import { health } from './health'
 import { transact } from './transact'
