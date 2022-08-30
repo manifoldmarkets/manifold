@@ -107,12 +107,12 @@ export function FeedAnswerCommentGroup(props: {
 
   return (
     <Col
-      className={'relative flex-1 items-start gap-3'}
+      className={'relative flex-1 items-stretch gap-3'}
       key={answer.id + 'comment'}
     >
       <Row
         className={clsx(
-          'flex gap-3 space-x-3 pt-4 transition-all duration-1000',
+          'gap-3 space-x-3 pt-4 transition-all duration-1000',
           highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
         id={answerElementId}
@@ -158,21 +158,23 @@ export function FeedAnswerCommentGroup(props: {
           )}
         </Col>
       </Row>
-      {answerComments.map((comment) => (
-        <FeedComment
-          key={comment.id}
-          indent={true}
-          contract={contract}
-          comment={comment}
-          tips={tips[comment.id]}
-          betsBySameUser={betsByUserId[comment.userId] ?? []}
-          onReplyClick={scrollAndOpenReplyInput}
-        />
-      ))}
+      <Col className="gap-3 pl-1">
+        {answerComments.map((comment) => (
+          <FeedComment
+            key={comment.id}
+            indent={true}
+            contract={contract}
+            comment={comment}
+            tips={tips[comment.id]}
+            betsBySameUser={betsByUserId[comment.userId] ?? []}
+            onReplyClick={scrollAndOpenReplyInput}
+          />
+        ))}
+      </Col>
       {showReply && (
-        <div className={'ml-6'}>
+        <div className={'relative ml-7'}>
           <span
-            className="absolute -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
           <CommentInput

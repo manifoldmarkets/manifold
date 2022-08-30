@@ -155,7 +155,7 @@ export function FeedComment(props: {
     <Row
       id={comment.id}
       className={clsx(
-        'relative flex',
+        'relative',
         indent ? 'ml-6' : '',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}

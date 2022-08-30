@@ -105,8 +105,9 @@ export function FreeResponseContractCommentsActivity(props: {
   const { bets, contract, comments, user, tips } = props
 
   let outcomes = uniq(bets.map((bet) => bet.outcome))
-  outcomes = sortBy(outcomes, (outcome) =>
-    getOutcomeProbability(contract, outcome)
+  outcomes = sortBy(
+    outcomes,
+    (outcome) => -getOutcomeProbability(contract, outcome)
   )
 
   const answers = outcomes
