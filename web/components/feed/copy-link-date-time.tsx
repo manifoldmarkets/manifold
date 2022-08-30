@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
 import Link from 'next/link'
@@ -21,9 +20,10 @@ export function CopyLinkDateTimeComponent(props: {
     event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
   ) {
     event.preventDefault()
-    const elementLocation = `https://${ENV_CONFIG.domain}/${prefix}/${slug}#${elementId}`
-
-    copyToClipboard(elementLocation)
+    const commentUrl = new URL(window.location.href)
+    commentUrl.pathname = `/${prefix}/${slug}`
+    commentUrl.hash = elementId
+    copyToClipboard(commentUrl.toString())
     setShowToast(true)
     setTimeout(() => setShowToast(false), 2000)
   }
