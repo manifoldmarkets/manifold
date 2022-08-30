@@ -80,7 +80,7 @@ export function MiscDetails(props: {
       ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
         <FeaturedContractBadge />
       ) : volume > 0 || !isNew ? (
-        <Row className={'shrink-0'}>{formatMoney(contract.volume)} bet</Row>
+        <Row className={'shrink-0'}>{formatMoney(volume)} bet</Row>
       ) : (
         <NewContractBadge />
       )}
@@ -103,7 +103,7 @@ export function AvatarDetails(props: {
   short?: boolean
 }) {
   const { contract, short, className } = props
-  const { creatorName, creatorUsername } = contract
+  const { creatorName, creatorUsername, creatorAvatarUrl } = contract
 
   return (
     <Row
@@ -111,7 +111,7 @@ export function AvatarDetails(props: {
     >
       <Avatar
         username={creatorUsername}
-        avatarUrl={contract.creatorAvatarUrl}
+        avatarUrl={creatorAvatarUrl}
         size={6}
       />
       <UserLink name={creatorName} username={creatorUsername} short={short} />
@@ -146,8 +146,15 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, isCreator, disabled } = props
-  const { closeTime, creatorName, creatorUsername, creatorId, groupLinks } =
-    contract
+  const {
+    closeTime,
+    creatorName,
+    creatorUsername,
+    creatorId,
+    groupLinks,
+    creatorAvatarUrl,
+    resolutionTime,
+  } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
 
   const groupToDisplay =
@@ -171,7 +178,7 @@ export function ContractDetails(props: {
       <Row className="items-center gap-2">
         <Avatar
           username={creatorUsername}
-          avatarUrl={contract.creatorAvatarUrl}
+          avatarUrl={creatorAvatarUrl}
           noLink={disabled}
           size={6}
         />
@@ -234,13 +241,10 @@ export function ContractDetails(props: {
 
       {(!!closeTime || !!resolvedDate) && (
         <Row className="hidden items-center gap-1 md:inline-flex">
-          {resolvedDate && contract.resolutionTime ? (
+          {resolvedDate && resolutionTime ? (
             <>
               <ClockIcon className="h-5 w-5" />
-              <DateTimeTooltip
-                text="Market resolved:"
-                time={contract.resolutionTime}
-              >
+              <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
                 {resolvedDate}
               </DateTimeTooltip>
             </>
@@ -282,9 +286,10 @@ export function ExtraMobileContractDetails(props: {
   forceShowVolume?: boolean
 }) {
   const { contract, user, forceShowVolume } = props
+  const { volume, resolutionTime, closeTime, creatorId } = contract
   const { resolvedDate } = contractMetrics(contract)
   const volumeTranslation =
-    contract.volume > 800 ? 'High' : contract.volume > 300 ? 'Medium' : 'Low'
+    volume > 800 ? 'High' : volume > 300 ? 'Medium' : 'Low'
 
   return (
     <Row
@@ -293,13 +298,10 @@ export function ExtraMobileContractDetails(props: {
         user ? 'w-full' : ''
       )}
     >
-      {resolvedDate && contract.resolutionTime ? (
+      {resolvedDate && resolutionTime ? (
         <Col className={'items-center text-sm'}>
           <Row className={'text-gray-500'}>
-            <DateTimeTooltip
-              text="Market resolved:"
-              time={contract.resolutionTime}
-            >
+            <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
               {resolvedDate}
             </DateTimeTooltip>
           </Row>
@@ -307,12 +309,12 @@ export function ExtraMobileContractDetails(props: {
         </Col>
       ) : (
         !resolvedDate &&
-        contract.closeTime && (
+        closeTime && (
           <Col className={'items-center text-sm text-gray-500'}>
             <EditableCloseDate
-              closeTime={contract.closeTime}
+              closeTime={closeTime}
               contract={contract}
-              isCreator={contract.creatorId === user?.id}
+              isCreator={creatorId === user?.id}
             />
             <Row className={'text-gray-400'}>Ends</Row>
           </Col>
@@ -320,9 +322,7 @@ export function ExtraMobileContractDetails(props: {
       )}
       {(user || forceShowVolume) && (
         <Col className={'items-center text-sm text-gray-500'}>
-          <Tooltip text={formatMoney(contract.volume)}>
-            {volumeTranslation}
-          </Tooltip>
+          <Tooltip text={formatMoney(volume)}>{volumeTranslation}</Tooltip>
           <Row className={'text-gray-400'}>Activity</Row>
         </Col>
       )}
