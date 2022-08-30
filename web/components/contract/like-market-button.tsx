@@ -43,7 +43,8 @@ export function LikeMarketButton(props: {
         <HeartIcon
           className={clsx(
             'h-6 w-6',
-            likedContractIds?.includes(contract.id)
+            likedContractIds?.includes(contract.id) ||
+              (!likes && contract.likedByUserIds?.includes(user.id))
               ? 'fill-red-500 text-red-500'
               : ''
           )}
