@@ -140,7 +140,7 @@ export const ContractOverview = (props: {
       </Col>
       <div className={'my-1 md:my-2'}></div>
       {(isBinary || isPseudoNumeric) && (
-        <ContractProbGraph contract={contract} bets={bets} />
+        <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
       )}{' '}
       {(outcomeType === 'FREE_RESPONSE' ||
         outcomeType === 'MULTIPLE_CHOICE') && (
