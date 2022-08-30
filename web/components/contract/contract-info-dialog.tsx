@@ -1,9 +1,7 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { uniqBy } from 'lodash'
 import { useState } from 'react'
-import { Bet } from 'common/bet'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
@@ -24,10 +22,9 @@ export const contractDetailsButtonClassName =
 
 export function ContractInfoDialog(props: {
   contract: Contract
-  bets: Bet[]
   className?: string
 }) {
-  const { contract, bets, className } = props
+  const { contract, className } = props
 
   const [open, setOpen] = useState(false)
   const [featured, setFeatured] = useState(
@@ -41,11 +38,7 @@ export function ContractInfoDialog(props: {
   const { createdTime, closeTime, resolutionTime, mechanism, outcomeType, id } =
     contract
 
-  const tradersCount = uniqBy(
-    bets.filter((bet) => !bet.isAnte),
-    'userId'
-  ).length
-
+  const bettorsCount = contract.uniqueBettorCount ?? 'Unknown'
   const typeDisplay =
     outcomeType === 'BINARY'
       ? 'YES / NO'
@@ -140,8 +133,8 @@ export function ContractInfoDialog(props: {
               </tr> */}
 
               <tr>
-                <td>Traders</td>
-                <td>{tradersCount}</td>
+                <td>Bettors</td>
+                <td>{bettorsCount}</td>
               </tr>
 
               <tr>

@@ -46,9 +46,9 @@ export const ContractOverview = (props: {
           isCreator={isCreator}
         />
         <Row className="justify-between gap-4">
-          <Col className="gap-2 text-2xl text-indigo-700 md:text-3xl">
+          <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
-          </Col>
+          </div>
           <Row className={'hidden gap-3 xl:flex'}>
             {isBinary && (
               <BinaryResolutionOrChance

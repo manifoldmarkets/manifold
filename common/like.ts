@@ -3,6 +3,6 @@ export type Like = {
   userId: string
   type: 'contract'
   createdTime: number
-  tipTxnId?: string
+  tipTxnId?: string // only holds most recent tip txn id
 }
 export const LIKE_TIP_AMOUNT = 5

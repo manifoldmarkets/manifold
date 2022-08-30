@@ -16,7 +16,7 @@ import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../avatar'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
@@ -145,7 +145,7 @@ export function ContractDetails(props: {
   isCreator?: boolean
   disabled?: boolean
 }) {
-  const { contract, bets, isCreator, disabled } = props
+  const { contract, isCreator, disabled } = props
   const { closeTime, creatorName, creatorUsername, creatorId, groupLinks } =
     contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
@@ -267,7 +267,6 @@ export function ContractDetails(props: {
           {!disabled && (
             <ContractInfoDialog
               contract={contract}
-              bets={bets}
               className={'hidden md:inline-flex'}
             />
           )}
@@ -310,15 +309,11 @@ export function ExtraMobileContractDetails(props: {
         !resolvedDate &&
         contract.closeTime && (
           <Col className={'items-center text-sm'}>
-            <Row className={'text-gray-500'}>
-              <DateTimeTooltip text="Market closes:" time={contract.closeTime}>
-                <EditableCloseDate
-                  closeTime={contract.closeTime}
-                  contract={contract}
-                  isCreator={contract.creatorId === user?.id}
-                />
-              </DateTimeTooltip>
-            </Row>
+            <EditableCloseDate
+              closeTime={contract.closeTime}
+              contract={contract}
+              isCreator={contract.creatorId === user?.id}
+            />
             <Row className={'text-gray-400'}>Ends</Row>
           </Col>
         )
@@ -387,10 +382,10 @@ function EditableCloseDate(props: {
   return (
     <>
       {isEditingCloseTime ? (
-        <Row className="mr-1 items-start">
+        <Row className="z-10 mr-2 w-full shrink-0 items-start items-center gap-1">
           <input
             type="date"
-            className="input input-bordered"
+            className="input input-bordered shrink-0"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseDate(e.target.value)}
             min={Date.now()}
@@ -398,34 +393,31 @@ function EditableCloseDate(props: {
           />
           <input
             type="time"
-            className="input input-bordered ml-2"
+            className="input input-bordered ml-2 shrink-0"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseHoursMinutes(e.target.value)}
             min="00:00"
             value={closeHoursMinutes}
           />
+          <Button size={'xs'} color={'blue'} onClick={onSave}>
+            Done
+          </Button>
         </Row>
       ) : (
         <DateTimeTooltip
           text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
           time={closeTime}
-          className={isCreator ? 'cursor-pointer' : ''}
         >
-          <span onClick={() => isCreator && setIsEditingCloseTime(true)}>
+          <span
+            className={isCreator ? 'cursor-pointer' : ''}
+            onClick={() => isCreator && setIsEditingCloseTime(true)}
+          >
             {isSameYear
               ? dayJsCloseTime.format('MMM D')
               : dayJsCloseTime.format('MMM D, YYYY')}
             {isSameDay && <> ({fromNow(closeTime)})</>}
           </span>
         </DateTimeTooltip>
-      )}
-
-      {isCreator && isEditingCloseTime && (
-        <Row className={'mt-2 items-center justify-end'}>
-          <button className="btn btn-xs" onClick={onSave}>
-            Done
-          </button>
-        </Row>
       )}
     </>
   )

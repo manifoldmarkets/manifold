@@ -3,7 +3,7 @@ import { ShareIcon } from '@heroicons/react/outline'
 
 import { Row } from '../layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from 'web/components/button'
 import { User } from 'common/user'
 import { ShareModal } from './share-modal'
@@ -49,9 +49,11 @@ export function ExtraContractActionsRow(props: {
       </Button>
 
       <FollowMarketButton contract={contract} user={user} />
-      <LikeMarketButton contract={contract} user={user} />
+      {user?.id !== contract.creatorId && (
+        <LikeMarketButton contract={contract} user={user} />
+      )}
       <Col className={'justify-center md:hidden'}>
-        <ContractInfoDialog contract={contract} bets={bets} />
+        <ContractInfoDialog contract={contract} />
       </Col>
     </Row>
   )
