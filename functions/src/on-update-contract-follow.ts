@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 
+// TODO: should cache the follower user ids in the contract as these triggers aren't idempotent
 export const onDeleteContractFollow = functions.firestore
   .document('contracts/{contractId}/follows/{userId}')
   .onDelete(async (change, context) => {

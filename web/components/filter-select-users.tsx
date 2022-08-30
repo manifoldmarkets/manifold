@@ -6,8 +6,8 @@ import clsx from 'clsx'
 import { Menu, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
-import { UserLink } from 'web/components/user-page'
 import { searchInAny } from 'common/util/parse'
+import { UserLink } from 'web/components/user-link'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void

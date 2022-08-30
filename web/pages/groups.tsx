@@ -16,9 +16,9 @@ import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import { UserLink } from 'web/components/user-page'
 import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
+import { UserLink } from 'web/components/user-link'
 
 export async function getStaticProps() {
   const groups = await listAllGroups().catch((_) => [])

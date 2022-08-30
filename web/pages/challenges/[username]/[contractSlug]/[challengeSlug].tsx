@@ -21,7 +21,6 @@ import { Page } from 'web/components/page'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { AcceptChallengeButton } from 'web/components/challenges/accept-challenge-button'
 import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-page'
 import { BinaryOutcomeLabel } from 'web/components/outcome-label'
 import { formatMoney } from 'common/util/format'
 import { LoadingIndicator } from 'web/components/loading-indicator'
@@ -33,6 +32,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { BinaryContract } from 'common/contract'
 import { Title } from 'web/components/title'
 import { getOpenGraphProps } from 'common/contract-details'
+import { UserLink } from 'web/components/user-link'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 

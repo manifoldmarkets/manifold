@@ -52,10 +52,9 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
-  const [bets, comments, recommendedContracts] = await Promise.all([
+  const [bets, comments] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
-    contract ? getRecommendedContracts(contract, 6) : [],
   ])
 
   return {
@@ -66,7 +65,6 @@ export async function getStaticPropz(props: {
       // Limit the data sent to the client. Client will still load all bets and comments directly.
       bets: bets.slice(0, 5000),
       comments: comments.slice(0, 1000),
-      recommendedContracts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -83,7 +81,6 @@ export default function ContractPage(props: {
   bets: Bet[]
   comments: ContractComment[]
   slug: string
-  recommendedContracts: Contract[]
   backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -91,7 +88,6 @@ export default function ContractPage(props: {
     username: '',
     comments: [],
     bets: [],
-    recommendedContracts: [],
     slug: '',
   }
 
@@ -188,15 +184,17 @@ export function ContractPageContent(
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
 
-  const [recommendedContracts, setRecommendedMarkets] = useState(
-    props.recommendedContracts
+  const [recommendedContracts, setRecommendedContracts] = useState<Contract[]>(
+    []
   )
   useEffect(() => {
-    if (contract && recommendedContracts.length === 0) {
-      getRecommendedContracts(contract, 6).then(setRecommendedMarkets)
+    if (contract && user) {
+      getRecommendedContracts(contract, user.id, 6).then(
+        setRecommendedContracts
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contract.id, recommendedContracts])
+  }, [contract.id, user?.id])
 
   const { isResolved, question, outcomeType } = contract
 

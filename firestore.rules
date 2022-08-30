@@ -62,6 +62,11 @@ service cloud.firestore {
       allow write: if request.auth.uid == userId;
     }
 
+    match /users/{userId}/likes/{likeId} {
+      allow read;
+      allow write: if request.auth.uid == userId;
+    }
+
     match /{somePath=**}/follows/{followUserId} {
       allow read;
     }
@@ -160,7 +165,7 @@ service cloud.firestore {
           allow update: if request.auth.uid == resource.data.creatorId
                            && request.resource.data.diff(resource.data)
                            .affectedKeys()
-                           .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin' ]);
+                           .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin', 'aboutPostId' ]);
          allow update: if (request.auth.uid in resource.data.memberIds  || resource.data.anyoneCanJoin)
                            && request.resource.data.diff(resource.data)
                            .affectedKeys()

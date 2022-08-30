@@ -21,7 +21,6 @@ import {
   getBinaryProbPercent,
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
-import { UserLink } from './user-page'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from './confirmation-button'
 import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
@@ -48,6 +47,7 @@ import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
+import { UserLink } from 'web/components/user-link'
 import { useUserBetContracts } from 'web/hooks/use-contracts'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
@@ -394,13 +394,11 @@ export function BetsSummary(props: {
   const { hasShares, invested, profitPercent, payout, profit, totalShares } =
     getContractBetMetrics(contract, bets)
 
-  const excludeSalesAndAntes = bets.filter(
-    (b) => !b.isAnte && !b.isSold && !b.sale
-  )
-  const yesWinnings = sumBy(excludeSalesAndAntes, (bet) =>
+  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
+  const yesWinnings = sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'YES')
   )
-  const noWinnings = sumBy(excludeSalesAndAntes, (bet) =>
+  const noWinnings = sumBy(excludeSales, (bet) =>
     calculatePayout(contract, bet, 'NO')
   )
 

@@ -1,10 +1,15 @@
+import clsx from 'clsx'
 import { Fragment } from 'react'
 import { SiteLink } from './site-link'
 
 // Return a JSX span, linkifying @username, #hashtags, and https://...
 // TODO: Use a markdown parser instead of rolling our own here.
-export function Linkify(props: { text: string; gray?: boolean }) {
-  const { text, gray } = props
+export function Linkify(props: {
+  text: string
+  className?: string
+  gray?: boolean
+}) {
+  const { text, className, gray } = props
   // Replace "m1234" with "ϻ1234"
   // const mRegex = /(\W|^)m(\d+)/g
   // text = text.replace(mRegex, (_, pre, num) => `${pre}ϻ${num}`)
@@ -38,7 +43,7 @@ export function Linkify(props: { text: string; gray?: boolean }) {
     )
   })
   return (
-    <span className="break-anywhere">
+    <span className={clsx(className, 'break-anywhere')}>
       {text.split(regex).map((part, i) => (
         <Fragment key={i}>
           {part}

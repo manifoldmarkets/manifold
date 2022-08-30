@@ -8,6 +8,7 @@ module.exports = {
   reactStrictMode: true,
   optimizeFonts: false,
   experimental: {
+    scrollRestoration: true,
     externalDir: true,
     modularizeImports: {
       '@heroicons/react/solid/?(((\\w*)?/?)*)': {

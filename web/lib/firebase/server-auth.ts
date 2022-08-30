@@ -170,7 +170,7 @@ type GetServerSidePropsAuthed<P> = (
   creds: UserCredential
 ) => Promise<GetServerSidePropsResult<P>>
 
-export const redirectIfLoggedIn = <P>(
+export const redirectIfLoggedIn = <P extends { [k: string]: any }>(
   dest: string,
   fn?: GetServerSideProps<P>
 ) => {
@@ -191,7 +191,7 @@ export const redirectIfLoggedIn = <P>(
   }
 }
 
-export const redirectIfLoggedOut = <P>(
+export const redirectIfLoggedOut = <P extends { [k: string]: any }>(
   dest: string,
   fn?: GetServerSidePropsAuthed<P>
 ) => {

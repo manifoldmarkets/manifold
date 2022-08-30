@@ -9,11 +9,7 @@ import {
 export const useUserBets = (userId: string) => {
   const result = useFirestoreQueryData(
     ['bets', userId],
-    getUserBetsQuery(userId),
-    { subscribe: true, includeMetadataChanges: true },
-    // Temporary workaround for react-query bug:
-    // https://github.com/invertase/react-query-firebase/issues/25
-    { refetchOnMount: 'always' }
+    getUserBetsQuery(userId)
   )
   return result.data
 }
