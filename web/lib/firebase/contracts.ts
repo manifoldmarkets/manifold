@@ -13,7 +13,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { sortBy, sum, uniqBy } from 'lodash'
+import { partition, sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract } from 'common/contract'
@@ -303,62 +303,63 @@ export async function getClosingSoonContracts() {
   return sortBy(chooseRandomSubset(data, 2), (contract) => contract.closeTime)
 }
 
-export const getRandTopCreatorContracts = async (
+export const getTopCreatorContracts = async (
   creatorId: string,
-  count: number,
-  excluding: string[] = []
+  count: number
 ) => {
   const creatorContractsQuery = query(
     contracts,
     where('isResolved', '==', false),
     where('creatorId', '==', creatorId),
     orderBy('popularityScore', 'desc'),
-    limit(count * 2)
+    limit(count)
   )
-  const data = await getValues<Contract>(creatorContractsQuery)
-  const open = data
-    .filter((c) => c.closeTime && c.closeTime > Date.now())
-    .filter((c) => !excluding.includes(c.id))
-
-  return chooseRandomSubset(open, count)
+  return await getValues<Contract>(creatorContractsQuery)
 }
 
-export const getRandTopGroupContracts = async (
+export const getTopGroupContracts = async (
   groupSlug: string,
-  count: number,
-  excluding: string[] = []
+  count: number
 ) => {
   const creatorContractsQuery = query(
     contracts,
     where('groupSlugs', 'array-contains', groupSlug),
     where('isResolved', '==', false),
     orderBy('popularityScore', 'desc'),
-    limit(count * 2)
+    limit(count)
   )
-  const data = await getValues<Contract>(creatorContractsQuery)
-  const open = data
-    .filter((c) => c.closeTime && c.closeTime > Date.now())
-    .filter((c) => !excluding.includes(c.id))
-
-  return chooseRandomSubset(open, count)
+  return await getValues<Contract>(creatorContractsQuery)
 }
 
 export const getRecommendedContracts = async (
   contract: Contract,
+  excludeBettorId: string,
   count: number
 ) => {
   const { creatorId, groupSlugs, id } = contract
 
   const [userContracts, groupContracts] = await Promise.all([
-    getRandTopCreatorContracts(creatorId, count, [id]),
+    getTopCreatorContracts(creatorId, count * 2),
     groupSlugs && groupSlugs[0]
-      ? getRandTopGroupContracts(groupSlugs[0], count, [id])
+      ? getTopGroupContracts(groupSlugs[0], count * 2)
       : [],
   ])
 
   const combined = uniqBy([...userContracts, ...groupContracts], (c) => c.id)
 
-  return chooseRandomSubset(combined, count)
+  const open = combined
+    .filter((c) => c.closeTime && c.closeTime > Date.now())
+    .filter((c) => c.id !== id)
+
+  const [betOnContracts, nonBetOnContracts] = partition(
+    open,
+    (c) => c.uniqueBettorIds && c.uniqueBettorIds.includes(excludeBettorId)
+  )
+  const chosen = chooseRandomSubset(nonBetOnContracts, count)
+  if (chosen.length < count)
+    chosen.push(...chooseRandomSubset(betOnContracts, count - chosen.length))
+
+  return chosen
 }
 
 export async function getRecentBetsAndComments(contract: Contract) {
