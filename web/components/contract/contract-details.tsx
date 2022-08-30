@@ -16,7 +16,7 @@ import { Contract, updateContract } from 'web/lib/firebase/contracts'
 import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../avatar'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
@@ -35,6 +35,8 @@ import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
 import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
+import { Tooltip } from 'web/components/tooltip'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -152,6 +154,8 @@ export function ContractDetails(props: {
     groupLinks?.sort((a, b) => a.createdTime - b.createdTime)[0] ?? null
   const user = useUser()
   const [open, setOpen] = useState(false)
+  const { width } = useWindowSize()
+  const isMobile = (width ?? 0) < 768
 
   const groupInfo = (
     <Row>
@@ -178,6 +182,7 @@ export function ContractDetails(props: {
             className="whitespace-nowrap"
             name={creatorName}
             username={creatorUsername}
+            short={isMobile}
           />
         )}
         {!disabled && <UserFollowButton userId={creatorId} small />}
@@ -228,7 +233,7 @@ export function ContractDetails(props: {
       </Modal>
 
       {(!!closeTime || !!resolvedDate) && (
-        <Row className="items-center gap-1">
+        <Row className="hidden items-center gap-1 md:inline-flex">
           {resolvedDate && contract.resolutionTime ? (
             <>
               <ClockIcon className="h-5 w-5" />
@@ -255,12 +260,76 @@ export function ContractDetails(props: {
       )}
       {user && (
         <>
-          <Row className="items-center gap-1">
+          <Row className="hidden items-center gap-1 md:inline-flex">
             <DatabaseIcon className="h-5 w-5" />
             <div className="whitespace-nowrap">{volumeLabel}</div>
           </Row>
-          {!disabled && <ContractInfoDialog contract={contract} bets={bets} />}
+          {!disabled && (
+            <ContractInfoDialog
+              contract={contract}
+              bets={bets}
+              className={'hidden md:inline-flex'}
+            />
+          )}
         </>
+      )}
+    </Row>
+  )
+}
+
+export function ExtraMobileContractDetails(props: {
+  contract: Contract
+  user: User | null | undefined
+  forceShowVolume?: boolean
+}) {
+  const { contract, user, forceShowVolume } = props
+  const { resolvedDate } = contractMetrics(contract)
+  const volumeTranslation =
+    contract.volume > 1000 ? 'High' : contract.volume > 200 ? 'Medium' : 'Low'
+
+  return (
+    <Row
+      className={clsx(
+        'items-center justify-around md:hidden',
+        user ? 'w-full' : ''
+      )}
+    >
+      {resolvedDate && contract.resolutionTime ? (
+        <Col className={'items-center text-sm'}>
+          <Row className={'text-gray-500'}>
+            <DateTimeTooltip
+              text="Market resolved:"
+              time={contract.resolutionTime}
+            >
+              {resolvedDate}
+            </DateTimeTooltip>
+          </Row>
+          <Row className={'text-gray-400'}>Ended</Row>
+        </Col>
+      ) : (
+        !resolvedDate &&
+        contract.closeTime && (
+          <Col className={'items-center text-sm'}>
+            <Row className={'text-gray-500'}>
+              <DateTimeTooltip text="Market closes:" time={contract.closeTime}>
+                <EditableCloseDate
+                  closeTime={contract.closeTime}
+                  contract={contract}
+                  isCreator={contract.creatorId === user?.id}
+                />
+              </DateTimeTooltip>
+            </Row>
+            <Row className={'text-gray-400'}>Ends</Row>
+          </Col>
+        )
+      )}
+      {(user || forceShowVolume) && (
+        <Col className={'items-center text-sm '}>
+          <Tooltip text={formatMoney(contract.volume)}>
+            <Row className={'text-gray-500'}>{volumeTranslation}</Row>
+          </Tooltip>
+          <Row className={'text-gray-400'}>Activity</Row>
+        </Col>
       )}
     </Row>
   )
@@ -340,28 +409,24 @@ function EditableCloseDate(props: {
         <DateTimeTooltip
           text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
           time={closeTime}
+          className={isCreator ? 'cursor-pointer' : ''}
         >
-          {isSameYear
-            ? dayJsCloseTime.format('MMM D')
-            : dayJsCloseTime.format('MMM D, YYYY')}
-          {isSameDay && <> ({fromNow(closeTime)})</>}
+          <span onClick={() => isCreator && setIsEditingCloseTime(true)}>
+            {isSameYear
+              ? dayJsCloseTime.format('MMM D')
+              : dayJsCloseTime.format('MMM D, YYYY')}
+            {isSameDay && <> ({fromNow(closeTime)})</>}
+          </span>
         </DateTimeTooltip>
       )}
 
-      {isCreator &&
-        (isEditingCloseTime ? (
+      {isCreator && isEditingCloseTime && (
+        <Row className={'mt-2 items-center justify-end'}>
           <button className="btn btn-xs" onClick={onSave}>
             Done
           </button>
-        ) : (
-          <Button
-            size={'xs'}
-            color={'gray-white'}
-            onClick={() => setIsEditingCloseTime(true)}
-          >
-            <PencilIcon className="!container mr-0.5 mb-0.5 inline h-4 w-4" />
-          </Button>
-        ))}
+        </Row>
+      )}
     </>
   )
 }

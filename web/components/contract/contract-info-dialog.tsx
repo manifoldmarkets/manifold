@@ -22,8 +22,12 @@ import ShortToggle from '../widgets/short-toggle'
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
 
-export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
+export function ContractInfoDialog(props: {
+  contract: Contract
+  bets: Bet[]
+  className?: string
+}) {
+  const { contract, bets, className } = props
 
   const [open, setOpen] = useState(false)
   const [featured, setFeatured] = useState(
@@ -69,7 +73,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   return (
     <>
       <button
-        className={contractDetailsButtonClassName}
+        className={clsx(contractDetailsButtonClassName, className)}
         onClick={() => setOpen(true)}
       >
         <DotsHorizontalIcon

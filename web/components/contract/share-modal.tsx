@@ -12,12 +12,15 @@ import { TweetButton } from '../tweet-button'
 import { DuplicateContractButton } from '../copy-contract-button'
 import { Button } from '../button'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { track } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import { SiteLink } from '../site-link'
 import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
+import { useState } from 'react'
+import { CHALLENGES_ENABLED } from 'common/challenge'
 
 export function ShareModal(props: {
   contract: Contract
@@ -26,8 +29,13 @@ export function ShareModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, user, isOpen, setOpen } = props
+  const { outcomeType, resolution } = contract
 
+  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
+    useState(false)
   const linkIcon = <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
+  const showChallenge =
+    user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
 
   const shareUrl = `https://${ENV_CONFIG.domain}${contractPath(contract)}${
     user?.username && contract.creatorUsername !== user?.username
@@ -46,7 +54,6 @@ export function ShareModal(props: {
           </SiteLink>{' '}
           if a new user signs up using the link!
         </p>
-
         <Button
           size="2xl"
           color="gradient"
@@ -61,8 +68,31 @@ export function ShareModal(props: {
         >
           {linkIcon} Copy link
         </Button>
-
-        <Row className="z-0 justify-start gap-4 self-center">
+        {showChallenge && (
+          <Button
+            size="lg"
+            color="gray-white"
+            className={'mb-2 flex max-w-xs self-center'}
+            onClick={withTracking(
+              () => setOpenCreateChallengeModal(true),
+              'click challenge button'
+            )}
+          >
+            <span>⚔️ Challenge a friend</span>
+            <CreateChallengeModal
+              isOpen={openCreateChallengeModal}
+              setOpen={(open) => {
+                if (!open) {
+                  setOpenCreateChallengeModal(false)
+                  setOpen(false)
+                } else setOpenCreateChallengeModal(open)
+              }}
+              user={user}
+              contract={contract}
+            />
+          </Button>
+        )}
+        <Row className="z-0 flex-wrap justify-center gap-4 self-center">
           <TweetButton
             className="self-start"
             tweetText={getTweetText(contract, shareUrl)}
