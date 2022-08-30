@@ -107,7 +107,14 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
           format: (time) =>
             formatTime(+time, multiYear, lessThanAWeek, includeMinute),
         }}
-        colors={{ scheme: 'category10' }}
+        colors={[
+          '#fca5a5', // red-300
+          '#a5b4fc', // indigo-300
+          '#86efac', // green-300
+          '#fef08a', // yellow-200
+          '#fdba74', // orange-300
+          '#c084fc', // purple-400
+        ]}
         pointSize={0}
         curve="stepAfter"
         enableSlices="x"
