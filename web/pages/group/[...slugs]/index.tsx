@@ -357,7 +357,7 @@ function GroupOverview(props: {
             />
           ) : (
             <span className={'text-gray-700'}>
-              {anyoneCanJoin ? 'Open' : 'Closed'}
+              {anyoneCanJoin ? 'Open to all' : 'Closed (by invite only)'}
             </span>
           )}
         </Row>
