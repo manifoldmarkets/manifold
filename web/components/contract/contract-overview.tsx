@@ -140,7 +140,7 @@ export const ContractOverview = (props: {
         </Col>
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
-      <ExtraContractActionsRow user={user} contract={contract} bets={bets} />
+      <ExtraContractActionsRow user={user} contract={contract} />
       <ContractDescription
         className="px-2"
         contract={contract}

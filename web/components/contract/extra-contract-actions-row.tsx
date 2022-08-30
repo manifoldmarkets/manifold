@@ -10,15 +10,13 @@ import { ShareModal } from './share-modal'
 import { FollowMarketButton } from 'web/components/follow-market-button'
 import { LikeMarketButton } from 'web/components/contract/like-market-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
-import { Bet } from 'common/bet'
 import { Col } from 'web/components/layout/col'
 
 export function ExtraContractActionsRow(props: {
   contract: Contract
-  bets: Bet[]
   user: User | undefined | null
 }) {
-  const { user, contract, bets } = props
+  const { user, contract } = props
 
   const [isShareOpen, setShareOpen] = useState(false)
 
