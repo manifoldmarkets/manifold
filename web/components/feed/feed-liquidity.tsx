@@ -3,7 +3,6 @@ import { User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
-import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React from 'react'
@@ -11,10 +10,10 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/user-link'
 
 export function FeedLiquidity(props: {
+  className?: string
   liquidity: LiquidityProvision
-  smallAvatar: boolean
 }) {
-  const { liquidity, smallAvatar } = props
+  const { liquidity } = props
   const { userId, createdTime } = liquidity
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
@@ -26,21 +25,11 @@ export function FeedLiquidity(props: {
 
   return (
     <>
-      <Row className={'flex w-full gap-2 pt-3'}>
+      <Row className="flex w-full gap-2 pt-3">
         {isSelf ? (
-          <Avatar
-            className={clsx(smallAvatar && 'ml-1')}
-            size={smallAvatar ? 'sm' : undefined}
-            avatarUrl={user.avatarUrl}
-            username={user.username}
-          />
+          <Avatar avatarUrl={user.avatarUrl} username={user.username} />
         ) : bettor ? (
-          <Avatar
-            className={clsx(smallAvatar && 'ml-1')}
-            size={smallAvatar ? 'sm' : undefined}
-            avatarUrl={bettor.avatarUrl}
-            username={bettor.username}
-          />
+          <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
         ) : (
           <div className="relative px-1">
             <EmptyAvatar />

@@ -236,9 +236,10 @@ const useUploadMutation = (editor: Editor | null) =>
 
 export function RichContent(props: {
   content: JSONContent | string
+  className?: string
   smallImage?: boolean
 }) {
-  const { content, smallImage } = props
+  const { className, content, smallImage } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
     extensions: [
@@ -254,19 +255,24 @@ export function RichContent(props: {
   })
   useEffect(() => void editor?.commands?.setContent(content), [editor, content])
 
-  return <EditorContent editor={editor} />
+  return <EditorContent className={className} editor={editor} />
 }
 
 // backwards compatibility: we used to store content as strings
 export function Content(props: {
   content: JSONContent | string
+  className?: string
   smallImage?: boolean
 }) {
-  const { content } = props
+  const { className, content } = props
   return typeof content === 'string' ? (
-    <div className="whitespace-pre-line font-light leading-relaxed">
-      <Linkify text={content} />
-    </div>
+    <Linkify
+      className={clsx(
+        className,
+        'whitespace-pre-line font-light leading-relaxed'
+      )}
+      text={content}
+    />
   ) : (
     <RichContent {...props} />
   )

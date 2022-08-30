@@ -16,13 +16,8 @@ import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/user-link'
 
-export function FeedBet(props: {
-  contract: Contract
-  bet: Bet
-  hideOutcome: boolean
-  smallAvatar: boolean
-}) {
-  const { contract, bet, hideOutcome, smallAvatar } = props
+export function FeedBet(props: { contract: Contract; bet: Bet }) {
+  const { contract, bet } = props
   const { userId, createdTime } = bet
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
@@ -33,21 +28,11 @@ export function FeedBet(props: {
   const isSelf = user?.id === userId
 
   return (
-    <Row className={'flex w-full items-center gap-2 pt-3'}>
+    <Row className="items-center gap-2 pt-3">
       {isSelf ? (
-        <Avatar
-          className={clsx(smallAvatar && 'ml-1')}
-          size={smallAvatar ? 'sm' : undefined}
-          avatarUrl={user.avatarUrl}
-          username={user.username}
-        />
+        <Avatar avatarUrl={user.avatarUrl} username={user.username} />
       ) : bettor ? (
-        <Avatar
-          className={clsx(smallAvatar && 'ml-1')}
-          size={smallAvatar ? 'sm' : undefined}
-          avatarUrl={bettor.avatarUrl}
-          username={bettor.username}
-        />
+        <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
       ) : (
         <EmptyAvatar className="mx-1" />
       )}
@@ -56,7 +41,6 @@ export function FeedBet(props: {
         contract={contract}
         isSelf={isSelf}
         bettor={bettor}
-        hideOutcome={hideOutcome}
         className="flex-1"
       />
     </Row>
