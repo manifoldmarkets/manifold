@@ -11,7 +11,7 @@ function shortenName(name: string) {
   const firstName = name.split(' ')[0]
   const maxLength = 10
   const shortName =
-    firstName.length >= 3
+    firstName.length >= 4
       ? firstName.length < maxLength
         ? firstName
         : firstName.substring(0, maxLength - 3) + '...'

@@ -31,8 +31,7 @@ export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
 export * from './reset-weekly-emails-flag'
 export * from './on-update-contract-follow'
-export * from './on-create-like'
-export * from './on-delete-like'
+export * from './on-update-like'
 
 // v2
 export * from './health'

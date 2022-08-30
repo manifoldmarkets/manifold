@@ -13,7 +13,7 @@ import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
 import { useState } from 'react'
-import { Row } from 'web/components/layout/row'
+import { Col } from 'web/components/layout/col'
 
 export const FollowMarketButton = (props: {
   contract: Contract
@@ -55,15 +55,15 @@ export const FollowMarketButton = (props: {
       }}
     >
       {followers?.includes(user?.id ?? 'nope') ? (
-        <Row className={'gap-2'}>
+        <Col className={'items-center gap-x-2 sm:flex-row'}>
           <EyeOffIcon className={clsx('h-6 w-6')} aria-hidden="true" />
           Unwatch
-        </Row>
+        </Col>
       ) : (
-        <Row className={'gap-2'}>
+        <Col className={'items-center gap-x-2 sm:flex-row'}>
           <EyeIcon className={clsx('h-6 w-6')} aria-hidden="true" />
           Watch
-        </Row>
+        </Col>
       )}
       <FollowMarketModal
         open={open}

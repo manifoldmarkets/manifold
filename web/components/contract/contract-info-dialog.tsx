@@ -1,9 +1,7 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { uniqBy } from 'lodash'
 import { useState } from 'react'
-import { Bet } from 'common/bet'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
@@ -22,8 +20,11 @@ import ShortToggle from '../widgets/short-toggle'
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
 
-export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
+export function ContractInfoDialog(props: {
+  contract: Contract
+  className?: string
+}) {
+  const { contract, className } = props
 
   const [open, setOpen] = useState(false)
   const [featured, setFeatured] = useState(
@@ -37,11 +38,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   const { createdTime, closeTime, resolutionTime, mechanism, outcomeType, id } =
     contract
 
-  const tradersCount = uniqBy(
-    bets.filter((bet) => !bet.isAnte),
-    'userId'
-  ).length
-
+  const bettorsCount = contract.uniqueBettorCount ?? 'Unknown'
   const typeDisplay =
     outcomeType === 'BINARY'
       ? 'YES / NO'
@@ -69,7 +66,7 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
   return (
     <>
       <button
-        className={contractDetailsButtonClassName}
+        className={clsx(contractDetailsButtonClassName, className)}
         onClick={() => setOpen(true)}
       >
         <DotsHorizontalIcon
@@ -136,8 +133,8 @@ export function ContractInfoDialog(props: { contract: Contract; bets: Bet[] }) {
               </tr> */}
 
               <tr>
-                <td>Traders</td>
-                <td>{tradersCount}</td>
+                <td>Bettors</td>
+                <td>{bettorsCount}</td>
               </tr>
 
               <tr>
