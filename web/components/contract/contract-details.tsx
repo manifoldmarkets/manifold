@@ -326,7 +326,13 @@ export function ExtraMobileContractDetails(props: {
       )}
       {(user || forceShowVolume) && (
         <Col className={'items-center text-sm text-gray-500'}>
-          <Tooltip text={formatMoney(volume)}>{volumeTranslation}</Tooltip>
+          <Tooltip
+            text={`${formatMoney(
+              volume
+            )} bet - ${uniqueBettors} unique bettors`}
+          >
+            {volumeTranslation}
+          </Tooltip>
           <Row className={'text-gray-400'}>Activity</Row>
         </Col>
       )}
