@@ -36,7 +36,7 @@ export function LikeMarketButton(props: {
       color={'gray-white'}
       onClick={onLike}
     >
-      <Col className={'gap-0 sm:flex-row sm:gap-x-2'}>
+      <Col className={'sm:flex-row sm:gap-x-2'}>
         <HeartIcon
           className={clsx(
             'h-6 w-6',
@@ -47,7 +47,7 @@ export function LikeMarketButton(props: {
               : ''
           )}
         />
-        <span>Tip</span>
+        Tip
       </Col>
     </Button>
   )

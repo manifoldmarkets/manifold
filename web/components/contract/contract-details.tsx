@@ -284,7 +284,7 @@ export function ExtraMobileContractDetails(props: {
   const { contract, user, forceShowVolume } = props
   const { resolvedDate } = contractMetrics(contract)
   const volumeTranslation =
-    contract.volume > 1000 ? 'High' : contract.volume > 200 ? 'Medium' : 'Low'
+    contract.volume > 800 ? 'High' : contract.volume > 300 ? 'Medium' : 'Low'
 
   return (
     <Row
@@ -308,7 +308,7 @@ export function ExtraMobileContractDetails(props: {
       ) : (
         !resolvedDate &&
         contract.closeTime && (
-          <Col className={'items-center text-sm'}>
+          <Col className={'items-center text-sm text-gray-500'}>
             <EditableCloseDate
               closeTime={contract.closeTime}
               contract={contract}
@@ -319,9 +319,9 @@ export function ExtraMobileContractDetails(props: {
         )
       )}
       {(user || forceShowVolume) && (
-        <Col className={'items-center text-sm '}>
+        <Col className={'items-center text-sm text-gray-500'}>
           <Tooltip text={formatMoney(contract.volume)}>
-            <Row className={'text-gray-500'}>{volumeTranslation}</Row>
+            {volumeTranslation}
           </Tooltip>
           <Row className={'text-gray-400'}>Activity</Row>
         </Col>
@@ -393,7 +393,7 @@ function EditableCloseDate(props: {
           />
           <input
             type="time"
-            className="input input-bordered ml-2 shrink-0"
+            className="input input-bordered shrink-0"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseHoursMinutes(e.target.value)}
             min="00:00"
