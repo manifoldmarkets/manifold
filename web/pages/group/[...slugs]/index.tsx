@@ -50,6 +50,7 @@ import { getPost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
 import { usePost } from 'web/hooks/use-post'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -158,6 +159,7 @@ export default function GroupPage(props: {
   const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
 
   const user = useUser()
+  const isAdmin = useAdmin()
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -186,14 +188,12 @@ export default function GroupPage(props: {
 
   const aboutTab = (
     <Col>
-      {group.aboutPostId != null || isCreator ? (
+      {(group.aboutPostId != null || isCreator || isAdmin) && (
         <GroupAboutPost
           group={group}
-          isCreator={!!isCreator}
+          isEditable={!!isCreator || isAdmin}
           post={aboutPost}
         />
-      ) : (
-        <div></div>
       )}
       <Spacer h={3} />
       <GroupOverview

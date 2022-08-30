@@ -1,4 +1,3 @@
-import { useAdmin } from 'web/hooks/use-admin'
 import { Row } from '../layout/row'
 import { Content } from '../editor'
 import { TextEditor, useTextEditor } from 'web/components/editor'
@@ -16,20 +15,15 @@ import { usePost } from 'web/hooks/use-post'
 
 export function GroupAboutPost(props: {
   group: Group
-  isCreator: boolean
+  isEditable: boolean
   post: Post
 }) {
-  const { group, isCreator } = props
+  const { group, isEditable } = props
   const post = usePost(group.aboutPostId) ?? props.post
-  const isAdmin = useAdmin()
-
-  if (group.aboutPostId == null && !isCreator) {
-    return <p className="text-center">No post has been created </p>
-  }
 
   return (
     <div className="rounded-md bg-white p-4">
-      {isCreator || isAdmin ? (
+      {isEditable ? (
         <RichEditGroupAboutPost group={group} post={post} />
       ) : (
         <Content content={post.content} />
