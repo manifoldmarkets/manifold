@@ -3,7 +3,6 @@ import type { AppProps } from 'next/app'
 import { useEffect } from 'react'
 import Head from 'next/head'
 import Script from 'next/script'
-import { usePreserveScroll } from 'web/hooks/use-preserve-scroll'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider } from 'web/components/auth-context'
 import Welcome from 'web/components/onboarding/welcome'
@@ -26,8 +25,6 @@ function printBuildInfo() {
 }
 
 function MyApp({ Component, pageProps }: AppProps) {
-  usePreserveScroll()
-
   useEffect(printBuildInfo, [])
 
   return (
