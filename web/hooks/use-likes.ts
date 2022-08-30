@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listenForLikes } from 'web/lib/firebase/users'
 import { Like } from 'common/like'
-import { Contract } from 'common/lib/contract'
+import { Contract } from 'common/contract'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { filterDefined } from 'common/util/array'
 

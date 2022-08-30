@@ -6,11 +6,8 @@ import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
 import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
-import {
-  LIKE_TIP_AMOUNT,
-  likeContract,
-  unLikeContract,
-} from 'web/lib/firebase/likes'
+import { likeContract, unLikeContract } from 'web/lib/firebase/likes'
+import { LIKE_TIP_AMOUNT } from 'common/like'
 
 export function LikeMarketButton(props: {
   contract: Contract

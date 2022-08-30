@@ -1,4 +1,4 @@
-import { User } from 'common/lib/user'
+import { User } from 'common/user'
 import { useState } from 'react'
 import { TextButton } from 'web/components/text-button'
 import { Modal } from 'web/components/layout/modal'
