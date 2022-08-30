@@ -157,7 +157,7 @@ export function FeedComment(props: {
       className={clsx(
         'relative flex',
         indent ? 'ml-6' : '',
-        highlighted ? `-m-1 rounded bg-indigo-500/[0.2] p-2` : ''
+        highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
     >
       {/*draw a gray line from the comment to the left:*/}
