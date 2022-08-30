@@ -87,7 +87,7 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
     >
       <ResponsiveLine
         data={data}
-        yScale={{ min: 0, max: 100, type: 'linear', stacked: true }}
+        yScale={{ min: 0, max: 100, type: 'linear' }}
         yFormat={formatPercent}
         gridYValues={yTickValues}
         axisLeft={{
@@ -107,20 +107,11 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
           format: (time) =>
             formatTime(+time, multiYear, lessThanAWeek, includeMinute),
         }}
-        colors={[
-          '#fca5a5', // red-300
-          '#a5b4fc', // indigo-300
-          '#86efac', // green-300
-          '#fef08a', // yellow-200
-          '#fdba74', // orange-300
-          '#c084fc', // purple-400
-        ]}
+        colors={{ scheme: 'category10' }}
         pointSize={0}
         curve="stepAfter"
         enableSlices="x"
         enableGridX={!!width && width >= 800}
-        enableArea
-        areaOpacity={1}
         margin={{ top: 20, right: 20, bottom: 25, left: 40 }}
         legends={[
           {
