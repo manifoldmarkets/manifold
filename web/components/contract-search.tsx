@@ -10,7 +10,7 @@ import {
 } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
-import { useEffect, useLayoutEffect, useRef, useMemo } from 'react'
+import { useEffect, useLayoutEffect, useRef, useMemo, ReactNode } from 'react'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
@@ -85,6 +85,7 @@ export function ContractSearch(props: {
   isWholePage?: boolean
   maxItems?: number
   noControls?: boolean
+  renderContracts?: (contracts: Contract[] | undefined) => ReactNode
 }) {
   const {
     user,
@@ -101,6 +102,7 @@ export function ContractSearch(props: {
     isWholePage,
     maxItems,
     noControls,
+    renderContracts,
   } = props
 
   const [state, setState] = usePersistentState(
@@ -203,14 +205,18 @@ export function ContractSearch(props: {
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
       />
-      <ContractsGrid
-        contracts={renderedContracts}
-        loadMore={noControls ? undefined : performQuery}
-        showTime={state.showTime ?? undefined}
-        onContractClick={onContractClick}
-        highlightOptions={highlightOptions}
-        cardHideOptions={cardHideOptions}
-      />
+      {renderContracts ? (
+        renderContracts(renderedContracts)
+      ) : (
+        <ContractsGrid
+          contracts={renderedContracts}
+          loadMore={noControls ? undefined : performQuery}
+          showTime={state.showTime ?? undefined}
+          onContractClick={onContractClick}
+          highlightOptions={highlightOptions}
+          cardHideOptions={cardHideOptions}
+        />
+      )}
     </Col>
   )
 }
