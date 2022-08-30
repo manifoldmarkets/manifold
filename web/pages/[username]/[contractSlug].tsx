@@ -168,9 +168,6 @@ export function ContractPageContent(
     [bets]
   )
 
-  // Sort for now to see if bug is fixed.
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-
   const tips = useTipTxns({ contractId: contract.id })
 
   const [showConfetti, setShowConfetti] = useState(false)
