@@ -162,7 +162,7 @@ export function ContractDetails(props: {
   const user = useUser()
   const [open, setOpen] = useState(false)
   const { width } = useWindowSize()
-  const isMobile = (width ?? 0) < 768
+  const isMobile = (width ?? 0) < 600
 
   const groupInfo = (
     <Row>
@@ -286,10 +286,16 @@ export function ExtraMobileContractDetails(props: {
   forceShowVolume?: boolean
 }) {
   const { contract, user, forceShowVolume } = props
-  const { volume, resolutionTime, closeTime, creatorId } = contract
+  const { volume, resolutionTime, closeTime, creatorId, uniqueBettorCount } =
+    contract
+  const uniqueBettors = uniqueBettorCount ?? 0
   const { resolvedDate } = contractMetrics(contract)
   const volumeTranslation =
-    volume > 800 ? 'High' : volume > 300 ? 'Medium' : 'Low'
+    volume > 800 || uniqueBettors > 20
+      ? 'High'
+      : volume > 300 || uniqueBettors > 10
+      ? 'Medium'
+      : 'Low'
 
   return (
     <Row
