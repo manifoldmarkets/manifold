@@ -6,7 +6,7 @@ import { Avatar } from './avatar'
 import { FollowButton } from './follow-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { UserLink } from './user-page'
+import { UserLink } from 'web/components/user-link'
 
 export function FollowList(props: { userIds: string[] }) {
   const { userIds } = props

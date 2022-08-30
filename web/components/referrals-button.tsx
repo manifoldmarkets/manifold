@@ -7,11 +7,11 @@ import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-page'
 import { useReferrals } from 'web/hooks/use-referrals'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { getUser, updateUser } from 'web/lib/firebase/users'
 import { TextButton } from 'web/components/text-button'
+import { UserLink } from 'web/components/user-link'
 
 export function ReferralsButton(props: { user: User; currentUser?: User }) {
   const { user, currentUser } = props

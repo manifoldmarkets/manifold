@@ -40,6 +40,8 @@ export type notification_source_types =
   | 'challenge'
   | 'betting_streak_bonus'
   | 'loan'
+  | 'like'
+  | 'tip_and_like'
 
 export type notification_source_update_types =
   | 'created'
@@ -71,3 +73,5 @@ export type notification_reason_types =
   | 'betting_streak_incremented'
   | 'loan_income'
   | 'you_follow_contract'
+  | 'liked_your_contract'
+  | 'liked_and_tipped_your_contract'

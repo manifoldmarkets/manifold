@@ -6,11 +6,11 @@ import { SiteLink } from './site-link'
 import { Row } from './layout/row'
 import { Avatar } from './avatar'
 import { RelativeTimestamp } from './relative-timestamp'
-import { UserLink } from './user-page'
 import { User } from 'common/user'
 import { Col } from './layout/col'
 import { Content } from './editor'
 import { LoadingIndicator } from './loading-indicator'
+import { UserLink } from 'web/components/user-link'
 import { PaginationNextPrev } from 'web/components/pagination'
 
 type ContractKey = {

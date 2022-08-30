@@ -11,7 +11,6 @@ import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
-import { UserLink } from 'web/components/user-page'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { Tipper } from 'web/components/tipper'
@@ -23,6 +22,7 @@ import { useUnseenNotifications } from 'web/hooks/use-notifications'
 import { ChevronDownIcon, UsersIcon } from '@heroicons/react/outline'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { usePrivateUser } from 'web/hooks/use-user'
+import { UserLink } from 'web/components/user-link'
 
 export function GroupChat(props: {
   messages: GroupComment[]

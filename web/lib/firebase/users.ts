@@ -28,6 +28,7 @@ import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
 import { track } from '@amplitude/analytics-browser'
+import { Like } from 'common/like'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
@@ -309,4 +310,12 @@ export function listenForReferrals(
       setReferralIds(filterDefined(values))
     }
   )
+}
+
+export function listenForLikes(
+  userId: string,
+  setLikes: (likes: Like[]) => void
+) {
+  const likes = collection(users, userId, 'likes')
+  return listenForValues<Like>(likes, (docs) => setLikes(docs))
 }

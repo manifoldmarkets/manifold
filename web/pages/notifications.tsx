@@ -7,7 +7,6 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { UserLink } from 'web/components/user-page'
 import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USERNAME,
@@ -35,7 +34,7 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { groupBy, sum, uniq } from 'lodash'
+import { groupBy, sum, uniqBy } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -45,10 +44,14 @@ import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
+import {
+  MultiUserTipLink,
+  MultiUserLinkInfo,
+  UserLink,
+} from 'web/components/user-link'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export const NOTIFICATIONS_PER_PAGE = 30
-const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
@@ -233,13 +236,26 @@ function IncomeNotificationGroupItem(props: {
         let sum = 0
         notificationsForSourceTitle.forEach(
           (notification) =>
-            notification.sourceText &&
-            (sum = parseInt(notification.sourceText) + sum)
+            (sum = parseInt(notification.sourceText ?? '0') + sum)
         )
-        const uniqueUsers = uniq(
+        const uniqueUsers = uniqBy(
           notificationsForSourceTitle.map((notification) => {
-            return notification.sourceUserUsername
-          })
+            let thisSum = 0
+            notificationsForSourceTitle
+              .filter(
+                (n) => n.sourceUserUsername === notification.sourceUserUsername
+              )
+              .forEach(
+                (n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum)
+              )
+            return {
+              username: notification.sourceUserUsername,
+              name: notification.sourceUserName,
+              avatarUrl: notification.sourceUserAvatarUrl,
+              amountTipped: thisSum,
+            } as MultiUserLinkInfo
+          }),
+          (n) => n.username
         )
 
         const newNotification = {
@@ -247,7 +263,7 @@ function IncomeNotificationGroupItem(props: {
           sourceText: sum.toString(),
           sourceUserUsername:
             uniqueUsers.length > 1
-              ? MULTIPLE_USERS_KEY
+              ? JSON.stringify(uniqueUsers)
               : notificationsForSourceTitle[0].sourceType,
         }
         newNotifications.push(newNotification)
@@ -385,6 +401,9 @@ function IncomeNotificationItem(props: {
       else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested bets returned as a`
+      // TODO: support just 'like' notification without a tip
+    } else if (sourceType === 'tip_and_like' && sourceText) {
+      reasonText = !simple ? `liked` : `in likes on`
     }
 
     const streakInDays =
@@ -493,9 +512,11 @@ function IncomeNotificationItem(props: {
               <span className={'mr-1'}>{incomeNotificationLabel()}</span>
             </div>
             <span>
-              {sourceType === 'tip' &&
-                (sourceUserUsername === MULTIPLE_USERS_KEY ? (
-                  <span className={'mr-1 truncate'}>Multiple users</span>
+              {(sourceType === 'tip' || sourceType === 'tip_and_like') &&
+                (sourceUserUsername?.includes(',') ? (
+                  <MultiUserTipLink
+                    userInfos={JSON.parse(sourceUserUsername)}
+                  />
                 ) : (
                   <UserLink
                     name={sourceUserName || ''}
