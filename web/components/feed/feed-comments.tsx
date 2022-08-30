@@ -168,8 +168,8 @@ export function FeedComment(props: {
         />
       ) : null}
       <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
-      <div className="ml-1.5 min-w-0 flex-1 sm:ml-3">
-        <div className="mt-0.5 pl-0.5 text-sm text-gray-500">
+      <div className="ml-1.5 min-w-0 flex-1 pl-0.5 sm:ml-3">
+        <div className="mt-0.5 text-sm text-gray-500">
           <UserLink
             className="text-gray-500"
             username={userUsername}
