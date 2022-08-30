@@ -7,7 +7,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { Post } from 'common/post'
-import { coll, getValue } from './utils'
+import { coll, getValue, listenForValue } from './utils'
 
 export const posts = coll<Post>('posts')
 
@@ -31,4 +31,11 @@ export async function getPostBySlug(slug: string) {
   const q = query(posts, where('slug', '==', slug))
   const docs = (await getDocs(q)).docs
   return docs.length === 0 ? null : docs[0].data()
+}
+
+export function listenForPost(
+  postId: string,
+  setPost: (post: Post | null) => void
+) {
+  return listenForValue(doc(posts, postId), setPost)
 }
