@@ -14,16 +14,16 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { GetServerSideProps } from 'next'
 import { Sort } from 'web/components/contract-search'
 import { Button } from 'web/components/button'
-import { Spacer } from 'web/components/layout/spacer'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { Group } from 'common/group'
 import { Carousel } from 'web/components/carousel'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { range } from 'lodash'
-import { Subtitle } from 'web/components/subtitle'
 import { Contract } from 'common/contract'
 import { ShowTime } from 'web/components/contract/contract-details'
+import { GroupLinkItem } from '../groups'
+import { SiteLink } from 'web/components/site-link'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -44,7 +44,7 @@ const Home = (props: { auth: { user: User } | null }) => {
 
   return (
     <Page>
-      <Col className="mx-4 mt-4 gap-2 sm:mx-10 xl:w-[125%]">
+      <Col className="mx-4 mt-4 gap-4 sm:mx-10 xl:w-[125%]">
         <SearchSection label="Trending" sort="score" user={user} />
         <SearchSection label="Newest" sort="newest" user={user} />
         <SearchSection label="Closing soon" sort="close-date" user={user} />
@@ -72,10 +72,13 @@ function SearchSection(props: {
   sort: Sort
 }) {
   const { label, user, sort } = props
+  const href = `/home?s=${sort}`
 
   return (
     <Col>
-      <Subtitle className="mx-2 !mt-2 !text-gray-800 sm:mx-0" text={label} />
+      <SiteLink className="mb-2 text-xl" href={href}>
+        {label}
+      </SiteLink>
       <ContractSearch
         user={user}
         defaultSort={sort}
@@ -85,7 +88,12 @@ function SearchSection(props: {
           contracts ? (
             <DoubleCarousel
               contracts={contracts}
-              seeMoreUrl={`/home?s=${sort}`}
+              seeMoreUrl={href}
+              showTime={
+                sort === 'close-date' || sort === 'resolve-date'
+                  ? sort
+                  : undefined
+              }
             />
           ) : (
             <LoadingIndicator />
@@ -100,9 +108,8 @@ function GroupSection(props: { group: Group; user: User | null }) {
   const { group, user } = props
 
   return (
-    <Col className="">
-      <Subtitle className="mx-2 !text-gray-800 sm:mx-0" text={group.name} />
-      <Spacer h={2} />
+    <Col>
+      <GroupLinkItem className="mb-2 text-xl" group={group} />
       <ContractSearch
         user={user}
         defaultSort={'score'}
@@ -133,30 +140,40 @@ function DoubleCarousel(props: {
   return (
     <Carousel className="-mx-4 mt-2 sm:-mx-10">
       <div className="shrink-0 sm:w-6" />
-      {contracts &&
-        range(0, Math.floor(contracts.length / 2)).map((col) => {
-          const i = col * 2
-          return (
-            <Col>
-              <ContractCard
-                key={contracts[i].id}
-                contract={contracts[i]}
-                className="mb-2 max-h-[200px] w-96 shrink-0"
-                questionClass="line-clamp-3"
-                trackingPostfix=" tournament"
-                showTime={showTime}
-              />
-              <ContractCard
-                key={contracts[i + 1].id}
-                contract={contracts[i + 1]}
-                className="mb-2 max-h-[200px] w-96 shrink-0"
-                questionClass="line-clamp-3"
-                trackingPostfix=" tournament"
-                showTime={showTime}
-              />
-            </Col>
-          )
-        })}
+      {contracts.length >= 6
+        ? range(0, Math.floor(contracts.length / 2)).map((col) => {
+            const i = col * 2
+            return (
+              <Col>
+                <ContractCard
+                  key={contracts[i].id}
+                  contract={contracts[i]}
+                  className="mb-2 max-h-[200px] w-96 shrink-0"
+                  questionClass="line-clamp-3"
+                  trackingPostfix=" tournament"
+                  showTime={showTime}
+                />
+                <ContractCard
+                  key={contracts[i + 1].id}
+                  contract={contracts[i + 1]}
+                  className="mb-2 max-h-[200px] w-96 shrink-0"
+                  questionClass="line-clamp-3"
+                  trackingPostfix=" tournament"
+                  showTime={showTime}
+                />
+              </Col>
+            )
+          })
+        : contracts.map((c) => (
+            <ContractCard
+              key={c.id}
+              contract={c}
+              className="mb-2 max-h-[200px] w-96 shrink-0"
+              questionClass="line-clamp-3"
+              trackingPostfix=" tournament"
+              showTime={showTime}
+            />
+          ))}
       <Button
         className="self-center whitespace-nowrap"
         color="blue"
