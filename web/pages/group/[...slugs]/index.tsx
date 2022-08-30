@@ -49,6 +49,7 @@ import { GroupAboutPost } from 'web/components/groups/group-about-post'
 import { getPost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
+import { usePost } from 'web/hooks/use-post'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -147,7 +148,6 @@ export default function GroupPage(props: {
     topTraders,
     creatorScores,
     topCreators,
-    aboutPost,
   } = props
 
   const router = useRouter()
@@ -155,6 +155,7 @@ export default function GroupPage(props: {
   const page = slugs?.[1] as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
+  const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
 
   const user = useUser()
 

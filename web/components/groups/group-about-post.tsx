@@ -11,15 +11,16 @@ import { DocumentRemoveIcon } from '@heroicons/react/solid'
 import { createPost } from 'web/lib/firebase/api'
 import { Post } from 'common/post'
 import { deletePost, updatePost } from 'web/lib/firebase/posts'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { usePost } from 'web/hooks/use-post'
 
 export function GroupAboutPost(props: {
   group: Group
   isCreator: boolean
   post: Post
 }) {
-  const { group, isCreator, post } = props
+  const { group, isCreator } = props
+  const post = usePost(group.aboutPostId) ?? props.post
   const isAdmin = useAdmin()
 
   if (group.aboutPostId == null && !isCreator) {
@@ -41,7 +42,6 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post }) {
   const { group, post } = props
   const [editing, setEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const router = useRouter()
 
   const { editor, upload } = useTextEditor({
     defaultValue: post.content,
@@ -68,13 +68,11 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post }) {
         content: newPost.content,
       })
     }
-    await router.replace(router.asPath)
   }
 
   async function deleteGroupAboutPost() {
     await deletePost(post)
     await deleteFieldFromGroup(group, 'aboutPostId')
-    await router.replace(router.asPath)
   }
 
   return editing ? (
