@@ -24,11 +24,10 @@ function shortenName(name: string) {
 export function UserLink(props: {
   name: string
   username: string
-  showUsername?: boolean
   className?: string
   short?: boolean
 }) {
-  const { name, username, showUsername, className, short } = props
+  const { name, username, className, short } = props
   const shortName = short ? shortenName(name) : name
   return (
     <SiteLink
@@ -36,7 +35,6 @@ export function UserLink(props: {
       className={clsx('z-10 truncate', className)}
     >
       {shortName}
-      {showUsername && ` (@${username})`}
     </SiteLink>
   )
 }
