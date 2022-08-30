@@ -18,7 +18,6 @@ import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../avatar'
 import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
-import { Bet } from 'common/bet'
 import NewContractBadge from '../new-contract-badge'
 import { UserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
@@ -140,7 +139,6 @@ export function AbbrContractDetails(props: {
 
 export function ContractDetails(props: {
   contract: Contract
-  bets: Bet[]
   user: User | null | undefined
   isCreator?: boolean
   disabled?: boolean

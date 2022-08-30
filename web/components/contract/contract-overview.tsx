@@ -42,7 +42,6 @@ export const ContractOverview = (props: {
         <ContractDetails
           contract={contract}
           user={user}
-          bets={bets}
           isCreator={isCreator}
         />
         <Row className="justify-between gap-4">
