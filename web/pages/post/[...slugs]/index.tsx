@@ -5,7 +5,6 @@ import { Post } from 'common/post'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
 import { Content } from 'web/components/editor'
-import { UserLink } from 'web/components/user-page'
 import { getUser, User } from 'web/lib/firebase/users'
 import { ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -16,6 +15,7 @@ import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
+import { UserLink } from 'web/components/user-link'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params

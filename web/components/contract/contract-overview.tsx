@@ -21,6 +21,7 @@ import { ContractDescription } from './contract-description'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 import { ShareRow } from './share-row'
+import { LikeMarketButton } from 'web/components/contract/like-market-button'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -43,6 +44,13 @@ export const ContractOverview = (props: {
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
+          {(outcomeType === 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') &&
+            !resolution && (
+              <div className={'sm:hidden'}>
+                <LikeMarketButton contract={contract} user={user} />
+              </div>
+            )}
           <Row className={'hidden gap-3 xl:flex'}>
             {isBinary && (
               <BinaryResolutionOrChance
@@ -72,28 +80,38 @@ export const ContractOverview = (props: {
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
             {tradingAllowed(contract) && (
-              <Col>
-                <BetButton contract={contract as CPMMBinaryContract} />
-                {!user && (
-                  <div className="mt-1 text-center text-sm text-gray-500">
-                    (with play money!)
-                  </div>
-                )}
-              </Col>
+              <Row>
+                <div className={'sm:hidden'}>
+                  <LikeMarketButton contract={contract} user={user} />
+                </div>
+                <Col>
+                  <BetButton contract={contract as CPMMBinaryContract} />
+                  {!user && (
+                    <div className="mt-1 text-center text-sm text-gray-500">
+                      (with play money!)
+                    </div>
+                  )}
+                </Col>
+              </Row>
             )}
           </Row>
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && (
-              <Col>
-                <BetButton contract={contract} />
-                {!user && (
-                  <div className="mt-1 text-center text-sm text-gray-500">
-                    (with play money!)
-                  </div>
-                )}
-              </Col>
+              <Row>
+                <div className={'sm:hidden'}>
+                  <LikeMarketButton contract={contract} user={user} />
+                </div>
+                <Col>
+                  <BetButton contract={contract} />
+                  {!user && (
+                    <div className="mt-1 text-center text-sm text-gray-500">
+                      (with play money!)
+                    </div>
+                  )}
+                </Col>
+              </Row>
             )}
           </Row>
         ) : (

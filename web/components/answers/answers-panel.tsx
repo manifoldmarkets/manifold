@@ -20,9 +20,9 @@ import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import { BuyButton } from 'web/components/yes-no-selector'
+import { UserLink } from 'web/components/user-link'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract

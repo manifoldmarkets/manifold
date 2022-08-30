@@ -18,6 +18,7 @@ import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 import { Challenge } from '../../common/challenge'
 import { richTextToString } from '../../common/util/parse'
+import { Like } from '../../common/like'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -686,6 +687,39 @@ export const createBettingStreakBonusNotification = async (
     sourceContractId: contract.id,
     sourceContractTitle: contract.question,
     sourceContractCreatorUsername: contract.creatorUsername,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createLikeNotification = async (
+  fromUser: User,
+  toUser: User,
+  like: Like,
+  idempotencyKey: string,
+  contract: Contract,
+  tip?: TipTxn
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: tip ? 'liked_and_tipped_your_contract' : 'liked_your_contract',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: like.id,
+    sourceType: tip ? 'tip_and_like' : 'like',
+    sourceUpdateType: 'created',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: tip?.amount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }
