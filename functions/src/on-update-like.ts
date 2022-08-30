@@ -19,14 +19,36 @@ export const onCreateLike = functions.firestore
     }
   })
 
+export const onUpdateLike = functions.firestore
+  .document('users/{userId}/likes/{likeId}')
+  .onUpdate(async (change, context) => {
+    const like = change.after.data() as Like
+    const prevLike = change.before.data() as Like
+    const { eventId } = context
+    if (like.type === 'contract' && like.tipTxnId !== prevLike.tipTxnId) {
+      await handleCreateLikeNotification(like, eventId)
+      await updateContractLikes(like)
+    }
+  })
+
+export const onDeleteLike = functions.firestore
+  .document('users/{userId}/likes/{likeId}')
+  .onDelete(async (change) => {
+    const like = change.data() as Like
+    if (like.type === 'contract') {
+      await removeContractLike(like)
+    }
+  })
+
 const updateContractLikes = async (like: Like) => {
   const contract = await getContract(like.id)
   if (!contract) {
     log('Could not find contract')
     return
   }
-  const likedByUserIds = uniq(contract.likedByUserIds ?? [])
-  likedByUserIds.push(like.userId)
+  const likedByUserIds = uniq(
+    (contract.likedByUserIds ?? []).concat(like.userId)
+  )
   await firestore
     .collection('contracts')
     .doc(like.id)
@@ -68,4 +90,20 @@ const handleCreateLikeNotification = async (like: Like, eventId: string) => {
     contract,
     tipTxnData
   )
+}
+
+const removeContractLike = async (like: Like) => {
+  const contract = await getContract(like.id)
+  if (!contract) {
+    log('Could not find contract')
+    return
+  }
+  const likedByUserIds = uniq(contract.likedByUserIds ?? [])
+  const newLikedByUserIds = likedByUserIds.filter(
+    (userId) => userId !== like.userId
+  )
+  await firestore.collection('contracts').doc(like.id).update({
+    likedByUserIds: newLikedByUserIds,
+    likedByUserCount: newLikedByUserIds.length,
+  })
 }

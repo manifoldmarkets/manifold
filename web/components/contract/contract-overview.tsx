@@ -18,10 +18,9 @@ import BetButton from '../bet-button'
 import { AnswersGraph } from '../answers/answers-graph'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractDescription } from './contract-description'
-import { ContractDetails } from './contract-details'
+import { ContractDetails, ExtraMobileContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
-import { ShareRow } from './share-row'
-import { LikeMarketButton } from 'web/components/contract/like-market-button'
+import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 
 export const ContractOverview = (props: {
   contract: Contract
@@ -40,17 +39,15 @@ export const ContractOverview = (props: {
   return (
     <Col className={clsx('mb-6', className)}>
       <Col className="gap-3 px-2 sm:gap-4">
+        <ContractDetails
+          contract={contract}
+          user={user}
+          isCreator={isCreator}
+        />
         <Row className="justify-between gap-4">
           <div className="text-2xl text-indigo-700 md:text-3xl">
             <Linkify text={question} />
           </div>
-          {(outcomeType === 'FREE_RESPONSE' ||
-            outcomeType === 'MULTIPLE_CHOICE') &&
-            !resolution && (
-              <div className={'sm:hidden'}>
-                <LikeMarketButton contract={contract} user={user} />
-              </div>
-            )}
           <Row className={'hidden gap-3 xl:flex'}>
             {isBinary && (
               <BinaryResolutionOrChance
@@ -79,11 +76,9 @@ export const ContractOverview = (props: {
         {isBinary ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <BinaryResolutionOrChance contract={contract} />
+            <ExtraMobileContractDetails contract={contract} user={user} />
             {tradingAllowed(contract) && (
               <Row>
-                <div className={'sm:hidden'}>
-                  <LikeMarketButton contract={contract} user={user} />
-                </div>
                 <Col>
                   <BetButton contract={contract as CPMMBinaryContract} />
                   {!user && (
@@ -98,11 +93,9 @@ export const ContractOverview = (props: {
         ) : isPseudoNumeric ? (
           <Row className="items-center justify-between gap-4 xl:hidden">
             <PseudoNumericResolutionOrExpectation contract={contract} />
+            <ExtraMobileContractDetails contract={contract} user={user} />
             {tradingAllowed(contract) && (
               <Row>
-                <div className={'sm:hidden'}>
-                  <LikeMarketButton contract={contract} user={user} />
-                </div>
                 <Col>
                   <BetButton contract={contract} />
                   {!user && (
@@ -130,13 +123,6 @@ export const ContractOverview = (props: {
             <NumericResolutionOrExpectation contract={contract} />
           </Row>
         )}
-
-        <ContractDetails
-          contract={contract}
-          bets={bets}
-          isCreator={isCreator}
-          user={user}
-        />
       </Col>
       <div className={'my-1 md:my-2'}></div>
       {(isBinary || isPseudoNumeric) && (
@@ -144,10 +130,17 @@ export const ContractOverview = (props: {
       )}{' '}
       {(outcomeType === 'FREE_RESPONSE' ||
         outcomeType === 'MULTIPLE_CHOICE') && (
-        <AnswersGraph contract={contract} bets={bets} />
+        <Col className={'mb-1 gap-y-2'}>
+          <AnswersGraph contract={contract} bets={bets} />
+          <ExtraMobileContractDetails
+            contract={contract}
+            user={user}
+            forceShowVolume={true}
+          />
+        </Col>
       )}
       {outcomeType === 'NUMERIC' && <NumericGraph contract={contract} />}
-      <ShareRow user={user} contract={contract} />
+      <ExtraContractActionsRow user={user} contract={contract} />
       <ContractDescription
         className="px-2"
         contract={contract}
