@@ -4,6 +4,7 @@ import { Like } from '../../common/like'
 import { getContract, getUser, log } from './utils'
 import { createLikeNotification } from './create-notification'
 import { TipTxn } from '../../common/txn'
+import { uniq } from 'lodash'
 
 const firestore = admin.firestore()
 
@@ -12,11 +13,28 @@ export const onCreateLike = functions.firestore
   .onCreate(async (change, context) => {
     const like = change.data() as Like
     const { eventId } = context
-    await handleCreateLike(like, eventId)
+    if (like.type === 'contract') {
+      await handleCreateLikeNotification(like, eventId)
+      await updateContractLikes(like)
+    }
   })
 
-const handleCreateLike = async (like: Like, eventId: string) => {
-  const contract = await getContract(like.contractId)
+const updateContractLikes = async (like: Like) => {
+  const contract = await getContract(like.id)
+  if (!contract) {
+    log('Could not find contract')
+    return
+  }
+  const likedByUserIds = uniq(contract.likedByUserIds ?? [])
+  likedByUserIds.push(like.userId)
+  await firestore
+    .collection('contracts')
+    .doc(like.id)
+    .update({ likedByUserIds, likedByUserCount: likedByUserIds.length })
+}
+
+const handleCreateLikeNotification = async (like: Like, eventId: string) => {
+  const contract = await getContract(like.id)
   if (!contract) {
     log('Could not find contract')
     return

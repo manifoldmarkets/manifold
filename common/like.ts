@@ -1,7 +1,7 @@
 export type Like = {
-  id: string
+  id: string // will be id of the object liked, i.e. contract.id
   userId: string
-  contractId: string
+  type: 'contract'
   createdTime: number
   tipTxnId?: string
 }

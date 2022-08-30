@@ -35,10 +35,8 @@ export function UserLikesButton(props: { user: User }) {
                   {likedContract.question}
                 </SiteLink>
                 <XIcon
-                  className="ml-2 h-5 w-5 cursor-pointer"
-                  onClick={() => async () => {
-                    await unLikeContract(user.id, likedContract.id)
-                  }}
+                  className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
+                  onClick={() => unLikeContract(user.id, likedContract.id)}
                 />
               </Row>
             ))}

@@ -1,19 +1,12 @@
-import {
-  collection,
-  deleteDoc,
-  doc,
-  query,
-  setDoc,
-  where,
-} from 'firebase/firestore'
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import toast from 'react-hot-toast'
 import { transact } from 'web/lib/firebase/api'
-import { removeUndefinedProps } from 'common/lib/util/object'
-import { Like } from 'common/lib/like'
+import { removeUndefinedProps } from 'common/util/object'
+import { Like } from 'common/like'
 import { track } from '@amplitude/analytics-browser'
 import { User } from 'common/user'
-import { Contract } from 'common/lib/contract'
+import { Contract } from 'common/contract'
 
 export const LIKE_TIP_AMOUNT = 5
 
@@ -22,11 +15,7 @@ function getLikesCollection(userId: string) {
 }
 
 export const unLikeContract = async (userId: string, contractId: string) => {
-  const ref = await query(
-    getLikesCollection(userId),
-    where('contractId', '==', contractId)
-  )
-  const snapshot = await ref.get()
+  const ref = await doc(getLikesCollection(userId), contractId)
   return await deleteDoc(ref)
 }
 
@@ -51,13 +40,13 @@ export const likeContract = async (user: User, contract: Contract) => {
     console.log('result', result)
   }
   // create new like in db under users collection
-  const ref = doc(getLikesCollection(user.id))
+  const ref = doc(getLikesCollection(user.id), contract.id)
   // contract slug and question are set via trigger
   const like = removeUndefinedProps({
     id: ref.id,
     userId: user.id,
     createdTime: Date.now(),
-    contractId: contract.id,
+    type: 'contract',
     tipTxnId: result.txn.id,
   } as Like)
   track('like', {

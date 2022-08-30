@@ -15,21 +15,24 @@ export const useUserLikes = (userId: string | undefined) => {
   return contractIds
 }
 export const useUserLikedContracts = (userId: string | undefined) => {
-  const [contractIds, setContractIds] = useState<Like[] | undefined>()
+  const [likes, setLikes] = useState<Like[] | undefined>()
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   useEffect(() => {
-    if (userId) return listenForLikes(userId, setContractIds)
+    if (userId)
+      return listenForLikes(userId, (likes) => {
+        setLikes(likes.filter((l) => l.type === 'contract'))
+      })
   }, [userId])
 
   useEffect(() => {
-    if (contractIds)
+    if (likes)
       Promise.all(
-        contractIds.map(async (like) => {
-          return await getContractFromId(like.contractId)
+        likes.map(async (like) => {
+          return await getContractFromId(like.id)
         })
       ).then((contracts) => setContracts(filterDefined(contracts)))
-  }, [contractIds])
+  }, [likes])
 
   return contracts
 }

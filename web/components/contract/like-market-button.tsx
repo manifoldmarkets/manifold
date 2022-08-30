@@ -19,7 +19,9 @@ export function LikeMarketButton(props: {
   const { contract, user } = props
 
   const likes = useUserLikes(user?.id)
-  const likedContractIds = likes?.map((l) => l.contractId)
+  const likedContractIds = likes
+    ?.filter((l) => l.type === 'contract')
+    .map((l) => l.id)
   if (!user) return <div />
 
   const onLike = async () => {
