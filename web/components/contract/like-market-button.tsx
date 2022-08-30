@@ -8,8 +8,8 @@ import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
 import { likeContract, unLikeContract } from 'web/lib/firebase/likes'
 import { LIKE_TIP_AMOUNT } from 'common/like'
-import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
+import { Row } from 'web/components/layout/row'
 
 export function LikeMarketButton(props: {
   contract: Contract
@@ -26,7 +26,6 @@ export function LikeMarketButton(props: {
   const onLike = async () => {
     if (likedContractIds?.includes(contract.id)) {
       await unLikeContract(user.id, contract.id)
-      toast(`You removed this market from your likes`)
       return
     }
     await likeContract(user, contract)
@@ -40,7 +39,7 @@ export function LikeMarketButton(props: {
       color={'gray-white'}
       onClick={onLike}
     >
-      <Col className={'items-center justify-center'}>
+      <Row className={'gap-0 sm:gap-2'}>
         <HeartIcon
           className={clsx(
             'h-6 w-6',
@@ -49,7 +48,8 @@ export function LikeMarketButton(props: {
               : ''
           )}
         />
-      </Col>
+        <span className={'hidden sm:block'}>Tip</span>
+      </Row>
     </Button>
   )
 }

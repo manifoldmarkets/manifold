@@ -46,7 +46,11 @@ export const ContractOverview = (props: {
           </div>
           {(outcomeType === 'FREE_RESPONSE' ||
             outcomeType === 'MULTIPLE_CHOICE') &&
-            !resolution && <LikeMarketButton contract={contract} user={user} />}
+            !resolution && (
+              <div className={'sm:hidden'}>
+                <LikeMarketButton contract={contract} user={user} />
+              </div>
+            )}
           <Row className={'hidden gap-3 xl:flex'}>
             {isBinary && (
               <BinaryResolutionOrChance
@@ -77,7 +81,9 @@ export const ContractOverview = (props: {
             <BinaryResolutionOrChance contract={contract} />
             {tradingAllowed(contract) && (
               <Row>
-                <LikeMarketButton contract={contract} user={user} />
+                <div className={'sm:hidden'}>
+                  <LikeMarketButton contract={contract} user={user} />
+                </div>
                 <Col>
                   <BetButton contract={contract as CPMMBinaryContract} />
                   {!user && (
@@ -94,7 +100,9 @@ export const ContractOverview = (props: {
             <PseudoNumericResolutionOrExpectation contract={contract} />
             {tradingAllowed(contract) && (
               <Row>
-                <LikeMarketButton contract={contract} user={user} />
+                <div className={'sm:hidden'}>
+                  <LikeMarketButton contract={contract} user={user} />
+                </div>
                 <Col>
                   <BetButton contract={contract} />
                   {!user && (
