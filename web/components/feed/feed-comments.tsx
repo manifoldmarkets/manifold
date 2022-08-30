@@ -40,8 +40,10 @@ export function FeedCommentThread(props: {
 }) {
   const { contract, comments, bets, tips, smallAvatar, parentComment } = props
   const [showReply, setShowReply] = useState(false)
-  const [replyToUser, setReplyToUser] =
-    useState<{ id: string; username: string }>()
+  const [replyToUser, setReplyToUser] = useState<{
+    id: string
+    username: string
+  }>()
   const betsByUserId = groupBy(bets, (bet) => bet.userId)
   const user = useUser()
   const commentsList = comments.filter(
