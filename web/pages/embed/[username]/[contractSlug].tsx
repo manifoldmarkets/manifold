@@ -71,8 +71,6 @@ export default function ContractEmbedPage(props: {
   const contract = useContractWithPreload(props.contract)
   const { bets } = props
 
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-
   if (!contract) {
     return <Custom404 />
   }

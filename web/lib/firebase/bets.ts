@@ -28,9 +28,9 @@ function getBetsCollection(contractId: string) {
 }
 
 export async function listAllBets(contractId: string) {
-  const bets = await getValues<Bet>(getBetsCollection(contractId))
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-  return bets
+  return await getValues<Bet>(
+    query(getBetsCollection(contractId), orderBy('createdTime', 'desc'))
+  )
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -64,10 +64,10 @@ export function listenForBets(
   contractId: string,
   setBets: (bets: Bet[]) => void
 ) {
-  return listenForValues<Bet>(getBetsCollection(contractId), (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
-  })
+  return listenForValues<Bet>(
+    query(getBetsCollection(contractId), orderBy('createdTime', 'desc')),
+    setBets
+  )
 }
 
 export async function getUserBets(
@@ -147,12 +147,10 @@ export function listenForUserContractBets(
 ) {
   const betsQuery = query(
     collection(db, 'contracts', contractId, 'bets'),
-    where('userId', '==', userId)
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
   )
-  return listenForValues<Bet>(betsQuery, (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
-  })
+  return listenForValues<Bet>(betsQuery, setBets)
 }
 
 export function listenForUnfilledBets(
@@ -162,12 +160,10 @@ export function listenForUnfilledBets(
   const betsQuery = query(
     collection(db, 'contracts', contractId, 'bets'),
     where('isFilled', '==', false),
-    where('isCancelled', '==', false)
+    where('isCancelled', '==', false),
+    orderBy('createdTime', 'desc')
   )
-  return listenForValues<LimitBet>(betsQuery, (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
-  })
+  return listenForValues<LimitBet>(betsQuery, setBets)
 }
 
 export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
