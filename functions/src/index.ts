@@ -53,7 +53,6 @@ export * from './resolve-market'
 export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-bonus-email'
-export * from './save-twitch-credentials'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -76,6 +75,7 @@ import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { getcustomtoken } from './get-custom-token'
 import { createpost } from './create-post'
+import { savetwitchcredentials } from './save-twitch-credentials'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -102,6 +102,7 @@ const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const getCustomTokenFunction = toCloudFunction(getcustomtoken)
 const createPostFunction = toCloudFunction(createpost)
+const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
 
 export {
   healthFunction as health,
@@ -126,4 +127,5 @@ export {
   acceptChallenge as acceptchallenge,
   getCustomTokenFunction as getcustomtoken,
   createPostFunction as createpost,
+  saveTwitchCredentials as savetwitchcredentials
 }
