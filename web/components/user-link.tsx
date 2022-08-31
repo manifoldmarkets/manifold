@@ -9,14 +9,14 @@ import { formatMoney } from 'common/util/format'
 
 function shortenName(name: string) {
   const firstName = name.split(' ')[0]
-  const maxLength = 10
+  const maxLength = 11
   const shortName =
-    firstName.length >= 4
+    firstName.length >= 3 && name.length > maxLength
       ? firstName.length < maxLength
         ? firstName
         : firstName.substring(0, maxLength - 3) + '...'
       : name.length > maxLength
-      ? name.substring(0, maxLength) + '...'
+      ? name.substring(0, maxLength - 3) + '...'
       : name
   return shortName
 }

@@ -5,7 +5,6 @@ import {
   TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
-import Router from 'next/router'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
@@ -162,13 +161,32 @@ export function ContractDetails(props: {
   const { width } = useWindowSize()
   const isMobile = (width ?? 0) < 600
 
-  const groupInfo = (
-    <Row>
-      <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-      <span className="truncate">
-        {groupToDisplay ? groupToDisplay.name : 'No group'}
-      </span>
+  const groupInfo = groupToDisplay ? (
+    <Row
+      className={clsx(
+        'items-center pr-2',
+        isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
+      )}
+    >
+      <SiteLink href={groupPath(groupToDisplay.slug)} className={'truncate'}>
+        <Row>
+          <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+          <span className="items-center truncate">{groupToDisplay.name}</span>
+        </Row>
+      </SiteLink>
     </Row>
+  ) : (
+    <Button
+      size={'xs'}
+      className={'max-w-[200px] pr-2'}
+      color={'gray-white'}
+      onClick={() => !groupToDisplay && setOpen(true)}
+    >
+      <Row>
+        <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+        <span className="truncate">No Group</span>
+      </Row>
+    </Button>
   )
 
   return (
@@ -199,19 +217,8 @@ export function ContractDetails(props: {
           <div />
         ) : (
           <Row>
-            <Button
-              size={'xs'}
-              className={'max-w-[200px] pr-2'}
-              color={'gray-white'}
-              onClick={() =>
-                groupToDisplay
-                  ? Router.push(groupPath(groupToDisplay.slug))
-                  : setOpen(!open)
-              }
-            >
-              {groupInfo}
-            </Button>
-            {user && (
+            {groupInfo}
+            {user && groupToDisplay && (
               <Button
                 size={'xs'}
                 color={'gray-white'}
