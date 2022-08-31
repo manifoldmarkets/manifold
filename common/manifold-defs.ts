@@ -8,6 +8,7 @@ export type LiteMarket = {
     // Attributes about the creator
     creatorUsername: string;
     creatorName: string;
+    creatorId: string;
     createdTime: number; // milliseconds since epoch
     creatorAvatarUrl?: string;
 

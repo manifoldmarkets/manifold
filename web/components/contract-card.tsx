@@ -8,10 +8,11 @@ import { ConfirmationButton } from "./confirmation-button";
 import { Col } from "./layout/col";
 import { Row } from "./layout/row";
 
-export default function ContractCard(props: { contract: LiteMarket; onFeature: () => void }) {
-    const { contract, onFeature } = props;
+export default function ContractCard(props: { controlUserID: string, contract: LiteMarket; onFeature: () => void }) {
+    const { controlUserID, contract, onFeature } = props;
     const isClosed = contract.closeTime < Date.now();
     const isFeatureable = !isClosed && contract.outcomeType === "BINARY";
+    const canResolveMarket = controlUserID === contract.creatorId;
     return (
         <Col className={clsx("group relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md", !isFeatureable && "bg-gray-100")}>
             <Row>
@@ -73,7 +74,7 @@ export default function ContractCard(props: { contract: LiteMarket; onFeature: (
                                 return true;
                             }}
                         >
-                            <p>Are you sure you want to feature this market?</p>
+                            <p>Are you sure you want to feature this market?{!canResolveMarket && <b> As you don't own it, you will need to ask {contract.creatorName} to resolve it for you.</b>}</p>
                         </ConfirmationButton>
                     </Row>
                 </Col>

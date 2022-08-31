@@ -25,7 +25,7 @@ const APIBase = "https://dev.manifold.markets/api/v0/";
 async function fetchAllMarkets(): Promise<LiteMarket[]> {
     const allMarkets: LiteMarket[] = [];
     for (;;) {
-        const r = await fetch(`${APIBase}markets?limit=1000${allMarkets.length > 0 ? "&before=" + allMarkets[allMarkets.length - 1].id : ""}`);
+        const r = await fetch(`${APIBase}markets?limit=1000${allMarkets.length > 0 ? "&before=" + allMarkets[allMarkets.length - 1].id : ""}`, {headers: {"Pragma": "no-cache"}});
         const markets = (await r.json()) as LiteMarket[];
         allMarkets.push(...markets);
         if (markets.length < 1000) {
@@ -82,6 +82,7 @@ export default () => {
     const [loadingMessage, setLoadingMessage] = useState("Connecting to server...");
     const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
     const [manifoldUserID, setManifoldUserID] = useState<string>(undefined);
+    const [refreshSignal, forceRefreshGroups] = useState(0);
 
     const ante = CONTRACT_ANTE;
     const onSubmitNewQuestion = async () => {
@@ -94,7 +95,25 @@ export default () => {
                         reject(new Error(packet.failReason));
                         return;
                     }
+                    setTimeout(() => {
+                        forceRefreshGroups(i => ++i)
+                        setTimeout(() => {
+                            forceRefreshGroups(i => ++i)
+                        }, 1000);
+                    }, 1000);
                     onContractFeature(await fetchMarketById(packet.id));
+                    // setTimeout(async () => {
+                    //     setLoadingContracts(true);
+                    //     await fetchMarketsInGroup(selectedGroup);
+                    //     await new Promise(r => setTimeout(r, 1000));
+                    //     fetchMarketsInGroup(selectedGroup)
+                    //         .then((markets) => {
+                    //             setContracts(markets);
+                    //         })
+                    //         .finally(() => {
+                    //             setLoadingContracts(false);
+                    //         });
+                    // });
                     //!!! Need to refresh groups
                     // const markets = await fetchMarketsInGroup(selectedGroup);
                     // setContracts(markets);
@@ -208,7 +227,7 @@ export default () => {
             <div className="flex justify-center">
                 <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
                     <div className="p-2">
-                        <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} />
+                        <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} />
                         <div className="w-full flex justify-center">
                             <ConfirmationButton
                                 openModalBtn={{
@@ -282,7 +301,7 @@ export default () => {
                             contracts.map((contract, index) => (
                                 <Transition key={contract.id} appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
                                     <div className="mb-2 hover:z-10" style={{ transitionDelay: index * 50 + "ms" }}>
-                                        <ContractCard contract={contract} onFeature={() => onContractFeature(contract)} />
+                                        <ContractCard controlUserID={manifoldUserID} contract={contract} onFeature={() => onContractFeature(contract)} />
                                     </div>
                                 </Transition>
                             ))
@@ -305,7 +324,7 @@ export default () => {
                     </Transition>
                     {selectedContract && (
                         <div className={clsx("fixed inset-0 flex flex-col items-center overflow-y-auto", selectedContract ?? "pointer-events-none")}>
-                            <Transition appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
+                            <Transition appear unmount={false} show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
                                 <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
                                     <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
                                 </div>
@@ -344,7 +363,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
         return true;
     };
 
-    const canResolveMarket = true; //!!! Waiting for change to Manifold API: controlUserID === contract.creatorID;
+    const canResolveMarket = controlUserID === contract.creatorId;
 
     return (
         <Col className={"rounded-md bg-white px-8 py-6 cursor-default"} onClick={(e) => e.stopPropagation()}>
@@ -409,7 +428,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
                 </>
             ) : (
                 <>
-                    <span>Please ask <p className="inline font-bold">{contract.creatorUsername}</p> to resolve this market.</span>
+                    <span>Please ask <p className="inline font-bold">{contract.creatorName}</p> to resolve this market.</span>
                     <div className="my-1" />
                 </>
             )}

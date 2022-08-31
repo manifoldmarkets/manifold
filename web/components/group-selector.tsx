@@ -14,8 +14,8 @@ async function fetchGroups(userID: string): Promise<Group[]> {
     return groups;
 }
 
-export function GroupSelector(props: { selectedGroup: Group | undefined; userID: string; setSelectedGroup: (group: Group) => void; onRefresh?: () => void }) {
-    const { selectedGroup, userID, setSelectedGroup, onRefresh } = props;
+export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Group | undefined; userID: string; setSelectedGroup: (group: Group) => void; onRefresh?: () => void }) {
+    const { refreshSignal, selectedGroup, userID, setSelectedGroup, onRefresh } = props;
 
     const [isRefreshingGroups, setIsRefreshingGroups] = useState<boolean>(false);
     const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
@@ -38,6 +38,10 @@ export function GroupSelector(props: { selectedGroup: Group | undefined; userID:
             })
             .finally(() => setIsRefreshingGroups(false));
     };
+
+    useEffect(() => {
+        refreshGroupList();
+    }, [refreshSignal]);
 
     let previouslySelectedGroup: SelectedGroup = undefined;
     if (typeof window !== "undefined") {
