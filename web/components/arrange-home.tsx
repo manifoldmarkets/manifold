@@ -9,6 +9,7 @@ import { useMemberGroups } from 'web/hooks/use-group'
 import { filterDefined } from 'common/util/array'
 import { keyBy } from 'lodash'
 import { User } from 'common/user'
+import { Group } from 'common/group'
 
 export function ArrangeHome(props: {
   user: User | null
@@ -18,35 +19,12 @@ export function ArrangeHome(props: {
     hidden: string[]
   }) => void
 }) {
-  const {
-    user,
-    homeSections: { visible, hidden },
-    setHomeSections,
-  } = props
+  const { user, homeSections, setHomeSections } = props
 
-  const memberGroups = useMemberGroups(user?.id) ?? []
-
-  const items = [
-    { label: 'Trending', id: 'score' },
-    { label: 'Newest', id: 'newest' },
-    { label: 'Close date', id: 'close-date' },
-    ...memberGroups.map((g) => ({
-      label: g.name,
-      id: g.id,
-    })),
-  ]
-  const itemsById = keyBy(items, 'id')
-
-  const [visibleItems, hiddenItems] = [
-    filterDefined(visible.map((id) => itemsById[id])),
-    filterDefined(hidden.map((id) => itemsById[id])),
-  ]
-
-  // Add unmentioned items to the visible list.
-  visibleItems.push(
-    ...items.filter(
-      (item) => !visibleItems.includes(item) && !hiddenItems.includes(item)
-    )
+  const groups = useMemberGroups(user?.id) ?? []
+  const { itemsById, visibleItems, hiddenItems } = getHomeItems(
+    groups,
+    homeSections
   )
 
   return (
@@ -124,4 +102,41 @@ function DraggableList(props: {
       )}
     </Droppable>
   )
+}
+
+export const getHomeItems = (
+  groups: Group[],
+  homeSections: { visible: string[]; hidden: string[] }
+) => {
+  const items = [
+    { label: 'Trending', id: 'score' },
+    { label: 'Newest', id: 'newest' },
+    { label: 'Close date', id: 'close-date' },
+    { label: 'Your bets', id: 'your-bets' },
+    ...groups.map((g) => ({
+      label: g.name,
+      id: g.id,
+    })),
+  ]
+  const itemsById = keyBy(items, 'id')
+
+  const { visible, hidden } = homeSections
+
+  const [visibleItems, hiddenItems] = [
+    filterDefined(visible.map((id) => itemsById[id])),
+    filterDefined(hidden.map((id) => itemsById[id])),
+  ]
+
+  // Add unmentioned items to the visible list.
+  visibleItems.push(
+    ...items.filter(
+      (item) => !visibleItems.includes(item) && !hiddenItems.includes(item)
+    )
+  )
+
+  return {
+    visibleItems,
+    hiddenItems,
+    itemsById,
+  }
 }

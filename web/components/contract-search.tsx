@@ -65,6 +65,7 @@ type AdditionalFilter = {
   tag?: string
   excludeContractIds?: string[]
   groupSlug?: string
+  yourBets?: boolean
 }
 
 export function ContractSearch(props: {
@@ -295,6 +296,10 @@ function ContractSearchControls(props: {
     additionalFilter?.tag ? `lowercaseTags:${additionalFilter.tag}` : '',
     additionalFilter?.groupSlug
       ? `groupLinks.slug:${additionalFilter.groupSlug}`
+      : '',
+    additionalFilter?.yourBets && user
+      ? // Show contracts bet on by the user
+        `uniqueBettorIds:${user.id}`
       : '',
   ]
   const facetFilters = query
