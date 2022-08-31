@@ -8,17 +8,20 @@ import {
   getUserAndPrivateUser,
   setCachedReferralInfoForUser,
 } from 'web/lib/firebase/users'
-import { deleteTokenCookies, setTokenCookies } from 'web/lib/firebase/auth'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
+import { AUTH_COOKIE_NAME } from 'common/envs/constants'
+import { setCookie } from 'web/lib/util/cookie'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
 type AuthUser = undefined | null | UserAndPrivateUser
 
+const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
+
 // Proxy localStorage in case it's not available (eg in incognito iframe)
 const localStorage =
   typeof window !== 'undefined'
@@ -36,6 +39,16 @@ const ensureDeviceToken = () => {
     localStorage.setItem('device-token', deviceToken)
   }
   return deviceToken
+}
+
+export const setUserCookie = (cookie: string | undefined) => {
+  const data = setCookie(AUTH_COOKIE_NAME, cookie ?? '', [
+    ['path', '/'],
+    ['max-age', (cookie === undefined ? 0 : TEN_YEARS_SECS).toString()],
+    ['samesite', 'lax'],
+    ['secure'],
+  ])
+  document.cookie = data
 }
 
 export const AuthContext = createContext<AuthUser>(undefined)
@@ -59,10 +72,7 @@ export function AuthProvider(props: {
       auth,
       async (fbUser) => {
         if (fbUser) {
-          setTokenCookies({
-            id: await fbUser.getIdToken(),
-            refresh: fbUser.refreshToken,
-          })
+          setUserCookie(JSON.stringify(fbUser.toJSON()))
           let current = await getUserAndPrivateUser(fbUser.uid)
           if (!current.user || !current.privateUser) {
             const deviceToken = ensureDeviceToken()
@@ -75,7 +85,7 @@ export function AuthProvider(props: {
           setCachedReferralInfoForUser(current.user)
         } else {
           // User logged out; reset to null
-          deleteTokenCookies()
+          setUserCookie(undefined)
           setAuthUser(null)
           localStorage.removeItem(CACHED_USER_KEY)
         }

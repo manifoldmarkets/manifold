@@ -36,7 +36,7 @@ import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-an
 import { MINUTE_MS } from 'common/util/time'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
 type NewQuestionParams = {

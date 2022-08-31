@@ -15,7 +15,7 @@ import { usePrefetch } from 'web/hooks/use-prefetch'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
-  const auth = creds ? await getUserAndPrivateUser(creds.user.uid) : null
+  const auth = creds ? await getUserAndPrivateUser(creds.uid) : null
   return { props: { auth } }
 }
 
