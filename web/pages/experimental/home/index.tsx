@@ -22,7 +22,7 @@ import { useMemberGroups } from 'web/hooks/use-group'
 import { DoubleCarousel } from '../../../components/double-carousel'
 import clsx from 'clsx'
 import { Button } from 'web/components/button'
-import { ArrangeHome } from '../../../components/arrange-home'
+import { ArrangeHome, getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 
@@ -39,11 +39,12 @@ const Home = (props: { auth: { user: User } | null }) => {
 
   useSaveReferral()
 
-  const memberGroups = useMemberGroups(user?.id) ?? []
+  const groups = useMemberGroups(user?.id) ?? []
 
   const [homeSections, setHomeSections] = useState(
     user?.homeSections ?? { visible: [], hidden: [] }
   )
+  const { visibleItems } = getHomeItems(groups, homeSections)
 
   const updateHomeSections = (newHomeSections: {
     visible: string[]
@@ -74,19 +75,33 @@ const Home = (props: { auth: { user: User } | null }) => {
             />
           </>
         ) : (
-          homeSections.visible.map((id) => {
+          visibleItems.map((item) => {
+            const { id } = item
+            if (id === 'your-bets') {
+              return (
+                <SearchSection
+                  key={id}
+                  label={'Your bets'}
+                  sort={'newest'}
+                  user={user}
+                  yourBets
+                />
+              )
+            }
             const sort = SORTS.find((sort) => sort.value === id)
             if (sort)
               return (
                 <SearchSection
+                  key={id}
                   label={sort.label}
                   sort={sort.value}
                   user={user}
                 />
               )
 
-            const group = memberGroups.find((g) => g.id === id)
-            if (group) return <GroupSection group={group} user={user} />
+            const group = groups.find((g) => g.id === id)
+            if (group)
+              return <GroupSection key={id} group={group} user={user} />
 
             return null
           })
@@ -110,8 +125,9 @@ function SearchSection(props: {
   label: string
   user: User | null
   sort: Sort
+  yourBets?: boolean
 }) {
-  const { label, user, sort } = props
+  const { label, user, sort, yourBets } = props
   const href = `/home?s=${sort}`
 
   return (
@@ -122,6 +138,7 @@ function SearchSection(props: {
       <ContractSearch
         user={user}
         defaultSort={sort}
+        additionalFilter={yourBets ? { yourBets: true } : undefined}
         noControls
         // persistPrefix={`experimental-home-${sort}`}
         renderContracts={(contracts, loadMore) =>
