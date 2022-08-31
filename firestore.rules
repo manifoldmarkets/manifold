@@ -162,7 +162,7 @@ service cloud.firestore {
 
      match /groups/{groupId} {
           allow read;
-          allow update: if request.auth.uid == resource.data.creatorId
+          allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                            && request.resource.data.diff(resource.data)
                            .affectedKeys()
                            .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin', 'aboutPostId' ]);
@@ -183,11 +183,11 @@ service cloud.firestore {
 
       match /posts/{postId} {
         allow read;
-        allow update: if request.auth.uid == resource.data.creatorId
+        allow update: if isAdmin() || request.auth.uid == resource.data.creatorId
                          && request.resource.data.diff(resource.data)
                          .affectedKeys()
                          .hasOnly(['name', 'content']);
-        allow delete: if request.auth.uid == resource.data.creatorId;
+        allow delete: if isAdmin() || request.auth.uid == resource.data.creatorId;
       }
   }
 }
