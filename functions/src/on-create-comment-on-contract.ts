@@ -6,7 +6,10 @@ import { ContractComment } from '../../common/comment'
 import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
-import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
+import {
+  createCommentOrAnswerOrUpdatedContractNotification,
+  filterUserIdsForOnlyFollowerIds,
+} from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
 
@@ -95,10 +98,13 @@ export const onCreateCommentOnContract = functions
       }
     )
 
-    const recipientUserIds = uniq([
-      contract.creatorId,
-      ...comments.map((comment) => comment.userId),
-    ]).filter((id) => id !== comment.userId)
+    const recipientUserIds = await filterUserIdsForOnlyFollowerIds(
+      uniq([
+        contract.creatorId,
+        ...comments.map((comment) => comment.userId),
+      ]).filter((id) => id !== comment.userId),
+      contractId
+    )
 
     await Promise.all(
       recipientUserIds.map((userId) =>

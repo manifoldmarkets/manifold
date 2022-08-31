@@ -723,3 +723,17 @@ export const createLikeNotification = async (
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }
+
+export async function filterUserIdsForOnlyFollowerIds(
+  userIds: string[],
+  contractId: string
+) {
+  // get contract follower documents and check here if they're a follower
+  const contractFollowersSnap = await firestore
+    .collection(`contracts/${contractId}/follows`)
+    .get()
+  const contractFollowersIds = contractFollowersSnap.docs.map(
+    (doc) => doc.data().id
+  )
+  return userIds.filter((id) => contractFollowersIds.includes(id))
+}
