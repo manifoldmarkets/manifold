@@ -1,4 +1,4 @@
-export const SELECT_MARKET_ID = "selectmarket";
+export const SELECT_MARKET_ID = "selectmarketid";
 export const UNFEATURE_MARKET = "unfeaturemarket";
 export const CLEAR = "clear";
 export const ADD_BETS = "bets";
@@ -8,4 +8,5 @@ export const CREATE_MARKET = "create";
 export const MARKET_CREATED = "marketcreated";
 export const USER_INFO = "userinfo";
 export const MARKET_LOAD_COMPLETE = "marketloadcomplete";
-export const HANDSHAKE_COMPLETE = "handshakecompelte";
+export const HANDSHAKE_COMPLETE = "handshakecomplete";
+export const SELECT_MARKET = "selectmarket";

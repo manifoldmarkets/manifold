@@ -1,3 +1,5 @@
+import { FullMarket } from "./manifold-defs";
+
 export type PacketResolved = {
     outcome: "YES" | "NO" | "NA";
     uniqueTraders: number;
@@ -28,3 +30,5 @@ export type PacketHandshakeComplete = {
     actingManifoldUserID: string;
     manifoldAPIBase: string;
 }
+
+export type PacketSelectMarket = FullMarket;

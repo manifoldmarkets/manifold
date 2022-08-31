@@ -5,6 +5,7 @@ import * as Packet from "common/packet-ids";
 import App from "../app";
 import log from "../logger";
 import User from "../user";
+import { PacketSelectMarket } from "common/packets";
 
 export default class OverlayClient {
     readonly socket: Socket;
@@ -30,7 +31,7 @@ export default class OverlayClient {
         const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
         this.socket.emit(Packet.CLEAR);
         if (market) {
-            this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
+            this.socket.emit(Packet.SELECT_MARKET, market.data as PacketSelectMarket);
             this.socket.emit(Packet.ADD_BETS, market.bets.slice(0, 3));
             this.socket.emit(Packet.MARKET_LOAD_COMPLETE);
             if (market.resolveData) {

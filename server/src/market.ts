@@ -93,16 +93,6 @@ export class Market {
     }
 
     async loadInitialBets() {
-        // Load most recent few bets:
-        // for (let i = Math.max(0, this.data.bets.length - 3); i < this.data.bets.length; i++) {
-        //     const bet = this.data.bets[i];
-        //     const displayName = await this.getDisplayNameForUserID(bet.userId);
-        //     const fullBet: FullBet = {
-        //         ...bet,
-        //         username: displayName,
-        //     };
-        //     this.addBet(fullBet);
-        // }
         let numLoadedBets = 0;
         let mostRecentBet: FullBet = undefined;
         const betsToAdd = [];

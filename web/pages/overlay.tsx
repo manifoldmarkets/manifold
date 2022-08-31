@@ -17,11 +17,9 @@ import { Transition } from "@headlessui/react";
 import * as Manifold from "common/manifold-defs";
 import * as Packet from "common/packet-ids";
 import { FullBet } from "common/transaction";
-import { PacketResolved } from "common/packets";
+import { PacketResolved, PacketSelectMarket } from "common/packets";
 import { ConnectionState } from "web/lib/connection-state";
 import { LoadingOverlay } from "web/components/loading-overlay";
-
-const APIBase = "https://dev.manifold.markets/api/v0/";
 
 class BetElement {
     bet: FullBet;
@@ -38,7 +36,7 @@ class Application {
     currentProbability_percent = 0;
     animatedProbability_percent: number = this.currentProbability_percent;
 
-    currentMarket: Manifold.LiteMarket = null;
+    currentMarket: Manifold.FullMarket = null;
 
     loadedHistory: boolean;
     loadingMarket: boolean;
@@ -79,9 +77,9 @@ class Application {
                 }
             }
         });
-        this.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
+        this.socket.on(Packet.SELECT_MARKET, (p: PacketSelectMarket) => {
             this.resetUI();
-            this.loadMarketByID(marketID);
+            this.loadMarket(p);
         });
         this.socket.on(Packet.CLEAR, () => {
             this.resetUI();
@@ -111,54 +109,43 @@ class Application {
         this.betsToAddOnceLoadedHistory = [];
     }
 
-    loadMarketByID(id: string) {
-        fetch(`${APIBase}market/${id}/lite`)
-            .then((r) => r.json() as Promise<Manifold.LiteMarket>)
-            .then((market) => {
-                this.currentMarket = market;
-                this.currentMarket["slug"] = this.currentMarket.url.substring(this.currentMarket.url.lastIndexOf("/") + 1, this.currentMarket.url.length); //!!!
+    loadMarket(market: Manifold.FullMarket) {
+        console.log(market)
+        this.currentMarket = market;
 
-                const questionLength = this.currentMarket.question.length;
-                const questionDiv = document.getElementById("question");
-                if (questionLength > 70) {
-                    questionDiv.style.fontSize = "0.8em";
-                } else {
-                    questionDiv.style.fontSize = "";
-                }
-                questionDiv.innerHTML = this.currentMarket.question;
-                this.currentProbability_percent = this.currentMarket.probability * 100;
-                this.animatedProbability_percent = this.currentProbability_percent;
+        const questionLength = this.currentMarket.question.length;
+        const questionDiv = document.getElementById("question");
+        if (questionLength > 70) {
+            questionDiv.style.fontSize = "0.8em";
+        } else {
+            questionDiv.style.fontSize = "";
+        }
+        questionDiv.innerHTML = this.currentMarket.question;
+        this.currentProbability_percent = this.currentMarket.probability * 100;
+        this.animatedProbability_percent = this.currentProbability_percent;
 
-                this.loadBettingHistory();
+        this.loadBettingHistory();
 
-                setTimeout(() => this.chart.resize(), 10);
-            })
-            .catch((e) => {
-                console.error(e);
-            });
+        setTimeout(() => this.chart.resize(), 10);
     }
 
     async loadBettingHistory() {
-        await fetch(`${APIBase}bets?market=${this.currentMarket["slug"]}&limit=1000`) //!!! Doesn't load entire history
-            .then((r) => r.json() as Promise<Manifold.Bet[]>)
-            .then((r) => {
-                const data: Point[] = [];
-                r.reverse(); // Data is returned in newest-first fashion and must be pushed in oldest-first
-                for (const t of r) {
-                    data.push(new Point(t.createdTime, t.probBefore));
-                    data.push(new Point(t.createdTime, t.probAfter));
-                }
-                this.chart.data = data;
+        const data: Point[] = [];
+        // Data is returned in newest-first fashion and must be pushed in oldest-first:
+        for (let i = this.currentMarket.bets.length - 1; i >= 0; i--) {
+            const bet = this.currentMarket.bets[i];
+            data.push(new Point(bet.createdTime, bet.probBefore));
+            data.push(new Point(bet.createdTime, bet.probAfter));
+        }
+        this.chart.data = data;
 
-                for (const bet of this.betsToAddOnceLoadedHistory) {
-                    this.addBet(bet);
-                }
+        for (const bet of this.betsToAddOnceLoadedHistory) {
+            this.addBet(bet);
+        }
 
-                this.chart.canvasElement.style.display = "";
+        this.chart.canvasElement.style.display = "";
 
-                this.loadedHistory = true;
-            })
-            .catch(console.error);
+        this.loadedHistory = true;
     }
 
     addBet(bet: FullBet) {
@@ -244,7 +231,7 @@ export default () => {
             setResolvedData(undefined);
             setOverlayVisible(false);
         });
-        app.socket.on(Packet.SELECT_MARKET_ID, (marketID: string) => {
+        app.socket.on(Packet.SELECT_MARKET, (marketID: string) => {
             setResolvedData(undefined);
             setOverlayVisible(marketID ? true : false);
         });
