@@ -16,6 +16,8 @@ import { SiteLink } from '../site-link'
 import { firestoreConsolePath } from 'common/envs/constants'
 import { deleteField } from 'firebase/firestore'
 import ShortToggle from '../widgets/short-toggle'
+import { DuplicateContractButton } from '../copy-contract-button'
+import { Row } from '../layout/row'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -185,6 +187,9 @@ export function ContractInfoDialog(props: {
             </tbody>
           </table>
 
+          <Row className="flex-wrap">
+            <DuplicateContractButton contract={contract} />
+          </Row>
           {contract.mechanism === 'cpmm-1' && !contract.resolution && (
             <LiquidityPanel contract={contract} />
           )}
