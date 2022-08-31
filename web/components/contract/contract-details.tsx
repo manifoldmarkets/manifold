@@ -429,10 +429,13 @@ function EditableCloseDate(props: {
             className={isCreator ? 'cursor-pointer' : ''}
             onClick={() => isCreator && setIsEditingCloseTime(true)}
           >
-            {isSameYear
-              ? dayJsCloseTime.format('MMM D')
-              : dayJsCloseTime.format('MMM D, YYYY')}
-            {isSameDay && <> ({fromNow(closeTime)})</>}
+            {isSameDay ? (
+              <span className={'capitalize'}> {fromNow(closeTime)}</span>
+            ) : isSameYear ? (
+              dayJsCloseTime.format('MMM D')
+            ) : (
+              dayJsCloseTime.format('MMM D, YYYY')
+            )}
           </span>
         </DateTimeTooltip>
       )}
