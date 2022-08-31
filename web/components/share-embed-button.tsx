@@ -9,12 +9,21 @@ import { DOMAIN } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 
-export function embedCode(contract: Contract) {
+export function embedContractCode(contract: Contract) {
   const title = contract.question
   const src = `https://${DOMAIN}/embed${contractPath(contract)}`
-
-  return `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
+  return embedCode(src, title)
 }
+
+export function embedContractGridCode(contracts: Contract[]) {
+  const src = `http://${DOMAIN}/embed/grid/${contracts
+    .map((c) => c.slug)
+    .join('/')}`
+  return embedCode(src, 'Grid of contracts')
+}
+
+const embedCode = (src: string, title: string) =>
+  `<iframe width="560" height="405" src="${src}" title="${title}" frameborder="0"></iframe>`
 
 export function ShareEmbedButton(props: { contract: Contract }) {
   const { contract } = props
@@ -26,7 +35,7 @@ export function ShareEmbedButton(props: { contract: Contract }) {
       as="div"
       className="relative z-10 flex-shrink-0"
       onMouseUp={() => {
-        copyToClipboard(embedCode(contract))
+        copyToClipboard(embedContractCode(contract))
         toast.success('Embed code copied!', {
           icon: codeIcon,
         })
