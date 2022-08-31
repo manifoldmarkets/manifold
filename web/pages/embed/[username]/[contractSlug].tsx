@@ -153,7 +153,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         {(isBinary || isPseudoNumeric) && (
           <ContractProbGraph
             contract={contract}
-            bets={bets}
+            bets={[...bets].reverse()}
             height={graphHeight}
           />
         )}
