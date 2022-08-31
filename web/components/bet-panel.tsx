@@ -179,12 +179,12 @@ function BuyPanel(props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
-  useEffect(() => {
-    if (selected) {
-      if (isIOS()) window.scrollTo(0, window.scrollY + 200)
-      focusAmountInput()
-    }
-  }, [selected, focusAmountInput])
+  // useEffect(() => {
+  //   if (selected) {
+  //     if (isIOS()) window.scrollTo(0, window.scrollY + 200)
+  //     focusAmountInput()
+  //   }
+  // }, [selected, focusAmountInput])
 
   function onBetChoice(choice: 'YES' | 'NO') {
     setOutcome(choice)
