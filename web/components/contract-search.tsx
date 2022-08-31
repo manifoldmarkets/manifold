@@ -38,7 +38,7 @@ const searchClient = algoliasearch(
 const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
 const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 
-const SORTS = [
+export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Most traded', value: 'most-traded' },
@@ -83,9 +83,11 @@ export function ContractSearch(props: {
   persistPrefix?: string
   useQueryUrlParam?: boolean
   isWholePage?: boolean
-  maxItems?: number
   noControls?: boolean
-  renderContracts?: (contracts: Contract[] | undefined) => ReactNode
+  renderContracts?: (
+    contracts: Contract[] | undefined,
+    loadMore: () => void
+  ) => ReactNode
 }) {
   const {
     user,
@@ -100,7 +102,6 @@ export function ContractSearch(props: {
     persistPrefix,
     useQueryUrlParam,
     isWholePage,
-    maxItems,
     noControls,
     renderContracts,
   } = props
@@ -184,8 +185,7 @@ export function ContractSearch(props: {
   const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-  const renderedContracts =
-    state.pages.length === 0 ? undefined : contracts.slice(0, maxItems)
+  const renderedContracts = state.pages.length === 0 ? undefined : contracts
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -206,7 +206,7 @@ export function ContractSearch(props: {
         noControls={noControls}
       />
       {renderContracts ? (
-        renderContracts(renderedContracts)
+        renderContracts(renderedContracts, performQuery)
       ) : (
         <ContractsGrid
           contracts={renderedContracts}
