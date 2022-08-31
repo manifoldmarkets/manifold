@@ -1,5 +1,6 @@
 import { Tabs } from 'web/components/layout/tabs'
 import React, { useEffect, useMemo, useState } from 'react'
+import Router from 'next/router'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -12,7 +13,6 @@ import {
   MANIFOLD_USERNAME,
   PrivateUser,
 } from 'common/user'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
@@ -39,11 +39,10 @@ import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   MultiUserTipLink,
   MultiUserLinkInfo,
@@ -54,14 +53,12 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
-})
+export default function Notifications() {
+  const privateUser = usePrivateUser()
 
-export default function Notifications(props: {
-  auth: { privateUser: PrivateUser }
-}) {
-  const { privateUser } = props.auth
+  useEffect(() => {
+    if (privateUser === null) Router.push('/')
+  })
 
   return (
     <Page>
@@ -69,28 +66,30 @@ export default function Notifications(props: {
         <Title text={'Notifications'} className={'hidden md:block'} />
         <SEO title="Notifications" description="Manifold user notifications" />
 
-        <div>
-          <Tabs
-            currentPageForAnalytics={'notifications'}
-            labelClassName={'pb-2 pt-1 '}
-            className={'mb-0 sm:mb-2'}
-            defaultIndex={0}
-            tabs={[
-              {
-                title: 'Notifications',
-                content: <NotificationsList privateUser={privateUser} />,
-              },
-              {
-                title: 'Settings',
-                content: (
-                  <div className={''}>
-                    <NotificationSettings />
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </div>
+        {privateUser && (
+          <div>
+            <Tabs
+              currentPageForAnalytics={'notifications'}
+              labelClassName={'pb-2 pt-1 '}
+              className={'mb-0 sm:mb-2'}
+              defaultIndex={0}
+              tabs={[
+                {
+                  title: 'Notifications',
+                  content: <NotificationsList privateUser={privateUser} />,
+                },
+                {
+                  title: 'Settings',
+                  content: (
+                    <div className={''}>
+                      <NotificationSettings />
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        )}
       </div>
     </Page>
   )
