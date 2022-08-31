@@ -23,3 +23,8 @@ export type PacketTwitchLinkComplete = {
 export type PacketUserInfo = {
     manifoldID: string;
 }
+
+export type PacketHandshakeComplete = {
+    actingManifoldUserID: string;
+    manifoldAPIBase: string;
+}

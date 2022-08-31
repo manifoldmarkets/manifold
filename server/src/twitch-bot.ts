@@ -36,7 +36,7 @@ const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; pro
     return message;
 };
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
-const MSG_MARKET_CREATED = (username: string, question: string) => `${username}'s market '${question}' has been created!`;
+const MSG_MARKET_CREATED = (username: string, question: string, defaultGroup: string) => `${username}'s market '${question}' has been created${defaultGroup ? ` in group '${defaultGroup}'` : ""}!${!defaultGroup ? " No default group was selected. Use /setdefaultgroup to set one." : ""}`;
 const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
 const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
 
@@ -132,13 +132,13 @@ export default class TwitchBot {
                 }
                 question = question.trim();
 
-                log.info("Create command issued with question: " + question);
+                log.info(`Create command issued with question '${question}'`);
 
                 try {
                     const market = await user.createBinaryMarket(question, null, 50, this.defaultGroupID ? this.defaultGroupID : undefined);
                     log.info("Created market ID: " + market.id);
                     this.app.selectMarket(channel, market.id);
-                    this.client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question));
+                    this.client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question, this.defaultGroupID));
                 } catch (e) {
                     if (e instanceof InsufficientBalanceException) {
                         user.getBalance().then((balance) => {

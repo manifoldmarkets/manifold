@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { Group } from "common/group";
 import { LiteMarket, LiteUser } from "common/manifold-defs";
 import * as Packets from "common/packet-ids";
-import { PacketCreateMarket, PacketMarketCreated, PacketUserInfo } from "common/packets";
+import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from "common/packets";
 import Head from "next/head";
 import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
 import Textarea from "react-expanding-textarea";
@@ -20,12 +20,13 @@ import { CONTRACT_ANTE, formatMoney, Resolution } from "web/lib/utils";
 import { ConfirmationButton } from "../components/confirmation-button";
 import { GroupSelector } from "../components/group-selector";
 
-const APIBase = "https://dev.manifold.markets/api/v0/";
+let socket: Socket;
+let APIBase = undefined;
 
 async function fetchAllMarkets(): Promise<LiteMarket[]> {
     const allMarkets: LiteMarket[] = [];
     for (;;) {
-        const r = await fetch(`${APIBase}markets?limit=1000${allMarkets.length > 0 ? "&before=" + allMarkets[allMarkets.length - 1].id : ""}`, {headers: {"Pragma": "no-cache"}});
+        const r = await fetch(`${APIBase}markets?limit=1000${allMarkets.length > 0 ? "&before=" + allMarkets[allMarkets.length - 1].id : ""}`, { headers: { Pragma: "no-cache" } });
         const markets = (await r.json()) as LiteMarket[];
         allMarkets.push(...markets);
         if (markets.length < 1000) {
@@ -68,8 +69,6 @@ async function getUserBalance(userID: string): Promise<number> {
     return user.balance;
 }
 
-let socket: Socket;
-
 export default () => {
     const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(undefined);
     const [balance, setBalance] = useState(0);
@@ -95,34 +94,14 @@ export default () => {
                         reject(new Error(packet.failReason));
                         return;
                     }
+                    //!!! Wait for API caching fix:
                     setTimeout(() => {
-                        forceRefreshGroups(i => ++i)
+                        forceRefreshGroups((i) => ++i);
                         setTimeout(() => {
-                            forceRefreshGroups(i => ++i)
+                            forceRefreshGroups((i) => ++i);
                         }, 1000);
                     }, 1000);
                     onContractFeature(await fetchMarketById(packet.id));
-                    // setTimeout(async () => {
-                    //     setLoadingContracts(true);
-                    //     await fetchMarketsInGroup(selectedGroup);
-                    //     await new Promise(r => setTimeout(r, 1000));
-                    //     fetchMarketsInGroup(selectedGroup)
-                    //         .then((markets) => {
-                    //             setContracts(markets);
-                    //         })
-                    //         .finally(() => {
-                    //             setLoadingContracts(false);
-                    //         });
-                    // });
-                    //!!! Need to refresh groups
-                    // const markets = await fetchMarketsInGroup(selectedGroup);
-                    // setContracts(markets);
-                    // for (const market of markets) {
-                    //     if (market.id === packet.id) {
-                    //         onContractFeature(market);
-                    //         break;
-                    //     }
-                    // }
                     resolve();
                 });
                 setTimeout(() => reject(new Error("Timeout")), 20000);
@@ -146,20 +125,21 @@ export default () => {
             setLoadingMessage("Failed to connect to server: " + err.message);
             setConnectionState(ConnectionState.FAILED);
         });
-        socket.on("connect", () => {
-            console.debug("Socked connected to server.");
-            setConnectionState(ConnectionState.CONNECTED);
-            setSelectedContract(undefined);
-        });
         socket.on("disconnect", () => {
             console.debug("Lost connection to server.");
             setConnectionState(ConnectionState.CONNECTING);
+            setLoadingMessage("Connecting to server...");
         });
+        socket.on(Packets.HANDSHAKE_COMPLETE, (p: PacketHandshakeComplete) => {
+            APIBase = p.manifoldAPIBase;
+            
+            setManifoldUserID(p.actingManifoldUserID);
+            getUserBalance(p.actingManifoldUserID).then((b) => setBalance(b));
 
-        socket.on(Packets.USER_INFO, (p: PacketUserInfo) => {
-            console.debug("Received user info: " + p.manifoldID);
-            setManifoldUserID(p.manifoldID);
-            getUserBalance(p.manifoldID).then((b) => setBalance(b));
+            console.debug("Socked connected to server.");
+            setConnectionState(ConnectionState.CONNECTED);
+            setLoadingMessage("Connected");
+            setSelectedContract(undefined);
         });
 
         socket.on(Packets.RESOLVED, () => {
@@ -213,7 +193,7 @@ export default () => {
             setContracts([]);
         }
         if (firstLoad.current) {
-            localStorage.setItem("SELECTED_GROUP", selectedGroup && JSON.stringify({groupID: selectedGroup.id, groupName: selectedGroup.name} as SelectedGroup));
+            localStorage.setItem("SELECTED_GROUP", selectedGroup && JSON.stringify({ groupID: selectedGroup.id, groupName: selectedGroup.name } as SelectedGroup));
         }
         firstLoad.current = true;
     }, [selectedGroup]);
@@ -223,116 +203,121 @@ export default () => {
             <Head>
                 <title>Dock</title>
             </Head>
-            <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} />
-            <div className="flex justify-center">
-                <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
-                    <div className="p-2">
-                        <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} />
-                        <div className="w-full flex justify-center">
-                            <ConfirmationButton
-                                openModalBtn={{
-                                    label: `Create and feature a question`,
-                                    className: clsx(
-                                        !selectedGroup ? "btn-disabled" : "from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md",
-                                        "uppercase w-full mt-2 py-2.5 text-base font-semibold text-white shadow-sm h-11"
-                                    ),
-                                }}
-                                submitBtn={{
-                                    label: "Create",
-                                    className: clsx("normal-case btn", question.trim().length == 0 || ante > balance ? "btn-disabled" : isSubmittingQuestion ? "loading btn-disabled" : "btn-primary"),
-                                }}
-                                cancelBtn={{
-                                    className: isSubmittingQuestion ? "btn-disabled" : "",
-                                }}
-                                onSubmitWithSuccess={onSubmitNewQuestion}
-                                onOpenChanged={() => {
-                                    getUserBalance(manifoldUserID).then((b) => setBalance(b));
-                                }}
-                            >
-                                <Title className="!my-0" text={`Create a new question  ${selectedGroup ? `in '${selectedGroup.name}'` : ""}`} />
+            <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} className="bg-base-200 text-slate-500" spinnerBorderColor="border-slate-500" />
+            {connectionState == ConnectionState.CONNECTED && (
+                <div className="flex justify-center">
+                    <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
+                        <div className="p-2">
+                            <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} APIBase={APIBase} />
+                            <div className="w-full flex justify-center">
+                                <ConfirmationButton
+                                    openModalBtn={{
+                                        label: `Create and feature a question`,
+                                        className: clsx(
+                                            !selectedGroup ? "btn-disabled" : "from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md",
+                                            "uppercase w-full mt-2 py-2.5 text-base font-semibold text-white shadow-sm h-11"
+                                        ),
+                                    }}
+                                    submitBtn={{
+                                        label: "Create",
+                                        className: clsx(
+                                            "normal-case btn",
+                                            question.trim().length == 0 || ante > balance ? "btn-disabled" : isSubmittingQuestion ? "loading btn-disabled" : "btn-primary"
+                                        ),
+                                    }}
+                                    cancelBtn={{
+                                        className: isSubmittingQuestion ? "btn-disabled" : "",
+                                    }}
+                                    onSubmitWithSuccess={onSubmitNewQuestion}
+                                    onOpenChanged={() => {
+                                        getUserBalance(manifoldUserID).then((b) => setBalance(b));
+                                    }}
+                                >
+                                    <Title className="!my-0" text={`Create a new question  ${selectedGroup ? `in '${selectedGroup.name}'` : ""}`} />
 
-                                <form>
-                                    <div className="form-control w-full">
-                                        <label className="label">
-                                            <span className="mb-1">
-                                                Question<span className={"text-red-700"}>*</span>
-                                            </span>
-                                        </label>
+                                    <form>
+                                        <div className="form-control w-full">
+                                            <label className="label">
+                                                <span className="mb-1">
+                                                    Question<span className={"text-red-700"}>*</span>
+                                                </span>
+                                            </label>
 
-                                        <Textarea
-                                            placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-                                            className="input input-bordered resize-none"
-                                            autoFocus
-                                            maxLength={480}
-                                            value={question}
-                                            onChange={(e) => setQuestion(e.target.value || "")}
-                                        />
-                                    </div>
-                                </form>
+                                            <Textarea
+                                                placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
+                                                className="input input-bordered resize-none"
+                                                autoFocus
+                                                maxLength={480}
+                                                value={question}
+                                                onChange={(e) => setQuestion(e.target.value || "")}
+                                            />
+                                        </div>
+                                    </form>
 
-                                <Row className="form-control items-start">
-                                    <Row className="gap-2 grow items-center justify-items-start flex">
-                                        <span>Cost:</span>
-                                        <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
+                                    <Row className="form-control items-start">
+                                        <Row className="gap-2 grow items-center justify-items-start flex">
+                                            <span>Cost:</span>
+                                            <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
+                                        </Row>
+
+                                        <div className="label-text text-neutral pl-1 justify-self-end self-center">{`M$${ante}`} </div>
                                     </Row>
-
-                                    <div className="label-text text-neutral pl-1 justify-self-end self-center">{`M$${ante}`} </div>
-                                </Row>
-                                {ante > balance && (
-                                    <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-                                        <span className="mr-2 text-red-500">Insufficient balance ({formatMoney(balance)})</span>
-                                    </div>
-                                )}
-                                {questionCreateError && (
-                                    <div className="-mt-1 mr-auto self-center whitespace-nowrap text-sm font-medium tracking-wide">
-                                        <span className="mr-2 text-red-500">Failed to create question: {questionCreateError}</span>
-                                    </div>
-                                )}
-                            </ConfirmationButton>
-                        </div>
-                    </div>
-
-                    <div className="p-2 overflow-y-auto relative grow flex flex-col">
-                        {loadingContracts ? (
-                            <div className="flex justify-center grow animate-fade">
-                                <div style={{ borderTopColor: "transparent" }} className="w-10 h-10 border-4 border-primary border-solid rounded-full animate-spin" />
+                                    {ante > balance && (
+                                        <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
+                                            <span className="mr-2 text-red-500">Insufficient balance ({formatMoney(balance)})</span>
+                                        </div>
+                                    )}
+                                    {questionCreateError && (
+                                        <div className="-mt-1 mr-auto self-center whitespace-nowrap text-sm font-medium tracking-wide">
+                                            <span className="mr-2 text-red-500">Failed to create question: {questionCreateError}</span>
+                                        </div>
+                                    )}
+                                </ConfirmationButton>
                             </div>
-                        ) : contracts.length > 0 ? (
-                            contracts.map((contract, index) => (
-                                <Transition key={contract.id} appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
-                                    <div className="mb-2 hover:z-10" style={{ transitionDelay: index * 50 + "ms" }}>
-                                        <ContractCard controlUserID={manifoldUserID} contract={contract} onFeature={() => onContractFeature(contract)} />
+                        </div>
+
+                        <div className="p-2 overflow-y-auto relative grow flex flex-col">
+                            {loadingContracts ? (
+                                <div className="flex justify-center grow animate-fade">
+                                    <div style={{ borderTopColor: "transparent" }} className="w-10 h-10 border-4 border-primary border-solid rounded-full animate-spin" />
+                                </div>
+                            ) : contracts.length > 0 ? (
+                                contracts.map((contract, index) => (
+                                    <Transition key={contract.id} appear show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
+                                        <div className="mb-2 hover:z-10" style={{ transitionDelay: index * 50 + "ms" }}>
+                                            <ContractCard controlUserID={manifoldUserID} contract={contract} onFeature={() => onContractFeature(contract)} />
+                                        </div>
+                                    </Transition>
+                                ))
+                            ) : (
+                                selectedGroup && <p className="w-full text-center text-gray-400 select-none">No applicable markets in this group</p>
+                            )}
+                        </div>
+                        <Transition
+                            unmount={false}
+                            as={Fragment}
+                            show={selectedContract != undefined}
+                            enter="ease-out duration-150"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
+                        </Transition>
+                        {selectedContract && (
+                            <div className={clsx("fixed inset-0 flex flex-col items-center overflow-y-auto", selectedContract ?? "pointer-events-none")}>
+                                <Transition appear unmount={false} show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
+                                    <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
+                                        <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
                                     </div>
                                 </Transition>
-                            ))
-                        ) : (
-                            selectedGroup && <p className="w-full text-center text-gray-400 select-none">No applicable markets in this group</p>
+                            </div>
                         )}
                     </div>
-                    <Transition
-                        unmount={false}
-                        as={Fragment}
-                        show={selectedContract != undefined}
-                        enter="ease-out duration-150"
-                        enterFrom="opacity-0"
-                        enterTo="opacity-100"
-                        leave="ease-in duration-200"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
-                    >
-                        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" />
-                    </Transition>
-                    {selectedContract && (
-                        <div className={clsx("fixed inset-0 flex flex-col items-center overflow-y-auto", selectedContract ?? "pointer-events-none")}>
-                            <Transition appear unmount={false} show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
-                                <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
-                                    <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
-                                </div>
-                            </Transition>
-                        </div>
-                    )}
                 </div>
-            </div>
+            )}
         </>
     );
 };
@@ -428,7 +413,9 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
                 </>
             ) : (
                 <>
-                    <span>Please ask <p className="inline font-bold">{contract.creatorName}</p> to resolve this market.</span>
+                    <span>
+                        Please ask <p className="inline font-bold">{contract.creatorName}</p> to resolve this market.
+                    </span>
                     <div className="my-1" />
                 </>
             )}

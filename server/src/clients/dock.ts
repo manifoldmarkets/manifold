@@ -7,7 +7,7 @@ import App from "../app";
 import * as ManifoldAPI from "../manifold-api";
 import User from "../user";
 import log from "../logger";
-import { PacketCreateMarket, PacketMarketCreated, PacketUserInfo } from "common/packets";
+import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from "common/packets";
 
 export default class DockClient {
     readonly socket: Socket;
@@ -17,8 +17,6 @@ export default class DockClient {
     constructor(app: App, socket: Socket) {
         this.app = app;
         this.socket = socket;
-
-        log.debug("Dock socket connected.");
 
         this.init();
     }
@@ -31,13 +29,13 @@ export default class DockClient {
         this.socket.join(connectedTwitchStream);
 
         const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
-        this.socket.emit(Packet.USER_INFO, <PacketUserInfo>{ manifoldID: this.connectedUser.data.manifoldID });
+        this.socket.emit(Packet.HANDSHAKE_COMPLETE, <PacketHandshakeComplete>{ actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: ManifoldAPI.APIBase });
         if (market) {
             this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
         }
 
         this.socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
-            log.debug(`Select market '${marketID}' requested for channel '${connectedTwitchStream}'`);
+            log.debug(`Select market ID '${marketID}' requested for channel '${connectedTwitchStream}' by dock`);
             try {
                 await this.app.selectMarket(connectedTwitchStream, marketID);
                 this.socket.broadcast.to(connectedTwitchStream).emit(Packet.SELECT_MARKET_ID, marketID);

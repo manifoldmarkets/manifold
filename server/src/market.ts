@@ -93,15 +93,43 @@ export class Market {
     }
 
     async loadInitialBets() {
-        // Load last few bets:
-        for (let i = Math.max(0, this.data.bets.length - 3); i < this.data.bets.length; i++) {
-            const bet = this.data.bets[i];
-            this.pendingBets.push(bet);
-            await this.loadUser(bet.userId);
+        // Load most recent few bets:
+        // for (let i = Math.max(0, this.data.bets.length - 3); i < this.data.bets.length; i++) {
+        //     const bet = this.data.bets[i];
+        //     const displayName = await this.getDisplayNameForUserID(bet.userId);
+        //     const fullBet: FullBet = {
+        //         ...bet,
+        //         username: displayName,
+        //     };
+        //     this.addBet(fullBet);
+        // }
+        let numLoadedBets = 0;
+        let mostRecentBet: FullBet = undefined;
+        const betsToAdd = [];
+        for (const bet of this.data.bets) {
+            if (bet.isRedemption) {
+                continue;
+            }
+            const displayName = await this.getDisplayNameForUserID(bet.userId);
+            const fullBet: FullBet = {
+                ...bet,
+                username: displayName,
+            };
+            if (!mostRecentBet) {
+                mostRecentBet = fullBet;
+            }
+            betsToAdd.push(fullBet);
+            numLoadedBets++;
+            if (numLoadedBets >= 3) {
+                break;
+            }
+        }
+        betsToAdd.reverse();
+        for (const bet of betsToAdd) {
+            this.addBet(bet);
         }
         log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
-        if (this.data.bets.length > 0) {
-            const mostRecentBet = this.data.bets[this.data.bets.length - 1];
+        if (mostRecentBet) {
             this.latestLoadedBetId = mostRecentBet.id;
             log.debug(`Latest loaded bet: ${this.userIdToNameMap[mostRecentBet.userId]} : ${mostRecentBet.id}`);
         }
@@ -212,6 +240,22 @@ export class Market {
                 bet.createdTime
             ).fromNow()}`
         );
+    }
+
+    private async getDisplayNameForUserID(userID: string) {
+        if (this.userIdToNameMap[userID]) {
+            return this.userIdToNameMap[userID];
+        }
+        let name: string;
+        try {
+            const user = await this.app.firestore.getUserForManifoldID(userID);
+            name = user.data.twitchLogin;
+        } catch {
+            const user = await Manifold.getUserByID(userID);
+            name = user.name;
+        }
+        log.info(`Loaded user ${name}`);
+        return this.userIdToNameMap[userID] = name;
     }
 
     private async loadUser(userId: string) {

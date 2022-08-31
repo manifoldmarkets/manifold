@@ -5,7 +5,7 @@ import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundExcep
 import log from "./logger";
 import { ResolutionOutcome } from "common/outcome";
 
-const APIBase = "https://dev.manifold.markets/api/v0/";
+export const APIBase = "https://dev.manifold.markets/api/v0/";
 
 async function post(url: string, APIKey: string, requestData: unknown): Promise<Response> {
     const r = await fetch(url, {

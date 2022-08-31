@@ -1,5 +1,5 @@
 import { FirebaseApp, initializeApp } from "firebase/app";
-import { collection, getFirestore, Firestore, getDocs, query, CollectionReference, where, setDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, getFirestore, Firestore, getDocs, query, CollectionReference, where, setDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import crypto from "crypto";
 import { FIREBASE_API_KEY, TWITCH_APP_CLIENT_SECRET } from "./envs";
 import User, { UserData } from "./user";
@@ -37,6 +37,13 @@ export default class AppFirestore {
         if (docs.size < 1) throw new UserNotRegisteredException(`No user record for Twitch username ${twitchUsername}`);
         if (docs.size > 1) log.warn("More than one user found with Twitch username " + twitchUsername);
         const data = <UserData>docs.docs[0].data();
+        return new User(data);
+    }
+
+    async getUserForManifoldID(manifoldID: string): Promise<User> {
+        const d = await getDoc(doc(this.db, this.userCollection.path, manifoldID));
+        if (!d) throw new UserNotRegisteredException(`No user record for Manifold ID ${manifoldID}`);
+        const data = <UserData>d.data();
         return new User(data);
     }
 

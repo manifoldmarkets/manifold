@@ -5,17 +5,15 @@ import { Group } from "common/group";
 import { useEffect, useState } from "react";
 import { SelectedGroup } from "web/lib/selected-group";
 
-const APIBase = "https://dev.manifold.markets/api/v0/";
-
-async function fetchGroups(userID: string): Promise<Group[]> {
+async function fetchGroups(APIBase: string, userID: string): Promise<Group[]> {
     const r = await fetch(`${APIBase}groups`);
     let groups = (await r.json()) as Group[];
     groups = groups.filter((g) => g.anyoneCanJoin || g.memberIds.indexOf(userID) >= 0);
     return groups;
 }
 
-export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Group | undefined; userID: string; setSelectedGroup: (group: Group) => void; onRefresh?: () => void }) {
-    const { refreshSignal, selectedGroup, userID, setSelectedGroup, onRefresh } = props;
+export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Group | undefined; userID: string; setSelectedGroup: (group: Group) => void; onRefresh?: () => void, APIBase: string }) {
+    const { refreshSignal, selectedGroup, userID, setSelectedGroup, onRefresh, APIBase } = props;
 
     const [isRefreshingGroups, setIsRefreshingGroups] = useState<boolean>(false);
     const [memberGroups, setMemberGroups] = useState<Group[] | undefined>();
@@ -23,7 +21,7 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
 
     const refreshGroupList = async () => {
         setIsRefreshingGroups(true);
-        return fetchGroups(userID)
+        return fetchGroups(APIBase, userID)
             .then((groups) => {
                 setMemberGroups(groups);
                 for (const g of groups) {
@@ -110,7 +108,7 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
                             ))}
                             <div
                                 className="btn btn-sm normal-case w-full justify-start rounded-none border-0 bg-white pl-2 h-14 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white"
-                                onClick={() => window.open("https://dev.manifold.markets/groups") /*!!!*/}
+                                onClick={() => window.open(APIBase.startsWith("https://dev") ? "https://dev.manifold.markets/groups" : "https://manifold.markets/groups") /* TODO: Make full generic */}
                             >
                                 <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
                                 Create a new Group
