@@ -84,7 +84,10 @@ export function ContractCommentsActivity(props: {
           user={user}
           contract={contract}
           parentComment={parent}
-          threadComments={commentsByParentId[parent.id] ?? []}
+          threadComments={sortBy(
+            commentsByParentId[parent.id] ?? [],
+            (c) => c.createdTime
+          )}
           tips={tips}
           bets={bets}
           betsByUserId={betsByUserId}
@@ -132,7 +135,10 @@ export function FreeResponseContractCommentsActivity(props: {
             contract={contract}
             user={user}
             answer={answer}
-            answerComments={commentsByOutcome[answer.number.toString()] ?? []}
+            answerComments={sortBy(
+              commentsByOutcome[answer.number.toString()] ?? [],
+              (c) => c.createdTime
+            )}
             tips={tips}
             betsByUserId={betsByUserId}
             commentsByUserId={commentsByUserId}
