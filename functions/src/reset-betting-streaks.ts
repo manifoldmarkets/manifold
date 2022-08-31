@@ -15,7 +15,10 @@ export const resetBettingStreaksForUsers = functions.pubsub
   })
 
 const resetBettingStreaksInternal = async () => {
-  const usersSnap = await firestore.collection('users').get()
+  const usersSnap = await firestore
+    .collection('users')
+    .where('currentBettingStreak', '>', 0)
+    .get()
 
   const users = usersSnap.docs.map((doc) => doc.data() as User)
 
