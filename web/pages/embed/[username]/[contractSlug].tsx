@@ -103,7 +103,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         <Spacer h={3} />
 
         <Row className="items-center justify-between gap-4 px-2">
-          <ContractDetails contract={contract} user={null} disabled />
+          <ContractDetails contract={contract} disabled />
 
           {(isBinary || isPseudoNumeric) &&
             tradingAllowed(contract) &&
