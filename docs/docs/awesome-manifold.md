@@ -32,3 +32,8 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [Introducing the Salem/CSPI Forecasting Tournament](https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting) by Richard Hanania
 - [What I learned about running a betting market game night contest](https://shakeddown.wordpress.com/2022/08/04/what-i-learned-about-running-a-betting-market-game-night-contest/) by shakeddown
 - [Free-riding on prediction markets](https://pedunculate.substack.com/p/free-riding-on-prediction-markets) by John Roxton
+
+## Art
+
+- Folded origami and doodles by [@hamnox](https://manifold.markets/hamnox) ![](https://i.imgur.com/nVGY4pL.png) 
+- Laser-cut Foldy by [@wasabipesto](https://manifold.markets/wasabipesto) ![](https://i.imgur.com/g9S6v3P.jpg) 
