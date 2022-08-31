@@ -1,18 +1,13 @@
+import { getFirestore } from '@firebase/firestore'
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getStorage } from 'firebase/storage'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
-import {
-  connectFirestoreEmulator,
-  initializeFirestore,
-} from 'firebase/firestore'
+import { connectFirestoreEmulator } from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 
 // Initialize Firebase
 export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
-
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-})
+export const db = getFirestore()
 export const functions = getFunctions()
 export const storage = getStorage()
 
