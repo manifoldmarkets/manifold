@@ -131,7 +131,7 @@ export const ContractOverview = (props: {
       {(outcomeType === 'FREE_RESPONSE' ||
         outcomeType === 'MULTIPLE_CHOICE') && (
         <Col className={'mb-1 gap-y-2'}>
-          <AnswersGraph contract={contract} bets={bets} />
+          <AnswersGraph contract={contract} bets={[...bets].reverse()} />
           <ExtraMobileContractDetails
             contract={contract}
             user={user}
