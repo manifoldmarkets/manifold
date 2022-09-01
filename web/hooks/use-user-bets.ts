@@ -1,3 +1,4 @@
+import { QueryClient } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
 import {
@@ -5,6 +6,11 @@ import {
   getUserBetsQuery,
   listenForUserContractBets,
 } from 'web/lib/firebase/bets'
+
+const queryClient = new QueryClient()
+
+export const prefetchUserBets = (userId: string) =>
+  queryClient.prefetchQuery(['bets', userId], () => getUserBetsQuery(userId))
 
 export const useUserBets = (userId: string) => {
   const result = useFirestoreQueryData(
