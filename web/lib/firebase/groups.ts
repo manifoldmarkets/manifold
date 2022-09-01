@@ -208,3 +208,17 @@ export function canModifyGroupContracts(group: Group, userId: string) {
     group.anyoneCanJoin
   )
 }
+
+export function getGroupLinkToDisplay(contract: Contract) {
+  const { groupLinks } = contract
+  const sortedGroupLinks = groupLinks?.sort(
+    (a, b) => b.createdTime - a.createdTime
+  )
+  const groupCreatorAdded = sortedGroupLinks?.find(
+    (g) => g.userId === contract.creatorId
+  )
+  const groupToDisplay = groupCreatorAdded
+    ? groupCreatorAdded
+    : sortedGroupLinks?.[0] ?? null
+  return groupToDisplay
+}

@@ -27,7 +27,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { SiteLink } from 'web/components/site-link'
-import { groupPath } from 'web/lib/firebase/groups'
+import { getGroupLinkToDisplay, groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
 import { User } from 'common/user'
@@ -52,10 +52,10 @@ export function MiscDetails(props: {
     isResolved,
     createdTime,
     resolutionTime,
-    groupLinks,
   } = contract
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <Row className="items-center gap-3 truncate text-sm text-gray-400">
@@ -83,12 +83,12 @@ export function MiscDetails(props: {
         <NewContractBadge />
       )}
 
-      {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
+      {!hideGroupLink && groupToDisplay && (
         <SiteLink
-          href={groupPath(groupLinks[0].slug)}
+          href={groupPath(groupToDisplay.slug)}
           className="truncate text-sm text-gray-400"
         >
-          {groupLinks[0].name}
+          {groupToDisplay.name}
         </SiteLink>
       )}
     </Row>
@@ -148,19 +148,15 @@ export function ContractDetails(props: {
     creatorName,
     creatorUsername,
     creatorId,
-    groupLinks,
     creatorAvatarUrl,
     resolutionTime,
   } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
-
-  const groupToDisplay =
-    groupLinks?.sort((a, b) => a.createdTime - b.createdTime)[0] ?? null
   const user = useUser()
   const [open, setOpen] = useState(false)
   const { width } = useWindowSize()
   const isMobile = (width ?? 0) < 600
-
+  const groupToDisplay = getGroupLinkToDisplay(contract)
   const groupInfo = groupToDisplay ? (
     <Row
       className={clsx(
@@ -236,11 +232,7 @@ export function ContractDetails(props: {
             'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
           }
         >
-          <ContractGroupsList
-            groupLinks={groupLinks ?? []}
-            contract={contract}
-            user={user}
-          />
+          <ContractGroupsList contract={contract} user={user} />
         </Col>
       </Modal>
 
