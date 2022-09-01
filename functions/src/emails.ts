@@ -4,7 +4,6 @@ import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
-import { DPM_CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import {
   formatLargeNumber,
