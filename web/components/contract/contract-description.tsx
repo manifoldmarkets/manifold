@@ -6,6 +6,7 @@ import Textarea from 'react-expanding-textarea'
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { exhibitExts, parseTags } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { Content } from '../editor'
@@ -17,11 +18,12 @@ import { insertContent } from '../editor/utils'
 
 export function ContractDescription(props: {
   contract: Contract
-  isCreator: boolean
   className?: string
 }) {
-  const { contract, isCreator, className } = props
+  const { contract, className } = props
   const isAdmin = useAdmin()
+  const user = useUser()
+  const isCreator = user?.id === contract.creatorId
   return (
     <div className={clsx('mt-2 text-gray-700', className)}>
       {isCreator || isAdmin ? (

@@ -5,7 +5,7 @@ import { Row } from '../layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
 import React, { useState } from 'react'
 import { Button } from 'web/components/button'
-import { User } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
 import { ShareModal } from './share-modal'
 import { FollowMarketButton } from 'web/components/follow-market-button'
 import { LikeMarketButton } from 'web/components/contract/like-market-button'
@@ -15,12 +15,10 @@ import { withTracking } from 'web/lib/service/analytics'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 
-export function ExtraContractActionsRow(props: {
-  contract: Contract
-  user: User | undefined | null
-}) {
-  const { user, contract } = props
+export function ExtraContractActionsRow(props: { contract: Contract }) {
+  const { contract } = props
   const { outcomeType, resolution } = contract
+  const user = useUser()
   const [isShareOpen, setShareOpen] = useState(false)
   const [openCreateChallengeModal, setOpenCreateChallengeModal] =
     useState(false)
