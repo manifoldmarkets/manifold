@@ -34,6 +34,11 @@ export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
 export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'
 
+export const AUTH_COOKIE_NAME = `FBUSER_${PROJECT_ID.toUpperCase().replace(
+  /-/g,
+  '_'
+)}`
+
 // Manifold's domain or any subdomains thereof
 export const CORS_ORIGIN_MANIFOLD = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
