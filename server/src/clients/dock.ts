@@ -8,6 +8,7 @@ import * as ManifoldAPI from "../manifold-api";
 import User from "../user";
 import log from "../logger";
 import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated, PacketSelectMarket } from "common/packets";
+import { MANIFOLD_API_BASE_URL } from "../envs";
 
 export default class DockClient {
     readonly socket: Socket;
@@ -29,7 +30,7 @@ export default class DockClient {
         this.socket.join(connectedTwitchStream);
 
         const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
-        this.socket.emit(Packet.HANDSHAKE_COMPLETE, <PacketHandshakeComplete>{ actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: ManifoldAPI.APIBase });
+        this.socket.emit(Packet.HANDSHAKE_COMPLETE, <PacketHandshakeComplete>{ actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: MANIFOLD_API_BASE_URL });
         if (market) {
             this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
         }

@@ -51,7 +51,6 @@ class Application {
 
         this.resetUI();
 
-        //!!! This all needs to move to another polling system for the market probability:
         const animationFrame = () => {
             this.animatedProbability_percent += (this.currentProbability_percent - this.animatedProbability_percent) * 0.1;
             document.getElementById("chance").innerHTML = this.animatedProbability_percent.toFixed(0);
@@ -110,12 +109,14 @@ class Application {
     }
 
     loadMarket(market: Manifold.FullMarket) {
-        console.log(market)
+        console.log(market);
         this.currentMarket = market;
 
         const questionLength = this.currentMarket.question.length;
         const questionDiv = document.getElementById("question");
-        if (questionLength > 70) {
+        if (questionLength > 60) {
+            questionDiv.style.fontSize = "0.8em";
+        } else if (questionLength > 150) {
             questionDiv.style.fontSize = "0.8em";
         } else {
             questionDiv.style.fontSize = "";
@@ -131,9 +132,8 @@ class Application {
 
     async loadBettingHistory() {
         const data: Point[] = [];
-        // Data is returned in newest-first fashion and must be pushed in oldest-first:
-        for (let i = this.currentMarket.bets.length - 1; i >= 0; i--) {
-            const bet = this.currentMarket.bets[i];
+        // Bets are stored returned oldest-first:
+        for (const bet of this.currentMarket.bets) {
             data.push(new Point(bet.createdTime, bet.probBefore));
             data.push(new Point(bet.createdTime, bet.probAfter));
         }

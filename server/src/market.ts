@@ -43,7 +43,7 @@ export class Market {
                     this.continuePolling = false;
 
                     let winners = await this.calculateWinners();
-                    winners = winners.filter(w => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
+                    winners = winners.filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
 
                     const channel = this.app.getChannelForMarketID(this.data.id);
 
@@ -61,7 +61,7 @@ export class Market {
                             topLosers.push({ displayName: winner.user.name, profit: winner.profit });
                         }
                     }
-                    const sortFunction = (a: Result, b: Result) => Math.abs(a.profit) > Math.abs(b.profit) ? -1 : 1;
+                    const sortFunction = (a: Result, b: Result) => (Math.abs(a.profit) > Math.abs(b.profit) ? -1 : 1);
                     topWinners.sort(sortFunction);
                     topLosers.sort(sortFunction);
 
@@ -96,7 +96,9 @@ export class Market {
         let numLoadedBets = 0;
         let mostRecentBet: FullBet = undefined;
         const betsToAdd = [];
-        for (const bet of this.data.bets) {
+        // Bets are in oldest-first order, so must iterate backwards to get most recent bets:
+        for (let betIndex = this.data.bets.length - 1; betIndex >= 0; betIndex--) {
+            const bet = this.data.bets[betIndex];
             if (bet.isRedemption) {
                 continue;
             }
@@ -114,10 +116,12 @@ export class Market {
                 break;
             }
         }
-        betsToAdd.reverse();
+
+        betsToAdd.reverse(); // Bets must be pushed oldest first, but betsToAdd is newest-first
         for (const bet of betsToAdd) {
             this.addBet(bet);
         }
+
         log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
         if (mostRecentBet) {
             this.latestLoadedBetId = mostRecentBet.id;
@@ -221,9 +225,8 @@ export class Market {
             this.bets.shift();
         }
         this.bets.push(bet);
-        // this.io.emit(Packet.ADD_BETS, [bet]); //!!!
 
-        this.app.io.to(this.twitchChannel).emit(Packet.ADD_BETS, [bet]); //!!!
+        this.app.io.to(this.twitchChannel).emit(Packet.ADD_BETS, [bet]);
 
         log.info(
             `${bet.username} ${bet.amount > 0 ? "bought" : "sold"} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(
@@ -245,7 +248,7 @@ export class Market {
             name = user.name;
         }
         log.info(`Loaded user ${name}`);
-        return this.userIdToNameMap[userID] = name;
+        return (this.userIdToNameMap[userID] = name);
     }
 
     private async loadUser(userId: string) {
@@ -260,7 +263,6 @@ export class Market {
 
             const betsToRemove = [];
             while (this.pendingBets.length) {
-                //!!! This incorrectly re-orders the bets
                 const bet = this.pendingBets[0];
                 if (user.id == bet.userId) {
                     const fullBet: FullBet = {
