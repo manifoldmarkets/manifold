@@ -296,9 +296,9 @@ export function ExtraMobileContractDetails(props: {
   const uniqueBettors = uniqueBettorCount ?? 0
   const { resolvedDate } = contractMetrics(contract)
   const volumeTranslation =
-    volume > 800 || uniqueBettors > 20
+    volume > 800 || uniqueBettors >= 20
       ? 'High'
-      : volume > 300 || uniqueBettors > 10
+      : volume > 300 || uniqueBettors >= 10
       ? 'Medium'
       : 'Low'
 
