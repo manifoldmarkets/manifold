@@ -62,7 +62,11 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const contracts =
     (group && (await listContractsByGroupSlug(group.slug))) ?? []
-
+  const now = Date.now()
+  const suggestedFilter =
+    contracts.filter((c) => (c.closeTime ?? 0) > now).length < 5
+      ? 'all'
+      : 'open'
   const aboutPost =
     group && group.aboutPostId != null && (await getPost(group.aboutPostId))
   const bets = await Promise.all(
@@ -92,6 +96,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       topCreators,
       messages,
       aboutPost,
+      suggestedFilter,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -131,6 +136,7 @@ export default function GroupPage(props: {
   topCreators: User[]
   messages: GroupComment[]
   aboutPost: Post
+  suggestedFilter: 'open' | 'all'
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -141,6 +147,7 @@ export default function GroupPage(props: {
     creatorScores: {},
     topCreators: [],
     messages: [],
+    suggestedFilter: 'open',
   }
   const {
     creator,
@@ -149,6 +156,7 @@ export default function GroupPage(props: {
     topTraders,
     creatorScores,
     topCreators,
+    suggestedFilter,
   } = props
 
   const router = useRouter()
@@ -210,7 +218,7 @@ export default function GroupPage(props: {
     <ContractSearch
       user={user}
       defaultSort={'newest'}
-      defaultFilter={'open'}
+      defaultFilter={suggestedFilter}
       additionalFilter={{ groupSlug: group.slug }}
     />
   )
