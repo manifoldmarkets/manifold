@@ -84,9 +84,12 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     []
 
   const creator = await creatorPromise
+  // Only count unresolved markets
+  const contractsCount = contracts.filter((c) => !c.isResolved).length
 
   return {
     props: {
+      contractsCount,
       group,
       members,
       creator,
@@ -127,6 +130,7 @@ const groupSubpages = [
 ] as const
 
 export default function GroupPage(props: {
+  contractsCount: number
   group: Group | null
   members: User[]
   creator: User
@@ -139,6 +143,7 @@ export default function GroupPage(props: {
   suggestedFilter: 'open' | 'all'
 }) {
   props = usePropz(props, getStaticPropz) ?? {
+    contractsCount: 0,
     group: null,
     members: [],
     creator: null,
@@ -150,6 +155,7 @@ export default function GroupPage(props: {
     suggestedFilter: 'open',
   }
   const {
+    contractsCount,
     creator,
     members,
     traderScores,
@@ -225,6 +231,7 @@ export default function GroupPage(props: {
 
   const tabs = [
     {
+      badge: `${contractsCount}`,
       title: 'Markets',
       content: questionsTab,
       href: groupPath(group.slug, 'markets'),
