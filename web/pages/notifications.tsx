@@ -47,8 +47,8 @@ import { UserLink } from 'web/components/user-link'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import {
   MultiUserLinkInfo,
-  MultiUserLink,
-} from 'web/components/multi-user-link'
+  MultiUserTransactionLink,
+} from 'web/components/multi-user-transaction-link'
 import { Col } from 'web/components/layout/col'
 
 export const NOTIFICATIONS_PER_PAGE = 30
@@ -506,7 +506,7 @@ function IncomeNotificationItem(props: {
         />
         <Col className={'justify-start text-gray-500'}>
           {(isTip || isUniqueBettorBonus) && (
-            <MultiUserLink
+            <MultiUserTransactionLink
               userInfos={userLinks}
               modalLabel={isTip ? 'Who tipped you' : 'Unique bettors'}
             />

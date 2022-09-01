@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { formatMoney } from 'common/lib/util/format'
@@ -15,12 +14,11 @@ export type MultiUserLinkInfo = {
   amount: number
 }
 
-export function MultiUserLink(props: {
+export function MultiUserTransactionLink(props: {
   userInfos: MultiUserLinkInfo[]
   modalLabel: string
-  className?: string
 }) {
-  const { userInfos, className, modalLabel } = props
+  const { userInfos, modalLabel } = props
   const [open, setOpen] = useState(false)
   const maxShowCount = 5
   return (
@@ -28,7 +26,7 @@ export function MultiUserLink(props: {
       <Button
         size={'xs'}
         color={'gray-white'}
-        className={clsx('z-10 mr-1 gap-1', className)}
+        className={'z-10 mr-1 gap-1 bg-transparent'}
         onClick={(e) => {
           e.stopPropagation()
           setOpen(true)

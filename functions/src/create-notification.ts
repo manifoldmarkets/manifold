@@ -743,7 +743,7 @@ export const createUniqueBettorBonusNotification = async (
     sourceUserUsername: bettor.username,
     sourceUserAvatarUrl: bettor.avatarUrl,
     sourceText: amount.toString(),
-    sourceSlug: `/${contract.creatorUsername}/${contract.slug}`,
+    sourceSlug: contract.slug,
     sourceTitle: contract.question,
     // Perhaps not necessary, but just in case
     sourceContractSlug: contract.slug,
