@@ -18,7 +18,6 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { QRCode } from '../qr-code'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { AmountInput } from '../amount-input'
-import { getProbability } from 'common/calculate'
 import { createMarket } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
 import { FIXED_ANTE } from 'common/economy'
@@ -26,6 +25,7 @@ import Textarea from 'react-expanding-textarea'
 import { useTextEditor } from 'web/components/editor'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { track } from 'web/lib/service/analytics'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 type challengeInfo = {
   amount: number
@@ -110,8 +110,9 @@ function CreateChallengeForm(props: {
   const [isCreating, setIsCreating] = useState(false)
   const [finishedCreating, setFinishedCreating] = useState(false)
   const [error, setError] = useState<string>('')
-  const [editingAcceptorAmount, setEditingAcceptorAmount] = useState(false)
   const defaultExpire = 'week'
+  const { width } = useWindowSize()
+  const isMobile = (width ?? 0) < 768
 
   const [challengeInfo, setChallengeInfo] = useState<challengeInfo>({
     expiresTime: dayjs().add(2, defaultExpire).valueOf(),
@@ -147,7 +148,7 @@ function CreateChallengeForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!mt-2" text="Challenge bet " />
+          <Title className="!mt-2 hidden sm:block" text="Challenge bet " />
 
           <div className="mb-8">
             Challenge a friend to bet on{' '}
@@ -157,7 +158,7 @@ function CreateChallengeForm(props: {
               <Textarea
                 placeholder="e.g. Will a Democrat be the next president?"
                 className="input input-bordered mt-1 w-full resize-none"
-                autoFocus={true}
+                autoFocus={!isMobile}
                 maxLength={MAX_QUESTION_LENGTH}
                 value={challengeInfo.question}
                 onChange={(e) =>
@@ -170,89 +171,59 @@ function CreateChallengeForm(props: {
             )}
           </div>
 
-          <div className="mt-2 flex flex-col flex-wrap justify-center gap-x-5 gap-y-2">
-            <div>You'll bet:</div>
-            <Row
-              className={
-                'form-control w-full max-w-xs items-center justify-between gap-4 pr-3'
-              }
-            >
-              <AmountInput
-                amount={challengeInfo.amount || undefined}
-                onChange={(newAmount) =>
-                  setChallengeInfo((m: challengeInfo) => {
-                    return {
-                      ...m,
-                      amount: newAmount ?? 0,
-                      acceptorAmount: editingAcceptorAmount
-                        ? m.acceptorAmount
-                        : newAmount ?? 0,
-                    }
-                  })
-                }
-                error={undefined}
-                label={'M$'}
-                inputClassName="w-24"
-              />
-              <span className={''}>on</span>
-              {challengeInfo.outcome === 'YES' ? <YesLabel /> : <NoLabel />}
-            </Row>
-            <Row className={'mt-3 max-w-xs justify-end'}>
-              <Button
-                color={'gray-white'}
-                onClick={() =>
-                  setChallengeInfo((m: challengeInfo) => {
-                    return {
-                      ...m,
-                      outcome: m.outcome === 'YES' ? 'NO' : 'YES',
-                    }
-                  })
+          <Col className="mt-2 flex-wrap justify-center gap-x-5 gap-y-0 sm:gap-y-2">
+            <Col>
+              <div>You'll bet:</div>
+              <Row
+                className={
+                  'form-control w-full max-w-xs items-center justify-between gap-4 pr-3'
                 }
               >
-                <SwitchVerticalIcon className={'h-6 w-6'} />
-              </Button>
-            </Row>
-            <Row className={'items-center'}>If they bet:</Row>
-            <Row className={'max-w-xs items-center justify-between gap-4 pr-3'}>
-              <div className={'w-32 sm:mr-1'}>
                 <AmountInput
-                  amount={challengeInfo.acceptorAmount || undefined}
-                  onChange={(newAmount) => {
-                    setEditingAcceptorAmount(true)
-
+                  amount={challengeInfo.amount || undefined}
+                  onChange={(newAmount) =>
                     setChallengeInfo((m: challengeInfo) => {
                       return {
                         ...m,
+                        amount: newAmount ?? 0,
                         acceptorAmount: newAmount ?? 0,
                       }
                     })
-                  }}
+                  }
                   error={undefined}
                   label={'M$'}
                   inputClassName="w-24"
                 />
+                <span className={''}>on</span>
+                {challengeInfo.outcome === 'YES' ? <YesLabel /> : <NoLabel />}
+              </Row>
+              <Row className={'max-w-xs justify-end'}>
+                <Button
+                  color={'gray-white'}
+                  onClick={() =>
+                    setChallengeInfo((m: challengeInfo) => {
+                      return {
+                        ...m,
+                        outcome: m.outcome === 'YES' ? 'NO' : 'YES',
+                      }
+                    })
+                  }
+                >
+                  <SwitchVerticalIcon className={'h-6 w-6'} />
+                </Button>
+              </Row>
+            </Col>
+            <Row className={'items-center'}>If they bet:</Row>
+            <Row className={'max-w-xs items-center justify-between gap-4 pr-3'}>
+              <div className={'mt-1 w-32 sm:mr-1'}>
+                <span className={'ml-2 font-bold'}>
+                  {formatMoney(challengeInfo.acceptorAmount)}
+                </span>
               </div>
               <span>on</span>
               {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
             </Row>
-          </div>
-          {contract && (
-            <Button
-              size="2xs"
-              color="gray"
-              onClick={() => {
-                setEditingAcceptorAmount(true)
-
-                const p = getProbability(contract)
-                const prob = challengeInfo.outcome === 'YES' ? p : 1 - p
-                const { amount } = challengeInfo
-                const acceptorAmount = Math.round(amount / prob - amount)
-                setChallengeInfo({ ...challengeInfo, acceptorAmount })
-              }}
-            >
-              Use market odds
-            </Button>
-          )}
+          </Col>
           <div className="mt-8">
             If the challenge is accepted, whoever is right will earn{' '}
             <span className="font-semibold">

@@ -45,7 +45,7 @@ export function ShareModal(props: {
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
-      <Col className="gap-4 rounded bg-white p-4">
+      <Col className="gap-2.5 rounded  bg-white p-4 sm:gap-4">
         <Title className="!mt-0 !mb-2" text="Share this market" />
         <p>
           Earn{' '}
@@ -57,7 +57,7 @@ export function ShareModal(props: {
         <Button
           size="2xl"
           color="gradient"
-          className={'mb-2 flex max-w-xs self-center'}
+          className={'flex max-w-xs self-center'}
           onClick={() => {
             copyToClipboard(shareUrl)
             toast.success('Link copied!', {
@@ -68,17 +68,18 @@ export function ShareModal(props: {
         >
           {linkIcon} Copy link
         </Button>
+        <Row className={'justify-center'}>or</Row>
         {showChallenge && (
           <Button
-            size="lg"
-            color="gray-white"
+            size="2xl"
+            color="gradient"
             className={'mb-2 flex max-w-xs self-center'}
             onClick={withTracking(
               () => setOpenCreateChallengeModal(true),
               'click challenge button'
             )}
           >
-            <span>⚔️ Challenge a friend</span>
+            <span>⚔️ Challenge</span>
             <CreateChallengeModal
               isOpen={openCreateChallengeModal}
               setOpen={(open) => {
