@@ -11,6 +11,7 @@ import {
   listenForNewContracts,
   getUserBetContractsQuery,
 } from 'web/lib/firebase/contracts'
+import { QueryClient } from 'react-query'
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -91,6 +92,13 @@ export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
     ? contracts.map((c) => contractDict.current[c.id])
     : undefined
 }
+
+const queryClient = new QueryClient()
+
+export const prefetchUserBetContracts = (userId: string) =>
+  queryClient.prefetchQuery(['contracts', 'bets', userId], () =>
+    getUserBetContractsQuery(userId)
+  )
 
 export const useUserBetContracts = (userId: string) => {
   const result = useFirestoreQueryData(
