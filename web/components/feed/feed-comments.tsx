@@ -384,6 +384,7 @@ export function CommentInput(props: {
           user={user}
           submitComment={submitComment}
           isSubmitting={isSubmitting}
+          submitOn={'mod-enter'}
           presetId={id}
         />
       </div>
@@ -398,7 +399,8 @@ export function CommentInputTextArea(props: {
   upload: Parameters<typeof TextEditor>[0]['upload']
   submitComment: (id?: string) => void
   isSubmitting: boolean
-  submitOnEnter?: boolean
+  // mod-enter = ctrl-enter or cmd-enter
+  submitOn?: 'enter' | 'mod-enter'
   presetId?: string
 }) {
   const {
@@ -408,11 +410,9 @@ export function CommentInputTextArea(props: {
     submitComment,
     presetId,
     isSubmitting,
-    submitOnEnter,
+    submitOn,
     replyToUser,
   } = props
-  const isMobile = (useWindowSize().width ?? 0) < 768 // TODO: base off input device (keybord vs touch)
-
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -431,10 +431,10 @@ export function CommentInputTextArea(props: {
       editorProps: {
         handleKeyDown: (view, event) => {
           if (
-            submitOnEnter &&
+            submitOn &&
             event.key === 'Enter' &&
             !event.shiftKey &&
-            (!isMobile || event.ctrlKey || event.metaKey) &&
+            (submitOn === 'enter' || event.ctrlKey || event.metaKey) &&
             // mention list is closed
             !(view.state as any).mention$.active
           ) {
