@@ -67,27 +67,32 @@ export function BetPanel(props: {
           className
         )}
       >
-        <QuickOrLimitBet
-          isLimitOrder={isLimitOrder}
-          setIsLimitOrder={setIsLimitOrder}
-          hideToggle={!user}
-        />
-        <BuyPanel
-          hidden={isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-        />
-        <LimitOrderPanel
-          hidden={!isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-        />
-
-        <BetSignUpPrompt />
-
-        {!user && <PlayMoneyDisclaimer />}
+        {user ? (
+          <>
+            <QuickOrLimitBet
+              isLimitOrder={isLimitOrder}
+              setIsLimitOrder={setIsLimitOrder}
+              hideToggle={!user}
+            />
+            <BuyPanel
+              hidden={isLimitOrder}
+              contract={contract}
+              user={user}
+              unfilledBets={unfilledBets}
+            />
+            <LimitOrderPanel
+              hidden={!isLimitOrder}
+              contract={contract}
+              user={user}
+              unfilledBets={unfilledBets}
+            />
+          </>
+        ) : (
+          <>
+            <BetSignUpPrompt />
+            <PlayMoneyDisclaimer />
+          </>
+        )}
       </Col>
 
       {user && unfilledBets.length > 0 && (
