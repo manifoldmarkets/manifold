@@ -254,6 +254,10 @@ export async function unfollow(userId: string, unfollowedUserId: string) {
   await deleteDoc(followDoc)
 }
 
+export function getPortfolioHistory(userId: string, since: number) {
+  return getValues<PortfolioMetrics>(getPortfolioHistoryQuery(userId, since))
+}
+
 export function getPortfolioHistoryQuery(userId: string, since: number) {
   return query(
     collectionGroup(db, 'portfolioHistory'),
