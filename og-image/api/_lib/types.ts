@@ -19,6 +19,7 @@ export interface ParsedRequest {
   creatorName: string
   creatorUsername: string
   creatorAvatarUrl: string
+  resolution: string
   // Challenge attributes:
   challengerAmount: string
   challengerOutcome: string
