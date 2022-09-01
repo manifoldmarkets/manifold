@@ -323,10 +323,6 @@ function ContractSearchControls(props: {
               .map((slug) => `groupLinks.slug:${slug}`)
               // Show contracts created by users the user follows
               .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
-              // Show contracts bet on by users the user follows
-              .concat(
-                follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
-              )
           : '',
         // Subtract contracts you bet on from For you.
         state.pillFilter === 'personal' && user
