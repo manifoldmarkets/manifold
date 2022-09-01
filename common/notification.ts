@@ -15,6 +15,7 @@ export type Notification = {
   sourceUserUsername?: string
   sourceUserAvatarUrl?: string
   sourceText?: string
+  data?: string
 
   sourceContractTitle?: string
   sourceContractCreatorUsername?: string

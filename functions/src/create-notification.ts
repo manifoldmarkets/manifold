@@ -151,15 +151,6 @@ export const createNotification = async (
       }
   }
 
-  const notifyContractCreatorOfUniqueBettorsBonus = async (
-    userToReasonTexts: user_to_reason_texts,
-    userId: string
-  ) => {
-    userToReasonTexts[userId] = {
-      reason: 'unique_bettors_on_your_contract',
-    }
-  }
-
   const userToReasonTexts: user_to_reason_texts = {}
   // The following functions modify the userToReasonTexts object in place.
 
@@ -192,16 +183,6 @@ export const createNotification = async (
     sourceContract
   ) {
     await notifyContractCreator(userToReasonTexts, sourceContract)
-  } else if (
-    sourceType === 'bonus' &&
-    sourceUpdateType === 'created' &&
-    sourceContract
-  ) {
-    // Note: the daily bonus won't have a contract attached to it
-    await notifyContractCreatorOfUniqueBettorsBonus(
-      userToReasonTexts,
-      sourceContract.creatorId
-    )
   }
 
   await createUsersNotifications(userToReasonTexts)
@@ -736,4 +717,39 @@ export async function filterUserIdsForOnlyFollowerIds(
     (doc) => doc.data().id
   )
   return userIds.filter((id) => contractFollowersIds.includes(id))
+}
+
+export const createUniqueBettorBonusNotification = async (
+  contractCreatorId: string,
+  bettor: User,
+  txnId: string,
+  contract: Contract,
+  amount: number,
+  idempotencyKey: string
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${contractCreatorId}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: contractCreatorId,
+    reason: 'unique_bettors_on_your_contract',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'bonus',
+    sourceUpdateType: 'created',
+    sourceUserName: bettor.name,
+    sourceUserUsername: bettor.username,
+    sourceUserAvatarUrl: bettor.avatarUrl,
+    sourceText: amount.toString(),
+    sourceSlug: `/${contract.creatorUsername}/${contract.slug}`,
+    sourceTitle: contract.question,
+    // Perhaps not necessary, but just in case
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    sourceContractTitle: contract.question,
+    sourceContractCreatorUsername: contract.creatorUsername,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
 }

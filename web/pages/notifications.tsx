@@ -43,12 +43,13 @@ import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import {
-  MultiUserTipLink,
-  MultiUserLinkInfo,
-  UserLink,
-} from 'web/components/user-link'
+import { UserLink } from 'web/components/user-link'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import {
+  MultiUserLinkInfo,
+  MultiUserLink,
+} from 'web/components/multi-user-link'
+import { Col } from 'web/components/layout/col'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -212,7 +213,7 @@ function IncomeNotificationGroupItem(props: {
   function combineNotificationsByAddingNumericSourceTexts(
     notifications: Notification[]
   ) {
-    const newNotifications = []
+    const newNotifications: Notification[] = []
     const groupedNotificationsBySourceType = groupBy(
       notifications,
       (n) => n.sourceType
@@ -228,10 +229,7 @@ function IncomeNotificationGroupItem(props: {
       for (const sourceTitle in groupedNotificationsBySourceTitle) {
         const notificationsForSourceTitle =
           groupedNotificationsBySourceTitle[sourceTitle]
-        if (notificationsForSourceTitle.length === 1) {
-          newNotifications.push(notificationsForSourceTitle[0])
-          continue
-        }
+
         let sum = 0
         notificationsForSourceTitle.forEach(
           (notification) =>
@@ -251,7 +249,7 @@ function IncomeNotificationGroupItem(props: {
               username: notification.sourceUserUsername,
               name: notification.sourceUserName,
               avatarUrl: notification.sourceUserAvatarUrl,
-              amountTipped: thisSum,
+              amount: thisSum,
             } as MultiUserLinkInfo
           }),
           (n) => n.username
@@ -260,10 +258,8 @@ function IncomeNotificationGroupItem(props: {
         const newNotification = {
           ...notificationsForSourceTitle[0],
           sourceText: sum.toString(),
-          sourceUserUsername:
-            uniqueUsers.length > 1
-              ? JSON.stringify(uniqueUsers)
-              : notificationsForSourceTitle[0].sourceType,
+          sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
+          data: JSON.stringify(uniqueUsers),
         }
         newNotifications.push(newNotification)
       }
@@ -372,12 +368,15 @@ function IncomeNotificationItem(props: {
   justSummary?: boolean
 }) {
   const { notification, justSummary } = props
-  const { sourceType, sourceUserName, sourceUserUsername, sourceText } =
-    notification
+  const { sourceType, sourceUserUsername, sourceText, data } = notification
   const [highlighted] = useState(!notification.isSeen)
   const { width } = useWindowSize()
   const isMobile = (width && width < 768) || false
   const user = useUser()
+  const isTip = sourceType === 'tip' || sourceType === 'tip_and_like'
+  const isUniqueBettorBonus = sourceType === 'bonus'
+  const userLinks: MultiUserLinkInfo[] =
+    isTip || isUniqueBettorBonus ? JSON.parse(data ?? '{}') : []
 
   useEffect(() => {
     setNotificationsAsSeen([notification])
@@ -505,29 +504,26 @@ function IncomeNotificationItem(props: {
           href={getIncomeSourceUrl() ?? ''}
           className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
         />
-        <Row className={'items-center text-gray-500 sm:justify-start'}>
-          <div className={'line-clamp-2 flex max-w-xl shrink '}>
-            <div className={'inline'}>
-              <span className={'mr-1'}>{incomeNotificationLabel()}</span>
-            </div>
-            <span>
-              {(sourceType === 'tip' || sourceType === 'tip_and_like') &&
-                (sourceUserUsername?.includes(',') ? (
-                  <MultiUserTipLink
-                    userInfos={JSON.parse(sourceUserUsername)}
-                  />
-                ) : (
-                  <UserLink
-                    name={sourceUserName || ''}
-                    username={sourceUserUsername || ''}
-                    className={'mr-1 flex-shrink-0'}
-                    short={true}
-                  />
-                ))}
-              {reasonAndLink(false)}
+        <Col className={'justify-start text-gray-500'}>
+          {(isTip || isUniqueBettorBonus) && (
+            <MultiUserLink
+              userInfos={userLinks}
+              modalLabel={isTip ? 'Who tipped you' : 'Unique bettors'}
+            />
+          )}
+          <Row className={'line-clamp-2 flex max-w-xl'}>
+            <span>{incomeNotificationLabel()}</span>
+            <span className={'mx-1'}>
+              {isTip &&
+                (userLinks.length > 1
+                  ? 'Multiple users'
+                  : userLinks.length > 0
+                  ? userLinks[0].name
+                  : '')}
             </span>
-          </div>
-        </Row>
+            <span>{reasonAndLink(false)}</span>
+          </Row>
+        </Col>
         <div className={'border-b border-gray-300 pt-4'} />
       </div>
     </div>
