@@ -339,10 +339,6 @@ export const sendMarketCloseEmail = async (
       userId,
       name: firstName,
       volume: formatMoney(volume),
-      creatorFee:
-        mechanism === 'dpm-2'
-          ? `${DPM_CREATOR_FEE * 100}% of the profits`
-          : formatMoney(collectedFees.creatorFee),
     }
   )
 }
