@@ -1,7 +1,7 @@
 import { FirebaseApp, initializeApp } from "firebase/app";
 import { collection, getFirestore, Firestore, getDocs, query, CollectionReference, where, setDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import crypto from "crypto";
-import { FIREBASE_API_KEY, TWITCH_APP_CLIENT_SECRET } from "./envs";
+import { FIREBASE_API_KEY, PUBLIC_FACING_URL, TWITCH_APP_CLIENT_SECRET } from "./envs";
 import User, { UserData } from "./user";
 import log from "./logger";
 import { UserNotRegisteredException } from "common/exceptions";
@@ -25,7 +25,7 @@ export default class AppFirestore {
     constructor() {
         this.app = initializeApp(firebaseConfig);
         this.db = getFirestore(this.app);
-        const baseID = crypto.createHash("md5").update(TWITCH_APP_CLIENT_SECRET).digest("hex");
+        const baseID = crypto.createHash("md5").update(TWITCH_APP_CLIENT_SECRET + PUBLIC_FACING_URL).digest("hex");
         this.userCollection = collection(this.db, "bots", baseID, "users");
         this.channelCollection = collection(this.db, "bots", baseID, "channels");
         this.settingsCollection = collection(this.db, "bots", baseID, "settings");
@@ -42,7 +42,7 @@ export default class AppFirestore {
 
     async getUserForManifoldID(manifoldID: string): Promise<User> {
         const d = await getDoc(doc(this.db, this.userCollection.path, manifoldID));
-        if (!d) throw new UserNotRegisteredException(`No user record for Manifold ID ${manifoldID}`);
+        if (!d.exists()) throw new UserNotRegisteredException(`No user record for Manifold ID ${manifoldID}`);
         const data = <UserData>d.data();
         return new User(data);
     }
