@@ -11,4 +11,4 @@ export const TWITCH_BOT_OAUTH_TOKEN = process.env.TWITCH_BOT_OAUTH_TOKEN;
 
 export const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
-export const MANIFOLD_API_BASE_URL = "http://localhost:3000/api/v0/";//"https://dev.manifold.markets/api/v0/";
+export const MANIFOLD_API_BASE_URL = "https://dev.manifold.markets/api/v0/";
