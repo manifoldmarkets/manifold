@@ -29,7 +29,7 @@ export function MarketModal(props: {
   async function doneAddingContracts() {
     setLoading(true)
     if (contracts.length == 1) {
-      insertContent(editor, ...contracts.map(embedContractCode))
+      insertContent(editor, embedContractCode(contracts[0]))
     } else if (contracts.length > 1) {
       insertContent(editor, embedContractGridCode(contracts))
     }
