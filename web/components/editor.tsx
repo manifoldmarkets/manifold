@@ -73,7 +73,9 @@ export function useTextEditor(props: {
   const editorClass = clsx(
     proseClass,
     !simple && 'min-h-[6em]',
-    'outline-none pt-2 px-4'
+    'outline-none pt-2 px-4',
+    'prose-img:select-auto',
+    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, emebeds
   )
 
   const editor = useEditor(
