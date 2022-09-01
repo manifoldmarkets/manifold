@@ -17,7 +17,7 @@ export function embedContractCode(contract: Contract) {
 
 export function embedContractGridCode(contracts: Contract[]) {
   const height = (contracts.length - (contracts.length % 2)) * 100 + 'px'
-  const src = `http://${DOMAIN}/embed/grid/${contracts
+  const src = `https://${DOMAIN}/embed/grid/${contracts
     .map((c) => c.slug)
     .join('/')}`
   return `<iframe height="${height}" src="${src}" title="Grid of contracts" frameborder="0"></iframe>`
