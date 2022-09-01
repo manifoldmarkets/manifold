@@ -27,10 +27,10 @@ export function contractMetrics(contract: Contract) {
 export function contractTextDetails(contract: Contract) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const dayjs = require('dayjs')
-  const { closeTime, tags } = contract
+  const { closeTime, groupLinks } = contract
   const { createdDate, resolvedDate, volumeLabel } = contractMetrics(contract)
 
-  const hashtags = tags.map((tag) => `#${tag}`)
+  const groupHashtags = groupLinks?.slice(0, 5).map((g) => `#${g.name}`)
 
   return (
     `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +
@@ -40,7 +40,7 @@ export function contractTextDetails(contract: Contract) {
         ).format('MMM D, h:mma')}`
       : '') +
     ` • ${volumeLabel}` +
-    (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
+    (groupHashtags ? ` • ${groupHashtags.join(' ')}` : '')
   )
 }
 
