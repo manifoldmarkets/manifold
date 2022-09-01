@@ -116,25 +116,6 @@ export function AvatarDetails(props: {
   )
 }
 
-export function AbbrContractDetails(props: {
-  contract: Contract
-  showHotVolume?: boolean
-  showTime?: ShowTime
-}) {
-  const { contract, showHotVolume, showTime } = props
-  return (
-    <Row className="items-center justify-between">
-      <AvatarDetails contract={contract} />
-
-      <MiscDetails
-        contract={contract}
-        showHotVolume={showHotVolume}
-        showTime={showTime}
-      />
-    </Row>
-  )
-}
-
 export function ContractDetails(props: {
   contract: Contract
   disabled?: boolean
