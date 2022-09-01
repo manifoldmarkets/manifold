@@ -137,19 +137,18 @@ export function ContractDetails(props: {
   const isMobile = (width ?? 0) < 600
   const groupToDisplay = getGroupLinkToDisplay(contract)
   const groupInfo = groupToDisplay ? (
-    <Row
-      className={clsx(
-        'items-center pr-0 sm:pr-2',
-        isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-      )}
-    >
-      <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a className={clsx(linkClass, 'flex flex-row truncate')}>
-          <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-          <span className="items-center truncate">{groupToDisplay.name}</span>
-        </a>
-      </Link>
-    </Row>
+    <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+      <a
+        className={clsx(
+          linkClass,
+          'flex flex-row items-center truncate pr-0 sm:pr-2',
+          isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
+        )}
+      >
+        <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+        <span className="items-center truncate">{groupToDisplay.name}</span>
+      </a>
+    </Link>
   ) : (
     <Button
       size={'xs'}
