@@ -13,15 +13,14 @@ import {
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import { SiteLink } from 'web/components/site-link'
-import { GroupLink } from 'common/group'
 import { useGroupsWithContract } from 'web/hooks/use-group'
 
 export function ContractGroupsList(props: {
-  groupLinks: GroupLink[]
   contract: Contract
   user: User | null | undefined
 }) {
-  const { groupLinks, user, contract } = props
+  const { user, contract } = props
+  const { groupLinks } = contract
   const groups = useGroupsWithContract(contract)
   return (
     <Col className={'gap-2'}>
@@ -35,7 +34,7 @@ export function ContractGroupsList(props: {
             options={{
               showSelector: true,
               showLabel: false,
-              ignoreGroupIds: groupLinks.map((g) => g.groupId),
+              ignoreGroupIds: groupLinks?.map((g) => g.groupId),
             }}
             setSelectedGroup={(group) =>
               group && addContractToGroup(group, contract, user.id)
