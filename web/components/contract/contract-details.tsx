@@ -160,7 +160,7 @@ export function ContractDetails(props: {
   const groupInfo = groupToDisplay ? (
     <Row
       className={clsx(
-        'items-center pr-2',
+        'items-center pr-0 sm:pr-2',
         isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
       )}
     >
