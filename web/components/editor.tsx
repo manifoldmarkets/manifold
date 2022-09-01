@@ -18,7 +18,6 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
-import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
@@ -68,8 +67,6 @@ export function useTextEditor(props: {
 }) {
   const { placeholder, max, defaultValue = '', disabled, simple } = props
 
-  const users = useUsers()
-
   const editorClass = clsx(
     proseClass,
     !simple && 'min-h-[6em]',
@@ -78,32 +75,27 @@ export function useTextEditor(props: {
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, emebeds
   )
 
-  const editor = useEditor(
-    {
-      editorProps: { attributes: { class: editorClass } },
-      extensions: [
-        StarterKit.configure({
-          heading: simple ? false : { levels: [1, 2, 3] },
-          horizontalRule: simple ? false : {},
-        }),
-        Placeholder.configure({
-          placeholder,
-          emptyEditorClass:
-            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
-        }),
-        CharacterCount.configure({ limit: max }),
-        simple ? DisplayImage : Image,
-        DisplayLink,
-        DisplayMention.configure({
-          suggestion: mentionSuggestion(users),
-        }),
-        Iframe,
-        TiptapTweet,
-      ],
-      content: defaultValue,
-    },
-    [!users.length] // passed as useEffect dependency. (re-render editor when users load, to update mention menu)
-  )
+  const editor = useEditor({
+    editorProps: { attributes: { class: editorClass } },
+    extensions: [
+      StarterKit.configure({
+        heading: simple ? false : { levels: [1, 2, 3] },
+        horizontalRule: simple ? false : {},
+      }),
+      Placeholder.configure({
+        placeholder,
+        emptyEditorClass:
+          'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
+      }),
+      CharacterCount.configure({ limit: max }),
+      simple ? DisplayImage : Image,
+      DisplayLink,
+      DisplayMention.configure({ suggestion: mentionSuggestion }),
+      Iframe,
+      TiptapTweet,
+    ],
+    content: defaultValue,
+  })
 
   const upload = useUploadMutation(editor)
 
