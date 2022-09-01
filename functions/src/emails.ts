@@ -321,7 +321,7 @@ export const sendMarketCloseEmail = async (
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
 
-  const { question, slug, volume, mechanism, collectedFees } = contract
+  const { question, slug, volume } = contract
 
   const url = `https://${DOMAIN}/${username}/${slug}`
   const emailType = 'market-resolve'
