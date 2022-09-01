@@ -29,10 +29,10 @@ export default class App {
     readonly bot: TwitchBot;
     readonly firestore: AppFirestore;
 
-    private linksInProgress: { [sessionToken: string]: { manifoldID: string; apiKey: string } } = {};
+    private linksInProgress: { [sessionToken: string]: { manifoldID: string; apiKey: string; redirectURL: string } } = {};
 
     selectedMarketMap: { [twitchChannel: string]: Market } = {};
-    
+
     autoUnfeatureTimer: NodeJS.Timeout = null;
 
     constructor() {
@@ -185,14 +185,16 @@ export default class App {
             try {
                 const body = request.body;
                 const manifoldID = body.manifoldID;
-                const APIKey = body.apiKey;
-                if (!manifoldID || !APIKey) throw new Error("manifoldID and apiKey parameters are required.");
-                if (!(await Manifold.verifyAPIKey(APIKey))) throw new Error("API key invalid.");
+                const apiKey = body.apiKey;
+                const redirectURL = body.redirectURL;
+                if (!manifoldID || !apiKey || !redirectURL) throw new Error("manifoldID, apiKey and redirectURL parameters are required.");
+                if (!(await Manifold.verifyAPIKey(apiKey))) throw new Error("API key invalid.");
 
                 const sessionToken = crypto.randomBytes(24).toString("hex");
                 this.linksInProgress[sessionToken] = {
-                    manifoldID: manifoldID,
-                    apiKey: APIKey,
+                    manifoldID,
+                    apiKey,
+                    redirectURL,
                 };
 
                 const params = {
@@ -244,7 +246,12 @@ export default class App {
                 const twitchLogin = twitchUser.login;
                 log.info(`Authorized Twitch user ${twitchLogin}`);
 
-                const user = new User({ twitchLogin: twitchLogin, manifoldID: sessionData.manifoldID, APIKey: sessionData.apiKey, controlToken: crypto.randomUUID() });
+                let user: User;
+                try {
+                    user = await this.firestore.getUserForManifoldID(sessionData.manifoldID);
+                } catch (e) {
+                    user = new User({ twitchLogin: twitchLogin, manifoldID: sessionData.manifoldID, APIKey: sessionData.apiKey, controlToken: crypto.randomUUID() });
+                }
 
                 const waitingResponse = registerTwitchReturnPromises[sessionData.manifoldID];
                 if (waitingResponse) {
@@ -255,8 +262,11 @@ export default class App {
                     log.info("No waiting response");
                 }
 
+
                 this.firestore.addNewUser(user);
-                response.send("<html><head><script>close();</script></head><html>");
+                await Manifold.saveTwitchDetails(sessionData.apiKey, twitchUser.display_name, user.data.controlToken);
+
+                response.send(`<html><head><script>window.location.href="${sessionData.redirectURL}"</script></head><html>`);
             } catch (e) {
                 log.trace(e);
                 response.status(400).json({ error: e.message, message: "Failed to link accounts." });

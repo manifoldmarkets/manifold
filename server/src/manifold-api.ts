@@ -18,9 +18,13 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
         }),
     });
     if (r.status !== 200) {
-        let error: { message: string } = { message: "" };
+        type ResponseMessage = {
+            message?: string,
+            details?: string,
+        }
+        let error: ResponseMessage = {message: ""};
         try {
-            error = <{ message: string }>await r.json();
+            error = <ResponseMessage>await r.json();
         } catch (e) {
             // Empty
         }
@@ -29,7 +33,7 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
         if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
         if (r.status === 403) throw new ForbiddenException(errorMessage);
         if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
-        throw new Error(errorMessage);
+        throw new Error(errorMessage + (error.details ? " Details: " + JSON.stringify(error.details) : ""));
     }
     return r;
 }
@@ -164,4 +168,14 @@ export async function getLiteMarketByID(marketID: string): Promise<ManifoldAPI.L
 
 export async function getGroupBySlug(groupSlug: string): Promise<ManifoldAPI.Group> {
     return <Promise<ManifoldAPI.Group>>(await get(`${MANIFOLD_API_BASE_URL}group/${groupSlug}`)).json();
+}
+
+export async function saveTwitchDetails(APIKey: string, twitchName: string, controlToken: string): Promise<void> {
+    const requestData = {
+        twitchInfo: {
+            twitchName,
+            controlToken
+        }
+    };
+    await post(`${MANIFOLD_API_BASE_URL}twitch/save`, APIKey, requestData);
 }
