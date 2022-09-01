@@ -253,7 +253,18 @@ export function UserPage(props: { user: User }) {
             },
             {
               title: 'Comments',
-              content: <UserCommentsList user={user} />,
+              content: (
+                <Col>
+                  <Row className={'mt-2 mb-4 flex-wrap items-center gap-6'}>
+                    <FollowingButton user={user} />
+                    <FollowersButton user={user} />
+                    <ReferralsButton user={user} />
+                    <GroupsButton user={user} />
+                    <UserLikesButton user={user} />
+                  </Row>
+                  <UserCommentsList user={user} />
+                </Col>
+              ),
             },
             {
               title: 'Bets',
@@ -262,20 +273,6 @@ export function UserPage(props: { user: User }) {
                   <PortfolioValueSection userId={user.id} />
                   <BetsList user={user} />
                 </>
-              ),
-            },
-            {
-              title: 'Social',
-              content: (
-                <Row
-                  className={'mt-2 flex-wrap items-center justify-center gap-6'}
-                >
-                  <FollowingButton user={user} />
-                  <FollowersButton user={user} />
-                  <ReferralsButton user={user} />
-                  <GroupsButton user={user} />
-                  <UserLikesButton user={user} />
-                </Row>
               ),
             },
           ]}
