@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { MouseEventHandler, ReactNode } from 'react'
 import clsx from 'clsx'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
@@ -14,7 +14,7 @@ export type ColorType =
 
 export function Button(props: {
   className?: string
-  onClick?: () => void
+  onClick?: MouseEventHandler<any> | undefined
   children?: ReactNode
   size?: SizeType
   color?: ColorType
