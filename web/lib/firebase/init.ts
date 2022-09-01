@@ -12,7 +12,7 @@ export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 
 function iOS() {
   if (typeof navigator === 'undefined') {
-    // we're on the server, do whatever
+    // We're on the server, proceed normally
     return false
   }
   return (
@@ -28,7 +28,7 @@ function iOS() {
     (navigator.userAgent.includes('Mac') && 'ontouchend' in document)
   )
 }
-// Necessary for ios, see: https://github.com/firebase/firebase-js-sdk/issues/6118
+// Long polling is necessary for ios, see: https://github.com/firebase/firebase-js-sdk/issues/6118
 const opts = iOS() ? { experimentalForceLongPolling: true } : {}
 export const db = initializeFirestore(app, opts)
 
