@@ -8,6 +8,7 @@ import {
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
+import Link from 'next/link'
 
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
@@ -26,7 +27,7 @@ import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
-import { SiteLink } from 'web/components/site-link'
+import { linkClass } from 'web/components/site-link'
 import { getGroupLinkToDisplay, groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
@@ -83,12 +84,11 @@ export function MiscDetails(props: {
       )}
 
       {!hideGroupLink && groupToDisplay && (
-        <SiteLink
-          href={groupPath(groupToDisplay.slug)}
-          className="truncate text-sm text-gray-400"
-        >
-          {groupToDisplay.name}
-        </SiteLink>
+        <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+          <a className={clsx(linkClass, 'truncate text-sm text-gray-400')}>
+            {groupToDisplay.name}
+          </a>
+        </Link>
       )}
     </Row>
   )
@@ -143,12 +143,12 @@ export function ContractDetails(props: {
         isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
       )}
     >
-      <SiteLink href={groupPath(groupToDisplay.slug)} className={'truncate'}>
-        <Row>
+      <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+        <a className={clsx(linkClass, 'flex flex-row truncate')}>
           <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
           <span className="items-center truncate">{groupToDisplay.name}</span>
-        </Row>
-      </SiteLink>
+        </a>
+      </Link>
     </Row>
   ) : (
     <Button
