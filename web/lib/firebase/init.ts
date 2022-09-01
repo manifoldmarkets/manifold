@@ -10,9 +10,28 @@ import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 // Initialize Firebase
 export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-})
+function iOS() {
+  if (typeof navigator === 'undefined') {
+    // we're on the server, do whatever
+    return false
+  }
+  return (
+    [
+      'iPad Simulator',
+      'iPhone Simulator',
+      'iPod Simulator',
+      'iPad',
+      'iPhone',
+      'iPod',
+    ].includes(navigator.platform) ||
+    // iPad on iOS 13 detection
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document)
+  )
+}
+// Necessary for ios, see: https://github.com/firebase/firebase-js-sdk/issues/6118
+const opts = iOS() ? { experimentalForceLongPolling: true } : {}
+export const db = initializeFirestore(app, opts)
+
 export const functions = getFunctions()
 export const storage = getStorage()
 
