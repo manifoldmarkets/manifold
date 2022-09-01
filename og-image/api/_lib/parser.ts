@@ -21,6 +21,7 @@ export function parseRequest(req: IncomingMessage) {
     creatorName,
     creatorUsername,
     creatorAvatarUrl,
+    resolution,
 
     // Challenge attributes:
     challengerAmount,
@@ -71,6 +72,7 @@ export function parseRequest(req: IncomingMessage) {
 
     question:
       getString(question) || 'Will you create a prediction market on Manifold?',
+    resolution: getString(resolution),
     probability: getString(probability),
     numericValue: getString(numericValue) || '',
     metadata: getString(metadata) || 'Jan 1 &nbsp;•&nbsp; M$ 123 pool',
