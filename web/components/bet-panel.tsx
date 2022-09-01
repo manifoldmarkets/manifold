@@ -280,7 +280,12 @@ function BuyPanel(props: {
         isPseudoNumeric={isPseudoNumeric}
       />
 
-      <div className="my-3 text-left text-sm text-gray-500">Amount</div>
+      <Row className="my-3 justify-between text-left text-sm text-gray-500">
+        Amount
+        <span className={'xl:hidden'}>
+          (balance: {formatMoney(user?.balance ?? 0)})
+        </span>
+      </Row>
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -598,9 +603,14 @@ function LimitOrderPanel(props: {
         </div>
       )}
 
-      <div className="mt-1 mb-3 text-left text-sm text-gray-500">
-        Max amount<span className="ml-1 text-red-500">*</span>
-      </div>
+      <Row className="mt-1 mb-3 justify-between text-left text-sm text-gray-500">
+        <span>
+          Max amount<span className="ml-1 text-red-500">*</span>
+        </span>
+        <span className={'xl:hidden'}>
+          (balance: {formatMoney(user?.balance ?? 0)})
+        </span>
+      </Row>
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
