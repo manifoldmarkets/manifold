@@ -11,14 +11,21 @@ import { FollowMarketButton } from 'web/components/follow-market-button'
 import { LikeMarketButton } from 'web/components/contract/like-market-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { Col } from 'web/components/layout/col'
+import { withTracking } from 'web/lib/service/analytics'
+import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
+import { CHALLENGES_ENABLED } from 'common/lib/challenge'
 
 export function ExtraContractActionsRow(props: {
   contract: Contract
   user: User | undefined | null
 }) {
   const { user, contract } = props
-
+  const { outcomeType, resolution } = contract
   const [isShareOpen, setShareOpen] = useState(false)
+  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
+    useState(false)
+  const showChallenge =
+    user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
 
   return (
     <Row className={'mt-0.5 justify-around sm:mt-2 lg:justify-start'}>
@@ -45,6 +52,25 @@ export function ExtraContractActionsRow(props: {
           user={user}
         />
       </Button>
+      {showChallenge && (
+        <Button
+          size="lg"
+          color="gray-white"
+          className={'flex hidden max-w-xs self-center sm:inline-block'}
+          onClick={withTracking(
+            () => setOpenCreateChallengeModal(true),
+            'click challenge button'
+          )}
+        >
+          <span>⚔️ Challenge</span>
+          <CreateChallengeModal
+            isOpen={openCreateChallengeModal}
+            setOpen={setOpenCreateChallengeModal}
+            user={user}
+            contract={contract}
+          />
+        </Button>
+      )}
 
       <FollowMarketButton contract={contract} user={user} />
       {user?.id !== contract.creatorId && (
