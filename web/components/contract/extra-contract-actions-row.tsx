@@ -13,7 +13,7 @@ import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog
 import { Col } from 'web/components/layout/col'
 import { withTracking } from 'web/lib/service/analytics'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
-import { CHALLENGES_ENABLED } from 'common/lib/challenge'
+import { CHALLENGES_ENABLED } from 'common/challenge'
 
 export function ExtraContractActionsRow(props: {
   contract: Contract
