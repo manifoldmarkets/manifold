@@ -166,7 +166,7 @@ export function TextEditor(props: {
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
-            <Tooltip className="flex items-center" text="Add image" noTap>
+            <Tooltip text="Add image" noTap noFade>
               <FileUploadButton
                 onFiles={upload.mutate}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
@@ -174,7 +174,7 @@ export function TextEditor(props: {
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
               </FileUploadButton>
             </Tooltip>
-            <Tooltip className="flex items-center" text="Add embed" noTap>
+            <Tooltip text="Add embed" noTap noFade>
               <button
                 type="button"
                 onClick={() => setIframeOpen(true)}
@@ -188,7 +188,7 @@ export function TextEditor(props: {
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
               </button>
             </Tooltip>
-            <Tooltip className="flex items-center" text="Add market" noTap>
+            <Tooltip text="Add market" noTap noFade>
               <button
                 type="button"
                 onClick={() => setMarketOpen(true)}
