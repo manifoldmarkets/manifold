@@ -1,7 +1,6 @@
 // Run with `npx ts-node src/scripts/contest/scrape-ea.ts`
 import * as fs from 'fs'
 import * as puppeteer from 'puppeteer'
-import { CONTEST_DATA } from 'common/contest'
 
 export function scrapeEA(contestLink: string, fileName: string) {
   ;(async () => {
@@ -23,7 +22,7 @@ export function scrapeEA(contestLink: string, fileName: string) {
       const items = document.querySelectorAll('.PostsItem2-root')
 
       for (const item of items) {
-        let link =
+        const link =
           'https://forum.effectivealtruism.org' +
           item?.querySelector('a')?.getAttribute('href')
 
@@ -41,8 +40,8 @@ export function scrapeEA(contestLink: string, fileName: string) {
     })
 
     fs.writeFileSync(
-      '../web/lib/util/contests/' + fileName + '.json',
-      JSON.stringify(data, null, 2)
+      `./src/scripts/contest/${fileName}.ts`,
+      `export const data = ${JSON.stringify(data, null, 2)}`
     )
 
     console.log(data)
@@ -50,8 +49,7 @@ export function scrapeEA(contestLink: string, fileName: string) {
   })()
 }
 
-// runs using data from CONTEST_DATA
 scrapeEA(
-  CONTEST_DATA['cause-exploration-prize'].submissionLink,
-  CONTEST_DATA['cause-exploration-prize'].fileName
+  'https://forum.effectivealtruism.org/topics/criticism-and-red-teaming-contest',
+  'criticism-and-red-teaming'
 )

@@ -1,11 +1,13 @@
 // Run with `npx ts-node src/scripts/contest/create-markets.ts`
 
-import { CEP_SUBMISSIONS } from './submissions'
+import { data } from './criticism-and-red-teaming'
 
 // Dev API key for Cause Exploration Prizes (@CEP)
 // const API_KEY = '188f014c-0ba2-4c35-9e6d-88252e281dbf'
+// DEV API key for Criticism and Red Teaming (@CARTBot)
+const API_KEY = '6ff1f78a-32fe-43b2-b31b-9e3c78c5f18c'
 // Prod API key for @CEPBot
-const API_KEY = 'b5cc8c88-64a3-45fe-a6b5-ac6a224ac56a'
+// const API_KEY = 'b5cc8c88-64a3-45fe-a6b5-ac6a224ac56a'
 
 type CEPSubmission = {
   title: string
@@ -16,7 +18,7 @@ type CEPSubmission = {
 // Use the API to create a new market for this Cause Exploration Prize submission
 async function postMarket(submission: CEPSubmission) {
   const { title, author } = submission
-  const response = await fetch('https://manifold.markets/api/v0/market', {
+  const response = await fetch('https://dev.manifold.markets/api/v0/market', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -30,7 +32,8 @@ async function postMarket(submission: CEPSubmission) {
       initialProb: 10,
       // Super secret options:
       // groupId: 'y2hcaGybXT1UfobK3XTx', // [DEV] CEP Tournament
-      groupId: 'cMcpBQ2p452jEcJD2SFw', // [PROD] Predict CEP
+      groupId: 'h3MhjYbSSG6HbxY8ZTwE', // [DEV] CART
+      // groupId: 'cMcpBQ2p452jEcJD2SFw', // [PROD] Predict CEP
       visibility: 'unlisted',
       // TODO: Increase liquidity?
     }),
@@ -40,7 +43,7 @@ async function postMarket(submission: CEPSubmission) {
 }
 
 async function postAll() {
-  for (const submission of CEP_SUBMISSIONS.slice(5)) {
+  for (const submission of data.slice(2, 5)) {
     await postMarket(submission)
   }
 }
@@ -78,9 +81,9 @@ function makeDescription(submission: CEPSubmission) {
             type: 'text',
             text: title,
           },
-          { text: '" win first or second place in the ', type: 'text' },
+          { text: '" win or be a runner-up in the ', type: 'text' },
           {
-            text: 'Cause Exploration Prizes',
+            text: 'EA Criticism and Red Teaming Contest',
             type: 'text',
             marks: [
               {
@@ -88,7 +91,7 @@ function makeDescription(submission: CEPSubmission) {
                   target: '_blank',
                   class:
                     'no-underline !text-indigo-700 z-10 break-words hover:underline hover:decoration-indigo-400 hover:decoration-2',
-                  href: 'https://www.causeexplorationprizes.com/',
+                  href: 'https://forum.effectivealtruism.org/posts/8hvmvrgcxJJ2pYR4X/announcing-a-contest-ea-criticism-and-red-teaming',
                 },
                 type: 'link',
               },
