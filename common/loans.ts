@@ -118,7 +118,7 @@ const getFreeResponseContractLoanUpdate = (
   contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
 ) => {
-  const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
+  const openBets = bets.filter((bet) => bet.isSold || bet.sale)
 
   return openBets.map((bet) => {
     const loanAmount = bet.loanAmount ?? 0
