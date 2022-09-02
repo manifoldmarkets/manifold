@@ -68,6 +68,16 @@ export function AuthProvider(props: {
   }, [setAuthUser, serverUser])
 
   useEffect(() => {
+    if (authUser != null) {
+      // Persist to local storage, to reduce login blink next time.
+      // Note: Cap on localStorage size is ~5mb
+      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
+    } else {
+      localStorage.removeItem(CACHED_USER_KEY)
+    }
+  }, [authUser])
+
+  useEffect(() => {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
@@ -80,14 +90,10 @@ export function AuthProvider(props: {
             setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)
-          // Persist to local storage, to reduce login blink next time.
-          // Note: Cap on localStorage size is ~5mb
-          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)
           setAuthUser(null)
-          localStorage.removeItem(CACHED_USER_KEY)
         }
       },
       (e) => {
