@@ -209,26 +209,27 @@ export function BetsList(props: { user: User }) {
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
-          <NoBets user={user} />
+          <NoMatchingBets />
         ) : (
-          displayedContracts.map((contract) => (
-            <ContractBets
-              key={contract.id}
-              contract={contract}
-              bets={contractBets[contract.id] ?? []}
-              metric={sort === 'profit' ? 'profit' : 'value'}
-              isYourBets={isYourBets}
+          <>
+            {displayedContracts.map((contract) => (
+              <ContractBets
+                key={contract.id}
+                contract={contract}
+                bets={contractBets[contract.id] ?? []}
+                metric={sort === 'profit' ? 'profit' : 'value'}
+                isYourBets={isYourBets}
+              />
+            ))}
+            <Pagination
+              page={page}
+              itemsPerPage={CONTRACTS_PER_PAGE}
+              totalItems={filteredContracts.length}
+              setPage={setPage}
             />
-          ))
+          </>
         )}
       </Col>
-
-      <Pagination
-        page={page}
-        itemsPerPage={CONTRACTS_PER_PAGE}
-        totalItems={filteredContracts.length}
-        setPage={setPage}
-      />
     </Col>
   )
 }
@@ -236,7 +237,7 @@ export function BetsList(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="mx-4 text-gray-500">
+    <div className="mx-4 py-4 text-gray-500">
       {user.id === me?.id ? (
         <>
           You have not made any bets yet.{' '}
@@ -250,6 +251,11 @@ const NoBets = ({ user }: { user: User }) => {
     </div>
   )
 }
+const NoMatchingBets = () => (
+  <div className="mx-4 py-4 text-gray-500">
+    No bets matching the current filter.
+  </div>
+)
 
 function ContractBets(props: {
   contract: Contract
