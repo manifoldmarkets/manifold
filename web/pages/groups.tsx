@@ -21,7 +21,11 @@ import { SEO } from 'web/components/SEO'
 import { UserLink } from 'web/components/user-link'
 
 export async function getStaticProps() {
-  const groups = await listAllGroups().catch((_) => [])
+  let groups = await listAllGroups().catch((_) => [])
+
+  // mqp: temporary fix to make dev deploy while Ian works on migrating groups away
+  // from the document array member and contracts representation
+  groups = groups.filter((g) => g.contractIds != null && g.memberIds != null)
 
   const creators = await Promise.all(
     groups.map((group) => getUser(group.creatorId))
