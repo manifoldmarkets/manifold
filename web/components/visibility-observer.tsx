@@ -17,7 +17,7 @@ export function VisibilityObserver(props: {
   useEffect(() => {
     if (elem) {
       observer.observe(elem)
-      return () => observer.disconnect()
+      return () => observer.unobserve(elem)
     }
   }, [elem, observer])
 
