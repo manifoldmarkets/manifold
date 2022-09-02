@@ -63,11 +63,15 @@ export const onCreateCommentOnContract = functions
         .doc(comment.betId)
         .get()
       bet = betSnapshot.data() as Bet
-
       answer =
         contract.outcomeType === 'FREE_RESPONSE' && contract.answers
           ? contract.answers.find((answer) => answer.id === bet?.outcome)
           : undefined
+
+      await change.ref.update({
+        betOutcome: bet.outcome,
+        betAmount: bet.amount,
+      })
     }
 
     const comments = await getValues<ContractComment>(
