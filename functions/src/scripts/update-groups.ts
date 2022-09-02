@@ -58,6 +58,17 @@ const convertGroupFieldsToGroupDocuments = async () => {
   const groups = await getGroups()
   for (const group of groups) {
     log('updating group', group.slug)
+    const groupRef = admin.firestore().collection('groups').doc(group.id)
+    const totalMembers = (await groupRef.collection('groupMembers').get()).size
+    const totalContracts = (await groupRef.collection('groupContracts').get())
+      .size
+    if (
+      totalMembers === group.memberIds?.length &&
+      totalContracts === group.contractIds?.length
+    ) {
+      log('group already converted', group.slug)
+      continue
+    }
     for (const contractId of group.contractIds ?? []) {
       await createContractIdForGroup(group.id, contractId)
     }
@@ -84,6 +95,6 @@ const updateTotalContractsAndMembers = async () => {
 
 if (require.main === module) {
   initAdmin()
-  // convertGroupFieldsToGroupDocuments()
-  updateTotalContractsAndMembers()
+  convertGroupFieldsToGroupDocuments()
+  // updateTotalContractsAndMembers()
 }
