@@ -102,17 +102,15 @@ export function AuthProvider(props: {
     if (uid && username) {
       identifyUser(uid)
       setUserProperty('username', username)
-      const userListener = listenForUser(uid, (user) =>
-        setAuthUser((authUser) => {
-          /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-          return { ...authUser!, user: user! }
-        })
-      )
+      const userListener = listenForUser(uid, (user) => {
+        setAuthUser((currAuthUser) =>
+          currAuthUser && user ? { ...currAuthUser, user } : null
+        )
+      })
       const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
-        setAuthUser((authUser) => {
-          /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-          return { ...authUser!, privateUser: privateUser! }
-        })
+        setAuthUser((currAuthUser) =>
+          currAuthUser && privateUser ? { ...currAuthUser, privateUser } : null
+        )
       })
       return () => {
         userListener()
