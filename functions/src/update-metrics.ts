@@ -1,13 +1,12 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEmpty, keyBy, sum, sumBy } from 'lodash'
+import { groupBy, isEmpty, keyBy, sortBy, sum, sumBy } from 'lodash'
 import { getValues, log, logMemory, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { calculatePayout } from '../../common/calculate'
 import { DAY_MS } from '../../common/util/time'
-import { last } from 'lodash'
 import { getLoanUpdates } from '../../common/loans'
 
 const firestore = admin.firestore()
@@ -87,24 +86,12 @@ export const updateMetricsCore = async () => {
       contractsById,
       currentBets
     )
-    const lastPortfolio = last(portfolioHistory)
-    const didProfitChange =
-      lastPortfolio === undefined ||
-      lastPortfolio.balance !== newPortfolio.balance ||
-      lastPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      lastPortfolio.investmentValue !== newPortfolio.investmentValue
-
-    const newProfit = calculateNewProfit(
-      portfolioHistory,
-      newPortfolio,
-      didProfitChange
-    )
+    const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
     return {
       user,
       newCreatorVolume,
       newPortfolio,
       newProfit,
-      didProfitChange,
     }
   })
 
@@ -120,16 +107,14 @@ export const updateMetricsCore = async () => {
   const nextLoanByUser = keyBy(userPayouts, (payout) => payout.user.id)
 
   const userUpdates = userMetrics.map(
-    ({ user, newCreatorVolume, newPortfolio, newProfit, didProfitChange }) => {
+    ({ user, newCreatorVolume, newPortfolio, newProfit }) => {
       const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
       return {
         fieldUpdates: {
           doc: firestore.collection('users').doc(user.id),
           fields: {
             creatorVolumeCached: newCreatorVolume,
-            ...(didProfitChange && {
-              profitCached: newProfit,
-            }),
+            profitCached: newProfit,
             nextLoanCached,
           },
         },
@@ -141,9 +126,7 @@ export const updateMetricsCore = async () => {
             .collection('portfolioHistory')
             .doc(),
           fields: {
-            ...(didProfitChange && {
-              ...newPortfolio,
-            }),
+            ...newPortfolio,
           },
         },
       }
@@ -171,15 +154,15 @@ const computeVolume = (contractBets: Bet[], since: number) => {
 
 const calculateProfitForPeriod = (
   startTime: number,
-  portfolioHistory: PortfolioMetrics[],
+  descendingPortfolio: PortfolioMetrics[],
   currentProfit: number
 ) => {
-  const startingPortfolio = [...portfolioHistory]
-    .reverse() // so we search in descending order (most recent first), for efficiency
-    .find((p) => p.timestamp < startTime)
+  const startingPortfolio = descendingPortfolio.find(
+    (p) => p.timestamp < startTime
+  )
 
   if (startingPortfolio === undefined) {
-    return 0
+    return currentProfit
   }
 
   const startingProfit = calculateTotalProfit(startingPortfolio)
@@ -233,28 +216,28 @@ const calculateNewPortfolioMetrics = (
 
 const calculateNewProfit = (
   portfolioHistory: PortfolioMetrics[],
-  newPortfolio: PortfolioMetrics,
-  didProfitChange: boolean
+  newPortfolio: PortfolioMetrics
 ) => {
-  if (!didProfitChange) {
-    return {} // early return for performance
-  }
-
   const allTimeProfit = calculateTotalProfit(newPortfolio)
+  const descendingPortfolio = sortBy(
+    portfolioHistory,
+    (p) => p.timestamp
+  ).reverse()
+
   const newProfit = {
     daily: calculateProfitForPeriod(
       Date.now() - 1 * DAY_MS,
-      portfolioHistory,
+      descendingPortfolio,
       allTimeProfit
     ),
     weekly: calculateProfitForPeriod(
       Date.now() - 7 * DAY_MS,
-      portfolioHistory,
+      descendingPortfolio,
       allTimeProfit
     ),
     monthly: calculateProfitForPeriod(
       Date.now() - 30 * DAY_MS,
-      portfolioHistory,
+      descendingPortfolio,
       allTimeProfit
     ),
     allTime: allTimeProfit,
