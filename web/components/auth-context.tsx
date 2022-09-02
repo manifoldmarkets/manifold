@@ -77,12 +77,12 @@ export function AuthProvider(props: {
           if (!current.user || !current.privateUser) {
             const deviceToken = ensureDeviceToken()
             current = (await createUser({ deviceToken })) as UserAndPrivateUser
+            setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)
           // Persist to local storage, to reduce login blink next time.
           // Note: Cap on localStorage size is ~5mb
           localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
-          setCachedReferralInfoForUser(current.user)
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)
