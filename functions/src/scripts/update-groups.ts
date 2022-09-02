@@ -69,10 +69,18 @@ const convertGroupFieldsToGroupDocuments = async () => {
       log('group already converted', group.slug)
       continue
     }
-    for (const contractId of group.contractIds ?? []) {
+    const contractStart = totalContracts - 1 < 0 ? 0 : totalContracts - 1
+    const membersStart = totalMembers - 1 < 0 ? 0 : totalMembers - 1
+    for (const contractId of group.contractIds?.slice(
+      contractStart,
+      group.contractIds?.length
+    ) ?? []) {
       await createContractIdForGroup(group.id, contractId)
     }
-    for (const userId of group.memberIds ?? []) {
+    for (const userId of group.memberIds?.slice(
+      membersStart,
+      group.memberIds?.length
+    ) ?? []) {
       await createMemberForGroup(group.id, userId)
     }
   }
