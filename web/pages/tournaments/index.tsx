@@ -69,7 +69,7 @@ const Salem = {
     },
     {
       marketUrl:
-        'https://salemcenter.manifold.markets/SalemCenter/over-100000-monkeypox-cases-in-2022',
+        'https://salemcenter.manifold.markets/SalemCenter/supreme-court-ban-race-in-college-a',
       image: race_pic,
     },
   ],
