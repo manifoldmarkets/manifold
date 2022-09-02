@@ -16,7 +16,7 @@ import { getUser } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 import { uniq } from 'lodash'
-import { getValues, listenForValues } from 'web/lib/firebase/utils'
+import { listenForValues } from 'web/lib/firebase/utils'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -97,11 +97,6 @@ export function useMemberIds(groupId: string | null) {
       })
   }, [groupId])
   return memberIds
-}
-
-export async function listMembers(group: Group) {
-  const members = await getValues<GroupMemberDoc>(groupMembers(group.id))
-  return await Promise.all(members.map((m) => m.userId).map(getUser))
 }
 
 export const useGroupsWithContract = (contract: Contract) => {

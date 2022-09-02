@@ -14,18 +14,14 @@ import {
   getGroupBySlug,
   groupPath,
   joinGroup,
+  listMembers,
   updateGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import {
-  listMembers,
-  useGroup,
-  useGroupContractIds,
-  useMembers,
-} from 'web/hooks/use-group'
+import { useGroup, useGroupContractIds, useMembers } from 'web/hooks/use-group'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
