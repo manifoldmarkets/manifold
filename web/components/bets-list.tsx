@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { keyBy, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
@@ -35,8 +35,6 @@ import {
   resolvedPayout,
   getContractBetNullMetrics,
 } from 'common/calculate'
-import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
-import { trackLatency } from 'web/lib/firebase/tracking'
 import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
@@ -84,13 +82,6 @@ export function BetsList(props: { user: User }) {
   const [page, setPage] = useState(0)
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
-
-  const getTime = useTimeSinceFirstRender()
-  useEffect(() => {
-    if (bets && contractsById && signedInUser) {
-      trackLatency(signedInUser.id, 'portfolio', getTime())
-    }
-  }, [signedInUser, bets, contractsById, getTime])
 
   if (!bets || !contractsById) {
     return <LoadingIndicator />
