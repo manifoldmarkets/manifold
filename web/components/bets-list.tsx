@@ -8,7 +8,6 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { Bet } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
 import {
-  formatLargeNumber,
   formatMoney,
   formatPercent,
   formatWithCommas,
@@ -479,23 +478,6 @@ export function BetsSummary(props: {
             <Col>
               <div className="whitespace-nowrap text-sm text-gray-500">
                 Payout if <NoLabel />
-              </div>
-              <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-            </Col>
-          </>
-        ) : isPseudoNumeric ? (
-          <>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if {'>='} {formatLargeNumber(contract.max)}
-              </div>
-              <div className="whitespace-nowrap">
-                {formatMoney(yesWinnings)}
-              </div>
-            </Col>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if {'<='} {formatLargeNumber(contract.min)}
               </div>
               <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
             </Col>
