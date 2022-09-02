@@ -185,7 +185,7 @@ service cloud.firestore {
             }
 
           match /groupMembers/{memberId}{
-             allow create: if request.auth.uid == request.resource.data.userId;
+             allow create: if request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin;
               allow delete: if request.auth.uid == resource.data.userId;
             }
 
