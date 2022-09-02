@@ -166,7 +166,6 @@ export async function addContractToGroup(
   contract: Contract,
   userId: string
 ) {
-  if (!canModifyGroupContracts(group, userId)) return
   const newGroupLinks = [
     ...(contract.groupLinks ?? []),
     {
@@ -193,11 +192,8 @@ export async function addContractToGroup(
 
 export async function removeContractFromGroup(
   group: Group,
-  contract: Contract,
-  userId: string
+  contract: Contract
 ) {
-  if (!canModifyGroupContracts(group, userId)) return
-
   if (contract.groupLinks?.map((l) => l.groupId).includes(group.id)) {
     const newGroupLinks = contract.groupLinks?.filter(
       (link) => link.slug !== group.slug
@@ -212,15 +208,6 @@ export async function removeContractFromGroup(
   // delete the contract document in groupContracts collection
   const contractDoc = doc(groupContracts(group.id), contract.id)
   await deleteDoc(contractDoc)
-}
-
-export function canModifyGroupContracts(group: Group, userId: string) {
-  return (
-    group.creatorId === userId ||
-    // TODO: check if member document exists
-    // group.memberIds.includes(userId) ||
-    group.anyoneCanJoin
-  )
 }
 
 export function getGroupLinkToDisplay(contract: Contract) {
