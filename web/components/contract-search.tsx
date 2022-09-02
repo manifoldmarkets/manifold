@@ -282,8 +282,8 @@ function ContractSearchControls(props: {
       : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
 
   const memberPillGroups = sortBy(
-    memberGroups.filter((group) => group.numContracts > 0),
-    (group) => group.numContracts
+    memberGroups.filter((group) => group.totalContracts > 0),
+    (group) => group.totalContracts
   ).reverse()
 
   const pillGroups: { name: string; slug: string }[] =

@@ -7,8 +7,8 @@ export type Group = {
   createdTime: number
   mostRecentActivityTime: number
   anyoneCanJoin: boolean
-  numContracts: number
-  numMembers: number
+  totalContracts: number
+  totalMembers: number
   aboutPostId?: string
   chatDisabled?: boolean
   mostRecentContractAddedTime?: number

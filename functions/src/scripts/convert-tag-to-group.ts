@@ -39,8 +39,8 @@ const createGroup = async (
     createdTime: now,
     mostRecentActivityTime: now,
     anyoneCanJoin: true,
-    numContracts: contracts.length,
-    numMembers: 1,
+    totalContracts: contracts.length,
+    totalMembers: 1,
   }
   await groupRef.create(group)
   // create a GroupMemberDoc for the creator

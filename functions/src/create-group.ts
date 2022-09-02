@@ -59,8 +59,8 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
     mostRecentActivityTime: Date.now(),
     // TODO: allow users to add contract ids on group creation
     anyoneCanJoin,
-    numContracts: 0,
-    numMembers: memberIds.length,
+    totalContracts: 0,
+    totalMembers: memberIds.length,
   }
 
   await groupRef.create(group)

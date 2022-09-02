@@ -31,7 +31,7 @@ export const onCreateGroupContract = functions.firestore
         .doc(groupId)
         .update({
           mostRecentContractAddedTime: Date.now(),
-          numContracts: admin.firestore.FieldValue.increment(1),
+          totalContracts: admin.firestore.FieldValue.increment(1),
         })
   })
 
@@ -45,7 +45,7 @@ export const onDeleteGroupContract = functions.firestore
         .doc(groupId)
         .update({
           mostRecentContractAddedTime: Date.now(),
-          numContracts: admin.firestore.FieldValue.increment(-1),
+          totalContracts: admin.firestore.FieldValue.increment(-1),
         })
   })
 
@@ -59,7 +59,7 @@ export const onCreateGroupMember = functions.firestore
         .doc(groupId)
         .update({
           mostRecentActivityTime: Date.now(),
-          numMembers: admin.firestore.FieldValue.increment(1),
+          totalMembers: admin.firestore.FieldValue.increment(1),
         })
   })
 
@@ -73,7 +73,7 @@ export const onDeleteGroupMember = functions.firestore
         .doc(groupId)
         .update({
           mostRecentActivityTime: Date.now(),
-          numMembers: admin.firestore.FieldValue.increment(-1),
+          totalMembers: admin.firestore.FieldValue.increment(-1),
         })
   })
 
