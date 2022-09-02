@@ -20,7 +20,12 @@ import { Row } from 'web/components/layout/row'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
+import {
+  listMembers,
+  useGroup,
+  useGroupContractIds,
+  useMembers,
+} from 'web/hooks/use-group'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
@@ -157,7 +162,6 @@ export default function GroupPage(props: {
   const {
     contractsCount,
     creator,
-    members,
     traderScores,
     topTraders,
     creatorScores,
@@ -174,6 +178,7 @@ export default function GroupPage(props: {
 
   const user = useUser()
   const isAdmin = useAdmin()
+  const members = useMembers(group?.id) ?? props.members
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -183,9 +188,8 @@ export default function GroupPage(props: {
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
-  const { memberIds } = group
   const isCreator = user && group && user.id === group.creatorId
-  const isMember = user && memberIds.includes(user.id)
+  const isMember = user && members.map((m) => m.id).includes(user.id)
 
   const leaderboard = (
     <Col>
@@ -347,8 +351,7 @@ function GroupOverview(props: {
           {isCreator ? (
             <EditGroupButton className={'ml-1'} group={group} />
           ) : (
-            user &&
-            group.memberIds.includes(user?.id) && (
+            user && (
               <Row>
                 <JoinOrLeaveGroupButton group={group} />
               </Row>
@@ -425,7 +428,7 @@ function GroupMemberSearch(props: { members: User[]; group: Group }) {
   let { members } = props
 
   // Use static members on load, but also listen to member changes:
-  const listenToMembers = useMembers(group)
+  const listenToMembers = useMembers(group.id)
   if (listenToMembers) {
     members = listenToMembers
   }
@@ -547,6 +550,7 @@ function AddContractButton(props: { group: Group; user: User }) {
   const [open, setOpen] = useState(false)
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(false)
+  const groupContractIds = useGroupContractIds(group.id)
 
   async function addContractToCurrentGroup(contract: Contract) {
     if (contracts.map((c) => c.id).includes(contract.id)) {
@@ -634,7 +638,9 @@ function AddContractButton(props: { group: Group; user: User }) {
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
               cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
-              additionalFilter={{ excludeContractIds: group.contractIds }}
+              additionalFilter={{
+                excludeContractIds: groupContractIds,
+              }}
               highlightOptions={{
                 contractIds: contracts.map((c) => c.id),
                 highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
@@ -653,7 +659,7 @@ function JoinGroupButton(props: {
 }) {
   const { group, user } = props
   function addUserToGroup() {
-    if (user && !group.memberIds.includes(user.id)) {
+    if (user) {
       toast.promise(joinGroup(group, user.id), {
         loading: 'Joining group...',
         success: 'Joined group!',

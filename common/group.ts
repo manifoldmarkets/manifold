@@ -6,14 +6,16 @@ export type Group = {
   creatorId: string // User id
   createdTime: number
   mostRecentActivityTime: number
-  memberIds: string[] // User ids
   anyoneCanJoin: boolean
-  contractIds: string[]
-
+  numContracts: number
+  numMembers: number
   aboutPostId?: string
   chatDisabled?: boolean
-  mostRecentChatActivityTime?: number
   mostRecentContractAddedTime?: number
+  /** @deprecated - members and contracts now stored as subcollections*/
+  memberIds?: string[] // Deprecated
+  /** @deprecated - members and contracts now stored as subcollections*/
+  contractIds?: string[] // Deprecated
 }
 export const MAX_GROUP_NAME_LENGTH = 75
 export const MAX_ABOUT_LENGTH = 140

@@ -160,25 +160,44 @@ service cloud.firestore {
                                                                     .hasOnly(['isSeen', 'viewTime']);
     }
 
-     match /groups/{groupId} {
+    match /{somePath=**}/groupMembers/{memberId} {
+      allow read;
+    }
+
+    match /{somePath=**}/groupContracts/{contractId} {
+      allow read;
+    }
+
+	   match /groups/{groupId} {
           allow read;
           allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                            && request.resource.data.diff(resource.data)
                            .affectedKeys()
                            .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin', 'aboutPostId' ]);
-         allow update: if (request.auth.uid in resource.data.memberIds  || resource.data.anyoneCanJoin)
-                           && request.resource.data.diff(resource.data)
-                           .affectedKeys()
-                           .hasOnly([ 'contractIds', 'memberIds' ]);
+         //allow update: if (request.auth.uid in resource.data.memberIds  || resource.data.anyoneCanJoin)
+           //                && request.resource.data.diff(resource.data)
+             //              .affectedKeys()
+               //            .hasOnly([ 'contractIds', 'memberIds' ]);
           allow delete: if request.auth.uid == resource.data.creatorId;
 
-          function isMember() {
-            return request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+          match /groupContracts/{contractId} {
+              allow write: if isGroupMember();
+            }
+
+          match /groupMembers/{memberId}{
+             allow create: if request.auth.uid == request.resource.data.userId;
+              allow delete: if request.auth.uid == resource.data.userId;
+            }
+
+          function isGroupMember() {
+            return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
           }
+
           match /comments/{commentId} {
           	allow read;
-            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
+            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember();
           }
+
         }
 
       match /posts/{postId} {
