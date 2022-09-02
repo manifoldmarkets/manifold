@@ -188,6 +188,10 @@ service cloud.firestore {
                          .affectedKeys()
                          .hasOnly(['name', 'content']);
         allow delete: if isAdmin() || request.auth.uid == resource.data.creatorId;
+         match /comments/{commentId} {
+          	allow read;
+            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) ;
+          }
       }
   }
 }

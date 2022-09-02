@@ -41,6 +41,13 @@ const getTipsOnGroupQuery = (groupId: string) =>
     where('data.groupId', '==', groupId)
   )
 
+const getTipsOnPostQuery = (postId: string) =>
+  query(
+    txns,
+    where('category', '==', 'TIP'),
+    where('data.postId', '==', postId)
+  )
+
 export function listenForTipTxns(
   contractId: string,
   setTxns: (txns: TipTxn[]) => void
@@ -52,6 +59,13 @@ export function listenForTipTxnsOnGroup(
   setTxns: (txns: TipTxn[]) => void
 ) {
   return listenForValues<TipTxn>(getTipsOnGroupQuery(groupId), setTxns)
+}
+
+export function listenForTipTxnsOnPost(
+  postId: string,
+  setTxns: (txns: TipTxn[]) => void
+) {
+  return listenForValues<TipTxn>(getTipsOnPostQuery(postId), setTxns)
 }
 
 // Find all manalink Txns that are from or to this user

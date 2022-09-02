@@ -7,12 +7,19 @@ import {
   query,
   setDoc,
   where,
+  DocumentData,
+  DocumentReference,
 } from 'firebase/firestore'
 
 import { getValues, listenForValues } from './utils'
 import { db } from './init'
 import { User } from 'common/user'
-import { Comment, ContractComment, GroupComment } from 'common/comment'
+import {
+  Comment,
+  ContractComment,
+  GroupComment,
+  PostComment,
+} from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { track } from '@amplitude/analytics-browser'
 import { JSONContent } from '@tiptap/react'
@@ -24,7 +31,7 @@ export const MAX_COMMENT_LENGTH = 10000
 export async function createCommentOnContract(
   contractId: string,
   content: JSONContent,
-  commenter: User,
+  user: User,
   betId?: string,
   answerOutcome?: string,
   replyToCommentId?: string
@@ -32,28 +39,15 @@ export async function createCommentOnContract(
   const ref = betId
     ? doc(getCommentsCollection(contractId), betId)
     : doc(getCommentsCollection(contractId))
-  // contract slug and question are set via trigger
-  const comment = removeUndefinedProps({
-    id: ref.id,
-    commentType: 'contract',
+  return await createComment(
     contractId,
-    userId: commenter.id,
-    content: content,
-    createdTime: Date.now(),
-    userName: commenter.name,
-    userUsername: commenter.username,
-    userAvatarUrl: commenter.avatarUrl,
-    betId: betId,
-    answerOutcome: answerOutcome,
-    replyToCommentId: replyToCommentId,
-  })
-  track('comment', {
-    contractId,
-    commentId: ref.id,
-    betId: betId,
-    replyToCommentId: replyToCommentId,
-  })
-  return await setDoc(ref, comment)
+    'contract',
+    content,
+    user,
+    ref,
+    replyToCommentId,
+    { answerOutcome: answerOutcome, betId: betId }
+  )
 }
 export async function createCommentOnGroup(
   groupId: string,
@@ -62,10 +56,45 @@ export async function createCommentOnGroup(
   replyToCommentId?: string
 ) {
   const ref = doc(getCommentsOnGroupCollection(groupId))
+  return await createComment(
+    groupId,
+    'group',
+    content,
+    user,
+    ref,
+    replyToCommentId
+  )
+}
+
+export async function createCommentOnPost(
+  postId: string,
+  content: JSONContent,
+  user: User,
+  replyToCommentId?: string
+) {
+  const ref = doc(getCommentsOnPostCollection(postId))
+
+  return await createComment(
+    postId,
+    'post',
+    content,
+    user,
+    ref,
+    replyToCommentId
+  )
+}
+
+async function createComment(
+  surfaceId: string,
+  surfaceType: 'contract' | 'group' | 'post',
+  content: JSONContent,
+  user: User,
+  ref: DocumentReference<DocumentData>,
+  replyToCommentId?: string,
+  extraFields: { [key: string]: any } = {}
+) {
   const comment = removeUndefinedProps({
     id: ref.id,
-    commentType: 'group',
-    groupId,
     userId: user.id,
     content: content,
     createdTime: Date.now(),
@@ -73,11 +102,13 @@ export async function createCommentOnGroup(
     userUsername: user.username,
     userAvatarUrl: user.avatarUrl,
     replyToCommentId: replyToCommentId,
+    ...extraFields,
   })
-  track('group message', {
+
+  track(`${surfaceType} message`, {
     user,
     commentId: ref.id,
-    groupId,
+    surfaceId,
     replyToCommentId: replyToCommentId,
   })
   return await setDoc(ref, comment)
@@ -91,6 +122,10 @@ function getCommentsOnGroupCollection(groupId: string) {
   return collection(db, 'groups', groupId, 'comments')
 }
 
+function getCommentsOnPostCollection(postId: string) {
+  return collection(db, 'posts', postId, 'comments')
+}
+
 export async function listAllComments(contractId: string) {
   return await getValues<Comment>(
     query(getCommentsCollection(contractId), orderBy('createdTime', 'desc'))
@@ -100,6 +135,12 @@ export async function listAllComments(contractId: string) {
 export async function listAllCommentsOnGroup(groupId: string) {
   return await getValues<GroupComment>(
     query(getCommentsOnGroupCollection(groupId), orderBy('createdTime', 'desc'))
+  )
+}
+
+export async function listAllCommentsOnPost(postId: string) {
+  return await getValues<PostComment>(
+    query(getCommentsOnPostCollection(postId), orderBy('createdTime', 'desc'))
   )
 }
 
@@ -122,6 +163,16 @@ export function listenForCommentsOnGroup(
       getCommentsOnGroupCollection(groupId),
       orderBy('createdTime', 'desc')
     ),
+    setComments
+  )
+}
+
+export function listenForCommentsOnPost(
+  postId: string,
+  setComments: (comments: PostComment[]) => void
+) {
+  return listenForValues<PostComment>(
+    query(getCommentsOnPostCollection(postId), orderBy('createdTime', 'desc')),
     setComments
   )
 }

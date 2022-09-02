@@ -1,6 +1,6 @@
 import type { JSONContent } from '@tiptap/core'
 
-export type AnyCommentType = OnContract | OnGroup
+export type AnyCommentType = OnContract | OnGroup | OnPost
 
 // Currently, comments are created after the bet, not atomically with the bet.
 // They're uniquely identified by the pair contractId/betId.
@@ -34,5 +34,11 @@ type OnGroup = {
   groupId: string
 }
 
+type OnPost = {
+  commentType: 'post'
+  postId: string
+}
+
 export type ContractComment = Comment<OnContract>
 export type GroupComment = Comment<OnGroup>
+export type PostComment = Comment<OnPost>

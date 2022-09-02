@@ -16,17 +16,25 @@ import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
 import { UserLink } from 'web/components/user-link'
+import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
+import { PostComment } from 'common/comment'
+import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
+import { groupBy, sortBy } from 'lodash'
+import { PostCommentThread, CommentInput } from 'web/posts/post-comments'
+import { useCommentsOnPost } from 'web/hooks/use-comments'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const post = await getPostBySlug(slugs[0])
   const creator = post ? await getUser(post.creatorId) : null
+  const comments = post && (await listAllCommentsOnPost(post.id))
 
   return {
     props: {
       post: post,
       creator: creator,
+      comments: comments,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -37,14 +45,21 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function PostPage(props: { post: Post; creator: User }) {
+export default function PostPage(props: {
+  post: Post
+  creator: User
+  comments: PostComment[]
+}) {
   const [isShareOpen, setShareOpen] = useState(false)
+
+  const tips = useTipTxns({ postId: props.post.id })
+  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(props?.post.slug)}`
+  const updatedComments = useCommentsOnPost(props.post.id)
+  const comments = updatedComments ?? props.comments
 
   if (props.post == null) {
     return <Custom404 />
   }
-
-  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(props?.post.slug)}`
 
   return (
     <Page>
@@ -91,7 +106,56 @@ export default function PostPage(props: { post: Post; creator: User }) {
             <Content content={props.post.content} />
           </div>
         </div>
+
+        <Spacer h={2} />
+        <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
+          <PostCommentsActivity
+            post={props.post}
+            comments={comments}
+            tips={tips}
+            user={props.creator}
+          />
+        </div>
       </div>
     </Page>
+  )
+}
+
+export function PostCommentsActivity(props: {
+  post: Post
+  comments: PostComment[]
+  tips: CommentTipMap
+  user: User | null | undefined
+}) {
+  const { post, comments, user, tips } = props
+  const commentsByUserId = groupBy(comments, (c) => c.userId)
+  const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
+  const topLevelComments = sortBy(
+    commentsByParentId['_'] ?? [],
+    (c) => -c.createdTime
+  )
+
+  return (
+    <>
+      <CommentInput
+        className="mb-5"
+        post={post}
+        commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
+      />
+      {topLevelComments.map((parent) => (
+        <PostCommentThread
+          key={parent.id}
+          user={user}
+          post={post}
+          parentComment={parent}
+          threadComments={sortBy(
+            commentsByParentId[parent.id] ?? [],
+            (c) => c.createdTime
+          )}
+          tips={tips}
+          commentsByUserId={commentsByUserId}
+        />
+      ))}
+    </>
   )
 }
