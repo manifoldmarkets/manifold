@@ -103,11 +103,9 @@ export function AuthProvider(props: {
   }, [setAuthUser])
 
   const uid = authUser?.user.id
-  const username = authUser?.user.username
   useEffect(() => {
-    if (uid && username) {
+    if (uid) {
       identifyUser(uid)
-      setUserProperty('username', username)
       const userListener = listenForUser(uid, (user) => {
         setAuthUser((currAuthUser) =>
           currAuthUser && user ? { ...currAuthUser, user } : null
@@ -123,7 +121,14 @@ export function AuthProvider(props: {
         privateUserListener()
       }
     }
-  }, [uid, username, setAuthUser])
+  }, [uid, setAuthUser])
+
+  const username = authUser?.user.username
+  useEffect(() => {
+    if (username != null) {
+      setUserProperty('username', username)
+    }
+  }, [username])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
