@@ -7,12 +7,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import {
-  useGroupContractIds,
-  useGroups,
-  useMemberGroupIds,
-  useMemberIds,
-} from 'web/hooks/use-group'
+import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
@@ -180,7 +175,7 @@ export default function Groups(props: {
 
 export function GroupCard(props: { group: Group; creator: User | undefined }) {
   const { group, creator } = props
-  const groupContracts = useGroupContractIds(group.id)
+  const { totalContracts } = group
   return (
     <Col className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100">
       <Link href={groupPath(group.slug)}>
@@ -198,7 +193,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
       </Row>
-      <Row>{groupContracts.length} questions</Row>
+      <Row>{totalContracts} questions</Row>
       <Row className="text-sm text-gray-500">
         <GroupMembersList group={group} />
       </Row>
@@ -214,11 +209,11 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
 
 function GroupMembersList(props: { group: Group }) {
   const { group } = props
-  const memberIds = useMemberIds(group.id)
-  if (memberIds.length === 1) return <div />
+  const { totalMembers } = group
+  if (totalMembers === 1) return <div />
   return (
     <div className="text-neutral flex flex-wrap gap-1">
-      <span>{memberIds.length} members</span>
+      <span>{totalMembers} members</span>
     </div>
   )
 }
