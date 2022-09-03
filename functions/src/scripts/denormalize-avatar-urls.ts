@@ -3,12 +3,7 @@
 
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
-import {
-  DocumentCorrespondence,
-  findDiffs,
-  describeDiff,
-  applyDiff,
-} from './denormalize'
+import { findDiffs, describeDiff, applyDiff } from './denormalize'
 import { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 
 initAdmin()
@@ -79,43 +74,36 @@ if (require.main === module) {
         getAnswersByUserId(transaction),
       ])
 
-    const usersContracts = Array.from(
-      usersById.entries(),
-      ([id, doc]): DocumentCorrespondence => {
-        return [doc, contractsByUserId.get(id) || []]
-      }
-    )
-    const contractDiffs = findDiffs(
-      usersContracts,
+    const usersContracts = Array.from(usersById.entries(), ([id, doc]) => {
+      return [doc, contractsByUserId.get(id) || []] as const
+    })
+    const contractDiffs = findDiffs(usersContracts, [
       'avatarUrl',
-      'creatorAvatarUrl'
-    )
+      'creatorAvatarUrl',
+    ])
     console.log(`Found ${contractDiffs.length} contracts with mismatches.`)
     contractDiffs.forEach((d) => {
       console.log(describeDiff(d))
       applyDiff(transaction, d)
     })
 
-    const usersComments = Array.from(
-      usersById.entries(),
-      ([id, doc]): DocumentCorrespondence => {
-        return [doc, commentsByUserId.get(id) || []]
-      }
-    )
-    const commentDiffs = findDiffs(usersComments, 'avatarUrl', 'userAvatarUrl')
+    const usersComments = Array.from(usersById.entries(), ([id, doc]) => {
+      return [doc, commentsByUserId.get(id) || []] as const
+    })
+    const commentDiffs = findDiffs(usersComments, [
+      'avatarUrl',
+      'userAvatarUrl',
+    ])
     console.log(`Found ${commentDiffs.length} comments with mismatches.`)
     commentDiffs.forEach((d) => {
       console.log(describeDiff(d))
       applyDiff(transaction, d)
     })
 
-    const usersAnswers = Array.from(
-      usersById.entries(),
-      ([id, doc]): DocumentCorrespondence => {
-        return [doc, answersByUserId.get(id) || []]
-      }
-    )
-    const answerDiffs = findDiffs(usersAnswers, 'avatarUrl', 'avatarUrl')
+    const usersAnswers = Array.from(usersById.entries(), ([id, doc]) => {
+      return [doc, answersByUserId.get(id) || []] as const
+    })
+    const answerDiffs = findDiffs(usersAnswers, ['avatarUrl', 'avatarUrl'])
     console.log(`Found ${answerDiffs.length} answers with mismatches.`)
     answerDiffs.forEach((d) => {
       console.log(describeDiff(d))

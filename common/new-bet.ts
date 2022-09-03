@@ -31,7 +31,10 @@ import {
   floatingLesserEqual,
 } from './util/math'
 
-export type CandidateBet<T extends Bet = Bet> = Omit<T, 'id' | 'userId'>
+export type CandidateBet<T extends Bet = Bet> = Omit<
+  T,
+  'id' | 'userId' | 'userAvatarUrl' | 'userName' | 'userUsername'
+>
 export type BetInfo = {
   newBet: CandidateBet
   newPool?: { [outcome: string]: number }
@@ -322,7 +325,7 @@ export const getNewBinaryDpmBetInfo = (
 export const getNewMultiBetInfo = (
   outcome: string,
   amount: number,
-  contract: FreeResponseContract | MultipleChoiceContract,
+  contract: FreeResponseContract | MultipleChoiceContract
 ) => {
   const { pool, totalShares, totalBets } = contract
 

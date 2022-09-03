@@ -9,7 +9,10 @@ import { CPMMContract, DPMContract } from './contract'
 import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
 import { sumBy } from 'lodash'
 
-export type CandidateBet<T extends Bet> = Omit<T, 'id' | 'userId'>
+export type CandidateBet<T extends Bet> = Omit<
+  T,
+  'id' | 'userId' | 'userAvatarUrl' | 'userName' | 'userUsername'
+>
 
 export const getSellBetInfo = (bet: Bet, contract: DPMContract) => {
   const { pool, totalShares, totalBets } = contract
