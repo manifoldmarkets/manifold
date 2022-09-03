@@ -7,7 +7,12 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { useGroups, useMemberGroupIds, useMembers } from 'web/hooks/use-group'
+import {
+  useGroupContractIds,
+  useGroups,
+  useMemberGroupIds,
+  useMemberIds,
+} from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
@@ -18,7 +23,6 @@ import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
-import { UserLink } from 'web/components/user-link'
 
 export async function getStaticProps() {
   let groups = await listAllGroups().catch((_) => [])
@@ -73,10 +77,7 @@ export default function Groups(props: {
 
   // List groups with the highest question count, then highest member count
   // TODO use find-active-contracts to sort by?
-  const matches = sortBy(groups, [
-    (group) => -1 * group.contractIds.length,
-    (group) => -1 * group.memberIds.length,
-  ]).filter((g) =>
+  const matches = sortBy(groups, []).filter((g) =>
     searchInAny(
       query,
       g.name,
@@ -87,10 +88,7 @@ export default function Groups(props: {
 
   const matchesOrderedByRecentActivity = sortBy(groups, [
     (group) =>
-      -1 *
-      (group.mostRecentChatActivityTime ??
-        group.mostRecentContractAddedTime ??
-        group.mostRecentActivityTime),
+      -1 * (group.mostRecentContractAddedTime ?? group.mostRecentActivityTime),
   ]).filter((g) =>
     searchInAny(
       query,
@@ -124,37 +122,6 @@ export default function Groups(props: {
           <Tabs
             currentPageForAnalytics={'groups'}
             tabs={[
-              ...(user && memberGroupIds.length > 0
-                ? [
-                    {
-                      title: 'My Groups',
-                      content: (
-                        <Col>
-                          <input
-                            type="text"
-                            onChange={(e) => debouncedQuery(e.target.value)}
-                            placeholder="Search your groups"
-                            className="input input-bordered mb-4 w-full"
-                          />
-
-                          <div className="flex flex-wrap justify-center gap-4">
-                            {matchesOrderedByRecentActivity
-                              .filter((match) =>
-                                memberGroupIds.includes(match.id)
-                              )
-                              .map((group) => (
-                                <GroupCard
-                                  key={group.id}
-                                  group={group}
-                                  creator={creatorsDict[group.creatorId]}
-                                />
-                              ))}
-                          </div>
-                        </Col>
-                      ),
-                    },
-                  ]
-                : []),
               {
                 title: 'All',
                 content: (
@@ -178,6 +145,31 @@ export default function Groups(props: {
                   </Col>
                 ),
               },
+              {
+                title: 'My Groups',
+                content: (
+                  <Col>
+                    <input
+                      type="text"
+                      onChange={(e) => debouncedQuery(e.target.value)}
+                      placeholder="Search your groups"
+                      className="input input-bordered mb-4 w-full"
+                    />
+
+                    <div className="flex flex-wrap justify-center gap-4">
+                      {matchesOrderedByRecentActivity
+                        .filter((match) => memberGroupIds.includes(match.id))
+                        .map((group) => (
+                          <GroupCard
+                            key={group.id}
+                            group={group}
+                            creator={creatorsDict[group.creatorId]}
+                          />
+                        ))}
+                    </div>
+                  </Col>
+                ),
+              },
             ]}
           />
         </Col>
@@ -188,6 +180,7 @@ export default function Groups(props: {
 
 export function GroupCard(props: { group: Group; creator: User | undefined }) {
   const { group, creator } = props
+  const groupContracts = useGroupContractIds(group.id)
   return (
     <Col className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100">
       <Link href={groupPath(group.slug)}>
@@ -205,7 +198,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
       </Row>
-      <Row>{group.contractIds.length} questions</Row>
+      <Row>{groupContracts.length} questions</Row>
       <Row className="text-sm text-gray-500">
         <GroupMembersList group={group} />
       </Row>
@@ -221,23 +214,11 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
 
 function GroupMembersList(props: { group: Group }) {
   const { group } = props
-  const maxMembersToShow = 3
-  const members = useMembers(group, maxMembersToShow).filter(
-    (m) => m.id !== group.creatorId
-  )
-  if (group.memberIds.length === 1) return <div />
+  const memberIds = useMemberIds(group.id)
+  if (memberIds.length === 1) return <div />
   return (
     <div className="text-neutral flex flex-wrap gap-1">
-      <span className={'text-gray-500'}>Other members</span>
-      {members.slice(0, maxMembersToShow).map((member, i) => (
-        <div key={member.id} className={'flex-shrink'}>
-          <UserLink name={member.name} username={member.username} />
-          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
-        </div>
-      ))}
-      {group.memberIds.length > maxMembersToShow && (
-        <span> & {group.memberIds.length - maxMembersToShow} more</span>
-      )}
+      <span>{memberIds.length} members</span>
     </div>
   )
 }

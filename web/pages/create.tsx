@@ -20,7 +20,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { canModifyGroupContracts, getGroup } from 'web/lib/firebase/groups'
+import { getGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -139,7 +139,7 @@ export function NewContract(props: {
   useEffect(() => {
     if (groupId)
       getGroup(groupId).then((group) => {
-        if (group && canModifyGroupContracts(group, creator.id)) {
+        if (group) {
           setSelectedGroup(group)
           setShowGroupSelector(false)
         }
