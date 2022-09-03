@@ -223,7 +223,7 @@ const ImageCarousel = (props: { images: MarketImage[]; url: string }) => {
 const MarketCarousel = (props: { slug: string }) => {
   const { slug } = props
   const q = contractsByGroupSlugQuery(slug)
-  const { allItems, getNext, isLoading } = usePagination({ q, pageSize: 6 })
+  const { allItems, getNext, isLoading } = usePagination({ q, pageSize: 12 })
   return isLoading ? (
     <LoadingIndicator className="mt-10" />
   ) : (
