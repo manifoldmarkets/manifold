@@ -25,11 +25,11 @@ import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
-  let groups = await listAllGroups().catch((_) => [])
+  const groups = await listAllGroups().catch((_) => [])
 
   // mqp: temporary fix to make dev deploy while Ian works on migrating groups away
   // from the document array member and contracts representation
-  groups = groups.filter((g) => g.contractIds != null && g.memberIds != null)
+  // groups = groups.filter((g) => g.contractIds != null && g.memberIds != null)
 
   const creators = await Promise.all(
     groups.map((group) => getUser(group.creatorId))
