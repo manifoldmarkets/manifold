@@ -264,7 +264,12 @@ export default class App {
 
 
                 this.firestore.addNewUser(user);
-                await Manifold.saveTwitchDetails(sessionData.apiKey, twitchUser.display_name, user.data.controlToken);
+                try {
+                    await Manifold.saveTwitchDetails(sessionData.apiKey, twitchUser.display_name, user.data.controlToken);
+                } catch (e) {
+                    log.trace(e);
+                    throw new Error("Failed to save Twitch details to Manifold");
+                }
 
                 response.send(`<html><head><script>window.location.href="${sessionData.redirectURL}"</script></head><html>`);
             } catch (e) {

@@ -32,7 +32,7 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
         if (errorMessage === "Insufficient balance.") throw new InsufficientBalanceException();
         if (errorMessage === "Balance must be at least 100.") throw new InsufficientBalanceException();
         if (r.status === 403) throw new ForbiddenException(errorMessage);
-        if (r.status === 404) throw new ResourceNotFoundException(errorMessage);
+        if (r.status === 404) throw new ResourceNotFoundException(url);
         throw new Error(errorMessage + (error.details ? " Details: " + JSON.stringify(error.details) : ""));
     }
     return r;
