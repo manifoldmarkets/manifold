@@ -1,10 +1,5 @@
 import { ClockIcon } from '@heroicons/react/outline'
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  UsersIcon,
-} from '@heroicons/react/solid'
-import clsx from 'clsx'
+import { UsersIcon } from '@heroicons/react/solid'
 import {
   BinaryContract,
   Contract,
@@ -15,10 +10,10 @@ import dayjs, { Dayjs } from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import { keyBy, mapValues, sortBy, throttle } from 'lodash'
+import { keyBy, mapValues, sortBy } from 'lodash'
 import Image, { ImageProps, StaticImageData } from 'next/image'
 import Link from 'next/link'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { DateTimeTooltip } from 'web/components/datetime-tooltip'
 import { Col } from 'web/components/layout/col'
@@ -33,6 +28,7 @@ import mpox_pic from './_cspi/Monkeypox_Cases.png'
 import race_pic from './_cspi/Supreme_Court_Ban_Race_in_College_Admissions.png'
 import { SiteLink } from 'web/components/site-link'
 import { getProbability } from 'common/calculate'
+import { Carousel } from 'web/components/carousel'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -73,7 +69,7 @@ const Salem = {
     },
     {
       marketUrl:
-        'https://salemcenter.manifold.markets/SalemCenter/over-100000-monkeypox-cases-in-2022',
+        'https://salemcenter.manifold.markets/SalemCenter/supreme-court-ban-race-in-college-a',
       image: race_pic,
     },
   ],
@@ -126,7 +122,7 @@ export async function getStaticProps() {
   const markets = Object.fromEntries(groups.map((g, i) => [g.id, contracts[i]]))
 
   const groupMap = keyBy(groups, 'id')
-  const numPeople = mapValues(groupMap, (g) => g?.memberIds.length)
+  const numPeople = mapValues(groupMap, (g) => g?.totalMembers)
   const slugs = mapValues(groupMap, 'slug')
 
   return { props: { markets, numPeople, slugs }, revalidate: 60 * 10 }
@@ -252,60 +248,5 @@ const NaturalImage = (props: ImageProps) => {
         setRatio(naturalWidth / naturalHeight)
       }
     />
-  )
-}
-
-function Carousel(props: { children: ReactNode; className?: string }) {
-  const { children, className } = props
-
-  const ref = useRef<HTMLDivElement>(null)
-
-  const th = (f: () => any) => throttle(f, 500, { trailing: false })
-  const scrollLeft = th(() =>
-    ref.current?.scrollBy({ left: -ref.current.clientWidth })
-  )
-  const scrollRight = th(() =>
-    ref.current?.scrollBy({ left: ref.current.clientWidth })
-  )
-
-  const [atFront, setAtFront] = useState(true)
-  const [atBack, setAtBack] = useState(false)
-  const onScroll = throttle(() => {
-    if (ref.current) {
-      const { scrollLeft, clientWidth, scrollWidth } = ref.current
-      setAtFront(scrollLeft < 80)
-      setAtBack(scrollWidth - (clientWidth + scrollLeft) < 80)
-    }
-  }, 500)
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(onScroll, [])
-
-  return (
-    <div className={clsx('relative', className)}>
-      <Row
-        className="scrollbar-hide w-full gap-4 overflow-x-auto scroll-smooth"
-        ref={ref}
-        onScroll={onScroll}
-      >
-        {children}
-      </Row>
-      {!atFront && (
-        <div
-          className="absolute left-0 top-0 bottom-0 z-10 flex w-10 cursor-pointer items-center justify-center hover:bg-indigo-100/30"
-          onMouseDown={scrollLeft}
-        >
-          <ChevronLeftIcon className="h-7 w-7 rounded-full bg-indigo-50 text-indigo-700" />
-        </div>
-      )}
-      {!atBack && (
-        <div
-          className="absolute right-0 top-0 bottom-0 z-10 flex w-10 cursor-pointer items-center justify-center hover:bg-indigo-100/30"
-          onMouseDown={scrollRight}
-        >
-          <ChevronRightIcon className="h-7 w-7 rounded-full bg-indigo-50 text-indigo-700" />
-        </div>
-      )}
-    </div>
   )
 }

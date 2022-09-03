@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
@@ -24,26 +25,23 @@ export function FeedLiquidity(props: {
   const isSelf = user?.id === userId
 
   return (
-    <>
-      <Row className="flex w-full gap-2 pt-3">
-        {isSelf ? (
-          <Avatar avatarUrl={user.avatarUrl} username={user.username} />
-        ) : bettor ? (
-          <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
-        ) : (
-          <div className="relative px-1">
-            <EmptyAvatar />
-          </div>
-        )}
-        <div className={'min-w-0 flex-1 py-1.5'}>
-          <LiquidityStatusText
-            liquidity={liquidity}
-            isSelf={isSelf}
-            bettor={bettor}
-          />
+    <Row className="flex w-full gap-2 pt-3">
+      {isSelf ? (
+        <Avatar avatarUrl={user.avatarUrl} username={user.username} />
+      ) : bettor ? (
+        <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
+      ) : (
+        <div className="relative px-1">
+          <EmptyAvatar />
         </div>
-      </Row>
-    </>
+      )}
+      <LiquidityStatusText
+        liquidity={liquidity}
+        isSelf={isSelf}
+        bettor={bettor}
+        className={'flex-1'}
+      />
+    </Row>
   )
 }
 
@@ -51,8 +49,9 @@ export function LiquidityStatusText(props: {
   liquidity: LiquidityProvision
   isSelf: boolean
   bettor?: User
+  className?: string
 }) {
-  const { liquidity, bettor, isSelf } = props
+  const { liquidity, bettor, isSelf, className } = props
   const { amount, createdTime } = liquidity
 
   // TODO: Withdrawn liquidity will never be shown, since liquidity amounts currently are zeroed out upon withdrawal.
@@ -60,7 +59,7 @@ export function LiquidityStatusText(props: {
   const money = formatMoney(Math.abs(amount))
 
   return (
-    <div className="text-sm text-gray-500">
+    <div className={clsx(className, 'text-sm text-gray-500')}>
       {bettor ? (
         <UserLink name={bettor.name} username={bettor.username} />
       ) : (

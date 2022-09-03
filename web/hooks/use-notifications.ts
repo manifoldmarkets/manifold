@@ -16,11 +16,7 @@ export type NotificationGroup = {
 function useNotifications(privateUser: PrivateUser) {
   const result = useFirestoreQueryData(
     ['notifications-all', privateUser.id],
-    getNotificationsQuery(privateUser.id),
-    { subscribe: true, includeMetadataChanges: true },
-    // Temporary workaround for react-query bug:
-    // https://github.com/invertase/react-query-firebase/issues/25
-    { refetchOnMount: 'always' }
+    getNotificationsQuery(privateUser.id)
   )
 
   const notifications = useMemo(() => {

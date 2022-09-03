@@ -21,7 +21,7 @@ import { generateNewApiKey } from 'web/lib/api/api-key'
 import { TwitchPanel } from 'web/components/profile/twitch-panel'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
 function EditUserField(props: {

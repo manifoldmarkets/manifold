@@ -1,85 +1,5 @@
-import { sanitizeHtml } from './sanitizer'
 import { ParsedRequest } from './types'
-
-function getCss(theme: string, fontSize: string) {
-  let background = 'white'
-  let foreground = 'black'
-  let radial = 'lightgray'
-
-  if (theme === 'dark') {
-    background = 'black'
-    foreground = 'white'
-    radial = 'dimgray'
-  }
-  // To use Readex Pro: `font-family: 'Readex Pro', sans-serif;`
-  return `
-    @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Readex+Pro:wght@400;700&display=swap');
-
-    body {
-        background: ${background};
-        background-image: radial-gradient(circle at 25px 25px, ${radial} 2%, transparent 0%), radial-gradient(circle at 75px 75px, ${radial} 2%, transparent 0%);
-        background-size: 100px 100px;
-        height: 100vh;
-        font-family: "Readex Pro", sans-serif;
-    }
-
-    code {
-        color: #D400FF;
-        font-family: 'Vera';
-        white-space: pre-wrap;
-        letter-spacing: -5px;
-    }
-
-    code:before, code:after {
-        content: '\`';
-    }
-
-    .logo-wrapper {
-        display: flex;
-        align-items: center;
-        align-content: center;
-        justify-content: center;
-        justify-items: center;
-    }
-
-    .logo {
-        margin: 0 75px;
-    }
-
-    .plus {
-        color: #BBB;
-        font-family: Times New Roman, Verdana;
-        font-size: 100px;
-    }
-
-    .spacer {
-        margin: 150px;
-    }
-
-    .emoji {
-        height: 1em;
-        width: 1em;
-        margin: 0 .05em 0 .1em;
-        vertical-align: -0.1em;
-    }
-    
-    .heading {
-        font-family: 'Major Mono Display', monospace;
-        font-size: ${sanitizeHtml(fontSize)};
-        font-style: normal;
-        color: ${foreground};
-        line-height: 1.8;
-    }
-    
-    .font-major-mono {
-      font-family: "Major Mono Display", monospace;
-    }
-
-    .text-primary {
-      color: #11b981;
-    }
-    `
-}
+import { getTemplateCss } from './template-css'
 
 export function getHtml(parsedReq: ParsedRequest) {
   const {
@@ -92,6 +12,7 @@ export function getHtml(parsedReq: ParsedRequest) {
     creatorUsername,
     creatorAvatarUrl,
     numericValue,
+    resolution,
   } = parsedReq
   const MAX_QUESTION_CHARS = 100
   const truncatedQuestion =
@@ -99,6 +20,49 @@ export function getHtml(parsedReq: ParsedRequest) {
       ? question.slice(0, MAX_QUESTION_CHARS) + '...'
       : question
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
+
+  let resolutionColor = 'text-primary'
+  let resolutionString = 'YES'
+  switch (resolution) {
+    case 'YES':
+      break
+    case 'NO':
+      resolutionColor = 'text-red-500'
+      resolutionString = 'NO'
+      break
+    case 'CANCEL':
+      resolutionColor = 'text-yellow-500'
+      resolutionString = 'N/A'
+      break
+    case 'MKT':
+      resolutionColor = 'text-blue-500'
+      resolutionString = numericValue ? numericValue : probability
+      break
+  }
+
+  const resolutionDiv = `
+        <span class='text-center ${resolutionColor}'>
+          <div class="text-8xl">
+              ${resolutionString}
+            </div>
+          <div class="text-4xl">${
+            resolution === 'CANCEL' ? '' : 'resolved'
+          }</div>
+        </span>`
+
+  const probabilityDiv = `
+        <span class='text-primary text-center'>
+          <div class="text-8xl">${probability}</div>
+          <div class="text-4xl">chance</div>
+        </span>`
+
+  const numericValueDiv = `
+        <span class='text-blue-500 text-center'> 
+           <div class="text-8xl ">${numericValue}</div>
+          <div class="text-4xl">expected</div>
+        </span>
+      `
+
   return `<!DOCTYPE html>
 <html>
     <head>
@@ -108,7 +72,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <style>
-        ${getCss(theme, fontSize)}
+        ${getTemplateCss(theme, fontSize)}
     </style>
   <body>
     <div class="px-24">
@@ -148,21 +112,20 @@ export function getHtml(parsedReq: ParsedRequest) {
         <div class="text-indigo-700 text-6xl leading-tight">
           ${truncatedQuestion}
         </div>
-        <div class="flex flex-col text-primary">
-          <div class="text-8xl">${probability}</div>
-          <div class="text-4xl">${probability !== '' ? 'chance' : ''}</div>
-          <span class='text-blue-500 text-center'> 
-           <div class="text-8xl ">${
-             numericValue !== '' && probability === '' ? numericValue : ''
-           }</div>
-          <div class="text-4xl">${numericValue !== '' ? 'expected' : ''}</div>
-          </span>
+        <div class="flex flex-col">
+                    ${
+                      resolution
+                        ? resolutionDiv
+                        : numericValue
+                        ? numericValueDiv
+                        : probabilityDiv
+                    }
         </div>
       </div>
 
       <!-- Metadata -->
       <div class="absolute bottom-16">
-        <div class="text-gray-500 text-3xl">
+        <div class="text-gray-500 text-3xl max-w-[80vw]">
           ${metadata}
         </div>
       </div>

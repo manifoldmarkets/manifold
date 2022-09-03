@@ -35,7 +35,7 @@ export default Node.create<IframeOptions>({
       HTMLAttributes: {
         class: 'iframe-wrapper' + ' ' + wrapperClasses,
         // Tailwind JIT doesn't seem to pick up `pb-[20rem]`, so we hack this in:
-        style: 'padding-bottom: 20rem;',
+        style: 'padding-bottom: 20rem; ',
       },
     }
   },
@@ -46,6 +46,9 @@ export default Node.create<IframeOptions>({
         default: null,
       },
       frameborder: {
+        default: 0,
+      },
+      height: {
         default: 0,
       },
       allowfullscreen: {
@@ -60,6 +63,11 @@ export default Node.create<IframeOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
+    this.options.HTMLAttributes.style =
+      this.options.HTMLAttributes.style +
+      ' height: ' +
+      HTMLAttributes.height +
+      ';'
     return [
       'div',
       this.options.HTMLAttributes,

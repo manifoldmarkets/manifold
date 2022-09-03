@@ -157,6 +157,10 @@ export function listenForUserContracts(
   return listenForValues<Contract>(q, setContracts)
 }
 
+export function getUserBetContracts(userId: string) {
+  return getValues<Contract>(getUserBetContractsQuery(userId))
+}
+
 export function getUserBetContractsQuery(userId: string) {
   return query(
     contracts,

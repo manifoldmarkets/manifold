@@ -7,10 +7,9 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { useGroups, useMemberGroupIds, useMembers } from 'web/hooks/use-group'
-import { useUser } from 'web/hooks/use-user'
+import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
-import { getUser, User } from 'web/lib/firebase/users'
+import { getUser, getUserAndPrivateUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
@@ -18,9 +17,13 @@ import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
-import { UserLink } from 'web/components/user-link'
+import { GetServerSideProps } from 'next'
+import { authenticateOnServer } from 'web/lib/firebase/server-auth'
+import { useUser } from 'web/hooks/use-user'
 
-export async function getStaticProps() {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const creds = await authenticateOnServer(ctx)
+  const auth = creds ? await getUserAndPrivateUser(creds.uid) : null
   const groups = await listAllGroups().catch((_) => [])
 
   const creators = await Promise.all(
@@ -30,24 +33,19 @@ export async function getStaticProps() {
     creators.map((creator) => [creator.id, creator])
   )
 
-  return {
-    props: {
-      groups: groups,
-      creatorsDict,
-    },
-
-    revalidate: 60, // regenerate after a minute
-  }
+  return { props: { auth, groups, creatorsDict } }
 }
 
 export default function Groups(props: {
+  auth: { user: User } | null
   groups: Group[]
   creatorsDict: { [k: string]: User }
 }) {
+  //TODO: do we really need the creatorsDict?
   const [creatorsDict, setCreatorsDict] = useState(props.creatorsDict)
-
+  const serverUser = props.auth?.user
   const groups = useGroups() ?? props.groups
-  const user = useUser()
+  const user = useUser() ?? serverUser
   const memberGroupIds = useMemberGroupIds(user) || []
 
   useEffect(() => {
@@ -69,10 +67,7 @@ export default function Groups(props: {
 
   // List groups with the highest question count, then highest member count
   // TODO use find-active-contracts to sort by?
-  const matches = sortBy(groups, [
-    (group) => -1 * group.contractIds.length,
-    (group) => -1 * group.memberIds.length,
-  ]).filter((g) =>
+  const matches = sortBy(groups, []).filter((g) =>
     searchInAny(
       query,
       g.name,
@@ -83,10 +78,7 @@ export default function Groups(props: {
 
   const matchesOrderedByRecentActivity = sortBy(groups, [
     (group) =>
-      -1 *
-      (group.mostRecentChatActivityTime ??
-        group.mostRecentContractAddedTime ??
-        group.mostRecentActivityTime),
+      -1 * (group.mostRecentContractAddedTime ?? group.mostRecentActivityTime),
   ]).filter((g) =>
     searchInAny(
       query,
@@ -120,7 +112,7 @@ export default function Groups(props: {
           <Tabs
             currentPageForAnalytics={'groups'}
             tabs={[
-              ...(user && memberGroupIds.length > 0
+              ...(user
                 ? [
                     {
                       title: 'My Groups',
@@ -143,6 +135,8 @@ export default function Groups(props: {
                                   key={group.id}
                                   group={group}
                                   creator={creatorsDict[group.creatorId]}
+                                  user={user}
+                                  isMember={memberGroupIds.includes(group.id)}
                                 />
                               ))}
                           </div>
@@ -168,6 +162,8 @@ export default function Groups(props: {
                           key={group.id}
                           group={group}
                           creator={creatorsDict[group.creatorId]}
+                          user={user}
+                          isMember={memberGroupIds.includes(group.id)}
                         />
                       ))}
                     </div>
@@ -182,8 +178,14 @@ export default function Groups(props: {
   )
 }
 
-export function GroupCard(props: { group: Group; creator: User | undefined }) {
-  const { group, creator } = props
+export function GroupCard(props: {
+  group: Group
+  creator: User | undefined
+  user: User | undefined | null
+  isMember: boolean
+}) {
+  const { group, creator, user, isMember } = props
+  const { totalContracts } = group
   return (
     <Col className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100">
       <Link href={groupPath(group.slug)}>
@@ -201,7 +203,7 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
       </Row>
-      <Row>{group.contractIds.length} questions</Row>
+      <Row>{totalContracts} questions</Row>
       <Row className="text-sm text-gray-500">
         <GroupMembersList group={group} />
       </Row>
@@ -209,7 +211,12 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
         <div className="text-sm text-gray-500">{group.about}</div>
       </Row>
       <Col className={'mt-2 h-full items-start justify-end'}>
-        <JoinOrLeaveGroupButton group={group} className={'z-10 w-24'} />
+        <JoinOrLeaveGroupButton
+          group={group}
+          className={'z-10 w-24'}
+          user={user}
+          isMember={isMember}
+        />
       </Col>
     </Col>
   )
@@ -217,23 +224,11 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
 
 function GroupMembersList(props: { group: Group }) {
   const { group } = props
-  const maxMembersToShow = 3
-  const members = useMembers(group, maxMembersToShow).filter(
-    (m) => m.id !== group.creatorId
-  )
-  if (group.memberIds.length === 1) return <div />
+  const { totalMembers } = group
+  if (totalMembers === 1) return <div />
   return (
     <div className="text-neutral flex flex-wrap gap-1">
-      <span className={'text-gray-500'}>Other members</span>
-      {members.slice(0, maxMembersToShow).map((member, i) => (
-        <div key={member.id} className={'flex-shrink'}>
-          <UserLink name={member.name} username={member.username} />
-          {members.length > 1 && i !== members.length - 1 && <span>,</span>}
-        </div>
-      ))}
-      {group.memberIds.length > maxMembersToShow && (
-        <span> & {group.memberIds.length - maxMembersToShow} more</span>
-      )}
+      <span>{totalMembers} members</span>
     </div>
   )
 }

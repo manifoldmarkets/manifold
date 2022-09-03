@@ -36,6 +36,8 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
 import { getOpenGraphProps } from 'common/contract-details'
+import { ContractDescription } from 'web/components/contract/contract-description'
+import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import {
   ContractLeaderboard,
   ContractTopTrades,
@@ -168,9 +170,6 @@ export function ContractPageContent(
     [bets]
   )
 
-  // Sort for now to see if bug is fixed.
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-
   const tips = useTipTxns({ contractId: contract.id })
 
   const [showConfetti, setShowConfetti] = useState(false)
@@ -235,6 +234,8 @@ export function ContractPageContent(
         )}
 
         <ContractOverview contract={contract} bets={nonChallengeBets} />
+        <ExtraContractActionsRow contract={contract} />
+        <ContractDescription className="mb-6 px-2" contract={contract} />
 
         {outcomeType === 'NUMERIC' && (
           <AlertBox

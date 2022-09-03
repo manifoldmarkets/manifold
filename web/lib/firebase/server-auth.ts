@@ -1,165 +1,81 @@
-import fetch from 'node-fetch'
 import { IncomingMessage, ServerResponse } from 'http'
-import { FIREBASE_CONFIG, PROJECT_ID } from 'common/envs/constants'
-import { getFunctionUrl } from 'common/api'
-import { UserCredential } from 'firebase/auth'
-import {
-  getTokensFromCookies,
-  setTokenCookies,
-  deleteTokenCookies,
-} from './auth'
+import { Auth as FirebaseAuth, User as FirebaseUser } from 'firebase/auth'
+import { AUTH_COOKIE_NAME } from 'common/envs/constants'
+import { getCookies } from 'web/lib/util/cookie'
 import {
   GetServerSideProps,
   GetServerSidePropsContext,
   GetServerSidePropsResult,
 } from 'next'
 
-// server firebase SDK
-import * as admin from 'firebase-admin'
-
 // client firebase SDK
 import { app as clientApp } from './init'
-import { getAuth, signInWithCustomToken } from 'firebase/auth'
-
-const ensureApp = async () => {
-  // Note: firebase-admin can only be imported from a server context,
-  // because it relies on Node standard library dependencies.
-  if (admin.apps.length === 0) {
-    // never initialize twice
-    return admin.initializeApp({ projectId: PROJECT_ID })
-  }
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return admin.apps[0]!
-}
-
-const requestFirebaseIdToken = async (refreshToken: string) => {
-  // See https://firebase.google.com/docs/reference/rest/auth/#section-refresh-token
-  const refreshUrl = new URL('https://securetoken.googleapis.com/v1/token')
-  refreshUrl.searchParams.append('key', FIREBASE_CONFIG.apiKey)
-  const result = await fetch(refreshUrl.toString(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    }),
-  })
-  if (!result.ok) {
-    throw new Error(`Could not refresh ID token: ${await result.text()}`)
-  }
-  return (await result.json()) as { id_token: string; refresh_token: string }
-}
-
-const requestManifoldCustomToken = async (idToken: string) => {
-  const functionUrl = getFunctionUrl('getcustomtoken')
-  const result = await fetch(functionUrl, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-    },
-  })
-  if (!result.ok) {
-    throw new Error(`Could not get custom token: ${await result.text()}`)
-  }
-  return (await result.json()) as { token: string }
-}
+import { getAuth, updateCurrentUser } from 'firebase/auth'
 
 type RequestContext = {
   req: IncomingMessage
   res: ServerResponse
 }
 
-const authAndRefreshTokens = async (ctx: RequestContext) => {
-  const adminAuth = (await ensureApp()).auth()
-  const clientAuth = getAuth(clientApp)
-  console.debug('Initialized Firebase auth libraries.')
+// The Firebase SDK doesn't really support persisting the logged-in state between
+// devices, or anything like that. To get it from the client to the server:
+//
+// 1. We pack up the user by calling (the undocumented) User.toJSON(). This is the
+//    same way the Firebase SDK saves it to disk, so it's gonna have the right stuff.
+//
+// 2. We put it into a cookie and read the cookie out here.
+//
+// 3. We use the Firebase "persistence manager" to write the cookie value into the persistent
+//    store on the server (an in-memory store), just as if the SDK had saved the user itself.
+//
+// 4. We ask the persistence manager for the current user, which reads what we just wrote,
+//    and creates a real puffed-up internal user object from the serialized user.
+//
+// 5. We set that user to be the current Firebase user in the SDK.
+//
+// 6. We ask for the ID token, which will refresh it if necessary (i.e. if this cookie
+//    is from an old browser session), so that we know the SDK is prepared to do real
+//    Firebase queries.
+//
+// This strategy should be robust, since it's repurposing Firebase's internal persistence
+// machinery, but the details may eventually need updating for new versions of the SDK.
+//
+// References:
+// Persistence manager: https://github.com/firebase/firebase-js-sdk/blob/39f4635ebc07316661324145f1b8c27f9bd7aedb/packages/auth/src/core/persistence/persistence_user_manager.ts#L64
+// Token manager: https://github.com/firebase/firebase-js-sdk/blob/39f4635ebc07316661324145f1b8c27f9bd7aedb/packages/auth/src/core/user/token_manager.ts#L76
 
-  let { id, refresh, custom } = getTokensFromCookies(ctx.req)
-
-  // step 0: if you have no refresh token you are logged out
-  if (refresh == null) {
-    console.debug('User is unauthenticated.')
-    return null
-  }
-
-  console.debug('User may be authenticated; checking cookies.')
-
-  // step 1: given a valid refresh token, ensure a valid ID token
-  if (id != null) {
-    // if they have an ID token, throw it out if it's invalid/expired
-    try {
-      await adminAuth.verifyIdToken(id)
-      console.debug('Verified ID token.')
-    } catch {
-      id = undefined
-      console.debug('Invalid existing ID token.')
+interface FirebaseAuthInternal extends FirebaseAuth {
+  persistenceManager: {
+    fullUserKey: string
+    getCurrentUser: () => Promise<FirebaseUser | null>
+    persistence: {
+      _set: (k: string, obj: Record<string, unknown>) => Promise<void>
     }
   }
-  if (id == null) {
-    // ask for a new one from google using the refresh token
-    try {
-      const resp = await requestFirebaseIdToken(refresh)
-      console.debug('Obtained fresh ID token from Firebase.')
-      id = resp.id_token
-      refresh = resp.refresh_token
-    } catch (e) {
-      // big unexpected problem -- functionally, they are not logged in
-      console.error(e)
-      return null
-    }
-  }
-
-  // step 2: given a valid ID token, ensure a valid custom token, and sign in
-  // to the client SDK with the custom token
-  if (custom != null) {
-    // sign in with this token, or throw it out if it's invalid/expired
-    try {
-      const creds = await signInWithCustomToken(clientAuth, custom)
-      console.debug('Signed in with custom token.')
-      return { creds, id, refresh, custom }
-    } catch {
-      custom = undefined
-      console.debug('Invalid existing custom token.')
-    }
-  }
-  if (custom == null) {
-    // ask for a new one from our cloud functions using the ID token, then sign in
-    try {
-      const resp = await requestManifoldCustomToken(id)
-      console.debug('Obtained fresh custom token from backend.')
-      custom = resp.token
-      const creds = await signInWithCustomToken(clientAuth, custom)
-      console.debug('Signed in with custom token.')
-      return { creds, id, refresh, custom }
-    } catch (e) {
-      // big unexpected problem -- functionally, they are not logged in
-      console.error(e)
-      return null
-    }
-  }
-  return null
 }
 
 export const authenticateOnServer = async (ctx: RequestContext) => {
-  console.debug('Server authentication sequence starting.')
-  const tokens = await authAndRefreshTokens(ctx)
-  console.debug('Finished checking and refreshing tokens.')
-  const creds = tokens?.creds
-  try {
-    if (tokens == null) {
-      deleteTokenCookies(ctx.res)
-      console.debug('Not logged in; cleared token cookies.')
-    } else {
-      setTokenCookies(tokens, ctx.res)
-      console.debug('Logged in; set current token cookies.')
-    }
-  } catch (e) {
-    // definitely not supposed to happen, but let's be maximally robust
-    console.error(e)
+  const user = getCookies(ctx.req.headers.cookie ?? '')[AUTH_COOKIE_NAME]
+  if (user == null) {
+    console.debug('User is unauthenticated.')
+    return null
   }
-  return creds ?? null
+  try {
+    const deserializedUser = JSON.parse(user)
+    const clientAuth = getAuth(clientApp) as FirebaseAuthInternal
+    const persistenceManager = clientAuth.persistenceManager
+    const persistence = persistenceManager.persistence
+    await persistence._set(persistenceManager.fullUserKey, deserializedUser)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const fbUser = (await persistenceManager.getCurrentUser())!
+    await fbUser.getIdToken() // forces a refresh if necessary
+    await updateCurrentUser(clientAuth, fbUser)
+    console.debug('Signed in with user from cookie.')
+    return fbUser
+  } catch (e) {
+    console.error(e)
+    return null
+  }
 }
 
 // note that we might want to define these types more generically if we want better
@@ -167,7 +83,7 @@ export const authenticateOnServer = async (ctx: RequestContext) => {
 
 type GetServerSidePropsAuthed<P> = (
   context: GetServerSidePropsContext,
-  creds: UserCredential
+  creds: FirebaseUser
 ) => Promise<GetServerSidePropsResult<P>>
 
 export const redirectIfLoggedIn = <P extends { [k: string]: any }>(

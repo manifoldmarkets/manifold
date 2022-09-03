@@ -20,7 +20,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { canModifyGroupContracts, getGroup } from 'web/lib/firebase/groups'
+import { getGroup } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -36,7 +36,7 @@ import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-an
 import { MINUTE_MS } from 'common/util/time'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
 type NewQuestionParams = {
@@ -139,7 +139,7 @@ export function NewContract(props: {
   useEffect(() => {
     if (groupId)
       getGroup(groupId).then((group) => {
-        if (group && canModifyGroupContracts(group, creator.id)) {
+        if (group) {
           setSelectedGroup(group)
           setShowGroupSelector(false)
         }
@@ -314,14 +314,14 @@ export function NewContract(props: {
           <div className="form-control mb-2 items-start">
             <label className="label gap-2">
               <span className="mb-1">Range</span>
-              <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
+              <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             </label>
 
             <Row className="gap-2">
               <input
                 type="number"
                 className="input input-bordered w-32"
-                placeholder="MIN"
+                placeholder="LOW"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}
@@ -332,7 +332,7 @@ export function NewContract(props: {
               <input
                 type="number"
                 className="input input-bordered w-32"
-                placeholder="MAX"
+                placeholder="HIGH"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}

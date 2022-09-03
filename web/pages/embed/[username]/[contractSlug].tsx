@@ -71,8 +71,6 @@ export default function ContractEmbedPage(props: {
   const contract = useContractWithPreload(props.contract)
   const { bets } = props
 
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-
   if (!contract) {
     return <Custom404 />
   }
@@ -105,13 +103,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         <Spacer h={3} />
 
         <Row className="items-center justify-between gap-4 px-2">
-          <ContractDetails
-            contract={contract}
-            bets={bets}
-            isCreator={false}
-            user={null}
-            disabled
-          />
+          <ContractDetails contract={contract} disabled />
 
           {(isBinary || isPseudoNumeric) &&
             tradingAllowed(contract) &&
@@ -161,7 +153,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         {(isBinary || isPseudoNumeric) && (
           <ContractProbGraph
             contract={contract}
-            bets={bets}
+            bets={[...bets].reverse()}
             height={graphHeight}
           />
         )}

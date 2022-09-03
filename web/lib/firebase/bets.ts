@@ -28,9 +28,9 @@ function getBetsCollection(contractId: string) {
 }
 
 export async function listAllBets(contractId: string) {
-  const bets = await getValues<Bet>(getBetsCollection(contractId))
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-  return bets
+  return await getValues<Bet>(
+    query(getBetsCollection(contractId), orderBy('createdTime', 'desc'))
+  )
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -64,26 +64,22 @@ export function listenForBets(
   contractId: string,
   setBets: (bets: Bet[]) => void
 ) {
-  return listenForValues<Bet>(getBetsCollection(contractId), (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
-  })
+  return listenForValues<Bet>(
+    query(getBetsCollection(contractId), orderBy('createdTime', 'desc')),
+    setBets
+  )
 }
 
-export async function getUserBets(
-  userId: string,
-  options: { includeRedemptions: boolean }
-) {
-  const { includeRedemptions } = options
-  return getValues<Bet>(
-    query(collectionGroup(db, 'bets'), where('userId', '==', userId))
-  )
-    .then((bets) =>
-      bets.filter(
-        (bet) => (includeRedemptions || !bet.isRedemption) && !bet.isAnte
-      )
-    )
-    .catch((reason) => reason)
+export async function getUserBets(userId: string) {
+  return getValues<Bet>(getUserBetsQuery(userId))
+}
+
+export function getUserBetsQuery(userId: string) {
+  return query(
+    collectionGroup(db, 'bets'),
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
+  ) as Query<Bet>
 }
 
 export async function getBets(options: {
@@ -124,20 +120,14 @@ export async function getBets(options: {
 }
 
 export async function getContractsOfUserBets(userId: string) {
-  const bets: Bet[] = await getUserBets(userId, { includeRedemptions: false })
-  const contractIds = uniq(bets.map((bet) => bet.contractId))
+  const bets = await getUserBets(userId)
+  const contractIds = uniq(
+    bets.filter((b) => !b.isAnte).map((bet) => bet.contractId)
+  )
   const contracts = await Promise.all(
     contractIds.map((contractId) => getContractFromId(contractId))
   )
   return filterDefined(contracts)
-}
-
-export function getUserBetsQuery(userId: string) {
-  return query(
-    collectionGroup(db, 'bets'),
-    where('userId', '==', userId),
-    orderBy('createdTime', 'desc')
-  ) as Query<Bet>
 }
 
 export function listenForUserContractBets(
@@ -147,12 +137,10 @@ export function listenForUserContractBets(
 ) {
   const betsQuery = query(
     collection(db, 'contracts', contractId, 'bets'),
-    where('userId', '==', userId)
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
   )
-  return listenForValues<Bet>(betsQuery, (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
-  })
+  return listenForValues<Bet>(betsQuery, setBets)
 }
 
 export function listenForUnfilledBets(
@@ -162,12 +150,10 @@ export function listenForUnfilledBets(
   const betsQuery = query(
     collection(db, 'contracts', contractId, 'bets'),
     where('isFilled', '==', false),
-    where('isCancelled', '==', false)
+    where('isCancelled', '==', false),
+    orderBy('createdTime', 'desc')
   )
-  return listenForValues<LimitBet>(betsQuery, (bets) => {
-    bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-    setBets(bets)
-  })
+  return listenForValues<LimitBet>(betsQuery, setBets)
 }
 
 export function withoutAnteBets(contract: Contract, bets?: Bet[]) {

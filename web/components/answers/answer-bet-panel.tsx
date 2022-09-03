@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from 'common/answer'
@@ -132,7 +132,10 @@ export function AnswerBetPanel(props: {
           </button>
         )}
       </Row>
-      <div className="my-3 text-left text-sm text-gray-500">Amount </div>
+      <Row className="my-3 justify-between text-left text-sm text-gray-500">
+        Amount
+        <span>(balance: {formatMoney(user?.balance ?? 0)})</span>
+      </Row>
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}

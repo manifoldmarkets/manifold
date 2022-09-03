@@ -92,17 +92,15 @@ function getCommentsOnGroupCollection(groupId: string) {
 }
 
 export async function listAllComments(contractId: string) {
-  const comments = await getValues<Comment>(getCommentsCollection(contractId))
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-  return comments
+  return await getValues<Comment>(
+    query(getCommentsCollection(contractId), orderBy('createdTime', 'desc'))
+  )
 }
 
 export async function listAllCommentsOnGroup(groupId: string) {
-  const comments = await getValues<GroupComment>(
-    getCommentsOnGroupCollection(groupId)
+  return await getValues<GroupComment>(
+    query(getCommentsOnGroupCollection(groupId), orderBy('createdTime', 'desc'))
   )
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-  return comments
 }
 
 export function listenForCommentsOnContract(
@@ -110,23 +108,21 @@ export function listenForCommentsOnContract(
   setComments: (comments: ContractComment[]) => void
 ) {
   return listenForValues<ContractComment>(
-    getCommentsCollection(contractId),
-    (comments) => {
-      comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-      setComments(comments)
-    }
+    query(getCommentsCollection(contractId), orderBy('createdTime', 'desc')),
+    setComments
   )
 }
+
 export function listenForCommentsOnGroup(
   groupId: string,
   setComments: (comments: GroupComment[]) => void
 ) {
   return listenForValues<GroupComment>(
-    getCommentsOnGroupCollection(groupId),
-    (comments) => {
-      comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
-      setComments(comments)
-    }
+    query(
+      getCommentsOnGroupCollection(groupId),
+      orderBy('createdTime', 'desc')
+    ),
+    setComments
   )
 }
 

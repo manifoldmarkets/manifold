@@ -73,7 +73,9 @@ export function useTextEditor(props: {
   const editorClass = clsx(
     proseClass,
     !simple && 'min-h-[6em]',
-    'outline-none pt-2 px-4'
+    'outline-none pt-2 px-4',
+    'prose-img:select-auto',
+    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, emebeds
   )
 
   const editor = useEditor(
@@ -108,10 +110,7 @@ export function useTextEditor(props: {
   editor?.setOptions({
     editorProps: {
       handlePaste(view, event) {
-        const imageFiles = Array.from(event.clipboardData?.files ?? []).filter(
-          (file) => file.type.startsWith('image')
-        )
-
+        const imageFiles = getImages(event.clipboardData)
         if (imageFiles.length) {
           event.preventDefault()
           upload.mutate(imageFiles)
@@ -126,6 +125,13 @@ export function useTextEditor(props: {
 
         return // Otherwise, use default paste handler
       },
+      handleDrop(_view, event, _slice, moved) {
+        // if dragged from outside
+        if (!moved) {
+          event.preventDefault()
+          upload.mutate(getImages(event.dataTransfer))
+        }
+      },
     },
   })
 
@@ -135,6 +141,9 @@ export function useTextEditor(props: {
 
   return { editor, upload }
 }
+
+const getImages = (data: DataTransfer | null) =>
+  Array.from(data?.files ?? []).filter((file) => file.type.startsWith('image'))
 
 function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
@@ -157,7 +166,7 @@ export function TextEditor(props: {
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
-            <Tooltip className="flex items-center" text="Add image" noTap>
+            <Tooltip text="Add image" noTap noFade>
               <FileUploadButton
                 onFiles={upload.mutate}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
@@ -165,7 +174,7 @@ export function TextEditor(props: {
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
               </FileUploadButton>
             </Tooltip>
-            <Tooltip className="flex items-center" text="Add embed" noTap>
+            <Tooltip text="Add embed" noTap noFade>
               <button
                 type="button"
                 onClick={() => setIframeOpen(true)}
@@ -179,7 +188,7 @@ export function TextEditor(props: {
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
               </button>
             </Tooltip>
-            <Tooltip className="flex items-center" text="Add market" noTap>
+            <Tooltip text="Add market" noTap noFade>
               <button
                 type="button"
                 onClick={() => setMarketOpen(true)}

@@ -32,7 +32,6 @@ import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
-import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function ContractCard(props: {
   contract: Contract
@@ -64,11 +63,7 @@ export function ContractCard(props: {
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
-  const { width } = useWindowSize()
-  const isMobile = (width ?? 0) < 768
-
   const showQuickBet =
-    !isMobile &&
     user &&
     !marketClosed &&
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&

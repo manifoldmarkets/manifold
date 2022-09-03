@@ -26,7 +26,6 @@ import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
-import { getcustomtoken } from './get-custom-token'
 import { createpost } from './create-post'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
@@ -66,7 +65,6 @@ addJsonEndpointRoute('/resolvemarket', resolvemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)
 addJsonEndpointRoute('/createcheckoutsession', createcheckoutsession)
 addJsonEndpointRoute('/getcurrentuser', getcurrentuser)
-addEndpointRoute('/getcustomtoken', getcustomtoken)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
 
