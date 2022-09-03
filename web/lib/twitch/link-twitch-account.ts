@@ -2,7 +2,7 @@ import { User, PrivateUser } from 'common/user'
 import { generateNewApiKey } from '../api/api-key'
 import { updatePrivateUser } from '../firebase/users'
 
-const TWITCH_BOT_PUBLIC_URL = 'https://king-prawn-app-5btyw.ondigitalocean.app'
+const TWITCH_BOT_PUBLIC_URL = 'https://king-prawn-app-5btyw.ondigitalocean.app' // TODO: Add this to env config appropriately
 
 export async function initLinkTwitchAccount(
   manifoldUserID: string,
@@ -16,6 +16,7 @@ export async function initLinkTwitchAccount(
     body: JSON.stringify({
       manifoldID: manifoldUserID,
       apiKey: manifoldUserAPIKey,
+      redirectURL: window.location.href,
     }),
   })
   const responseData = await response.json()
@@ -38,7 +39,7 @@ export async function linkTwitchAccount(user: User, privateUser: PrivateUser) {
   )
 
   console.log('opening twitch link', twitchAuthURL)
-  window.open(twitchAuthURL)
+  window.location.href = twitchAuthURL
 
   const twitchInfo = await linkSuccessPromise
   await updatePrivateUser(user.id, { twitchInfo })
