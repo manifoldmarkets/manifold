@@ -68,6 +68,16 @@ export function AuthProvider(props: {
   }, [setAuthUser, serverUser])
 
   useEffect(() => {
+    if (authUser != null) {
+      // Persist to local storage, to reduce login blink next time.
+      // Note: Cap on localStorage size is ~5mb
+      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
+    } else {
+      localStorage.removeItem(CACHED_USER_KEY)
+    }
+  }, [authUser])
+
+  useEffect(() => {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
@@ -77,17 +87,13 @@ export function AuthProvider(props: {
           if (!current.user || !current.privateUser) {
             const deviceToken = ensureDeviceToken()
             current = (await createUser({ deviceToken })) as UserAndPrivateUser
+            setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)
-          // Persist to local storage, to reduce login blink next time.
-          // Note: Cap on localStorage size is ~5mb
-          localStorage.setItem(CACHED_USER_KEY, JSON.stringify(current))
-          setCachedReferralInfoForUser(current.user)
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)
           setAuthUser(null)
-          localStorage.removeItem(CACHED_USER_KEY)
         }
       },
       (e) => {
@@ -97,29 +103,32 @@ export function AuthProvider(props: {
   }, [setAuthUser])
 
   const uid = authUser?.user.id
-  const username = authUser?.user.username
   useEffect(() => {
-    if (uid && username) {
+    if (uid) {
       identifyUser(uid)
-      setUserProperty('username', username)
-      const userListener = listenForUser(uid, (user) =>
-        setAuthUser((authUser) => {
-          /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-          return { ...authUser!, user: user! }
-        })
-      )
+      const userListener = listenForUser(uid, (user) => {
+        setAuthUser((currAuthUser) =>
+          currAuthUser && user ? { ...currAuthUser, user } : null
+        )
+      })
       const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
-        setAuthUser((authUser) => {
-          /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-          return { ...authUser!, privateUser: privateUser! }
-        })
+        setAuthUser((currAuthUser) =>
+          currAuthUser && privateUser ? { ...currAuthUser, privateUser } : null
+        )
       })
       return () => {
         userListener()
         privateUserListener()
       }
     }
-  }, [uid, username, setAuthUser])
+  }, [uid, setAuthUser])
+
+  const username = authUser?.user.username
+  useEffect(() => {
+    if (username != null) {
+      setUserProperty('username', username)
+    }
+  }, [username])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
