@@ -9,7 +9,7 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
-import { getUser, User } from 'web/lib/firebase/users'
+import { getUser, getUserAndPrivateUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/site-link'
 import clsx from 'clsx'
@@ -23,7 +23,7 @@ import { useUser } from 'web/hooks/use-user'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
-  const serverUser = creds ? await getUser(creds.uid) : null
+  const auth = creds ? await getUserAndPrivateUser(creds.uid) : null
   const groups = await listAllGroups().catch((_) => [])
 
   const creators = await Promise.all(
@@ -33,17 +33,17 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     creators.map((creator) => [creator.id, creator])
   )
 
-  return { props: { serverUser, groups: groups, creatorsDict } }
+  return { props: { auth, groups, creatorsDict } }
 }
 
 export default function Groups(props: {
-  serverUser: User | null
+  auth: { user: User } | null
   groups: Group[]
   creatorsDict: { [k: string]: User }
 }) {
   //TODO: do we really need the creatorsDict?
   const [creatorsDict, setCreatorsDict] = useState(props.creatorsDict)
-  const { serverUser } = props || {}
+  const serverUser = props.auth?.user
   const groups = useGroups() ?? props.groups
   const memberGroupIds = useMemberGroupIds(serverUser) || []
   const user = useUser() ?? serverUser
