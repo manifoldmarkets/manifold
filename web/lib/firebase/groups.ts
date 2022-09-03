@@ -23,7 +23,7 @@ import {
 import { Contract } from 'common/contract'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
-import { filterDefined } from 'common/lib/util/array'
+import { filterDefined } from 'common/util/array'
 import { getUser } from 'web/lib/firebase/users'
 
 export const groups = coll<Group>('groups')

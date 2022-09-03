@@ -54,7 +54,7 @@ const createMemberForGroup = async (groupId: string, userId: string) => {
       })
 }
 
-const convertGroupFieldsToGroupDocuments = async () => {
+async function convertGroupFieldsToGroupDocuments() {
   const groups = await getGroups()
   for (const group of groups) {
     log('updating group', group.slug)
@@ -86,7 +86,7 @@ const convertGroupFieldsToGroupDocuments = async () => {
   }
 }
 
-const updateTotalContractsAndMembers = async () => {
+async function updateTotalContractsAndMembers() {
   const groups = await getGroups()
   for (const group of groups) {
     log('updating group total contracts and members', group.slug)
@@ -103,6 +103,6 @@ const updateTotalContractsAndMembers = async () => {
 
 if (require.main === module) {
   initAdmin()
-  convertGroupFieldsToGroupDocuments()
-  // updateTotalContractsAndMembers()
+  // convertGroupFieldsToGroupDocuments()
+  updateTotalContractsAndMembers()
 }
