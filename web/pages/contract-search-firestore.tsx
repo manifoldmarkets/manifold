@@ -3,13 +3,18 @@ import { Answer } from 'common/answer'
 import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { useContracts } from 'web/hooks/use-contracts'
 import {
   usePersistentState,
   urlParamStore,
 } from 'web/hooks/use-persistent-state'
 import { getProbability } from 'common/calculate'
-import { BinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  PseudoNumericContract,
+} from 'common/contract'
+import { useEffect, useState } from 'react'
+import { listAllContracts } from 'web/lib/firebase/contracts'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -21,9 +26,10 @@ export default function ContractSearchFirestore(props: {
     groupSlug?: string
   }
   defaultSort?: string
+  getContracts?: () => Promise<Contract[]>
 }) {
-  const { additionalFilter } = props
-  const contracts = useContracts()
+  const { additionalFilter, getContracts } = props
+  const [contracts, setContracts] = useState<Contract[]>([])
   const router = useRouter()
   const store = urlParamStore(router)
   const [query, setQuery] = usePersistentState('', { key: 'q', store })
@@ -31,6 +37,15 @@ export default function ContractSearchFirestore(props: {
     key: 'sort',
     store,
   })
+
+  useEffect(() => {
+    // Either set contracts from getContracts, or fallback to getting all of them
+    if (getContracts) {
+      getContracts().then(setContracts)
+    } else {
+      listAllContracts(100000).then(setContracts)
+    }
+  }, [getContracts])
 
   let matches = (contracts ?? []).filter((c) =>
     searchInAny(

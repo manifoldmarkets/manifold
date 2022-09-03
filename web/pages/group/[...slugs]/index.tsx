@@ -227,6 +227,10 @@ export default function GroupPage(props: {
     <ContractSearchFirestore
       additionalFilter={{ groupSlug: group.slug }}
       defaultSort="highest-percent"
+      getContracts={async () => {
+        const contracts = await listContractsByGroupSlug(group.slug)
+        return contracts.filter((c) => !c.isResolved)
+      }}
     />
   ) : (
     <ContractSearch
