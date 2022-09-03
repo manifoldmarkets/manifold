@@ -104,11 +104,18 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
   return snapshot.docs.map((doc) => doc.data())
 }
 
+export const contractsByGroupSlugQuery = (slug: string) =>
+  query(
+    contracts,
+    where('groupSlugs', 'array-contains', slug),
+    where('isResolved', '==', false),
+    orderBy('popularityScore', 'desc')
+  )
+
 export async function listContractsByGroupSlug(
   slug: string
 ): Promise<Contract[]> {
-  const q = query(contracts, where('groupSlugs', 'array-contains', slug))
-  const snapshot = await getDocs(q)
+  const snapshot = await getDocs(contractsByGroupSlugQuery(slug))
   return snapshot.docs.map((doc) => doc.data())
 }
 
