@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { prefetchUsers, useUserById } from 'web/hooks/use-user'
+import { usePrefetchUsers, useUserById } from 'web/hooks/use-user'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
@@ -56,9 +56,7 @@ function ReferralsDialog(props: {
     }
   }, [isOpen, referredByUser, user.referredByUserId])
 
-  useEffect(() => {
-    prefetchUsers(referralIds)
-  }, [referralIds])
+  usePrefetchUsers(referralIds)
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>

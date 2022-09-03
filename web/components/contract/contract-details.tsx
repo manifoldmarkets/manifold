@@ -8,6 +8,7 @@ import {
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
+import Link from 'next/link'
 
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
@@ -26,11 +27,10 @@ import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
-import { SiteLink } from 'web/components/site-link'
-import { groupPath } from 'web/lib/firebase/groups'
+import { linkClass } from 'web/components/site-link'
+import { getGroupLinkToDisplay, groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
-import { User } from 'common/user'
 import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
@@ -52,10 +52,10 @@ export function MiscDetails(props: {
     isResolved,
     createdTime,
     resolutionTime,
-    groupLinks,
   } = contract
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <Row className="items-center gap-3 truncate text-sm text-gray-400">
@@ -83,13 +83,12 @@ export function MiscDetails(props: {
         <NewContractBadge />
       )}
 
-      {!hideGroupLink && groupLinks && groupLinks.length > 0 && (
-        <SiteLink
-          href={groupPath(groupLinks[0].slug)}
-          className="truncate text-sm text-gray-400"
-        >
-          {groupLinks[0].name}
-        </SiteLink>
+      {!hideGroupLink && groupToDisplay && (
+        <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+          <a className={clsx(linkClass, 'truncate text-sm text-gray-400')}>
+            {groupToDisplay.name}
+          </a>
+        </Link>
       )}
     </Row>
   )
@@ -117,64 +116,39 @@ export function AvatarDetails(props: {
   )
 }
 
-export function AbbrContractDetails(props: {
-  contract: Contract
-  showHotVolume?: boolean
-  showTime?: ShowTime
-}) {
-  const { contract, showHotVolume, showTime } = props
-  return (
-    <Row className="items-center justify-between">
-      <AvatarDetails contract={contract} />
-
-      <MiscDetails
-        contract={contract}
-        showHotVolume={showHotVolume}
-        showTime={showTime}
-      />
-    </Row>
-  )
-}
-
 export function ContractDetails(props: {
   contract: Contract
-  user: User | null | undefined
-  isCreator?: boolean
   disabled?: boolean
 }) {
-  const { contract, isCreator, disabled } = props
+  const { contract, disabled } = props
   const {
     closeTime,
     creatorName,
     creatorUsername,
     creatorId,
-    groupLinks,
     creatorAvatarUrl,
     resolutionTime,
   } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
-
-  const groupToDisplay =
-    groupLinks?.sort((a, b) => a.createdTime - b.createdTime)[0] ?? null
   const user = useUser()
+  const isCreator = user?.id === creatorId
   const [open, setOpen] = useState(false)
   const { width } = useWindowSize()
   const isMobile = (width ?? 0) < 600
-
+  const groupToDisplay = getGroupLinkToDisplay(contract)
   const groupInfo = groupToDisplay ? (
-    <Row
-      className={clsx(
-        'items-center pr-2',
-        isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-      )}
-    >
-      <SiteLink href={groupPath(groupToDisplay.slug)} className={'truncate'}>
-        <Row>
-          <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-          <span className="items-center truncate">{groupToDisplay.name}</span>
-        </Row>
-      </SiteLink>
-    </Row>
+    <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+      <a
+        className={clsx(
+          linkClass,
+          'flex flex-row items-center truncate pr-0 sm:pr-2',
+          isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
+        )}
+      >
+        <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
+        <span className="items-center truncate">{groupToDisplay.name}</span>
+      </a>
+    </Link>
   ) : (
     <Button
       size={'xs'}
@@ -236,11 +210,7 @@ export function ContractDetails(props: {
             'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
           }
         >
-          <ContractGroupsList
-            groupLinks={groupLinks ?? []}
-            contract={contract}
-            user={user}
-          />
+          <ContractGroupsList contract={contract} user={user} />
         </Col>
       </Modal>
 
@@ -287,18 +257,18 @@ export function ContractDetails(props: {
 
 export function ExtraMobileContractDetails(props: {
   contract: Contract
-  user: User | null | undefined
   forceShowVolume?: boolean
 }) {
-  const { contract, user, forceShowVolume } = props
+  const { contract, forceShowVolume } = props
   const { volume, resolutionTime, closeTime, creatorId, uniqueBettorCount } =
     contract
+  const user = useUser()
   const uniqueBettors = uniqueBettorCount ?? 0
   const { resolvedDate } = contractMetrics(contract)
   const volumeTranslation =
-    volume > 800 || uniqueBettors > 20
+    volume > 800 || uniqueBettors >= 20
       ? 'High'
-      : volume > 300 || uniqueBettors > 10
+      : volume > 300 || uniqueBettors >= 10
       ? 'Medium'
       : 'Low'
 

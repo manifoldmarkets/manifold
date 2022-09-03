@@ -21,9 +21,7 @@ export * from './on-follow-user'
 export * from './on-unfollow-user'
 export * from './on-create-liquidity-provision'
 export * from './on-update-group'
-export * from './on-create-group'
 export * from './on-update-user'
-export * from './on-create-comment-on-group'
 export * from './on-create-txn'
 export * from './on-delete-group'
 export * from './score-contracts'
@@ -72,7 +70,6 @@ import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
-import { getcustomtoken } from './get-custom-token'
 import { createpost } from './create-post'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
@@ -98,7 +95,6 @@ const stripeWebhookFunction = toCloudFunction(stripewebhook)
 const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
 const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
-const getCustomTokenFunction = toCloudFunction(getcustomtoken)
 const createPostFunction = toCloudFunction(createpost)
 
 export {
@@ -122,6 +118,5 @@ export {
   createCheckoutSessionFunction as createcheckoutsession,
   getCurrentUserFunction as getcurrentuser,
   acceptChallenge as acceptchallenge,
-  getCustomTokenFunction as getcustomtoken,
   createPostFunction as createpost,
 }

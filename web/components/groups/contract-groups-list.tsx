@@ -7,22 +7,30 @@ import { Button } from 'web/components/button'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import {
   addContractToGroup,
-  canModifyGroupContracts,
   removeContractFromGroup,
 } from 'web/lib/firebase/groups'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import { SiteLink } from 'web/components/site-link'
-import { GroupLink } from 'common/group'
-import { useGroupsWithContract } from 'web/hooks/use-group'
+import { useGroupsWithContract, useMemberGroupIds } from 'web/hooks/use-group'
+import { Group } from 'common/group'
 
 export function ContractGroupsList(props: {
-  groupLinks: GroupLink[]
   contract: Contract
   user: User | null | undefined
 }) {
-  const { groupLinks, user, contract } = props
+  const { user, contract } = props
+  const { groupLinks } = contract
   const groups = useGroupsWithContract(contract)
+  const memberGroupIds = useMemberGroupIds(user)
+
+  const canModifyGroupContracts = (group: Group, userId: string) => {
+    return (
+      group.creatorId === userId ||
+      group.anyoneCanJoin ||
+      memberGroupIds?.includes(group.id)
+    )
+  }
   return (
     <Col className={'gap-2'}>
       <span className={'text-xl text-indigo-700'}>
@@ -35,7 +43,7 @@ export function ContractGroupsList(props: {
             options={{
               showSelector: true,
               showLabel: false,
-              ignoreGroupIds: groupLinks.map((g) => g.groupId),
+              ignoreGroupIds: groupLinks?.map((g) => g.groupId),
             }}
             setSelectedGroup={(group) =>
               group && addContractToGroup(group, contract, user.id)
@@ -62,7 +70,7 @@ export function ContractGroupsList(props: {
             <Button
               color={'gray-white'}
               size={'xs'}
-              onClick={() => removeContractFromGroup(group, contract, user.id)}
+              onClick={() => removeContractFromGroup(group, contract)}
             >
               <XIcon className="h-4 w-4 text-gray-500" />
             </Button>

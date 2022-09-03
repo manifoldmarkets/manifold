@@ -18,8 +18,9 @@ export default async function handler(
     return
   }
 
-  const bets = await getUserBets(user.id, { includeRedemptions: false })
+  const bets = await getUserBets(user.id)
+  const visibleBets = bets.filter((b) => !b.isRedemption && !b.isAnte)
 
   res.setHeader('Cache-Control', 'max-age=0')
-  return res.status(200).json(bets)
+  return res.status(200).json(visibleBets)
 }

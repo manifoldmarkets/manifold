@@ -4,21 +4,23 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 import { isProd, log } from '../utils'
 import { getSlug } from '../create-group'
-import { Group } from '../../../common/group'
+import { Group, GroupLink } from '../../../common/group'
+import { uniq } from 'lodash'
+import { Contract } from 'common/contract'
 
-const getTaggedContractIds = async (tag: string) => {
+const getTaggedContracts = async (tag: string) => {
   const firestore = admin.firestore()
   const results = await firestore
     .collection('contracts')
     .where('lowercaseTags', 'array-contains', tag.toLowerCase())
     .get()
-  return results.docs.map((d) => d.id)
+  return results.docs.map((d) => d.data() as Contract)
 }
 
 const createGroup = async (
   name: string,
   about: string,
-  contractIds: string[]
+  contracts: Contract[]
 ) => {
   const firestore = admin.firestore()
   const creatorId = isProd()
@@ -36,21 +38,60 @@ const createGroup = async (
     about,
     createdTime: now,
     mostRecentActivityTime: now,
-    contractIds: contractIds,
     anyoneCanJoin: true,
-    memberIds: [],
+    totalContracts: contracts.length,
+    totalMembers: 1,
   }
-  return await groupRef.create(group)
+  await groupRef.create(group)
+  // create a GroupMemberDoc for the creator
+  const memberDoc = groupRef.collection('groupMembers').doc(creatorId)
+  await memberDoc.create({
+    userId: creatorId,
+    createdTime: now,
+  })
+
+  // create GroupContractDocs for each contractId
+  await Promise.all(
+    contracts
+      .map((c) => c.id)
+      .map((contractId) =>
+        groupRef.collection('groupContracts').doc(contractId).create({
+          contractId,
+          createdTime: now,
+        })
+      )
+  )
+  for (const market of contracts) {
+    if (market.groupLinks?.map((l) => l.groupId).includes(group.id)) continue // already in that group
+
+    const newGroupLinks = [
+      ...(market.groupLinks ?? []),
+      {
+        groupId: group.id,
+        createdTime: Date.now(),
+        slug: group.slug,
+        name: group.name,
+      } as GroupLink,
+    ]
+    await firestore
+      .collection('contracts')
+      .doc(market.id)
+      .update({
+        groupSlugs: uniq([...(market.groupSlugs ?? []), group.slug]),
+        groupLinks: newGroupLinks,
+      })
+  }
+  return { status: 'success', group: group }
 }
 
 const convertTagToGroup = async (tag: string, groupName: string) => {
   log(`Looking up contract IDs with tag ${tag}...`)
-  const contractIds = await getTaggedContractIds(tag)
-  log(`${contractIds.length} contracts found.`)
-  if (contractIds.length > 0) {
+  const contracts = await getTaggedContracts(tag)
+  log(`${contracts.length} contracts found.`)
+  if (contracts.length > 0) {
     log(`Creating group ${groupName}...`)
     const about = `Contracts that used to be tagged ${tag}.`
-    const result = await createGroup(groupName, about, contractIds)
+    const result = await createGroup(groupName, about, contracts)
     log(`Done. Group: `, result)
   }
 }
