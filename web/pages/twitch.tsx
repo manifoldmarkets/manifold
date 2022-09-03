@@ -14,6 +14,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { linkTwitchAccount } from 'web/lib/twitch/link-twitch-account'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import toast from 'react-hot-toast'
 
 export default function TwitchLandingPage() {
   useSaveReferral()
@@ -39,13 +40,18 @@ export default function TwitchLandingPage() {
   const [isLoading, setLoading] = useState(false)
 
   const getStarted = async () => {
-    setLoading(true)
+    try {
+      setLoading(true)
 
-    const promise = callback()
-    track('twitch page button click')
-    await promise
-
-    setLoading(false)
+      const promise = callback()
+      track('twitch page button click')
+      await promise
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to sign up. Please try again later.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -96,7 +102,7 @@ export default function TwitchLandingPage() {
                 </div>
               </div>
             ) : isLoading ? (
-              <LoadingIndicator spinnerClassName="w-16 h-16" />
+              <LoadingIndicator spinnerClassName="!w-16 !h-16" />
             ) : (
               <Button
                 size="2xl"
