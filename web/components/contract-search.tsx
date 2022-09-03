@@ -43,6 +43,7 @@ export const SORTS = [
   { label: 'Trending', value: 'score' },
   { label: 'Most traded', value: 'most-traded' },
   { label: '24h volume', value: '24-hour-vol' },
+  { label: '24h change', value: 'prob-change-day' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Subsidy', value: 'liquidity' },
   { label: 'Close date', value: 'close-date' },
