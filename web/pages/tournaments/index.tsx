@@ -107,6 +107,10 @@ const tourneys: Tourney[] = [
   // },
 ]
 
+export function isTournament(groupId: string) {
+  return tourneys.map((t) => t.groupId).includes(groupId)
+}
+
 export async function getStaticProps() {
   const groupIds = tourneys
     .map((data) => data.groupId)

@@ -52,6 +52,8 @@ import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
 import { usePost } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
+import { isTournament } from 'web/pages/tournaments'
+import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -220,7 +222,13 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const questionsTab = (
+  // Use Firestore search for Tournament groups, so they can sort by highest
+  const questionsTab = isTournament(group.id) ? (
+    <ContractSearchFirestore
+      additionalFilter={{ groupSlug: group.slug }}
+      defaultSort="highest-percent"
+    />
+  ) : (
     <ContractSearch
       user={user}
       defaultSort={'newest'}

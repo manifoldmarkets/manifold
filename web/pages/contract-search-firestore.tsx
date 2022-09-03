@@ -8,6 +8,8 @@ import {
   usePersistentState,
   urlParamStore,
 } from 'web/hooks/use-persistent-state'
+import { getProbability } from 'common/calculate'
+import { BinaryContract, PseudoNumericContract } from 'common/contract'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -18,13 +20,17 @@ export default function ContractSearchFirestore(props: {
     excludeContractIds?: string[]
     groupSlug?: string
   }
+  defaultSort?: string
 }) {
   const { additionalFilter } = props
   const contracts = useContracts()
   const router = useRouter()
   const store = urlParamStore(router)
   const [query, setQuery] = usePersistentState('', { key: 'q', store })
-  const [sort, setSort] = usePersistentState('score', { key: 'sort', store })
+  const [sort, setSort] = usePersistentState(props.defaultSort ?? 'score', {
+    key: 'sort',
+    store,
+  })
 
   let matches = (contracts ?? []).filter((c) =>
     searchInAny(
@@ -51,6 +57,10 @@ export default function ContractSearchFirestore(props: {
     // Use lodash for stable sort, so previous sort breaks all ties.
     matches = sortBy(matches, ({ volume7Days }) => -1 * volume7Days)
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
+  } else if (sort === 'highest-percent') {
+    matches = sortBy(matches, (c) =>
+      getProbability(c as BinaryContract | PseudoNumericContract)
+    ).reverse()
   }
 
   if (additionalFilter) {
@@ -99,6 +109,7 @@ export default function ContractSearchFirestore(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
+          <option value="highest-percent">Highest %</option>
           <option value="score">Trending</option>
           <option value="newest">Newest</option>
           <option value="most-traded">Most traded</option>
