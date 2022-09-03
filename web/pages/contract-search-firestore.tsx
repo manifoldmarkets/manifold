@@ -61,6 +61,10 @@ export default function ContractSearchFirestore(props: {
     matches = sortBy(matches, (c) =>
       getProbability(c as BinaryContract | PseudoNumericContract)
     ).reverse()
+  } else if (sort === 'lowest-percent') {
+    matches = sortBy(matches, (c) =>
+      getProbability(c as BinaryContract | PseudoNumericContract)
+    )
   }
 
   if (additionalFilter) {
@@ -109,12 +113,13 @@ export default function ContractSearchFirestore(props: {
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
-          <option value="highest-percent">Highest %</option>
           <option value="score">Trending</option>
           <option value="newest">Newest</option>
           <option value="most-traded">Most traded</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
+          <option value="highest-percent">Highest %</option>
+          <option value="lowest-percent">Lowest %</option>
         </select>
       </div>
       <ContractsGrid contracts={matches} showTime={showTime} />
