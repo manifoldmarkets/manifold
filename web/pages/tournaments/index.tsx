@@ -121,7 +121,7 @@ export async function getStaticProps() {
     .map(([tourney, group]) => ({
       tourney,
       slug: group!.slug, // eslint-disable-line
-      numPeople: group!.memberIds.length, // eslint-disable-line
+      numPeople: group!.totalMembers, // eslint-disable-line
     }))
   return { props: { sections } }
 }
