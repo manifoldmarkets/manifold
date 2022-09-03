@@ -54,6 +54,7 @@ const createMemberForGroup = async (groupId: string, userId: string) => {
       })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function convertGroupFieldsToGroupDocuments() {
   const groups = await getGroups()
   for (const group of groups) {
