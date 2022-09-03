@@ -8,7 +8,6 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
-import { useUser } from 'web/hooks/use-user'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
@@ -18,13 +17,14 @@ import { Avatar } from 'web/components/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
+import { GetServerSideProps } from 'next'
+import { authenticateOnServer } from 'web/lib/firebase/server-auth'
+import { useUser } from 'web/hooks/use-user'
 
-export async function getStaticProps() {
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const creds = await authenticateOnServer(ctx)
+  const serverUser = creds ? await getUser(creds.uid) : null
   const groups = await listAllGroups().catch((_) => [])
-
-  // mqp: temporary fix to make dev deploy while Ian works on migrating groups away
-  // from the document array member and contracts representation
-  // groups = groups.filter((g) => g.contractIds != null && g.memberIds != null)
 
   const creators = await Promise.all(
     groups.map((group) => getUser(group.creatorId))
@@ -33,25 +33,20 @@ export async function getStaticProps() {
     creators.map((creator) => [creator.id, creator])
   )
 
-  return {
-    props: {
-      groups: groups,
-      creatorsDict,
-    },
-
-    revalidate: 60, // regenerate after a minute
-  }
+  return { props: { serverUser, groups: groups, creatorsDict } }
 }
 
 export default function Groups(props: {
+  serverUser: User | null
   groups: Group[]
   creatorsDict: { [k: string]: User }
 }) {
+  //TODO: do we really need the creatorsDict?
   const [creatorsDict, setCreatorsDict] = useState(props.creatorsDict)
-
+  const { serverUser } = props || {}
   const groups = useGroups() ?? props.groups
-  const user = useUser()
-  const memberGroupIds = useMemberGroupIds(user) || []
+  const memberGroupIds = useMemberGroupIds(serverUser) || []
+  const user = useUser() ?? serverUser
 
   useEffect(() => {
     // Load User object for creator of new Groups.
@@ -117,6 +112,39 @@ export default function Groups(props: {
           <Tabs
             currentPageForAnalytics={'groups'}
             tabs={[
+              ...(user
+                ? [
+                    {
+                      title: 'My Groups',
+                      content: (
+                        <Col>
+                          <input
+                            type="text"
+                            onChange={(e) => debouncedQuery(e.target.value)}
+                            placeholder="Search your groups"
+                            className="input input-bordered mb-4 w-full"
+                          />
+
+                          <div className="flex flex-wrap justify-center gap-4">
+                            {matchesOrderedByRecentActivity
+                              .filter((match) =>
+                                memberGroupIds.includes(match.id)
+                              )
+                              .map((group) => (
+                                <GroupCard
+                                  key={group.id}
+                                  group={group}
+                                  creator={creatorsDict[group.creatorId]}
+                                  user={user}
+                                  isMember={memberGroupIds.includes(group.id)}
+                                />
+                              ))}
+                          </div>
+                        </Col>
+                      ),
+                    },
+                  ]
+                : []),
               {
                 title: 'All',
                 content: (
@@ -138,33 +166,6 @@ export default function Groups(props: {
                           isMember={memberGroupIds.includes(group.id)}
                         />
                       ))}
-                    </div>
-                  </Col>
-                ),
-              },
-              {
-                title: 'My Groups',
-                content: (
-                  <Col>
-                    <input
-                      type="text"
-                      onChange={(e) => debouncedQuery(e.target.value)}
-                      placeholder="Search your groups"
-                      className="input input-bordered mb-4 w-full"
-                    />
-
-                    <div className="flex flex-wrap justify-center gap-4">
-                      {matchesOrderedByRecentActivity
-                        .filter((match) => memberGroupIds.includes(match.id))
-                        .map((group) => (
-                          <GroupCard
-                            key={group.id}
-                            group={group}
-                            creator={creatorsDict[group.creatorId]}
-                            user={user}
-                            isMember={memberGroupIds.includes(group.id)}
-                          />
-                        ))}
                     </div>
                   </Col>
                 ),
