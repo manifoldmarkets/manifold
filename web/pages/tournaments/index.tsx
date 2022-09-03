@@ -122,7 +122,7 @@ export async function getStaticProps() {
   const markets = Object.fromEntries(groups.map((g, i) => [g.id, contracts[i]]))
 
   const groupMap = keyBy(groups, 'id')
-  const numPeople = mapValues(groupMap, (g) => g?.memberIds.length)
+  const numPeople = mapValues(groupMap, (g) => g?.totalMembers)
   const slugs = mapValues(groupMap, 'slug')
 
   return { props: { markets, numPeople, slugs }, revalidate: 60 * 10 }
