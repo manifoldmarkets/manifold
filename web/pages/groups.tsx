@@ -45,8 +45,8 @@ export default function Groups(props: {
   const [creatorsDict, setCreatorsDict] = useState(props.creatorsDict)
   const serverUser = props.auth?.user
   const groups = useGroups() ?? props.groups
-  const memberGroupIds = useMemberGroupIds(serverUser) || []
   const user = useUser() ?? serverUser
+  const memberGroupIds = useMemberGroupIds(user) || []
 
   useEffect(() => {
     // Load User object for creator of new Groups.
