@@ -8,7 +8,7 @@ import { SelectedGroup } from "web/lib/selected-group";
 async function fetchGroups(APIBase: string, userID: string): Promise<Group[]> {
     const r = await fetch(`${APIBase}groups`);
     let groups = (await r.json()) as Group[];
-    groups = groups.filter((g) => g.anyoneCanJoin || g.memberIds.indexOf(userID) >= 0);
+    groups = groups.filter((g) => g.anyoneCanJoin || g.memberIds?.indexOf(userID) >= 0);
     return groups;
 }
 

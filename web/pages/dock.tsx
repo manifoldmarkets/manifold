@@ -40,7 +40,7 @@ async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
     let markets = await fetchAllMarkets();
     console.debug(`Fetched ${markets.length} markets`);
     markets = markets.filter((market) => {
-        return group.contractIds.indexOf(market.id) >= 0 && !market.isResolved;
+        return group.contractIds?.indexOf(market.id) >= 0 && !market.isResolved;
     });
 
     // Sort the markets such that the display order is Featureable markets > Closed markets > Unsupported markets:
