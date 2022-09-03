@@ -87,6 +87,12 @@ export type CPMM = {
   pool: { [outcome: string]: number }
   p: number // probability constant in y^p * n^(1-p) = k
   totalLiquidity: number // in M$
+  prob: number
+  probChanges: {
+    day: number
+    week: number
+    month: number
+  }
 }
 
 export type Binary = {
