@@ -223,13 +223,16 @@ const ImageCarousel = (props: { images: MarketImage[]; url: string }) => {
 const MarketCarousel = (props: { slug: string }) => {
   const { slug } = props
   const q = contractsByGroupSlugQuery(slug)
-  const { allItems, getNext, isLoading } = usePagination({ q, pageSize: 12 })
-  return isLoading ? (
+  const { allItems, getNext } = usePagination({ q, pageSize: 6 })
+  const items = allItems()
+
+  // todo: would be nice to have indicator somewhere when it loads next page
+  return items.length === 0 ? (
     <LoadingIndicator className="mt-10" />
   ) : (
     <Carousel className="-mx-4 mt-4 sm:-mx-10" loadMore={getNext}>
       <div className="shrink-0 sm:w-6" />
-      {allItems().map((m) => (
+      {items.map((m) => (
         <ContractCard
           key={m.id}
           contract={m}
