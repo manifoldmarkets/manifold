@@ -134,6 +134,8 @@ export default function Groups(props: {
                           key={group.id}
                           group={group}
                           creator={creatorsDict[group.creatorId]}
+                          user={user}
+                          isMember={memberGroupIds.includes(group.id)}
                         />
                       ))}
                     </div>
@@ -159,6 +161,8 @@ export default function Groups(props: {
                             key={group.id}
                             group={group}
                             creator={creatorsDict[group.creatorId]}
+                            user={user}
+                            isMember={memberGroupIds.includes(group.id)}
                           />
                         ))}
                     </div>
@@ -173,8 +177,13 @@ export default function Groups(props: {
   )
 }
 
-export function GroupCard(props: { group: Group; creator: User | undefined }) {
-  const { group, creator } = props
+export function GroupCard(props: {
+  group: Group
+  creator: User | undefined
+  user: User | undefined | null
+  isMember: boolean
+}) {
+  const { group, creator, user, isMember } = props
   const { totalContracts } = group
   return (
     <Col className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100">
@@ -201,7 +210,12 @@ export function GroupCard(props: { group: Group; creator: User | undefined }) {
         <div className="text-sm text-gray-500">{group.about}</div>
       </Row>
       <Col className={'mt-2 h-full items-start justify-end'}>
-        <JoinOrLeaveGroupButton group={group} className={'z-10 w-24'} />
+        <JoinOrLeaveGroupButton
+          group={group}
+          className={'z-10 w-24'}
+          user={user}
+          isMember={isMember}
+        />
       </Col>
     </Col>
   )

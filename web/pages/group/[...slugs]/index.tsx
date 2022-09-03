@@ -331,6 +331,7 @@ function GroupOverview(props: {
   const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
     group.slug
   )}${postFix}`
+  const isMember = user ? members.map((m) => m.id).includes(user.id) : false
 
   return (
     <>
@@ -349,7 +350,11 @@ function GroupOverview(props: {
           ) : (
             user && (
               <Row>
-                <JoinOrLeaveGroupButton group={group} />
+                <JoinOrLeaveGroupButton
+                  group={group}
+                  user={user}
+                  isMember={isMember}
+                />
               </Row>
             )
           )}
