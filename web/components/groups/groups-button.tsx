@@ -72,29 +72,34 @@ function GroupsList(props: { groups: Group[] }) {
 
 function GroupItem(props: { group: Group; className?: string }) {
   const { group, className } = props
+  const user = useUser()
+  const memberIds = useMemberIds(group.id)
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
       <Row className="line-clamp-1 items-center gap-2">
         <GroupLinkItem group={group} />
       </Row>
-      <JoinOrLeaveGroupButton group={group} />
+      <JoinOrLeaveGroupButton
+        group={group}
+        user={user}
+        isMember={user ? memberIds?.includes(user.id) : false}
+      />
     </Row>
   )
 }
 
 export function JoinOrLeaveGroupButton(props: {
   group: Group
+  isMember: boolean
+  user: User | undefined | null
   small?: boolean
   className?: string
 }) {
-  const { group, small, className } = props
-  const currentUser = useUser()
-  const memberIds = useMemberIds(group.id)
-  const isMember = memberIds?.includes(currentUser?.id ?? '') ?? false
+  const { group, small, className, isMember, user } = props
   const smallStyle =
     'btn !btn-xs border-2 border-gray-500 bg-white normal-case text-gray-500 hover:border-gray-500 hover:bg-white hover:text-gray-500'
 
-  if (!currentUser) {
+  if (!user) {
     if (!group.anyoneCanJoin)
       return <div className={clsx(className, 'text-gray-500')}>Closed</div>
     return (
@@ -107,12 +112,12 @@ export function JoinOrLeaveGroupButton(props: {
     )
   }
   const onJoinGroup = () => {
-    joinGroup(group, currentUser.id).catch(() => {
+    joinGroup(group, user.id).catch(() => {
       toast.error('Failed to join group')
     })
   }
   const onLeaveGroup = () => {
-    leaveGroup(group, currentUser.id).catch(() => {
+    leaveGroup(group, user.id).catch(() => {
       toast.error('Failed to leave group')
     })
   }
