@@ -56,18 +56,20 @@ function UsersTable() {
       return {
         email: privateUsersById[user.id]?.email,
         profit: profitByUser[user.id] ?? 0,
+        ip: privateUsersById[user.id]?.initialIpAddress,
         ...user,
       }
     })
     .sort((a, b) => b.createdTime - a.createdTime)
 
   function exportCsv() {
-    const lines = [['Email', 'Name', 'Balance', 'Profit']].concat(
+    const lines = [['Email', 'Name', 'Balance', 'Profit', 'IP Address']].concat(
       fullUsers.map((u) => [
         u.email ?? '',
         u.name,
         Math.round(u.balance).toString(),
         Math.round(profitByUser[u.id] ?? 0).toString(),
+        u.ip ?? '',
       ])
     )
     const csv = lines.map((line) => line.join(', ')).join('\n')
