@@ -39,6 +39,7 @@ import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { filterDefined } from 'common/util/array'
 import { useUserBets } from 'web/hooks/use-user-bets'
 import { ReferralsButton } from 'web/components/referrals-button'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function UserLink(props: {
   name: string
@@ -288,7 +289,11 @@ export function UserPage(props: { user: User; currentUser?: User }) {
                   </span>
                 ),
               },
-              ...(isCurrentUser
+              ...(isCurrentUser ||
+              [
+                ...(ENV_CONFIG.whitelistCreators ?? []),
+                'JamesGrugett',
+              ].includes(currentUser?.username ?? '')
                 ? [
                     {
                       title: 'Bets',
