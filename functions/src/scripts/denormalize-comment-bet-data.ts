@@ -19,7 +19,7 @@ async function getBetComments(transaction: Transaction) {
   const allComments = await transaction.get(
     firestore.collectionGroup('comments')
   )
-  const betComments = allComments.docs.filter((d) => d.get('betId') != null)
+  const betComments = allComments.docs.filter((d) => d.get('betId'))
   log(`Found ${betComments.length} comments associated with bets.`)
   return betComments
 }
