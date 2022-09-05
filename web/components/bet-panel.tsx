@@ -310,7 +310,7 @@ function BuyPanel(props: {
       <Row className="my-3 justify-between text-left text-sm text-gray-500">
         Amount
         <span className={'xl:hidden'}>
-          (balance: {formatMoney(user?.balance ?? 0)})
+          Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
       <BuyAmountInput
@@ -606,7 +606,7 @@ function LimitOrderPanel(props: {
           Max amount<span className="ml-1 text-red-500">*</span>
         </span>
         <span className={'xl:hidden'}>
-          (balance: {formatMoney(user?.balance ?? 0)})
+          Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
       <BuyAmountInput
