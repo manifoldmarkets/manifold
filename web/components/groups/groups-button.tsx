@@ -107,7 +107,7 @@ export function JoinOrLeaveGroupButton(props: {
         onClick={firebaseLogin}
         className={clsx('btn btn-sm', small && smallStyle, className)}
       >
-        Login to Join
+        Login to follow
       </button>
     )
   }
@@ -132,7 +132,7 @@ export function JoinOrLeaveGroupButton(props: {
         )}
         onClick={withTracking(onLeaveGroup, 'leave group')}
       >
-        Leave
+        Unfollow
       </button>
     )
   }
@@ -144,7 +144,7 @@ export function JoinOrLeaveGroupButton(props: {
       className={clsx('btn btn-sm', small && smallStyle, className)}
       onClick={withTracking(onJoinGroup, 'join group')}
     >
-      Join
+      Follow
     </button>
   )
 }
