@@ -152,7 +152,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                 <Row className="my-3 justify-between text-left text-sm text-gray-500">
                   Bet Amount
                   <span className={'sm:hidden'}>
-                    (balance: {formatMoney(user?.balance ?? 0)})
+                    Balance: {formatMoney(user?.balance ?? 0)}
                   </span>
                 </Row>{' '}
                 <BuyAmountInput

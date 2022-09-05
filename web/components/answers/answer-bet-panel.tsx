@@ -134,7 +134,7 @@ export function AnswerBetPanel(props: {
       </Row>
       <Row className="my-3 justify-between text-left text-sm text-gray-500">
         Amount
-        <span>(balance: {formatMoney(user?.balance ?? 0)})</span>
+        <span>Balance: {formatMoney(user?.balance ?? 0)}</span>
       </Row>
       <BuyAmountInput
         inputClassName="w-full max-w-none"
