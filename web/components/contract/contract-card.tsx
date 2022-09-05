@@ -35,7 +35,6 @@ import { Tooltip } from '../tooltip'
 
 export function ContractCard(props: {
   contract: Contract
-  showHotVolume?: boolean
   showTime?: ShowTime
   className?: string
   questionClass?: string
@@ -45,7 +44,6 @@ export function ContractCard(props: {
   trackingPostfix?: string
 }) {
   const {
-    showHotVolume,
     showTime,
     className,
     questionClass,
@@ -147,7 +145,6 @@ export function ContractCard(props: {
         <AvatarDetails contract={contract} short={true} className="md:hidden" />
         <MiscDetails
           contract={contract}
-          showHotVolume={showHotVolume}
           showTime={showTime}
           hideGroupLink={hideGroupLink}
         />
