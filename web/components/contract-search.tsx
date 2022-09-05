@@ -48,6 +48,8 @@ export const SORTS = [
   { label: 'Subsidy', value: 'liquidity' },
   { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
+  { label: 'Highest %', value: 'prob-descending' },
+  { label: 'Lowest %', value: 'prob-ascending' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
