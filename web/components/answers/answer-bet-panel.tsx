@@ -136,6 +136,7 @@ export function AnswerBetPanel(props: {
         Amount
         <span>Balance: {formatMoney(user?.balance ?? 0)}</span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -144,6 +145,7 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        showSliderOnMobile
       />
 
       {(betAmount ?? 0) > 10 &&
