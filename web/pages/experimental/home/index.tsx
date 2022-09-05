@@ -156,7 +156,6 @@ function SearchSection(props: {
                   ? sort
                   : undefined
               }
-              showProbChange={sort === 'prob-change-day'}
               loadMore={loadMore}
             />
           ) : (
