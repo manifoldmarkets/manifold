@@ -25,6 +25,7 @@ import { Button } from 'web/components/button'
 import { ArrangeHome, getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
+import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -75,36 +76,40 @@ const Home = (props: { auth: { user: User } | null }) => {
             />
           </>
         ) : (
-          visibleItems.map((item) => {
-            const { id } = item
-            if (id === 'your-bets') {
-              return (
-                <SearchSection
-                  key={id}
-                  label={'Your bets'}
-                  sort={'prob-change-day'}
-                  user={user}
-                  yourBets
-                />
-              )
-            }
-            const sort = SORTS.find((sort) => sort.value === id)
-            if (sort)
-              return (
-                <SearchSection
-                  key={id}
-                  label={sort.label}
-                  sort={sort.value}
-                  user={user}
-                />
-              )
+          <>
+            <ProbChangeTable userId={user?.id} />
 
-            const group = groups.find((g) => g.id === id)
-            if (group)
-              return <GroupSection key={id} group={group} user={user} />
+            {visibleItems.map((item) => {
+              const { id } = item
+              if (id === 'your-bets') {
+                return (
+                  <SearchSection
+                    key={id}
+                    label={'Your bets'}
+                    sort={'prob-change-day'}
+                    user={user}
+                    yourBets
+                  />
+                )
+              }
+              const sort = SORTS.find((sort) => sort.value === id)
+              if (sort)
+                return (
+                  <SearchSection
+                    key={id}
+                    label={sort.label}
+                    sort={sort.value}
+                    user={user}
+                  />
+                )
 
-            return null
-          })
+              const group = groups.find((g) => g.id === id)
+              if (group)
+                return <GroupSection key={id} group={group} user={user} />
+
+              return null
+            })}
+          </>
         )}
       </Col>
       <button
@@ -151,6 +156,7 @@ function SearchSection(props: {
                   ? sort
                   : undefined
               }
+              showProbChange={sort === 'prob-change-day'}
               loadMore={loadMore}
             />
           ) : (
