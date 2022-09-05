@@ -313,6 +313,7 @@ function BuyPanel(props: {
           Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -321,6 +322,7 @@ function BuyPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        showSliderOnMobile
       />
 
       {warning}
@@ -609,6 +611,7 @@ function LimitOrderPanel(props: {
           Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -616,6 +619,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
+        showSliderOnMobile
       />
 
       <Col className="mt-3 w-full gap-3">

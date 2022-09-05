@@ -84,6 +84,7 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
+  showSliderOnMobile?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -94,6 +95,7 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
+    showSliderOnMobile: showSlider,
     disabled,
     className,
     inputClassName,
@@ -121,15 +123,28 @@ export function BuyAmountInput(props: {
   }
 
   return (
-    <AmountInput
-      amount={amount}
-      onChange={onAmountChange}
-      label={ENV_CONFIG.moneyMoniker}
-      error={error}
-      disabled={disabled}
-      className={className}
-      inputClassName={inputClassName}
-      inputRef={inputRef}
-    />
+    <>
+      <AmountInput
+        amount={amount}
+        onChange={onAmountChange}
+        label={ENV_CONFIG.moneyMoniker}
+        error={error}
+        disabled={disabled}
+        className={className}
+        inputClassName={inputClassName}
+        inputRef={inputRef}
+      />
+      {showSlider && (
+        <input
+          type="range"
+          min="0"
+          max="250"
+          value={amount ?? 0}
+          onChange={(e) => onAmountChange(parseInt(e.target.value))}
+          className="xl:hidden"
+          step="25"
+        />
+      )}
+    </>
   )
 }
