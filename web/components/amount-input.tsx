@@ -141,7 +141,7 @@ export function BuyAmountInput(props: {
           max="250"
           value={amount ?? 0}
           onChange={(e) => onAmountChange(parseInt(e.target.value))}
-          className="xl:hidden"
+          className="range range-lg range-primary mb-2 z-40 xl:hidden "
           step="25"
         />
       )}
