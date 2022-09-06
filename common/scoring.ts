@@ -1,6 +1,7 @@
 import { groupBy, sumBy, mapValues, partition } from 'lodash'
 
 import { Bet } from './bet'
+import { computeInvestmentValueForBet } from './calculate-metrics'
 import { Contract } from './contract'
 import { getPayouts } from './payouts'
 
@@ -62,7 +63,18 @@ export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
       return { userId, payout }
     })
 
-  const netPayouts = [...resolvePayouts, ...salePayouts, ...investments]
+  const investmentValues = openBets.map((bet) => {
+    const { userId } = bet
+    const investmentValue = computeInvestmentValueForBet(bet, contract)
+    return { userId, payout: investmentValue }
+  })
+
+  const netPayouts = [
+    ...resolvePayouts,
+    ...salePayouts,
+    ...investments,
+    ...investmentValues,
+  ]
 
   const userScore = mapValues(
     groupBy(netPayouts, (payout) => payout.userId),

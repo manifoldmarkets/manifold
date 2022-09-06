@@ -11,14 +11,18 @@ const computeInvestmentValue = (
 ) => {
   return sumBy(bets, (bet) => {
     const contract = contractsDict[bet.contractId]
-    if (!contract || contract.isResolved) return 0
-    if (bet.sale || bet.isSold) return 0
-
-    const payout = calculatePayout(contract, bet, 'MKT')
-    const value = payout - (bet.loanAmount ?? 0)
-    if (isNaN(value)) return 0
-    return value
+    return computeInvestmentValueForBet(bet, contract)
   })
+}
+
+export const computeInvestmentValueForBet = (bet: Bet, contract: Contract) => {
+  if (!contract || contract.isResolved) return 0
+  if (bet.sale || bet.isSold) return 0
+
+  const payout = calculatePayout(contract, bet, 'MKT')
+  const value = payout - (bet.loanAmount ?? 0)
+  if (isNaN(value)) return 0
+  return value
 }
 
 const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
