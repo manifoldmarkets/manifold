@@ -14,7 +14,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
-import { contractsByGroupSlugQuery } from 'web/lib/firebase/contracts'
+import { tournamentContractsByGroupSlugQuery } from 'web/lib/firebase/contracts'
 import { getGroup, groupPath } from 'web/lib/firebase/groups'
 import elon_pic from './_cspi/Will_Elon_Buy_Twitter.png'
 import china_pic from './_cspi/Chinese_Military_Action_against_Taiwan.png'
@@ -222,7 +222,7 @@ const ImageCarousel = (props: { images: MarketImage[]; url: string }) => {
 
 const MarketCarousel = (props: { slug: string }) => {
   const { slug } = props
-  const q = contractsByGroupSlugQuery(slug)
+  const q = tournamentContractsByGroupSlugQuery(slug)
   const { allItems, getNext } = usePagination({ q, pageSize: 6 })
   const items = allItems()
 
