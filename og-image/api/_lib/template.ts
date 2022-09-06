@@ -118,7 +118,9 @@ export function getHtml(parsedReq: ParsedRequest) {
                         ? resolutionDiv
                         : numericValue
                         ? numericValueDiv
-                        : probabilityDiv
+                        : probability
+                        ? probabilityDiv
+                        : ''
                     }
         </div>
       </div>
