@@ -20,7 +20,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { getGroup } from 'web/lib/firebase/groups'
+import { getGroup, groupPath } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -34,6 +34,8 @@ import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { SiteLink } from 'web/components/site-link'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -406,13 +408,19 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <GroupSelector
-        selectedGroup={selectedGroup}
-        setSelectedGroup={setSelectedGroup}
-        creator={creator}
-        options={{ showSelector: showGroupSelector, showLabel: true }}
-      />
-
+      <Row className={'items-end gap-x-2'}>
+        <GroupSelector
+          selectedGroup={selectedGroup}
+          setSelectedGroup={setSelectedGroup}
+          creator={creator}
+          options={{ showSelector: showGroupSelector, showLabel: true }}
+        />
+        {showGroupSelector && selectedGroup && (
+          <SiteLink href={groupPath(selectedGroup.slug)}>
+            <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
+          </SiteLink>
+        )}
+      </Row>
       <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
