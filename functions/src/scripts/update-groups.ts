@@ -86,7 +86,7 @@ async function convertGroupFieldsToGroupDocuments() {
     }
   }
 }
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function updateTotalContractsAndMembers() {
   const groups = await getGroups()
   for (const group of groups) {
@@ -101,9 +101,22 @@ async function updateTotalContractsAndMembers() {
     })
   }
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function removeUnusedMemberAndContractFields() {
+  const groups = await getGroups()
+  for (const group of groups) {
+    log('removing member and contract ids', group.slug)
+    const groupRef = admin.firestore().collection('groups').doc(group.id)
+    await groupRef.update({
+      memberIds: admin.firestore.FieldValue.delete(),
+      contractIds: admin.firestore.FieldValue.delete(),
+    })
+  }
+}
 
 if (require.main === module) {
   initAdmin()
   // convertGroupFieldsToGroupDocuments()
-  updateTotalContractsAndMembers()
+  // updateTotalContractsAndMembers()
+  removeUnusedMemberAndContractFields()
 }
