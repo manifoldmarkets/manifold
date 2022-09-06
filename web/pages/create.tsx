@@ -483,17 +483,17 @@ export function NewContract(props: {
               {formatMoney(ante)}
             </div>
           ) : (
-            <div>
-              <div className="label-text text-primary pl-1">
-                FREE{' '}
-                <span className="label-text pl-1 text-gray-500">
-                  (You have{' '}
-                  {FREE_MARKETS_PER_USER_MAX -
-                    (creator?.freeMarketsCreated ?? 0)}{' '}
-                  free markets left)
-                </span>
+            <Row>
+              <div className="label-text text-neutral pl-1 line-through">
+                {formatMoney(ante)}
               </div>
-            </div>
+              <div className="label-text text-primary pl-1">FREE </div>
+              <div className="label-text pl-1 text-gray-500">
+                (You have{' '}
+                {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
+                free markets left)
+              </div>
+            </Row>
           )}
 
           {ante > balance && !deservesFreeMarket && (
