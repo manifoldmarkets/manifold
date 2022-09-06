@@ -65,20 +65,9 @@ export default function Groups(props: {
 
   const [query, setQuery] = useState('')
 
-  // List groups with the highest question count, then highest member count
-  // TODO use find-active-contracts to sort by?
-  const matches = sortBy(groups, []).filter((g) =>
-    searchInAny(
-      query,
-      g.name,
-      g.about || '',
-      creatorsDict[g.creatorId].username
-    )
-  )
-
-  const matchesOrderedByRecentActivity = sortBy(groups, [
-    (group) =>
-      -1 * (group.mostRecentContractAddedTime ?? group.mostRecentActivityTime),
+  const matchesOrderedByMostContractAndMembers = sortBy(groups, [
+    (group) => -1 * group.totalContracts,
+    (group) => -1 * group.totalMembers,
   ]).filter((g) =>
     searchInAny(
       query,
@@ -120,13 +109,14 @@ export default function Groups(props: {
                         <Col>
                           <input
                             type="text"
+                            value={query}
                             onChange={(e) => debouncedQuery(e.target.value)}
                             placeholder="Search your groups"
                             className="input input-bordered mb-4 w-full"
                           />
 
                           <div className="flex flex-wrap justify-center gap-4">
-                            {matchesOrderedByRecentActivity
+                            {matchesOrderedByMostContractAndMembers
                               .filter((match) =>
                                 memberGroupIds.includes(match.id)
                               )
@@ -153,11 +143,12 @@ export default function Groups(props: {
                       type="text"
                       onChange={(e) => debouncedQuery(e.target.value)}
                       placeholder="Search groups"
+                      value={query}
                       className="input input-bordered mb-4 w-full"
                     />
 
                     <div className="flex flex-wrap justify-center gap-4">
-                      {matches.map((group) => (
+                      {matchesOrderedByMostContractAndMembers.map((group) => (
                         <GroupCard
                           key={group.id}
                           group={group}

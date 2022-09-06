@@ -9,7 +9,7 @@ import {
 import clsx from 'clsx'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { useState } from 'react'
-import { useMemberGroups } from 'web/hooks/use-group'
+import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
 
@@ -27,9 +27,15 @@ export function GroupSelector(props: {
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const { showSelector, showLabel, ignoreGroupIds } = options
   const [query, setQuery] = useState('')
-  const availableGroups = (useMemberGroups(creator?.id) ?? []).filter(
-    (group) => !ignoreGroupIds?.includes(group.id)
-  )
+  const openGroups = useOpenGroups()
+  const availableGroups = openGroups
+    .concat(
+      (useMemberGroups(creator?.id) ?? []).filter(
+        (g) => !openGroups.map((og) => og.id).includes(g.id)
+      )
+    )
+    .filter((group) => !ignoreGroupIds?.includes(group.id))
+
   const filteredGroups = availableGroups.filter((group) =>
     searchInAny(query, group.name)
   )
