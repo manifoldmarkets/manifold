@@ -9,7 +9,7 @@ import {
 import clsx from 'clsx'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { useState } from 'react'
-import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
+import { useMemberGroups } from 'web/hooks/use-group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
 
@@ -27,14 +27,9 @@ export function GroupSelector(props: {
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const { showSelector, showLabel, ignoreGroupIds } = options
   const [query, setQuery] = useState('')
-  const openGroups = useOpenGroups()
-  const availableGroups = openGroups
-    .concat(
-      (useMemberGroups(creator?.id) ?? []).filter(
-        (g) => !openGroups.map((og) => og.id).includes(g.id)
-      )
-    )
-    .filter((group) => !ignoreGroupIds?.includes(group.id))
+  const availableGroups = (useMemberGroups(creator?.id) ?? []).filter(
+    (group) => !ignoreGroupIds?.includes(group.id)
+  )
   const filteredGroups = availableGroups.filter((group) =>
     searchInAny(query, group.name)
   )
@@ -96,7 +91,7 @@ export function GroupSelector(props: {
                     value={group}
                     className={({ active }) =>
                       clsx(
-                        'relative h-12 cursor-pointer select-none py-2 pl-4 pr-9',
+                        'relative h-12 cursor-pointer select-none py-2 pl-4 pr-6',
                         active ? 'bg-indigo-500 text-white' : 'text-gray-900'
                       )
                     }
@@ -115,11 +110,21 @@ export function GroupSelector(props: {
                         )}
                         <span
                           className={clsx(
-                            'ml-5 mt-1 block truncate',
+                            'ml-3 mt-1 block flex flex-row justify-between',
                             selected && 'font-semibold'
                           )}
                         >
-                          {group.name}
+                          <span className={'truncate'}>{group.name}</span>
+                          <span
+                            className={clsx(
+                              'ml-1 w-[1.4rem] shrink-0 rounded-full bg-indigo-500 text-center text-white',
+                              group.totalContracts > 99 ? 'w-[2.1rem]' : ''
+                            )}
+                          >
+                            {group.totalContracts > 99
+                              ? '99+'
+                              : group.totalContracts}
+                          </span>
                         </span>
                       </>
                     )}
