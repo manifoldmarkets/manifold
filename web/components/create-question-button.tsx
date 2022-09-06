@@ -1,13 +1,13 @@
 import React from 'react'
-import Link from 'next/link'
 import { Button } from './button'
+import { SiteLink } from 'web/components/site-link'
 
 export const CreateQuestionButton = () => {
   return (
-    <Link href="/create" passHref>
-      <Button color="gradient" size="xl" className="mt-4">
+    <SiteLink href="/create">
+      <Button color="gradient" size="xl" className="mt-4 w-full">
         Create a market
       </Button>
-    </Link>
+    </SiteLink>
   )
 }
