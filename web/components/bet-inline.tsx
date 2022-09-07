@@ -12,7 +12,7 @@ import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { useUser } from 'web/hooks/use-user'
-import { SignUpPrompt } from './sign-up-prompt'
+import { BetSignUpPrompt } from './sign-up-prompt'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Col } from './layout/col'
 import { XIcon } from '@heroicons/react/solid'
@@ -22,7 +22,7 @@ import { formatMoney } from 'common/util/format'
 export function BetInline(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
-  setProbAfter: (probAfter: number) => void
+  setProbAfter: (probAfter: number | undefined) => void
   onClose: () => void
 }) {
   const { contract, className, setProbAfter, onClose } = props
@@ -82,7 +82,7 @@ export function BetInline(props: {
         <div className="text-xl">Bet</div>
         <YesNoSelector
           className="space-x-0"
-          btnClassName="rounded-none first:rounded-l-2xl last:rounded-r-2xl"
+          btnClassName="rounded-l-none rounded-r-none first:rounded-l-2xl last:rounded-r-2xl"
           selected={outcome}
           onSelect={setOutcome}
           isPseudoNumeric={isPseudoNumeric}
@@ -112,8 +112,13 @@ export function BetInline(props: {
               : 'Submit'}
           </Button>
         )}
-        <SignUpPrompt size="xs" />
-        <button onClick={onClose}>
+        <BetSignUpPrompt size="xs" />
+        <button
+          onClick={() => {
+            setProbAfter(undefined)
+            onClose()
+          }}
+        >
           <XIcon className="ml-1 h-6 w-6" />
         </button>
       </Row>

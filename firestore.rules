@@ -10,7 +10,9 @@ service cloud.firestore {
         'akrolsmir@gmail.com',
         'jahooma@gmail.com',
         'taowell@gmail.com',
-        'manticmarkets@gmail.com'
+        'abc.sinclair@gmail.com',
+        'manticmarkets@gmail.com',
+        'iansphilips@gmail.com'
       ]
     }
 
@@ -22,7 +24,7 @@ service cloud.firestore {
       allow read;
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome']);
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -43,6 +45,11 @@ service cloud.firestore {
       allow read;
     }
 
+    match /contracts/{contractId}/follows/{userId} {
+      allow read;
+      allow create, delete: if userId == request.auth.uid;
+    }
+
     match /contracts/{contractId}/challenges/{challengeId}{
       allow read;
       allow create: if request.auth.uid == request.resource.data.creatorId;
@@ -51,6 +58,11 @@ service cloud.firestore {
     }
 
     match /users/{userId}/follows/{followUserId} {
+      allow read;
+      allow write: if request.auth.uid == userId;
+    }
+
+    match /users/{userId}/likes/{likeId} {
       allow read;
       allow write: if request.auth.uid == userId;
     }
@@ -148,25 +160,49 @@ service cloud.firestore {
                                                                     .hasOnly(['isSeen', 'viewTime']);
     }
 
-     match /groups/{groupId} {
+    match /{somePath=**}/groupMembers/{memberId} {
+      allow read;
+    }
+
+    match /{somePath=**}/groupContracts/{contractId} {
+      allow read;
+    }
+
+	   match /groups/{groupId} {
           allow read;
-          allow update: if request.auth.uid == resource.data.creatorId
+          allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                            && request.resource.data.diff(resource.data)
                            .affectedKeys()
-                           .hasOnly(['name', 'about', 'contractIds', 'memberIds', 'anyoneCanJoin' ]);
-         allow update: if (request.auth.uid in resource.data.memberIds  || resource.data.anyoneCanJoin)
-                           && request.resource.data.diff(resource.data)
-                           .affectedKeys()
-                           .hasOnly([ 'contractIds', 'memberIds' ]);
+                           .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId' ]);
           allow delete: if request.auth.uid == resource.data.creatorId;
 
-          function isMember() {
-            return request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+          match /groupContracts/{contractId} {
+              allow write: if isGroupMember() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId
+            }
+
+          match /groupMembers/{memberId}{
+             allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin);
+             allow delete: if request.auth.uid == resource.data.userId;
+            }
+
+          function isGroupMember() {
+            return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
           }
+
           match /comments/{commentId} {
           	allow read;
-            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isMember();
+            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember();
           }
+
         }
+
+      match /posts/{postId} {
+        allow read;
+        allow update: if isAdmin() || request.auth.uid == resource.data.creatorId
+                         && request.resource.data.diff(resource.data)
+                         .affectedKeys()
+                         .hasOnly(['name', 'content']);
+        allow delete: if isAdmin() || request.auth.uid == resource.data.creatorId;
+      }
   }
 }

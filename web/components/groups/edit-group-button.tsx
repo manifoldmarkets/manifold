@@ -3,17 +3,16 @@ import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
 
 import { Group } from 'common/group'
-import { deleteGroup, updateGroup } from 'web/lib/firebase/groups'
+import { deleteGroup, joinGroup } from 'web/lib/firebase/groups'
 import { Spacer } from '../layout/spacer'
 import { useRouter } from 'next/router'
 import { Modal } from 'web/components/layout/modal'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
-import { uniq } from 'lodash'
+import { useMemberIds } from 'web/hooks/use-group'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props
-  const { memberIds } = group
   const router = useRouter()
 
   const [name, setName] = useState(group.name)
@@ -21,7 +20,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [addMemberUsers, setAddMemberUsers] = useState<User[]>([])
-
+  const memberIds = useMemberIds(group.id)
   function updateOpen(newOpen: boolean) {
     setAddMemberUsers([])
     setOpen(newOpen)
@@ -33,11 +32,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   const onSubmit = async () => {
     setIsSubmitting(true)
 
-    await updateGroup(group, {
-      name,
-      about,
-      memberIds: uniq([...memberIds, ...addMemberUsers.map((user) => user.id)]),
-    })
+    await Promise.all(addMemberUsers.map((user) => joinGroup(group, user.id)))
 
     setIsSubmitting(false)
     updateOpen(false)

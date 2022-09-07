@@ -19,7 +19,6 @@ import {
 import { Challenge, CHALLENGES_ENABLED } from 'common/challenge'
 import { Tabs } from 'web/components/layout/tabs'
 import { SiteLink } from 'web/components/site-link'
-import { UserLink } from 'web/components/user-page'
 import { Avatar } from 'web/components/avatar'
 import Router from 'next/router'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
@@ -30,6 +29,7 @@ import toast from 'react-hot-toast'
 import { Modal } from 'web/components/layout/modal'
 import { QRCode } from 'web/components/qr-code'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
+import { UserLink } from 'web/components/user-link'
 
 dayjs.extend(customParseFormat)
 const columnClass = 'sm:px-5 px-2 py-3.5 max-w-[100px] truncate'

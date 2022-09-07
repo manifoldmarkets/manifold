@@ -11,7 +11,6 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
-import { ActivityItem } from '../feed/activity-items'
 import { User } from 'common/user'
 import { getOutcomeProbability } from 'common/calculate'
 import { Answer } from 'common/answer'
@@ -21,9 +20,9 @@ import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import { BuyButton } from 'web/components/yes-no-selector'
+import { UserLink } from 'web/components/user-link'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
@@ -176,7 +175,6 @@ function getAnswerItems(
         type: 'answer' as const,
         contract,
         answer,
-        items: [] as ActivityItem[],
         user,
       }
     })
@@ -186,7 +184,6 @@ function getAnswerItems(
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
-  items: ActivityItem[]
   type: string
 }) {
   const { answer, contract } = props

@@ -10,7 +10,7 @@ const queryParams = z
   .object({
     limit: z
       .number()
-      .default(1000)
+      .default(500)
       .or(z.string().regex(/\d+/).transform(Number))
       .refine((n) => n >= 0 && n <= 1000, 'Limit must be between 0 and 1000'),
     before: z.string().optional(),

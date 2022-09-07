@@ -10,11 +10,11 @@ import {
 import { PortfolioMetrics, User } from './user'
 import { filterDefined } from './util/array'
 
-const LOAN_WEEKLY_RATE = 0.05
+const LOAN_DAILY_RATE = 0.02
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
-  return netValue * LOAN_WEEKLY_RATE
+  return netValue * LOAN_DAILY_RATE
 }
 
 export const getLoanUpdates = (
@@ -101,7 +101,7 @@ const getBinaryContractLoanUpdate = (contract: CPMMContract, bets: Bet[]) => {
   const oldestBet = minBy(bets, (bet) => bet.createdTime)
 
   const newLoan = calculateNewLoan(invested, loanAmount)
-  if (isNaN(newLoan) || newLoan <= 0 || !oldestBet) return undefined
+  if (!isFinite(newLoan) || newLoan <= 0 || !oldestBet) return undefined
 
   const loanTotal = (oldestBet.loanAmount ?? 0) + newLoan
 
@@ -118,14 +118,14 @@ const getFreeResponseContractLoanUpdate = (
   contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
 ) => {
-  const openBets = bets.filter((bet) => bet.isSold || bet.sale)
+  const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
 
   return openBets.map((bet) => {
     const loanAmount = bet.loanAmount ?? 0
     const newLoan = calculateNewLoan(bet.amount, loanAmount)
     const loanTotal = loanAmount + newLoan
 
-    if (isNaN(newLoan) || newLoan <= 0) return undefined
+    if (!isFinite(newLoan) || newLoan <= 0) return undefined
 
     return {
       userId: bet.userId,

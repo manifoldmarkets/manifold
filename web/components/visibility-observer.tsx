@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useEvent } from '../hooks/use-event'
 
 export function VisibilityObserver(props: {
@@ -8,17 +8,18 @@ export function VisibilityObserver(props: {
   const { className } = props
   const [elem, setElem] = useState<HTMLElement | null>(null)
   const onVisibilityUpdated = useEvent(props.onVisibilityUpdated)
-
-  useEffect(() => {
-    const hasIOSupport = !!window.IntersectionObserver
-    if (!hasIOSupport || !elem) return
-
-    const observer = new IntersectionObserver(([entry]) => {
+  const observer = useRef(
+    new IntersectionObserver(([entry]) => {
       onVisibilityUpdated(entry.isIntersecting)
     }, {})
-    observer.observe(elem)
-    return () => observer.disconnect()
-  }, [elem, onVisibilityUpdated])
+  ).current
+
+  useEffect(() => {
+    if (elem) {
+      observer.observe(elem)
+      return () => observer.unobserve(elem)
+    }
+  }, [elem, observer])
 
   return <div ref={setElem} className={className}></div>
 }

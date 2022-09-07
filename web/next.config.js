@@ -4,10 +4,12 @@ const ABOUT_PAGE_URL = 'https://docs.manifold.markets/$how-to'
 
 /** @type {import('next').NextConfig} */
 module.exports = {
+  productionBrowserSourceMaps: true,
   staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
   optimizeFonts: false,
   experimental: {
+    scrollRestoration: true,
     externalDir: true,
     modularizeImports: {
       '@heroicons/react/solid/?(((\\w*)?/?)*)': {

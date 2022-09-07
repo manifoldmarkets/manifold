@@ -1,9 +1,13 @@
+import { useRouter } from 'next/router'
 import { Answer } from 'common/answer'
 import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { useContracts } from 'web/hooks/use-contracts'
-import { Sort, useQuery, useSort } from 'web/hooks/use-sort-and-query-params'
+import {
+  usePersistentState,
+  urlParamStore,
+} from 'web/hooks/use-persistent-state'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -15,10 +19,12 @@ export default function ContractSearchFirestore(props: {
     groupSlug?: string
   }
 }) {
-  const contracts = useContracts()
   const { additionalFilter } = props
-  const [query, setQuery] = useQuery('', { useUrl: true })
-  const [sort, setSort] = useSort('score', { useUrl: true })
+  const contracts = useContracts()
+  const router = useRouter()
+  const store = urlParamStore(router)
+  const [query, setQuery] = usePersistentState('', { key: 'q', store })
+  const [sort, setSort] = usePersistentState('score', { key: 'sort', store })
 
   let matches = (contracts ?? []).filter((c) =>
     searchInAny(
@@ -34,8 +40,6 @@ export default function ContractSearchFirestore(props: {
     matches.sort((a, b) => b.createdTime - a.createdTime)
   } else if (sort === 'resolve-date') {
     matches = sortBy(matches, (contract) => -1 * (contract.resolutionTime ?? 0))
-  } else if (sort === 'oldest') {
-    matches.sort((a, b) => a.createdTime - b.createdTime)
   } else if (sort === 'close-date') {
     matches = sortBy(matches, ({ volume24Hours }) => -1 * volume24Hours)
     matches = sortBy(matches, (contract) => contract.closeTime ?? Infinity)
@@ -93,7 +97,7 @@ export default function ContractSearchFirestore(props: {
         <select
           className="select select-bordered"
           value={sort}
-          onChange={(e) => setSort(e.target.value as Sort)}
+          onChange={(e) => setSort(e.target.value)}
         >
           <option value="score">Trending</option>
           <option value="newest">Newest</option>

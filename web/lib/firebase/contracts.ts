@@ -6,16 +6,17 @@ import {
   getDocs,
   limit,
   orderBy,
+  Query,
   query,
   setDoc,
   startAfter,
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { sortBy, sum } from 'lodash'
+import { partition, sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, CPMMContract } from 'common/contract'
 import { createRNG, shuffle } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
@@ -103,6 +104,14 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
   return snapshot.docs.map((doc) => doc.data())
 }
 
+export const tournamentContractsByGroupSlugQuery = (slug: string) =>
+  query(
+    contracts,
+    where('groupSlugs', 'array-contains', slug),
+    where('isResolved', '==', false),
+    orderBy('popularityScore', 'desc')
+  )
+
 export async function listContractsByGroupSlug(
   slug: string
 ): Promise<Contract[]> {
@@ -125,9 +134,10 @@ export async function listTaggedContractsCaseInsensitive(
 
 export async function listAllContracts(
   n: number,
-  before?: string
+  before?: string,
+  sortDescBy = 'createdTime'
 ): Promise<Contract[]> {
-  let q = query(contracts, orderBy('createdTime', 'desc'), limit(n))
+  let q = query(contracts, orderBy(sortDescBy, 'desc'), limit(n))
   if (before != null) {
     const snap = await getDoc(doc(contracts, before))
     q = query(q, startAfter(snap))
@@ -153,6 +163,17 @@ export function listenForUserContracts(
     orderBy('createdTime', 'desc')
   )
   return listenForValues<Contract>(q, setContracts)
+}
+
+export function getUserBetContracts(userId: string) {
+  return getValues<Contract>(getUserBetContractsQuery(userId))
+}
+
+export function getUserBetContractsQuery(userId: string) {
+  return query(
+    contracts,
+    where('uniqueBettorIds', 'array-contains', userId)
+  ) as Query<Contract>
 }
 
 const activeContractsQuery = query(
@@ -209,6 +230,29 @@ export function listenForContract(
 ) {
   const contractRef = doc(contracts, contractId)
   return listenForValue<Contract>(contractRef, setContract)
+}
+
+export function listenForContractFollows(
+  contractId: string,
+  setFollowIds: (followIds: string[]) => void
+) {
+  const follows = collection(contracts, contractId, 'follows')
+  return listenForValues<{ id: string }>(follows, (docs) =>
+    setFollowIds(docs.map(({ id }) => id))
+  )
+}
+
+export async function followContract(contractId: string, userId: string) {
+  const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
+  return await setDoc(followDoc, {
+    id: userId,
+    createdTime: Date.now(),
+  })
+}
+
+export async function unFollowContract(contractId: string, userId: string) {
+  const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
+  await deleteDoc(followDoc)
 }
 
 function chooseRandomSubset(contracts: Contract[], count: number) {
@@ -271,6 +315,65 @@ export async function getClosingSoonContracts() {
   return sortBy(chooseRandomSubset(data, 2), (contract) => contract.closeTime)
 }
 
+export const getTopCreatorContracts = async (
+  creatorId: string,
+  count: number
+) => {
+  const creatorContractsQuery = query(
+    contracts,
+    where('isResolved', '==', false),
+    where('creatorId', '==', creatorId),
+    orderBy('popularityScore', 'desc'),
+    limit(count)
+  )
+  return await getValues<Contract>(creatorContractsQuery)
+}
+
+export const getTopGroupContracts = async (
+  groupSlug: string,
+  count: number
+) => {
+  const creatorContractsQuery = query(
+    contracts,
+    where('groupSlugs', 'array-contains', groupSlug),
+    where('isResolved', '==', false),
+    orderBy('popularityScore', 'desc'),
+    limit(count)
+  )
+  return await getValues<Contract>(creatorContractsQuery)
+}
+
+export const getRecommendedContracts = async (
+  contract: Contract,
+  excludeBettorId: string,
+  count: number
+) => {
+  const { creatorId, groupSlugs, id } = contract
+
+  const [userContracts, groupContracts] = await Promise.all([
+    getTopCreatorContracts(creatorId, count * 2),
+    groupSlugs && groupSlugs[0]
+      ? getTopGroupContracts(groupSlugs[0], count * 2)
+      : [],
+  ])
+
+  const combined = uniqBy([...userContracts, ...groupContracts], (c) => c.id)
+
+  const open = combined
+    .filter((c) => c.closeTime && c.closeTime > Date.now())
+    .filter((c) => c.id !== id)
+
+  const [betOnContracts, nonBetOnContracts] = partition(
+    open,
+    (c) => c.uniqueBettorIds && c.uniqueBettorIds.includes(excludeBettorId)
+  )
+  const chosen = chooseRandomSubset(nonBetOnContracts, count)
+  if (chosen.length < count)
+    chosen.push(...chooseRandomSubset(betOnContracts, count - chosen.length))
+
+  return chosen
+}
+
 export async function getRecentBetsAndComments(contract: Contract) {
   const contractDoc = doc(contracts, contract.id)
 
@@ -300,3 +403,21 @@ export async function getRecentBetsAndComments(contract: Contract) {
     recentComments,
   }
 }
+
+export const getProbChangesPositive = (userId: string) =>
+  query(
+    contracts,
+    where('uniqueBettorIds', 'array-contains', userId),
+    where('probChanges.day', '>', 0),
+    orderBy('probChanges.day', 'desc'),
+    limit(10)
+  ) as Query<CPMMContract>
+
+export const getProbChangesNegative = (userId: string) =>
+  query(
+    contracts,
+    where('uniqueBettorIds', 'array-contains', userId),
+    where('probChanges.day', '<', 0),
+    orderBy('probChanges.day', 'asc'),
+    limit(10)
+  ) as Query<CPMMContract>

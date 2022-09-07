@@ -49,7 +49,7 @@ export function ContractLeaderboard(props: {
 
   return users && users.length > 0 ? (
     <Leaderboard
-      title="🏅 Top traders"
+      title="🏅 Top bettors"
       users={users || []}
       columns={[
         {
@@ -107,12 +107,7 @@ export function ContractTopTrades(props: {
               comment={commentsById[topCommentId]}
               tips={tips[topCommentId]}
               betsBySameUser={[betsById[topCommentId]]}
-              smallAvatar={false}
             />
-          </div>
-          <div className="mt-2 text-sm text-gray-500">
-            {commentsById[topCommentId].userName} made{' '}
-            {formatMoney(profitById[topCommentId] || 0)}!
           </div>
           <Spacer h={16} />
         </>
@@ -121,16 +116,11 @@ export function ContractTopTrades(props: {
       {/* If they're the same, only show the comment; otherwise show both */}
       {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
         <>
-          <Title text="💸 Smartest money" className="!mt-0" />
+          <Title text="💸 Best bet" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedBet
-              contract={contract}
-              bet={betsById[topBetId]}
-              hideOutcome={false}
-              smallAvatar={false}
-            />
+            <FeedBet contract={contract} bet={betsById[topBetId]} />
           </div>
-          <div className="mt-2 text-sm text-gray-500">
+          <div className="mt-2 ml-2 text-sm text-gray-500">
             {topBettor?.name} made {formatMoney(profitById[topBetId] || 0)}!
           </div>
         </>

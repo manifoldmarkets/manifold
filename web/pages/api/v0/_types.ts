@@ -14,6 +14,7 @@ export type LiteMarket = {
   id: string
 
   // Attributes about the creator
+  creatorId: string
   creatorUsername: string
   creatorName: string
   createdTime: number
@@ -22,8 +23,6 @@ export type LiteMarket = {
   // Market attributes. All times are in milliseconds since epoch
   closeTime?: number
   question: string
-  description: string | JSONContent
-  textDescription: string // string version of description
   tags: string[]
   url: string
   outcomeType: string
@@ -54,6 +53,8 @@ export type FullMarket = LiteMarket & {
   bets: Bet[]
   comments: Comment[]
   answers?: ApiAnswer[]
+  description: string | JSONContent
+  textDescription: string // string version of description
 }
 
 export type ApiError = {
@@ -75,13 +76,13 @@ export class ValidationError {
 export function toLiteMarket(contract: Contract): LiteMarket {
   const {
     id,
+    creatorId,
     creatorUsername,
     creatorName,
     createdTime,
     creatorAvatarUrl,
     closeTime,
     question,
-    description,
     tags,
     slug,
     pool,
@@ -109,6 +110,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
 
   return removeUndefinedProps({
     id,
+    creatorId,
     creatorUsername,
     creatorName,
     createdTime,
@@ -118,11 +120,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
         ? Math.min(resolutionTime, closeTime)
         : closeTime,
     question,
-    description,
-    textDescription:
-      typeof description === 'string'
-        ? description
-        : richTextToString(description),
     tags,
     url: `https://manifold.markets/${creatorUsername}/${slug}`,
     pool,
@@ -158,11 +155,18 @@ export function toFullMarket(
         )
       : undefined
 
+  const { description } = contract
+
   return {
     ...liteMarket,
     answers,
     comments,
     bets,
+    description,
+    textDescription:
+      typeof description === 'string'
+        ? description
+        : richTextToString(description),
   }
 }
 

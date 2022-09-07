@@ -8,20 +8,22 @@
     "web"
   ],
   "scripts": {
-    "verify": "(cd web && yarn verify:dir); (cd functions && yarn verify:dir)"
+    "verify": "(cd web && yarn verify:dir); (cd functions && yarn verify:dir)",
+    "lint": "eslint common --fix ; eslint web --fix ; eslint functions --fix"
   },
   "dependencies": {},
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "5.25.0",
-    "@typescript-eslint/parser": "5.25.0",
     "@types/node": "16.11.11",
+    "@typescript-eslint/eslint-plugin": "5.36.0",
+    "@typescript-eslint/parser": "5.36.0",
     "concurrently": "6.5.1",
-    "eslint": "8.15.0",
+    "eslint": "8.23.0",
     "eslint-plugin-lodash": "^7.4.0",
-    "prettier": "2.5.0",
-    "typescript": "4.6.4",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "nodemon": "2.0.19",
+    "prettier": "2.7.1",
     "ts-node": "10.9.1",
-    "nodemon": "2.0.19"
+    "typescript": "4.8.2"
   },
   "resolutions": {
     "@types/react": "17.0.43"

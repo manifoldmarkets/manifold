@@ -56,6 +56,10 @@ module.exports = {
             display: 'none',
           },
         },
+        '.break-anywhere': {
+          'overflow-wrap': 'anywhere',
+          'word-break': 'break-word', // for Safari
+        },
       })
     }),
   ],

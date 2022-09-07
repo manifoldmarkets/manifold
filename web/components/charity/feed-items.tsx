@@ -1,9 +1,9 @@
 import { DonationTxn } from 'common/txn'
 import { Avatar } from '../avatar'
 import { useUserById } from 'web/hooks/use-user'
-import { UserLink } from '../user-page'
 import { manaToUSD } from '../../../common/util/format'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { UserLink } from 'web/components/user-link'
 
 export function Donation(props: { txn: DonationTxn }) {
   const { txn } = props

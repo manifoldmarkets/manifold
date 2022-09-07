@@ -69,6 +69,10 @@ export const unsubscribe: EndpointDefinition = {
       res.send(
         `${name}, you have been unsubscribed from market answer emails on Manifold Markets.`
       )
+    else if (type === 'weekly-trending')
+      res.send(
+        `${name}, you have been unsubscribed from weekly trending emails on Manifold Markets.`
+      )
     else res.send(`${name}, you have been unsubscribed.`)
   },
 }

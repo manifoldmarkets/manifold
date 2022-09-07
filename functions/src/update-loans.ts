@@ -12,8 +12,8 @@ const firestore = admin.firestore()
 
 export const updateLoans = functions
   .runWith({ memory: '2GB', timeoutSeconds: 540 })
-  // Run every Monday.
-  .pubsub.schedule('0 0 * * 1')
+  // Run every day at midnight.
+  .pubsub.schedule('0 0 * * *')
   .timeZone('America/Los_Angeles')
   .onRun(updateLoansCore)
 
@@ -79,9 +79,13 @@ async function updateLoansCore() {
   const today = new Date().toDateString().replace(' ', '-')
   const key = `loan-notifications-${today}`
   await Promise.all(
-    userPayouts.map(({ user, payout }) =>
-      createLoanIncomeNotification(user, key, payout)
-    )
+    userPayouts
+      // Don't send a notification if the payout is < M$1,
+      // because a M$0 loan is confusing.
+      .filter(({ payout }) => payout >= 1)
+      .map(({ user, payout }) =>
+        createLoanIncomeNotification(user, key, payout)
+      )
   )
 
   log('Notifications sent!')

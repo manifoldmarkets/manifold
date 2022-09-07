@@ -31,35 +31,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { LoansModal } from './profile/loans-modal'
-
-export function UserLink(props: {
-  name: string
-  username: string
-  showUsername?: boolean
-  className?: string
-  short?: boolean
-}) {
-  const { name, username, showUsername, className, short } = props
-  const firstName = name.split(' ')[0]
-  const maxLength = 10
-  const shortName =
-    firstName.length >= 3
-      ? firstName.length < maxLength
-        ? firstName
-        : firstName.substring(0, maxLength - 3) + '...'
-      : name.length > maxLength
-      ? name.substring(0, maxLength) + '...'
-      : name
-  return (
-    <SiteLink
-      href={`/${username}`}
-      className={clsx('z-10 truncate', className)}
-    >
-      {short ? shortName : name}
-      {showUsername && ` (@${username})`}
-    </SiteLink>
-  )
-}
+import { UserLikesButton } from 'web/components/profile/user-likes-button'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -148,10 +120,7 @@ export function UserPage(props: { user: User }) {
       <Col className="mx-4 -mt-6">
         <Row className={'flex-wrap justify-between gap-y-2'}>
           <Col>
-            <span
-              className="text-2xl font-bold"
-              style={{ wordBreak: 'break-word' }}
-            >
+            <span className="break-anywhere text-2xl font-bold">
               {user.name}
             </span>
             <span className="text-gray-500">@{user.username}</span>
@@ -199,62 +168,63 @@ export function UserPage(props: { user: User }) {
             <Spacer h={4} />
           </>
         )}
-        <Row className="flex-wrap items-center gap-2 sm:gap-4">
-          {user.website && (
-            <SiteLink
-              href={
-                'https://' +
-                user.website.replace('http://', '').replace('https://', '')
-              }
-            >
-              <Row className="items-center gap-1">
-                <LinkIcon className="h-4 w-4" />
-                <span className="text-sm text-gray-500">{user.website}</span>
-              </Row>
-            </SiteLink>
-          )}
+        {(user.website || user.twitterHandle || user.discordHandle) && (
+          <Row className="mb-5 flex-wrap items-center gap-2 sm:gap-4">
+            {user.website && (
+              <SiteLink
+                href={
+                  'https://' +
+                  user.website.replace('http://', '').replace('https://', '')
+                }
+              >
+                <Row className="items-center gap-1">
+                  <LinkIcon className="h-4 w-4" />
+                  <span className="text-sm text-gray-500">{user.website}</span>
+                </Row>
+              </SiteLink>
+            )}
 
-          {user.twitterHandle && (
-            <SiteLink
-              href={`https://twitter.com/${user.twitterHandle
-                .replace('https://www.twitter.com/', '')
-                .replace('https://twitter.com/', '')
-                .replace('www.twitter.com/', '')
-                .replace('twitter.com/', '')}`}
-            >
-              <Row className="items-center gap-1">
-                <img
-                  src="/twitter-logo.svg"
-                  className="h-4 w-4"
-                  alt="Twitter"
-                />
-                <span className="text-sm text-gray-500">
-                  {user.twitterHandle}
-                </span>
-              </Row>
-            </SiteLink>
-          )}
+            {user.twitterHandle && (
+              <SiteLink
+                href={`https://twitter.com/${user.twitterHandle
+                  .replace('https://www.twitter.com/', '')
+                  .replace('https://twitter.com/', '')
+                  .replace('www.twitter.com/', '')
+                  .replace('twitter.com/', '')}`}
+              >
+                <Row className="items-center gap-1">
+                  <img
+                    src="/twitter-logo.svg"
+                    className="h-4 w-4"
+                    alt="Twitter"
+                  />
+                  <span className="text-sm text-gray-500">
+                    {user.twitterHandle}
+                  </span>
+                </Row>
+              </SiteLink>
+            )}
 
-          {user.discordHandle && (
-            <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
-              <Row className="items-center gap-1">
-                <img
-                  src="/discord-logo.svg"
-                  className="h-4 w-4"
-                  alt="Discord"
-                />
-                <span className="text-sm text-gray-500">
-                  {user.discordHandle}
-                </span>
-              </Row>
-            </SiteLink>
-          )}
-        </Row>
-        <Spacer h={5} />
+            {user.discordHandle && (
+              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+                <Row className="items-center gap-1">
+                  <img
+                    src="/discord-logo.svg"
+                    className="h-4 w-4"
+                    alt="Discord"
+                  />
+                  <span className="text-sm text-gray-500">
+                    {user.discordHandle}
+                  </span>
+                </Row>
+              </SiteLink>
+            )}
+          </Row>
+        )}
         {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
           <Row
             className={
-              'w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
+              'mb-5 w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
             }
           >
             <span>
@@ -271,7 +241,6 @@ export function UserPage(props: { user: User }) {
             />
           </Row>
         )}
-        <Spacer h={5} />
         <QueryUncontrolledTabs
           currentPageForAnalytics={'profile'}
           labelClassName={'pb-2 pt-1 '}
@@ -284,28 +253,33 @@ export function UserPage(props: { user: User }) {
             },
             {
               title: 'Comments',
-              content: <UserCommentsList user={user} />,
+              content: (
+                <Col>
+                  <UserCommentsList user={user} />
+                </Col>
+              ),
             },
             {
               title: 'Bets',
               content: (
                 <>
-                  <PortfolioValueSection userId={user.id} />
                   <BetsList user={user} />
                 </>
               ),
             },
             {
-              title: 'Social',
+              title: 'Stats',
               content: (
-                <Row
-                  className={'mt-2 flex-wrap items-center justify-center gap-6'}
-                >
-                  <FollowingButton user={user} />
-                  <FollowersButton user={user} />
-                  <ReferralsButton user={user} />
-                  <GroupsButton user={user} />
-                </Row>
+                <Col className="mb-8">
+                  <Row className={'mb-8 flex-wrap items-center gap-6'}>
+                    <FollowingButton user={user} />
+                    <FollowersButton user={user} />
+                    <ReferralsButton user={user} />
+                    <GroupsButton user={user} />
+                    <UserLikesButton user={user} />
+                  </Row>
+                  <PortfolioValueSection userId={user.id} />
+                </Col>
               ),
             },
           ]}

@@ -35,6 +35,7 @@ export type Economy = {
   BETTING_STREAK_BONUS_AMOUNT?: number
   BETTING_STREAK_BONUS_MAX?: number
   BETTING_STREAK_RESET_HOUR?: number
+  FREE_MARKETS_PER_USER_MAX?: number
 }
 
 type FirebaseConfig = {
@@ -70,6 +71,8 @@ export const PROD_CONFIG: EnvConfig = {
     'taowell@gmail.com', // Stephen
     'abc.sinclair@gmail.com', // Sinclair
     'manticmarkets@gmail.com', // Manifold
+    'iansphilips@gmail.com', // Ian
+    'd4vidchee@gmail.com', // D4vid
   ],
   visibility: 'PUBLIC',
 

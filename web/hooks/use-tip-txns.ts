@@ -29,3 +29,15 @@ export function useTipTxns(on: {
     })
   }, [txns])
 }
+
+export function useMarketTipTxns(contractId: string): TipTxn[] {
+  const [txns, setTxns] = useState<TipTxn[]>([])
+
+  useEffect(() => {
+    return listenForTipTxns(contractId, (txns) => {
+      setTxns(txns.filter((txn) => !txn.data.commentId))
+    })
+  }, [contractId])
+
+  return txns
+}

@@ -11,7 +11,6 @@ import {
   useRole,
 } from '@floating-ui/react-dom-interactions'
 import { Transition } from '@headlessui/react'
-import clsx from 'clsx'
 import { ReactNode, useRef, useState } from 'react'
 
 // See https://floating-ui.com/docs/react-dom
@@ -22,8 +21,9 @@ export function Tooltip(props: {
   className?: string
   placement?: Placement
   noTap?: boolean
+  noFade?: boolean
 }) {
-  const { text, children, className, placement = 'top', noTap } = props
+  const { text, children, className, placement = 'top', noTap, noFade } = props
 
   const arrowRef = useRef(null)
 
@@ -58,21 +58,17 @@ export function Tooltip(props: {
   }[placement.split('-')[0]] as string
 
   return text ? (
-    <div className="contents">
-      <div
-        className={clsx('inline-block', className)}
-        ref={reference}
-        {...getReferenceProps()}
-      >
+    <>
+      <span className={className} ref={reference} {...getReferenceProps()}>
         {children}
-      </div>
+      </span>
       {/* conditionally render tooltip and fade in/out */}
       <Transition
         show={open}
-        enter="transition ease-out duration-200"
-        enterFrom="opacity-0 "
+        enter="transition ease-out duration-50"
+        enterFrom="opacity-0"
         enterTo="opacity-100"
-        leave="transition ease-in duration-150"
+        leave={noFade ? '' : 'transition ease-in duration-150'}
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         // div attributes
@@ -95,7 +91,7 @@ export function Tooltip(props: {
           }}
         />
       </Transition>
-    </div>
+    </>
   ) : (
     <>{children}</>
   )

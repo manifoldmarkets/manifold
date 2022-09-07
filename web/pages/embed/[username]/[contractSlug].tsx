@@ -21,6 +21,7 @@ import { SiteLink } from 'web/components/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { useTracking } from 'web/hooks/use-tracking'
 import { listAllBets } from 'web/lib/firebase/bets'
 import {
   contractPath,
@@ -71,8 +72,6 @@ export default function ContractEmbedPage(props: {
   const contract = useContractWithPreload(props.contract)
   const { bets } = props
 
-  bets.sort((bet1, bet2) => bet1.createdTime - bet2.createdTime)
-
   if (!contract) {
     return <Custom404 />
   }
@@ -83,6 +82,12 @@ export default function ContractEmbedPage(props: {
 export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   const { question, outcomeType } = contract
+
+  useTracking('view market embed', {
+    slug: contract.slug,
+    contractId: contract.id,
+    creatorId: contract.creatorId,
+  })
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -105,12 +110,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         <Spacer h={3} />
 
         <Row className="items-center justify-between gap-4 px-2">
-          <ContractDetails
-            contract={contract}
-            bets={bets}
-            isCreator={false}
-            disabled
-          />
+          <ContractDetails contract={contract} disabled />
 
           {(isBinary || isPseudoNumeric) &&
             tradingAllowed(contract) &&
@@ -160,12 +160,13 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
         {(isBinary || isPseudoNumeric) && (
           <ContractProbGraph
             contract={contract}
-            bets={bets}
+            bets={[...bets].reverse()}
             height={graphHeight}
           />
         )}
 
-        {outcomeType === 'FREE_RESPONSE' && (
+        {(outcomeType === 'FREE_RESPONSE' ||
+          outcomeType === 'MULTIPLE_CHOICE') && (
           <AnswersGraph contract={contract} bets={bets} height={graphHeight} />
         )}
 

@@ -35,20 +35,22 @@ import { Tooltip } from '../tooltip'
 
 export function ContractCard(props: {
   contract: Contract
-  showHotVolume?: boolean
   showTime?: ShowTime
   className?: string
+  questionClass?: string
   onClick?: () => void
   hideQuickBet?: boolean
   hideGroupLink?: boolean
+  trackingPostfix?: string
 }) {
   const {
-    showHotVolume,
     showTime,
     className,
+    questionClass,
     onClick,
     hideQuickBet,
     hideGroupLink,
+    trackingPostfix,
   } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
@@ -68,45 +70,20 @@ export function ContractCard(props: {
   return (
     <Row
       className={clsx(
-        'relative gap-3 self-start rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
+        'group  relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
         className
       )}
     >
-      <Col className="group relative flex-1 gap-3 py-4 pb-12  pl-6">
-        {onClick ? (
-          <a
-            className="absolute top-0 left-0 right-0 bottom-0"
-            href={contractPath(contract)}
-            onClick={(e) => {
-              // Let the browser handle the link click (opens in new tab).
-              if (e.ctrlKey || e.metaKey) return
-
-              e.preventDefault()
-              track('click market card', {
-                slug: contract.slug,
-                contractId: contract.id,
-              })
-              onClick()
-            }}
-          />
-        ) : (
-          <Link href={contractPath(contract)}>
-            <a
-              onClick={trackCallback('click market card', {
-                slug: contract.slug,
-                contractId: contract.id,
-              })}
-              className="absolute top-0 left-0 right-0 bottom-0"
-            />
-          </Link>
-        )}
+      <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
           className={'hidden md:inline-flex'}
         />
         <p
-          className="break-words font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2"
-          style={{ /* For iOS safari */ wordBreak: 'break-word' }}
+          className={clsx(
+            'break-anywhere font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+            questionClass
+          )}
         >
           {question}
         </p>
@@ -124,7 +101,7 @@ export function ContractCard(props: {
           ))}
       </Col>
       {showQuickBet ? (
-        <QuickBet contract={contract} user={user} />
+        <QuickBet contract={contract} user={user} className="z-10" />
       ) : (
         <>
           {outcomeType === 'BINARY' && (
@@ -165,18 +142,45 @@ export function ContractCard(props: {
           showQuickBet ? 'w-[85%]' : 'w-full'
         )}
       >
-        <AvatarDetails
-          contract={contract}
-          short={true}
-          className={'block md:hidden'}
-        />
+        <AvatarDetails contract={contract} short={true} className="md:hidden" />
         <MiscDetails
           contract={contract}
-          showHotVolume={showHotVolume}
           showTime={showTime}
           hideGroupLink={hideGroupLink}
         />
       </Row>
+
+      {/* Add click layer */}
+      {onClick ? (
+        <a
+          className="absolute top-0 left-0 right-0 bottom-0"
+          href={contractPath(contract)}
+          onClick={(e) => {
+            // Let the browser handle the link click (opens in new tab).
+            if (e.ctrlKey || e.metaKey) return
+
+            e.preventDefault()
+            track('click market card' + (trackingPostfix ?? ''), {
+              slug: contract.slug,
+              contractId: contract.id,
+            })
+            onClick()
+          }}
+        />
+      ) : (
+        <Link href={contractPath(contract)}>
+          <a
+            onClick={trackCallback(
+              'click market card' + (trackingPostfix ?? ''),
+              {
+                slug: contract.slug,
+                contractId: contract.id,
+              }
+            )}
+            className="absolute top-0 left-0 right-0 bottom-0"
+          />
+        </Link>
+      )}
     </Row>
   )
 }

@@ -1,3 +1,4 @@
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { isEqual } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -8,7 +9,10 @@ import {
   listenForHotContracts,
   listenForInactiveContracts,
   listenForNewContracts,
+  getUserBetContracts,
+  getUserBetContractsQuery,
 } from 'web/lib/firebase/contracts'
+import { useQueryClient } from 'react-query'
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -88,4 +92,19 @@ export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
   return contracts && Object.keys(contractDict.current).length > 0
     ? contracts.map((c) => contractDict.current[c.id])
     : undefined
+}
+
+export const usePrefetchUserBetContracts = (userId: string) => {
+  const queryClient = useQueryClient()
+  return queryClient.prefetchQuery(['contracts', 'bets', userId], () =>
+    getUserBetContracts(userId)
+  )
+}
+
+export const useUserBetContracts = (userId: string) => {
+  const result = useFirestoreQueryData(
+    ['contracts', 'bets', userId],
+    getUserBetContractsQuery(userId)
+  )
+  return result.data
 }

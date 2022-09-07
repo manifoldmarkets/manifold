@@ -147,7 +147,7 @@ function CreateChallengeForm(props: {
             setFinishedCreating(true)
           }}
         >
-          <Title className="!mt-2" text="Challenge bet " />
+          <Title className="!mt-2 hidden sm:block" text="Challenge bet " />
 
           <div className="mb-8">
             Challenge a friend to bet on{' '}
@@ -170,72 +170,76 @@ function CreateChallengeForm(props: {
             )}
           </div>
 
-          <div className="mt-2 flex flex-col flex-wrap justify-center gap-x-5 gap-y-2">
-            <div>You'll bet:</div>
-            <Row
-              className={
-                'form-control w-full max-w-xs items-center justify-between gap-4 pr-3'
-              }
-            >
-              <AmountInput
-                amount={challengeInfo.amount || undefined}
-                onChange={(newAmount) =>
-                  setChallengeInfo((m: challengeInfo) => {
-                    return {
-                      ...m,
-                      amount: newAmount ?? 0,
-                      acceptorAmount: editingAcceptorAmount
-                        ? m.acceptorAmount
-                        : newAmount ?? 0,
-                    }
-                  })
-                }
-                error={undefined}
-                label={'M$'}
-                inputClassName="w-24"
-              />
-              <span className={''}>on</span>
-              {challengeInfo.outcome === 'YES' ? <YesLabel /> : <NoLabel />}
-            </Row>
-            <Row className={'mt-3 max-w-xs justify-end'}>
-              <Button
-                color={'gray-white'}
-                onClick={() =>
-                  setChallengeInfo((m: challengeInfo) => {
-                    return {
-                      ...m,
-                      outcome: m.outcome === 'YES' ? 'NO' : 'YES',
-                    }
-                  })
+          <Col className="mt-2 flex-wrap justify-center gap-x-5 sm:gap-y-2">
+            <Col>
+              <div>You'll bet:</div>
+              <Row
+                className={
+                  'form-control w-full max-w-xs items-center justify-between gap-4 pr-3'
                 }
               >
-                <SwitchVerticalIcon className={'h-6 w-6'} />
-              </Button>
-            </Row>
-            <Row className={'items-center'}>If they bet:</Row>
-            <Row className={'max-w-xs items-center justify-between gap-4 pr-3'}>
-              <div className={'w-32 sm:mr-1'}>
                 <AmountInput
-                  amount={challengeInfo.acceptorAmount || undefined}
-                  onChange={(newAmount) => {
-                    setEditingAcceptorAmount(true)
-
+                  amount={challengeInfo.amount || undefined}
+                  onChange={(newAmount) =>
                     setChallengeInfo((m: challengeInfo) => {
                       return {
                         ...m,
-                        acceptorAmount: newAmount ?? 0,
+                        amount: newAmount ?? 0,
+                        acceptorAmount: editingAcceptorAmount
+                          ? m.acceptorAmount
+                          : newAmount ?? 0,
                       }
                     })
-                  }}
+                  }
                   error={undefined}
                   label={'M$'}
                   inputClassName="w-24"
                 />
-              </div>
-              <span>on</span>
-              {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
-            </Row>
-          </div>
+                <span className={''}>on</span>
+                {challengeInfo.outcome === 'YES' ? <YesLabel /> : <NoLabel />}
+              </Row>
+              <Row className={'mt-3 max-w-xs justify-end'}>
+                <Button
+                  color={'gray-white'}
+                  onClick={() =>
+                    setChallengeInfo((m: challengeInfo) => {
+                      return {
+                        ...m,
+                        outcome: m.outcome === 'YES' ? 'NO' : 'YES',
+                      }
+                    })
+                  }
+                >
+                  <SwitchVerticalIcon className={'h-6 w-6'} />
+                </Button>
+              </Row>
+              <Row className={'items-center'}>If they bet:</Row>
+              <Row
+                className={'max-w-xs items-center justify-between gap-4 pr-3'}
+              >
+                <div className={'w-32 sm:mr-1'}>
+                  <AmountInput
+                    amount={challengeInfo.acceptorAmount || undefined}
+                    onChange={(newAmount) => {
+                      setEditingAcceptorAmount(true)
+
+                      setChallengeInfo((m: challengeInfo) => {
+                        return {
+                          ...m,
+                          acceptorAmount: newAmount ?? 0,
+                        }
+                      })
+                    }}
+                    error={undefined}
+                    label={'M$'}
+                    inputClassName="w-24"
+                  />
+                </div>
+                <span>on</span>
+                {challengeInfo.outcome === 'YES' ? <NoLabel /> : <YesLabel />}
+              </Row>
+            </Col>
+          </Col>
           {contract && (
             <Button
               size="2xs"

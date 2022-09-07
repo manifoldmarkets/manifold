@@ -26,6 +26,8 @@ export function ContractsGrid(props: {
     hideGroupLink?: boolean
   }
   highlightOptions?: ContractHighlightOptions
+  trackingPostfix?: string
+  breakpointColumns?: { [key: string]: number }
 }) {
   const {
     contracts,
@@ -34,6 +36,7 @@ export function ContractsGrid(props: {
     onContractClick,
     cardHideOptions,
     highlightOptions,
+    trackingPostfix,
   } = props
   const { hideQuickBet, hideGroupLink } = cardHideOptions || {}
   const { contractIds, highlightClassName } = highlightOptions || {}
@@ -65,7 +68,7 @@ export function ContractsGrid(props: {
     <Col className="gap-8">
       <Masonry
         // Show only 1 column on tailwind's md breakpoint (768px)
-        breakpointCols={{ default: 2, 768: 1 }}
+        breakpointCols={props.breakpointColumns ?? { default: 2, 768: 1 }}
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
@@ -79,6 +82,7 @@ export function ContractsGrid(props: {
             }
             hideQuickBet={hideQuickBet}
             hideGroupLink={hideGroupLink}
+            trackingPostfix={trackingPostfix}
             className={clsx(
               'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
               contractIds?.includes(contract.id) && highlightClassName
@@ -86,10 +90,12 @@ export function ContractsGrid(props: {
           />
         ))}
       </Masonry>
-      <VisibilityObserver
-        onVisibilityUpdated={onVisibilityUpdated}
-        className="relative -top-96 h-1"
-      />
+      {loadMore && (
+        <VisibilityObserver
+          onVisibilityUpdated={onVisibilityUpdated}
+          className="relative -top-96 h-1"
+        />
+      )}
     </Col>
   )
 }

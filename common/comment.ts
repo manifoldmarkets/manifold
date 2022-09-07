@@ -23,10 +23,16 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
 type OnContract = {
   commentType: 'contract'
   contractId: string
-  contractSlug: string
-  contractQuestion: string
   answerOutcome?: string
   betId?: string
+
+  // denormalized from contract
+  contractSlug: string
+  contractQuestion: string
+
+  // denormalized from bet
+  betAmount?: number
+  betOutcome?: string
 }
 
 type OnGroup = {

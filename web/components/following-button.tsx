@@ -2,9 +2,9 @@ import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
 
 import { User } from 'common/user'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { prefetchUsers, useUser } from 'web/hooks/use-user'
+import { usePrefetchUsers, useUser } from 'web/hooks/use-user'
 import { FollowList } from './follow-list'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
@@ -105,16 +105,9 @@ function FollowsDialog(props: {
   const { user, followingIds, followerIds, defaultTab, isOpen, setIsOpen } =
     props
 
-  useEffect(() => {
-    prefetchUsers([...followingIds, ...followerIds])
-  }, [followingIds, followerIds])
-
   const currentUser = useUser()
-
   const discoverUserIds = useDiscoverUsers(user?.id)
-  useEffect(() => {
-    prefetchUsers(discoverUserIds)
-  }, [discoverUserIds])
+  usePrefetchUsers([...followingIds, ...followerIds, ...discoverUserIds])
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>

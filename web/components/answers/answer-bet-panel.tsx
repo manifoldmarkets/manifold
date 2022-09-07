@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from 'common/answer'
@@ -24,7 +24,7 @@ import {
 } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
-import { SignUpPrompt } from '../sign-up-prompt'
+import { BetSignUpPrompt } from '../sign-up-prompt'
 import { isIOS } from 'web/lib/util/device'
 import { AlertBox } from '../alert-box'
 
@@ -132,7 +132,11 @@ export function AnswerBetPanel(props: {
           </button>
         )}
       </Row>
-      <div className="my-3 text-left text-sm text-gray-500">Amount </div>
+      <Row className="my-3 justify-between text-left text-sm text-gray-500">
+        Amount
+        <span>Balance: {formatMoney(user?.balance ?? 0)}</span>
+      </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -141,6 +145,7 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        showSliderOnMobile
       />
 
       {(betAmount ?? 0) > 10 &&
@@ -204,7 +209,7 @@ export function AnswerBetPanel(props: {
           {isSubmitting ? 'Submitting...' : 'Submit trade'}
         </button>
       ) : (
-        <SignUpPrompt />
+        <BetSignUpPrompt />
       )}
     </Col>
   )

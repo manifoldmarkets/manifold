@@ -1,13 +1,37 @@
-import { getFirestore } from '@firebase/firestore'
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getStorage } from 'firebase/storage'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
-import { connectFirestoreEmulator } from 'firebase/firestore'
+import {
+  connectFirestoreEmulator,
+  initializeFirestore,
+} from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 
 // Initialize Firebase
 export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
-export const db = getFirestore()
+
+function iOS() {
+  if (typeof navigator === 'undefined') {
+    // We're on the server, proceed normally
+    return false
+  }
+  return (
+    [
+      'iPad Simulator',
+      'iPhone Simulator',
+      'iPod Simulator',
+      'iPad',
+      'iPhone',
+      'iPod',
+    ].includes(navigator.platform) ||
+    // iPad on iOS 13 detection
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document)
+  )
+}
+// Long polling is necessary for ios, see: https://github.com/firebase/firebase-js-sdk/issues/6118
+const opts = iOS() ? { experimentalForceLongPolling: true } : {}
+export const db = initializeFirestore(app, opts)
+
 export const functions = getFunctions()
 export const storage = getStorage()
 

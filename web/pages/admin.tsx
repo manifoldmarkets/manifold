@@ -10,6 +10,7 @@ import { mapKeys } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { firestoreConsolePath } from 'common/envs/constants'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -198,7 +199,7 @@ function ContractsTable() {
             html(`<a
               class="hover:underline hover:decoration-indigo-400 hover:decoration-2"
               target="_blank"
-              href="https://console.firebase.google.com/project/mantic-markets/firestore/data/~2Fcontracts~2F${cell}">${cell}</a>`),
+              href="${firestoreConsolePath(cell as string)}">${cell}</a>`),
         },
       ]}
       search={true}

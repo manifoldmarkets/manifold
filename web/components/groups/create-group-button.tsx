@@ -76,6 +76,8 @@ export function CreateGroupButton(props: {
     }
   }
 
+  if (user.isBannedFromPosting) return <></>
+
   return (
     <ConfirmationButton
       openModalBtn={{

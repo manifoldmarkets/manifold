@@ -5,32 +5,25 @@ import {
   DotsHorizontalIcon,
   CashIcon,
   HeartIcon,
-  UserGroupIcon,
-  TrendingUpIcon,
   ChatIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router, { useRouter } from 'next/router'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
 import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
-import React, { useMemo, useState } from 'react'
+import React from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
-import { useMemberGroups } from 'web/hooks/use-group'
-import { groupPath } from 'web/lib/firebase/groups'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
-import { Group, GROUP_CHAT_SLUG } from 'common/group'
-import { Spacer } from '../layout/spacer'
-import { useUnseenPreferredNotifications } from 'web/hooks/use-notifications'
-import { PrivateUser } from 'common/user'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
+import TrophyIcon from 'web/lib/icons/trophy-icon'
+import { SignInButton } from '../sign-in-button'
 
 const logout = async () => {
   // log out, and then reload the page, in case SSR wants to boot them out
@@ -48,11 +41,12 @@ function getNavigation() {
       icon: NotificationsIcon,
     },
 
-    { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
-
     ...(IS_PRIVATE_MANIFOLD
       ? []
-      : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
+      : [
+          { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+          { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
+        ]),
   ]
 }
 
@@ -69,14 +63,14 @@ function getMoreNavigation(user?: User | null) {
   }
 
   if (!user) {
+    // Signed out "More"
     return buildArray(
+      { name: 'Leaderboards', href: '/leaderboards' },
+      { name: 'Groups', href: '/groups' },
       CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
       [
+        { name: 'Tournaments', href: '/tournaments' },
         { name: 'Charity', href: '/charity' },
-        {
-          name: 'Salem tournament',
-          href: 'https://salemcenter.manifold.markets/',
-        },
         { name: 'Blog', href: 'https://news.manifold.markets' },
         { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
         { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
@@ -84,18 +78,17 @@ function getMoreNavigation(user?: User | null) {
     )
   }
 
+  // Signed in "More"
   return buildArray(
+    { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Groups', href: '/groups' },
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
       { name: 'Referrals', href: '/referrals' },
       { name: 'Charity', href: '/charity' },
       { name: 'Send M$', href: '/links' },
-      {
-        name: 'Salem tournament',
-        href: 'https://salemcenter.manifold.markets/',
-      },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-      { name: 'About', href: 'https://docs.manifold.markets/$how-to' },
+      { name: 'Help & About', href: 'https://help.manifold.markets/' },
       {
         name: 'Sign out',
         href: '#',
@@ -109,31 +102,31 @@ const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Explore', href: '/home', icon: SearchIcon },
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
 ]
 
 const signedOutMobileNavigation = [
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+  { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
   { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
 ]
 
 const signedInMobileNavigation = [
-  { name: 'Leaderboards', href: '/leaderboards', icon: TrendingUpIcon },
+  { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
   ...(IS_PRIVATE_MANIFOLD
     ? []
     : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
   {
-    name: 'About',
-    href: 'https://docs.manifold.markets/$how-to',
+    name: 'Help & About',
+    href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
 ]
@@ -149,11 +142,9 @@ function getMoreMobileNav() {
   return buildArray<Item>(
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
+      { name: 'Groups', href: '/groups' },
       { name: 'Referrals', href: '/referrals' },
-      {
-        name: 'Salem tournament',
-        href: 'https://salemcenter.manifold.markets/',
-      },
+      { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Charity', href: '/charity' },
       { name: 'Send M$', href: '/links' },
       { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -228,39 +219,25 @@ export default function Sidebar(props: { className?: string }) {
   const currentPage = router.pathname
 
   const user = useUser()
-  const privateUser = usePrivateUser()
-  // usePing(user?.id)
 
   const navigationOptions = !user ? signedOutNavigation : getNavigation()
   const mobileNavigationOptions = !user
     ? signedOutMobileNavigation
     : signedInMobileNavigation
 
-  const memberItems = (
-    useMemberGroups(
-      user?.id,
-      { withChatEnabled: true },
-      { by: 'mostRecentChatActivityTime' }
-    ) ?? []
-  ).map((group: Group) => ({
-    name: group.name,
-    href: `${groupPath(group.slug)}`,
-  }))
-
   return (
-    <nav aria-label="Sidebar" className={className}>
+    <nav
+      aria-label="Sidebar"
+      className={clsx('flex max-h-[100vh] flex-col', className)}
+    >
       <ManifoldLogo className="py-6" twoLine />
 
-      <CreateQuestionButton user={user} />
-      <Spacer h={4} />
-      {user && (
-        <div className="w-full" style={{ minHeight: 80 }}>
-          <ProfileSummary user={user} />
-        </div>
-      )}
+      {!user && <SignInButton className="mb-4" />}
+
+      {user && <ProfileSummary user={user} />}
 
       {/* Mobile navigation */}
-      <div className="space-y-1 lg:hidden">
+      <div className="flex min-h-0 shrink flex-col gap-1 lg:hidden">
         {mobileNavigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
@@ -271,21 +248,10 @@ export default function Sidebar(props: { className?: string }) {
             buttonContent={<MoreButton />}
           />
         )}
-        {/* Spacer if there are any groups */}
-        {memberItems.length > 0 && (
-          <hr className="!my-4 mr-2 border-gray-300" />
-        )}
-        {privateUser && (
-          <GroupsList
-            currentPage={router.asPath}
-            memberItems={memberItems}
-            privateUser={privateUser}
-          />
-        )}
       </div>
 
       {/* Desktop navigation */}
-      <div className="hidden space-y-1 lg:block">
+      <div className="hidden min-h-0 shrink flex-col items-stretch gap-1 lg:flex ">
         {navigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
@@ -294,79 +260,8 @@ export default function Sidebar(props: { className?: string }) {
           buttonContent={<MoreButton />}
         />
 
-        {/* Spacer if there are any groups */}
-        {memberItems.length > 0 && <hr className="!my-4 border-gray-300" />}
-        {privateUser && (
-          <GroupsList
-            currentPage={router.asPath}
-            memberItems={memberItems}
-            privateUser={privateUser}
-          />
-        )}
+        {user && !user.isBannedFromPosting && <CreateQuestionButton />}
       </div>
     </nav>
-  )
-}
-
-function GroupsList(props: {
-  currentPage: string
-  memberItems: Item[]
-  privateUser: PrivateUser
-}) {
-  const { currentPage, memberItems, privateUser } = props
-  const preferredNotifications = useUnseenPreferredNotifications(
-    privateUser,
-    {
-      customHref: '/group/',
-    },
-    memberItems.length > 0 ? memberItems.length : undefined
-  )
-
-  const { height } = useWindowSize()
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-  const remainingHeight = (height ?? 0) - (containerRef?.offsetTop ?? 0)
-
-  const notifIsForThisItem = useMemo(
-    () => (itemHref: string) =>
-      preferredNotifications.some(
-        (n) =>
-          !n.isSeen &&
-          (n.isSeenOnHref === itemHref ||
-            n.isSeenOnHref?.replace('/chat', '') === itemHref)
-      ),
-    [preferredNotifications]
-  )
-
-  return (
-    <>
-      <SidebarItem
-        item={{ name: 'Groups', href: '/groups', icon: UserGroupIcon }}
-        currentPage={currentPage}
-      />
-
-      <div
-        className="flex-1 space-y-0.5 overflow-auto"
-        style={{ height: remainingHeight }}
-        ref={setContainerRef}
-      >
-        {memberItems.map((item) => (
-          <a
-            href={
-              item.href +
-              (notifIsForThisItem(item.href) ? '/' + GROUP_CHAT_SLUG : '')
-            }
-            key={item.name}
-            onClick={trackCallback('sidebar: ' + item.name)}
-            className={clsx(
-              'cursor-pointer truncate',
-              'group flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-              notifIsForThisItem(item.href) && 'font-bold'
-            )}
-          >
-            {item.name}
-          </a>
-        ))}
-      </div>
-    </>
   )
 }

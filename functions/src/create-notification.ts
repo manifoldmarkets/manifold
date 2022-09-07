@@ -7,7 +7,7 @@ import {
 } from '../../common/notification'
 import { User } from '../../common/user'
 import { Contract } from '../../common/contract'
-import { getValues } from './utils'
+import { getValues, log } from './utils'
 import { Comment } from '../../common/comment'
 import { uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
@@ -18,6 +18,7 @@ import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 import { Challenge } from '../../common/challenge'
 import { richTextToString } from '../../common/util/parse'
+import { Like } from '../../common/like'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -33,19 +34,12 @@ export const createNotification = async (
   sourceText: string,
   miscData?: {
     contract?: Contract
-    relatedSourceType?: notification_source_types
     recipients?: string[]
     slug?: string
     title?: string
   }
 ) => {
-  const {
-    contract: sourceContract,
-    relatedSourceType,
-    recipients,
-    slug,
-    title,
-  } = miscData ?? {}
+  const { contract: sourceContract, recipients, slug, title } = miscData ?? {}
 
   const shouldGetNotification = (
     userId: string,
@@ -90,24 +84,6 @@ export const createNotification = async (
     )
   }
 
-  const notifyLiquidityProviders = async (
-    userToReasonTexts: user_to_reason_texts,
-    contract: Contract
-  ) => {
-    const liquidityProviders = await firestore
-      .collection(`contracts/${contract.id}/liquidity`)
-      .get()
-    const liquidityProvidersIds = uniq(
-      liquidityProviders.docs.map((doc) => doc.data().userId)
-    )
-    liquidityProvidersIds.forEach((userId) => {
-      if (!shouldGetNotification(userId, userToReasonTexts)) return
-      userToReasonTexts[userId] = {
-        reason: 'on_contract_with_users_shares_in',
-      }
-    })
-  }
-
   const notifyUsersFollowers = async (
     userToReasonTexts: user_to_reason_texts
   ) => {
@@ -127,23 +103,6 @@ export const createNotification = async (
         }
       }
     })
-  }
-
-  const notifyRepliedUser = (
-    userToReasonTexts: user_to_reason_texts,
-    relatedUserId: string,
-    relatedSourceType: notification_source_types
-  ) => {
-    if (!shouldGetNotification(relatedUserId, userToReasonTexts)) return
-    if (relatedSourceType === 'comment') {
-      userToReasonTexts[relatedUserId] = {
-        reason: 'reply_to_users_comment',
-      }
-    } else if (relatedSourceType === 'answer') {
-      userToReasonTexts[relatedUserId] = {
-        reason: 'reply_to_users_answer',
-      }
-    }
   }
 
   const notifyFollowedUser = (
@@ -182,9 +141,150 @@ export const createNotification = async (
       }
   }
 
-  const notifyOtherAnswerersOnContract = async (
+  const notifyUserAddedToGroup = (
     userToReasonTexts: user_to_reason_texts,
-    sourceContract: Contract
+    relatedUserId: string
+  ) => {
+    if (shouldGetNotification(relatedUserId, userToReasonTexts))
+      userToReasonTexts[relatedUserId] = {
+        reason: 'added_you_to_group',
+      }
+  }
+
+  const userToReasonTexts: user_to_reason_texts = {}
+  // The following functions modify the userToReasonTexts object in place.
+
+  if (sourceType === 'follow' && recipients?.[0]) {
+    notifyFollowedUser(userToReasonTexts, recipients[0])
+  } else if (
+    sourceType === 'group' &&
+    sourceUpdateType === 'created' &&
+    recipients
+  ) {
+    recipients.forEach((r) => notifyUserAddedToGroup(userToReasonTexts, r))
+  } else if (
+    sourceType === 'contract' &&
+    sourceUpdateType === 'created' &&
+    sourceContract
+  ) {
+    await notifyUsersFollowers(userToReasonTexts)
+    notifyTaggedUsers(userToReasonTexts, recipients ?? [])
+  } else if (
+    sourceType === 'contract' &&
+    sourceUpdateType === 'closed' &&
+    sourceContract
+  ) {
+    await notifyContractCreator(userToReasonTexts, sourceContract, {
+      force: true,
+    })
+  } else if (
+    sourceType === 'liquidity' &&
+    sourceUpdateType === 'created' &&
+    sourceContract
+  ) {
+    await notifyContractCreator(userToReasonTexts, sourceContract)
+  }
+
+  await createUsersNotifications(userToReasonTexts)
+}
+
+export const createCommentOrAnswerOrUpdatedContractNotification = async (
+  sourceId: string,
+  sourceType: notification_source_types,
+  sourceUpdateType: notification_source_update_types,
+  sourceUser: User,
+  idempotencyKey: string,
+  sourceText: string,
+  sourceContract: Contract,
+  miscData?: {
+    relatedSourceType?: notification_source_types
+    repliedUserId?: string
+    taggedUserIds?: string[]
+  }
+) => {
+  const { relatedSourceType, repliedUserId, taggedUserIds } = miscData ?? {}
+
+  const createUsersNotifications = async (
+    userToReasonTexts: user_to_reason_texts
+  ) => {
+    await Promise.all(
+      Object.keys(userToReasonTexts).map(async (userId) => {
+        const notificationRef = firestore
+          .collection(`/users/${userId}/notifications`)
+          .doc(idempotencyKey)
+        const notification: Notification = {
+          id: idempotencyKey,
+          userId,
+          reason: userToReasonTexts[userId].reason,
+          createdTime: Date.now(),
+          isSeen: false,
+          sourceId,
+          sourceType,
+          sourceUpdateType,
+          sourceContractId: sourceContract.id,
+          sourceUserName: sourceUser.name,
+          sourceUserUsername: sourceUser.username,
+          sourceUserAvatarUrl: sourceUser.avatarUrl,
+          sourceText,
+          sourceContractCreatorUsername: sourceContract.creatorUsername,
+          sourceContractTitle: sourceContract.question,
+          sourceContractSlug: sourceContract.slug,
+          sourceSlug: sourceContract.slug,
+          sourceTitle: sourceContract.question,
+        }
+        await notificationRef.set(removeUndefinedProps(notification))
+      })
+    )
+  }
+
+  // get contract follower documents and check here if they're a follower
+  const contractFollowersSnap = await firestore
+    .collection(`contracts/${sourceContract.id}/follows`)
+    .get()
+  const contractFollowersIds = contractFollowersSnap.docs.map(
+    (doc) => doc.data().id
+  )
+  log('contractFollowerIds', contractFollowersIds)
+
+  const stillFollowingContract = (userId: string) => {
+    return contractFollowersIds.includes(userId)
+  }
+
+  const shouldGetNotification = (
+    userId: string,
+    userToReasonTexts: user_to_reason_texts
+  ) => {
+    return (
+      sourceUser.id != userId &&
+      !Object.keys(userToReasonTexts).includes(userId)
+    )
+  }
+
+  const notifyContractFollowers = async (
+    userToReasonTexts: user_to_reason_texts
+  ) => {
+    for (const userId of contractFollowersIds) {
+      if (shouldGetNotification(userId, userToReasonTexts))
+        userToReasonTexts[userId] = {
+          reason: 'you_follow_contract',
+        }
+    }
+  }
+
+  const notifyContractCreator = async (
+    userToReasonTexts: user_to_reason_texts
+  ) => {
+    if (
+      shouldGetNotification(sourceContract.creatorId, userToReasonTexts) &&
+      stillFollowingContract(sourceContract.creatorId)
+    )
+      userToReasonTexts[sourceContract.creatorId] = {
+        reason: 'on_users_contract',
+      }
+  }
+
+  const notifyOtherAnswerersOnContract = async (
+    userToReasonTexts: user_to_reason_texts
   ) => {
     const answers = await getValues<Answer>(
       firestore
@@ -194,7 +294,10 @@ export const createNotification = async (
     )
     const recipientUserIds = uniq(answers.map((answer) => answer.userId))
     recipientUserIds.forEach((userId) => {
-      if (shouldGetNotification(userId, userToReasonTexts))
+      if (
+        shouldGetNotification(userId, userToReasonTexts) &&
+        stillFollowingContract(userId)
+      )
         userToReasonTexts[userId] = {
           reason: 'on_contract_with_users_answer',
         }
@@ -202,8 +305,7 @@ export const createNotification = async (
   }
 
   const notifyOtherCommentersOnContract = async (
-    userToReasonTexts: user_to_reason_texts,
-    sourceContract: Contract
+    userToReasonTexts: user_to_reason_texts
   ) => {
     const comments = await getValues<Comment>(
       firestore
@@ -213,7 +315,10 @@ export const createNotification = async (
     )
     const recipientUserIds = uniq(comments.map((comment) => comment.userId))
     recipientUserIds.forEach((userId) => {
-      if (shouldGetNotification(userId, userToReasonTexts))
+      if (
+        shouldGetNotification(userId, userToReasonTexts) &&
+        stillFollowingContract(userId)
+      )
         userToReasonTexts[userId] = {
           reason: 'on_contract_with_users_comment',
         }
@@ -221,8 +326,7 @@ export const createNotification = async (
   }
 
   const notifyBettorsOnContract = async (
-    userToReasonTexts: user_to_reason_texts,
-    sourceContract: Contract
+    userToReasonTexts: user_to_reason_texts
   ) => {
     const betsSnap = await firestore
       .collection(`contracts/${sourceContract.id}/bets`)
@@ -240,84 +344,86 @@ export const createNotification = async (
       }
     )
     recipientUserIds.forEach((userId) => {
-      if (shouldGetNotification(userId, userToReasonTexts))
+      if (
+        shouldGetNotification(userId, userToReasonTexts) &&
+        stillFollowingContract(userId)
+      )
         userToReasonTexts[userId] = {
           reason: 'on_contract_with_users_shares_in',
         }
     })
   }
 
-  const notifyUserAddedToGroup = (
+  const notifyRepliedUser = (
     userToReasonTexts: user_to_reason_texts,
-    relatedUserId: string
+    relatedUserId: string,
+    relatedSourceType: notification_source_types
   ) => {
-    if (shouldGetNotification(relatedUserId, userToReasonTexts))
-      userToReasonTexts[relatedUserId] = {
-        reason: 'added_you_to_group',
-      }
-  }
-
-  const notifyContractCreatorOfUniqueBettorsBonus = async (
-    userToReasonTexts: user_to_reason_texts,
-    userId: string
-  ) => {
-    userToReasonTexts[userId] = {
-      reason: 'unique_bettors_on_your_contract',
-    }
-  }
-
-  const getUsersToNotify = async () => {
-    const userToReasonTexts: user_to_reason_texts = {}
-    // The following functions modify the userToReasonTexts object in place.
-    if (sourceType === 'follow' && recipients?.[0]) {
-      notifyFollowedUser(userToReasonTexts, recipients[0])
-    } else if (
-      sourceType === 'group' &&
-      sourceUpdateType === 'created' &&
-      recipients
-    ) {
-      recipients.forEach((r) => notifyUserAddedToGroup(userToReasonTexts, r))
-    }
-
-    // The following functions need sourceContract to be defined.
-    if (!sourceContract) return userToReasonTexts
-
     if (
-      sourceType === 'comment' ||
-      sourceType === 'answer' ||
-      (sourceType === 'contract' &&
-        (sourceUpdateType === 'updated' || sourceUpdateType === 'resolved'))
+      shouldGetNotification(relatedUserId, userToReasonTexts) &&
+      stillFollowingContract(relatedUserId)
     ) {
-      if (sourceType === 'comment') {
-        if (recipients?.[0] && relatedSourceType)
-          notifyRepliedUser(userToReasonTexts, recipients[0], relatedSourceType)
-        if (sourceText) notifyTaggedUsers(userToReasonTexts, recipients ?? [])
+      if (relatedSourceType === 'comment') {
+        userToReasonTexts[relatedUserId] = {
+          reason: 'reply_to_users_comment',
+        }
+      } else if (relatedSourceType === 'answer') {
+        userToReasonTexts[relatedUserId] = {
+          reason: 'reply_to_users_answer',
+        }
       }
-      await notifyContractCreator(userToReasonTexts, sourceContract)
-      await notifyOtherAnswerersOnContract(userToReasonTexts, sourceContract)
-      await notifyLiquidityProviders(userToReasonTexts, sourceContract)
-      await notifyBettorsOnContract(userToReasonTexts, sourceContract)
-      await notifyOtherCommentersOnContract(userToReasonTexts, sourceContract)
-    } else if (sourceType === 'contract' && sourceUpdateType === 'created') {
-      await notifyUsersFollowers(userToReasonTexts)
-      notifyTaggedUsers(userToReasonTexts, recipients ?? [])
-    } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
-      await notifyContractCreator(userToReasonTexts, sourceContract, {
-        force: true,
-      })
-    } else if (sourceType === 'liquidity' && sourceUpdateType === 'created') {
-      await notifyContractCreator(userToReasonTexts, sourceContract)
-    } else if (sourceType === 'bonus' && sourceUpdateType === 'created') {
-      // Note: the daily bonus won't have a contract attached to it
-      await notifyContractCreatorOfUniqueBettorsBonus(
-        userToReasonTexts,
-        sourceContract.creatorId
-      )
     }
-    return userToReasonTexts
   }
 
-  const userToReasonTexts = await getUsersToNotify()
+  const notifyTaggedUsers = (
+    userToReasonTexts: user_to_reason_texts,
+    userIds: (string | undefined)[]
+  ) => {
+    userIds.forEach((id) => {
+      console.log('tagged user: ', id)
+      // Allowing non-following users to get tagged
+      if (id && shouldGetNotification(id, userToReasonTexts))
+        userToReasonTexts[id] = {
+          reason: 'tagged_user',
+        }
+    })
+  }
+
+  const notifyLiquidityProviders = async (
+    userToReasonTexts: user_to_reason_texts
+  ) => {
+    const liquidityProviders = await firestore
+      .collection(`contracts/${sourceContract.id}/liquidity`)
+      .get()
+    const liquidityProvidersIds = uniq(
+      liquidityProviders.docs.map((doc) => doc.data().userId)
+    )
+    liquidityProvidersIds.forEach((userId) => {
+      if (
+        shouldGetNotification(userId, userToReasonTexts) &&
+        stillFollowingContract(userId)
+      ) {
+        userToReasonTexts[userId] = {
+          reason: 'on_contract_with_users_shares_in',
+        }
+      }
+    })
+  }
+  const userToReasonTexts: user_to_reason_texts = {}
+
+  if (sourceType === 'comment') {
+    if (repliedUserId && relatedSourceType)
+      notifyRepliedUser(userToReasonTexts, repliedUserId, relatedSourceType)
+    if (sourceText) notifyTaggedUsers(userToReasonTexts, taggedUserIds ?? [])
+  }
+  await notifyContractCreator(userToReasonTexts)
+  await notifyOtherAnswerersOnContract(userToReasonTexts)
+  await notifyLiquidityProviders(userToReasonTexts)
+  await notifyBettorsOnContract(userToReasonTexts)
+  await notifyOtherCommentersOnContract(userToReasonTexts)
+  // if they weren't added previously, add them now
+  await notifyContractFollowers(userToReasonTexts)
+
   await createUsersNotifications(userToReasonTexts)
 }
 
@@ -557,6 +663,88 @@ export const createBettingStreakBonusNotification = async (
     sourceText: amount.toString(),
     sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
     sourceTitle: 'Betting Streak Bonus',
+    // Perhaps not necessary, but just in case
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    sourceContractTitle: contract.question,
+    sourceContractCreatorUsername: contract.creatorUsername,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createLikeNotification = async (
+  fromUser: User,
+  toUser: User,
+  like: Like,
+  idempotencyKey: string,
+  contract: Contract,
+  tip?: TipTxn
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: tip ? 'liked_and_tipped_your_contract' : 'liked_your_contract',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: like.id,
+    sourceType: tip ? 'tip_and_like' : 'like',
+    sourceUpdateType: 'created',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: tip?.amount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export async function filterUserIdsForOnlyFollowerIds(
+  userIds: string[],
+  contractId: string
+) {
+  // get contract follower documents and check here if they're a follower
+  const contractFollowersSnap = await firestore
+    .collection(`contracts/${contractId}/follows`)
+    .get()
+  const contractFollowersIds = contractFollowersSnap.docs.map(
+    (doc) => doc.data().id
+  )
+  return userIds.filter((id) => contractFollowersIds.includes(id))
+}
+
+export const createUniqueBettorBonusNotification = async (
+  contractCreatorId: string,
+  bettor: User,
+  txnId: string,
+  contract: Contract,
+  amount: number,
+  idempotencyKey: string
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${contractCreatorId}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: contractCreatorId,
+    reason: 'unique_bettors_on_your_contract',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'bonus',
+    sourceUpdateType: 'created',
+    sourceUserName: bettor.name,
+    sourceUserUsername: bettor.username,
+    sourceUserAvatarUrl: bettor.avatarUrl,
+    sourceText: amount.toString(),
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
     // Perhaps not necessary, but just in case
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,

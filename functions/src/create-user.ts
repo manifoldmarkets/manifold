@@ -1,14 +1,8 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { uniq } from 'lodash'
 
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USERNAME,
-  PrivateUser,
-  User,
-} from '../../common/user'
-import { getUser, getUserByUsername, getValues, isProd } from './utils'
+import { PrivateUser, User } from '../../common/user'
+import { getUser, getUserByUsername, getValues } from './utils'
 import { randomString } from '../../common/util/random'
 import {
   cleanDisplayName,
@@ -22,12 +16,8 @@ import {
 
 import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
-import { Group, NEW_USER_GROUP_SLUGS } from '../../common/group'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
-import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
+import { Group } from '../../common/group'
+import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -126,42 +116,8 @@ const addUserToDefaultGroups = async (user: User) => {
       firestore.collection('groups').where('slug', '==', slug)
     )
     await firestore
-      .collection('groups')
-      .doc(groups[0].id)
-      .update({
-        memberIds: uniq(groups[0].memberIds.concat(user.id)),
-      })
-  }
-
-  for (const slug of NEW_USER_GROUP_SLUGS) {
-    const groups = await getValues<Group>(
-      firestore.collection('groups').where('slug', '==', slug)
-    )
-    const group = groups[0]
-    await firestore
-      .collection('groups')
-      .doc(group.id)
-      .update({
-        memberIds: uniq(group.memberIds.concat(user.id)),
-      })
-    const manifoldAccount = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-
-    if (slug === 'welcome') {
-      const welcomeCommentDoc = firestore
-        .collection(`groups/${group.id}/comments`)
-        .doc()
-      await welcomeCommentDoc.create({
-        id: welcomeCommentDoc.id,
-        groupId: group.id,
-        userId: manifoldAccount,
-        text: `Welcome, @${user.username} aka ${user.name}!`,
-        createdTime: Date.now(),
-        userName: 'Manifold Markets',
-        userUsername: MANIFOLD_USERNAME,
-        userAvatarUrl: MANIFOLD_AVATAR_URL,
-      })
-    }
+      .collection(`groups/${groups[0].id}/groupMembers`)
+      .doc(user.id)
+      .set({ userId: user.id, createdTime: Date.now() })
   }
 }

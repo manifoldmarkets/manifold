@@ -1,7 +1,5 @@
 import { collection, limit, orderBy, query, where } from 'firebase/firestore'
-import { Notification } from 'common/notification'
 import { db } from 'web/lib/firebase/init'
-import { listenForValues } from 'web/lib/firebase/utils'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 
 export function getNotificationsQuery(
@@ -21,19 +19,5 @@ export function getNotificationsQuery(
     orderBy('createdTime', 'desc'),
     // Nobody's going through 10 pages of notifications, right?
     limit(NOTIFICATIONS_PER_PAGE * 10)
-  )
-}
-
-export function listenForNotifications(
-  userId: string,
-  setNotifications: (notifs: Notification[]) => void,
-  unseenOnlyOptions?: { unseenOnly: boolean; limit: number }
-) {
-  return listenForValues<Notification>(
-    getNotificationsQuery(userId, unseenOnlyOptions),
-    (notifs) => {
-      notifs.sort((n1, n2) => n2.createdTime - n1.createdTime)
-      setNotifications(notifs)
-    }
   )
 }

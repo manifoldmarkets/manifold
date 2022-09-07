@@ -1,13 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { notification_subscribe_types, PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
-import {
-  getNotificationsQuery,
-  listenForNotifications,
-} from 'web/lib/firebase/notifications'
+import { getNotificationsQuery } from 'web/lib/firebase/notifications'
 import { groupBy, map, partition } from 'lodash'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
-import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -17,49 +13,45 @@ export type NotificationGroup = {
   type: 'income' | 'normal'
 }
 
-// For some reason react-query subscriptions don't actually listen for notifications
-// Use useUnseenPreferredNotificationGroups to listen for new notifications
-export function usePreferredGroupedNotifications(
-  privateUser: PrivateUser,
-  cachedNotifications?: Notification[]
-) {
+function useNotifications(privateUser: PrivateUser) {
   const result = useFirestoreQueryData(
     ['notifications-all', privateUser.id],
     getNotificationsQuery(privateUser.id)
   )
+
   const notifications = useMemo(() => {
-    if (result.isLoading) return cachedNotifications ?? []
-    if (!result.data) return cachedNotifications ?? []
+    if (!result.data) return undefined
     const notifications = result.data as Notification[]
 
     return getAppropriateNotifications(
       notifications,
       privateUser.notificationPreferences
     ).filter((n) => !n.isSeenOnHref)
-  }, [
-    cachedNotifications,
-    privateUser.notificationPreferences,
-    result.data,
-    result.isLoading,
-  ])
+  }, [privateUser.notificationPreferences, result.data])
 
+  return notifications
+}
+
+export function useUnseenNotifications(privateUser: PrivateUser) {
+  const notifications = useNotifications(privateUser)
+  return useMemo(
+    () => notifications && notifications.filter((n) => !n.isSeen),
+    [notifications]
+  )
+}
+
+export function useGroupedNotifications(privateUser: PrivateUser) {
+  const notifications = useNotifications(privateUser)
   return useMemo(() => {
     if (notifications) return groupNotifications(notifications)
   }, [notifications])
 }
 
-export function useUnseenPreferredNotificationGroups(privateUser: PrivateUser) {
-  const notifications = useUnseenPreferredNotifications(privateUser, {})
-  const [notificationGroups, setNotificationGroups] = useState<
-    NotificationGroup[] | undefined
-  >(undefined)
-  useEffect(() => {
-    if (!notifications) return
-
-    const groupedNotifications = groupNotifications(notifications)
-    setNotificationGroups(groupedNotifications)
+export function useUnseenGroupedNotification(privateUser: PrivateUser) {
+  const notifications = useUnseenNotifications(privateUser)
+  return useMemo(() => {
+    if (notifications) return groupNotifications(notifications)
   }, [notifications])
-  return notificationGroups
 }
 
 export function groupNotifications(notifications: Notification[]) {
@@ -67,7 +59,13 @@ export function groupNotifications(notifications: Notification[]) {
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()
   )
-  const incomeSourceTypes = ['bonus', 'tip', 'loan', 'betting_streak_bonus']
+  const incomeSourceTypes = [
+    'bonus',
+    'tip',
+    'loan',
+    'betting_streak_bonus',
+    'tip_and_like',
+  ]
 
   Object.keys(notificationGroupsByDay).forEach((day) => {
     const notificationsGroupedByDay = notificationGroupsByDay[day]
@@ -114,39 +112,10 @@ export function groupNotifications(notifications: Notification[]) {
   return notificationGroups
 }
 
-export function useUnseenPreferredNotifications(
-  privateUser: PrivateUser,
-  options: { customHref?: string },
-  limit: number = NOTIFICATIONS_PER_PAGE
-) {
-  const { customHref } = options
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [userAppropriateNotifications, setUserAppropriateNotifications] =
-    useState<Notification[]>([])
-
-  useEffect(() => {
-    return listenForNotifications(privateUser.id, setNotifications, {
-      unseenOnly: true,
-      limit,
-    })
-  }, [limit, privateUser.id])
-
-  useEffect(() => {
-    const notificationsToShow = getAppropriateNotifications(
-      notifications,
-      privateUser.notificationPreferences
-    ).filter((n) =>
-      customHref ? n.isSeenOnHref?.includes(customHref) : !n.isSeenOnHref
-    )
-    setUserAppropriateNotifications(notificationsToShow)
-  }, [notifications, customHref, privateUser.notificationPreferences])
-
-  return userAppropriateNotifications
-}
-
 const lessPriorityReasons = [
   'on_contract_with_users_comment',
   'on_contract_with_users_answer',
+  // Notifications not currently generated for users who've sold their shares
   'on_contract_with_users_shares_out',
   // Not sure if users will want to see these w/ less:
   // 'on_contract_with_users_shares_in',

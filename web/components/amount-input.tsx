@@ -5,6 +5,7 @@ import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -33,7 +34,8 @@ export function AmountInput(props: {
     const isInvalid = !str || isNaN(amount)
     onChange(isInvalid ? undefined : amount)
   }
-
+  const { width } = useWindowSize()
+  const isMobile = (width ?? 0) < 768
   return (
     <Col className={className}>
       <label className="input-group mb-4">
@@ -50,6 +52,7 @@ export function AmountInput(props: {
           inputMode="numeric"
           placeholder="0"
           maxLength={6}
+          autoFocus={!isMobile}
           value={amount ?? ''}
           disabled={disabled}
           onChange={(e) => onAmountChange(e.target.value)}
@@ -81,6 +84,7 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
+  showSliderOnMobile?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -91,6 +95,7 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
+    showSliderOnMobile: showSlider,
     disabled,
     className,
     inputClassName,
@@ -118,15 +123,28 @@ export function BuyAmountInput(props: {
   }
 
   return (
-    <AmountInput
-      amount={amount}
-      onChange={onAmountChange}
-      label={ENV_CONFIG.moneyMoniker}
-      error={error}
-      disabled={disabled}
-      className={className}
-      inputClassName={inputClassName}
-      inputRef={inputRef}
-    />
+    <>
+      <AmountInput
+        amount={amount}
+        onChange={onAmountChange}
+        label={ENV_CONFIG.moneyMoniker}
+        error={error}
+        disabled={disabled}
+        className={className}
+        inputClassName={inputClassName}
+        inputRef={inputRef}
+      />
+      {showSlider && (
+        <input
+          type="range"
+          min="0"
+          max="200"
+          value={amount ?? 0}
+          onChange={(e) => onAmountChange(parseInt(e.target.value))}
+          className="range range-lg z-40 mb-2 xl:hidden"
+          step="5"
+        />
+      )}
+    </>
   )
 }

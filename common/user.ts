@@ -34,6 +34,7 @@ export type User = {
   followerCountCached: number
 
   followedCategories?: string[]
+  homeSections?: { visible: string[]; hidden: string[] }
 
   referredByUserId?: string
   referredByContractId?: string
@@ -42,6 +43,9 @@ export type User = {
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  hasSeenContractFollowModal?: boolean
+  freeMarketsCreated?: number
+  isBannedFromPosting?: boolean
 }
 
 export type PrivateUser = {
@@ -54,6 +58,7 @@ export type PrivateUser = {
   unsubscribedFromAnswerEmails?: boolean
   unsubscribedFromGenericEmails?: boolean
   unsubscribedFromWeeklyTrendingEmails?: boolean
+  weeklyTrendingEmailSent?: boolean
   manaBonusEmailSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string

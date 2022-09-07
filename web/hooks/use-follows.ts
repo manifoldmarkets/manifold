@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listenForFollowers, listenForFollows } from 'web/lib/firebase/users'
+import { listenForContractFollows } from 'web/lib/firebase/contracts'
 
 export const useFollows = (userId: string | null | undefined) => {
   const [followIds, setFollowIds] = useState<string[] | undefined>()
@@ -28,4 +29,14 @@ export const useFollowers = (userId: string | undefined) => {
   }, [userId])
 
   return followerIds
+}
+
+export const useContractFollows = (contractId: string) => {
+  const [followIds, setFollowIds] = useState<string[] | undefined>()
+
+  useEffect(() => {
+    return listenForContractFollows(contractId, setFollowIds)
+  }, [contractId])
+
+  return followIds
 }
