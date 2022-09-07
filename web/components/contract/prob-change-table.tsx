@@ -21,7 +21,7 @@ export function ProbChangeTable(props: { userId: string | undefined }) {
   const count = 3
 
   return (
-    <Row className="w-full flex-wrap divide-x-2 rounded bg-white shadow-md">
+    <Row className="mb-4 w-full flex-wrap divide-x-2 rounded bg-white shadow-md">
       <Col className="min-w-[300px] flex-1 divide-y">
         {positiveChanges.slice(0, count).map((contract) => (
           <Row className="hover:bg-gray-100">
@@ -30,7 +30,7 @@ export function ProbChangeTable(props: { userId: string | undefined }) {
               className="p-4 font-semibold text-indigo-700"
               href={contractPath(contract)}
             >
-              {contract.question}
+              <span className="line-clamp-2">{contract.question}</span>
             </SiteLink>
           </Row>
         ))}
@@ -43,7 +43,7 @@ export function ProbChangeTable(props: { userId: string | undefined }) {
               className="p-4 font-semibold text-indigo-700"
               href={contractPath(contract)}
             >
-              {contract.question}
+              <span className="line-clamp-2">{contract.question}</span>
             </SiteLink>
           </Row>
         ))}
