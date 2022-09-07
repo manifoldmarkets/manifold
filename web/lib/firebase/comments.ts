@@ -18,6 +18,9 @@ import {
   Comment,
   ContractComment,
   GroupComment,
+  OnContract,
+  OnGroup,
+  OnPost,
   PostComment,
 } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
@@ -39,14 +42,19 @@ export async function createCommentOnContract(
   const ref = betId
     ? doc(getCommentsCollection(contractId), betId)
     : doc(getCommentsCollection(contractId))
+  const onContract = {
+    commentType: 'contract',
+    contractId,
+    betId,
+    answerOutcome,
+  } as OnContract
   return await createComment(
     contractId,
-    'contract',
+    onContract,
     content,
     user,
     ref,
-    replyToCommentId,
-    { answerOutcome: answerOutcome, betId: betId }
+    replyToCommentId
   )
 }
 export async function createCommentOnGroup(
@@ -56,9 +64,10 @@ export async function createCommentOnGroup(
   replyToCommentId?: string
 ) {
   const ref = doc(getCommentsOnGroupCollection(groupId))
+  const onGroup = { commentType: 'group', groupId: groupId } as OnGroup
   return await createComment(
     groupId,
-    'group',
+    onGroup,
     content,
     user,
     ref,
@@ -73,10 +82,10 @@ export async function createCommentOnPost(
   replyToCommentId?: string
 ) {
   const ref = doc(getCommentsOnPostCollection(postId))
-
+  const onPost = { postId: postId, commentType: 'post' } as OnPost
   return await createComment(
     postId,
-    'post',
+    onPost,
     content,
     user,
     ref,
@@ -86,12 +95,11 @@ export async function createCommentOnPost(
 
 async function createComment(
   surfaceId: string,
-  surfaceType: 'contract' | 'group' | 'post',
+  extraFields: OnContract | OnGroup | OnPost,
   content: JSONContent,
   user: User,
   ref: DocumentReference<DocumentData>,
-  replyToCommentId?: string,
-  extraFields: { [key: string]: any } = {}
+  replyToCommentId?: string
 ) {
   const comment = removeUndefinedProps({
     id: ref.id,
@@ -105,7 +113,7 @@ async function createComment(
     ...extraFields,
   })
 
-  track(`${surfaceType} message`, {
+  track(`${extraFields.commentType} message`, {
     user,
     commentId: ref.id,
     surfaceId,

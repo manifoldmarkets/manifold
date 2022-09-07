@@ -51,13 +51,14 @@ export default function PostPage(props: {
   comments: PostComment[]
 }) {
   const [isShareOpen, setShareOpen] = useState(false)
+  const { post, creator } = props
 
-  const tips = useTipTxns({ postId: props.post.id })
-  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(props?.post.slug)}`
-  const updatedComments = useCommentsOnPost(props.post.id)
+  const tips = useTipTxns({ postId: post.id })
+  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
+  const updatedComments = useCommentsOnPost(post.id)
   const comments = updatedComments ?? props.comments
 
-  if (props.post == null) {
+  if (post == null) {
     return <Custom404 />
   }
 
@@ -65,15 +66,15 @@ export default function PostPage(props: {
     <Page>
       <div className="mx-auto w-full max-w-3xl ">
         <Spacer h={1} />
-        <Title className="!mt-0" text={props.post.title} />
+        <Title className="!mt-0" text={post.title} />
         <Row>
           <Col className="flex-1">
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
               <UserLink
                 className="text-neutral"
-                name={props.creator.name}
-                username={props.creator.username}
+                name={creator.name}
+                username={creator.username}
               />
             </div>
           </Col>
@@ -103,17 +104,17 @@ export default function PostPage(props: {
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <div className="form-control w-full py-2">
-            <Content content={props.post.content} />
+            <Content content={post.content} />
           </div>
         </div>
 
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <PostCommentsActivity
-            post={props.post}
+            post={post}
             comments={comments}
             tips={tips}
-            user={props.creator}
+            user={creator}
           />
         </div>
       </div>

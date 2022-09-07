@@ -39,7 +39,6 @@ export function PostCommentThread(props: {
 
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
-      sdafasdfadsf
       <span
         className="absolute top-5 left-4 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
         aria-hidden="true"

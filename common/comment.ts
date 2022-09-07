@@ -20,7 +20,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   userAvatarUrl?: string
 } & T
 
-type OnContract = {
+export type OnContract = {
   commentType: 'contract'
   contractId: string
   answerOutcome?: string
@@ -35,12 +35,12 @@ type OnContract = {
   betOutcome?: string
 }
 
-type OnGroup = {
+export type OnGroup = {
   commentType: 'group'
   groupId: string
 }
 
-type OnPost = {
+export type OnPost = {
   commentType: 'post'
   postId: string
 }
