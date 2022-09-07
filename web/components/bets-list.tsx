@@ -161,7 +161,7 @@ export function BetsList(props: { user: User }) {
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
-    <Col className="mt-6">
+    <Col>
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
