@@ -86,7 +86,7 @@ const Home = (props: { auth: { user: User } | null }) => {
                 return (
                   <SearchSection
                     key={id}
-                    label={'Your bets'}
+                    label={'Your trades'}
                     sort={'prob-change-day'}
                     user={user}
                     yourBets

@@ -281,7 +281,7 @@ function BuyPanel(props: {
         title="Whoa, there!"
         text={`You might not want to spend ${formatPercent(
           bankrollFraction
-        )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
+        )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
           user?.balance ?? 0
         )}`}
       />
@@ -379,11 +379,11 @@ function BuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit bet'}
+          {isSubmitting ? 'Submitting...' : 'Submit trade'}
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+      {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
     </Col>
   )
 }
@@ -569,7 +569,7 @@ function LimitOrderPanel(props: {
       <Row className="mt-1 items-center gap-4">
         <Col className="gap-2">
           <div className="relative ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
+            Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -580,7 +580,7 @@ function LimitOrderPanel(props: {
         </Col>
         <Col className="gap-2">
           <div className="ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
+            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -750,7 +750,7 @@ function QuickOrLimitBet(props: {
 
   return (
     <Row className="align-center mb-4 justify-between">
-      <div className="text-4xl">Bet</div>
+      <div className="text-4xl">Trade</div>
       {!hideToggle && (
         <Row className="mt-1 items-center gap-2">
           <PillButton

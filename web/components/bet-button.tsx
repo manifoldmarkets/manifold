@@ -38,7 +38,7 @@ export default function BetButton(props: {
             className={clsx('my-auto inline-flex min-w-[75px] ', btnClassName)}
             onClick={() => setOpen(true)}
           >
-            Bet
+            Trade
           </Button>
         ) : (
           <BetSignUpPrompt />

@@ -193,7 +193,7 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
       )}
       onClick={onClick}
     >
-      Bet
+      Buy
     </button>
   )
 }
