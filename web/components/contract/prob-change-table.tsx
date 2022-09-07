@@ -4,12 +4,13 @@ import { CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
 import { SiteLink } from '../site-link'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 
 export function ProbChangeTable(props: { userId: string | undefined }) {
   const { userId } = props
 
   const changes = useProbChanges(userId ?? '')
-  console.log('changes', changes)
 
   if (!changes) {
     return null
@@ -20,31 +21,34 @@ export function ProbChangeTable(props: { userId: string | undefined }) {
   const count = 3
 
   return (
-    <div className="grid max-w-xl gap-x-2 gap-y-2 rounded bg-white p-4 text-gray-700">
-      <div className="text-xl text-gray-800">Daily movers</div>
-      <div className="text-right">% pts</div>
-      {positiveChanges.slice(0, count).map((contract) => (
-        <>
-          <div className="line-clamp-2">
-            <SiteLink href={contractPath(contract)}>
+    <Row className="w-full flex-wrap divide-x-2 rounded bg-white shadow-md">
+      <Col className="min-w-[300px] flex-1 divide-y">
+        {positiveChanges.slice(0, count).map((contract) => (
+          <Row className="hover:bg-gray-100">
+            <ProbChange className="p-4 text-right" contract={contract} />
+            <SiteLink
+              className="p-4 font-semibold text-indigo-700"
+              href={contractPath(contract)}
+            >
               {contract.question}
             </SiteLink>
-          </div>
-          <ProbChange className="text-right" contract={contract} />
-        </>
-      ))}
-      <div className="col-span-2 my-2" />
-      {negativeChanges.slice(0, count).map((contract) => (
-        <>
-          <div className="line-clamp-2">
-            <SiteLink href={contractPath(contract)}>
+          </Row>
+        ))}
+      </Col>
+      <Col className="justify-content-stretch min-w-[300px] flex-1 divide-y">
+        {negativeChanges.slice(0, count).map((contract) => (
+          <Row className="hover:bg-gray-100">
+            <ProbChange className="p-4 text-right" contract={contract} />
+            <SiteLink
+              className="p-4 font-semibold text-indigo-700"
+              href={contractPath(contract)}
+            >
               {contract.question}
             </SiteLink>
-          </div>
-          <ProbChange className="text-right" contract={contract} />
-        </>
-      ))}
-    </div>
+          </Row>
+        ))}
+      </Col>
+    </Row>
   )
 }
 
@@ -59,10 +63,10 @@ export function ProbChange(props: {
 
   const color =
     change > 0
-      ? 'text-green-500'
+      ? 'text-green-600'
       : change < 0
-      ? 'text-red-500'
-      : 'text-gray-500'
+      ? 'text-red-600'
+      : 'text-gray-600'
 
   const str =
     change === 0

@@ -77,6 +77,7 @@ const Home = (props: { auth: { user: User } | null }) => {
           </>
         ) : (
           <>
+            <div className="text-xl text-gray-800">Daily movers</div>
             <ProbChangeTable userId={user?.id} />
 
             {visibleItems.map((item) => {
