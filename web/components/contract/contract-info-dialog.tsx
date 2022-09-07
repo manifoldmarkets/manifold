@@ -135,7 +135,7 @@ export function ContractInfoDialog(props: {
               </tr> */}
 
               <tr>
-                <td>Bettors</td>
+                <td>Traders</td>
                 <td>{bettorsCount}</td>
               </tr>
 

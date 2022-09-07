@@ -260,7 +260,7 @@ export function UserPage(props: { user: User }) {
               ),
             },
             {
-              title: 'Bets',
+              title: 'Trades',
               content: (
                 <>
                   <BetsList user={user} />

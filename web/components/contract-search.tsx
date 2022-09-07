@@ -441,7 +441,7 @@ function ContractSearchControls(props: {
               selected={state.pillFilter === 'your-bets'}
               onSelect={selectPill('your-bets')}
             >
-              Your bets
+              Your trades
             </PillButton>
           )}
 

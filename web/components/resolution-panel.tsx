@@ -83,14 +83,14 @@ export function ResolutionPanel(props: {
       <div>
         {outcome === 'YES' ? (
           <>
-            Winnings will be paid out to YES bettors.
+            Winnings will be paid out to traders who bought YES.
             {/* <br />
             <br />
             You will earn {earnedFees}. */}
           </>
         ) : outcome === 'NO' ? (
           <>
-            Winnings will be paid out to NO bettors.
+            Winnings will be paid out to traders who bought NO.
             {/* <br />
             <br />
             You will earn {earnedFees}. */}
