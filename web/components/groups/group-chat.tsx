@@ -6,7 +6,6 @@ import { Avatar } from 'web/components/avatar'
 import { Group } from 'common/group'
 import { Comment, GroupComment } from 'common/comment'
 import { createCommentOnGroup } from 'web/lib/firebase/comments'
-import { CommentInputTextArea } from 'web/components/feed/feed-comments'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useRouter } from 'next/router'
@@ -23,6 +22,7 @@ import { ChevronDownIcon, UsersIcon } from '@heroicons/react/outline'
 import { setNotificationsAsSeen } from 'web/pages/notifications'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { UserLink } from 'web/components/user-link'
+import { CommentInputTextArea } from '../comment-input'
 
 export function GroupChat(props: {
   messages: GroupComment[]

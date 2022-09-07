@@ -20,7 +20,7 @@ import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
 import { PostComment } from 'common/comment'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
-import { PostCommentThread, CommentInput } from 'web/posts/post-comments'
+import { PostCommentInput, PostCommentThread } from 'web/posts/post-comments'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
@@ -137,11 +137,7 @@ export function PostCommentsActivity(props: {
 
   return (
     <>
-      <CommentInput
-        className="mb-5"
-        post={post}
-        commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
-      />
+      <PostCommentInput post={post} />
       {topLevelComments.map((parent) => (
         <PostCommentThread
           key={parent.id}

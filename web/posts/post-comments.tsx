@@ -1,4 +1,5 @@
 import { track } from '@amplitude/analytics-browser'
+import { Editor } from '@tiptap/core'
 import clsx from 'clsx'
 import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
@@ -7,19 +8,16 @@ import { Dictionary } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { Avatar } from 'web/components/avatar'
-import { Content, useTextEditor } from 'web/components/editor'
+import { CommentInput } from 'web/components/comment-input'
+import { Content } from 'web/components/editor'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
-import { CommentInputTextArea } from 'web/components/feed/feed-comments'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tipper } from 'web/components/tipper'
 import { UserLink } from 'web/components/user-link'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
 import { useUser } from 'web/hooks/use-user'
-import {
-  createCommentOnPost,
-  MAX_COMMENT_LENGTH,
-} from 'web/lib/firebase/comments'
+import { createCommentOnPost } from 'web/lib/firebase/comments'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 export function PostCommentThread(props: {
@@ -30,8 +28,7 @@ export function PostCommentThread(props: {
   parentComment: PostComment
   commentsByUserId: Dictionary<PostComment[]>
 }) {
-  const { user, post, threadComments, commentsByUserId, tips, parentComment } =
-    props
+  const { post, threadComments, tips, parentComment } = props
   const [showReply, setShowReply] = useState(false)
   const [replyTo, setReplyTo] = useState<{ id: string; username: string }>()
 
@@ -63,9 +60,8 @@ export function PostCommentThread(props: {
             className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
-          <CommentInput
+          <PostCommentInput
             post={post}
-            commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
             parentCommentId={parentComment.id}
             replyToUser={replyTo}
             onSubmitComment={() => setShowReply(false)}
@@ -73,6 +69,34 @@ export function PostCommentThread(props: {
         </Col>
       )}
     </Col>
+  )
+}
+
+export function PostCommentInput(props: {
+  post: Post
+  parentCommentId?: string
+  replyToUser?: { id: string; username: string }
+  onSubmitComment?: () => void
+}) {
+  const user = useUser()
+
+  const { post, parentCommentId, replyToUser } = props
+
+  async function onSubmitComment(editor: Editor) {
+    if (!user) {
+      track('sign in to comment')
+      return await firebaseLogin()
+    }
+    await createCommentOnPost(post.id, editor.getJSON(), user, parentCommentId)
+    props.onSubmitComment?.()
+  }
+
+  return (
+    <CommentInput
+      replyToUser={replyToUser}
+      parentCommentId={parentCommentId}
+      onSubmitComment={onSubmitComment}
+    />
   )
 }
 
@@ -84,7 +108,7 @@ export function PostComment(props: {
   probAtCreatedTime?: number
   onReplyClick?: (comment: PostComment) => void
 }) {
-  const { post, comment, tips, indent, probAtCreatedTime, onReplyClick } = props
+  const { post, comment, tips, indent, onReplyClick } = props
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
 
@@ -143,73 +167,6 @@ export function PostComment(props: {
             </button>
           )}
         </Row>
-      </div>
-    </Row>
-  )
-}
-
-export function CommentInput(props: {
-  post: Post
-  commentsByCurrentUser: PostComment[]
-  className?: string
-  replyToUser?: { id: string; username: string }
-  // Reply to a free response answer
-  parentAnswerOutcome?: string
-  // Reply to another comment
-  parentCommentId?: string
-  onSubmitComment?: () => void
-}) {
-  const {
-    post,
-    className,
-    parentAnswerOutcome,
-    parentCommentId,
-    replyToUser,
-    onSubmitComment,
-  } = props
-  const user = useUser()
-  const { editor, upload } = useTextEditor({
-    simple: true,
-    max: MAX_COMMENT_LENGTH,
-    placeholder:
-      !!parentCommentId || !!parentAnswerOutcome
-        ? 'Write a reply...'
-        : 'Write a comment...',
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  async function submitComment(betId: string | undefined) {
-    if (!user) {
-      track('sign in to comment')
-      return await firebaseLogin()
-    }
-    if (!editor || editor.isEmpty || isSubmitting) return
-    setIsSubmitting(true)
-    await createCommentOnPost(post.id, editor.getJSON(), user, parentCommentId)
-    onSubmitComment?.()
-    setIsSubmitting(false)
-  }
-
-  if (user?.isBannedFromPosting) return <></>
-
-  return (
-    <Row className={clsx(className, 'mb-2 gap-1 sm:gap-2')}>
-      <Avatar
-        avatarUrl={user?.avatarUrl}
-        username={user?.username}
-        size="sm"
-        className="mt-2"
-      />
-      <div className="min-w-0 flex-1 pl-0.5 text-sm">
-        <div className="mb-1 text-gray-500"></div>
-        <CommentInputTextArea
-          editor={editor}
-          upload={upload}
-          replyToUser={replyToUser}
-          user={user}
-          submitComment={submitComment}
-          isSubmitting={isSubmitting}
-        />
       </div>
     </Row>
   )
