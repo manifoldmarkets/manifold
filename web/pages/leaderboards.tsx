@@ -135,21 +135,20 @@ export default function Leaderboards(_props: {
         defaultIndex={1}
         tabs={[
           {
-            title: 'All Time',
-            content: LeaderboardWithPeriod('allTime'),
+            title: 'Daily',
+            content: LeaderboardWithPeriod('daily'),
           },
-          // TODO: Enable this near the end of July!
-          // {
-          //   title: 'Monthly',
-          //   content: LeaderboardWithPeriod('monthly'),
-          // },
           {
             title: 'Weekly',
             content: LeaderboardWithPeriod('weekly'),
           },
           {
-            title: 'Daily',
-            content: LeaderboardWithPeriod('daily'),
+            title: 'Monthly',
+            content: LeaderboardWithPeriod('monthly'),
+          },
+          {
+            title: 'All Time',
+            content: LeaderboardWithPeriod('allTime'),
           },
         ]}
       />
