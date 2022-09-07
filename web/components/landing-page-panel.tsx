@@ -27,23 +27,18 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
         <div className="m-4 max-w-[550px] self-center">
           <h1 className="text-3xl sm:text-6xl xl:text-6xl">
             <div className="font-semibold sm:mb-2">
-              Predict{' '}
+              A{' '}
               <span className="bg-gradient-to-r from-indigo-500 to-blue-500 bg-clip-text font-bold text-transparent">
-                anything!
-              </span>
+                market
+              </span>{' '}
+              for every question
             </div>
           </h1>
           <Spacer h={6} />
           <div className="mb-4 px-2 ">
-            Create a play-money prediction market on any topic you care about
-            and bet with your friends on what will happen!
+            Create a play-money prediction market on any topic you care about.
+            Trade with your friends to forecast the future.
             <br />
-            {/* <br />
-          Sign up and get {formatMoney(1000)} - worth $10 to your{' '}
-          <SiteLink className="font-semibold" href="/charity">
-            favorite charity.
-          </SiteLink>
-          <br /> */}
           </div>
         </div>
         <Spacer h={6} />
