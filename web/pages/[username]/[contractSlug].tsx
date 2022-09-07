@@ -158,11 +158,15 @@ export function ContractPageContent(
   const contract = useContractWithPreload(props.contract) ?? props.contract
   usePrefetch(user?.id)
 
-  useTracking('view market', {
-    slug: contract.slug,
-    contractId: contract.id,
-    creatorId: contract.creatorId,
-  })
+  useTracking(
+    'view market',
+    {
+      slug: contract.slug,
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+    },
+    true
+  )
 
   const bets = useBets(contract.id) ?? props.bets
   const nonChallengeBets = useMemo(
