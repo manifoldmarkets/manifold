@@ -6,7 +6,7 @@ import { getOutcomeProbability } from 'common/calculate'
 import { FeedBet } from './feed-bets'
 import { FeedLiquidity } from './feed-liquidity'
 import { FeedAnswerCommentGroup } from './feed-answer-comment-group'
-import { FeedCommentThread, CommentInput } from './feed-comments'
+import { FeedCommentThread, ContractCommentInput } from './feed-comments'
 import { User } from 'common/user'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -72,7 +72,7 @@ export function ContractCommentsActivity(props: {
 
   return (
     <>
-      <CommentInput
+      <ContractCommentInput
         className="mb-5"
         contract={contract}
         betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}

@@ -9,7 +9,7 @@ import { Avatar } from 'web/components/avatar'
 import { Linkify } from 'web/components/linkify'
 import clsx from 'clsx'
 import {
-  CommentInput,
+  ContractCommentInput,
   FeedComment,
   getMostRecentCommentableBet,
 } from 'web/components/feed/feed-comments'
@@ -177,7 +177,7 @@ export function FeedAnswerCommentGroup(props: {
             className="absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
-          <CommentInput
+          <ContractCommentInput
             contract={contract}
             betsByCurrentUser={betsByCurrentUser}
             commentsByCurrentUser={commentsByCurrentUser}
