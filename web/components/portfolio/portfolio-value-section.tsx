@@ -44,6 +44,7 @@ export const PortfolioValueSection = memo(
             }}
           >
             <option value="allTime">All time</option>
+            <option value="monthly">Last Month</option>
             <option value="weekly">Last 7d</option>
             <option value="daily">Last 24h</option>
           </select>
