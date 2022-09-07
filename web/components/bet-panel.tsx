@@ -8,6 +8,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import {
+  formatLargeNumber,
   formatMoney,
   formatPercent,
   formatWithCommas,
@@ -28,7 +29,7 @@ import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { BetSignUpPrompt } from './sign-up-prompt'
@@ -256,16 +257,42 @@ function BuyPanel(props: {
   const resultProb = getCpmmProbability(newPool, newP)
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
+
   const probChange = Math.abs(resultProb - initialProb)
-
   const currentPayout = newBet.shares
-
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
   const format = getFormattedMappedValue(contract)
 
+  const getValue = getMappedValue(contract)
+  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const displayedDifference = isPseudoNumeric
+    ? formatLargeNumber(rawDifference)
+    : formatPercent(rawDifference)
+
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+
+  const warning =
+    (betAmount ?? 0) > 10 &&
+    bankrollFraction >= 0.5 &&
+    bankrollFraction <= 1 ? (
+      <AlertBox
+        title="Whoa, there!"
+        text={`You might not want to spend ${formatPercent(
+          bankrollFraction
+        )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
+          user?.balance ?? 0
+        )}`}
+      />
+    ) : (betAmount ?? 0) > 10 && probChange >= 0.3 && bankrollFraction <= 1 ? (
+      <AlertBox
+        title="Whoa, there!"
+        text={`Are you sure you want to move the market by ${displayedDifference}?`}
+      />
+    ) : (
+      <></>
+    )
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
@@ -283,9 +310,10 @@ function BuyPanel(props: {
       <Row className="my-3 justify-between text-left text-sm text-gray-500">
         Amount
         <span className={'xl:hidden'}>
-          (balance: {formatMoney(user?.balance ?? 0)})
+          Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -294,35 +322,10 @@ function BuyPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        showSliderOnMobile
       />
 
-      {(betAmount ?? 0) > 10 &&
-      bankrollFraction >= 0.5 &&
-      bankrollFraction <= 1 ? (
-        <AlertBox
-          title="Whoa, there!"
-          text={`You might not want to spend ${formatPercent(
-            bankrollFraction
-          )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
-            user?.balance ?? 0
-          )}`}
-        />
-      ) : (
-        ''
-      )}
-
-      {(betAmount ?? 0) > 10 && probChange >= 0.3 ? (
-        <AlertBox
-          title="Whoa, there!"
-          text={`Are you sure you want to move the market ${
-            isPseudoNumeric && contract.isLogScale
-              ? 'this much'
-              : format(probChange)
-          }?`}
-        />
-      ) : (
-        ''
-      )}
+      {warning}
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
@@ -351,9 +354,6 @@ function BuyPanel(props: {
                 </>
               )}
             </div>
-            {/* <InfoTooltip
-              text={`Includes ${formatMoneyWithDecimals(totalFees)} in fees`}
-            /> */}
           </Row>
           <div>
             <span className="mr-2 whitespace-nowrap">
@@ -608,9 +608,10 @@ function LimitOrderPanel(props: {
           Max amount<span className="ml-1 text-red-500">*</span>
         </span>
         <span className={'xl:hidden'}>
-          (balance: {formatMoney(user?.balance ?? 0)})
+          Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -618,6 +619,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
+        showSliderOnMobile
       />
 
       <Col className="mt-3 w-full gap-3">

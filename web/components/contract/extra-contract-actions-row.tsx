@@ -42,7 +42,6 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           />
           <span>Share</span>
         </Col>
-
         <ShareModal
           isOpen={isShareOpen}
           setOpen={setShareOpen}
@@ -50,17 +49,23 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           user={user}
         />
       </Button>
+
       {showChallenge && (
         <Button
           size="lg"
           color="gray-white"
-          className={'flex hidden max-w-xs self-center sm:inline-block'}
+          className="max-w-xs self-center"
           onClick={withTracking(
             () => setOpenCreateChallengeModal(true),
             'click challenge button'
           )}
         >
-          <span>⚔️ Challenge</span>
+          <Col className="items-center sm:flex-row">
+            <span className="h-[24px] w-5 sm:mr-2" aria-hidden="true">
+              ⚔️
+            </span>
+            <span>Challenge</span>
+          </Col>
           <CreateChallengeModal
             isOpen={openCreateChallengeModal}
             setOpen={setOpenCreateChallengeModal}

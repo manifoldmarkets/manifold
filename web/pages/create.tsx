@@ -20,7 +20,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { canModifyGroupContracts, getGroup } from 'web/lib/firebase/groups'
+import { getGroup, groupPath } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
@@ -34,6 +34,8 @@ import { Title } from 'web/components/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { SiteLink } from 'web/components/site-link'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -139,7 +141,7 @@ export function NewContract(props: {
   useEffect(() => {
     if (groupId)
       getGroup(groupId).then((group) => {
-        if (group && canModifyGroupContracts(group, creator.id)) {
+        if (group) {
           setSelectedGroup(group)
           setShowGroupSelector(false)
         }
@@ -290,9 +292,9 @@ export function NewContract(props: {
         }}
         choicesMap={{
           'Yes / No': 'BINARY',
-          'Multiple choice': 'MULTIPLE_CHOICE',
+          // 'Multiple choice': 'MULTIPLE_CHOICE',
           'Free response': 'FREE_RESPONSE',
-          Numeric: 'PSEUDO_NUMERIC',
+          // Numeric: 'PSEUDO_NUMERIC',
         }}
         isSubmitting={isSubmitting}
         className={'col-span-4'}
@@ -314,14 +316,14 @@ export function NewContract(props: {
           <div className="form-control mb-2 items-start">
             <label className="label gap-2">
               <span className="mb-1">Range</span>
-              <InfoTooltip text="The minimum and maximum numbers across the numeric range." />
+              <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             </label>
 
             <Row className="gap-2">
               <input
                 type="number"
                 className="input input-bordered w-32"
-                placeholder="MIN"
+                placeholder="LOW"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}
@@ -332,7 +334,7 @@ export function NewContract(props: {
               <input
                 type="number"
                 className="input input-bordered w-32"
-                placeholder="MAX"
+                placeholder="HIGH"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
                 min={Number.MIN_SAFE_INTEGER}
@@ -406,13 +408,19 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <GroupSelector
-        selectedGroup={selectedGroup}
-        setSelectedGroup={setSelectedGroup}
-        creator={creator}
-        options={{ showSelector: showGroupSelector, showLabel: true }}
-      />
-
+      <Row className={'items-end gap-x-2'}>
+        <GroupSelector
+          selectedGroup={selectedGroup}
+          setSelectedGroup={setSelectedGroup}
+          creator={creator}
+          options={{ showSelector: showGroupSelector, showLabel: true }}
+        />
+        {showGroupSelector && selectedGroup && (
+          <SiteLink href={groupPath(selectedGroup.slug)}>
+            <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
+          </SiteLink>
+        )}
+      </Row>
       <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
@@ -483,17 +491,17 @@ export function NewContract(props: {
               {formatMoney(ante)}
             </div>
           ) : (
-            <div>
-              <div className="label-text text-primary pl-1">
-                FREE{' '}
-                <span className="label-text pl-1 text-gray-500">
-                  (You have{' '}
-                  {FREE_MARKETS_PER_USER_MAX -
-                    (creator?.freeMarketsCreated ?? 0)}{' '}
-                  free markets left)
-                </span>
+            <Row>
+              <div className="label-text text-neutral pl-1 line-through">
+                {formatMoney(ante)}
               </div>
-            </div>
+              <div className="label-text text-primary pl-1">FREE </div>
+              <div className="label-text pl-1 text-gray-500">
+                (You have{' '}
+                {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
+                free markets left)
+              </div>
+            </Row>
           )}
 
           {ante > balance && !deservesFreeMarket && (

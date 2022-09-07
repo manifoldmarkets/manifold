@@ -123,15 +123,12 @@ export function FeedComment(props: {
   } = props
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
-  let betOutcome: string | undefined,
-    bought: string | undefined,
-    money: string | undefined
-
-  const matchedBet = betsBySameUser.find((bet) => bet.id === comment.betId)
-  if (matchedBet) {
-    betOutcome = matchedBet.outcome
-    bought = matchedBet.amount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(matchedBet.amount))
+  const betOutcome = comment.betOutcome
+  let bought: string | undefined
+  let money: string | undefined
+  if (comment.betAmount != null) {
+    bought = comment.betAmount >= 0 ? 'bought' : 'sold'
+    money = formatMoney(Math.abs(comment.betAmount))
   }
 
   const [highlighted, setHighlighted] = useState(false)
@@ -146,7 +143,7 @@ export function FeedComment(props: {
   const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
     contract,
     comment.createdTime,
-    matchedBet ? [] : betsBySameUser
+    comment.betId ? [] : betsBySameUser
   )
 
   return (
@@ -173,7 +170,7 @@ export function FeedComment(props: {
             username={userUsername}
             name={userName}
           />{' '}
-          {!matchedBet &&
+          {!comment.betId != null &&
             userPosition > 0 &&
             contract.outcomeType !== 'NUMERIC' && (
               <>
@@ -192,7 +189,6 @@ export function FeedComment(props: {
               of{' '}
               <OutcomeLabel
                 outcome={betOutcome ? betOutcome : ''}
-                value={(matchedBet as any).value}
                 contract={contract}
                 truncate="short"
               />

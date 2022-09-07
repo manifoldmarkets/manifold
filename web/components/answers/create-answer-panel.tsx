@@ -120,7 +120,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
 
   return (
     <Col className="gap-4 rounded">
-      <Col className="flex-1 gap-2">
+      <Col className="flex-1 gap-2 px-4 xl:px-0">
         <div className="mb-1">Add your answer</div>
         <Textarea
           value={text}
@@ -152,7 +152,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                 <Row className="my-3 justify-between text-left text-sm text-gray-500">
                   Bet Amount
                   <span className={'sm:hidden'}>
-                    (balance: {formatMoney(user?.balance ?? 0)})
+                    Balance: {formatMoney(user?.balance ?? 0)}
                   </span>
                 </Row>{' '}
                 <BuyAmountInput
@@ -162,6 +162,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                   setError={setAmountError}
                   minimumAmount={1}
                   disabled={isSubmitting}
+                  showSliderOnMobile
                 />
               </Col>
               <Col className="gap-3">
@@ -205,7 +206,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
               disabled={!canSubmit}
               onClick={withTracking(submitAnswer, 'submit answer')}
             >
-              Submit answer & buy
+              Submit
             </button>
           ) : (
             text && (

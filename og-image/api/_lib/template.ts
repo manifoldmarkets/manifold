@@ -22,13 +22,13 @@ export function getHtml(parsedReq: ParsedRequest) {
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
 
   let resolutionColor = 'text-primary'
-  let resolutionString = 'Yes'
+  let resolutionString = 'YES'
   switch (resolution) {
     case 'YES':
       break
     case 'NO':
       resolutionColor = 'text-red-500'
-      resolutionString = 'No'
+      resolutionString = 'NO'
       break
     case 'CANCEL':
       resolutionColor = 'text-yellow-500'
@@ -118,7 +118,9 @@ export function getHtml(parsedReq: ParsedRequest) {
                         ? resolutionDiv
                         : numericValue
                         ? numericValueDiv
-                        : probabilityDiv
+                        : probability
+                        ? probabilityDiv
+                        : ''
                     }
         </div>
       </div>

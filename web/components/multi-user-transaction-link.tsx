@@ -32,20 +32,21 @@ export function MultiUserTransactionLink(props: {
           setOpen(true)
         }}
       >
-        <Row className={'gap-1'}>
-          {userInfos.map((userInfo, index) =>
-            index < maxShowCount ? (
-              <Row key={userInfo.username + 'shortened'}>
+        <Row className={'items-center gap-1 sm:gap-2'}>
+          {userInfos.map(
+            (userInfo, index) =>
+              index < maxShowCount && (
                 <Avatar
                   username={userInfo.username}
                   size={'sm'}
                   avatarUrl={userInfo.avatarUrl}
                   noLink={userInfos.length > 1}
+                  key={userInfo.username + 'avatar'}
                 />
-              </Row>
-            ) : (
-              <span>& {userInfos.length - maxShowCount} more</span>
-            )
+              )
+          )}
+          {userInfos.length > maxShowCount && (
+            <span>& {userInfos.length - maxShowCount} more</span>
           )}
         </Row>
       </Button>
