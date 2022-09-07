@@ -69,7 +69,7 @@ export async function getStaticPropz(props: {
       comments: comments.slice(0, 1000),
     },
 
-    revalidate: 60, // regenerate after a minute
+    revalidate: 5, // regenerate after five seconds
   }
 }
 
