@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { debounce, sortBy, take } from 'lodash'
-import { SearchIcon } from '@heroicons/react/outline'
+import { sortBy, take } from 'lodash'
 import { toast } from 'react-hot-toast'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
@@ -14,14 +13,18 @@ import {
   getGroupBySlug,
   groupPath,
   joinGroup,
-  listMembers,
+  listMemberIds,
   updateGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { useGroup, useGroupContractIds, useMembers } from 'web/hooks/use-group'
+import {
+  useGroup,
+  useGroupContractIds,
+  useMemberIds,
+} from 'web/hooks/use-group'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
@@ -35,9 +38,7 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { ContractSearch } from 'web/components/contract-search'
-import { FollowList } from 'web/components/follow-list'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
-import { searchInAny } from 'common/util/parse'
 import { CopyLinkButton } from 'web/components/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -59,7 +60,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
 
   const group = await getGroupBySlug(slugs[0])
-  const members = group && (await listMembers(group))
+  const memberIds = group && (await listMemberIds(group))
   const creatorPromise = group ? getUser(group.creatorId) : null
 
   const contracts =
@@ -79,9 +80,9 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   const creatorScores = scoreCreators(contracts)
   const traderScores = scoreTraders(contracts, bets)
   const [topCreators, topTraders] =
-    (members && [
-      toTopUsers(creatorScores, members),
-      toTopUsers(traderScores, members),
+    (memberIds && [
+      await toTopUsers(creatorScores, memberIds),
+      await toTopUsers(traderScores, memberIds),
     ]) ??
     []
 
@@ -93,7 +94,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     props: {
       contractsCount,
       group,
-      members,
+      memberIds,
       creator,
       traderScores,
       topTraders,
@@ -108,18 +109,21 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
   }
 }
 
-function toTopUsers(userScores: { [userId: string]: number }, users: User[]) {
+function toTopUsers(
+  userScores: { [userId: string]: number },
+  userIds: string[]
+) {
   const topUserPairs = take(
     sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
     10
   ).filter(([_, score]) => score >= 0.5)
 
-  const topUsers = topUserPairs.map(
-    ([userId]) => users.filter((user) => user.id === userId)[0]
-  )
-  return topUsers.filter((user) => user)
-}
+  const topUserIds = topUserPairs
+    .map(([userId]) => userIds.filter((uid) => uid === userId)[0])
+    .filter((userId) => userId != null) as string[]
 
+  return Promise.all(topUserIds.map(getUser))
+}
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
@@ -134,7 +138,7 @@ const groupSubpages = [
 export default function GroupPage(props: {
   contractsCount: number
   group: Group | null
-  members: User[]
+  memberIds: string[]
   creator: User
   traderScores: { [userId: string]: number }
   topTraders: User[]
@@ -147,7 +151,7 @@ export default function GroupPage(props: {
   props = usePropz(props, getStaticPropz) ?? {
     contractsCount: 0,
     group: null,
-    members: [],
+    memberIds: [],
     creator: null,
     traderScores: {},
     topTraders: [],
@@ -175,7 +179,7 @@ export default function GroupPage(props: {
 
   const user = useUser()
   const isAdmin = useAdmin()
-  const members = useMembers(group?.id) ?? props.members
+  const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -186,7 +190,7 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   const isCreator = user && group && user.id === group.creatorId
-  const isMember = user && members.map((m) => m.id).includes(user.id)
+  const isMember = user && memberIds.includes(user.id)
 
   const leaderboard = (
     <Col>
@@ -195,7 +199,7 @@ export default function GroupPage(props: {
         creatorScores={creatorScores}
         topTraders={topTraders}
         topCreators={topCreators}
-        members={members}
+        memberIds={memberIds}
         user={user}
       />
     </Col>
@@ -216,7 +220,7 @@ export default function GroupPage(props: {
         creator={creator}
         isCreator={!!isCreator}
         user={user}
-        members={members}
+        memberIds={memberIds}
       />
     </Col>
   )
@@ -311,9 +315,9 @@ function GroupOverview(props: {
   creator: User
   user: User | null | undefined
   isCreator: boolean
-  members: User[]
+  memberIds: string[]
 }) {
-  const { group, creator, isCreator, user, members } = props
+  const { group, creator, isCreator, user, memberIds } = props
   const anyoneCanJoinChoices: { [key: string]: string } = {
     Closed: 'false',
     Open: 'true',
@@ -332,7 +336,7 @@ function GroupOverview(props: {
   const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
     group.slug
   )}${postFix}`
-  const isMember = user ? members.map((m) => m.id).includes(user.id) : false
+  const isMember = user ? memberIds.includes(user.id) : false
 
   return (
     <>
@@ -398,63 +402,8 @@ function GroupOverview(props: {
             />
           </Col>
         )}
-
-        <Col className={'mt-2'}>
-          <div className="mb-2 text-lg">Members</div>
-          <GroupMemberSearch members={members} group={group} />
-        </Col>
       </Col>
     </>
-  )
-}
-
-function SearchBar(props: { setQuery: (query: string) => void }) {
-  const { setQuery } = props
-  const debouncedQuery = debounce(setQuery, 50)
-  return (
-    <div className={'relative'}>
-      <SearchIcon className={'absolute left-5 top-3.5 h-5 w-5 text-gray-500'} />
-      <input
-        type="text"
-        onChange={(e) => debouncedQuery(e.target.value)}
-        placeholder="Find a member"
-        className="input input-bordered mb-4 w-full pl-12"
-      />
-    </div>
-  )
-}
-
-function GroupMemberSearch(props: { members: User[]; group: Group }) {
-  const [query, setQuery] = useState('')
-  const { group } = props
-  let { members } = props
-
-  // Use static members on load, but also listen to member changes:
-  const listenToMembers = useMembers(group.id)
-  if (listenToMembers) {
-    members = listenToMembers
-  }
-
-  // TODO use find-active-contracts to sort by?
-  const matches = sortBy(members, [(member) => member.name]).filter((m) =>
-    searchInAny(query, m.name, m.username)
-  )
-  const matchLimit = 25
-
-  return (
-    <div>
-      <SearchBar setQuery={setQuery} />
-      <Col className={'gap-2'}>
-        {matches.length > 0 && (
-          <FollowList userIds={matches.slice(0, matchLimit).map((m) => m.id)} />
-        )}
-        {matches.length > 25 && (
-          <div className={'text-center'}>
-            And {matches.length - matchLimit} more...
-          </div>
-        )}
-      </Col>
-    </div>
   )
 }
 
@@ -466,11 +415,11 @@ function SortedLeaderboard(props: {
   maxToShow?: number
 }) {
   const { users, scoreFunction, title, header, maxToShow } = props
-  const sortedUsers = users.sort((a, b) => scoreFunction(b) - scoreFunction(a))
+
   return (
     <Leaderboard
       className="max-w-xl"
-      users={sortedUsers}
+      users={users}
       title={title}
       columns={[
         { header, renderCell: (user) => formatMoney(scoreFunction(user)) },
@@ -485,28 +434,29 @@ function GroupLeaderboards(props: {
   creatorScores: { [userId: string]: number }
   topTraders: User[]
   topCreators: User[]
-  members: User[]
+  memberIds: string[]
   user: User | null | undefined
 }) {
-  const { traderScores, creatorScores, members, topTraders, topCreators } =
+  const { traderScores, creatorScores, memberIds, topTraders, topCreators } =
     props
   const maxToShow = 50
   // Consider hiding M$0
   // If it's just one member (curator), show all bettors, otherwise just show members
+
   return (
     <Col>
       <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
-        {members.length > 1 ? (
+        {memberIds.length > 1 ? (
           <>
             <SortedLeaderboard
-              users={members}
+              users={topTraders}
               scoreFunction={(user) => traderScores[user.id] ?? 0}
               title="🏅 Top traders"
               header="Profit"
               maxToShow={maxToShow}
             />
             <SortedLeaderboard
-              users={members}
+              users={topCreators}
               scoreFunction={(user) => creatorScores[user.id] ?? 0}
               title="🏅 Top creators"
               header="Market volume"
