@@ -255,13 +255,6 @@ export function UserPage(props: { user: User }) {
               title: 'Comments',
               content: (
                 <Col>
-                  <Row className={'mt-2 mb-4 flex-wrap items-center gap-6'}>
-                    <FollowingButton user={user} />
-                    <FollowersButton user={user} />
-                    <ReferralsButton user={user} />
-                    <GroupsButton user={user} />
-                    <UserLikesButton user={user} />
-                  </Row>
                   <UserCommentsList user={user} />
                 </Col>
               ),
@@ -270,9 +263,23 @@ export function UserPage(props: { user: User }) {
               title: 'Bets',
               content: (
                 <>
-                  <PortfolioValueSection userId={user.id} />
                   <BetsList user={user} />
                 </>
+              ),
+            },
+            {
+              title: 'Stats',
+              content: (
+                <Col className="mb-8">
+                  <Row className={'mt-2 mb-8 flex-wrap items-center gap-6'}>
+                    <FollowingButton user={user} />
+                    <FollowersButton user={user} />
+                    <ReferralsButton user={user} />
+                    <GroupsButton user={user} />
+                    <UserLikesButton user={user} />
+                  </Row>
+                  <PortfolioValueSection userId={user.id} />
+                </Col>
               ),
             },
           ]}
