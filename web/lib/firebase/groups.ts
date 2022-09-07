@@ -86,9 +86,10 @@ export async function listGroupContracts(groupId: string) {
     contractId: string
     createdTime: number
   }>(groupContracts(groupId))
-  return Promise.all(
+  const contracts = await Promise.all(
     contractDocs.map((doc) => getContractFromId(doc.contractId))
   )
+  return filterDefined(contracts)
 }
 
 export function listenForOpenGroups(setGroups: (groups: Group[]) => void) {
