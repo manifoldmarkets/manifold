@@ -751,7 +751,7 @@ function QuickOrLimitBet(props: {
   return (
     <Row className="align-center mb-4 justify-between">
       <div className="mr-2 -ml-2 shrink-0 text-3xl sm:-ml-0 sm:text-4xl">
-        Weigh in
+        Trade
       </div>
       {!hideToggle && (
         <Row className="mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
