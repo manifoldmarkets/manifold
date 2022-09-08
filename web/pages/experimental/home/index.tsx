@@ -64,7 +64,7 @@ const Home = () => {
               <SearchSection
                 key={id}
                 label={'Your trades'}
-                sort={'prob-change-day'}
+                sort={'newest'}
                 user={user}
                 yourBets
               />
@@ -122,7 +122,7 @@ function SearchSection(props: {
       <ContractSearch
         user={user}
         defaultSort={sort}
-        additionalFilter={yourBets ? { yourBets: true } : undefined}
+        additionalFilter={yourBets ? { yourBets: true } : { followed: true }}
         noControls
         maxResults={6}
         persistPrefix={`experimental-home-${sort}`}

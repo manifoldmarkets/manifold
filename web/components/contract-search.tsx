@@ -69,6 +69,7 @@ type AdditionalFilter = {
   excludeContractIds?: string[]
   groupSlug?: string
   yourBets?: boolean
+  followed?: boolean
 }
 
 export function ContractSearch(props: {
@@ -295,6 +296,19 @@ function ContractSearchControls(props: {
   const pillGroups: { name: string; slug: string }[] =
     memberPillGroups.length > 0 ? memberPillGroups : DEFAULT_CATEGORY_GROUPS
 
+  const personalFilters = user
+    ? [
+        // Show contracts in groups that the user is a member of.
+        memberGroupSlugs
+          .map((slug) => `groupLinks.slug:${slug}`)
+          // Or, show contracts created by users the user follows
+          .concat(follows?.map((followId) => `creatorId:${followId}`) ?? []),
+
+        // Subtract contracts you bet on, to show new ones.
+        `uniqueBettorIds:-${user.id}`,
+      ]
+    : []
+
   const additionalFilters = [
     additionalFilter?.creatorId
       ? `creatorId:${additionalFilter.creatorId}`
@@ -307,6 +321,7 @@ function ContractSearchControls(props: {
       ? // Show contracts bet on by the user
         `uniqueBettorIds:${user.id}`
       : '',
+    ...(additionalFilter?.followed ? personalFilters : []),
   ]
   const facetFilters = query
     ? additionalFilters
@@ -323,17 +338,7 @@ function ContractSearchControls(props: {
         state.pillFilter !== 'your-bets'
           ? `groupLinks.slug:${state.pillFilter}`
           : '',
-        state.pillFilter === 'personal'
-          ? // Show contracts in groups that the user is a member of
-            memberGroupSlugs
-              .map((slug) => `groupLinks.slug:${slug}`)
-              // Show contracts created by users the user follows
-              .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
-          : '',
-        // Subtract contracts you bet on from For you.
-        state.pillFilter === 'personal' && user
-          ? `uniqueBettorIds:-${user.id}`
-          : '',
+        ...(state.pillFilter === 'personal' ? personalFilters : []),
         state.pillFilter === 'your-bets' && user
           ? // Show contracts bet on by the user
             `uniqueBettorIds:${user.id}`
