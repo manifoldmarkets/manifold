@@ -25,6 +25,9 @@ import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath } from 'web/lib/firebase/groups'
+import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import { calculatePortfolioProfit } from 'common/calculate-metrics'
+import { formatMoney } from 'common/util/format'
 
 const Home = () => {
   const user = useUser()
@@ -44,10 +47,12 @@ const Home = () => {
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-12">
         <Row className={'w-full items-center justify-between'}>
-          <Title text="Home" />
+          <Title className="!mb-0" text="Home" />
 
           <EditButton />
         </Row>
+
+        <DailyProfitAndBalance className="self-end" userId={user?.id} />
 
         <div className="text-xl text-gray-800">Daily movers</div>
         <ProbChangeTable userId={user?.id} />
@@ -160,6 +165,39 @@ function EditButton(props: { className?: string }) {
         Edit
       </Button>
     </SiteLink>
+  )
+}
+
+function DailyProfitAndBalance(props: {
+  userId: string | null | undefined
+  className?: string
+}) {
+  const { userId, className } = props
+  const metrics = usePortfolioHistory(userId ?? '', 'daily') ?? []
+  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
+
+  if (first === undefined || last === undefined) return null
+
+  const profit =
+    calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
+
+  const balanceChange = last.balance - first.balance
+
+  return (
+    <div className={clsx(className, 'text-lg')}>
+      <span className={clsx(profit >= 0 ? 'text-green-500' : 'text-red-500')}>
+        {profit >= 0 ? '+' : '-'}
+        {formatMoney(profit)}
+      </span>{' '}
+      profit and{' '}
+      <span
+        className={clsx(balanceChange >= 0 ? 'text-green-500' : 'text-red-500')}
+      >
+        {balanceChange >= 0 ? '+' : '-'}
+        {formatMoney(balanceChange)}
+      </span>{' '}
+      balance today
+    </div>
   )
 }
 
