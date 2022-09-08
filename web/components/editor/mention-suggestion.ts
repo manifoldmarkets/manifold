@@ -1,15 +1,12 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 import { ReactRenderer } from '@tiptap/react'
 import { searchInAny } from 'common/util/parse'
-import { memoize, orderBy } from 'lodash'
+import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
-import { getUsers } from 'web/lib/firebase/users'
+import { getCachedUsers } from 'web/hooks/use-users'
 import { MentionList } from './mention-list'
 
 type Suggestion = MentionOptions['suggestion']
-
-const users = memoize(getUsers)
-users() // prefetch
 
 const beginsWith = (text: string, query: string) =>
   text.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
@@ -18,7 +15,9 @@ const beginsWith = (text: string, query: string) =>
 export const mentionSuggestion: Suggestion = {
   items: async ({ query }) =>
     orderBy(
-      (await users()).filter((u) => searchInAny(query, u.username, u.name)),
+      (await getCachedUsers()).filter((u) =>
+        searchInAny(query, u.username, u.name)
+      ),
       [
         (u) => [u.name, u.username].some((s) => beginsWith(s, query)),
         'followerCountCached',
