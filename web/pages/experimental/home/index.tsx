@@ -11,7 +11,6 @@ import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
 import { ContractSearch, SORTS } from 'web/components/contract-search'
 import { User } from 'common/user'
-import { updateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -21,7 +20,7 @@ import { SiteLink } from 'web/components/site-link'
 import { useUser } from 'web/hooks/use-user'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
-import { ArrangeHome, getHomeItems } from '../../../components/arrange-home'
+import { getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
@@ -36,76 +35,52 @@ const Home = () => {
 
   const groups = useMemberGroups(user?.id) ?? []
 
-  const [homeSections, setHomeSections] = useState(
+  const [homeSections] = useState(
     user?.homeSections ?? { visible: [], hidden: [] }
   )
   const { visibleItems } = getHomeItems(groups, homeSections)
-
-  const updateHomeSections = (newHomeSections: {
-    visible: string[]
-    hidden: string[]
-  }) => {
-    if (!user) return
-    updateUser(user.id, { homeSections: newHomeSections })
-    setHomeSections(newHomeSections)
-  }
-
-  const [isEditing, setIsEditing] = useState(false)
 
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-12">
         <Row className={'w-full items-center justify-between'}>
-          <Title text={isEditing ? 'Edit your home page' : 'Home'} />
+          <Title text="Home" />
 
-          <EditDoneButton isEditing={isEditing} setIsEditing={setIsEditing} />
+          <EditButton />
         </Row>
 
-        {isEditing ? (
-          <>
-            <ArrangeHome
-              user={user}
-              homeSections={homeSections}
-              setHomeSections={updateHomeSections}
-            />
-          </>
-        ) : (
-          <>
-            <div className="text-xl text-gray-800">Daily movers</div>
-            <ProbChangeTable userId={user?.id} />
+        <div className="text-xl text-gray-800">Daily movers</div>
+        <ProbChangeTable userId={user?.id} />
 
-            {visibleItems.map((item) => {
-              const { id } = item
-              if (id === 'your-bets') {
-                return (
-                  <SearchSection
-                    key={id}
-                    label={'Your bets'}
-                    sort={'prob-change-day'}
-                    user={user}
-                    yourBets
-                  />
-                )
-              }
-              const sort = SORTS.find((sort) => sort.value === id)
-              if (sort)
-                return (
-                  <SearchSection
-                    key={id}
-                    label={sort.label}
-                    sort={sort.value}
-                    user={user}
-                  />
-                )
+        {visibleItems.map((item) => {
+          const { id } = item
+          if (id === 'your-bets') {
+            return (
+              <SearchSection
+                key={id}
+                label={'Your bets'}
+                sort={'prob-change-day'}
+                user={user}
+                yourBets
+              />
+            )
+          }
+          const sort = SORTS.find((sort) => sort.value === id)
+          if (sort)
+            return (
+              <SearchSection
+                key={id}
+                label={sort.label}
+                sort={sort.value}
+                user={user}
+              />
+            )
 
-              const group = groups.find((g) => g.id === id)
-              if (group)
-                return <GroupSection key={id} group={group} user={user} />
+          const group = groups.find((g) => g.id === id)
+          if (group) return <GroupSection key={id} group={group} user={user} />
 
-              return null
-            })}
-          </>
-        )}
+          return null
+        })}
       </Col>
       <button
         type="button"
@@ -175,27 +150,16 @@ function GroupSection(props: { group: Group; user: User | null | undefined }) {
   )
 }
 
-function EditDoneButton(props: {
-  isEditing: boolean
-  setIsEditing: (isEditing: boolean) => void
-  className?: string
-}) {
-  const { isEditing, setIsEditing, className } = props
+function EditButton(props: { className?: string }) {
+  const { className } = props
 
   return (
-    <Button
-      size="lg"
-      color={isEditing ? 'blue' : 'gray-white'}
-      className={clsx(className, 'flex')}
-      onClick={() => {
-        setIsEditing(!isEditing)
-      }}
-    >
-      {!isEditing && (
-        <PencilIcon className={clsx('mr-2 h-[24px] w-5')} aria-hidden="true" />
-      )}
-      {isEditing ? 'Done' : 'Edit'}
-    </Button>
+    <SiteLink href="/experimental/home/edit">
+      <Button size="lg" color="gray-white" className={clsx(className, 'flex')}>
+        <PencilIcon className={clsx('mr-2 h-[24px] w-5')} aria-hidden="true" />{' '}
+        Edit
+      </Button>
+    </SiteLink>
   )
 }
 

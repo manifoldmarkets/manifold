@@ -30,7 +30,6 @@ export function ArrangeHome(props: {
   return (
     <DragDropContext
       onDragEnd={(e) => {
-        console.log('drag end', e)
         const { destination, source, draggableId } = e
         if (!destination) return
 
