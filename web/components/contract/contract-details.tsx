@@ -2,7 +2,6 @@ import {
   ClockIcon,
   DatabaseIcon,
   PencilIcon,
-  TrendingUpIcon,
   UserGroupIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
@@ -40,30 +39,19 @@ export type ShowTime = 'resolve-date' | 'close-date'
 
 export function MiscDetails(props: {
   contract: Contract
-  showHotVolume?: boolean
   showTime?: ShowTime
   hideGroupLink?: boolean
 }) {
-  const { contract, showHotVolume, showTime, hideGroupLink } = props
-  const {
-    volume,
-    volume24Hours,
-    closeTime,
-    isResolved,
-    createdTime,
-    resolutionTime,
-  } = contract
+  const { contract, showTime, hideGroupLink } = props
+  const { volume, closeTime, isResolved, createdTime, resolutionTime } =
+    contract
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <Row className="items-center gap-3 truncate text-sm text-gray-400">
-      {showHotVolume ? (
-        <Row className="gap-0.5">
-          <TrendingUpIcon className="h-5 w-5" /> {formatMoney(volume24Hours)}
-        </Row>
-      ) : showTime === 'close-date' ? (
+      {showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
@@ -306,7 +294,7 @@ export function ExtraMobileContractDetails(props: {
           <Tooltip
             text={`${formatMoney(
               volume
-            )} bet - ${uniqueBettors} unique bettors`}
+            )} bet - ${uniqueBettors} unique traders`}
           >
             {volumeTranslation}
           </Tooltip>
@@ -369,7 +357,7 @@ function EditableCloseDate(props: {
   return (
     <>
       {isEditingCloseTime ? (
-        <Row className="z-10 mr-2 w-full shrink-0 items-start items-center gap-1">
+        <Row className="z-10 mr-2 w-full shrink-0 items-center gap-1">
           <input
             type="date"
             className="input input-bordered shrink-0"

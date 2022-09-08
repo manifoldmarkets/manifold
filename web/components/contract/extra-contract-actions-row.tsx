@@ -14,6 +14,7 @@ import { Col } from 'web/components/layout/col'
 import { withTracking } from 'web/lib/service/analytics'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { CHALLENGES_ENABLED } from 'common/challenge'
+import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -42,7 +43,6 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           />
           <span>Share</span>
         </Col>
-
         <ShareModal
           isOpen={isShareOpen}
           setOpen={setShareOpen}
@@ -50,17 +50,21 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           user={user}
         />
       </Button>
+
       {showChallenge && (
         <Button
           size="lg"
           color="gray-white"
-          className={'flex hidden max-w-xs self-center sm:inline-block'}
+          className="max-w-xs self-center"
           onClick={withTracking(
             () => setOpenCreateChallengeModal(true),
             'click challenge button'
           )}
         >
-          <span>⚔️ Challenge</span>
+          <Col className="items-center sm:flex-row">
+            <ChallengeIcon className="mx-auto h-[24px] w-5 text-gray-500 sm:mr-2" />
+            <span>Challenge</span>
+          </Col>
           <CreateChallengeModal
             isOpen={openCreateChallengeModal}
             setOpen={setOpenCreateChallengeModal}

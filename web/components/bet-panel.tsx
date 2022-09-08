@@ -281,7 +281,7 @@ function BuyPanel(props: {
         title="Whoa, there!"
         text={`You might not want to spend ${formatPercent(
           bankrollFraction
-        )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
+        )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
           user?.balance ?? 0
         )}`}
       />
@@ -310,9 +310,10 @@ function BuyPanel(props: {
       <Row className="my-3 justify-between text-left text-sm text-gray-500">
         Amount
         <span className={'xl:hidden'}>
-          (balance: {formatMoney(user?.balance ?? 0)})
+          Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -321,6 +322,7 @@ function BuyPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        showSliderOnMobile
       />
 
       {warning}
@@ -377,11 +379,11 @@ function BuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit bet'}
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+      {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
     </Col>
   )
 }
@@ -567,7 +569,7 @@ function LimitOrderPanel(props: {
       <Row className="mt-1 items-center gap-4">
         <Col className="gap-2">
           <div className="relative ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
+            Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -578,7 +580,7 @@ function LimitOrderPanel(props: {
         </Col>
         <Col className="gap-2">
           <div className="ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
+            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -606,9 +608,10 @@ function LimitOrderPanel(props: {
           Max amount<span className="ml-1 text-red-500">*</span>
         </span>
         <span className={'xl:hidden'}>
-          (balance: {formatMoney(user?.balance ?? 0)})
+          Balance: {formatMoney(user?.balance ?? 0)}
         </span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -616,6 +619,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
+        showSliderOnMobile
       />
 
       <Col className="mt-3 w-full gap-3">
@@ -746,15 +750,18 @@ function QuickOrLimitBet(props: {
 
   return (
     <Row className="align-center mb-4 justify-between">
-      <div className="text-4xl">Bet</div>
+      <div className="mr-2 -ml-2 shrink-0 text-3xl sm:-ml-0 sm:text-4xl">
+        Predict
+      </div>
       {!hideToggle && (
-        <Row className="mt-1 items-center gap-2">
+        <Row className="mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
           <PillButton
             selected={!isLimitOrder}
             onSelect={() => {
               setIsLimitOrder(false)
               track('select quick order')
             }}
+            xs={true}
           >
             Quick
           </PillButton>
@@ -764,6 +771,7 @@ function QuickOrLimitBet(props: {
               setIsLimitOrder(true)
               track('select limit order')
             }}
+            xs={true}
           >
             Limit
           </PillButton>

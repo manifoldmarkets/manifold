@@ -203,7 +203,7 @@ function NumericBuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit bet'}
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       )}
 

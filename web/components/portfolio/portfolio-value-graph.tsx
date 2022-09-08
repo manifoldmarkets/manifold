@@ -8,16 +8,21 @@ import { formatTime } from 'web/lib/util/time'
 
 export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
   portfolioHistory: PortfolioMetrics[]
+  mode: 'value' | 'profit'
   height?: number
   includeTime?: boolean
 }) {
-  const { portfolioHistory, height, includeTime } = props
+  const { portfolioHistory, height, includeTime, mode } = props
   const { width } = useWindowSize()
 
   const points = portfolioHistory.map((p) => {
+    const { timestamp, balance, investmentValue, totalDeposits } = p
+    const value = balance + investmentValue
+    const profit = value - totalDeposits
+
     return {
-      x: new Date(p.timestamp),
-      y: p.balance + p.investmentValue,
+      x: new Date(timestamp),
+      y: mode === 'value' ? value : profit,
     }
   })
   const data = [{ id: 'Value', data: points, color: '#11b981' }]

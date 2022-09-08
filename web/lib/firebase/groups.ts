@@ -11,7 +11,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { uniq } from 'lodash'
+import { uniq, uniqBy } from 'lodash'
 import { Group, GROUP_CHAT_SLUG, GroupLink } from 'common/group'
 import {
   coll,
@@ -21,7 +21,7 @@ import {
   listenForValues,
 } from './utils'
 import { Contract } from 'common/contract'
-import { updateContract } from 'web/lib/firebase/contracts'
+import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
 import { filterDefined } from 'common/util/array'
 import { getUser } from 'web/lib/firebase/users'
@@ -31,6 +31,9 @@ export const groupMembers = (groupId: string) =>
   collection(groups, groupId, 'groupMembers')
 export const groupContracts = (groupId: string) =>
   collection(groups, groupId, 'groupContracts')
+const openGroupsQuery = query(groups, where('anyoneCanJoin', '==', true))
+export const memberGroupsQuery = (userId: string) =>
+  query(collectionGroup(db, 'groupMembers'), where('userId', '==', userId))
 
 export function groupPath(
   groupSlug: string,
@@ -78,21 +81,23 @@ export function listenForGroupContractDocs(
   return listenForValues(groupContracts(groupId), setContractDocs)
 }
 
-export function listenForOpenGroups(setGroups: (groups: Group[]) => void) {
-  return listenForValues(
-    query(groups, where('anyoneCanJoin', '==', true)),
-    setGroups
+export async function listGroupContracts(groupId: string) {
+  const contractDocs = await getValues<{
+    contractId: string
+    createdTime: number
+  }>(groupContracts(groupId))
+  const contracts = await Promise.all(
+    contractDocs.map((doc) => getContractFromId(doc.contractId))
   )
+  return filterDefined(contracts)
+}
+
+export function listenForOpenGroups(setGroups: (groups: Group[]) => void) {
+  return listenForValues(openGroupsQuery, setGroups)
 }
 
 export function getGroup(groupId: string) {
   return getValue<Group>(doc(groups, groupId))
-}
-
-export function getGroupContracts(groupId: string) {
-  return getValues<{ contractId: string; createdTime: number }>(
-    groupContracts(groupId)
-  )
 }
 
 export async function getGroupBySlug(slug: string) {
@@ -108,14 +113,20 @@ export function listenForGroup(
   return listenForValue(doc(groups, groupId), setGroup)
 }
 
+export async function getMemberGroups(userId: string) {
+  const snapshot = await getDocs(memberGroupsQuery(userId))
+  const groupIds = filterDefined(
+    snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
+  )
+  const groups = await Promise.all(groupIds.map(getGroup))
+  return filterDefined(groups)
+}
+
 export function listenForMemberGroupIds(
   userId: string,
   setGroupIds: (groupIds: string[]) => void
 ) {
-  const q = query(
-    collectionGroup(db, 'groupMembers'),
-    where('userId', '==', userId)
-  )
+  const q = memberGroupsQuery(userId)
   return onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
     if (snapshot.metadata.fromCache) return
 
@@ -134,6 +145,24 @@ export function listenForMemberGroups(
       setGroups(filterDefined(groups))
     })
   })
+}
+
+export async function listAvailableGroups(userId: string) {
+  const [openGroups, memberGroupSnapshot] = await Promise.all([
+    getValues<Group>(openGroupsQuery),
+    getDocs(memberGroupsQuery(userId)),
+  ])
+  const memberGroups = filterDefined(
+    await Promise.all(
+      memberGroupSnapshot.docs.map((doc) => {
+        return doc.ref.parent.parent?.id
+          ? getGroup(doc.ref.parent.parent?.id)
+          : null
+      })
+    )
+  )
+
+  return uniqBy([...openGroups, ...memberGroups], (g) => g.id)
 }
 
 export async function addUserToGroupViaId(groupId: string, userId: string) {

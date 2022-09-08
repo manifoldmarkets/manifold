@@ -9,6 +9,9 @@ module.exports = {
   reactStrictMode: true,
   optimizeFonts: false,
   experimental: {
+    images: {
+      allowFutureImage: true,
+    },
     scrollRestoration: true,
     externalDir: true,
     modularizeImports: {
@@ -25,7 +28,12 @@ module.exports = {
     },
   },
   images: {
-    domains: ['lh3.googleusercontent.com', 'i.imgur.com'],
+    domains: [
+      'manifold.markets',
+      'lh3.googleusercontent.com',
+      'i.imgur.com',
+      'firebasestorage.googleapis.com',
+    ],
   },
   async redirects() {
     return [

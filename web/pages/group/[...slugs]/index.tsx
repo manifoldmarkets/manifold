@@ -52,6 +52,7 @@ import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
 import { usePost } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
+import { track } from '@amplitude/analytics-browser'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -226,6 +227,7 @@ export default function GroupPage(props: {
       defaultSort={'newest'}
       defaultFilter={suggestedFilter}
       additionalFilter={{ groupSlug: group.slug }}
+      persistPrefix={`group-${group.slug}`}
     />
   )
 
@@ -659,22 +661,25 @@ function JoinGroupButton(props: {
   user: User | null | undefined
 }) {
   const { group, user } = props
-  function addUserToGroup() {
-    if (user) {
-      toast.promise(joinGroup(group, user.id), {
-        loading: 'Joining group...',
-        success: 'Joined group!',
-        error: "Couldn't join group, try again?",
-      })
-    }
+
+  const follow = async () => {
+    track('join group')
+    const userId = user ? user.id : (await firebaseLogin()).user.uid
+
+    toast.promise(joinGroup(group, userId), {
+      loading: 'Following group...',
+      success: 'Followed',
+      error: "Couldn't follow group, try again?",
+    })
   }
+
   return (
     <div>
       <button
-        onClick={user ? addUserToGroup : firebaseLogin}
+        onClick={follow}
         className={'btn-md btn-outline btn whitespace-nowrap normal-case'}
       >
-        {user ? 'Join group' : 'Login to join group'}
+        Follow
       </button>
     </div>
   )

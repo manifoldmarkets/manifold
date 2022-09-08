@@ -5,6 +5,7 @@ import {
   CheckIcon,
   PlusCircleIcon,
   SelectorIcon,
+  UserIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
@@ -12,6 +13,7 @@ import { useState } from 'react'
 import { useMemberGroups, useOpenGroups } from 'web/hooks/use-group'
 import { User } from 'common/user'
 import { searchInAny } from 'common/util/parse'
+import { Row } from 'web/components/layout/row'
 
 export function GroupSelector(props: {
   selectedGroup: Group | undefined
@@ -28,13 +30,27 @@ export function GroupSelector(props: {
   const { showSelector, showLabel, ignoreGroupIds } = options
   const [query, setQuery] = useState('')
   const openGroups = useOpenGroups()
+  const memberGroups = useMemberGroups(creator?.id)
+  const memberGroupIds = memberGroups?.map((g) => g.id) ?? []
   const availableGroups = openGroups
     .concat(
-      (useMemberGroups(creator?.id) ?? []).filter(
+      (memberGroups ?? []).filter(
         (g) => !openGroups.map((og) => og.id).includes(g.id)
       )
     )
     .filter((group) => !ignoreGroupIds?.includes(group.id))
+    .sort((a, b) => b.totalContracts - a.totalContracts)
+    // put the groups the user is a member of first
+    .sort((a, b) => {
+      if (memberGroupIds.includes(a.id)) {
+        return -1
+      }
+      if (memberGroupIds.includes(b.id)) {
+        return 1
+      }
+      return 0
+    })
+
   const filteredGroups = availableGroups.filter((group) =>
     searchInAny(query, group.name)
   )
@@ -96,7 +112,7 @@ export function GroupSelector(props: {
                     value={group}
                     className={({ active }) =>
                       clsx(
-                        'relative h-12 cursor-pointer select-none py-2 pl-4 pr-9',
+                        'relative h-12 cursor-pointer select-none py-2 pr-6',
                         active ? 'bg-indigo-500 text-white' : 'text-gray-900'
                       )
                     }
@@ -115,11 +131,28 @@ export function GroupSelector(props: {
                         )}
                         <span
                           className={clsx(
-                            'ml-5 mt-1 block truncate',
+                            'ml-3 mt-1 block flex flex-row justify-between',
                             selected && 'font-semibold'
                           )}
                         >
-                          {group.name}
+                          <Row className={'items-center gap-1 truncate pl-5'}>
+                            {memberGroupIds.includes(group.id) && (
+                              <UserIcon
+                                className={'text-primary h-4 w-4 shrink-0'}
+                              />
+                            )}
+                            {group.name}
+                          </Row>
+                          <span
+                            className={clsx(
+                              'ml-1 w-[1.4rem] shrink-0 rounded-full bg-indigo-500 text-center text-white',
+                              group.totalContracts > 99 ? 'w-[2.1rem]' : ''
+                            )}
+                          >
+                            {group.totalContracts > 99
+                              ? '99+'
+                              : group.totalContracts}
+                          </span>
                         </span>
                       </>
                     )}

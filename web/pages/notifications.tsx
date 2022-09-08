@@ -390,7 +390,7 @@ function IncomeNotificationItem(props: {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } unique traders on`
+          } new traders on`
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
@@ -508,7 +508,7 @@ function IncomeNotificationItem(props: {
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
               userInfos={userLinks}
-              modalLabel={isTip ? 'Who tipped you' : 'Unique bettors'}
+              modalLabel={isTip ? 'Who tipped you' : 'Unique traders'}
             />
           )}
           <Row className={'line-clamp-2 flex max-w-xl'}>

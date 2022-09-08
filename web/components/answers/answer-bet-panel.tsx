@@ -120,7 +120,7 @@ export function AnswerBetPanel(props: {
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
         <div className="text-xl">
-          Bet on {isModal ? `"${answer.text}"` : 'this answer'}
+          Buy answer: {isModal ? `"${answer.text}"` : 'this answer'}
         </div>
 
         {!isModal && (
@@ -134,8 +134,9 @@ export function AnswerBetPanel(props: {
       </Row>
       <Row className="my-3 justify-between text-left text-sm text-gray-500">
         Amount
-        <span>(balance: {formatMoney(user?.balance ?? 0)})</span>
+        <span>Balance: {formatMoney(user?.balance ?? 0)}</span>
       </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -144,6 +145,7 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        showSliderOnMobile
       />
 
       {(betAmount ?? 0) > 10 &&
@@ -204,7 +206,7 @@ export function AnswerBetPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit trade'}
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       ) : (
         <BetSignUpPrompt />

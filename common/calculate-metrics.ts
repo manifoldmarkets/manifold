@@ -1,4 +1,4 @@
-import { sortBy, sum, sumBy } from 'lodash'
+import { last, sortBy, sum, sumBy } from 'lodash'
 import { calculatePayout } from './calculate'
 import { Bet } from './bet'
 import { Contract } from './contract'
@@ -34,6 +34,33 @@ export const computeVolume = (contractBets: Bet[], since: number) => {
   return sumBy(contractBets, (b) =>
     b.createdTime > since && !b.isRedemption ? Math.abs(b.amount) : 0
   )
+}
+
+const calculateProbChangeSince = (descendingBets: Bet[], since: number) => {
+  const newestBet = descendingBets[0]
+  if (!newestBet) return 0
+
+  const betBeforeSince = descendingBets.find((b) => b.createdTime < since)
+
+  if (!betBeforeSince) {
+    const oldestBet = last(descendingBets) ?? newestBet
+    return newestBet.probAfter - oldestBet.probBefore
+  }
+
+  return newestBet.probAfter - betBeforeSince.probAfter
+}
+
+export const calculateProbChanges = (descendingBets: Bet[]) => {
+  const now = Date.now()
+  const yesterday = now - DAY_MS
+  const weekAgo = now - 7 * DAY_MS
+  const monthAgo = now - 30 * DAY_MS
+
+  return {
+    day: calculateProbChangeSince(descendingBets, yesterday),
+    week: calculateProbChangeSince(descendingBets, weekAgo),
+    month: calculateProbChangeSince(descendingBets, monthAgo),
+  }
 }
 
 export const calculateCreatorVolume = (userContracts: Contract[]) => {
@@ -89,12 +116,12 @@ const calculateProfitForPeriod = (
     return currentProfit
   }
 
-  const startingProfit = calculateTotalProfit(startingPortfolio)
+  const startingProfit = calculatePortfolioProfit(startingPortfolio)
 
   return currentProfit - startingProfit
 }
 
-const calculateTotalProfit = (portfolio: PortfolioMetrics) => {
+export const calculatePortfolioProfit = (portfolio: PortfolioMetrics) => {
   return portfolio.investmentValue + portfolio.balance - portfolio.totalDeposits
 }
 
@@ -102,7 +129,7 @@ export const calculateNewProfit = (
   portfolioHistory: PortfolioMetrics[],
   newPortfolio: PortfolioMetrics
 ) => {
-  const allTimeProfit = calculateTotalProfit(newPortfolio)
+  const allTimeProfit = calculatePortfolioProfit(newPortfolio)
   const descendingPortfolio = sortBy(
     portfolioHistory,
     (p) => p.timestamp

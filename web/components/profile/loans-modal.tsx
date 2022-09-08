@@ -11,7 +11,7 @@ export function LoansModal(props: {
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="items-center gap-4 rounded-md bg-white px-8 py-6">
         <span className={'text-8xl'}>🏦</span>
-        <span className="text-xl">Daily loans on your bets</span>
+        <span className="text-xl">Daily loans on your trades</span>
         <Col className={'gap-2'}>
           <span className={'text-indigo-700'}>• What are daily loans?</span>
           <span className={'ml-2'}>

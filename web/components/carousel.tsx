@@ -33,12 +33,12 @@ export function Carousel(props: {
   }, 500)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(onScroll, [])
+  useEffect(onScroll, [children])
 
   return (
     <div className={clsx('relative', className)}>
       <Row
-        className="scrollbar-hide w-full gap-4 overflow-x-auto scroll-smooth"
+        className="scrollbar-hide w-full snap-x gap-4 overflow-x-auto scroll-smooth"
         ref={ref}
         onScroll={onScroll}
       >

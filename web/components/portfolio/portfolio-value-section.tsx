@@ -5,6 +5,7 @@ import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Period } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
 import { PortfolioValueGraph } from './portfolio-value-graph'
 
 export const PortfolioValueSection = memo(
@@ -24,15 +25,16 @@ export const PortfolioValueSection = memo(
       return <></>
     }
 
-    const { balance, investmentValue } = lastPortfolioMetrics
+    const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
+    const totalProfit = totalValue - totalDeposits
 
     return (
       <>
         <Row className="gap-8">
           <Col className="flex-1 justify-center">
-            <div className="text-sm text-gray-500">Portfolio value</div>
-            <div className="text-lg">{formatMoney(totalValue)}</div>
+            <div className="text-sm text-gray-500">Profit</div>
+            <div className="text-lg">{formatMoney(totalProfit)}</div>
           </Col>
           <select
             className="select select-bordered self-start"
@@ -42,6 +44,7 @@ export const PortfolioValueSection = memo(
             }}
           >
             <option value="allTime">All time</option>
+            <option value="monthly">Last Month</option>
             <option value="weekly">Last 7d</option>
             <option value="daily">Last 24h</option>
           </select>
@@ -49,6 +52,17 @@ export const PortfolioValueSection = memo(
         <PortfolioValueGraph
           portfolioHistory={currPortfolioHistory}
           includeTime={portfolioPeriod == 'daily'}
+          mode="profit"
+        />
+        <Spacer h={8} />
+        <Col className="flex-1 justify-center">
+          <div className="text-sm text-gray-500">Portfolio value</div>
+          <div className="text-lg">{formatMoney(totalValue)}</div>
+        </Col>
+        <PortfolioValueGraph
+          portfolioHistory={currPortfolioHistory}
+          includeTime={portfolioPeriod == 'daily'}
+          mode="value"
         />
       </>
     )

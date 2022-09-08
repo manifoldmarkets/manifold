@@ -21,6 +21,7 @@ import { SiteLink } from 'web/components/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
+import { useTracking } from 'web/hooks/use-tracking'
 import { listAllBets } from 'web/lib/firebase/bets'
 import {
   contractPath,
@@ -81,6 +82,12 @@ export default function ContractEmbedPage(props: {
 export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   const { question, outcomeType } = contract
+
+  useTracking('view market embed', {
+    slug: contract.slug,
+    contractId: contract.id,
+    creatorId: contract.creatorId,
+  })
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'

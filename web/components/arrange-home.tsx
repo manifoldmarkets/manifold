@@ -12,7 +12,7 @@ import { User } from 'common/user'
 import { Group } from 'common/group'
 
 export function ArrangeHome(props: {
-  user: User | null
+  user: User | null | undefined
   homeSections: { visible: string[]; hidden: string[] }
   setHomeSections: (homeSections: {
     visible: string[]
@@ -30,7 +30,6 @@ export function ArrangeHome(props: {
   return (
     <DragDropContext
       onDragEnd={(e) => {
-        console.log('drag end', e)
         const { destination, source, draggableId } = e
         if (!destination) return
 
@@ -112,7 +111,7 @@ export const getHomeItems = (
     { label: 'Trending', id: 'score' },
     { label: 'Newest', id: 'newest' },
     { label: 'Close date', id: 'close-date' },
-    { label: 'Your bets', id: 'your-bets' },
+    { label: 'Your trades', id: 'your-bets' },
     ...groups.map((g) => ({
       label: g.name,
       id: g.id,

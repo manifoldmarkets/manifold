@@ -1,9 +1,9 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEmpty, keyBy, last } from 'lodash'
+import { groupBy, isEmpty, keyBy, last, sortBy } from 'lodash'
 import { getValues, log, logMemory, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
-import { Contract } from '../../common/contract'
+import { Contract, CPMM } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { getLoanUpdates } from '../../common/loans'
@@ -11,8 +11,10 @@ import {
   calculateCreatorVolume,
   calculateNewPortfolioMetrics,
   calculateNewProfit,
+  calculateProbChanges,
   computeVolume,
 } from '../../common/calculate-metrics'
+import { getProbability } from '../../common/calculate'
 
 const firestore = admin.firestore()
 
@@ -43,11 +45,29 @@ export async function updateMetricsCore() {
     .filter((contract) => contract.id)
     .map((contract) => {
       const contractBets = betsByContract[contract.id] ?? []
+      const descendingBets = sortBy(
+        contractBets,
+        (bet) => bet.createdTime
+      ).reverse()
+
+      let cpmmFields: Partial<CPMM> = {}
+      if (contract.mechanism === 'cpmm-1') {
+        const prob = descendingBets[0]
+          ? descendingBets[0].probAfter
+          : getProbability(contract)
+
+        cpmmFields = {
+          prob,
+          probChanges: calculateProbChanges(descendingBets),
+        }
+      }
+
       return {
         doc: firestore.collection('contracts').doc(contract.id),
         fields: {
           volume24Hours: computeVolume(contractBets, now - DAY_MS),
           volume7Days: computeVolume(contractBets, now - DAY_MS * 7),
+          ...cpmmFields,
         },
       }
     })
