@@ -39,14 +39,14 @@ export function LikeMarketButton(props: {
   return (
     <Button
       size={'lg'}
-      className={'mb-1'}
+      className={'max-w-xs self-center'}
       color={'gray-white'}
       onClick={onLike}
     >
-      <Col className={'items-center sm:flex-row sm:gap-x-2'}>
+      <Col className={'items-center sm:flex-row'}>
         <HeartIcon
           className={clsx(
-            'h-6 w-6',
+            'h-[24px] w-5 sm:mr-2',
             user &&
               (userLikedContractIds?.includes(contract.id) ||
                 (!likes && contract.likedByUserIds?.includes(user.id)))
