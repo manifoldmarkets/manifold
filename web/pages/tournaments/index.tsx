@@ -237,7 +237,7 @@ const MarketCarousel = (props: { slug: string }) => {
           key={m.id}
           contract={m}
           hideGroupLink
-          className="mb-2 max-h-[200px] w-96 shrink-0"
+          className="mb-2 max-h-[200px] w-96 shrink-0 snap-start scroll-m-4 md:snap-align-none"
           questionClass="line-clamp-3"
           trackingPostfix=" tournament"
         />
