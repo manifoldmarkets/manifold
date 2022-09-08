@@ -58,7 +58,7 @@ export function Pagination(props: {
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
 
-  if (maxPage === 0) return <Spacer h={4} />
+  if (maxPage <= 0) return <Spacer h={4} />
 
   return (
     <nav

@@ -109,10 +109,6 @@ export function ContractTopTrades(props: {
               betsBySameUser={[betsById[topCommentId]]}
             />
           </div>
-          <div className="mt-2 text-sm text-gray-500">
-            {commentsById[topCommentId].userName} made{' '}
-            {formatMoney(profitById[topCommentId] || 0)}!
-          </div>
           <Spacer h={16} />
         </>
       )}
@@ -120,11 +116,11 @@ export function ContractTopTrades(props: {
       {/* If they're the same, only show the comment; otherwise show both */}
       {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
         <>
-          <Title text="💸 Smartest money" className="!mt-0" />
+          <Title text="💸 Best bet" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
             <FeedBet contract={contract} bet={betsById[topBetId]} />
           </div>
-          <div className="mt-2 text-sm text-gray-500">
+          <div className="mt-2 ml-2 text-sm text-gray-500">
             {topBettor?.name} made {formatMoney(profitById[topBetId] || 0)}!
           </div>
         </>

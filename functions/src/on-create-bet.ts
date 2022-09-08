@@ -7,7 +7,7 @@ import { getUser, getValues, isProd, log } from './utils'
 import {
   createBetFillNotification,
   createBettingStreakBonusNotification,
-  createNotification,
+  createUniqueBettorBonusNotification,
 } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 import { Contract } from '../../common/contract'
@@ -54,11 +54,11 @@ export const onCreateBet = functions.firestore
       log(`Could not find contract ${contractId}`)
       return
     }
-    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bet.userId)
 
     const bettor = await getUser(bet.userId)
     if (!bettor) return
 
+    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
     await updateBettingStreak(bettor, bet, contract, eventId)
 
@@ -126,7 +126,7 @@ const updateBettingStreak = async (
 const updateUniqueBettorsAndGiveCreatorBonus = async (
   contract: Contract,
   eventId: string,
-  bettorId: string
+  bettor: User
 ) => {
   let previousUniqueBettorIds = contract.uniqueBettorIds
 
@@ -147,13 +147,13 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     )
   }
 
-  const isNewUniqueBettor = !previousUniqueBettorIds.includes(bettorId)
+  const isNewUniqueBettor = !previousUniqueBettorIds.includes(bettor.id)
 
-  const newUniqueBettorIds = uniq([...previousUniqueBettorIds, bettorId])
+  const newUniqueBettorIds = uniq([...previousUniqueBettorIds, bettor.id])
   // Update contract unique bettors
   if (!contract.uniqueBettorIds || isNewUniqueBettor) {
     log(`Got ${previousUniqueBettorIds} unique bettors`)
-    isNewUniqueBettor && log(`And a new unique bettor ${bettorId}`)
+    isNewUniqueBettor && log(`And a new unique bettor ${bettor.id}`)
     await firestore.collection(`contracts`).doc(contract.id).update({
       uniqueBettorIds: newUniqueBettorIds,
       uniqueBettorCount: newUniqueBettorIds.length,
@@ -161,7 +161,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   }
 
   // No need to give a bonus for the creator's bet
-  if (!isNewUniqueBettor || bettorId == contract.creatorId) return
+  if (!isNewUniqueBettor || bettor.id == contract.creatorId) return
 
   // Create combined txn for all new unique bettors
   const bonusTxnDetails = {
@@ -192,18 +192,13 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     log(`No bonus for user: ${contract.creatorId} - reason:`, result.status)
   } else {
     log(`Bonus txn for user: ${contract.creatorId} completed:`, result.txn?.id)
-    await createNotification(
+    await createUniqueBettorBonusNotification(
+      contract.creatorId,
+      bettor,
       result.txn.id,
-      'bonus',
-      'created',
-      fromUser,
-      eventId + '-bonus',
-      result.txn.amount + '',
-      {
-        contract,
-        slug: contract.slug,
-        title: contract.question,
-      }
+      contract,
+      result.txn.amount,
+      eventId + '-unique-bettor-bonus'
     )
   }
 }

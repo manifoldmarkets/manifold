@@ -70,20 +70,16 @@ export function listenForBets(
   )
 }
 
-export async function getUserBets(
-  userId: string,
-  options: { includeRedemptions: boolean }
-) {
-  const { includeRedemptions } = options
-  return getValues<Bet>(
-    query(collectionGroup(db, 'bets'), where('userId', '==', userId))
-  )
-    .then((bets) =>
-      bets.filter(
-        (bet) => (includeRedemptions || !bet.isRedemption) && !bet.isAnte
-      )
-    )
-    .catch((reason) => reason)
+export async function getUserBets(userId: string) {
+  return getValues<Bet>(getUserBetsQuery(userId))
+}
+
+export function getUserBetsQuery(userId: string) {
+  return query(
+    collectionGroup(db, 'bets'),
+    where('userId', '==', userId),
+    orderBy('createdTime', 'desc')
+  ) as Query<Bet>
 }
 
 export async function getBets(options: {
@@ -124,20 +120,14 @@ export async function getBets(options: {
 }
 
 export async function getContractsOfUserBets(userId: string) {
-  const bets: Bet[] = await getUserBets(userId, { includeRedemptions: false })
-  const contractIds = uniq(bets.map((bet) => bet.contractId))
+  const bets = await getUserBets(userId)
+  const contractIds = uniq(
+    bets.filter((b) => !b.isAnte).map((bet) => bet.contractId)
+  )
   const contracts = await Promise.all(
     contractIds.map((contractId) => getContractFromId(contractId))
   )
   return filterDefined(contracts)
-}
-
-export function getUserBetsQuery(userId: string) {
-  return query(
-    collectionGroup(db, 'bets'),
-    where('userId', '==', userId),
-    orderBy('createdTime', 'desc')
-  ) as Query<Bet>
 }
 
 export function listenForUserContractBets(

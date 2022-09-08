@@ -43,10 +43,13 @@ export const SORTS = [
   { label: 'Trending', value: 'score' },
   { label: 'Most traded', value: 'most-traded' },
   { label: '24h volume', value: '24-hour-vol' },
+  { label: '24h change', value: 'prob-change-day' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Subsidy', value: 'liquidity' },
   { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
+  { label: 'Highest %', value: 'prob-descending' },
+  { label: 'Lowest %', value: 'prob-ascending' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
@@ -282,8 +285,8 @@ function ContractSearchControls(props: {
       : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
 
   const memberPillGroups = sortBy(
-    memberGroups.filter((group) => group.contractIds.length > 0),
-    (group) => group.contractIds.length
+    memberGroups.filter((group) => group.totalContracts > 0),
+    (group) => group.totalContracts
   ).reverse()
 
   const pillGroups: { name: string; slug: string }[] =

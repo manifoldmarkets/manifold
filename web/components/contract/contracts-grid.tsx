@@ -27,6 +27,7 @@ export function ContractsGrid(props: {
   }
   highlightOptions?: ContractHighlightOptions
   trackingPostfix?: string
+  breakpointColumns?: { [key: string]: number }
 }) {
   const {
     contracts,
@@ -67,7 +68,7 @@ export function ContractsGrid(props: {
     <Col className="gap-8">
       <Masonry
         // Show only 1 column on tailwind's md breakpoint (768px)
-        breakpointCols={{ default: 2, 768: 1 }}
+        breakpointCols={props.breakpointColumns ?? { default: 2, 768: 1 }}
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >

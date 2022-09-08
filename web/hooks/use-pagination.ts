@@ -103,6 +103,7 @@ export const usePagination = <T>(opts: PaginationOptions<T>) => {
     isEnd: state.isComplete && state.pageEnd >= state.docs.length,
     getPrev: () => dispatch({ type: 'PREV' }),
     getNext: () => dispatch({ type: 'NEXT' }),
+    allItems: () => state.docs.map((d) => d.data()),
     getItems: () =>
       state.docs.slice(state.pageStart, state.pageEnd).map((d) => d.data()),
   }

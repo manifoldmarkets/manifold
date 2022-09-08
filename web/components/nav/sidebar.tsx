@@ -234,11 +234,7 @@ export default function Sidebar(props: { className?: string }) {
 
       {!user && <SignInButton className="mb-4" />}
 
-      {user && (
-        <div className="min-h-[80px] w-full">
-          <ProfileSummary user={user} />
-        </div>
-      )}
+      {user && <ProfileSummary user={user} />}
 
       {/* Mobile navigation */}
       <div className="flex min-h-0 shrink flex-col gap-1 lg:hidden">
@@ -255,7 +251,7 @@ export default function Sidebar(props: { className?: string }) {
       </div>
 
       {/* Desktop navigation */}
-      <div className="hidden min-h-0 shrink flex-col gap-1 lg:flex">
+      <div className="hidden min-h-0 shrink flex-col items-stretch gap-1 lg:flex ">
         {navigationOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
@@ -264,7 +260,7 @@ export default function Sidebar(props: { className?: string }) {
           buttonContent={<MoreButton />}
         />
 
-        {user && <CreateQuestionButton user={user} />}
+        {user && !user.isBannedFromPosting && <CreateQuestionButton />}
       </div>
     </nav>
   )

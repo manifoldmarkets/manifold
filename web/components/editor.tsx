@@ -246,7 +246,7 @@ export function RichContent(props: {
     extensions: [
       StarterKit,
       smallImage ? DisplayImage : Image,
-      DisplayLink,
+      DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
       Iframe,
       TiptapTweet,
