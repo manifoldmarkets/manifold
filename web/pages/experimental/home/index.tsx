@@ -5,6 +5,7 @@ import {
   PlusSmIcon,
   ArrowSmRightIcon,
 } from '@heroicons/react/solid'
+import clsx from 'clsx'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -16,12 +17,9 @@ import { track } from 'web/lib/service/analytics'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
-import { LoadingIndicator } from 'web/components/loading-indicator'
 import { SiteLink } from 'web/components/site-link'
 import { useUser } from 'web/hooks/use-user'
 import { useMemberGroups } from 'web/hooks/use-group'
-import { DoubleCarousel } from '../../../components/double-carousel'
-import clsx from 'clsx'
 import { Button } from 'web/components/button'
 import { ArrangeHome, getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
@@ -56,7 +54,7 @@ const Home = () => {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 px-4 pb-12 xl:w-[125%]">
+      <Col className="pm:mx-10 gap-4 px-4 pb-12">
         <Row className={'w-full items-center justify-between'}>
           <Title text={isEditing ? 'Edit your home page' : 'Home'} />
 
@@ -146,23 +144,8 @@ function SearchSection(props: {
         defaultSort={sort}
         additionalFilter={yourBets ? { yourBets: true } : undefined}
         noControls
-        // persistPrefix={`experimental-home-${sort}`}
-        renderContracts={(contracts, loadMore) =>
-          contracts ? (
-            <DoubleCarousel
-              contracts={contracts}
-              seeMoreUrl={href}
-              showTime={
-                sort === 'close-date' || sort === 'resolve-date'
-                  ? sort
-                  : undefined
-              }
-              loadMore={loadMore}
-            />
-          ) : (
-            <LoadingIndicator />
-          )
-        }
+        maxResults={6}
+        persistPrefix={`experimental-home-${sort}`}
       />
     </Col>
   )
@@ -185,22 +168,8 @@ function GroupSection(props: { group: Group; user: User | null | undefined }) {
         defaultSort={'score'}
         additionalFilter={{ groupSlug: group.slug }}
         noControls
-        // persistPrefix={`experimental-home-${group.slug}`}
-        renderContracts={(contracts, loadMore) =>
-          contracts ? (
-            contracts.length == 0 ? (
-              <div className="m-2 text-gray-500">No open markets</div>
-            ) : (
-              <DoubleCarousel
-                contracts={contracts}
-                seeMoreUrl={`/group/${group.slug}`}
-                loadMore={loadMore}
-              />
-            )
-          ) : (
-            <LoadingIndicator />
-          )
-        }
+        maxResults={6}
+        persistPrefix={`experimental-home-${group.slug}`}
       />
     </Col>
   )

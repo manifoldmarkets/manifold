@@ -7,7 +7,6 @@ import { Col } from 'web/components/layout/col'
 
 export function DoubleCarousel(props: {
   contracts: Contract[]
-  seeMoreUrl?: string
   showTime?: ShowTime
   loadMore?: () => void
 }) {

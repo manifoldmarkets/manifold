@@ -88,6 +88,7 @@ export function ContractSearch(props: {
   useQueryUrlParam?: boolean
   isWholePage?: boolean
   noControls?: boolean
+  maxResults?: number
   renderContracts?: (
     contracts: Contract[] | undefined,
     loadMore: () => void
@@ -107,6 +108,7 @@ export function ContractSearch(props: {
     useQueryUrlParam,
     isWholePage,
     noControls,
+    maxResults,
     renderContracts,
   } = props
 
@@ -189,7 +191,8 @@ export function ContractSearch(props: {
   const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-  const renderedContracts = state.pages.length === 0 ? undefined : contracts
+  const renderedContracts =
+    state.pages.length === 0 ? undefined : contracts.slice(0, maxResults)
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />

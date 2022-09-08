@@ -30,7 +30,7 @@ export function ProbChangeTable(props: { userId: string | undefined }) {
 
   return (
     <Col>
-      <Col className="mb-4 w-full divide-x-2 divide-y rounded bg-white shadow-md md:flex-row md:divide-y-0">
+      <Col className="mb-4 w-full divide-x-2 divide-y rounded-lg bg-white shadow-md md:flex-row md:divide-y-0">
         <Col className="flex-1 divide-y">
           {filteredChanges.slice(0, count / 2).map((contract) => (
             <Row className="items-center hover:bg-gray-100">
