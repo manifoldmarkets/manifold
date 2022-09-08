@@ -19,7 +19,7 @@ export function DoubleCarousel(props: {
         ? range(0, Math.floor(contracts.length / 2)).map((col) => {
             const i = col * 2
             return (
-              <Col key={contracts[i].id}>
+              <Col className="snap-start scroll-m-4" key={contracts[i].id}>
                 <ContractCard
                   contract={contracts[i]}
                   className="mb-2 w-96 shrink-0"
