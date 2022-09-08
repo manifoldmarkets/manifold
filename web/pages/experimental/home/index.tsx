@@ -1,6 +1,10 @@
 import React, { useState } from 'react'
 import Router from 'next/router'
-import { PencilIcon, PlusSmIcon } from '@heroicons/react/solid'
+import {
+  PencilIcon,
+  PlusSmIcon,
+  ArrowSmRightIcon,
+} from '@heroicons/react/solid'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -13,7 +17,6 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { LoadingIndicator } from 'web/components/loading-indicator'
-import { GroupLinkItem } from '../../groups'
 import { SiteLink } from 'web/components/site-link'
 import { useUser } from 'web/hooks/use-user'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -24,6 +27,7 @@ import { ArrangeHome, getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
+import { groupPath } from 'web/lib/firebase/groups'
 
 const Home = () => {
   const user = useUser()
@@ -131,7 +135,11 @@ function SearchSection(props: {
   return (
     <Col>
       <SiteLink className="mb-2 text-xl" href={href}>
-        {label}
+        {label}{' '}
+        <ArrowSmRightIcon
+          className="mb-0.5 inline h-6 w-6 text-gray-500"
+          aria-hidden="true"
+        />
       </SiteLink>
       <ContractSearch
         user={user}
@@ -165,7 +173,13 @@ function GroupSection(props: { group: Group; user: User | null | undefined }) {
 
   return (
     <Col>
-      <GroupLinkItem className="mb-2 text-xl" group={group} />
+      <SiteLink className="mb-2 text-xl" href={groupPath(group.slug)}>
+        {group.name}{' '}
+        <ArrowSmRightIcon
+          className="mb-0.5 inline h-6 w-6 text-gray-500"
+          aria-hidden="true"
+        />
+      </SiteLink>
       <ContractSearch
         user={user}
         defaultSort={'score'}
