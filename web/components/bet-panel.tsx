@@ -297,7 +297,7 @@ function BuyPanel(props: {
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <div className="my-3 text-left text-sm text-gray-500">
-        {isPseudoNumeric ? 'Direction' : 'Outcome'}
+        {isPseudoNumeric ? 'Direction' : 'Buy'}
       </div>
       <YesNoSelector
         className="mb-4"
@@ -379,7 +379,7 @@ function BuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit trade'}
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       )}
 
@@ -750,15 +750,18 @@ function QuickOrLimitBet(props: {
 
   return (
     <Row className="align-center mb-4 justify-between">
-      <div className="text-4xl">Trade</div>
+      <div className="mr-2 -ml-2 shrink-0 text-3xl sm:-ml-0 sm:text-4xl">
+        Weigh in
+      </div>
       {!hideToggle && (
-        <Row className="mt-1 items-center gap-2">
+        <Row className="mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
           <PillButton
             selected={!isLimitOrder}
             onSelect={() => {
               setIsLimitOrder(false)
               track('select quick order')
             }}
+            xs={true}
           >
             Quick
           </PillButton>
@@ -768,6 +771,7 @@ function QuickOrLimitBet(props: {
               setIsLimitOrder(true)
               track('select limit order')
             }}
+            xs={true}
           >
             Limit
           </PillButton>

@@ -35,10 +35,13 @@ export default function BetButton(props: {
         {user ? (
           <Button
             size="lg"
-            className={clsx('my-auto inline-flex min-w-[75px] ', btnClassName)}
+            className={clsx(
+              'my-auto inline-flex min-w-[75px] whitespace-nowrap ',
+              btnClassName
+            )}
             onClick={() => setOpen(true)}
           >
-            Trade
+            Weigh in
           </Button>
         ) : (
           <BetSignUpPrompt />
