@@ -16,18 +16,27 @@ export function ProbChangeTable(props: { userId: string | undefined }) {
     return null
   }
 
-  const { positiveChanges, negativeChanges } = changes
+  const count = 4
 
-  const count = 3
+  const { positiveChanges, negativeChanges } = changes
+  const filteredPositiveChanges = positiveChanges.slice(0, count / 2)
+  const filteredNegativeChanges = negativeChanges.slice(0, count / 2)
+  const filteredChanges = [
+    ...filteredPositiveChanges,
+    ...filteredNegativeChanges,
+  ]
 
   return (
     <Row className="mb-4 w-full flex-wrap divide-x-2 rounded bg-white shadow-md">
       <Col className="min-w-[300px] flex-1 divide-y">
-        {positiveChanges.slice(0, count).map((contract) => (
-          <Row className="hover:bg-gray-100">
-            <ProbChange className="p-4 text-right" contract={contract} />
+        {filteredChanges.slice(0, count / 2).map((contract) => (
+          <Row className="items-center hover:bg-gray-100">
+            <ProbChange
+              className="p-4 text-right text-xl"
+              contract={contract}
+            />
             <SiteLink
-              className="p-4 font-semibold text-indigo-700"
+              className="p-4 pl-2 font-semibold text-indigo-700"
               href={contractPath(contract)}
             >
               <span className="line-clamp-2">{contract.question}</span>
@@ -36,11 +45,14 @@ export function ProbChangeTable(props: { userId: string | undefined }) {
         ))}
       </Col>
       <Col className="justify-content-stretch min-w-[300px] flex-1 divide-y">
-        {negativeChanges.slice(0, count).map((contract) => (
-          <Row className="hover:bg-gray-100">
-            <ProbChange className="p-4 text-right" contract={contract} />
+        {filteredChanges.slice(count / 2).map((contract) => (
+          <Row className="items-center hover:bg-gray-100">
+            <ProbChange
+              className="p-4 text-right text-xl"
+              contract={contract}
+            />
             <SiteLink
-              className="p-4 font-semibold text-indigo-700"
+              className="p-4 pl-2 font-semibold text-indigo-700"
               href={contractPath(contract)}
             >
               <span className="line-clamp-2">{contract.question}</span>
@@ -63,9 +75,9 @@ export function ProbChange(props: {
 
   const color =
     change > 0
-      ? 'text-green-600'
+      ? 'text-green-500'
       : change < 0
-      ? 'text-red-600'
+      ? 'text-red-500'
       : 'text-gray-600'
 
   const str =

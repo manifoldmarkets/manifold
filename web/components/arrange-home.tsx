@@ -12,7 +12,7 @@ import { User } from 'common/user'
 import { Group } from 'common/group'
 
 export function ArrangeHome(props: {
-  user: User | null
+  user: User | null | undefined
   homeSections: { visible: string[]; hidden: string[] }
   setHomeSections: (homeSections: {
     visible: string[]

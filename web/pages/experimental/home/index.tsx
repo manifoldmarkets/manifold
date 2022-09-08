@@ -6,12 +6,10 @@ import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
 import { ContractSearch, SORTS } from 'web/components/contract-search'
 import { User } from 'common/user'
-import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
+import { updateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
-import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { GetServerSideProps } from 'next'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { LoadingIndicator } from 'web/components/loading-indicator'
@@ -27,14 +25,8 @@ import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const creds = await authenticateOnServer(ctx)
-  const auth = creds ? await getUserAndPrivateUser(creds.uid) : null
-  return { props: { auth } }
-}
-
-const Home = (props: { auth: { user: User } | null }) => {
-  const user = useUser() ?? props.auth?.user ?? null
+const Home = () => {
+  const user = useUser()
 
   useTracking('view home')
 
@@ -129,7 +121,7 @@ const Home = (props: { auth: { user: User } | null }) => {
 
 function SearchSection(props: {
   label: string
-  user: User | null
+  user: User | null | undefined
   sort: Sort
   yourBets?: boolean
 }) {
@@ -168,7 +160,7 @@ function SearchSection(props: {
   )
 }
 
-function GroupSection(props: { group: Group; user: User | null }) {
+function GroupSection(props: { group: Group; user: User | null | undefined }) {
   const { group, user } = props
 
   return (
