@@ -14,6 +14,7 @@ import { Col } from 'web/components/layout/col'
 import { withTracking } from 'web/lib/service/analytics'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { CHALLENGES_ENABLED } from 'common/challenge'
+import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -61,9 +62,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           )}
         >
           <Col className="items-center sm:flex-row">
-            <span className="h-[24px] w-5 sm:mr-2" aria-hidden="true">
-              ⚔️
-            </span>
+            <ChallengeIcon className="mx-auto h-[24px] w-5 text-gray-500 sm:mr-2" />
             <span>Challenge</span>
           </Col>
           <CreateChallengeModal
