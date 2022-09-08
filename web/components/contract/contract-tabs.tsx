@@ -116,13 +116,13 @@ export function ContractTabs(props: {
             badge: `${comments.length}`,
           },
           {
-            title: 'Bets',
+            title: 'Trades',
             content: betActivity,
             badge: `${visibleBets.length}`,
           },
           ...(!user || !userBets?.length
             ? []
-            : [{ title: 'Your bets', content: yourTrades }]),
+            : [{ title: 'Your trades', content: yourTrades }]),
         ]}
       />
       {!user ? (

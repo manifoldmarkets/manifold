@@ -135,7 +135,7 @@ export const placebet = newEndpoint({}, async (req, auth) => {
         !isFinite(newP) ||
         Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
     ) {
-      throw new APIError(400, 'Bet too large for current liquidity pool.')
+      throw new APIError(400, 'Trade too large for current liquidity pool.')
     }
 
     const betDoc = contractDoc.collection('bets').doc()

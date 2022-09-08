@@ -52,7 +52,7 @@ const Home = () => {
           <EditButton />
         </Row>
 
-        <DailyProfitAndBalance className="self-end" userId={user?.id} />
+        <DailyProfitAndBalance userId={user?.id} />
 
         <div className="text-xl text-gray-800">Daily movers</div>
         <ProbChangeTable userId={user?.id} />
@@ -63,7 +63,7 @@ const Home = () => {
             return (
               <SearchSection
                 key={id}
-                label={'Your bets'}
+                label={'Your trades'}
                 sort={'prob-change-day'}
                 user={user}
                 yourBets
