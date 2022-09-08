@@ -5,7 +5,7 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import {
   exhaustive_notification_subscribe_types,
-  notification_receive_types,
+  notification_destination_types,
 } from 'common/user'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { Switch } from '@headlessui/react'
@@ -28,79 +28,6 @@ import toast from 'react-hot-toast'
 export function NotificationSettings() {
   const privateUser = usePrivateUser()
   const [showWatchModal, setShowWatchModal] = useState(false)
-  const prevPref = privateUser?.notificationPreferences
-  const browserOnly = ['browser']
-  const emailOnly = ['email']
-  const both = ['email', 'browser']
-  const wantsLess = prevPref === 'less'
-  const wantsAll = prevPref === 'all'
-
-  const constructPref = (browserIf: boolean, emailIf: boolean | undefined) => {
-    const browser = browserIf ? 'browser' : undefined
-    const email = emailIf ? 'email' : undefined
-    return filterDefined([browser, email]) as notification_receive_types[]
-  }
-  if (privateUser && !privateUser.notificationSubscriptionTypes) {
-    updatePrivateUser(privateUser.id, {
-      notificationSubscriptionTypes: {
-        // Watched Markets
-        all_comments: constructPref(
-          wantsAll,
-          !privateUser.unsubscribedFromCommentEmails
-        ),
-        all_answers: constructPref(
-          wantsAll,
-          !privateUser.unsubscribedFromAnswerEmails
-        ),
-
-        // Comments
-        tipped_comments: constructPref(wantsAll || wantsLess, true),
-        comments_by_followed_users: constructPref(wantsAll, false), //wantsAll ? browserOnly : none,
-        all_replies_to_my_comments: constructPref(wantsAll || wantsLess, true), //wantsAll || wantsLess ? both : none,
-        all_replies_to_my_answers: constructPref(wantsAll || wantsLess, true), //wantsAll || wantsLess ? both : none,
-
-        // Answers
-        answers_by_followed_users: constructPref(
-          wantsAll || wantsLess,
-          !privateUser.unsubscribedFromAnswerEmails
-        ), //wantsAll || wantsLess ? both : none,
-        answers_by_market_creator: constructPref(
-          wantsAll || wantsLess,
-          !privateUser.unsubscribedFromAnswerEmails
-        ), //wantsAll || wantsLess ? both : none,
-
-        // On users' markets
-        my_markets_closed: constructPref(
-          wantsAll || wantsLess,
-          !privateUser.unsubscribedFromResolutionEmails
-        ), //wantsAll || wantsLess ? both : none, // High priority
-        all_comments_on_my_markets: constructPref(wantsAll || wantsLess, true), //wantsAll || wantsLess ? both : none,
-        all_answers_on_my_markets: constructPref(wantsAll || wantsLess, true), //wantsAll || wantsLess ? both : none,
-
-        // Market updates
-        resolutions: constructPref(wantsAll || wantsLess, true),
-        market_updates: constructPref(wantsAll || wantsLess, false),
-
-        //Balance Changes
-        loans: browserOnly,
-        betting_streaks: browserOnly,
-        referral_bonuses: both,
-        unique_bettor_bonuses: browserOnly,
-
-        // General
-        user_tagged_you: constructPref(wantsAll || wantsLess, true), //wantsAll || wantsLess ? both : none,
-        new_markets_by_followed_users: constructPref(
-          wantsAll || wantsLess,
-          true
-        ), //wantsAll || wantsLess ? both : none,
-        trending_markets: constructPref(
-          false,
-          !privateUser.unsubscribedFromWeeklyTrendingEmails
-        ),
-        profit_loss_updates: emailOnly,
-      } as exhaustive_notification_subscribe_types,
-    })
-  }
 
   if (!privateUser || !privateUser.notificationSubscriptionTypes) {
     return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
@@ -120,22 +47,28 @@ export function NotificationSettings() {
     'new_markets_by_followed_users',
     'trending_markets',
     'profit_loss_updates',
+    'all_comments_on_contracts_with_shares_in',
+    'all_answers_on_contracts_with_shares_in',
   ]
   const browserDisabled = ['trending_markets', 'profit_loss_updates']
 
   const watched_markets_explanations_comments: {
     [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
   } = {
-    all_comments: 'All',
+    all_comments_on_watched_markets: 'All',
     // tipped_comments: 'Tipped',
     // comments_by_followed_users: 'By followed users',
-    all_replies_to_my_comments: 'Replies to your comments',
+    all_replies_to_my_comments_on_watched_markets: 'Replies to your comments',
+    all_comments_on_contracts_with_shares_in_on_watched_markets:
+      'On markets you have shares in',
   }
   const watched_markets_explanations_answers: {
     [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
   } = {
-    all_answers: 'All',
-    all_replies_to_my_answers: 'Replies to your answers',
+    all_answers_on_watched_markets: 'All',
+    all_replies_to_my_answers_on_watched_markets: 'Replies to your answers',
+    all_answers_on_contracts_with_shares_in_on_watched_markets:
+      'On markets you have shares in',
     // answers_by_followed_users: 'By followed users',
     // answers_by_market_creator: 'Submitted by the market creator',
   }
@@ -149,15 +82,15 @@ export function NotificationSettings() {
   const watched_markets_explanations_market_updates: {
     [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
   } = {
-    resolutions: 'Market resolutions',
-    market_updates: 'Updates made by the creator',
+    resolutions_on_watched_markets: 'Market resolutions',
+    market_updates_on_watched_markets: 'Updates made by the creator',
     // probability_updates: 'Changes in probability',
   }
 
   const balance_change_explanations: {
     [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
   } = {
-    loans: 'Automatic loans from your profitable bets',
+    loan_income: 'Automatic loans from your profitable bets',
     betting_streaks: 'Betting streak bonuses',
     referral_bonuses: 'Referral bonuses from referring users',
     unique_bettor_bonuses: 'Unique bettor bonuses on your markets',
@@ -175,7 +108,7 @@ export function NotificationSettings() {
   const NotificationSettingLine = (
     description: string,
     key: string,
-    value: notification_receive_types[]
+    value: notification_destination_types[]
   ) => {
     const previousInAppValue = value.includes('browser')
     const previousEmailValue = value.includes('email')
@@ -348,7 +281,7 @@ export function NotificationSettings() {
         )}
         {Section(
           <UserIcon className={'h-6 w-6'} />,
-          'On Your Markets',
+          'On Markets You Created',
           watched_markets_explanations_your_markets
         )}
         {Section(

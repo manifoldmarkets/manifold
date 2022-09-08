@@ -1,8 +1,6 @@
 import { DOMAIN } from '../../common/envs/constants'
-import { Answer } from '../../common/answer'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
-import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import {
@@ -18,6 +16,7 @@ import { getPrivateUser, getUser } from './utils'
 import { getFunctionUrl } from '../../common/api'
 import { richTextToString } from '../../common/util/parse'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
+import { JSONContent } from '@tiptap/core'
 
 const UNSUBSCRIBE_ENDPOINT = getFunctionUrl('unsubscribe')
 
@@ -346,7 +345,8 @@ export const sendNewCommentEmail = async (
   userId: string,
   commentCreator: User,
   contract: Contract,
-  comment: Comment,
+  commentContent: JSONContent | string,
+  commentId: string,
   bet?: Bet,
   answerText?: string,
   answerId?: string
@@ -359,14 +359,17 @@ export const sendNewCommentEmail = async (
   )
     return
 
-  const { question, creatorUsername, slug } = contract
-  const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}#${comment.id}`
+  const { question } = contract
+  const marketUrl = `https://${DOMAIN}/${contract.creatorUsername}/${contract.slug}#${commentId}`
   const emailType = 'market-comment'
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
-  const { content } = comment
-  const text = richTextToString(content)
+
+  const text =
+    typeof commentContent !== 'string'
+      ? richTextToString(commentContent)
+      : commentContent
 
   let betDescription = ''
   if (bet) {
@@ -380,7 +383,7 @@ export const sendNewCommentEmail = async (
   const from = `${commentorName} on Manifold <no-reply@manifold.markets>`
 
   if (contract.outcomeType === 'FREE_RESPONSE' && answerId && answerText) {
-    const answerNumber = `#${answerId}`
+    const answerNumber = answerId ? `#${answerId}` : ''
 
     return await sendTemplateEmail(
       privateUser.email,
@@ -423,14 +426,15 @@ export const sendNewCommentEmail = async (
 }
 
 export const sendNewAnswerEmail = async (
-  answer: Answer,
-  contract: Contract
+  userId: string,
+  name: string,
+  text: string,
+  contract: Contract,
+  avatarUrl?: string
 ) => {
-  // Send to just the creator for now.
-  const { creatorId: userId } = contract
-
+  const { creatorId } = contract
   // Don't send the creator's own answers.
-  if (answer.userId === userId) return
+  if (userId === creatorId) return
 
   const privateUser = await getPrivateUser(userId)
   if (
@@ -441,7 +445,6 @@ export const sendNewAnswerEmail = async (
     return
 
   const { question, creatorUsername, slug } = contract
-  const { name, avatarUrl, text } = answer
 
   const marketUrl = `https://${DOMAIN}/${creatorUsername}/${slug}`
   const emailType = 'market-answer'

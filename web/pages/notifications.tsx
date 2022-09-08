@@ -1003,7 +1003,7 @@ function getReasonForShowingNotification(
       else reasonText = justSummary ? `commented` : `commented on`
       break
     case 'contract':
-      if (reason === 'you_follow_user')
+      if (reason === 'contract_from_followed_user')
         reasonText = justSummary ? 'asked the question' : 'asked'
       else if (sourceUpdateType === 'resolved')
         reasonText = justSummary ? `resolved the question` : `resolved`
@@ -1011,7 +1011,8 @@ function getReasonForShowingNotification(
       else reasonText = justSummary ? 'updated the question' : `updated`
       break
     case 'answer':
-      if (reason === 'on_users_contract') reasonText = `answered your question `
+      if (reason === 'answer_on_your_contract')
+        reasonText = `answered your question `
       else reasonText = `answered`
       break
     case 'follow':

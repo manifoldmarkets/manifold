@@ -1,15 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { compact, uniq } from 'lodash'
+import { compact } from 'lodash'
 import { getContract, getUser, getValues } from './utils'
 import { ContractComment } from '../../common/comment'
-import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
-import {
-  createCommentOrAnswerOrUpdatedContractNotification,
-  filterUserIdsForOnlyFollowerIds,
-} from './create-notification'
+import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
 
@@ -77,10 +73,10 @@ export const onCreateCommentOnContract = functions
     const comments = await getValues<ContractComment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
-    const relatedSourceType = comment.replyToCommentId
-      ? 'comment'
-      : comment.answerOutcome
+    const repliedToType = answer
       ? 'answer'
+      : comment.replyToCommentId
+      ? 'comment'
       : undefined
 
     const repliedUserId = comment.replyToCommentId
@@ -96,31 +92,11 @@ export const onCreateCommentOnContract = functions
       richTextToString(comment.content),
       contract,
       {
-        relatedSourceType,
+        repliedToType,
+        repliedToId: comment.replyToCommentId || answer?.id,
+        repliedToContent: answer ? answer.text : undefined,
         repliedUserId,
         taggedUserIds: compact(parseMentions(comment.content)),
       }
-    )
-
-    const recipientUserIds = await filterUserIdsForOnlyFollowerIds(
-      uniq([
-        contract.creatorId,
-        ...comments.map((comment) => comment.userId),
-      ]).filter((id) => id !== comment.userId),
-      contractId
-    )
-
-    await Promise.all(
-      recipientUserIds.map((userId) =>
-        sendNewCommentEmail(
-          userId,
-          commentCreator,
-          contract,
-          comment,
-          bet,
-          answer?.text,
-          answer?.id
-        )
-      )
     )
   })

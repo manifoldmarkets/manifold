@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { difference, mapValues, groupBy, sumBy } from 'lodash'
+import { mapValues, groupBy, sumBy } from 'lodash'
 
 import {
   Contract,
@@ -8,10 +8,8 @@ import {
   MultipleChoiceContract,
   RESOLUTIONS,
 } from '../../common/contract'
-import { User } from '../../common/user'
 import { Bet } from '../../common/bet'
 import { getUser, isProd, payUser } from './utils'
-import { sendMarketResolutionEmail } from './emails'
 import {
   getLoanPayouts,
   getPayouts,
@@ -23,7 +21,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 import { APIError, newEndpoint, validate } from './api'
 import { getContractBetMetrics } from '../../common/calculate'
-import { floatingEqual } from '../../common/util/math'
+import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -163,15 +161,44 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
 
-  await sendResolutionEmails(
-    bets,
-    userPayoutsWithoutLoans,
+  const userInvestments = mapValues(
+    groupBy(bets, (bet) => bet.userId),
+    (bets) => getContractBetMetrics(contract, bets).invested
+  )
+  let resolutionText = contract.resolution ?? contract.question
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    const answerText = contract.answers.find(
+      (answer) => answer.id === contract.resolution
+    )?.text
+    if (answerText) resolutionText = answerText
+  } else if (contract.outcomeType === 'BINARY') {
+    if (resolutionText === 'MKT' && contract.resolutionProbability)
+      resolutionText = `${contract.resolutionProbability}%`
+    else if (resolutionText === 'MKT') resolutionText = 'PROB'
+  } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
+    if (resolutionText === 'MKT' && contract.resolutionValue)
+      resolutionText = `${contract.resolutionValue}`
+  }
+  await createCommentOrAnswerOrUpdatedContractNotification(
+    contract.id,
+    'contract',
+    'resolved',
     creator,
-    creatorPayout,
+    contract.id + '-resolution',
+    resolutionText,
     contract,
-    outcome,
-    resolutionProbability,
-    resolutions
+    undefined,
+    {
+      bets,
+      userInvestments,
+      userPayouts: userPayoutsWithoutLoans,
+      creator,
+      creatorPayout,
+      contract,
+      outcome,
+      resolutionProbability,
+      resolutions,
+    }
   )
 
   return updatedContract
@@ -188,51 +215,51 @@ const processPayouts = async (payouts: Payout[], isDeposit = false) => {
     .catch((e) => ({ status: 'error', message: e }))
     .then(() => ({ status: 'success' }))
 }
-
-const sendResolutionEmails = async (
-  bets: Bet[],
-  userPayouts: { [userId: string]: number },
-  creator: User,
-  creatorPayout: number,
-  contract: Contract,
-  outcome: string,
-  resolutionProbability?: number,
-  resolutions?: { [outcome: string]: number }
-) => {
-  const investedByUser = mapValues(
-    groupBy(bets, (bet) => bet.userId),
-    (bets) => getContractBetMetrics(contract, bets).invested
-  )
-  const investedUsers = Object.keys(investedByUser).filter(
-    (userId) => !floatingEqual(investedByUser[userId], 0)
-  )
-
-  const nonWinners = difference(investedUsers, Object.keys(userPayouts))
-  const emailPayouts = [
-    ...Object.entries(userPayouts),
-    ...nonWinners.map((userId) => [userId, 0] as const),
-  ].map(([userId, payout]) => ({
-    userId,
-    investment: investedByUser[userId] ?? 0,
-    payout,
-  }))
-
-  await Promise.all(
-    emailPayouts.map(({ userId, investment, payout }) =>
-      sendMarketResolutionEmail(
-        userId,
-        investment,
-        payout,
-        creator,
-        creatorPayout,
-        contract,
-        outcome,
-        resolutionProbability,
-        resolutions
-      )
-    )
-  )
-}
+//
+// const sendResolutionEmails = async (
+//   bets: Bet[],
+//   userPayouts: { [userId: string]: number },
+//   creator: User,
+//   creatorPayout: number,
+//   contract: Contract,
+//   outcome: string,
+//   resolutionProbability?: number,
+//   resolutions?: { [outcome: string]: number }
+// ) => {
+//   const investedByUser = mapValues(
+//     groupBy(bets, (bet) => bet.userId),
+//     (bets) => getContractBetMetrics(contract, bets).invested
+//   )
+//   const investedUsers = Object.keys(investedByUser).filter(
+//     (userId) => !floatingEqual(investedByUser[userId], 0)
+//   )
+//
+//   const nonWinners = difference(investedUsers, Object.keys(userPayouts))
+//   const emailPayouts = [
+//     ...Object.entries(userPayouts),
+//     ...nonWinners.map((userId) => [userId, 0] as const),
+//   ].map(([userId, payout]) => ({
+//     userId,
+//     investment: investedByUser[userId] ?? 0,
+//     payout,
+//   }))
+//
+//   await Promise.all(
+//     emailPayouts.map(({ userId, investment, payout }) =>
+//       sendMarketResolutionEmail(
+//         userId,
+//         investment,
+//         payout,
+//         creator,
+//         creatorPayout,
+//         contract,
+//         outcome,
+//         resolutionProbability,
+//         resolutions
+//       )
+//     )
+//   )
+// }
 
 function getResolutionParams(contract: Contract, body: string) {
   const { outcomeType } = contract

@@ -159,7 +159,7 @@ service cloud.firestore {
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['isSeen', 'viewTime']);
     }
-
+    
     match /{somePath=**}/groupMembers/{memberId} {
       allow read;
     }
@@ -168,7 +168,7 @@ service cloud.firestore {
       allow read;
     }
 
-	   match /groups/{groupId} {
+	    match /groups/{groupId} {
           allow read;
           allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                            && request.resource.data.diff(resource.data)
@@ -182,7 +182,7 @@ service cloud.firestore {
 
           match /groupMembers/{memberId}{
              allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin);
-             allow delete: if request.auth.uid == resource.data.userId;
+              allow delete: if request.auth.uid == resource.data.userId;
             }
 
           function isGroupMember() {
