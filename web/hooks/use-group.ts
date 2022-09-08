@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
+  getMemberGroups,
   GroupMemberDoc,
   groupMembers,
   listenForGroup,
   listenForGroupContractDocs,
   listenForGroups,
   listenForMemberGroupIds,
-  listenForMemberGroups,
   listenForOpenGroups,
   listGroups,
 } from 'web/lib/firebase/groups'
@@ -17,6 +17,7 @@ import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
 import { uniq } from 'lodash'
 import { listenForValues } from 'web/lib/firebase/utils'
+import { useQuery } from 'react-query'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -49,12 +50,10 @@ export const useOpenGroups = () => {
 }
 
 export const useMemberGroups = (userId: string | null | undefined) => {
-  const [memberGroups, setMemberGroups] = useState<Group[] | undefined>()
-  useEffect(() => {
-    if (userId)
-      return listenForMemberGroups(userId, (groups) => setMemberGroups(groups))
-  }, [userId])
-  return memberGroups
+  const result = useQuery(['member-groups', userId ?? ''], () =>
+    getMemberGroups(userId ?? '')
+  )
+  return result.data
 }
 
 // Note: We cache member group ids in localstorage to speed up the initial load

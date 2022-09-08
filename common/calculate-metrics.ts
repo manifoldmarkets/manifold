@@ -116,12 +116,12 @@ const calculateProfitForPeriod = (
     return currentProfit
   }
 
-  const startingProfit = calculateTotalProfit(startingPortfolio)
+  const startingProfit = calculatePortfolioProfit(startingPortfolio)
 
   return currentProfit - startingProfit
 }
 
-const calculateTotalProfit = (portfolio: PortfolioMetrics) => {
+export const calculatePortfolioProfit = (portfolio: PortfolioMetrics) => {
   return portfolio.investmentValue + portfolio.balance - portfolio.totalDeposits
 }
 
@@ -129,7 +129,7 @@ export const calculateNewProfit = (
   portfolioHistory: PortfolioMetrics[],
   newPortfolio: PortfolioMetrics
 ) => {
-  const allTimeProfit = calculateTotalProfit(newPortfolio)
+  const allTimeProfit = calculatePortfolioProfit(newPortfolio)
   const descendingPortfolio = sortBy(
     portfolioHistory,
     (p) => p.timestamp
