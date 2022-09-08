@@ -1,4 +1,9 @@
+import React, { useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { debounce, sortBy, take } from 'lodash'
+import { SearchIcon } from '@heroicons/react/outline'
+import { toast } from 'react-hot-toast'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
@@ -9,15 +14,14 @@ import {
   getGroupBySlug,
   groupPath,
   joinGroup,
+  listMembers,
   updateGroup,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
-import { UserLink } from 'web/components/user-page'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
-import { listMembers, useGroup, useMembers } from 'web/hooks/use-group'
-import { useRouter } from 'next/router'
+import { useGroup, useGroupContractIds, useMembers } from 'web/hooks/use-group'
 import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
@@ -27,15 +31,11 @@ import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
-import { CreateQuestionButton } from 'web/components/create-question-button'
-import React, { useState } from 'react'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
-import { toast } from 'react-hot-toast'
 import { ContractSearch } from 'web/components/contract-search'
 import { FollowList } from 'web/components/follow-list'
-import { SearchIcon } from '@heroicons/react/outline'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { CopyLinkButton } from 'web/components/copy-link-button'
@@ -45,6 +45,14 @@ import { Button } from 'web/components/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { UserLink } from 'web/components/user-link'
+import { GroupAboutPost } from 'web/components/groups/group-about-post'
+import { getPost } from 'web/lib/firebase/posts'
+import { Post } from 'common/post'
+import { Spacer } from 'web/components/layout/spacer'
+import { usePost } from 'web/hooks/use-post'
+import { useAdmin } from 'web/hooks/use-admin'
+import { track } from '@amplitude/analytics-browser'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -56,7 +64,13 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const contracts =
     (group && (await listContractsByGroupSlug(group.slug))) ?? []
-
+  const now = Date.now()
+  const suggestedFilter =
+    contracts.filter((c) => (c.closeTime ?? 0) > now).length < 5
+      ? 'all'
+      : 'open'
+  const aboutPost =
+    group && group.aboutPostId != null && (await getPost(group.aboutPostId))
   const bets = await Promise.all(
     contracts.map((contract: Contract) => listAllBets(contract.id))
   )
@@ -72,9 +86,12 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
     []
 
   const creator = await creatorPromise
+  // Only count unresolved markets
+  const contractsCount = contracts.filter((c) => !c.isResolved).length
 
   return {
     props: {
+      contractsCount,
       group,
       members,
       creator,
@@ -83,6 +100,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       creatorScores,
       topCreators,
       messages,
+      aboutPost,
+      suggestedFilter,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -113,6 +132,7 @@ const groupSubpages = [
 ] as const
 
 export default function GroupPage(props: {
+  contractsCount: number
   group: Group | null
   members: User[]
   creator: User
@@ -121,8 +141,11 @@ export default function GroupPage(props: {
   creatorScores: { [userId: string]: number }
   topCreators: User[]
   messages: GroupComment[]
+  aboutPost: Post
+  suggestedFilter: 'open' | 'all'
 }) {
   props = usePropz(props, getStaticPropz) ?? {
+    contractsCount: 0,
     group: null,
     members: [],
     creator: null,
@@ -131,14 +154,16 @@ export default function GroupPage(props: {
     creatorScores: {},
     topCreators: [],
     messages: [],
+    suggestedFilter: 'open',
   }
   const {
+    contractsCount,
     creator,
-    members,
     traderScores,
     topTraders,
     creatorScores,
     topCreators,
+    suggestedFilter,
   } = props
 
   const router = useRouter()
@@ -146,8 +171,11 @@ export default function GroupPage(props: {
   const page = slugs?.[1] as typeof groupSubpages[number]
 
   const group = useGroup(props.group?.id) ?? props.group
+  const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
 
   const user = useUser()
+  const isAdmin = useAdmin()
+  const members = useMembers(group?.id) ?? props.members
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -157,9 +185,8 @@ export default function GroupPage(props: {
   if (group === null || !groupSubpages.includes(page) || slugs[2]) {
     return <Custom404 />
   }
-  const { memberIds } = group
   const isCreator = user && group && user.id === group.creatorId
-  const isMember = user && memberIds.includes(user.id)
+  const isMember = user && members.map((m) => m.id).includes(user.id)
 
   const leaderboard = (
     <Col>
@@ -176,6 +203,14 @@ export default function GroupPage(props: {
 
   const aboutTab = (
     <Col>
+      {(group.aboutPostId != null || isCreator || isAdmin) && (
+        <GroupAboutPost
+          group={group}
+          isEditable={!!isCreator || isAdmin}
+          post={aboutPost}
+        />
+      )}
+      <Spacer h={3} />
       <GroupOverview
         group={group}
         creator={creator}
@@ -190,13 +225,15 @@ export default function GroupPage(props: {
     <ContractSearch
       user={user}
       defaultSort={'newest'}
-      defaultFilter={'open'}
+      defaultFilter={suggestedFilter}
       additionalFilter={{ groupSlug: group.slug }}
+      persistPrefix={`group-${group.slug}`}
     />
   )
 
   const tabs = [
     {
+      badge: `${contractsCount}`,
       title: 'Markets',
       content: questionsTab,
       href: groupPath(group.slug, 'markets'),
@@ -292,11 +329,11 @@ function GroupOverview(props: {
       error: "Couldn't update group",
     })
   }
-
   const postFix = user ? '?referrer=' + user.username : ''
   const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
     group.slug
   )}${postFix}`
+  const isMember = user ? members.map((m) => m.id).includes(user.id) : false
 
   return (
     <>
@@ -313,10 +350,13 @@ function GroupOverview(props: {
           {isCreator ? (
             <EditGroupButton className={'ml-1'} group={group} />
           ) : (
-            user &&
-            group.memberIds.includes(user?.id) && (
+            user && (
               <Row>
-                <JoinOrLeaveGroupButton group={group} />
+                <JoinOrLeaveGroupButton
+                  group={group}
+                  user={user}
+                  isMember={isMember}
+                />
               </Row>
             )
           )}
@@ -338,7 +378,7 @@ function GroupOverview(props: {
             />
           ) : (
             <span className={'text-gray-700'}>
-              {anyoneCanJoin ? 'Open' : 'Closed'}
+              {anyoneCanJoin ? 'Open to all' : 'Closed (by invite only)'}
             </span>
           )}
         </Row>
@@ -391,7 +431,7 @@ function GroupMemberSearch(props: { members: User[]; group: Group }) {
   let { members } = props
 
   // Use static members on load, but also listen to member changes:
-  const listenToMembers = useMembers(group)
+  const listenToMembers = useMembers(group.id)
   if (listenToMembers) {
     members = listenToMembers
   }
@@ -513,6 +553,7 @@ function AddContractButton(props: { group: Group; user: User }) {
   const [open, setOpen] = useState(false)
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(false)
+  const groupContractIds = useGroupContractIds(group.id)
 
   async function addContractToCurrentGroup(contract: Contract) {
     if (contracts.map((c) => c.id).includes(contract.id)) {
@@ -538,35 +579,37 @@ function AddContractButton(props: { group: Group; user: User }) {
       <div className={'flex justify-center'}>
         <Button
           className="whitespace-nowrap"
-          size="sm"
-          color="gradient"
+          size="md"
+          color="indigo"
           onClick={() => setOpen(true)}
         >
           Add market
         </Button>
       </div>
 
-      <Modal open={open} setOpen={setOpen} className={'sm:p-0'} size={'lg'}>
-        <Col className={' w-full gap-4 rounded-md bg-white'}>
+      <Modal
+        open={open}
+        setOpen={setOpen}
+        className={'max-w-4xl sm:p-0'}
+        size={'xl'}
+      >
+        <Col
+          className={'min-h-screen w-full max-w-4xl gap-4 rounded-md bg-white'}
+        >
           <Col className="p-8 pb-0">
-            <div className={'text-xl text-indigo-700'}>
-              Add a market to your group
+            <div className={'text-xl text-indigo-700'}>Add markets</div>
+
+            <div className={'text-md my-4 text-gray-600'}>
+              Add pre-existing markets to this group, or{' '}
+              <Link href={`/create?groupId=${group.id}`}>
+                <span className="cursor-pointer font-semibold underline">
+                  create a new one
+                </span>
+              </Link>
+              .
             </div>
 
-            {contracts.length === 0 ? (
-              <Col className="items-center justify-center">
-                <CreateQuestionButton
-                  user={user}
-                  overrideText={'New market'}
-                  className={'w-48 flex-shrink-0 '}
-                  query={`?groupId=${group.id}`}
-                />
-
-                <div className={'mt-1 text-lg text-gray-600'}>
-                  (or select old markets)
-                </div>
-              </Col>
-            ) : (
+            {contracts.length > 0 && (
               <Col className={'w-full '}>
                 {!loading ? (
                   <Row className={'justify-end gap-4'}>
@@ -598,7 +641,9 @@ function AddContractButton(props: { group: Group; user: User }) {
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
               cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
-              additionalFilter={{ excludeContractIds: group.contractIds }}
+              additionalFilter={{
+                excludeContractIds: groupContractIds,
+              }}
               highlightOptions={{
                 contractIds: contracts.map((c) => c.id),
                 highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
@@ -616,22 +661,25 @@ function JoinGroupButton(props: {
   user: User | null | undefined
 }) {
   const { group, user } = props
-  function addUserToGroup() {
-    if (user && !group.memberIds.includes(user.id)) {
-      toast.promise(joinGroup(group, user.id), {
-        loading: 'Joining group...',
-        success: 'Joined group!',
-        error: "Couldn't join group, try again?",
-      })
-    }
+
+  const follow = async () => {
+    track('join group')
+    const userId = user ? user.id : (await firebaseLogin()).user.uid
+
+    toast.promise(joinGroup(group, userId), {
+      loading: 'Following group...',
+      success: 'Followed',
+      error: "Couldn't follow group, try again?",
+    })
   }
+
   return (
     <div>
       <button
-        onClick={user ? addUserToGroup : firebaseLogin}
+        onClick={follow}
         className={'btn-md btn-outline btn whitespace-nowrap normal-case'}
       >
-        {user ? 'Join group' : 'Login to join group'}
+        Follow
       </button>
     </div>
   )

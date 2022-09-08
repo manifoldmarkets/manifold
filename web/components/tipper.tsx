@@ -46,6 +46,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
         comment.commentType === 'contract' ? comment.contractId : undefined
       const groupId =
         comment.commentType === 'group' ? comment.groupId : undefined
+      const postId = comment.commentType === 'post' ? comment.postId : undefined
       await transact({
         amount: change,
         fromId: user.id,
@@ -54,7 +55,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
         toType: 'USER',
         token: 'M$',
         category: 'TIP',
-        data: { commentId: comment.id, contractId, groupId },
+        data: { commentId: comment.id, contractId, groupId, postId },
         description: `${user.name} tipped M$ ${change} to ${comment.userName} for a comment`,
       })
 
@@ -62,6 +63,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
         commentId: comment.id,
         contractId,
         groupId,
+        postId,
         amount: change,
         fromId: user.id,
         toId: comment.userId,

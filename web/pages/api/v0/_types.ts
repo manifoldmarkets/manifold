@@ -14,6 +14,7 @@ export type LiteMarket = {
   id: string
 
   // Attributes about the creator
+  creatorId: string
   creatorUsername: string
   creatorName: string
   createdTime: number
@@ -75,6 +76,7 @@ export class ValidationError {
 export function toLiteMarket(contract: Contract): LiteMarket {
   const {
     id,
+    creatorId,
     creatorUsername,
     creatorName,
     createdTime,
@@ -108,6 +110,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
 
   return removeUndefinedProps({
     id,
+    creatorId,
     creatorUsername,
     creatorName,
     createdTime,

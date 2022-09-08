@@ -18,19 +18,20 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
 }) {
   const { contract, bets, height } = props
   const { createdTime, resolutionTime, closeTime, answers } = contract
+  const now = Date.now()
 
   const { probsByOutcome, sortedOutcomes } = computeProbsByOutcome(
     bets,
     contract
   )
 
-  const isClosed = !!closeTime && Date.now() > closeTime
+  const isClosed = !!closeTime && now > closeTime
   const latestTime = dayjs(
     resolutionTime && isClosed
       ? Math.min(resolutionTime, closeTime)
       : isClosed
       ? closeTime
-      : resolutionTime ?? Date.now()
+      : resolutionTime ?? now
   )
 
   const { width } = useWindowSize()
@@ -71,13 +72,14 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
   const yTickValues = [0, 25, 50, 75, 100]
 
   const numXTickValues = isLargeWidth ? 5 : 2
-  const hoursAgo = latestTime.subtract(5, 'hours')
-  const startDate = dayjs(contract.createdTime).isBefore(hoursAgo)
-    ? new Date(contract.createdTime)
-    : hoursAgo.toDate()
+  const startDate = dayjs(contract.createdTime)
+  const endDate = startDate.add(1, 'hour').isAfter(latestTime)
+    ? latestTime.add(1, 'hours')
+    : latestTime
+  const includeMinute = endDate.diff(startDate, 'hours') < 2
 
-  const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
-  const lessThanAWeek = dayjs(startDate).add(1, 'week').isAfter(latestTime)
+  const multiYear = !startDate.isSame(latestTime, 'year')
+  const lessThanAWeek = startDate.add(1, 'week').isAfter(latestTime)
 
   return (
     <div
@@ -95,17 +97,25 @@ export const AnswersGraph = memo(function AnswersGraph(props: {
         }}
         xScale={{
           type: 'time',
-          min: startDate,
-          max: latestTime.toDate(),
+          min: startDate.toDate(),
+          max: endDate.toDate(),
         }}
         xFormat={(d) =>
-          formatTime(+d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
+          formatTime(now, +d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
         }
         axisBottom={{
           tickValues: numXTickValues,
-          format: (time) => formatTime(+time, multiYear, lessThanAWeek, false),
+          format: (time) =>
+            formatTime(now, +time, multiYear, lessThanAWeek, includeMinute),
         }}
-        colors={{ scheme: 'pastel1' }}
+        colors={[
+          '#fca5a5', // red-300
+          '#a5b4fc', // indigo-300
+          '#86efac', // green-300
+          '#fef08a', // yellow-200
+          '#fdba74', // orange-300
+          '#c084fc', // purple-400
+        ]}
         pointSize={0}
         curve="stepAfter"
         enableSlices="x"
@@ -149,19 +159,20 @@ function formatPercent(y: DatumValue) {
 }
 
 function formatTime(
+  now: number,
   time: number,
   includeYear: boolean,
   includeHour: boolean,
   includeMinute: boolean
 ) {
   const d = dayjs(time)
-
-  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
+  if (d.add(1, 'minute').isAfter(now) && d.subtract(1, 'minute').isBefore(now))
+    return 'Now'
 
   let format: string
-  if (d.isSame(Date.now(), 'day')) {
+  if (d.isSame(now, 'day')) {
     format = '[Today]'
-  } else if (d.add(1, 'day').isSame(Date.now(), 'day')) {
+  } else if (d.add(1, 'day').isSame(now, 'day')) {
     format = '[Yesterday]'
   } else {
     format = 'MMM D'

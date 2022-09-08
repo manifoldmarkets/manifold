@@ -2,7 +2,7 @@ import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import { Challenge } from 'common/challenge'
 import { useEffect, useState } from 'react'
-import { SignUpPrompt } from 'web/components/sign-up-prompt'
+import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { acceptChallenge, APIError } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -27,7 +27,8 @@ export function AcceptChallengeButton(props: {
     setErrorText('')
   }, [open])
 
-  if (!user) return <SignUpPrompt label="Accept this bet" className="mt-4" />
+  if (!user)
+    return <BetSignUpPrompt label="Sign up to accept" className="mt-4" />
 
   const iAcceptChallenge = () => {
     setLoading(true)

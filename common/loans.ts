@@ -10,7 +10,7 @@ import {
 import { PortfolioMetrics, User } from './user'
 import { filterDefined } from './util/array'
 
-const LOAN_DAILY_RATE = 0.01
+const LOAN_DAILY_RATE = 0.02
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
@@ -118,7 +118,7 @@ const getFreeResponseContractLoanUpdate = (
   contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
 ) => {
-  const openBets = bets.filter((bet) => bet.isSold || bet.sale)
+  const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
 
   return openBets.map((bet) => {
     const loanAmount = bet.loanAmount ?? 0

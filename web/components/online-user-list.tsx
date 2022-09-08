@@ -2,13 +2,13 @@ import clsx from 'clsx'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { UserLink } from './user-page'
 import { User } from 'common/user'
 import { UserCircleIcon } from '@heroicons/react/solid'
 import { useUsers } from 'web/hooks/use-users'
 import { partition } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { useState } from 'react'
+import { UserLink } from 'web/components/user-link'
 
 const isOnline = (user?: User) =>
   user && user.lastPingTime && user.lastPingTime > Date.now() - 5 * 60 * 1000

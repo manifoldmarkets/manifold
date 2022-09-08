@@ -1,6 +1,6 @@
 import { union } from 'lodash'
 
-export const removeUndefinedProps = <T>(obj: T): T => {
+export const removeUndefinedProps = <T extends object>(obj: T): T => {
   const newObj: any = {}
 
   for (const key of Object.keys(obj)) {
@@ -37,4 +37,3 @@ export const subtractObjects = <T extends { [key: string]: number }>(
 
   return newObj as T
 }
-

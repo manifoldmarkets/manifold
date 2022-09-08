@@ -1,10 +1,10 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import { useMemberGroups } from 'web/hooks/use-group'
+import { useMemberGroups, useMemberIds } from 'web/hooks/use-group'
 import { TextButton } from 'web/components/text-button'
 import { Group } from 'common/group'
 import { Modal } from 'web/components/layout/modal'
@@ -17,9 +17,7 @@ import toast from 'react-hot-toast'
 export function GroupsButton(props: { user: User }) {
   const { user } = props
   const [isOpen, setIsOpen] = useState(false)
-  const groups = useMemberGroups(user.id, undefined, {
-    by: 'mostRecentChatActivityTime',
-  })
+  const groups = useMemberGroups(user.id)
 
   return (
     <>
@@ -74,51 +72,34 @@ function GroupsList(props: { groups: Group[] }) {
 
 function GroupItem(props: { group: Group; className?: string }) {
   const { group, className } = props
+  const user = useUser()
+  const memberIds = useMemberIds(group.id)
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
       <Row className="line-clamp-1 items-center gap-2">
         <GroupLinkItem group={group} />
       </Row>
-      <JoinOrLeaveGroupButton group={group} />
+      <JoinOrLeaveGroupButton
+        group={group}
+        user={user}
+        isMember={user ? memberIds?.includes(user.id) : false}
+      />
     </Row>
   )
 }
 
 export function JoinOrLeaveGroupButton(props: {
   group: Group
+  isMember: boolean
+  user: User | undefined | null
   small?: boolean
   className?: string
 }) {
-  const { group, small, className } = props
-  const currentUser = useUser()
-  const [isMember, setIsMember] = useState<boolean>(false)
-  useEffect(() => {
-    if (currentUser && group.memberIds.includes(currentUser.id)) {
-      setIsMember(group.memberIds.includes(currentUser.id))
-    }
-  }, [currentUser, group])
-
-  const onJoinGroup = () => {
-    if (!currentUser) return
-    setIsMember(true)
-    joinGroup(group, currentUser.id).catch(() => {
-      setIsMember(false)
-      toast.error('Failed to join group')
-    })
-  }
-  const onLeaveGroup = () => {
-    if (!currentUser) return
-    setIsMember(false)
-    leaveGroup(group, currentUser.id).catch(() => {
-      setIsMember(true)
-      toast.error('Failed to leave group')
-    })
-  }
-
+  const { group, small, className, isMember, user } = props
   const smallStyle =
     'btn !btn-xs border-2 border-gray-500 bg-white normal-case text-gray-500 hover:border-gray-500 hover:bg-white hover:text-gray-500'
 
-  if (!currentUser || isMember === undefined) {
+  if (!user) {
     if (!group.anyoneCanJoin)
       return <div className={clsx(className, 'text-gray-500')}>Closed</div>
     return (
@@ -126,9 +107,19 @@ export function JoinOrLeaveGroupButton(props: {
         onClick={firebaseLogin}
         className={clsx('btn btn-sm', small && smallStyle, className)}
       >
-        Login to Join
+        Login to follow
       </button>
     )
+  }
+  const onJoinGroup = () => {
+    joinGroup(group, user.id).catch(() => {
+      toast.error('Failed to join group')
+    })
+  }
+  const onLeaveGroup = () => {
+    leaveGroup(group, user.id).catch(() => {
+      toast.error('Failed to leave group')
+    })
   }
 
   if (isMember) {
@@ -141,7 +132,7 @@ export function JoinOrLeaveGroupButton(props: {
         )}
         onClick={withTracking(onLeaveGroup, 'leave group')}
       >
-        Leave
+        Unfollow
       </button>
     )
   }
@@ -153,7 +144,7 @@ export function JoinOrLeaveGroupButton(props: {
       className={clsx('btn btn-sm', small && smallStyle, className)}
       onClick={withTracking(onJoinGroup, 'join group')}
     >
-      Join
+      Follow
     </button>
   )
 }

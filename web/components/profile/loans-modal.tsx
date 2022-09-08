@@ -11,11 +11,11 @@ export function LoansModal(props: {
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="items-center gap-4 rounded-md bg-white px-8 py-6">
         <span className={'text-8xl'}>🏦</span>
-        <span className="text-xl">Daily loans on your bets</span>
+        <span className="text-xl">Daily loans on your trades</span>
         <Col className={'gap-2'}>
           <span className={'text-indigo-700'}>• What are daily loans?</span>
           <span className={'ml-2'}>
-            Every day at midnight PT, get 1% of your total bet amount back as a
+            Every day at midnight PT, get 2% of your total bet amount back as a
             loan.
           </span>
           <span className={'text-indigo-700'}>
@@ -34,12 +34,12 @@ export function LoansModal(props: {
           </span>
           <span className={'text-indigo-700'}>• What is an example?</span>
           <span className={'ml-2'}>
-            For example, if you bet M$1000 on "Will I become a millionare?" on
-            Monday, you will get M$10 back on Tuesday.
+            For example, if you bet M$1000 on "Will I become a millionare?"
+            today, you will get M$20 back tomorrow.
           </span>
           <span className={'ml-2'}>
-            Previous loans count against your total bet amount. So on Wednesday,
-            you would get back 1% of M$990 = M$9.9.
+            Previous loans count against your total bet amount. So on the next
+            day, you would get back 2% of M$(1000 - 20) = M$19.6.
           </span>
         </Col>
       </Col>

@@ -18,7 +18,6 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
-import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
@@ -68,50 +67,42 @@ export function useTextEditor(props: {
 }) {
   const { placeholder, max, defaultValue = '', disabled, simple } = props
 
-  const users = useUsers()
-
   const editorClass = clsx(
     proseClass,
     !simple && 'min-h-[6em]',
-    'outline-none pt-2 px-4'
+    'outline-none pt-2 px-4',
+    'prose-img:select-auto',
+    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, emebeds
   )
 
-  const editor = useEditor(
-    {
-      editorProps: { attributes: { class: editorClass } },
-      extensions: [
-        StarterKit.configure({
-          heading: simple ? false : { levels: [1, 2, 3] },
-          horizontalRule: simple ? false : {},
-        }),
-        Placeholder.configure({
-          placeholder,
-          emptyEditorClass:
-            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
-        }),
-        CharacterCount.configure({ limit: max }),
-        simple ? DisplayImage : Image,
-        DisplayLink,
-        DisplayMention.configure({
-          suggestion: mentionSuggestion(users),
-        }),
-        Iframe,
-        TiptapTweet,
-      ],
-      content: defaultValue,
-    },
-    [!users.length] // passed as useEffect dependency. (re-render editor when users load, to update mention menu)
-  )
+  const editor = useEditor({
+    editorProps: { attributes: { class: editorClass } },
+    extensions: [
+      StarterKit.configure({
+        heading: simple ? false : { levels: [1, 2, 3] },
+        horizontalRule: simple ? false : {},
+      }),
+      Placeholder.configure({
+        placeholder,
+        emptyEditorClass:
+          'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
+      }),
+      CharacterCount.configure({ limit: max }),
+      simple ? DisplayImage : Image,
+      DisplayLink,
+      DisplayMention.configure({ suggestion: mentionSuggestion }),
+      Iframe,
+      TiptapTweet,
+    ],
+    content: defaultValue,
+  })
 
   const upload = useUploadMutation(editor)
 
   editor?.setOptions({
     editorProps: {
       handlePaste(view, event) {
-        const imageFiles = Array.from(event.clipboardData?.files ?? []).filter(
-          (file) => file.type.startsWith('image')
-        )
-
+        const imageFiles = getImages(event.clipboardData)
         if (imageFiles.length) {
           event.preventDefault()
           upload.mutate(imageFiles)
@@ -126,6 +117,13 @@ export function useTextEditor(props: {
 
         return // Otherwise, use default paste handler
       },
+      handleDrop(_view, event, _slice, moved) {
+        // if dragged from outside
+        if (!moved) {
+          event.preventDefault()
+          upload.mutate(getImages(event.dataTransfer))
+        }
+      },
     },
   })
 
@@ -135,6 +133,9 @@ export function useTextEditor(props: {
 
   return { editor, upload }
 }
+
+const getImages = (data: DataTransfer | null) =>
+  Array.from(data?.files ?? []).filter((file) => file.type.startsWith('image'))
 
 function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
@@ -157,7 +158,7 @@ export function TextEditor(props: {
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
-            <Tooltip className="flex items-center" text="Add image" noTap>
+            <Tooltip text="Add image" noTap noFade>
               <FileUploadButton
                 onFiles={upload.mutate}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
@@ -165,7 +166,7 @@ export function TextEditor(props: {
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
               </FileUploadButton>
             </Tooltip>
-            <Tooltip className="flex items-center" text="Add embed" noTap>
+            <Tooltip text="Add embed" noTap noFade>
               <button
                 type="button"
                 onClick={() => setIframeOpen(true)}
@@ -179,7 +180,7 @@ export function TextEditor(props: {
                 <CodeIcon className="h-5 w-5" aria-hidden="true" />
               </button>
             </Tooltip>
-            <Tooltip className="flex items-center" text="Add market" noTap>
+            <Tooltip text="Add market" noTap noFade>
               <button
                 type="button"
                 onClick={() => setMarketOpen(true)}
@@ -236,15 +237,16 @@ const useUploadMutation = (editor: Editor | null) =>
 
 export function RichContent(props: {
   content: JSONContent | string
+  className?: string
   smallImage?: boolean
 }) {
-  const { content, smallImage } = props
+  const { className, content, smallImage } = props
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
     extensions: [
       StarterKit,
       smallImage ? DisplayImage : Image,
-      DisplayLink,
+      DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
       Iframe,
       TiptapTweet,
@@ -254,19 +256,24 @@ export function RichContent(props: {
   })
   useEffect(() => void editor?.commands?.setContent(content), [editor, content])
 
-  return <EditorContent editor={editor} />
+  return <EditorContent className={className} editor={editor} />
 }
 
 // backwards compatibility: we used to store content as strings
 export function Content(props: {
   content: JSONContent | string
+  className?: string
   smallImage?: boolean
 }) {
-  const { content } = props
+  const { className, content } = props
   return typeof content === 'string' ? (
-    <div className="whitespace-pre-line font-light leading-relaxed">
-      <Linkify text={content} />
-    </div>
+    <Linkify
+      className={clsx(
+        className,
+        'whitespace-pre-line font-light leading-relaxed'
+      )}
+      text={content}
+    />
   ) : (
     <RichContent {...props} />
   )

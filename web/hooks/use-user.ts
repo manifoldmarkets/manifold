@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
-import { QueryClient } from 'react-query'
+import { useQueryClient } from 'react-query'
 
 import { doc, DocumentData } from 'firebase/firestore'
 import { getUser, User, users } from 'web/lib/firebase/users'
@@ -28,12 +28,13 @@ export const useUserById = (userId = '_') => {
   return result.isLoading ? undefined : result.data
 }
 
-const queryClient = new QueryClient()
-
-export const prefetchUser = (userId: string) => {
-  queryClient.prefetchQuery(['users', userId], () => getUser(userId))
+export const usePrefetchUser = (userId: string) => {
+  return usePrefetchUsers([userId])[0]
 }
 
-export const prefetchUsers = (userIds: string[]) => {
-  userIds.forEach(prefetchUser)
+export const usePrefetchUsers = (userIds: string[]) => {
+  const queryClient = useQueryClient()
+  return userIds.map((userId) =>
+    queryClient.prefetchQuery(['users', userId], () => getUser(userId))
+  )
 }

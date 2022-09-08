@@ -18,7 +18,6 @@ import { ManalinkTxn } from 'common/txn'
 import { User } from 'common/user'
 import { Avatar } from 'web/components/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { UserLink } from 'web/components/user-page'
 import { CreateLinksButton } from 'web/components/manalinks/create-links-button'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
@@ -27,11 +26,12 @@ import { Pagination } from 'web/components/pagination'
 import { Manalink } from 'common/manalink'
 import { SiteLink } from 'web/components/site-link'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { UserLink } from 'web/components/user-link'
 
 const LINKS_PER_PAGE = 24
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
 export function getManalinkUrl(slug: string) {

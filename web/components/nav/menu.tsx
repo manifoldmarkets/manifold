@@ -19,12 +19,10 @@ export function MenuButton(props: {
       as="div"
       className={clsx(className ? className : 'relative z-40 flex-shrink-0')}
     >
-      <div>
-        <Menu.Button className="w-full rounded-full">
-          <span className="sr-only">Open user menu</span>
-          {buttonContent}
-        </Menu.Button>
-      </div>
+      <Menu.Button className="w-full rounded-full">
+        <span className="sr-only">Open user menu</span>
+        {buttonContent}
+      </Menu.Button>
       <Transition
         as={Fragment}
         enter="transition ease-out duration-100"

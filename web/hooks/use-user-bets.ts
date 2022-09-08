@@ -1,22 +1,24 @@
-import { uniq } from 'lodash'
+import { useQueryClient } from 'react-query'
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
 import {
   Bet,
-  listenForUserBets,
+  getUserBets,
+  getUserBetsQuery,
   listenForUserContractBets,
 } from 'web/lib/firebase/bets'
 
-export const useUserBets = (
-  userId: string | undefined,
-  options: { includeRedemptions: boolean }
-) => {
-  const [bets, setBets] = useState<Bet[] | undefined>(undefined)
+export const usePrefetchUserBets = (userId: string) => {
+  const queryClient = useQueryClient()
+  return queryClient.prefetchQuery(['bets', userId], () => getUserBets(userId))
+}
 
-  useEffect(() => {
-    if (userId) return listenForUserBets(userId, setBets, options)
-  }, [userId])
-
-  return bets
+export const useUserBets = (userId: string) => {
+  const result = useFirestoreQueryData(
+    ['bets', userId],
+    getUserBetsQuery(userId)
+  )
+  return result.data
 }
 
 export const useUserContractBets = (
@@ -31,36 +33,6 @@ export const useUserContractBets = (
   }, [userId, contractId])
 
   return bets
-}
-
-export const useUserBetContracts = (
-  userId: string | undefined,
-  options: { includeRedemptions: boolean }
-) => {
-  const [contractIds, setContractIds] = useState<string[] | undefined>()
-
-  useEffect(() => {
-    if (userId) {
-      const key = `user-bet-contractIds-${userId}`
-
-      const userBetContractJson = localStorage.getItem(key)
-      if (userBetContractJson) {
-        setContractIds(JSON.parse(userBetContractJson))
-      }
-
-      return listenForUserBets(
-        userId,
-        (bets) => {
-          const contractIds = uniq(bets.map((bet) => bet.contractId))
-          setContractIds(contractIds)
-          localStorage.setItem(key, JSON.stringify(contractIds))
-        },
-        options
-      )
-    }
-  }, [userId])
-
-  return contractIds
 }
 
 export const useGetUserBetContractIds = (userId: string | undefined) => {

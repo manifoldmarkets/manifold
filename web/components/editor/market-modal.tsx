@@ -7,7 +7,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
-import { embedCode } from '../share-embed-button'
+import { embedContractCode, embedContractGridCode } from '../share-embed-button'
 import { insertContent } from './utils'
 
 export function MarketModal(props: {
@@ -28,7 +28,11 @@ export function MarketModal(props: {
 
   async function doneAddingContracts() {
     setLoading(true)
-    insertContent(editor, ...contracts.map(embedCode))
+    if (contracts.length == 1) {
+      insertContent(editor, embedContractCode(contracts[0]))
+    } else if (contracts.length > 1) {
+      insertContent(editor, embedContractGridCode(contracts))
+    }
     setLoading(false)
     setOpen(false)
     setContracts([])
@@ -42,14 +46,28 @@ export function MarketModal(props: {
 
           {!loading && (
             <Row className="grow justify-end gap-4">
-              {contracts.length > 0 && (
+              {contracts.length == 1 && (
                 <Button onClick={doneAddingContracts} color={'indigo'}>
-                  Embed {contracts.length} question
+                  Embed 1 question
+                </Button>
+              )}
+              {contracts.length > 1 && (
+                <Button onClick={doneAddingContracts} color={'indigo'}>
+                  Embed grid of {contracts.length} question
                   {contracts.length > 1 && 's'}
                 </Button>
               )}
-              <Button onClick={() => setContracts([])} color="gray">
-                Cancel
+              <Button
+                onClick={() => {
+                  if (contracts.length > 0) {
+                    setContracts([])
+                  } else {
+                    setOpen(false)
+                  }
+                }}
+                color="gray"
+              >
+                {contracts.length > 0 ? 'Reset' : 'Cancel'}
               </Button>
             </Row>
           )}

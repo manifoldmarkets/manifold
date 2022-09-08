@@ -15,7 +15,10 @@ export const resetBettingStreaksForUsers = functions.pubsub
   })
 
 const resetBettingStreaksInternal = async () => {
-  const usersSnap = await firestore.collection('users').get()
+  const usersSnap = await firestore
+    .collection('users')
+    .where('currentBettingStreak', '>', 0)
+    .get()
 
   const users = usersSnap.docs.map((doc) => doc.data() as User)
 
@@ -28,7 +31,7 @@ const resetBettingStreakForUser = async (user: User) => {
   const betStreakResetTime = Date.now() - DAY_MS
   // if they made a bet within the last day, don't reset their streak
   if (
-    (user.lastBetTime ?? 0 > betStreakResetTime) ||
+    (user?.lastBetTime ?? 0) > betStreakResetTime ||
     !user.currentBettingStreak ||
     user.currentBettingStreak === 0
   )

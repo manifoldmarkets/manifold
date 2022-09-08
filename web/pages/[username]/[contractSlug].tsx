@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
@@ -11,7 +11,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import {
   Contract,
   getContractFromSlug,
-  getRandTopCreatorContracts,
+  getRecommendedContracts,
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
@@ -36,12 +36,15 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
 import { getOpenGraphProps } from 'common/contract-details'
+import { ContractDescription } from 'web/components/contract/contract-description'
+import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import {
   ContractLeaderboard,
   ContractTopTrades,
 } from 'web/components/contract/contract-leaderboard'
-import { Subtitle } from 'web/components/subtitle'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
+import { Title } from 'web/components/title'
+import { usePrefetch } from 'web/hooks/use-prefetch'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -51,12 +54,9 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
-  const [bets, comments, recommendedContracts] = await Promise.all([
+  const [bets, comments] = await Promise.all([
     contractId ? listAllBets(contractId) : [],
     contractId ? listAllComments(contractId) : [],
-    contract
-      ? getRandTopCreatorContracts(contract.creatorId, 4, [contract?.id])
-      : [],
   ])
 
   return {
@@ -67,10 +67,9 @@ export async function getStaticPropz(props: {
       // Limit the data sent to the client. Client will still load all bets and comments directly.
       bets: bets.slice(0, 5000),
       comments: comments.slice(0, 1000),
-      recommendedContracts,
     },
 
-    revalidate: 60, // regenerate after a minute
+    revalidate: 5, // regenerate after five seconds
   }
 }
 
@@ -84,7 +83,6 @@ export default function ContractPage(props: {
   bets: Bet[]
   comments: ContractComment[]
   slug: string
-  recommendedContracts: Contract[]
   backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
@@ -92,7 +90,6 @@ export default function ContractPage(props: {
     username: '',
     comments: [],
     bets: [],
-    recommendedContracts: [],
     slug: '',
   }
 
@@ -108,7 +105,9 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  return <ContractPageContent {...{ ...props, contract, user }} />
+  return (
+    <ContractPageContent key={contract.id} {...{ ...props, contract, user }} />
+  )
 }
 
 export function ContractPageSidebar(props: {
@@ -154,20 +153,26 @@ export function ContractPageContent(
     user?: User | null
   }
 ) {
-  const { backToHome, comments, user, recommendedContracts } = props
+  const { backToHome, comments, user } = props
 
   const contract = useContractWithPreload(props.contract) ?? props.contract
+  usePrefetch(user?.id)
 
-  useTracking('view market', {
-    slug: contract.slug,
-    contractId: contract.id,
-    creatorId: contract.creatorId,
-  })
+  useTracking(
+    'view market',
+    {
+      slug: contract.slug,
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+    },
+    true
+  )
 
   const bets = useBets(contract.id) ?? props.bets
-
-  // Sort for now to see if bug is fixed.
-  comments.sort((c1, c2) => c1.createdTime - c2.createdTime)
+  const nonChallengeBets = useMemo(
+    () => bets.filter((b) => !b.challengeSlug),
+    [bets]
+  )
 
   const tips = useTipTxns({ contractId: contract.id })
 
@@ -181,6 +186,18 @@ export function ContractPageContent(
     )
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
+
+  const [recommendedContracts, setRecommendedContracts] = useState<Contract[]>(
+    []
+  )
+  useEffect(() => {
+    if (contract && user) {
+      getRecommendedContracts(contract, user.id, 6).then(
+        setRecommendedContracts
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract.id, user?.id])
 
   const { isResolved, question, outcomeType } = contract
 
@@ -220,10 +237,9 @@ export function ContractPageContent(
           </button>
         )}
 
-        <ContractOverview
-          contract={contract}
-          bets={bets.filter((b) => !b.challengeSlug)}
-        />
+        <ContractOverview contract={contract} bets={nonChallengeBets} />
+        <ExtraContractActionsRow contract={contract} />
+        <ContractDescription className="mb-6 px-2" contract={contract} />
 
         {outcomeType === 'NUMERIC' && (
           <AlertBox
@@ -270,9 +286,12 @@ export function ContractPageContent(
       </Col>
 
       {recommendedContracts.length > 0 && (
-        <Col className="gap-2 px-2 sm:px-0">
-          <Subtitle text="Recommended" />
-          <ContractsGrid contracts={recommendedContracts} />
+        <Col className="mt-2 gap-2 px-2 sm:px-0">
+          <Title className="text-gray-700" text="Recommended" />
+          <ContractsGrid
+            contracts={recommendedContracts}
+            trackingPostfix=" recommended"
+          />
         </Col>
       )}
     </Page>

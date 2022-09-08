@@ -6,16 +6,17 @@ import {
   getDocs,
   limit,
   orderBy,
+  Query,
   query,
   setDoc,
   startAfter,
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { sortBy, sum } from 'lodash'
+import { partition, sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, CPMMContract } from 'common/contract'
 import { createRNG, shuffle } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
@@ -103,6 +104,14 @@ export async function listContracts(creatorId: string): Promise<Contract[]> {
   return snapshot.docs.map((doc) => doc.data())
 }
 
+export const tournamentContractsByGroupSlugQuery = (slug: string) =>
+  query(
+    contracts,
+    where('groupSlugs', 'array-contains', slug),
+    where('isResolved', '==', false),
+    orderBy('popularityScore', 'desc')
+  )
+
 export async function listContractsByGroupSlug(
   slug: string
 ): Promise<Contract[]> {
@@ -154,6 +163,17 @@ export function listenForUserContracts(
     orderBy('createdTime', 'desc')
   )
   return listenForValues<Contract>(q, setContracts)
+}
+
+export function getUserBetContracts(userId: string) {
+  return getValues<Contract>(getUserBetContractsQuery(userId))
+}
+
+export function getUserBetContractsQuery(userId: string) {
+  return query(
+    contracts,
+    where('uniqueBettorIds', 'array-contains', userId)
+  ) as Query<Contract>
 }
 
 const activeContractsQuery = query(
@@ -295,24 +315,63 @@ export async function getClosingSoonContracts() {
   return sortBy(chooseRandomSubset(data, 2), (contract) => contract.closeTime)
 }
 
-export const getRandTopCreatorContracts = async (
+export const getTopCreatorContracts = async (
   creatorId: string,
-  count: number,
-  excluding: string[] = []
+  count: number
 ) => {
   const creatorContractsQuery = query(
     contracts,
     where('isResolved', '==', false),
     where('creatorId', '==', creatorId),
     orderBy('popularityScore', 'desc'),
-    limit(Math.max(count * 2, 15))
+    limit(count)
   )
-  const data = await getValues<Contract>(creatorContractsQuery)
-  const open = data
-    .filter((c) => c.closeTime && c.closeTime > Date.now())
-    .filter((c) => !excluding.includes(c.id))
+  return await getValues<Contract>(creatorContractsQuery)
+}
 
-  return chooseRandomSubset(open, count)
+export const getTopGroupContracts = async (
+  groupSlug: string,
+  count: number
+) => {
+  const creatorContractsQuery = query(
+    contracts,
+    where('groupSlugs', 'array-contains', groupSlug),
+    where('isResolved', '==', false),
+    orderBy('popularityScore', 'desc'),
+    limit(count)
+  )
+  return await getValues<Contract>(creatorContractsQuery)
+}
+
+export const getRecommendedContracts = async (
+  contract: Contract,
+  excludeBettorId: string,
+  count: number
+) => {
+  const { creatorId, groupSlugs, id } = contract
+
+  const [userContracts, groupContracts] = await Promise.all([
+    getTopCreatorContracts(creatorId, count * 2),
+    groupSlugs && groupSlugs[0]
+      ? getTopGroupContracts(groupSlugs[0], count * 2)
+      : [],
+  ])
+
+  const combined = uniqBy([...userContracts, ...groupContracts], (c) => c.id)
+
+  const open = combined
+    .filter((c) => c.closeTime && c.closeTime > Date.now())
+    .filter((c) => c.id !== id)
+
+  const [betOnContracts, nonBetOnContracts] = partition(
+    open,
+    (c) => c.uniqueBettorIds && c.uniqueBettorIds.includes(excludeBettorId)
+  )
+  const chosen = chooseRandomSubset(nonBetOnContracts, count)
+  if (chosen.length < count)
+    chosen.push(...chooseRandomSubset(betOnContracts, count - chosen.length))
+
+  return chosen
 }
 
 export async function getRecentBetsAndComments(contract: Contract) {
@@ -344,3 +403,21 @@ export async function getRecentBetsAndComments(contract: Contract) {
     recentComments,
   }
 }
+
+export const getProbChangesPositive = (userId: string) =>
+  query(
+    contracts,
+    where('uniqueBettorIds', 'array-contains', userId),
+    where('probChanges.day', '>', 0),
+    orderBy('probChanges.day', 'desc'),
+    limit(10)
+  ) as Query<CPMMContract>
+
+export const getProbChangesNegative = (userId: string) =>
+  query(
+    contracts,
+    where('uniqueBettorIds', 'array-contains', userId),
+    where('probChanges.day', '<', 0),
+    orderBy('probChanges.day', 'asc'),
+    limit(10)
+  ) as Query<CPMMContract>

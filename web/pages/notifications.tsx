@@ -1,5 +1,6 @@
 import { Tabs } from 'web/components/layout/tabs'
 import React, { useEffect, useMemo, useState } from 'react'
+import Router from 'next/router'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -7,13 +8,11 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import { UserLink } from 'web/components/user-page'
 import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USERNAME,
   PrivateUser,
 } from 'common/user'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
@@ -26,7 +25,7 @@ import {
 } from 'web/components/outcome-label'
 import {
   NotificationGroup,
-  usePreferredGroupedNotifications,
+  useGroupedNotifications,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
@@ -35,39 +34,32 @@ import {
   BETTING_STREAK_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { groupBy, sum, uniq } from 'lodash'
+import { groupBy, sum, uniqBy } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { SiteLink } from 'web/components/site-link'
 import { NotificationSettings } from 'web/components/NotificationSettings'
 import { SEO } from 'web/components/SEO'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { UserLink } from 'web/components/user-link'
+import { LoadingIndicator } from 'web/components/loading-indicator'
+import {
+  MultiUserLinkInfo,
+  MultiUserTransactionLink,
+} from 'web/components/multi-user-transaction-link'
+import { Col } from 'web/components/layout/col'
 
 export const NOTIFICATIONS_PER_PAGE = 30
-const MULTIPLE_USERS_KEY = 'multipleUsers'
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
-export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
-})
+export default function Notifications() {
+  const privateUser = usePrivateUser()
 
-export default function Notifications(props: {
-  auth: { privateUser: PrivateUser }
-}) {
-  const { privateUser } = props.auth
-  const local = safeLocalStorage()
-  let localNotifications = [] as Notification[]
-  const localSavedNotificationGroups = local?.getItem('notification-groups')
-  let localNotificationGroups = [] as NotificationGroup[]
-  if (localSavedNotificationGroups) {
-    localNotificationGroups = JSON.parse(localSavedNotificationGroups)
-    localNotifications = localNotificationGroups
-      .map((g) => g.notifications)
-      .flat()
-  }
+  useEffect(() => {
+    if (privateUser === null) Router.push('/')
+  })
 
   return (
     <Page>
@@ -75,33 +67,30 @@ export default function Notifications(props: {
         <Title text={'Notifications'} className={'hidden md:block'} />
         <SEO title="Notifications" description="Manifold user notifications" />
 
-        <div>
-          <Tabs
-            currentPageForAnalytics={'notifications'}
-            labelClassName={'pb-2 pt-1 '}
-            className={'mb-0 sm:mb-2'}
-            defaultIndex={0}
-            tabs={[
-              {
-                title: 'Notifications',
-                content: (
-                  <NotificationsList
-                    privateUser={privateUser}
-                    cachedNotifications={localNotifications}
-                  />
-                ),
-              },
-              {
-                title: 'Settings',
-                content: (
-                  <div className={''}>
-                    <NotificationSettings />
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </div>
+        {privateUser && (
+          <div>
+            <Tabs
+              currentPageForAnalytics={'notifications'}
+              labelClassName={'pb-2 pt-1 '}
+              className={'mb-0 sm:mb-2'}
+              defaultIndex={0}
+              tabs={[
+                {
+                  title: 'Notifications',
+                  content: <NotificationsList privateUser={privateUser} />,
+                },
+                {
+                  title: 'Settings',
+                  content: (
+                    <div className={''}>
+                      <NotificationSettings />
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        )}
       </div>
     </Page>
   )
@@ -135,16 +124,10 @@ function RenderNotificationGroups(props: {
   )
 }
 
-function NotificationsList(props: {
-  privateUser: PrivateUser
-  cachedNotifications: Notification[]
-}) {
-  const { privateUser, cachedNotifications } = props
+function NotificationsList(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
   const [page, setPage] = useState(0)
-  const allGroupedNotifications = usePreferredGroupedNotifications(
-    privateUser,
-    cachedNotifications
-  )
+  const allGroupedNotifications = useGroupedNotifications(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return
     const start = page * NOTIFICATIONS_PER_PAGE
@@ -163,7 +146,8 @@ function NotificationsList(props: {
     return maxNotificationsToShow
   }, [allGroupedNotifications, page])
 
-  if (!paginatedGroupedNotifications || !allGroupedNotifications) return <div />
+  if (!paginatedGroupedNotifications || !allGroupedNotifications)
+    return <LoadingIndicator />
 
   return (
     <div className={'min-h-[100vh] text-sm'}>
@@ -200,7 +184,9 @@ function IncomeNotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
   const numSummaryLines = 3
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(
+    notifications.length <= numSummaryLines
+  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )
@@ -227,7 +213,7 @@ function IncomeNotificationGroupItem(props: {
   function combineNotificationsByAddingNumericSourceTexts(
     notifications: Notification[]
   ) {
-    const newNotifications = []
+    const newNotifications: Notification[] = []
     const groupedNotificationsBySourceType = groupBy(
       notifications,
       (n) => n.sourceType
@@ -243,29 +229,37 @@ function IncomeNotificationGroupItem(props: {
       for (const sourceTitle in groupedNotificationsBySourceTitle) {
         const notificationsForSourceTitle =
           groupedNotificationsBySourceTitle[sourceTitle]
-        if (notificationsForSourceTitle.length === 1) {
-          newNotifications.push(notificationsForSourceTitle[0])
-          continue
-        }
+
         let sum = 0
         notificationsForSourceTitle.forEach(
           (notification) =>
-            notification.sourceText &&
-            (sum = parseInt(notification.sourceText) + sum)
+            (sum = parseInt(notification.sourceText ?? '0') + sum)
         )
-        const uniqueUsers = uniq(
+        const uniqueUsers = uniqBy(
           notificationsForSourceTitle.map((notification) => {
-            return notification.sourceUserUsername
-          })
+            let thisSum = 0
+            notificationsForSourceTitle
+              .filter(
+                (n) => n.sourceUserUsername === notification.sourceUserUsername
+              )
+              .forEach(
+                (n) => (thisSum = parseInt(n.sourceText ?? '0') + thisSum)
+              )
+            return {
+              username: notification.sourceUserUsername,
+              name: notification.sourceUserName,
+              avatarUrl: notification.sourceUserAvatarUrl,
+              amount: thisSum,
+            } as MultiUserLinkInfo
+          }),
+          (n) => n.username
         )
 
         const newNotification = {
           ...notificationsForSourceTitle[0],
           sourceText: sum.toString(),
-          sourceUserUsername:
-            uniqueUsers.length > 1
-              ? MULTIPLE_USERS_KEY
-              : notificationsForSourceTitle[0].sourceType,
+          sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
+          data: JSON.stringify(uniqueUsers),
         }
         newNotifications.push(newNotification)
       }
@@ -374,12 +368,15 @@ function IncomeNotificationItem(props: {
   justSummary?: boolean
 }) {
   const { notification, justSummary } = props
-  const { sourceType, sourceUserName, sourceUserUsername, sourceText } =
-    notification
+  const { sourceType, sourceUserUsername, sourceText, data } = notification
   const [highlighted] = useState(!notification.isSeen)
   const { width } = useWindowSize()
   const isMobile = (width && width < 768) || false
   const user = useUser()
+  const isTip = sourceType === 'tip' || sourceType === 'tip_and_like'
+  const isUniqueBettorBonus = sourceType === 'bonus'
+  const userLinks: MultiUserLinkInfo[] =
+    isTip || isUniqueBettorBonus ? JSON.parse(data ?? '{}') : []
 
   useEffect(() => {
     setNotificationsAsSeen([notification])
@@ -393,14 +390,18 @@ function IncomeNotificationItem(props: {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } unique traders on`
+          } new traders on`
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
-      reasonText = 'for your'
+      if (sourceText && +sourceText === 50) reasonText = '(max) for your'
+      else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested bets returned as a`
+      // TODO: support just 'like' notification without a tip
+    } else if (sourceType === 'tip_and_like' && sourceText) {
+      reasonText = !simple ? `liked` : `in likes on`
     }
 
     const streakInDays =
@@ -503,28 +504,27 @@ function IncomeNotificationItem(props: {
           href={getIncomeSourceUrl() ?? ''}
           className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
         />
-        <Row className={'items-center text-gray-500 sm:justify-start'}>
-          <div className={'line-clamp-2 flex max-w-xl shrink '}>
-            <div className={'inline'}>
-              <span className={'mr-1'}>{incomeNotificationLabel()}</span>
-            </div>
-            <span>
-              {sourceType === 'tip' &&
-                (sourceUserUsername === MULTIPLE_USERS_KEY ? (
-                  <span className={'mr-1 truncate'}>Multiple users</span>
-                ) : (
-                  <UserLink
-                    name={sourceUserName || ''}
-                    username={sourceUserUsername || ''}
-                    className={'mr-1 flex-shrink-0'}
-                    short={true}
-                  />
-                ))}
-              {reasonAndLink(false)}
+        <Col className={'justify-start text-gray-500'}>
+          {(isTip || isUniqueBettorBonus) && (
+            <MultiUserTransactionLink
+              userInfos={userLinks}
+              modalLabel={isTip ? 'Who tipped you' : 'Unique traders'}
+            />
+          )}
+          <Row className={'line-clamp-2 flex max-w-xl'}>
+            <span>{incomeNotificationLabel()}</span>
+            <span className={'mx-1'}>
+              {isTip &&
+                (userLinks.length > 1
+                  ? 'Multiple users'
+                  : userLinks.length > 0
+                  ? userLinks[0].name
+                  : '')}
             </span>
-          </div>
-        </Row>
-        <div className={'mt-4 border-b border-gray-300'} />
+            <span>{reasonAndLink(false)}</span>
+          </Row>
+        </Col>
+        <div className={'border-b border-gray-300 pt-4'} />
       </div>
     </div>
   )
@@ -541,7 +541,9 @@ function NotificationGroupItem(props: {
   const isMobile = (width && width < 768) || false
   const numSummaryLines = 3
 
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(
+    notifications.length <= numSummaryLines
+  )
   const [highlighted, setHighlighted] = useState(
     notifications.some((n) => !n.isSeen)
   )

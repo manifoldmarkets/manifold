@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { clamp, partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
@@ -8,6 +8,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import {
+  formatLargeNumber,
   formatMoney,
   formatPercent,
   formatWithCommas,
@@ -28,11 +29,10 @@ import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from './use-save-binary-shares'
-import { SignUpPrompt } from './sign-up-prompt'
-import { isIOS } from 'web/lib/util/device'
+import { BetSignUpPrompt } from './sign-up-prompt'
 import { ProbabilityOrNumericInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
 import { useUnfilledBets } from 'web/hooks/use-bets'
@@ -68,27 +68,32 @@ export function BetPanel(props: {
           className
         )}
       >
-        <QuickOrLimitBet
-          isLimitOrder={isLimitOrder}
-          setIsLimitOrder={setIsLimitOrder}
-          hideToggle={!user}
-        />
-        <BuyPanel
-          hidden={isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-        />
-        <LimitOrderPanel
-          hidden={!isLimitOrder}
-          contract={contract}
-          user={user}
-          unfilledBets={unfilledBets}
-        />
-
-        <SignUpPrompt />
-
-        {!user && <PlayMoneyDisclaimer />}
+        {user ? (
+          <>
+            <QuickOrLimitBet
+              isLimitOrder={isLimitOrder}
+              setIsLimitOrder={setIsLimitOrder}
+              hideToggle={!user}
+            />
+            <BuyPanel
+              hidden={isLimitOrder}
+              contract={contract}
+              user={user}
+              unfilledBets={unfilledBets}
+            />
+            <LimitOrderPanel
+              hidden={!isLimitOrder}
+              contract={contract}
+              user={user}
+              unfilledBets={unfilledBets}
+            />
+          </>
+        ) : (
+          <>
+            <BetSignUpPrompt />
+            <PlayMoneyDisclaimer />
+          </>
+        )}
       </Col>
 
       {user && unfilledBets.length > 0 && (
@@ -146,7 +151,7 @@ export function SimpleBetPanel(props: {
           onBuySuccess={onBetSuccess}
         />
 
-        <SignUpPrompt />
+        <BetSignUpPrompt />
 
         {!user && <PlayMoneyDisclaimer />}
       </Col>
@@ -179,12 +184,12 @@ function BuyPanel(props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
-  useEffect(() => {
-    if (selected) {
-      if (isIOS()) window.scrollTo(0, window.scrollY + 200)
-      focusAmountInput()
-    }
-  }, [selected, focusAmountInput])
+  // useEffect(() => {
+  //   if (selected) {
+  //     if (isIOS()) window.scrollTo(0, window.scrollY + 200)
+  //     focusAmountInput()
+  //   }
+  // }, [selected, focusAmountInput])
 
   function onBetChoice(choice: 'YES' | 'NO') {
     setOutcome(choice)
@@ -252,16 +257,42 @@ function BuyPanel(props: {
   const resultProb = getCpmmProbability(newPool, newP)
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
+
   const probChange = Math.abs(resultProb - initialProb)
-
   const currentPayout = newBet.shares
-
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
   const format = getFormattedMappedValue(contract)
 
+  const getValue = getMappedValue(contract)
+  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const displayedDifference = isPseudoNumeric
+    ? formatLargeNumber(rawDifference)
+    : formatPercent(rawDifference)
+
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
+
+  const warning =
+    (betAmount ?? 0) > 10 &&
+    bankrollFraction >= 0.5 &&
+    bankrollFraction <= 1 ? (
+      <AlertBox
+        title="Whoa, there!"
+        text={`You might not want to spend ${formatPercent(
+          bankrollFraction
+        )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
+          user?.balance ?? 0
+        )}`}
+      />
+    ) : (betAmount ?? 0) > 10 && probChange >= 0.3 && bankrollFraction <= 1 ? (
+      <AlertBox
+        title="Whoa, there!"
+        text={`Are you sure you want to move the market by ${displayedDifference}?`}
+      />
+    ) : (
+      <></>
+    )
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
@@ -276,7 +307,13 @@ function BuyPanel(props: {
         isPseudoNumeric={isPseudoNumeric}
       />
 
-      <div className="my-3 text-left text-sm text-gray-500">Amount</div>
+      <Row className="my-3 justify-between text-left text-sm text-gray-500">
+        Amount
+        <span className={'xl:hidden'}>
+          Balance: {formatMoney(user?.balance ?? 0)}
+        </span>
+      </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -285,35 +322,10 @@ function BuyPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         inputRef={inputRef}
+        showSliderOnMobile
       />
 
-      {(betAmount ?? 0) > 10 &&
-      bankrollFraction >= 0.5 &&
-      bankrollFraction <= 1 ? (
-        <AlertBox
-          title="Whoa, there!"
-          text={`You might not want to spend ${formatPercent(
-            bankrollFraction
-          )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
-            user?.balance ?? 0
-          )}`}
-        />
-      ) : (
-        ''
-      )}
-
-      {(betAmount ?? 0) > 10 && probChange >= 0.3 ? (
-        <AlertBox
-          title="Whoa, there!"
-          text={`Are you sure you want to move the market ${
-            isPseudoNumeric && contract.isLogScale
-              ? 'this much'
-              : format(probChange)
-          }?`}
-        />
-      ) : (
-        ''
-      )}
+      {warning}
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
@@ -342,9 +354,6 @@ function BuyPanel(props: {
                 </>
               )}
             </div>
-            {/* <InfoTooltip
-              text={`Includes ${formatMoneyWithDecimals(totalFees)} in fees`}
-            /> */}
           </Row>
           <div>
             <span className="mr-2 whitespace-nowrap">
@@ -370,11 +379,11 @@ function BuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit bet'}
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       )}
 
-      {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
+      {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
     </Col>
   )
 }
@@ -560,7 +569,7 @@ function LimitOrderPanel(props: {
       <Row className="mt-1 items-center gap-4">
         <Col className="gap-2">
           <div className="relative ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} at
+            Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -571,7 +580,7 @@ function LimitOrderPanel(props: {
         </Col>
         <Col className="gap-2">
           <div className="ml-1 text-sm text-gray-500">
-            Bet {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} at
+            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
             contract={contract}
@@ -594,9 +603,15 @@ function LimitOrderPanel(props: {
         </div>
       )}
 
-      <div className="mt-1 mb-3 text-left text-sm text-gray-500">
-        Max amount<span className="ml-1 text-red-500">*</span>
-      </div>
+      <Row className="mt-1 mb-3 justify-between text-left text-sm text-gray-500">
+        <span>
+          Max amount<span className="ml-1 text-red-500">*</span>
+        </span>
+        <span className={'xl:hidden'}>
+          Balance: {formatMoney(user?.balance ?? 0)}
+        </span>
+      </Row>
+
       <BuyAmountInput
         inputClassName="w-full max-w-none"
         amount={betAmount}
@@ -604,6 +619,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
+        showSliderOnMobile
       />
 
       <Col className="mt-3 w-full gap-3">
@@ -734,15 +750,16 @@ function QuickOrLimitBet(props: {
 
   return (
     <Row className="align-center mb-4 justify-between">
-      <div className="text-4xl">Bet</div>
+      <div className="mr-2 -ml-2 shrink-0 text-3xl sm:-ml-0">Predict</div>
       {!hideToggle && (
-        <Row className="mt-1 items-center gap-2">
+        <Row className="mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
           <PillButton
             selected={!isLimitOrder}
             onSelect={() => {
               setIsLimitOrder(false)
               track('select quick order')
             }}
+            xs={true}
           >
             Quick
           </PillButton>
@@ -752,6 +769,7 @@ function QuickOrLimitBet(props: {
               setIsLimitOrder(true)
               track('select limit order')
             }}
+            xs={true}
           >
             Limit
           </PillButton>

@@ -40,6 +40,11 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (id) =>
       `<iframe src="https://www.metaculus.com/questions/embed/${id}"></iframe>`,
   },
+  {
+    regex: /^(https?:\/\/www\.figma\.com\/(?:file|proto)\/[^\/]+\/[^\/]+)/,
+    rewrite: (url) =>
+      `<iframe src="https://www.figma.com/embed?embed_host=manifold&url=${url}"></iframe>`,
+  },
   // Twitch is a bit annoying, since it requires the `&parent=DOMAIN` to match
   {
     // Twitch: https://www.twitch.tv/videos/1445087149

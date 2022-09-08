@@ -18,7 +18,7 @@ import { BucketInput } from './bucket-input'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
-import { SignUpPrompt } from './sign-up-prompt'
+import { BetSignUpPrompt } from './sign-up-prompt'
 import { track } from 'web/lib/service/analytics'
 
 export function NumericBetPanel(props: {
@@ -34,7 +34,7 @@ export function NumericBetPanel(props: {
 
       <NumericBuyPanel contract={contract} user={user} />
 
-      <SignUpPrompt />
+      <BetSignUpPrompt />
     </Col>
   )
 }
@@ -203,7 +203,7 @@ function NumericBuyPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit bet'}
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       )}
 

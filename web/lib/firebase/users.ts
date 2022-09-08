@@ -12,6 +12,7 @@ import {
   deleteDoc,
   collectionGroup,
   onSnapshot,
+  Query,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
@@ -27,6 +28,7 @@ import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
 import { track } from '@amplitude/analytics-browser'
+import { Like } from 'common/like'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
@@ -252,14 +254,17 @@ export async function unfollow(userId: string, unfollowedUserId: string) {
   await deleteDoc(followDoc)
 }
 
-export async function getPortfolioHistory(userId: string) {
-  return getValues<PortfolioMetrics>(
-    query(
-      collectionGroup(db, 'portfolioHistory'),
-      where('userId', '==', userId),
-      orderBy('timestamp', 'asc')
-    )
-  )
+export function getPortfolioHistory(userId: string, since: number) {
+  return getValues<PortfolioMetrics>(getPortfolioHistoryQuery(userId, since))
+}
+
+export function getPortfolioHistoryQuery(userId: string, since: number) {
+  return query(
+    collectionGroup(db, 'portfolioHistory'),
+    where('userId', '==', userId),
+    where('timestamp', '>=', since),
+    orderBy('timestamp', 'asc')
+  ) as Query<PortfolioMetrics>
 }
 
 export function listenForFollows(
@@ -309,4 +314,12 @@ export function listenForReferrals(
       setReferralIds(filterDefined(values))
     }
   )
+}
+
+export function listenForLikes(
+  userId: string,
+  setLikes: (likes: Like[]) => void
+) {
+  const likes = collection(users, userId, 'likes')
+  return listenForValues<Like>(likes, (docs) => setLikes(docs))
 }

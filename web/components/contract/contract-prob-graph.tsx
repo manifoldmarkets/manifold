@@ -16,6 +16,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 }) {
   const { contract, height } = props
   const { resolutionTime, closeTime, outcomeType } = contract
+  const now = Date.now()
   const isBinary = outcomeType === 'BINARY'
   const isLogScale = outcomeType === 'PSEUDO_NUMERIC' && contract.isLogScale
 
@@ -23,10 +24,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 
   const startProb = getInitialProbability(contract)
 
-  const times = [
-    contract.createdTime,
-    ...bets.map((bet) => bet.createdTime),
-  ].map((time) => new Date(time))
+  const times = [contract.createdTime, ...bets.map((bet) => bet.createdTime)]
 
   const f: (p: number) => number = isBinary
     ? (p) => p
@@ -36,17 +34,17 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
 
   const probs = [startProb, ...bets.map((bet) => bet.probAfter)].map(f)
 
-  const isClosed = !!closeTime && Date.now() > closeTime
+  const isClosed = !!closeTime && now > closeTime
   const latestTime = dayjs(
     resolutionTime && isClosed
       ? Math.min(resolutionTime, closeTime)
       : isClosed
       ? closeTime
-      : resolutionTime ?? Date.now()
+      : resolutionTime ?? now
   )
 
   // Add a fake datapoint so the line continues to the right
-  times.push(latestTime.toDate())
+  times.push(latestTime.valueOf())
   probs.push(probs[probs.length - 1])
 
   const quartiles = [0, 25, 50, 75, 100]
@@ -58,15 +56,16 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   const { width } = useWindowSize()
 
   const numXTickValues = !width || width < 800 ? 2 : 5
-  const hoursAgo = latestTime.subtract(1, 'hours')
-  const startDate = dayjs(times[0]).isBefore(hoursAgo)
-    ? times[0]
-    : hoursAgo.toDate()
+  const startDate = dayjs(times[0])
+  const endDate = startDate.add(1, 'hour').isAfter(latestTime)
+    ? latestTime.add(1, 'hours')
+    : latestTime
+  const includeMinute = endDate.diff(startDate, 'hours') < 2
 
   // Minimum number of points for the graph to have. For smooth tooltip movement
-  // On first load, width is undefined, skip adding extra points to let page load faster
+  // If we aren't actually loading any data yet, skip adding extra points to let page load faster
   // This fn runs again once DOM is finished loading
-  const totalPoints = width ? (width > 800 ? 300 : 50) : 1
+  const totalPoints = width && bets.length ? (width > 800 ? 300 : 50) : 1
 
   const timeStep: number = latestTime.diff(startDate, 'ms') / totalPoints
 
@@ -74,20 +73,16 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   const s = isBinary ? 100 : 1
 
   for (let i = 0; i < times.length - 1; i++) {
-    points[points.length] = { x: times[i], y: s * probs[i] }
-    const numPoints: number = Math.floor(
-      dayjs(times[i + 1]).diff(dayjs(times[i]), 'ms') / timeStep
-    )
+    const p = probs[i]
+    const d0 = times[i]
+    const d1 = times[i + 1]
+    const msDiff = d1 - d0
+    const numPoints = Math.floor(msDiff / timeStep)
+    points.push({ x: new Date(times[i]), y: s * p })
     if (numPoints > 1) {
-      const thisTimeStep: number =
-        dayjs(times[i + 1]).diff(dayjs(times[i]), 'ms') / numPoints
+      const thisTimeStep: number = msDiff / numPoints
       for (let n = 1; n < numPoints; n++) {
-        points[points.length] = {
-          x: dayjs(times[i])
-            .add(thisTimeStep * n, 'ms')
-            .toDate(),
-          y: s * probs[i],
-        }
+        points.push({ x: new Date(d0 + thisTimeStep * n), y: s * p })
       }
     }
   }
@@ -96,8 +91,8 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
     { id: 'Yes', data: points, color: isBinary ? '#11b981' : '#5fa5f9' },
   ]
 
-  const multiYear = !dayjs(startDate).isSame(latestTime, 'year')
-  const lessThanAWeek = dayjs(startDate).add(8, 'day').isAfter(latestTime)
+  const multiYear = !startDate.isSame(latestTime, 'year')
+  const lessThanAWeek = startDate.add(8, 'day').isAfter(latestTime)
 
   const formatter = isBinary
     ? formatPercent
@@ -132,15 +127,16 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         }}
         xScale={{
           type: 'time',
-          min: startDate,
-          max: latestTime.toDate(),
+          min: startDate.toDate(),
+          max: endDate.toDate(),
         }}
         xFormat={(d) =>
-          formatTime(+d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
+          formatTime(now, +d.valueOf(), multiYear, lessThanAWeek, lessThanAWeek)
         }
         axisBottom={{
           tickValues: numXTickValues,
-          format: (time) => formatTime(+time, multiYear, lessThanAWeek, false),
+          format: (time) =>
+            formatTime(now, +time, multiYear, lessThanAWeek, includeMinute),
         }}
         colors={{ datum: 'color' }}
         curve="stepAfter"
@@ -176,19 +172,20 @@ function formatPercent(y: DatumValue) {
 }
 
 function formatTime(
+  now: number,
   time: number,
   includeYear: boolean,
   includeHour: boolean,
   includeMinute: boolean
 ) {
   const d = dayjs(time)
-
-  if (d.add(1, 'minute').isAfter(Date.now())) return 'Now'
+  if (d.add(1, 'minute').isAfter(now) && d.subtract(1, 'minute').isBefore(now))
+    return 'Now'
 
   let format: string
-  if (d.isSame(Date.now(), 'day')) {
+  if (d.isSame(now, 'day')) {
     format = '[Today]'
-  } else if (d.add(1, 'day').isSame(Date.now(), 'day')) {
+  } else if (d.add(1, 'day').isSame(now, 'day')) {
     format = '[Yesterday]'
   } else {
     format = 'MMM D'

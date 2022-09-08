@@ -140,6 +140,8 @@ function getCpmmInvested(yourBets: Bet[]) {
   const sortedBets = sortBy(yourBets, 'createdTime')
   for (const bet of sortedBets) {
     const { outcome, shares, amount } = bet
+    if (floatingEqual(shares, 0)) continue
+
     if (amount > 0) {
       totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
       totalSpent[outcome] = (totalSpent[outcome] ?? 0) + amount

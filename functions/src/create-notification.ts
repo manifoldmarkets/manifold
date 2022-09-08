@@ -18,6 +18,7 @@ import { TipTxn } from '../../common/txn'
 import { Group, GROUP_CHAT_SLUG } from '../../common/group'
 import { Challenge } from '../../common/challenge'
 import { richTextToString } from '../../common/util/parse'
+import { Like } from '../../common/like'
 const firestore = admin.firestore()
 
 type user_to_reason_texts = {
@@ -150,15 +151,6 @@ export const createNotification = async (
       }
   }
 
-  const notifyContractCreatorOfUniqueBettorsBonus = async (
-    userToReasonTexts: user_to_reason_texts,
-    userId: string
-  ) => {
-    userToReasonTexts[userId] = {
-      reason: 'unique_bettors_on_your_contract',
-    }
-  }
-
   const userToReasonTexts: user_to_reason_texts = {}
   // The following functions modify the userToReasonTexts object in place.
 
@@ -191,16 +183,6 @@ export const createNotification = async (
     sourceContract
   ) {
     await notifyContractCreator(userToReasonTexts, sourceContract)
-  } else if (
-    sourceType === 'bonus' &&
-    sourceUpdateType === 'created' &&
-    sourceContract
-  ) {
-    // Note: the daily bonus won't have a contract attached to it
-    await notifyContractCreatorOfUniqueBettorsBonus(
-      userToReasonTexts,
-      sourceContract.creatorId
-    )
   }
 
   await createUsersNotifications(userToReasonTexts)
@@ -681,6 +663,88 @@ export const createBettingStreakBonusNotification = async (
     sourceText: amount.toString(),
     sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
     sourceTitle: 'Betting Streak Bonus',
+    // Perhaps not necessary, but just in case
+    sourceContractSlug: contract.slug,
+    sourceContractId: contract.id,
+    sourceContractTitle: contract.question,
+    sourceContractCreatorUsername: contract.creatorUsername,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export const createLikeNotification = async (
+  fromUser: User,
+  toUser: User,
+  like: Like,
+  idempotencyKey: string,
+  contract: Contract,
+  tip?: TipTxn
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${toUser.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: toUser.id,
+    reason: tip ? 'liked_and_tipped_your_contract' : 'liked_your_contract',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: like.id,
+    sourceType: tip ? 'tip_and_like' : 'like',
+    sourceUpdateType: 'created',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceText: tip?.amount.toString(),
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+}
+
+export async function filterUserIdsForOnlyFollowerIds(
+  userIds: string[],
+  contractId: string
+) {
+  // get contract follower documents and check here if they're a follower
+  const contractFollowersSnap = await firestore
+    .collection(`contracts/${contractId}/follows`)
+    .get()
+  const contractFollowersIds = contractFollowersSnap.docs.map(
+    (doc) => doc.data().id
+  )
+  return userIds.filter((id) => contractFollowersIds.includes(id))
+}
+
+export const createUniqueBettorBonusNotification = async (
+  contractCreatorId: string,
+  bettor: User,
+  txnId: string,
+  contract: Contract,
+  amount: number,
+  idempotencyKey: string
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${contractCreatorId}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: contractCreatorId,
+    reason: 'unique_bettors_on_your_contract',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: txnId,
+    sourceType: 'bonus',
+    sourceUpdateType: 'created',
+    sourceUserName: bettor.name,
+    sourceUserUsername: bettor.username,
+    sourceUserAvatarUrl: bettor.avatarUrl,
+    sourceText: amount.toString(),
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
     // Perhaps not necessary, but just in case
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,

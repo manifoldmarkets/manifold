@@ -64,7 +64,7 @@ export function BottomNavBar() {
           item={{
             name: formatMoney(user.balance),
             trackingEventName: 'profile',
-            href: `/${user.username}?tab=bets`,
+            href: `/${user.username}?tab=trades`,
             icon: () => (
               <Avatar
                 className="mx-auto my-1"

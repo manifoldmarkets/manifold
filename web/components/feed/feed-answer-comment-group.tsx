@@ -1,34 +1,44 @@
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
+import { FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import React, { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-page'
 import { Linkify } from 'web/components/linkify'
 import clsx from 'clsx'
 import {
-  CommentInput,
-  CommentRepliesList,
+  ContractCommentInput,
+  FeedComment,
   getMostRecentCommentableBet,
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
-import { groupBy } from 'lodash'
+import { Dictionary } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { UserLink } from 'web/components/user-link'
 
 export function FeedAnswerCommentGroup(props: {
-  contract: any
+  contract: FreeResponseContract
   user: User | undefined | null
   answer: Answer
-  comments: ContractComment[]
+  answerComments: ContractComment[]
   tips: CommentTipMap
-  bets: Bet[]
+  betsByUserId: Dictionary<Bet[]>
+  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const { answer, contract, comments, tips, bets, user } = props
+  const {
+    answer,
+    contract,
+    answerComments,
+    tips,
+    betsByUserId,
+    commentsByUserId,
+    user,
+  } = props
   const { username, avatarUrl, name, text } = answer
 
   const [replyToUser, setReplyToUser] =
@@ -38,11 +48,6 @@ export function FeedAnswerCommentGroup(props: {
   const router = useRouter()
 
   const answerElementId = `answer-${answer.id}`
-  const betsByUserId = groupBy(bets, (bet) => bet.userId)
-  const commentsByUserId = groupBy(comments, (comment) => comment.userId)
-  const commentsList = comments.filter(
-    (comment) => comment.answerOutcome === answer.number.toString()
-  )
   const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
@@ -101,10 +106,13 @@ export function FeedAnswerCommentGroup(props: {
   }, [answerElementId, router.asPath])
 
   return (
-    <Col className={'relative flex-1 gap-3'} key={answer.id + 'comment'}>
+    <Col
+      className={'relative flex-1 items-stretch gap-3'}
+      key={answer.id + 'comment'}
+    >
       <Row
         className={clsx(
-          'flex gap-3 space-x-3 pt-4 transition-all duration-1000',
+          'gap-3 space-x-3 pt-4 transition-all duration-1000',
           highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
         id={answerElementId}
@@ -150,24 +158,26 @@ export function FeedAnswerCommentGroup(props: {
           )}
         </Col>
       </Row>
-      <CommentRepliesList
-        contract={contract}
-        commentsList={commentsList}
-        betsByUserId={betsByUserId}
-        smallAvatar={true}
-        bets={bets}
-        tips={tips}
-        scrollAndOpenReplyInput={scrollAndOpenReplyInput}
-        treatFirstIndexEqually={true}
-      />
-
+      <Col className="gap-3 pl-1">
+        {answerComments.map((comment) => (
+          <FeedComment
+            key={comment.id}
+            indent={true}
+            contract={contract}
+            comment={comment}
+            tips={tips[comment.id]}
+            betsBySameUser={betsByUserId[comment.userId] ?? []}
+            onReplyClick={scrollAndOpenReplyInput}
+          />
+        ))}
+      </Col>
       {showReply && (
-        <div className={'ml-6'}>
+        <div className={'relative ml-7'}>
           <span
-            className="absolute -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
-          <CommentInput
+          <ContractCommentInput
             contract={contract}
             betsByCurrentUser={betsByCurrentUser}
             commentsByCurrentUser={commentsByCurrentUser}

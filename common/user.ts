@@ -34,6 +34,7 @@ export type User = {
   followerCountCached: number
 
   followedCategories?: string[]
+  homeSections?: { visible: string[]; hidden: string[] }
 
   referredByUserId?: string
   referredByContractId?: string
@@ -44,6 +45,7 @@ export type User = {
   currentBettingStreak?: number
   hasSeenContractFollowModal?: boolean
   freeMarketsCreated?: number
+  isBannedFromPosting?: boolean
 }
 
 export type PrivateUser = {

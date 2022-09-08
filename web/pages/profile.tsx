@@ -23,7 +23,7 @@ import Textarea from 'react-expanding-textarea'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
 function EditUserField(props: {

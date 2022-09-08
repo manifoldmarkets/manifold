@@ -155,8 +155,14 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     }
 
     group = groupDoc.data() as Group
+    const groupMembersSnap = await firestore
+      .collection(`groups/${groupId}/groupMembers`)
+      .get()
+    const groupMemberDocs = groupMembersSnap.docs.map(
+      (doc) => doc.data() as { userId: string; createdTime: number }
+    )
     if (
-      !group.memberIds.includes(user.id) &&
+      !groupMemberDocs.map((m) => m.userId).includes(user.id) &&
       !group.anyoneCanJoin &&
       group.creatorId !== user.id
     ) {
@@ -227,11 +233,20 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
   await contractRef.create(contract)
 
   if (group != null) {
-    if (!group.contractIds.includes(contractRef.id)) {
+    const groupContractsSnap = await firestore
+      .collection(`groups/${groupId}/groupContracts`)
+      .get()
+    const groupContracts = groupContractsSnap.docs.map(
+      (doc) => doc.data() as { contractId: string; createdTime: number }
+    )
+    if (!groupContracts.map((c) => c.contractId).includes(contractRef.id)) {
       await createGroupLinks(group, [contractRef.id], auth.uid)
-      const groupDocRef = firestore.collection('groups').doc(group.id)
-      groupDocRef.update({
-        contractIds: uniq([...group.contractIds, contractRef.id]),
+      const groupContractRef = firestore
+        .collection(`groups/${groupId}/groupContracts`)
+        .doc(contract.id)
+      await groupContractRef.set({
+        contractId: contract.id,
+        createdTime: Date.now(),
       })
     }
   }

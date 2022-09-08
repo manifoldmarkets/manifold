@@ -4,10 +4,15 @@ const ABOUT_PAGE_URL = 'https://docs.manifold.markets/$how-to'
 
 /** @type {import('next').NextConfig} */
 module.exports = {
+  productionBrowserSourceMaps: true,
   staticPageGenerationTimeout: 600, // e.g. stats page
   reactStrictMode: true,
   optimizeFonts: false,
   experimental: {
+    images: {
+      allowFutureImage: true,
+    },
+    scrollRestoration: true,
     externalDir: true,
     modularizeImports: {
       '@heroicons/react/solid/?(((\\w*)?/?)*)': {
@@ -23,7 +28,12 @@ module.exports = {
     },
   },
   images: {
-    domains: ['lh3.googleusercontent.com', 'i.imgur.com'],
+    domains: [
+      'manifold.markets',
+      'lh3.googleusercontent.com',
+      'i.imgur.com',
+      'firebasestorage.googleapis.com',
+    ],
   },
   async redirects() {
     return [
