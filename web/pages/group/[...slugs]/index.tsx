@@ -227,6 +227,7 @@ export default function GroupPage(props: {
       defaultSort={'newest'}
       defaultFilter={suggestedFilter}
       additionalFilter={{ groupSlug: group.slug }}
+      persistPrefix={`group-${group.slug}`}
     />
   )
 
