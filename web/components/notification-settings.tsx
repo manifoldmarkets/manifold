@@ -33,10 +33,12 @@ export function NotificationSettings() {
     return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
   }
 
+  // should be keyof Partial<exhaustive_notification_subscribe_types>[] but can't figure out how to make that work
+  // TODO: re-enable emails for renamed subscribe types
   const emailsEnabled = [
-    'all_comments',
-    'all_answers',
-    'resolutions',
+    // 'all_comments',
+    // 'all_answers',
+    // 'resolutions',
     'all_replies_to_my_comments',
     'all_replies_to_my_answers',
     'all_comments_on_my_markets',
@@ -56,11 +58,10 @@ export function NotificationSettings() {
     [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
   } = {
     all_comments_on_watched_markets: 'All',
-    // tipped_comments: 'Tipped',
-    // comments_by_followed_users: 'By followed users',
     all_replies_to_my_comments_on_watched_markets: 'Replies to your comments',
     all_comments_on_contracts_with_shares_in_on_watched_markets:
       'On markets you have shares in',
+    // comments_by_followed_users_on_watched_markets: 'By followed users',
   }
   const watched_markets_explanations_answers: {
     [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
@@ -69,8 +70,8 @@ export function NotificationSettings() {
     all_replies_to_my_answers_on_watched_markets: 'Replies to your answers',
     all_answers_on_contracts_with_shares_in_on_watched_markets:
       'On markets you have shares in',
-    // answers_by_followed_users: 'By followed users',
-    // answers_by_market_creator: 'Submitted by the market creator',
+    // answers_by_followed_users_on_watched_markets: 'By followed users',
+    // answers_by_market_creator_on_watched_markets: 'By market creator',
   }
   const watched_markets_explanations_your_markets: {
     [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
@@ -84,7 +85,7 @@ export function NotificationSettings() {
   } = {
     resolutions_on_watched_markets: 'Market resolutions',
     market_updates_on_watched_markets: 'Updates made by the creator',
-    // probability_updates: 'Changes in probability',
+    // probability_updates_on_watched_markets: 'Probability updates',
   }
 
   const balance_change_explanations: {
@@ -94,6 +95,8 @@ export function NotificationSettings() {
     betting_streaks: 'Betting streak bonuses',
     referral_bonuses: 'Referral bonuses from referring users',
     unique_bettor_bonuses: 'Unique bettor bonuses on your markets',
+    tips_on_your_comments: 'Tips on your comments',
+    limit_order_fills: 'Limit order fills',
   }
 
   const general_explanations: {
@@ -102,7 +105,9 @@ export function NotificationSettings() {
     user_tagged_you: 'A user tagged you',
     new_markets_by_followed_users: 'New markets created by users you follow',
     trending_markets: 'Weekly trending markets',
-    // profit_loss_updates: 'Weekly profit and loss updates',
+    new_followers: 'New followers',
+    group_adds: 'When someone adds you to a group',
+    // profit_loss_updates: 'Weekly profit/loss updates',
   }
 
   const NotificationSettingLine = (
