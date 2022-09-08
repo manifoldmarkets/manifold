@@ -3,7 +3,7 @@ import requests
 import json
 
 # add category name here
-allCategories = ['counterspell', 'beast', 'burn'] #, 'terror', 'wrath']
+allCategories = ['counterspell', 'beast', 'burn', 'commander'] #, 'terror', 'wrath']
 specialCategories = ['set', 'basic']
 
 
@@ -23,6 +23,8 @@ def generate_initial_query(category):
                         '%2Fcontroller%28%5C.%7C+%29%2F%29+or+o%3A%2F~+deals+%28.%7C..%29+damage+to+%28any+target%7C' \
                         '.*player%28%5C.%7C+or+planeswalker%29%7C.*opponent%28%5C.%7C+or+planeswalker%29%29%2F%29' \
                         '+%28type%3Ainstant+or+type%3Asorcery%29+not%3Aadventure'
+    elif category == 'commander':
+        string_query += '-banned%3Acommander+is%3Acommander'
     # add category string query here
     string_query += '+-%28set%3Asld+%28%28cn>%3D231+cn<%3D233%29+or+%28cn>%3D321+cn<%3D324%29+or+%28cn>%3D185+cn' \
                 '<%3D189%29+or+%28cn>%3D138+cn<%3D142%29+or+%28cn>%3D364+cn<%3D368%29+or+cn%3A669+or+cn%3A670%29' \
@@ -51,7 +53,7 @@ def fetch_and_write_all(category, query):
         response = fetch(query, count)
         will_repeat = response['has_more']
         count+=1
-        to_compact_write_form(all_cards, art_names, response, category)
+        to_compact_write_form(all_cards, art_names, response)
     
     with open('jsons/' + category + '.json', 'w') as f:
         json.dump(all_cards, f)
@@ -88,7 +90,7 @@ def fetch_special(query):
     return response
 
 
-def to_compact_write_form(smallJson, art_names, response, category):
+def to_compact_write_form(smallJson, art_names, response):
     fieldsInCard = ['name', 'image_uris', 'content_warning', 'flavor_name', 'reprint', 'frame_effects', 'digital',
                     'set_type']
     data = []
