@@ -41,7 +41,7 @@ export default function BetButton(props: {
             )}
             onClick={() => setOpen(true)}
           >
-            Trade
+            Predict
           </Button>
         ) : (
           <BetSignUpPrompt />
