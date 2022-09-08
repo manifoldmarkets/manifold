@@ -206,7 +206,7 @@ export function AnswerBetPanel(props: {
           )}
           onClick={betDisabled ? undefined : submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit trade'}
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       ) : (
         <BetSignUpPrompt />
