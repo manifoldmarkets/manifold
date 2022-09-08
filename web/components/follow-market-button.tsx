@@ -11,7 +11,7 @@ import { User } from 'common/user'
 import { useContractFollows } from 'web/hooks/use-follows'
 import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
+import { WatchMarketModal } from 'web/components/contract/follow-market-modal'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 
@@ -65,7 +65,7 @@ export const FollowMarketButton = (props: {
           Watch
         </Col>
       )}
-      <FollowMarketModal
+      <WatchMarketModal
         open={open}
         setOpen={setOpen}
         title={`You ${
