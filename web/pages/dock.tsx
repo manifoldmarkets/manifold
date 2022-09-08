@@ -23,25 +23,12 @@ import { GroupSelector } from "../components/group-selector";
 let socket: Socket;
 let APIBase = undefined;
 
-async function fetchAllMarkets(): Promise<LiteMarket[]> {
-    const allMarkets: LiteMarket[] = [];
-    for (;;) {
-        const r = await fetch(`${APIBase}markets?limit=1000${allMarkets.length > 0 ? "&before=" + allMarkets[allMarkets.length - 1].id : ""}`, { headers: { Pragma: "no-cache" } });
-        const markets = (await r.json()) as LiteMarket[];
-        allMarkets.push(...markets);
-        if (markets.length < 1000) {
-            break;
-        }
-    }
-    return allMarkets;
-}
-
 async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
-    let markets = await fetchAllMarkets();
-    console.debug(`Fetched ${markets.length} markets`);
-    markets = markets.filter((market) => {
-        return group.contractIds?.indexOf(market.id) >= 0 && !market.isResolved;
-    });
+    const r = await fetch(`${APIBase}group/by-id/${group.id}/markets`);
+    const markets = (await r.json()) as LiteMarket[];
+
+    // Sort the markets for most recently created first:
+    markets.sort((a, b) => b.createdTime - a.createdTime);
 
     // Sort the markets such that the display order is Featureable markets > Closed markets > Unsupported markets:
     const now = Date.now();
@@ -50,9 +37,7 @@ async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
         if (a.closeTime < now) return 2;
         return 1;
     };
-    markets.sort((a, b) => {
-        return marketWeight(a) - marketWeight(b);
-    });
+    markets.sort((a, b) => marketWeight(a) - marketWeight(b));
 
     return markets;
 }
@@ -94,13 +79,7 @@ export default () => {
                         reject(new Error(packet.failReason));
                         return;
                     }
-                    //!!! Wait for API caching fix:
-                    setTimeout(() => {
-                        forceRefreshGroups((i) => ++i);
-                        setTimeout(() => {
-                            forceRefreshGroups((i) => ++i);
-                        }, 1000);
-                    }, 1000);
+                    forceRefreshGroups((i) => ++i);
                     onContractFeature(await fetchMarketById(packet.id));
                     resolve();
                 });
@@ -132,7 +111,7 @@ export default () => {
         });
         socket.on(Packets.HANDSHAKE_COMPLETE, (p: PacketHandshakeComplete) => {
             APIBase = p.manifoldAPIBase;
-            
+
             setManifoldUserID(p.actingManifoldUserID);
             getUserBalance(p.actingManifoldUserID).then((b) => setBalance(b));
 
@@ -203,7 +182,13 @@ export default () => {
             <Head>
                 <title>Dock</title>
             </Head>
-            <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} className="bg-base-200 text-slate-500" spinnerBorderColor="border-slate-500" />
+            <LoadingOverlay
+                visible={connectionState != ConnectionState.CONNECTED}
+                message={loadingMessage}
+                loading={connectionState == ConnectionState.CONNECTING}
+                className="bg-base-200 text-slate-500"
+                spinnerBorderColor="border-slate-500"
+            />
             {connectionState == ConnectionState.CONNECTED && (
                 <div className="flex justify-center">
                     <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">

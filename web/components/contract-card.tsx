@@ -118,7 +118,7 @@ function AvatarDetails(props: { contract: LiteMarket }) {
 
     return (
         <Row className="items-center gap-2 text-sm text-gray-400">
-            <Avatar username={creatorUsername} avatarUrl={contract.creatorAvatarUrl} size={6} />
+            <Avatar username={creatorUsername} avatarUrl={contract.creatorAvatarUrl} size={"xs"} />
             <p className="break-words hover:underline hover:decoration-indigo-400 hover:decoration-2">{creatorName}</p>
         </Row>
     );

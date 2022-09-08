@@ -11,4 +11,10 @@ export const TWITCH_BOT_OAUTH_TOKEN = process.env.TWITCH_BOT_OAUTH_TOKEN;
 
 export const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
-export const MANIFOLD_API_BASE_URL = "https://dev-git-twitch-linking-mantic.vercel.app/api/v0/";//"http://localhost:3000/api/v0/";//"https://dev.manifold.markets/api/v0/"; // TODO: Find a nice way to handle these in dev
+const MANIFOLD_API_URLS = {
+    PROD: "https://manifold.markets/api/v0/",
+    DEV: "https://dev.manifold.markets/api/v0/",
+    PR_DEV: "https://dev-git-twitch-linking-mantic.vercel.app/api/v0/",
+    LOCAL: "http://localhost:3000/api/v0/",
+};
+export const MANIFOLD_API_BASE_URL = MANIFOLD_API_URLS["DEV"]; // TODO: Find a nice way to handle these in dev

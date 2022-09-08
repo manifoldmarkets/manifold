@@ -6,9 +6,8 @@ import { useEffect, useState } from "react";
 import { SelectedGroup } from "web/lib/selected-group";
 
 async function fetchGroups(APIBase: string, userID: string): Promise<Group[]> {
-    const r = await fetch(`${APIBase}groups`);
-    let groups = (await r.json()) as Group[];
-    groups = groups.filter((g) => g.anyoneCanJoin || g.memberIds?.indexOf(userID) >= 0);
+    const r = await fetch(`${APIBase}groups?availableToUserId=${userID}`);
+    const groups = (await r.json()) as Group[];
     return groups;
 }
 
