@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from 'common/answer'
@@ -25,7 +25,6 @@ import {
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { BetSignUpPrompt } from '../sign-up-prompt'
-import { isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../warning-confirmation-button'
 
 export function AnswerBetPanel(props: {
@@ -43,12 +42,6 @@ export function AnswerBetPanel(props: {
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const inputRef = useRef<HTMLElement>(null)
-  useEffect(() => {
-    if (isIOS()) window.scrollTo(0, window.scrollY + 200)
-    inputRef.current && inputRef.current.focus()
-  }, [])
 
   async function submitBet() {
     if (!user || !betAmount) return
@@ -117,7 +110,7 @@ export function AnswerBetPanel(props: {
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
   const warning =
-    (betAmount ?? 0) > 10 && bankrollFraction >= 0.5 && bankrollFraction <= 1
+    (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
       ? `You might not want to spend ${formatPercent(
           bankrollFraction
         )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
@@ -153,7 +146,6 @@ export function AnswerBetPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        inputRef={inputRef}
         showSliderOnMobile
       />
 

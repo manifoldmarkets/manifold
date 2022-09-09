@@ -271,7 +271,7 @@ function BuyPanel(props: {
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
   const warning =
-    (betAmount ?? 0) > 10 && bankrollFraction >= 0.5 && bankrollFraction <= 1
+    (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
       ? `You might not want to spend ${formatPercent(
           bankrollFraction
         )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
