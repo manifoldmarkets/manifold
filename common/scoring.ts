@@ -31,18 +31,8 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
 }
 
 export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
-  const profits = bets.map((bet) => {
-    const { userId } = bet
-    const payout = getContractBetMetrics(contract, [bet]).profit
-    return { userId, payout }
-  })
-
-  const userScore = mapValues(
-    groupBy(profits, (payout) => payout.userId),
-    (payouts) => sumBy(payouts, ({ payout }) => payout)
-  )
-
-  return userScore
+  const betsByUser = groupBy(bets, bet => bet.userId)
+  return mapValues(betsByUser, bets => getContractBetMetrics(contract, bets).profit)
 }
 
 export function addUserScores(
