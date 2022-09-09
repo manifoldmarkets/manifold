@@ -108,29 +108,3 @@ export function groupNotifications(notifications: Notification[]) {
   })
   return notificationGroups
 }
-
-// const lessPriorityReasons = [
-//   'on_contract_with_users_comment',
-//   'on_contract_with_users_answer',
-//   // Notifications not currently generated for users who've sold their shares
-//   'on_contract_with_users_shares_out',
-//   // Not sure if users will want to see these w/ less:
-//   // 'on_contract_with_users_shares_in',
-// ]
-
-// function getAppropriateNotifications(
-//   notifications: Notification[],
-//   notificationPreferences?: notification_subscribe_types
-// ) {
-//   if (notificationPreferences === 'all') return notifications
-//   if (notificationPreferences === 'less')
-//     return notifications.filter(
-//       (n) =>
-//         n.reason &&
-//         // Show all contract notifications and any that aren't in the above list:
-//         (n.sourceType === 'contract' || !lessPriorityReasons.includes(n.reason))
-//     )
-//   if (notificationPreferences === 'none') return []
-//
-//   return notifications
-// }

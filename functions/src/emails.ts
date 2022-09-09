@@ -219,7 +219,7 @@ export const sendOneWeekBonusEmail = async (
   )
     return
 
-  const { name, id: userId } = user
+  const { name } = user
   const firstName = name.split(' ')[0]
 
   const unsubscribeLink = `${DOMAIN}/notifications?section=${
@@ -252,7 +252,7 @@ export const sendCreatorGuideEmail = async (
   )
     return
 
-  const { name, id: userId } = user
+  const { name } = user
   const firstName = name.split(' ')[0]
 
   const unsubscribeLink = `${DOMAIN}/notifications?section=${
