@@ -6,8 +6,6 @@ import { data } from './criticism-and-red-teaming'
 // const API_KEY = '188f014c-0ba2-4c35-9e6d-88252e281dbf'
 // DEV API key for Criticism and Red Teaming (@CARTBot)
 const API_KEY = '6ff1f78a-32fe-43b2-b31b-9e3c78c5f18c'
-// Prod API key for @CEPBot
-// const API_KEY = 'b5cc8c88-64a3-45fe-a6b5-ac6a224ac56a'
 
 type CEPSubmission = {
   title: string
