@@ -1,4 +1,4 @@
-import { exhaustive_notification_subscribe_types } from 'common/user'
+import { notification_subscription_types } from 'common/user'
 
 export type Notification = {
   id: string
@@ -55,26 +55,17 @@ export type notification_source_update_types =
 
 export type notification_reason_types =
   | 'tagged_user'
-  // | 'on_users_contract'
-  // | 'on_contract_with_users_shares_in'
-  // | 'on_contract_with_users_shares_out'
-  // | 'on_contract_with_users_answer'
-  // | 'on_contract_with_users_comment'
   | 'on_new_follow'
   | 'contract_from_followed_user'
-  | 'added_you_to_group'
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
   | 'unique_bettors_on_your_contract'
-  // | 'on_group_you_are_member_of'
   | 'tip_received'
   | 'bet_fill'
   | 'user_joined_from_your_group_invite'
   | 'challenge_accepted'
   | 'betting_streak_incremented'
   | 'loan_income'
-  // | 'you_follow_contract'
-  | 'liked_your_contract'
   | 'liked_and_tipped_your_contract'
   | 'comment_on_your_contract'
   | 'answer_on_your_contract'
@@ -97,25 +88,19 @@ export type notification_reason_types =
   | 'reply_to_users_answer'
   | 'reply_to_users_comment'
   | 'your_contract_closed'
+  | 'subsidized_your_market'
 
-export const notificationReasonToSubscribeTypeMap: Record<
-  notification_reason_types,
-  keyof exhaustive_notification_subscribe_types
+// Adding a new key:value here is optional, you can also just use a key of exhaustive_notification_subscribe_types
+export const notificationReasonToSubscriptionType: Partial<
+  Record<notification_reason_types, keyof notification_subscription_types>
 > = {
-  tagged_user: 'user_tagged_you',
-  on_new_follow: 'new_followers',
-  contract_from_followed_user: 'new_markets_by_followed_users',
-  added_you_to_group: 'group_adds',
   you_referred_user: 'referral_bonuses',
   user_joined_to_bet_on_your_market: 'referral_bonuses',
-  unique_bettors_on_your_contract: 'unique_bettor_bonuses',
   tip_received: 'tips_on_your_comments',
   bet_fill: 'limit_order_fills',
   user_joined_from_your_group_invite: 'referral_bonuses',
   challenge_accepted: 'limit_order_fills',
   betting_streak_incremented: 'betting_streaks',
-  loan_income: 'loan_income',
-  liked_your_contract: 'tips_on_your_markets',
   liked_and_tipped_your_contract: 'tips_on_your_markets',
   comment_on_your_contract: 'all_comments_on_my_markets',
   answer_on_your_contract: 'all_answers_on_my_markets',
@@ -128,7 +113,7 @@ export const notificationReasonToSubscribeTypeMap: Record<
   answer_on_contract_with_users_shares_in:
     'all_answers_on_contracts_with_shares_in_on_watched_markets',
   update_on_contract_with_users_shares_in:
-    'market_updates_with_shares_in_on_watched_markets',
+    'market_updates_on_watched_markets_with_shares_in',
   resolution_on_contract_with_users_shares_in:
     'resolutions_on_watched_markets_with_shares_in',
   comment_on_contract_with_users_answer: 'all_comments_on_watched_markets',
@@ -141,5 +126,4 @@ export const notificationReasonToSubscribeTypeMap: Record<
   resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
   reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
-  your_contract_closed: 'my_markets_closed',
 }

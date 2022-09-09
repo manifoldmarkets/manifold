@@ -66,12 +66,12 @@ export type PrivateUser = {
   initialIpAddress?: string
   apiKey?: string
   notificationPreferences?: notification_subscribe_types
-  notificationSubscriptionTypes: exhaustive_notification_subscribe_types
+  notificationSubscriptionTypes: notification_subscription_types
 }
 
 export type notification_destination_types = 'email' | 'browser'
 
-export type exhaustive_notification_subscribe_types = {
+export type notification_subscription_types = {
   // Watched Markets
   all_comments_on_watched_markets: notification_destination_types[] // Email currently - seems bad
   all_answers_on_watched_markets: notification_destination_types[] // Email currently - seems bad
@@ -89,31 +89,31 @@ export type exhaustive_notification_subscribe_types = {
   all_answers_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
 
   // On users' markets
-  my_markets_closed: notification_destination_types[] // Email, Recommended
+  your_contract_closed: notification_destination_types[] // Email, Recommended
   all_comments_on_my_markets: notification_destination_types[] // Email
   all_answers_on_my_markets: notification_destination_types[] // Email
+  subsidized_your_market: notification_destination_types[] // Email
 
   // Market updates
   resolutions_on_watched_markets: notification_destination_types[] // Email
   resolutions_on_watched_markets_with_shares_in: notification_destination_types[] // Email
   market_updates_on_watched_markets: notification_destination_types[]
-  market_updates_with_shares_in_on_watched_markets: notification_destination_types[]
+  market_updates_on_watched_markets_with_shares_in: notification_destination_types[]
   probability_updates_on_watched_markets: notification_destination_types[] // Email - would want persistent changes only though
 
   // Balance Changes
   loan_income: notification_destination_types[]
   betting_streaks: notification_destination_types[]
   referral_bonuses: notification_destination_types[]
-  unique_bettor_bonuses: notification_destination_types[]
+  unique_bettors_on_your_contract: notification_destination_types[]
   tips_on_your_comments: notification_destination_types[]
   tips_on_your_markets: notification_destination_types[]
   limit_order_fills: notification_destination_types[]
 
   // General
-  user_tagged_you: notification_destination_types[] // Email
-  new_followers: notification_destination_types[] // Email
-  group_adds: notification_destination_types[] // Email
-  new_markets_by_followed_users: notification_destination_types[] // Email
+  tagged_user: notification_destination_types[] // Email
+  on_new_follow: notification_destination_types[] // Email
+  contract_from_followed_user: notification_destination_types[] // Email
   trending_markets: notification_destination_types[] // Email
   profit_loss_updates: notification_destination_types[] // Email
 }
@@ -169,15 +169,15 @@ export const getDefaultNotificationSettings = (
     comments_by_followed_users_on_watched_markets: constructPref(
       wantsAll,
       false
-    ), //wantsAll ? browserOnly : none,
+    ),
     all_replies_to_my_comments_on_watched_markets: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromCommentEmails
-    ), //wantsAll || wantsLess ? both : none,
+    ),
     all_replies_to_my_answers_on_watched_markets: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromCommentEmails
-    ), //wantsAll || wantsLess ? both : none,
+    ),
     all_comments_on_contracts_with_shares_in_on_watched_markets: constructPref(
       wantsAll,
       !unsubscribedFromCommentEmails
@@ -187,29 +187,30 @@ export const getDefaultNotificationSettings = (
     answers_by_followed_users_on_watched_markets: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromAnswerEmails
-    ), //wantsAll || wantsLess ? both : none,
+    ),
     answers_by_market_creator_on_watched_markets: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromAnswerEmails
-    ), //wantsAll || wantsLess ? both : none,
+    ),
     all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
       wantsAll,
       !unsubscribedFromAnswerEmails
     ),
 
     // On users' markets
-    my_markets_closed: constructPref(
+    your_contract_closed: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromResolutionEmails
-    ), //wantsAll || wantsLess ? both : none, // High priority
+    ), // High priority
     all_comments_on_my_markets: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromCommentEmails
-    ), //wantsAll || wantsLess ? both : none,
+    ),
     all_answers_on_my_markets: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromAnswerEmails
-    ), //wantsAll || wantsLess ? both : none,
+    ),
+    subsidized_your_market: constructPref(wantsAll || wantsLess, true),
 
     // Market updates
     resolutions_on_watched_markets: constructPref(
@@ -220,7 +221,7 @@ export const getDefaultNotificationSettings = (
       wantsAll || wantsLess,
       false
     ),
-    market_updates_with_shares_in_on_watched_markets: constructPref(
+    market_updates_on_watched_markets_with_shares_in: constructPref(
       wantsAll || wantsLess,
       false
     ),
@@ -233,7 +234,10 @@ export const getDefaultNotificationSettings = (
     loan_income: constructPref(wantsAll || wantsLess, false),
     betting_streaks: constructPref(wantsAll || wantsLess, false),
     referral_bonuses: constructPref(wantsAll || wantsLess, true),
-    unique_bettor_bonuses: constructPref(wantsAll || wantsLess, false),
+    unique_bettors_on_your_contract: constructPref(
+      wantsAll || wantsLess,
+      false
+    ),
     tipped_comments_on_watched_markets: constructPref(
       wantsAll || wantsLess,
       !unsubscribedFromCommentEmails
@@ -242,9 +246,9 @@ export const getDefaultNotificationSettings = (
     limit_order_fills: constructPref(wantsAll || wantsLess, false),
 
     // General
-    user_tagged_you: constructPref(wantsAll || wantsLess, true), //wantsAll || wantsLess ? both : none,
-    new_followers: constructPref(wantsAll || wantsLess, true),
-    new_markets_by_followed_users: constructPref(wantsAll || wantsLess, true), //wantsAll || wantsLess ? both : none,
+    tagged_user: constructPref(wantsAll || wantsLess, true),
+    on_new_follow: constructPref(wantsAll || wantsLess, true),
+    contract_from_followed_user: constructPref(wantsAll || wantsLess, true),
     trending_markets: constructPref(
       false,
       !unsubscribedFromWeeklyTrendingEmails
@@ -254,6 +258,5 @@ export const getDefaultNotificationSettings = (
       wantsAll || wantsLess,
       false
     ),
-    group_adds: constructPref(wantsAll || wantsLess, true),
-  } as exhaustive_notification_subscribe_types
+  } as notification_subscription_types
 }

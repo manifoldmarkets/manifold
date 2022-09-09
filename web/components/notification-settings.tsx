@@ -4,7 +4,7 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import {
-  exhaustive_notification_subscribe_types,
+  notification_subscription_types,
   notification_destination_types,
 } from 'common/user'
 import { updatePrivateUser } from 'web/lib/firebase/users'
@@ -33,29 +33,42 @@ export function NotificationSettings() {
     return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
   }
 
-  // should be keyof Partial<exhaustive_notification_subscribe_types>[] but can't figure out how to make that work
-  // TODO: re-enable emails for renamed subscribe types
-  const emailsEnabled = [
-    // 'all_comments',
-    // 'all_answers',
-    // 'resolutions',
-    'all_replies_to_my_comments',
-    'all_replies_to_my_answers',
+  const emailsEnabled: Array<keyof notification_subscription_types> = [
+    'all_comments_on_watched_markets',
+    'all_replies_to_my_comments_on_watched_markets',
+    'all_comments_on_contracts_with_shares_in_on_watched_markets',
+
+    'all_answers_on_watched_markets',
+    'all_replies_to_my_answers_on_watched_markets',
+    'all_answers_on_contracts_with_shares_in_on_watched_markets',
+
+    'your_contract_closed',
     'all_comments_on_my_markets',
     'all_answers_on_my_markets',
-    'my_markets_closed',
-    'probability_updates',
-    'user_tagged_you',
-    'new_markets_by_followed_users',
+
+    'resolutions_on_watched_markets_with_shares_in',
+    'resolutions_on_watched_markets',
+
+    'tagged_user',
     'trending_markets',
-    'profit_loss_updates',
-    'all_comments_on_contracts_with_shares_in',
-    'all_answers_on_contracts_with_shares_in',
+
+    // TODO: add these
+    // 'contract_from_followed_user',
+    // 'referral_bonuses',
+    // 'unique_bettors_on_your_contract',
+    // 'tips_on_your_markets',
+    // 'tips_on_your_comments',
+    // 'subsidized_your_market',
+    // 'on_new_follow',
+    // maybe the following?
+    // 'profit_loss_updates',
+    // 'probability_updates_on_watched_markets',
+    // 'limit_order_fills',
   ]
   const browserDisabled = ['trending_markets', 'profit_loss_updates']
 
   const watched_markets_explanations_comments: {
-    [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
+    [key in keyof Partial<notification_subscription_types>]: string
   } = {
     all_comments_on_watched_markets: 'All',
     all_replies_to_my_comments_on_watched_markets: 'Replies to your comments',
@@ -64,7 +77,7 @@ export function NotificationSettings() {
     // comments_by_followed_users_on_watched_markets: 'By followed users',
   }
   const watched_markets_explanations_answers: {
-    [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
+    [key in keyof Partial<notification_subscription_types>]: string
   } = {
     all_answers_on_watched_markets: 'All',
     all_replies_to_my_answers_on_watched_markets: 'Replies to your answers',
@@ -74,45 +87,49 @@ export function NotificationSettings() {
     // answers_by_market_creator_on_watched_markets: 'By market creator',
   }
   const watched_markets_explanations_your_markets: {
-    [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
+    [key in keyof Partial<notification_subscription_types>]: string
   } = {
-    my_markets_closed: 'Your market has closed (and needs resolution)',
+    your_contract_closed: 'Your market has closed (and needs resolution)',
     all_comments_on_my_markets: 'Comments on your markets',
     all_answers_on_my_markets: 'Answers on your markets',
+    subsidized_your_market: 'Your market was subsidized',
   }
   const watched_markets_explanations_market_updates: {
-    [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
+    [key in keyof Partial<notification_subscription_types>]: string
   } = {
     resolutions_on_watched_markets: 'Market resolutions',
+    resolutions_on_watched_markets_with_shares_in:
+      'Market resolutions you have shares in',
     market_updates_on_watched_markets: 'Updates made by the creator',
+    market_updates_on_watched_markets_with_shares_in:
+      'Updates made by the creator on markets you have shares in',
     // probability_updates_on_watched_markets: 'Probability updates',
   }
 
   const balance_change_explanations: {
-    [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
+    [key in keyof Partial<notification_subscription_types>]: string
   } = {
     loan_income: 'Automatic loans from your profitable bets',
     betting_streaks: 'Betting streak bonuses',
     referral_bonuses: 'Referral bonuses from referring users',
-    unique_bettor_bonuses: 'Unique bettor bonuses on your markets',
+    unique_bettors_on_your_contract: 'Unique bettor bonuses on your markets',
     tips_on_your_comments: 'Tips on your comments',
     limit_order_fills: 'Limit order fills',
   }
 
   const general_explanations: {
-    [key in keyof Partial<exhaustive_notification_subscribe_types>]: string
+    [key in keyof Partial<notification_subscription_types>]: string
   } = {
-    user_tagged_you: 'A user tagged you',
-    new_markets_by_followed_users: 'New markets created by users you follow',
+    tagged_user: 'A user tagged you',
+    contract_from_followed_user: 'New markets created by users you follow',
     trending_markets: 'Weekly trending markets',
-    new_followers: 'New followers',
-    group_adds: 'When someone adds you to a group',
+    on_new_follow: 'New followers',
     // profit_loss_updates: 'Weekly profit/loss updates',
   }
 
   const NotificationSettingLine = (
     description: string,
-    key: string,
+    key: keyof notification_subscription_types,
     value: notification_destination_types[]
   ) => {
     const previousInAppValue = value.includes('browser')
@@ -217,22 +234,18 @@ export function NotificationSettings() {
     )
   }
 
-  const getUsersSavedPreference = (key: string) => {
-    return Object.keys(privateUser.notificationSubscriptionTypes).includes(key)
-      ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        privateUser.notificationSubscriptionTypes[
-          Object.keys(privateUser.notificationSubscriptionTypes).filter(
-            (x) => x === key
-          )[0]
-        ]
-      : ''
+  const getUsersSavedPreference = (
+    key: keyof notification_subscription_types
+  ) => {
+    return privateUser.notificationSubscriptionTypes[key] ?? []
   }
 
   const Section = (
     icon: ReactNode,
     label: string,
-    map: { [key: string]: string }
+    subscriptionTypeToDescription: {
+      [key in keyof Partial<notification_subscription_types>]: string
+    }
   ) => {
     const [expanded, setExpanded] = useState(false)
     return (
@@ -255,8 +268,14 @@ export function NotificationSettings() {
           )}
         </Row>
         <Col className={clsx(expanded ? 'block' : 'hidden', 'gap-2 p-2')}>
-          {Object.entries(map).map(([key, value]) =>
-            NotificationSettingLine(value, key, getUsersSavedPreference(key))
+          {Object.entries(subscriptionTypeToDescription).map(([key, value]) =>
+            NotificationSettingLine(
+              value,
+              key as keyof notification_subscription_types,
+              getUsersSavedPreference(
+                key as keyof notification_subscription_types
+              )
+            )
           )}
         </Col>
       </Col>
