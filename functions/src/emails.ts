@@ -14,9 +14,7 @@ import { formatNumericProbability } from '../../common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getPrivateUser, getUser } from './utils'
 import { getFunctionUrl } from '../../common/api'
-import { richTextToString } from '../../common/util/parse'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
-import { JSONContent } from '@tiptap/core'
 
 const UNSUBSCRIBE_ENDPOINT = getFunctionUrl('unsubscribe')
 
@@ -345,7 +343,7 @@ export const sendNewCommentEmail = async (
   userId: string,
   commentCreator: User,
   contract: Contract,
-  commentContent: JSONContent | string,
+  commentText: string,
   commentId: string,
   bet?: Bet,
   answerText?: string,
@@ -365,11 +363,6 @@ export const sendNewCommentEmail = async (
   const unsubscribeUrl = `${UNSUBSCRIBE_ENDPOINT}?id=${userId}&type=${emailType}`
 
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
-
-  const text =
-    typeof commentContent !== 'string'
-      ? richTextToString(commentContent)
-      : commentContent
 
   let betDescription = ''
   if (bet) {
@@ -394,7 +387,7 @@ export const sendNewCommentEmail = async (
         answerNumber,
         commentorName,
         commentorAvatarUrl: commentorAvatarUrl ?? '',
-        comment: text,
+        comment: commentText,
         marketUrl,
         unsubscribeUrl,
         betDescription,
@@ -415,7 +408,7 @@ export const sendNewCommentEmail = async (
       {
         commentorName,
         commentorAvatarUrl: commentorAvatarUrl ?? '',
-        comment: text,
+        comment: commentText,
         marketUrl,
         unsubscribeUrl,
         betDescription,

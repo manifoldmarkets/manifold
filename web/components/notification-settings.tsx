@@ -11,15 +11,17 @@ import { updatePrivateUser } from 'web/lib/firebase/users'
 import { Switch } from '@headlessui/react'
 import { Col } from 'web/components/layout/col'
 import {
-  AdjustmentsIcon,
   CashIcon,
   ChatIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  CurrencyDollarIcon,
+  InboxInIcon,
   InformationCircleIcon,
   LightBulbIcon,
   TrendingUpIcon,
   UserIcon,
+  UsersIcon,
 } from '@heroicons/react/outline'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { filterDefined } from 'common/util/array'
@@ -93,38 +95,49 @@ export function NotificationSettings() {
     all_comments_on_my_markets: 'Comments on your markets',
     all_answers_on_my_markets: 'Answers on your markets',
     subsidized_your_market: 'Your market was subsidized',
+    tips_on_your_markets: 'Likes on your markets',
   }
   const watched_markets_explanations_market_updates: {
     [key in keyof Partial<notification_subscription_types>]: string
   } = {
-    resolutions_on_watched_markets: 'Market resolutions',
-    resolutions_on_watched_markets_with_shares_in:
-      'Market resolutions you have shares in',
     market_updates_on_watched_markets: 'Updates made by the creator',
     market_updates_on_watched_markets_with_shares_in:
       'Updates made by the creator on markets you have shares in',
+    resolutions_on_watched_markets: 'Market resolutions',
+    resolutions_on_watched_markets_with_shares_in:
+      'Market resolutions you have shares in',
     // probability_updates_on_watched_markets: 'Probability updates',
   }
 
-  const balance_change_explanations: {
+  const bonuses_explanations: {
     [key in keyof Partial<notification_subscription_types>]: string
   } = {
-    loan_income: 'Automatic loans from your profitable bets',
     betting_streaks: 'Betting streak bonuses',
     referral_bonuses: 'Referral bonuses from referring users',
     unique_bettors_on_your_contract: 'Unique bettor bonuses on your markets',
-    tips_on_your_comments: 'Tips on your comments',
+  }
+
+  const other_balance_change_explanations: {
+    [key in keyof Partial<notification_subscription_types>]: string
+  } = {
+    loan_income: 'Automatic loans from your profitable bets',
     limit_order_fills: 'Limit order fills',
+    tips_on_your_comments: 'Tips on your comments',
   }
 
   const general_explanations: {
     [key in keyof Partial<notification_subscription_types>]: string
   } = {
     tagged_user: 'A user tagged you',
-    contract_from_followed_user: 'New markets created by users you follow',
     trending_markets: 'Weekly trending markets',
-    on_new_follow: 'New followers',
     // profit_loss_updates: 'Weekly profit/loss updates',
+  }
+
+  const follows_and_followers_explanations: {
+    [key in keyof Partial<notification_subscription_types>]: string
+  } = {
+    on_new_follow: 'New followers',
+    contract_from_followed_user: 'New markets created by users you follow',
   }
 
   const NotificationSettingLine = (
@@ -304,29 +317,39 @@ export function NotificationSettings() {
           watched_markets_explanations_answers
         )}
         {Section(
-          <UserIcon className={'h-6 w-6'} />,
-          'On Markets You Created',
-          watched_markets_explanations_your_markets
+          <TrendingUpIcon className={'h-6 w-6'} />,
+          'Updates & Resolutions',
+          watched_markets_explanations_market_updates
         )}
         {Section(
-          <TrendingUpIcon className={'h-6 w-6'} />,
-          'Market Updates',
-          watched_markets_explanations_market_updates
+          <UserIcon className={'h-6 w-6'} />,
+          'Markets You Created',
+          watched_markets_explanations_your_markets
         )}
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>Balance Changes</span>
         </Row>
         {Section(
+          <CurrencyDollarIcon className={'h-6 w-6'} />,
+          'Bonuses',
+          bonuses_explanations
+        )}
+        {Section(
           <CashIcon className={'h-6 w-6'} />,
-          'Loans and Bonuses',
-          balance_change_explanations
+          'Other',
+          other_balance_change_explanations
         )}
         <Row className={'gap-2 text-xl text-gray-700'}>
-          <span>Other</span>
+          <span>General</span>
         </Row>
         {Section(
-          <AdjustmentsIcon className={'h-6 w-6'} />,
-          'General',
+          <UsersIcon className={'h-6 w-6'} />,
+          'Follows & Followers',
+          follows_and_followers_explanations
+        )}
+        {Section(
+          <InboxInIcon className={'h-6 w-6'} />,
+          'Other',
           general_explanations
         )}
         <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
