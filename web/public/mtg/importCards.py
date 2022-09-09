@@ -24,7 +24,7 @@ def generate_initial_query(category):
                         '.*player%28%5C.%7C+or+planeswalker%29%7C.*opponent%28%5C.%7C+or+planeswalker%29%29%2F%29' \
                         '+%28type%3Ainstant+or+type%3Asorcery%29+not%3Aadventure'
     elif category == 'commander':
-        string_query += '-banned%3Acommander+is%3Acommander'
+        string_query += 'is%3Acommander+%28not%3Adigital+-banned%3Acommander+or+is%3Adigital+legal%3Ahistoricbrawl+or+legal%3Acommander+or+legal%3Abrawl%29'
     # add category string query here
     string_query += '+-%28set%3Asld+%28%28cn>%3D231+cn<%3D233%29+or+%28cn>%3D321+cn<%3D324%29+or+%28cn>%3D185+cn' \
                 '<%3D189%29+or+%28cn>%3D138+cn<%3D142%29+or+%28cn>%3D364+cn<%3D368%29+or+cn%3A669+or+cn%3A670%29' \
