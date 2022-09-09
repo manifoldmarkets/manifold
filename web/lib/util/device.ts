@@ -12,3 +12,7 @@ export function isIOS() {
     (navigator.userAgent.includes('Mac') && 'ontouchend' in document)
   )
 }
+
+export function isAndroid() {
+  return navigator.userAgent.includes('Android')
+}

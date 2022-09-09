@@ -77,13 +77,21 @@ const Salem = {
 
 const tourneys: Tourney[] = [
   {
-    title: 'Cause Exploration Prizes',
+    title: 'Manifold F2P Tournament',
     blurb:
-      'Which new charity ideas will Open Philanthropy find most promising?',
-    award: 'M$100k',
-    endTime: toDate('Sep 9, 2022'),
-    groupId: 'cMcpBQ2p452jEcJD2SFw',
+      'Who can amass the most mana starting from a free-to-play (F2P) account?',
+    award: 'Poem',
+    endTime: toDate('Sep 15, 2022'),
+    groupId: '6rrIja7tVW00lUVwtsYS',
   },
+  // {
+  //   title: 'Cause Exploration Prizes',
+  //   blurb:
+  //     'Which new charity ideas will Open Philanthropy find most promising?',
+  //   award: 'M$100k',
+  //   endTime: toDate('Sep 9, 2022'),
+  //   groupId: 'cMcpBQ2p452jEcJD2SFw',
+  // },
   {
     title: 'Fantasy Football Stock Exchange',
     blurb: 'How many points will each NFL player score this season?',
@@ -135,7 +143,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
         title="Tournaments"
         description="Win money by betting in forecasting touraments on current events, sports, science, and more"
       />
-      <Col className="mx-4 mt-4 gap-10 sm:mx-10 xl:w-[125%]">
+      <Col className="m-4 gap-10 sm:mx-10 sm:gap-24 xl:w-[125%]">
         {sections.map(({ tourney, slug, numPeople }) => (
           <div key={slug}>
             <SectionHeader
