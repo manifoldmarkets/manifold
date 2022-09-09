@@ -5,6 +5,7 @@ import json
 # add category name here
 allCategories = ['counterspell', 'beast', 'burn', 'commander', 'artist'] #, 'terror', 'wrath', 'zombie', 'artifact']
 specialCategories = ['set', 'basic']
+artists = dict()
 
 
 def generate_initial_query(category):
@@ -29,8 +30,8 @@ def generate_initial_query(category):
     #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken'
     # elif category == 'artifact':
         # string_query += 't%3Aartifact&order=released&dir=asc&unique=prints&page='
-    # elif category == 'artist':
-    #     string_query+= 'a%3A"Wylie+Beckert"+or+a%3A“Ernanda+Souza”+or+a%3A"randy+gallegos"+or+a%3A“Amy+Weber”+or+a%3A“Dan+Frazier”+or+a%3A“Thomas+M.+Baxa”+or+a%3A“Phil+Foglio”+or+a%3A“DiTerlizzi”+or+a%3A"steve+argyle"+or+a%3A"Veronique+Meignaud"+or+a%3A"Magali+Villeneuve"+or+a%3A"Michael+Sutfin"+or+a%3A“Volkan+Baǵa”+or+a%3A“Franz+Vohwinkel”+or+a%3A"Nils+Hamm"+or+a%3A"Mark+Poole"+or+a%3A"Carl+Critchlow"+or+a%3A"rob+alexander"+or+a%3A"igor+kieryluk"+or+a%3A“Victor+Adame+Minguez”+or+a%3A"johannes+voss"+or+a%3A"Svetlin+Velinov"+or+a%3A"ron+spencer"+or+a%3A"rk+post"+or+a%3A"kev+walker"+or+a%3A"rebecca+guay"+or+a%3A"seb+mckinnon"+or+a%3A"pete+venters"+or+a%3A"greg+staples"+or+a%3A"Christopher+Moeller"+or+a%3A"christopher+rush"+or+a%3A"Mark+Tedin"'
+    elif category == 'artist':
+        string_query+= '%28a%3A"Wylie+Beckert"+or+a%3A“David+Martin”+or+a%3A“Ernanda+Souza”+or+a%3A"randy+gallegos"+or+a%3A“Amy+Weber”+or+a%3A“Dan+Frazier”+or+a%3A“Thomas+M.+Baxa”+or+a%3A“Phil+Foglio”+or+a%3A“DiTerlizzi”+or+a%3A"steve+argyle"+or+a%3A"Veronique+Meignaud"+or+a%3A"Magali+Villeneuve"+or+a%3A"Michael+Sutfin"+or+a%3A“Volkan+Baǵa”+or+a%3A“Franz+Vohwinkel”+or+a%3A"Nils+Hamm"+or+a%3A"Mark+Poole"+or+a%3A"Carl+Critchlow"+or+a%3A"rob+alexander"+or+a%3A"igor+kieryluk"+or+a%3A“Victor+Adame+Minguez”+or+a%3A"johannes+voss"+or+a%3A"Svetlin+Velinov"+or+a%3A"ron+spencer"+or+a%3A"rk+post"+or+a%3A"kev+walker"+or+a%3A"rebecca+guay"+or+a%3A"seb+mckinnon"+or+a%3A"pete+venters"+or+a%3A"greg+staples"+or+a%3A"Christopher+Moeller"+or+a%3A"christopher+rush"+or+a%3A"Mark+Tedin"%29+not%3Adfc'
     # add category string query here
     string_query += '+-%28set%3Asld+%28%28cn>%3D231+cn<%3D233%29+or+%28cn>%3D321+cn<%3D324%29+or+%28cn>%3D185+cn' \
                 '<%3D189%29+or+%28cn>%3D138+cn<%3D142%29+or+%28cn>%3D364+cn<%3D368%29+or+cn%3A669+or+cn%3A670%29' \
@@ -104,6 +105,9 @@ def to_compact_write_form(smallJson, art_names, response, category):
         # do not include racist cards
         if 'content_warning' in card and card['content_warning'] == True:
             continue
+        # for artist category, do not use multiple artists
+        if category == 'artist' and len(card['artist_ids']) != 1:
+            continue
         # do not repeat art
         if 'card_faces' in card:
             card_face = card['card_faces'][0]
@@ -119,7 +123,13 @@ def to_compact_write_form(smallJson, art_names, response, category):
         for field in fieldsInCard:
             # if field == 'name' and category == 'artifact':
             #     write_card['name'] = card['released_at'].split('-')[0]
-            if field == 'name' and 'card_faces' in card:
+            if field =='name' and category == 'artist':
+                artist_id = card['artist_ids'][0]
+                artist = card['artist']
+                if artist_id not in artists or len(artists[artist_id]) > len(artist):
+                    artists[artist_id] = artist
+                write_card['name'] = card['artist_ids'][0]
+            elif field == 'name' and 'card_faces' in card:
                 write_card['name'] = card['card_faces'][0]['name']
             elif field == 'image_uris':
                 if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
@@ -182,3 +192,6 @@ if __name__ == "__main__":
     for category in specialCategories:
         print(category)
         fetch_and_write_all_special(category, generate_initial_special_query(category))
+        print("artistList")
+    with open('jsons/artistList.json', 'w') as f:
+        json.dump(artists, f)

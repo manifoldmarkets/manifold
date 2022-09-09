@@ -39,6 +39,11 @@ if (whichGuesser === 'basic') {
     .then((response) => response.json())
     .then((data) => (sets = data))
 }
+if (whichGuesser === 'artist') {
+  fetch('jsons/artistList.json')
+    .then((response) => response.json())
+    .then((data) => (sets = data))
+}
 
 let firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
@@ -66,6 +71,8 @@ function putIntoMapAndFetch(data) {
     document.getElementById('guess-type').innerText = 'How Basic'
   } else if (whichGuesser === 'commander') {
     document.getElementById('guess-type').innerText = 'General Knowledge'
+  } else if (whichGuesser === 'artist') {
+    document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
   }
   setUpNewGame()
 }
@@ -145,6 +152,15 @@ function determineIfSkip(card) {
       ) {
         return true
       }
+    } else if (whichGuesser == 'artist') {
+      if (
+        card.set_type === 'token' ||
+        card.set_type === 'vanguard' ||
+        card.set_type === 'planechase' ||
+        card.set_type === 'archenemy'
+      ) {
+        return true
+      }
     } else {
       if (
         card.reprint === true ||
@@ -179,6 +195,8 @@ function putIntoMap(data) {
         sets[name][1] +
         '" /> ' +
         sets[name][0]
+    } else if (whichGuesser === 'artist') {
+      name = sets[name]
     }
     let normalImg = ''
     if (card.image_uris.normal) {
