@@ -158,8 +158,8 @@ function determineIfSkip(card) {
   if (card.flavor_name) {
     return true
   }
-  // don't include racist cards
-  return card.content_warning
+
+  return false
 }
 
 function putIntoMap(data) {

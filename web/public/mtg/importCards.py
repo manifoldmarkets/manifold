@@ -91,11 +91,13 @@ def fetch_special(query):
 
 
 def to_compact_write_form(smallJson, art_names, response):
-    fieldsInCard = ['name', 'image_uris', 'content_warning', 'flavor_name', 'reprint', 'frame_effects', 'digital',
-                    'set_type']
+    fieldsInCard = ['name', 'image_uris', 'flavor_name', 'reprint', 'frame_effects', 'digital', 'set_type']
     data = []
     # write all fields needed in card
     for card in response['data']:
+        # do not include racist cards
+        if 'content_warning' in card and card['content_warning'] == True:
+            continue
         # do not repeat art
         if 'illustration_id' not in card or card['illustration_id'] in art_names:
             continue
