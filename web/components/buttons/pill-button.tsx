@@ -5,19 +5,19 @@ export function PillButton(props: {
   selected: boolean
   onSelect: () => void
   color?: string
-  big?: boolean
+  xs?: boolean
   children: ReactNode
 }) {
-  const { children, selected, onSelect, color, big } = props
+  const { children, selected, onSelect, color, xs } = props
 
   return (
     <button
       className={clsx(
-        'cursor-pointer select-none whitespace-nowrap rounded-full',
+        'cursor-pointer select-none whitespace-nowrap rounded-full px-3 py-1.5 text-sm',
+        xs ? 'text-xs' : '',
         selected
           ? ['text-white', color ?? 'bg-greyscale-6']
-          : 'bg-greyscale-2 hover:bg-greyscale-3',
-        big ? 'px-8 py-2' : 'px-3 py-1.5 text-sm'
+          : 'bg-greyscale-2 hover:bg-greyscale-3'
       )}
       onClick={onSelect}
     >

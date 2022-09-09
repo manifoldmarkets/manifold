@@ -13,21 +13,17 @@ import { Avatar } from 'web/components/avatar'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import {
-  createCommentOnContract,
-  MAX_COMMENT_LENGTH,
-} from 'web/lib/firebase/comments'
+import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
 import { getProbability } from 'common/calculate'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import { PaperAirplaneIcon } from '@heroicons/react/outline'
 import { track } from 'web/lib/service/analytics'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
-import { Content, TextEditor, useTextEditor } from '../editor'
+import { Content } from '../editor'
 import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
+import { CommentInput } from '../comment-input'
 
 export function FeedCommentThread(props: {
   user: User | null | undefined
@@ -89,14 +85,16 @@ export function FeedCommentThread(props: {
             className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
-          <CommentInput
+          <ContractCommentInput
             contract={contract}
             betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
             commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
             parentCommentId={parentComment.id}
             replyToUser={replyTo}
             parentAnswerOutcome={parentComment.answerOutcome}
-            onSubmitComment={() => setShowReply(false)}
+            onSubmitComment={() => {
+              setShowReply(false)
+            }}
           />
         </Col>
       )}
@@ -124,15 +122,12 @@ export function FeedComment(props: {
   } = props
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
-  let betOutcome: string | undefined,
-    bought: string | undefined,
-    money: string | undefined
-
-  const matchedBet = betsBySameUser.find((bet) => bet.id === comment.betId)
-  if (matchedBet) {
-    betOutcome = matchedBet.outcome
-    bought = matchedBet.amount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(matchedBet.amount))
+  const betOutcome = comment.betOutcome
+  let bought: string | undefined
+  let money: string | undefined
+  if (comment.betAmount != null) {
+    bought = comment.betAmount >= 0 ? 'bought' : 'sold'
+    money = formatMoney(Math.abs(comment.betAmount))
   }
 
   const [highlighted, setHighlighted] = useState(false)
@@ -147,7 +142,7 @@ export function FeedComment(props: {
   const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
     contract,
     comment.createdTime,
-    matchedBet ? [] : betsBySameUser
+    comment.betId ? [] : betsBySameUser
   )
 
   return (
@@ -174,7 +169,7 @@ export function FeedComment(props: {
             username={userUsername}
             name={userName}
           />{' '}
-          {!matchedBet &&
+          {!comment.betId != null &&
             userPosition > 0 &&
             contract.outcomeType !== 'NUMERIC' && (
               <>
@@ -193,7 +188,6 @@ export function FeedComment(props: {
               of{' '}
               <OutcomeLabel
                 outcome={betOutcome ? betOutcome : ''}
-                value={(matchedBet as any).value}
                 contract={contract}
                 truncate="short"
               />
@@ -270,66 +264,75 @@ function CommentStatus(props: {
   )
 }
 
-//TODO: move commentinput and comment input text area into their own files
-export function CommentInput(props: {
+export function ContractCommentInput(props: {
   contract: Contract
   betsByCurrentUser: Bet[]
   commentsByCurrentUser: ContractComment[]
   className?: string
+  parentAnswerOutcome?: string | undefined
   replyToUser?: { id: string; username: string }
-  // Reply to a free response answer
-  parentAnswerOutcome?: string
-  // Reply to another comment
   parentCommentId?: string
   onSubmitComment?: () => void
 }) {
-  const {
-    contract,
-    betsByCurrentUser,
-    commentsByCurrentUser,
-    className,
-    parentAnswerOutcome,
-    parentCommentId,
-    replyToUser,
-    onSubmitComment,
-  } = props
   const user = useUser()
-  const { editor, upload } = useTextEditor({
-    simple: true,
-    max: MAX_COMMENT_LENGTH,
-    placeholder:
-      !!parentCommentId || !!parentAnswerOutcome
-        ? 'Write a reply...'
-        : 'Write a comment...',
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    betsByCurrentUser,
-    commentsByCurrentUser,
-    user,
-    parentAnswerOutcome
-  )
-  const { id } = mostRecentCommentableBet || { id: undefined }
-
-  async function submitComment(betId: string | undefined) {
+  async function onSubmitComment(editor: Editor, betId: string | undefined) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
     }
-    if (!editor || editor.isEmpty || isSubmitting) return
-    setIsSubmitting(true)
     await createCommentOnContract(
-      contract.id,
+      props.contract.id,
       editor.getJSON(),
       user,
       betId,
-      parentAnswerOutcome,
-      parentCommentId
+      props.parentAnswerOutcome,
+      props.parentCommentId
     )
-    onSubmitComment?.()
-    setIsSubmitting(false)
+    props.onSubmitComment?.()
   }
+
+  const mostRecentCommentableBet = getMostRecentCommentableBet(
+    props.betsByCurrentUser,
+    props.commentsByCurrentUser,
+    user,
+    props.parentAnswerOutcome
+  )
+
+  const { id } = mostRecentCommentableBet || { id: undefined }
+
+  return (
+    <Col>
+      <CommentBetArea
+        betsByCurrentUser={props.betsByCurrentUser}
+        contract={props.contract}
+        commentsByCurrentUser={props.commentsByCurrentUser}
+        parentAnswerOutcome={props.parentAnswerOutcome}
+        user={useUser()}
+        className={props.className}
+        mostRecentCommentableBet={mostRecentCommentableBet}
+      />
+      <CommentInput
+        replyToUser={props.replyToUser}
+        parentAnswerOutcome={props.parentAnswerOutcome}
+        parentCommentId={props.parentCommentId}
+        onSubmitComment={onSubmitComment}
+        className={props.className}
+        presetId={id}
+      />
+    </Col>
+  )
+}
+
+function CommentBetArea(props: {
+  betsByCurrentUser: Bet[]
+  contract: Contract
+  commentsByCurrentUser: ContractComment[]
+  parentAnswerOutcome?: string
+  user?: User | null
+  className?: string
+  mostRecentCommentableBet?: Bet
+}) {
+  const { betsByCurrentUser, contract, user, mostRecentCommentableBet } = props
 
   const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
     contract,
@@ -339,155 +342,33 @@ export function CommentInput(props: {
 
   const isNumeric = contract.outcomeType === 'NUMERIC'
 
-  if (user?.isBannedFromPosting) return <></>
-
   return (
-    <Row className={clsx(className, 'mb-2 gap-1 sm:gap-2')}>
-      <Avatar
-        avatarUrl={user?.avatarUrl}
-        username={user?.username}
-        size="sm"
-        className="mt-2"
-      />
-      <div className="min-w-0 flex-1 pl-0.5 text-sm">
-        <div className="mb-1 text-gray-500">
-          {mostRecentCommentableBet && (
-            <BetStatusText
+    <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>
+      <div className="mb-1 text-gray-500">
+        {mostRecentCommentableBet && (
+          <BetStatusText
+            contract={contract}
+            bet={mostRecentCommentableBet}
+            isSelf={true}
+            hideOutcome={isNumeric || contract.outcomeType === 'FREE_RESPONSE'}
+          />
+        )}
+        {!mostRecentCommentableBet && user && userPosition > 0 && !isNumeric && (
+          <>
+            {"You're"}
+            <CommentStatus
+              outcome={outcome}
               contract={contract}
-              bet={mostRecentCommentableBet}
-              isSelf={true}
-              hideOutcome={
-                isNumeric || contract.outcomeType === 'FREE_RESPONSE'
+              prob={
+                contract.outcomeType === 'BINARY'
+                  ? getProbability(contract)
+                  : undefined
               }
             />
-          )}
-          {!mostRecentCommentableBet && user && userPosition > 0 && !isNumeric && (
-            <>
-              {"You're"}
-              <CommentStatus
-                outcome={outcome}
-                contract={contract}
-                prob={
-                  contract.outcomeType === 'BINARY'
-                    ? getProbability(contract)
-                    : undefined
-                }
-              />
-            </>
-          )}
-        </div>
-        <CommentInputTextArea
-          editor={editor}
-          upload={upload}
-          replyToUser={replyToUser}
-          user={user}
-          submitComment={submitComment}
-          isSubmitting={isSubmitting}
-          submitOn={'mod-enter'}
-          presetId={id}
-        />
+          </>
+        )}
       </div>
     </Row>
-  )
-}
-
-export function CommentInputTextArea(props: {
-  user: User | undefined | null
-  replyToUser?: { id: string; username: string }
-  editor: Editor | null
-  upload: Parameters<typeof TextEditor>[0]['upload']
-  submitComment: (id?: string) => void
-  isSubmitting: boolean
-  // mod-enter = ctrl-enter or cmd-enter
-  submitOn?: 'enter' | 'mod-enter'
-  presetId?: string
-}) {
-  const {
-    user,
-    editor,
-    upload,
-    submitComment,
-    presetId,
-    isSubmitting,
-    submitOn,
-    replyToUser,
-  } = props
-  useEffect(() => {
-    editor?.setEditable(!isSubmitting)
-  }, [isSubmitting, editor])
-
-  const submit = () => {
-    submitComment(presetId)
-    editor?.commands?.clearContent()
-  }
-
-  useEffect(() => {
-    if (!editor) {
-      return
-    }
-    // submit on Enter key
-    editor.setOptions({
-      editorProps: {
-        handleKeyDown: (view, event) => {
-          if (
-            submitOn &&
-            event.key === 'Enter' &&
-            !event.shiftKey &&
-            (submitOn === 'enter' || event.ctrlKey || event.metaKey) &&
-            // mention list is closed
-            !(view.state as any).mention$.active
-          ) {
-            submit()
-            event.preventDefault()
-            return true
-          }
-          return false
-        },
-      },
-    })
-    // insert at mention and focus
-    if (replyToUser) {
-      editor
-        .chain()
-        .setContent({
-          type: 'mention',
-          attrs: { label: replyToUser.username, id: replyToUser.id },
-        })
-        .insertContent(' ')
-        .focus()
-        .run()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor])
-
-  return (
-    <>
-      <TextEditor editor={editor} upload={upload}>
-        {user && !isSubmitting && (
-          <button
-            className="btn btn-ghost btn-sm px-2 disabled:bg-inherit disabled:text-gray-300"
-            disabled={!editor || editor.isEmpty}
-            onClick={submit}
-          >
-            <PaperAirplaneIcon className="m-0 h-[25px] min-w-[22px] rotate-90 p-0" />
-          </button>
-        )}
-
-        {isSubmitting && (
-          <LoadingIndicator spinnerClassName={'border-gray-500'} />
-        )}
-      </TextEditor>
-      <Row>
-        {!user && (
-          <button
-            className={'btn btn-outline btn-sm mt-2 normal-case'}
-            onClick={() => submitComment(presetId)}
-          >
-            Add my comment
-          </button>
-        )}
-      </Row>
-    </>
   )
 }
 

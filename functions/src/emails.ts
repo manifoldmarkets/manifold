@@ -4,7 +4,6 @@ import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 import { Comment } from '../../common/comment'
 import { Contract } from '../../common/contract'
-import { DPM_CREATOR_FEE } from '../../common/fees'
 import { PrivateUser, User } from '../../common/user'
 import {
   formatLargeNumber,
@@ -187,7 +186,7 @@ export const sendPersonalFollowupEmail = async (
 
   const emailBody = `Hi ${firstName},
 
-Thanks for signing up! I'm one of the cofounders of Manifold Markets, and was wondering how you've found your exprience on the platform so far?
+Thanks for signing up! I'm one of the cofounders of Manifold Markets, and was wondering how you've found your experience on the platform so far?
 
 If you haven't already, I encourage you to try creating your own prediction market (https://manifold.markets/create) and joining our Discord chat (https://discord.com/invite/eHQBNBqXuh).
 
@@ -322,7 +321,7 @@ export const sendMarketCloseEmail = async (
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
 
-  const { question, slug, volume, mechanism, collectedFees } = contract
+  const { question, slug, volume } = contract
 
   const url = `https://${DOMAIN}/${username}/${slug}`
   const emailType = 'market-resolve'
@@ -339,10 +338,6 @@ export const sendMarketCloseEmail = async (
       userId,
       name: firstName,
       volume: formatMoney(volume),
-      creatorFee:
-        mechanism === 'dpm-2'
-          ? `${DPM_CREATOR_FEE * 100}% of the profits`
-          : formatMoney(collectedFees.creatorFee),
     }
   )
 }

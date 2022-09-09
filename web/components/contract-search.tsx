@@ -43,10 +43,13 @@ export const SORTS = [
   { label: 'Trending', value: 'score' },
   { label: 'Most traded', value: 'most-traded' },
   { label: '24h volume', value: '24-hour-vol' },
+  { label: '24h change', value: 'prob-change-day' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Subsidy', value: 'liquidity' },
   { label: 'Close date', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
+  { label: 'Highest %', value: 'prob-descending' },
+  { label: 'Lowest %', value: 'prob-ascending' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
@@ -66,6 +69,7 @@ type AdditionalFilter = {
   excludeContractIds?: string[]
   groupSlug?: string
   yourBets?: boolean
+  followed?: boolean
 }
 
 export function ContractSearch(props: {
@@ -85,6 +89,7 @@ export function ContractSearch(props: {
   useQueryUrlParam?: boolean
   isWholePage?: boolean
   noControls?: boolean
+  maxResults?: number
   renderContracts?: (
     contracts: Contract[] | undefined,
     loadMore: () => void
@@ -104,6 +109,7 @@ export function ContractSearch(props: {
     useQueryUrlParam,
     isWholePage,
     noControls,
+    maxResults,
     renderContracts,
   } = props
 
@@ -186,7 +192,8 @@ export function ContractSearch(props: {
   const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
-  const renderedContracts = state.pages.length === 0 ? undefined : contracts
+  const renderedContracts =
+    state.pages.length === 0 ? undefined : contracts.slice(0, maxResults)
 
   if (IS_PRIVATE_MANIFOLD || process.env.NEXT_PUBLIC_FIREBASE_EMULATE) {
     return <ContractSearchFirestore additionalFilter={additionalFilter} />
@@ -282,12 +289,25 @@ function ContractSearchControls(props: {
       : DEFAULT_CATEGORY_GROUPS.map((g) => g.slug)
 
   const memberPillGroups = sortBy(
-    memberGroups.filter((group) => group.contractIds.length > 0),
-    (group) => group.contractIds.length
+    memberGroups.filter((group) => group.totalContracts > 0),
+    (group) => group.totalContracts
   ).reverse()
 
   const pillGroups: { name: string; slug: string }[] =
     memberPillGroups.length > 0 ? memberPillGroups : DEFAULT_CATEGORY_GROUPS
+
+  const personalFilters = user
+    ? [
+        // Show contracts in groups that the user is a member of.
+        memberGroupSlugs
+          .map((slug) => `groupLinks.slug:${slug}`)
+          // Or, show contracts created by users the user follows
+          .concat(follows?.map((followId) => `creatorId:${followId}`) ?? []),
+
+        // Subtract contracts you bet on, to show new ones.
+        `uniqueBettorIds:-${user.id}`,
+      ]
+    : []
 
   const additionalFilters = [
     additionalFilter?.creatorId
@@ -301,6 +321,7 @@ function ContractSearchControls(props: {
       ? // Show contracts bet on by the user
         `uniqueBettorIds:${user.id}`
       : '',
+    ...(additionalFilter?.followed ? personalFilters : []),
   ]
   const facetFilters = query
     ? additionalFilters
@@ -317,21 +338,7 @@ function ContractSearchControls(props: {
         state.pillFilter !== 'your-bets'
           ? `groupLinks.slug:${state.pillFilter}`
           : '',
-        state.pillFilter === 'personal'
-          ? // Show contracts in groups that the user is a member of
-            memberGroupSlugs
-              .map((slug) => `groupLinks.slug:${slug}`)
-              // Show contracts created by users the user follows
-              .concat(follows?.map((followId) => `creatorId:${followId}`) ?? [])
-              // Show contracts bet on by users the user follows
-              .concat(
-                follows?.map((followId) => `uniqueBettorIds:${followId}`) ?? []
-              )
-          : '',
-        // Subtract contracts you bet on from For you.
-        state.pillFilter === 'personal' && user
-          ? `uniqueBettorIds:-${user.id}`
-          : '',
+        ...(state.pillFilter === 'personal' ? personalFilters : []),
         state.pillFilter === 'your-bets' && user
           ? // Show contracts bet on by the user
             `uniqueBettorIds:${user.id}`
@@ -442,7 +449,7 @@ function ContractSearchControls(props: {
               selected={state.pillFilter === 'your-bets'}
               onSelect={selectPill('your-bets')}
             >
-              Your bets
+              Your trades
             </PillButton>
           )}
 

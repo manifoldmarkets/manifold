@@ -36,6 +36,8 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
 import { getOpenGraphProps } from 'common/contract-details'
+import { ContractDescription } from 'web/components/contract/contract-description'
+import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import {
   ContractLeaderboard,
   ContractTopTrades,
@@ -67,7 +69,7 @@ export async function getStaticPropz(props: {
       comments: comments.slice(0, 1000),
     },
 
-    revalidate: 60, // regenerate after a minute
+    revalidate: 5, // regenerate after five seconds
   }
 }
 
@@ -156,11 +158,15 @@ export function ContractPageContent(
   const contract = useContractWithPreload(props.contract) ?? props.contract
   usePrefetch(user?.id)
 
-  useTracking('view market', {
-    slug: contract.slug,
-    contractId: contract.id,
-    creatorId: contract.creatorId,
-  })
+  useTracking(
+    'view market',
+    {
+      slug: contract.slug,
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+    },
+    true
+  )
 
   const bets = useBets(contract.id) ?? props.bets
   const nonChallengeBets = useMemo(
@@ -232,6 +238,8 @@ export function ContractPageContent(
         )}
 
         <ContractOverview contract={contract} bets={nonChallengeBets} />
+        <ExtraContractActionsRow contract={contract} />
+        <ContractDescription className="mb-6 px-2" contract={contract} />
 
         {outcomeType === 'NUMERIC' && (
           <AlertBox

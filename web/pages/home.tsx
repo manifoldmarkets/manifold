@@ -4,23 +4,14 @@ import { PencilAltIcon } from '@heroicons/react/solid'
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
 import { ContractSearch } from 'web/components/contract-search'
-import { User } from 'common/user'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { GetServerSideProps } from 'next'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const creds = await authenticateOnServer(ctx)
-  const auth = creds ? await getUserAndPrivateUser(creds.user.uid) : null
-  return { props: { auth } }
-}
-
-const Home = (props: { auth: { user: User } | null }) => {
-  const user = props.auth ? props.auth.user : null
+const Home = () => {
+  const user = useUser()
   const router = useRouter()
   useTracking('view home')
 

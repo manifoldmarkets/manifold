@@ -27,10 +27,10 @@ export function contractMetrics(contract: Contract) {
 export function contractTextDetails(contract: Contract) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const dayjs = require('dayjs')
-  const { closeTime, tags } = contract
+  const { closeTime, groupLinks } = contract
   const { createdDate, resolvedDate, volumeLabel } = contractMetrics(contract)
 
-  const hashtags = tags.map((tag) => `#${tag}`)
+  const groupHashtags = groupLinks?.slice(0, 5).map((g) => `#${g.name}`)
 
   return (
     `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +
@@ -40,7 +40,7 @@ export function contractTextDetails(contract: Contract) {
         ).format('MMM D, h:mma')}`
       : '') +
     ` • ${volumeLabel}` +
-    (hashtags.length > 0 ? ` • ${hashtags.join(' ')}` : '')
+    (groupHashtags ? ` • ${groupHashtags.join(' ')}` : '')
   )
 }
 
@@ -92,6 +92,7 @@ export const getOpenGraphProps = (contract: Contract) => {
     creatorAvatarUrl,
     description,
     numericValue,
+    resolution,
   }
 }
 
@@ -103,6 +104,7 @@ export type OgCardProps = {
   creatorUsername: string
   creatorAvatarUrl?: string
   numericValue?: string
+  resolution?: string
 }
 
 export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
@@ -113,22 +115,32 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
     creatorOutcome,
     acceptorOutcome,
   } = challenge || {}
+  const {
+    probability,
+    numericValue,
+    resolution,
+    creatorAvatarUrl,
+    question,
+    metadata,
+    creatorUsername,
+    creatorName,
+  } = props
   const { userName, userAvatarUrl } = acceptances?.[0] ?? {}
 
   const probabilityParam =
-    props.probability === undefined
+    probability === undefined
       ? ''
-      : `&probability=${encodeURIComponent(props.probability ?? '')}`
+      : `&probability=${encodeURIComponent(probability ?? '')}`
 
   const numericValueParam =
-    props.numericValue === undefined
+    numericValue === undefined
       ? ''
-      : `&numericValue=${encodeURIComponent(props.numericValue ?? '')}`
+      : `&numericValue=${encodeURIComponent(numericValue ?? '')}`
 
   const creatorAvatarUrlParam =
-    props.creatorAvatarUrl === undefined
+    creatorAvatarUrl === undefined
       ? ''
-      : `&creatorAvatarUrl=${encodeURIComponent(props.creatorAvatarUrl ?? '')}`
+      : `&creatorAvatarUrl=${encodeURIComponent(creatorAvatarUrl ?? '')}`
 
   const challengeUrlParams = challenge
     ? `&creatorAmount=${creatorAmount}&creatorOutcome=${creatorOutcome}` +
@@ -136,16 +148,21 @@ export function buildCardUrl(props: OgCardProps, challenge?: Challenge) {
       `&acceptedName=${userName ?? ''}&acceptedAvatarUrl=${userAvatarUrl ?? ''}`
     : ''
 
+  const resolutionUrlParam = resolution
+    ? `&resolution=${encodeURIComponent(resolution)}`
+    : ''
+
   // URL encode each of the props, then add them as query params
   return (
     `https://manifold-og-image.vercel.app/m.png` +
-    `?question=${encodeURIComponent(props.question)}` +
+    `?question=${encodeURIComponent(question)}` +
     probabilityParam +
     numericValueParam +
-    `&metadata=${encodeURIComponent(props.metadata)}` +
-    `&creatorName=${encodeURIComponent(props.creatorName)}` +
+    `&metadata=${encodeURIComponent(metadata)}` +
+    `&creatorName=${encodeURIComponent(creatorName)}` +
     creatorAvatarUrlParam +
-    `&creatorUsername=${encodeURIComponent(props.creatorUsername)}` +
-    challengeUrlParams
+    `&creatorUsername=${encodeURIComponent(creatorUsername)}` +
+    challengeUrlParams +
+    resolutionUrlParam
   )
 }

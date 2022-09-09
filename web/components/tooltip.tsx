@@ -21,8 +21,9 @@ export function Tooltip(props: {
   className?: string
   placement?: Placement
   noTap?: boolean
+  noFade?: boolean
 }) {
-  const { text, children, className, placement = 'top', noTap } = props
+  const { text, children, className, placement = 'top', noTap, noFade } = props
 
   const arrowRef = useRef(null)
 
@@ -64,10 +65,10 @@ export function Tooltip(props: {
       {/* conditionally render tooltip and fade in/out */}
       <Transition
         show={open}
-        enter="transition ease-out duration-200"
-        enterFrom="opacity-0 "
+        enter="transition ease-out duration-50"
+        enterFrom="opacity-0"
         enterTo="opacity-100"
-        leave="transition ease-in duration-150"
+        leave={noFade ? '' : 'transition ease-in duration-150'}
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
         // div attributes

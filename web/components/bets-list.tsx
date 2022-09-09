@@ -1,14 +1,13 @@
 import Link from 'next/link'
 import { keyBy, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
 import {
-  formatLargeNumber,
   formatMoney,
   formatPercent,
   formatWithCommas,
@@ -35,8 +34,6 @@ import {
   resolvedPayout,
   getContractBetNullMetrics,
 } from 'common/calculate'
-import { useTimeSinceFirstRender } from 'web/hooks/use-time-since-first-render'
-import { trackLatency } from 'web/lib/firebase/tracking'
 import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
@@ -84,13 +81,6 @@ export function BetsList(props: { user: User }) {
   const [page, setPage] = useState(0)
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
-
-  const getTime = useTimeSinceFirstRender()
-  useEffect(() => {
-    if (bets && contractsById && signedInUser) {
-      trackLatency(signedInUser.id, 'portfolio', getTime())
-    }
-  }, [signedInUser, bets, contractsById, getTime])
 
   if (!bets || !contractsById) {
     return <LoadingIndicator />
@@ -171,7 +161,7 @@ export function BetsList(props: { user: User }) {
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
-    <Col className="mt-6">
+    <Col>
       <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
         <Row className="gap-8">
           <Col>
@@ -219,26 +209,27 @@ export function BetsList(props: { user: User }) {
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
-          <NoBets user={user} />
+          <NoMatchingBets />
         ) : (
-          displayedContracts.map((contract) => (
-            <ContractBets
-              key={contract.id}
-              contract={contract}
-              bets={contractBets[contract.id] ?? []}
-              metric={sort === 'profit' ? 'profit' : 'value'}
-              isYourBets={isYourBets}
+          <>
+            {displayedContracts.map((contract) => (
+              <ContractBets
+                key={contract.id}
+                contract={contract}
+                bets={contractBets[contract.id] ?? []}
+                metric={sort === 'profit' ? 'profit' : 'value'}
+                isYourBets={isYourBets}
+              />
+            ))}
+            <Pagination
+              page={page}
+              itemsPerPage={CONTRACTS_PER_PAGE}
+              totalItems={filteredContracts.length}
+              setPage={setPage}
             />
-          ))
+          </>
         )}
       </Col>
-
-      <Pagination
-        page={page}
-        itemsPerPage={CONTRACTS_PER_PAGE}
-        totalItems={filteredContracts.length}
-        setPage={setPage}
-      />
     </Col>
   )
 }
@@ -246,7 +237,7 @@ export function BetsList(props: { user: User }) {
 const NoBets = ({ user }: { user: User }) => {
   const me = useUser()
   return (
-    <div className="mx-4 text-gray-500">
+    <div className="mx-4 py-4 text-gray-500">
       {user.id === me?.id ? (
         <>
           You have not made any bets yet.{' '}
@@ -260,6 +251,11 @@ const NoBets = ({ user }: { user: User }) => {
     </div>
   )
 }
+const NoMatchingBets = () => (
+  <div className="mx-4 py-4 text-gray-500">
+    No bets matching the current filter.
+  </div>
+)
 
 function ContractBets(props: {
   contract: Contract
@@ -479,23 +475,6 @@ export function BetsSummary(props: {
             <Col>
               <div className="whitespace-nowrap text-sm text-gray-500">
                 Payout if <NoLabel />
-              </div>
-              <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-            </Col>
-          </>
-        ) : isPseudoNumeric ? (
-          <>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if {'>='} {formatLargeNumber(contract.max)}
-              </div>
-              <div className="whitespace-nowrap">
-                {formatMoney(yesWinnings)}
-              </div>
-            </Col>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if {'<='} {formatLargeNumber(contract.min)}
               </div>
               <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
             </Col>

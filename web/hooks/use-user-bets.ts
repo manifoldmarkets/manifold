@@ -1,10 +1,22 @@
+import { useQueryClient } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
 import {
   Bet,
+  getUserBets,
   getUserBetsQuery,
   listenForUserContractBets,
 } from 'web/lib/firebase/bets'
+import { MINUTE_MS } from 'common/util/time'
+
+export const usePrefetchUserBets = (userId: string) => {
+  const queryClient = useQueryClient()
+  return queryClient.prefetchQuery(
+    ['bets', userId],
+    () => getUserBets(userId),
+    { staleTime: MINUTE_MS }
+  )
+}
 
 export const useUserBets = (userId: string) => {
   const result = useFirestoreQueryData(

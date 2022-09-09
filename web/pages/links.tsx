@@ -31,7 +31,7 @@ import { UserLink } from 'web/components/user-link'
 const LINKS_PER_PAGE = 24
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
-  return { props: { auth: await getUserAndPrivateUser(creds.user.uid) } }
+  return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
 })
 
 export function getManalinkUrl(slug: string) {

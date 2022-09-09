@@ -17,6 +17,14 @@
         f.parentNode.insertBefore(j, f)
       })(window, document, 'script', 'dataLayer', 'GTM-M3MBVGG')
     </script>
+    <script>
+      function updateSettingDefault(digital, un, original) {
+        window.console.log(digital, un, original)
+        document.getElementById('digital').checked = digital
+        document.getElementById('un').checked = un
+        document.getElementById('original').checked = original
+      }
+    </script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
     <style type="text/css">
@@ -130,6 +138,7 @@
           id="counterspell"
           name="whichguesser"
           value="counterspell"
+          onchange="updateSettingDefault(true, true, false)"
           checked
         />
         <label class="radio-label" for="counterspell">
@@ -140,7 +149,13 @@
           <h3>Counterspell Guesser</h3></label
         ><br />
 
-        <input type="radio" id="burn" name="whichguesser" value="burn" />
+        <input
+          type="radio"
+          id="burn"
+          name="whichguesser"
+          value="burn"
+          onchange="updateSettingDefault(true, true, false)"
+        />
         <label class="radio-label" for="burn">
           <img
             class="thumbnail"
@@ -149,7 +164,13 @@
           <h3>Match With Hot Singles</h3></label
         ><br />
 
-        <input type="radio" id="beast" name="whichguesser" value="beast" />
+        <input
+          type="radio"
+          id="beast"
+          name="whichguesser"
+          value="beast"
+          onchange="updateSettingDefault(true, true, false)"
+        />
         <label class="radio-label" for="beast">
           <img
             class="thumbnail"
@@ -159,15 +180,36 @@
         >
         <br />
 
-        <input type="radio" id="basic" name="whichguesser" value="basic" />
+        <input
+          type="radio"
+          id="basic"
+          name="whichguesser"
+          value="basic"
+          onchange="updateSettingDefault(true, true, true)"
+        />
         <label class="radio-label" for="basic">
           <img
             class="thumbnail"
-            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/3/03683fbb-9843-4c14-bb95-387150e97c90.jpg?1642161346"
+            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/e/5/e52ed647-bd30-40a5-b648-0b98d1a3fd4a.jpg?1562949575"
           />
           <h3>How Basic</h3></label
         >
         <br />
+
+        <input
+          type="radio"
+          id="commander"
+          name="whichguesser"
+          value="commander"
+          onchange="updateSettingDefault(false, false, false)"
+        />
+        <label class="radio-label" for="commander">
+          <img
+            class="thumbnail"
+            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/d/9/d9631cb2-d53b-4401-b53b-29d27bdefc44.jpg?1562770627"
+          />
+          <h3>General Knowledge</h3></label
+        ><br />
 
         <details id="addl-options">
           <summary>

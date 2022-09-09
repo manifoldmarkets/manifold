@@ -13,7 +13,6 @@ import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
-import { useBets } from 'web/hooks/use-bets'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { BetSignUpPrompt } from '../sign-up-prompt'
@@ -27,24 +26,23 @@ export function ContractTabs(props: {
   comments: ContractComment[]
   tips: CommentTipMap
 }) {
-  const { contract, user, tips } = props
+  const { contract, user, bets, tips } = props
   const { outcomeType } = contract
 
-  const bets = useBets(contract.id) ?? props.bets
-  const lps = useLiquidity(contract.id) ?? []
+  const lps = useLiquidity(contract.id)
 
   const userBets =
     user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
   const visibleBets = bets.filter(
     (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
   )
-  const visibleLps = lps.filter((l) => !l.isAnte && l.amount > 0)
+  const visibleLps = lps?.filter((l) => !l.isAnte && l.amount > 0)
 
   // Load comments here, so the badge count will be correct
   const updatedComments = useComments(contract.id)
   const comments = updatedComments ?? props.comments
 
-  const betActivity = (
+  const betActivity = visibleLps && (
     <ContractBetsActivity
       contract={contract}
       bets={visibleBets}
@@ -116,13 +114,13 @@ export function ContractTabs(props: {
             badge: `${comments.length}`,
           },
           {
-            title: 'Bets',
+            title: 'Trades',
             content: betActivity,
             badge: `${visibleBets.length}`,
           },
           ...(!user || !userBets?.length
             ? []
-            : [{ title: 'Your bets', content: yourTrades }]),
+            : [{ title: 'Your trades', content: yourTrades }]),
         ]}
       />
       {!user ? (

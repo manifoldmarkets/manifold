@@ -54,19 +54,33 @@ Returns the authenticated user.
 
 Gets all groups, in no particular order.
 
+Parameters:
+- `availableToUserId`: Optional. if specified, only groups that the user can
+  join and groups they've already joined will be returned.
+
 Requires no authorization.
 
-### `GET /v0/groups/[slug]`
+### `GET /v0/group/[slug]`
 
 Gets a group by its slug.
 
-Requires no authorization.
+Requires no authorization.  
+Note: group is singular in the URL.
 
-### `GET /v0/groups/by-id/[id]`
+### `GET /v0/group/by-id/[id]`
 
 Gets a group by its unique ID.
 
-Requires no authorization.
+Requires no authorization.  
+Note: group is singular in the URL.
+
+### `GET /v0/group/by-id/[id]/markets`
+
+Gets a group's markets by its unique ID.
+
+Requires no authorization.  
+Note: group is singular in the URL.
+
 
 ### `GET /v0/markets`
 

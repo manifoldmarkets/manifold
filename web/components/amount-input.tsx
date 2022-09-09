@@ -84,6 +84,7 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
+  showSliderOnMobile?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -94,6 +95,7 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
+    showSliderOnMobile: showSlider,
     disabled,
     className,
     inputClassName,
@@ -120,16 +122,41 @@ export function BuyAmountInput(props: {
     }
   }
 
+  const parseRaw = (x: number) => {
+    if (x <= 100) return x
+    if (x <= 130) return 100 + (x - 100) * 5
+    return 250 + (x - 130) * 10
+  }
+
+  const getRaw = (x: number) => {
+    if (x <= 100) return x
+    if (x <= 250) return 100 + (x - 100) / 5
+    return 130 + (x - 250) / 10
+  }
+
   return (
-    <AmountInput
-      amount={amount}
-      onChange={onAmountChange}
-      label={ENV_CONFIG.moneyMoniker}
-      error={error}
-      disabled={disabled}
-      className={className}
-      inputClassName={inputClassName}
-      inputRef={inputRef}
-    />
+    <>
+      <AmountInput
+        amount={amount}
+        onChange={onAmountChange}
+        label={ENV_CONFIG.moneyMoniker}
+        error={error}
+        disabled={disabled}
+        className={className}
+        inputClassName={inputClassName}
+        inputRef={inputRef}
+      />
+      {showSlider && (
+        <input
+          type="range"
+          min="0"
+          max="205"
+          value={getRaw(amount ?? 0)}
+          onChange={(e) => onAmountChange(parseRaw(parseInt(e.target.value)))}
+          className="range range-lg only-thumb z-40 mb-2 xl:hidden"
+          step="5"
+        />
+      )}
+    </>
   )
 }
