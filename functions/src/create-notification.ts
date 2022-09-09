@@ -263,7 +263,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
   const recipientIdsList: string[] = []
 
-  // get contract follower documents and check here if they're a follower
   const contractFollowersSnap = await firestore
     .collection(`contracts/${sourceContract.id}/follows`)
     .get()
@@ -327,7 +326,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     }
     if (sendToEmail) {
       if (sourceType === 'comment') {
-        // if the source contract is a free response contract, send the email
         await sendNewCommentEmail(
           reason,
           userId,
