@@ -43,18 +43,6 @@ export const getStandardFixedPayouts = (
 
   const { collectedFees } = contract
   const creatorPayout = collectedFees.creatorFee
-
-  console.log(
-    'resolved',
-    outcome,
-    'pool',
-    contract.pool[outcome],
-    'payouts',
-    sum(payouts),
-    'creator fee',
-    creatorPayout
-  )
-
   const liquidityPayouts = getLiquidityPoolPayouts(
     contract,
     outcome,
@@ -98,18 +86,6 @@ export const getMktFixedPayouts = (
 
   const { collectedFees } = contract
   const creatorPayout = collectedFees.creatorFee
-
-  console.log(
-    'resolved PROB',
-    p,
-    'pool',
-    p * contract.pool.YES + (1 - p) * contract.pool.NO,
-    'payouts',
-    sum(payouts),
-    'creator fee',
-    creatorPayout
-  )
-
   const liquidityPayouts = getLiquidityPoolProbPayouts(contract, p, liquidities)
 
   return { payouts, creatorPayout, liquidityPayouts, collectedFees }
