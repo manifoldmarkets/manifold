@@ -27,7 +27,10 @@ import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { filterDefined } from 'common/util/array'
 import toast from 'react-hot-toast'
 
-export function NotificationSettings() {
+export function NotificationSettings(props: {
+  navigateToSection: string | undefined
+}) {
+  const { navigateToSection } = props
   const privateUser = usePrivateUser()
   const [showWatchModal, setShowWatchModal] = useState(false)
 
@@ -53,6 +56,8 @@ export function NotificationSettings() {
 
     'tagged_user',
     'trending_markets',
+    'onboarding_flow',
+    'thank_you_for_purchases',
 
     // TODO: add these
     // 'contract_from_followed_user',
@@ -67,77 +72,94 @@ export function NotificationSettings() {
     // 'probability_updates_on_watched_markets',
     // 'limit_order_fills',
   ]
-  const browserDisabled = ['trending_markets', 'profit_loss_updates']
+  const browserDisabled: Array<keyof notification_subscription_types> = [
+    'trending_markets',
+    'profit_loss_updates',
+    'onboarding_flow',
+    'thank_you_for_purchases',
+  ]
 
-  const watched_markets_explanations_comments: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    all_comments_on_watched_markets: 'All',
-    all_replies_to_my_comments_on_watched_markets: 'Replies to your comments',
-    all_comments_on_contracts_with_shares_in_on_watched_markets:
-      'On markets you have shares in',
-    // comments_by_followed_users_on_watched_markets: 'By followed users',
-  }
-  const watched_markets_explanations_answers: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    all_answers_on_watched_markets: 'All',
-    all_replies_to_my_answers_on_watched_markets: 'Replies to your answers',
-    all_answers_on_contracts_with_shares_in_on_watched_markets:
-      'On markets you have shares in',
-    // answers_by_followed_users_on_watched_markets: 'By followed users',
-    // answers_by_market_creator_on_watched_markets: 'By market creator',
-  }
-  const watched_markets_explanations_your_markets: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    your_contract_closed: 'Your market has closed (and needs resolution)',
-    all_comments_on_my_markets: 'Comments on your markets',
-    all_answers_on_my_markets: 'Answers on your markets',
-    subsidized_your_market: 'Your market was subsidized',
-    tips_on_your_markets: 'Likes on your markets',
-  }
-  const watched_markets_explanations_market_updates: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    market_updates_on_watched_markets: 'Updates made by the creator',
-    market_updates_on_watched_markets_with_shares_in:
-      'Updates made by the creator on markets you have shares in',
-    resolutions_on_watched_markets: 'Market resolutions',
-    resolutions_on_watched_markets_with_shares_in:
-      'Market resolutions you have shares in',
-    // probability_updates_on_watched_markets: 'Probability updates',
+  type sectionData = {
+    label: string
+    subscriptionTypeToDescription: {
+      [key in keyof Partial<notification_subscription_types>]: string
+    }
   }
 
-  const bonuses_explanations: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    betting_streaks: 'Betting streak bonuses',
-    referral_bonuses: 'Referral bonuses from referring users',
-    unique_bettors_on_your_contract: 'Unique bettor bonuses on your markets',
+  const comments: sectionData = {
+    label: 'New Comments',
+    subscriptionTypeToDescription: {
+      all_comments_on_watched_markets: 'All new comments',
+      all_comments_on_contracts_with_shares_in_on_watched_markets: `Only on markets you're invested in`,
+      all_replies_to_my_comments_on_watched_markets:
+        'Only replies to your comments',
+      // comments_by_followed_users_on_watched_markets: 'By followed users',
+    },
   }
 
-  const other_balance_change_explanations: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    loan_income: 'Automatic loans from your profitable bets',
-    limit_order_fills: 'Limit order fills',
-    tips_on_your_comments: 'Tips on your comments',
+  const answers: sectionData = {
+    label: 'New Answers',
+    subscriptionTypeToDescription: {
+      all_answers_on_watched_markets: 'All new answers',
+      all_answers_on_contracts_with_shares_in_on_watched_markets: `Only on markets you're invested in`,
+      all_replies_to_my_answers_on_watched_markets:
+        'Only replies to your answers',
+      // answers_by_followed_users_on_watched_markets: 'By followed users',
+      // answers_by_market_creator_on_watched_markets: 'By market creator',
+    },
   }
-
-  const general_explanations: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    tagged_user: 'A user tagged you',
-    trending_markets: 'Weekly trending markets',
-    // profit_loss_updates: 'Weekly profit/loss updates',
+  const updates: sectionData = {
+    label: 'Updates & Resolutions',
+    subscriptionTypeToDescription: {
+      market_updates_on_watched_markets: 'All creator updates',
+      market_updates_on_watched_markets_with_shares_in: `Only creator updates on markets you're invested in`,
+      resolutions_on_watched_markets: 'All market resolutions',
+      resolutions_on_watched_markets_with_shares_in: `Only market resolutions you're invested in`,
+      // probability_updates_on_watched_markets: 'Probability updates',
+    },
   }
-
-  const follows_and_followers_explanations: {
-    [key in keyof Partial<notification_subscription_types>]: string
-  } = {
-    on_new_follow: 'New followers',
-    contract_from_followed_user: 'New markets created by users you follow',
+  const yourMarkets: sectionData = {
+    label: 'Markets You Created',
+    subscriptionTypeToDescription: {
+      your_contract_closed: 'Your market has closed (and needs resolution)',
+      all_comments_on_my_markets: 'Comments on your markets',
+      all_answers_on_my_markets: 'Answers on your markets',
+      subsidized_your_market: 'Your market was subsidized',
+      tips_on_your_markets: 'Likes on your markets',
+    },
+  }
+  const bonuses: sectionData = {
+    label: 'Bonuses',
+    subscriptionTypeToDescription: {
+      betting_streaks: 'Betting streak bonuses',
+      referral_bonuses: 'Referral bonuses from referring users',
+      unique_bettors_on_your_contract: 'Unique bettor bonuses on your markets',
+    },
+  }
+  const otherBalances: sectionData = {
+    label: 'Other',
+    subscriptionTypeToDescription: {
+      loan_income: 'Automatic loans from your profitable bets',
+      limit_order_fills: 'Limit order fills',
+      tips_on_your_comments: 'Tips on your comments',
+    },
+  }
+  const userInteractions: sectionData = {
+    label: 'Users',
+    subscriptionTypeToDescription: {
+      tagged_user: 'A user tagged you',
+      on_new_follow: 'Someone followed you',
+      contract_from_followed_user: 'New markets created by users you follow',
+    },
+  }
+  const generalOther: sectionData = {
+    label: 'Other',
+    subscriptionTypeToDescription: {
+      trending_markets: 'Weekly interesting markets',
+      thank_you_for_purchases: 'Thank you notes for your purchases',
+      onboarding_flow: 'Explanatory emails to help you get started',
+      // profit_loss_updates: 'Weekly profit/loss updates',
+    },
   }
 
   const NotificationSettingLine = (
@@ -151,6 +173,7 @@ export function NotificationSettings() {
     const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
     const loading = 'Changing Notifications Settings'
     const success = 'Changed Notification Settings!'
+    const highlight = navigateToSection === key
 
     useEffect(() => {
       if (
@@ -183,7 +206,12 @@ export function NotificationSettings() {
     ])
 
     return (
-      <Row className={clsx('my-1 gap-1 text-gray-300')}>
+      <Row
+        className={clsx(
+          'my-1 gap-1 text-gray-300',
+          highlight ? 'rounded-md bg-indigo-100 p-1' : ''
+        )}
+      >
         <Col className="ml-3 gap-2 text-sm">
           <Row className="gap-2 font-medium text-gray-700">
             <span>{description}</span>
@@ -251,16 +279,20 @@ export function NotificationSettings() {
     return privateUser.notificationSubscriptionTypes[key] ?? []
   }
 
-  const Section = (
-    icon: ReactNode,
-    label: string,
-    subscriptionTypeToDescription: {
-      [key in keyof Partial<notification_subscription_types>]: string
-    }
-  ) => {
-    const [expanded, setExpanded] = useState(false)
+  const Section = (icon: ReactNode, data: sectionData) => {
+    const { label, subscriptionTypeToDescription } = data
+    const expand =
+      navigateToSection &&
+      Object.keys(subscriptionTypeToDescription).includes(navigateToSection)
+    const [expanded, setExpanded] = useState(expand)
+
+    // Not working as the default value for expanded, so using a useEffect
+    useEffect(() => {
+      if (expand) setExpanded(true)
+    }, [expand])
+
     return (
-      <Col className={'ml-2 gap-2'}>
+      <Col className={clsx('ml-2 gap-2')}>
         <Row
           className={'mt-1 cursor-pointer items-center gap-2 text-gray-600'}
           onClick={() => setExpanded(!expanded)}
@@ -303,52 +335,20 @@ export function NotificationSettings() {
             onClick={() => setShowWatchModal(true)}
           />
         </Row>
-        {Section(
-          <ChatIcon className={'h-6 w-6'} />,
-          'New Comments',
-          watched_markets_explanations_comments
-        )}
-        {Section(
-          <LightBulbIcon className={'h-6 w-6'} />,
-          'New Answers',
-          watched_markets_explanations_answers
-        )}
-        {Section(
-          <TrendingUpIcon className={'h-6 w-6'} />,
-          'Updates & Resolutions',
-          watched_markets_explanations_market_updates
-        )}
-        {Section(
-          <UserIcon className={'h-6 w-6'} />,
-          'Markets You Created',
-          watched_markets_explanations_your_markets
-        )}
+        {Section(<ChatIcon className={'h-6 w-6'} />, comments)}
+        {Section(<LightBulbIcon className={'h-6 w-6'} />, answers)}
+        {Section(<TrendingUpIcon className={'h-6 w-6'} />, updates)}
+        {Section(<UserIcon className={'h-6 w-6'} />, yourMarkets)}
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>Balance Changes</span>
         </Row>
-        {Section(
-          <CurrencyDollarIcon className={'h-6 w-6'} />,
-          'Bonuses',
-          bonuses_explanations
-        )}
-        {Section(
-          <CashIcon className={'h-6 w-6'} />,
-          'Other',
-          other_balance_change_explanations
-        )}
+        {Section(<CurrencyDollarIcon className={'h-6 w-6'} />, bonuses)}
+        {Section(<CashIcon className={'h-6 w-6'} />, otherBalances)}
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>General</span>
         </Row>
-        {Section(
-          <UsersIcon className={'h-6 w-6'} />,
-          'Follows & Followers',
-          follows_and_followers_explanations
-        )}
-        {Section(
-          <InboxInIcon className={'h-6 w-6'} />,
-          'Other',
-          general_explanations
-        )}
+        {Section(<UsersIcon className={'h-6 w-6'} />, userInteractions)}
+        {Section(<InboxInIcon className={'h-6 w-6'} />, generalOther)}
         <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </div>

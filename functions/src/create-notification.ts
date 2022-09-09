@@ -23,6 +23,7 @@ import {
   sendNewAnswerEmail,
   sendNewCommentEmail,
 } from './emails'
+import { DOMAIN } from 'common/lib/envs/constants'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -92,7 +93,7 @@ export const createNotification = async (
       if (!sendToEmail) continue
 
       if (reason === 'your_contract_closed' && privateUser && sourceContract) {
-        await sendMarketCloseEmail(sourceUser, privateUser, sourceContract)
+        await sendMarketCloseEmail(reason, sourceUser, sourceContract)
       } else if (reason === 'tagged_user') {
         // TODO: send email to tagged user in new contract
       } else if (reason === 'subsidized_your_market') {
@@ -196,7 +197,7 @@ export const createNotification = async (
   await sendNotificationsIfSettingsPermit(userToReasonTexts)
 }
 
-const getDestinationsForUser = async (
+export const getDestinationsForUser = async (
   userId: string,
   reason: notification_reason_types | keyof notification_subscription_types
 ) => {
@@ -206,12 +207,13 @@ const getDestinationsForUser = async (
 
   const notificationSettings = privateUser.notificationSubscriptionTypes
   let destinations
+  let subscriptionType: keyof notification_subscription_types | undefined
   if (Object.keys(notificationSettings).includes(reason)) {
-    const key = reason as keyof notification_subscription_types
-    destinations = notificationSettings[key]
+    subscriptionType = reason as keyof notification_subscription_types
+    destinations = notificationSettings[subscriptionType]
   } else {
     const key = reason as notification_reason_types
-    const subscriptionType = notificationReasonToSubscriptionType[key]
+    subscriptionType = notificationReasonToSubscriptionType[key]
     destinations = subscriptionType
       ? notificationSettings[subscriptionType]
       : []
@@ -220,6 +222,7 @@ const getDestinationsForUser = async (
     sendToEmail: destinations.includes('email'),
     sendToBrowser: destinations.includes('browser'),
     privateUser,
+    urlToManageThisNotification: `${DOMAIN}/notifications?section=${subscriptionType}`,
   }
 }
 
@@ -326,6 +329,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       if (sourceType === 'comment') {
         // if the source contract is a free response contract, send the email
         await sendNewCommentEmail(
+          reason,
           userId,
           sourceUser,
           sourceContract,
@@ -338,6 +342,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
         )
       } else if (sourceType === 'answer')
         await sendNewAnswerEmail(
+          reason,
           userId,
           sourceUser.name,
           sourceText,
@@ -350,6 +355,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
         resolutionData
       )
         await sendMarketResolutionEmail(
+          reason,
           userId,
           resolutionData.userInvestments[userId],
           resolutionData.userPayouts[userId],

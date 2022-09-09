@@ -116,6 +116,8 @@ export type notification_subscription_types = {
   contract_from_followed_user: notification_destination_types[]
   trending_markets: notification_destination_types[]
   profit_loss_updates: notification_destination_types[]
+  onboarding_flow: notification_destination_types[]
+  thank_you_for_purchases: notification_destination_types[]
 }
 export type notification_subscribe_types = 'all' | 'less' | 'none'
 
@@ -143,6 +145,7 @@ export const getDefaultNotificationSettings = (
     unsubscribedFromAnswerEmails,
     unsubscribedFromResolutionEmails,
     unsubscribedFromWeeklyTrendingEmails,
+    unsubscribedFromGenericEmails,
   } = privateUser || {}
 
   const constructPref = (browserIf: boolean, emailIf: boolean) => {
@@ -258,5 +261,10 @@ export const getDefaultNotificationSettings = (
       wantsAll || wantsLess,
       false
     ),
+    thank_you_for_purchases: constructPref(
+      false,
+      !unsubscribedFromGenericEmails
+    ),
+    onboarding_flow: constructPref(false, !unsubscribedFromGenericEmails),
   } as notification_subscription_types
 }

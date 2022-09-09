@@ -1,6 +1,6 @@
-import { Tabs } from 'web/components/layout/tabs'
+import { ControlledTabs } from 'web/components/layout/tabs'
 import React, { useEffect, useMemo, useState } from 'react'
-import Router from 'next/router'
+import Router, { useRouter } from 'next/router'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -56,10 +56,21 @@ const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
+  const router = useRouter()
+  const [navigateToSection, setNavigateToSection] = useState<string>()
+  const [activeIndex, setActiveIndex] = useState(0)
 
   useEffect(() => {
     if (privateUser === null) Router.push('/')
   })
+
+  useEffect(() => {
+    const query = { ...router.query }
+    if (query.section) {
+      setNavigateToSection(query.section as string)
+      setActiveIndex(1)
+    }
+  }, [router.query])
 
   return (
     <Page>
@@ -67,13 +78,16 @@ export default function Notifications() {
         <Title text={'Notifications'} className={'hidden md:block'} />
         <SEO title="Notifications" description="Manifold user notifications" />
 
-        {privateUser && (
+        {privateUser && router.isReady && (
           <div>
-            <Tabs
+            <ControlledTabs
               currentPageForAnalytics={'notifications'}
               labelClassName={'pb-2 pt-1 '}
               className={'mb-0 sm:mb-2'}
-              defaultIndex={0}
+              activeIndex={activeIndex}
+              onClick={(title, index) => {
+                setActiveIndex(index)
+              }}
               tabs={[
                 {
                   title: 'Notifications',
@@ -82,9 +96,9 @@ export default function Notifications() {
                 {
                   title: 'Settings',
                   content: (
-                    <div className={''}>
-                      <NotificationSettings />
-                    </div>
+                    <NotificationSettings
+                      navigateToSection={navigateToSection}
+                    />
                   ),
                 },
               ]}
