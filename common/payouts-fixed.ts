@@ -1,4 +1,3 @@
-import { sum } from 'lodash'
 
 import { Bet } from './bet'
 import { getProbability } from './calculate'
