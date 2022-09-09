@@ -28,7 +28,7 @@ def generate_initial_query(category):
     # add category string query here
     string_query += '+-%28set%3Asld+%28%28cn>%3D231+cn<%3D233%29+or+%28cn>%3D321+cn<%3D324%29+or+%28cn>%3D185+cn' \
                 '<%3D189%29+or+%28cn>%3D138+cn<%3D142%29+or+%28cn>%3D364+cn<%3D368%29+or+cn%3A669+or+cn%3A670%29' \
-                '%29+-name%3A%2F%5EA-%2F+not%3Adfc+not%3Asplit+-set%3Acmb2+-set%3Acmb1+-set%3Aplist+-set%3Adbl' \
+                '%29+-name%3A%2F%5EA-%2F+not%3Adfc+not%3Asplit+-set%3Acmb2+-set%3Acmb1+-set%3Aplist' \
                 '+language%3Aenglish&order=released&dir=asc&unique=prints&page='
     print(string_query)
     return string_query
