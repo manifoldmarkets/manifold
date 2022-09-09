@@ -64,6 +64,8 @@ function putIntoMapAndFetch(data) {
     document.getElementById('guess-type').innerText = 'Finding Fantastic Beasts'
   } else if (whichGuesser === 'basic') {
     document.getElementById('guess-type').innerText = 'How Basic'
+  } else if (whichGuesser === 'commander') {
+    document.getElementById('guess-type').innerText = 'General Knowledge'
   }
   setUpNewGame()
 }
@@ -156,8 +158,8 @@ function determineIfSkip(card) {
   if (card.flavor_name) {
     return true
   }
-  // don't include racist cards
-  return card.content_warning
+
+  return false
 }
 
 function putIntoMap(data) {
