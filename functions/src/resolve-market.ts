@@ -215,51 +215,6 @@ const processPayouts = async (payouts: Payout[], isDeposit = false) => {
     .catch((e) => ({ status: 'error', message: e }))
     .then(() => ({ status: 'success' }))
 }
-//
-// const sendResolutionEmails = async (
-//   bets: Bet[],
-//   userPayouts: { [userId: string]: number },
-//   creator: User,
-//   creatorPayout: number,
-//   contract: Contract,
-//   outcome: string,
-//   resolutionProbability?: number,
-//   resolutions?: { [outcome: string]: number }
-// ) => {
-//   const investedByUser = mapValues(
-//     groupBy(bets, (bet) => bet.userId),
-//     (bets) => getContractBetMetrics(contract, bets).invested
-//   )
-//   const investedUsers = Object.keys(investedByUser).filter(
-//     (userId) => !floatingEqual(investedByUser[userId], 0)
-//   )
-//
-//   const nonWinners = difference(investedUsers, Object.keys(userPayouts))
-//   const emailPayouts = [
-//     ...Object.entries(userPayouts),
-//     ...nonWinners.map((userId) => [userId, 0] as const),
-//   ].map(([userId, payout]) => ({
-//     userId,
-//     investment: investedByUser[userId] ?? 0,
-//     payout,
-//   }))
-//
-//   await Promise.all(
-//     emailPayouts.map(({ userId, investment, payout }) =>
-//       sendMarketResolutionEmail(
-//         userId,
-//         investment,
-//         payout,
-//         creator,
-//         creatorPayout,
-//         contract,
-//         outcome,
-//         resolutionProbability,
-//         resolutions
-//       )
-//     )
-//   )
-// }
 
 function getResolutionParams(contract: Contract, body: string) {
   const { outcomeType } = contract
