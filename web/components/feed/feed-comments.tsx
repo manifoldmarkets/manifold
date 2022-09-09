@@ -20,7 +20,6 @@ import { getProbability } from 'common/calculate'
 import { track } from 'web/lib/service/analytics'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
-
 import { Content } from '../editor'
 import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
