@@ -182,8 +182,6 @@ export function NotificationSettings() {
       key,
     ])
 
-    // for each entry in the exhaustive_notification_subscribe_types we'll want to load whether the user
-    // wants email, browser, both, or none
     return (
       <Row className={clsx('my-1 gap-1 text-gray-300')}>
         <Col className="ml-3 gap-2 text-sm">
@@ -305,7 +303,6 @@ export function NotificationSettings() {
             onClick={() => setShowWatchModal(true)}
           />
         </Row>
-        {/*// TODO: add none option to each section*/}
         {Section(
           <ChatIcon className={'h-6 w-6'} />,
           'New Comments',

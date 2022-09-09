@@ -90,7 +90,7 @@ export type notification_reason_types =
   | 'your_contract_closed'
   | 'subsidized_your_market'
 
-// Adding a new key:value here is optional, you can also just use a key of exhaustive_notification_subscribe_types
+// Adding a new key:value here is optional, you can also just use a key of notification_subscription_types
 export const notificationReasonToSubscriptionType: Partial<
   Record<notification_reason_types, keyof notification_subscription_types>
 > = {

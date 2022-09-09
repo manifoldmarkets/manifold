@@ -73,14 +73,14 @@ export type notification_destination_types = 'email' | 'browser'
 
 export type notification_subscription_types = {
   // Watched Markets
-  all_comments_on_watched_markets: notification_destination_types[] // Email currently - seems bad
-  all_answers_on_watched_markets: notification_destination_types[] // Email currently - seems bad
+  all_comments_on_watched_markets: notification_destination_types[]
+  all_answers_on_watched_markets: notification_destination_types[]
 
   // Comments
-  tipped_comments_on_watched_markets: notification_destination_types[] // Email
+  tipped_comments_on_watched_markets: notification_destination_types[]
   comments_by_followed_users_on_watched_markets: notification_destination_types[]
-  all_replies_to_my_comments_on_watched_markets: notification_destination_types[] // Email
-  all_replies_to_my_answers_on_watched_markets: notification_destination_types[] // Email
+  all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
+  all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
   all_comments_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
 
   // Answers
@@ -89,17 +89,17 @@ export type notification_subscription_types = {
   all_answers_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
 
   // On users' markets
-  your_contract_closed: notification_destination_types[] // Email, Recommended
-  all_comments_on_my_markets: notification_destination_types[] // Email
-  all_answers_on_my_markets: notification_destination_types[] // Email
-  subsidized_your_market: notification_destination_types[] // Email
+  your_contract_closed: notification_destination_types[]
+  all_comments_on_my_markets: notification_destination_types[]
+  all_answers_on_my_markets: notification_destination_types[]
+  subsidized_your_market: notification_destination_types[]
 
   // Market updates
-  resolutions_on_watched_markets: notification_destination_types[] // Email
-  resolutions_on_watched_markets_with_shares_in: notification_destination_types[] // Email
+  resolutions_on_watched_markets: notification_destination_types[]
+  resolutions_on_watched_markets_with_shares_in: notification_destination_types[]
   market_updates_on_watched_markets: notification_destination_types[]
   market_updates_on_watched_markets_with_shares_in: notification_destination_types[]
-  probability_updates_on_watched_markets: notification_destination_types[] // Email - would want persistent changes only though
+  probability_updates_on_watched_markets: notification_destination_types[]
 
   // Balance Changes
   loan_income: notification_destination_types[]
@@ -111,11 +111,11 @@ export type notification_subscription_types = {
   limit_order_fills: notification_destination_types[]
 
   // General
-  tagged_user: notification_destination_types[] // Email
-  on_new_follow: notification_destination_types[] // Email
-  contract_from_followed_user: notification_destination_types[] // Email
-  trending_markets: notification_destination_types[] // Email
-  profit_loss_updates: notification_destination_types[] // Email
+  tagged_user: notification_destination_types[]
+  on_new_follow: notification_destination_types[]
+  contract_from_followed_user: notification_destination_types[]
+  trending_markets: notification_destination_types[]
+  profit_loss_updates: notification_destination_types[]
 }
 export type notification_subscribe_types = 'all' | 'less' | 'none'
 
