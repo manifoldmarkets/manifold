@@ -109,7 +109,7 @@ def write_art(art_names, id, index, digital):
 def to_compact_write_form(smallJson, art_names, response, category):
     fieldsInCard = ['name', 'image_uris', 'flavor_name',
                     'reprint', 'frame_effects', 'digital', 'set_type']
-    data = []
+    data = smallJson['data']
     # write all fields needed in card
     for card in response['data']:
         # do not include racist cards
@@ -125,18 +125,18 @@ def to_compact_write_form(smallJson, art_names, response, category):
             if 'illustration_id' not in card_face or card_face['illustration_id'] in art_names and (art_names[card_face['illustration_id']] < 0 or card['digital']):
                 continue
             else:
-                ind = len(data)+len(smallJson['data'])
+                ind = len(data)
                 if (card_face['illustration_id'] in art_names):
-                    digital_holder = ind
+                    digital_holder = art_names[card['illustration_id']]
                     ind = -1
                 write_art(
                     art_names, card_face['illustration_id'], ind, card['digital'])
         elif 'illustration_id' not in card or card['illustration_id'] in art_names and (art_names[card['illustration_id']] < 0 or card['digital']):
             continue
         else:
-            ind = len(data)+len(smallJson['data'])
+            ind = len(data)
             if (card['illustration_id'] in art_names):
-                digital_holder = ind
+                digital_holder = art_names[card['illustration_id']]
                 ind = -1
             write_art(art_names, card['illustration_id'], ind, card['digital'])
         write_card = dict()
@@ -164,12 +164,11 @@ def to_compact_write_form(smallJson, art_names, response, category):
             data[digital_holder] = write_card
         else:
             data.append(write_card)
-    smallJson['data'] += data
 
 
 def to_compact_write_form_special(smallJson, art_names, response, category):
     fieldsInBasic = ['image_uris', 'set', 'set_type', 'digital']
-    data = []
+    data = smallJson['data']
     # write all fields needed in card
     for card in response['data']:
         # do not include racist cards
@@ -182,9 +181,9 @@ def to_compact_write_form_special(smallJson, art_names, response, category):
             if 'illustration_id' not in card or card['illustration_id'] in art_names and (art_names[card['illustration_id']] < 0 or card['digital']):
                 continue
             else:
-                ind = len(data)+len(smallJson['data'])
+                ind = len(data)
                 if (card['illustration_id'] in art_names):
-                    digital_holder = ind
+                    digital_holder = art_names[card['illustration_id']]
                     ind = -1
                 write_art(
                     art_names, card['illustration_id'], ind, card['digital'])
@@ -203,8 +202,6 @@ def to_compact_write_form_special(smallJson, art_names, response, category):
         else:
             if card['set_type'] != 'token':
                 smallJson[card['code']] = [card['name'], card['icon_svg_uri']]
-
-    smallJson['data'] += data
 
 
 # only write images needed

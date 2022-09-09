@@ -18,11 +18,12 @@
       })(window, document, 'script', 'dataLayer', 'GTM-M3MBVGG')
     </script>
     <script>
-      function updateSettingDefault(digital, un, original) {
+      function updateSettingDefault(digital, un, original, original_label) {
         window.console.log(digital, un, original)
         document.getElementById('digital').checked = digital
         document.getElementById('un').checked = un
         document.getElementById('original').checked = original
+        document.getElementById('original_label').innerText = original_label
       }
     </script>
     <!-- End Google Tag Manager -->
@@ -151,7 +152,7 @@
             id="counterspell"
             name="whichguesser"
             value="counterspell"
-            onchange="updateSettingDefault(true, true, false)"
+            onchange="updateSettingDefault(true, true, false, 'only first printing')"
             checked
           />
           <label class="radio-label" for="counterspell">
@@ -174,7 +175,7 @@
             id="burn"
             name="whichguesser"
             value="burn"
-            onchange="updateSettingDefault(true, true, false)"
+            onchange="updateSettingDefault(true, true, false, 'only first printing')"
           />
           <label class="radio-label" for="burn">
             <img
@@ -196,7 +197,7 @@
             id="beast"
             name="whichguesser"
             value="beast"
-            onchange="updateSettingDefault(true, true, false)"
+            onchange="updateSettingDefault(true, true, false, 'only first printing')"
           />
           <label class="radio-label" for="beast">
             <img
@@ -218,7 +219,7 @@
             id="basic"
             name="whichguesser"
             value="basic"
-            onchange="updateSettingDefault(true, true, true)"
+            onchange="updateSettingDefault(true, true, true, 'only expansions')"
           />
           <label class="radio-label" for="basic">
             <img
@@ -240,7 +241,7 @@
             id="commander"
             name="whichguesser"
             value="commander"
-            onchange="updateSettingDefault(false, false, false)"
+            onchange="updateSettingDefault(false, false, false, 'only first printing')"
           />
           <label class="radio-label" for="commander">
             <img
@@ -262,7 +263,7 @@
             id="artist"
             name="whichguesser"
             value="artist"
-            onchange="updateSettingDefault(true, true, true)"
+            onchange="updateSettingDefault(true, true, true, 'only include cards')"
           />
           <label class="radio-label" for="artist">
             <img
@@ -293,7 +294,9 @@
           <label for="un">include un-cards</label>
           <br />
           <input type="checkbox" name="original" id="original" />
-          <label for="original">only original set printing</label>
+          <label for="original"
+            ><span id="original_label">only first printing</span></label
+          >
         </details>
         <input type="submit" id="submit" value="Play" />
       </form>
