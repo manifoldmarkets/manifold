@@ -41,6 +41,7 @@ import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 import { AlertBox } from './alert-box'
+import { isAndroid, isIOS } from 'web/lib/util/device'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -184,17 +185,13 @@ function BuyPanel(props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
-  // useEffect(() => {
-  //   if (selected) {
-  //     if (isIOS()) window.scrollTo(0, window.scrollY + 200)
-  //     focusAmountInput()
-  //   }
-  // }, [selected, focusAmountInput])
-
   function onBetChoice(choice: 'YES' | 'NO') {
     setOutcome(choice)
     setWasSubmitted(false)
-    focusAmountInput()
+
+    if (!isIOS() && !isAndroid()) {
+      focusAmountInput()
+    }
   }
 
   function onBetChange(newAmount: number | undefined) {
