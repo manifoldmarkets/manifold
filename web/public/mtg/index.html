@@ -113,6 +113,18 @@
         list-style: none;
         text-align: right;
       }
+
+      .option-row {
+        display: flex;
+        align-items: flex-end;
+        padding-left: 65px;
+      }
+      .level-badge {
+        display: block;
+        width: 65px;
+        padding-left: 8px;
+        padding-bottom: 2px;
+      }
     </style>
   </head>
   <body>
@@ -133,83 +145,116 @@
         action="guess.html"
         style="display: flex; flex-direction: column; align-items: center"
       >
-        <input
-          type="radio"
-          id="counterspell"
-          name="whichguesser"
-          value="counterspell"
-          onchange="updateSettingDefault(true, true, false)"
-          checked
-        />
-        <label class="radio-label" for="counterspell">
-          <img
-            class="thumbnail"
-            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/7/1/71cfcba5-1571-48b8-a3db-55dca135506e.jpg?1562843855"
+        <div class="option-row">
+          <input
+            type="radio"
+            id="counterspell"
+            name="whichguesser"
+            value="counterspell"
+            onchange="updateSettingDefault(true, true, false)"
+            checked
           />
-          <h3>Counterspell Guesser</h3></label
-        ><br />
-
-        <input
-          type="radio"
-          id="burn"
-          name="whichguesser"
-          value="burn"
-          onchange="updateSettingDefault(true, true, false)"
-        />
-        <label class="radio-label" for="burn">
+          <label class="radio-label" for="counterspell">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/7/1/71cfcba5-1571-48b8-a3db-55dca135506e.jpg?1562843855"
+            />
+            <h3>Counterspell Guesser</h3></label
+          >
           <img
-            class="thumbnail"
-            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/6/0/60b2fae1-242b-45e0-a757-b1adc02c06f3.jpg?1562760596"
+            class="level-badge"
+            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/a8/Advanced_level.jpg"
           />
-          <h3>Match With Hot Singles</h3></label
-        ><br />
-
-        <input
-          type="radio"
-          id="beast"
-          name="whichguesser"
-          value="beast"
-          onchange="updateSettingDefault(true, true, false)"
-        />
-        <label class="radio-label" for="beast">
-          <img
-            class="thumbnail"
-            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/3/3/33f7e788-8fc7-49f3-804b-2d7f96852d4b.jpg?1562905469"
-          />
-          <h3>Finding Fantastic Beasts</h3></label
-        >
+        </div>
         <br />
 
-        <input
-          type="radio"
-          id="basic"
-          name="whichguesser"
-          value="basic"
-          onchange="updateSettingDefault(true, true, true)"
-        />
-        <label class="radio-label" for="basic">
-          <img
-            class="thumbnail"
-            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/e/5/e52ed647-bd30-40a5-b648-0b98d1a3fd4a.jpg?1562949575"
+        <div class="option-row">
+          <input
+            type="radio"
+            id="burn"
+            name="whichguesser"
+            value="burn"
+            onchange="updateSettingDefault(true, true, false)"
           />
-          <h3>How Basic</h3></label
-        >
+          <label class="radio-label" for="burn">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/6/0/60b2fae1-242b-45e0-a757-b1adc02c06f3.jpg?1562760596"
+            />
+            <h3>Match With Hot Singles</h3></label
+          >
+          <img
+            class="level-badge"
+            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/a8/Advanced_level.jpg"
+          />
+        </div>
         <br />
 
-        <input
-          type="radio"
-          id="commander"
-          name="whichguesser"
-          value="commander"
-          onchange="updateSettingDefault(false, false, false)"
-        />
-        <label class="radio-label" for="commander">
-          <img
-            class="thumbnail"
-            src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/d/9/d9631cb2-d53b-4401-b53b-29d27bdefc44.jpg?1562770627"
+        <div class="option-row">
+          <input
+            type="radio"
+            id="beast"
+            name="whichguesser"
+            value="beast"
+            onchange="updateSettingDefault(true, true, false)"
           />
-          <h3>General Knowledge</h3></label
-        ><br />
+          <label class="radio-label" for="beast">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/3/3/33f7e788-8fc7-49f3-804b-2d7f96852d4b.jpg?1562905469"
+            />
+            <h3>Finding Fantastic Beasts</h3></label
+          >
+          <img
+            class="level-badge"
+            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/a8/Advanced_level.jpg"
+          />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="basic"
+            name="whichguesser"
+            value="basic"
+            onchange="updateSettingDefault(true, true, true)"
+          />
+          <label class="radio-label" for="basic">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/e/5/e52ed647-bd30-40a5-b648-0b98d1a3fd4a.jpg?1562949575"
+            />
+            <h3>How Basic</h3></label
+          >
+          <img
+            class="level-badge"
+            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/af/Expert_level.jpg"
+          />
+        </div>
+        <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="commander"
+            name="whichguesser"
+            value="commander"
+            onchange="updateSettingDefault(false, false, false)"
+          />
+          <label class="radio-label" for="commander">
+            <img
+              class="thumbnail"
+              src="https://c1.scryfall.com/file/scryfall-cards/art_crop/front/d/9/d9631cb2-d53b-4401-b53b-29d27bdefc44.jpg?1562770627"
+            />
+            <h3>General Knowledge</h3></label
+          >
+          <img
+            class="level-badge"
+            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/0/00/Starter_level.jpg"
+          />
+        </div>
+        <br />
 
         <details id="addl-options">
           <summary>
