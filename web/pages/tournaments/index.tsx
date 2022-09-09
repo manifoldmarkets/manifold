@@ -143,7 +143,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
         title="Tournaments"
         description="Win money by betting in forecasting touraments on current events, sports, science, and more"
       />
-      <Col className="mx-4 mt-4 gap-10 sm:mx-10 xl:w-[125%]">
+      <Col className="m-4 gap-10 sm:mx-10 sm:gap-24 xl:w-[125%]">
         {sections.map(({ tourney, slug, numPeople }) => (
           <div key={slug}>
             <SectionHeader
