@@ -75,8 +75,9 @@ const Home = () => {
             return (
               <SearchSection
                 key={id}
-                label={sort.label}
+                label={sort.value === 'newest' ? 'New for you' : sort.label}
                 sort={sort.value}
+                followed={sort.value === 'newest'}
                 user={user}
               />
             )
@@ -106,8 +107,9 @@ function SearchSection(props: {
   user: User | null | undefined
   sort: Sort
   yourBets?: boolean
+  followed?: boolean
 }) {
-  const { label, user, sort, yourBets } = props
+  const { label, user, sort, yourBets, followed } = props
   const href = `/home?s=${sort}`
 
   return (
@@ -122,7 +124,13 @@ function SearchSection(props: {
       <ContractSearch
         user={user}
         defaultSort={sort}
-        additionalFilter={yourBets ? { yourBets: true } : { followed: true }}
+        additionalFilter={
+          yourBets
+            ? { yourBets: true }
+            : followed
+            ? { followed: true }
+            : undefined
+        }
         noControls
         maxResults={6}
         persistPrefix={`experimental-home-${sort}`}

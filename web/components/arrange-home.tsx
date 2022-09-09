@@ -110,7 +110,6 @@ export const getHomeItems = (
   const items = [
     { label: 'Trending', id: 'score' },
     { label: 'Newest', id: 'newest' },
-    { label: 'Close date', id: 'close-date' },
     { label: 'Your trades', id: 'your-bets' },
     ...groups.map((g) => ({
       label: g.name,
