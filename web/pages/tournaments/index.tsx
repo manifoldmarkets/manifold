@@ -147,7 +147,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
         {sections.map(({ tourney, slug, numPeople }) => (
           <div key={slug}>
             <SectionHeader
-              url={groupPath(slug)}
+              url={groupPath(slug, 'about')}
               title={tourney.title}
               ppl={numPeople}
               award={tourney.award}
