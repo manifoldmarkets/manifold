@@ -1,9 +1,8 @@
-import { groupBy, sumBy, mapValues, partition } from 'lodash'
+import { groupBy, sumBy, mapValues } from 'lodash'
 
 import { Bet } from './bet'
 import { getContractBetMetrics } from './calculate'
 import { Contract } from './contract'
-import { getPayouts } from './payouts'
 
 export function scoreCreators(contracts: Contract[]) {
   const creatorScore = mapValues(
