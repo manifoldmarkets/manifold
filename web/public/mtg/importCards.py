@@ -3,7 +3,8 @@ import requests
 import json
 
 # add category name here
-allCategories = ['counterspell', 'beast', 'burn', 'commander', 'artist'] #, 'terror', 'wrath', 'zombie', 'artifact']
+# , 'terror', 'wrath', 'zombie', 'artifact']
+allCategories = ['counterspell', 'beast', 'burn', 'commander', 'artist']
 specialCategories = ['set', 'basic']
 artists = dict()
 
@@ -31,14 +32,15 @@ def generate_initial_query(category):
     # elif category == 'artifact':
         # string_query += 't%3Aartifact&order=released&dir=asc&unique=prints&page='
     elif category == 'artist':
-        string_query+= '%28a%3A"Wylie+Beckert"+or+a%3A“David+Martin”+or+a%3A“Ernanda+Souza”+or+a%3A"randy+gallegos"+or+a%3A“Amy+Weber”+or+a%3A“Dan+Frazier”+or+a%3A“Thomas+M.+Baxa”+or+a%3A“Phil+Foglio”+or+a%3A“DiTerlizzi”+or+a%3A"steve+argyle"+or+a%3A"Veronique+Meignaud"+or+a%3A"Magali+Villeneuve"+or+a%3A"Michael+Sutfin"+or+a%3A“Volkan+Baǵa”+or+a%3A“Franz+Vohwinkel”+or+a%3A"Nils+Hamm"+or+a%3A"Mark+Poole"+or+a%3A"Carl+Critchlow"+or+a%3A"rob+alexander"+or+a%3A"igor+kieryluk"+or+a%3A“Victor+Adame+Minguez”+or+a%3A"johannes+voss"+or+a%3A"Svetlin+Velinov"+or+a%3A"ron+spencer"+or+a%3A"rk+post"+or+a%3A"kev+walker"+or+a%3A"rebecca+guay"+or+a%3A"seb+mckinnon"+or+a%3A"pete+venters"+or+a%3A"greg+staples"+or+a%3A"Christopher+Moeller"+or+a%3A"christopher+rush"+or+a%3A"Mark+Tedin"%29+not%3Adfc'
+        string_query += '%28a%3A"Wylie+Beckert"+or+a%3A“David+Martin”+or+a%3A“Ernanda+Souza”+or+a%3A"randy+gallegos"+or+a%3A“Amy+Weber”+or+a%3A“Dan+Frazier”+or+a%3A“Thomas+M.+Baxa”+or+a%3A“Phil+Foglio”+or+a%3A“DiTerlizzi”+or+a%3A"steve+argyle"+or+a%3A"Veronique+Meignaud"+or+a%3A"Magali+Villeneuve"+or+a%3A"Michael+Sutfin"+or+a%3A“Volkan+Baǵa”+or+a%3A“Franz+Vohwinkel”+or+a%3A"Nils+Hamm"+or+a%3A"Mark+Poole"+or+a%3A"Carl+Critchlow"+or+a%3A"rob+alexander"+or+a%3A"igor+kieryluk"+or+a%3A“Victor+Adame+Minguez”+or+a%3A"johannes+voss"+or+a%3A"Svetlin+Velinov"+or+a%3A"ron+spencer"+or+a%3A"rk+post"+or+a%3A"kev+walker"+or+a%3A"rebecca+guay"+or+a%3A"seb+mckinnon"+or+a%3A"pete+venters"+or+a%3A"greg+staples"+or+a%3A"Christopher+Moeller"+or+a%3A"christopher+rush"+or+a%3A"Mark+Tedin"%29+not%3Adfc'
     # add category string query here
     string_query += '+-%28set%3Asld+%28%28cn>%3D231+cn<%3D233%29+or+%28cn>%3D321+cn<%3D324%29+or+%28cn>%3D185+cn' \
-                '<%3D189%29+or+%28cn>%3D138+cn<%3D142%29+or+%28cn>%3D364+cn<%3D368%29+or+cn%3A669+or+cn%3A670%29' \
-                '%29+-name%3A%2F%5EA-%2F+not%3Asplit+-set%3Acmb2+-set%3Acmb1+-set%3Aplist+-st%3Amemorabilia' \
-                '+language%3Aenglish&order=released&dir=asc&unique=prints&page='
+        '<%3D189%29+or+%28cn>%3D138+cn<%3D142%29+or+%28cn>%3D364+cn<%3D368%29+or+cn%3A669+or+cn%3A670%29' \
+        '%29+-name%3A%2F%5EA-%2F+not%3Asplit+-set%3Acmb2+-set%3Acmb1+-set%3Aplist+-st%3Amemorabilia' \
+        '+language%3Aenglish&order=released&dir=asc&unique=prints&page='
     print(string_query)
     return string_query
+
 
 def generate_initial_special_query(category):
     string_query = 'https://api.scryfall.com/cards/search?q='
@@ -54,14 +56,14 @@ def generate_initial_special_query(category):
 def fetch_and_write_all(category, query):
     count = 1
     will_repeat = True
-    all_cards = {'data' : []}
+    all_cards = {'data': []}
     art_names = dict()
     while will_repeat:
         response = fetch(query, count)
         will_repeat = response['has_more']
-        count+=1
+        count += 1
         to_compact_write_form(all_cards, art_names, response, category)
-    
+
     with open('jsons/' + category + '.json', 'w') as f:
         json.dump(all_cards, f)
 
@@ -69,7 +71,7 @@ def fetch_and_write_all(category, query):
 def fetch_and_write_all_special(category, query):
     count = 1
     will_repeat = True
-    all_cards = {'data' : []}
+    all_cards = {'data': []}
     art_names = dict()
     while will_repeat:
         if category == 'set':
@@ -77,12 +79,11 @@ def fetch_and_write_all_special(category, query):
         else:
             response = fetch(query, count)
         will_repeat = response['has_more']
-        count+=1
+        count += 1
         to_compact_write_form_special(all_cards, art_names, response, category)
-    
+
     with open('jsons/' + category + '.json', 'w') as f:
         json.dump(all_cards, f)
-        
 
 
 def fetch(query, count):
@@ -91,10 +92,12 @@ def fetch(query, count):
     time.sleep(0.1)
     return response
 
+
 def fetch_special(query):
     response = requests.get(f"{query}").json()
     time.sleep(0.1)
     return response
+
 
 def write_art(art_names, id, index, digital):
     if digital:
@@ -104,7 +107,8 @@ def write_art(art_names, id, index, digital):
 
 
 def to_compact_write_form(smallJson, art_names, response, category):
-    fieldsInCard = ['name', 'image_uris', 'flavor_name', 'reprint', 'frame_effects', 'digital', 'set_type']
+    fieldsInCard = ['name', 'image_uris', 'flavor_name',
+                    'reprint', 'frame_effects', 'digital', 'set_type']
     data = []
     # write all fields needed in card
     for card in response['data']:
@@ -115,22 +119,31 @@ def to_compact_write_form(smallJson, art_names, response, category):
         if category == 'artist' and len(card['artist_ids']) != 1:
             continue
         # do not repeat art
-        digital_holder = False
+        digital_holder = -1
         if 'card_faces' in card:
             card_face = card['card_faces'][0]
             if 'illustration_id' not in card_face or card_face['illustration_id'] in art_names and (art_names[card_face['illustration_id']] < 0 or card['digital']):
                 continue
             else:
-                write_art(art_names, card_face['illustration_id'], len(data)+len(smallJson['data']), card['digital'])
-        elif 'illustration_id' not in card or card['illustration_id'] in art_names:
+                ind = len(data)+len(smallJson['data'])
+                if (card_face['illustration_id'] in art_names):
+                    digital_holder = ind
+                    ind = -1
+                write_art(
+                    art_names, card_face['illustration_id'], ind, card['digital'])
+        elif 'illustration_id' not in card or card['illustration_id'] in art_names and (art_names[card['illustration_id']] < 0 or card['digital']):
             continue
         else:
-            write_art(art_names, card['illustration_id'], len(data)+len(smallJson['data']), card['digital'])
+            ind = len(data)+len(smallJson['data'])
+            if (card['illustration_id'] in art_names):
+                digital_holder = ind
+                ind = -1
+            write_art(art_names, card['illustration_id'], ind, card['digital'])
         write_card = dict()
         for field in fieldsInCard:
             # if field == 'name' and category == 'artifact':
             #     write_card['name'] = card['released_at'].split('-')[0]
-            if field =='name' and category == 'artist':
+            if field == 'name' and category == 'artist':
                 artist_id = card['artist_ids'][0]
                 artist = card['artist']
                 if artist_id not in artists or len(artists[artist_id]) > len(artist):
@@ -140,13 +153,19 @@ def to_compact_write_form(smallJson, art_names, response, category):
                 write_card['name'] = card['card_faces'][0]['name']
             elif field == 'image_uris':
                 if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
-                     write_card['image_uris'] = write_image_uris(card['card_faces'][0]['image_uris'])
+                    write_card['image_uris'] = write_image_uris(
+                        card['card_faces'][0]['image_uris'])
                 else:
-                    write_card['image_uris'] = write_image_uris(card['image_uris'])
+                    write_card['image_uris'] = write_image_uris(
+                        card['image_uris'])
             elif field in card:
                 write_card[field] = card[field]
-        data.append(write_card)
+        if digital_holder != -1:
+            data[digital_holder] = write_card
+        else:
+            data.append(write_card)
     smallJson['data'] += data
+
 
 def to_compact_write_form_special(smallJson, art_names, response, category):
     fieldsInBasic = ['image_uris', 'set', 'set_type', 'digital']
@@ -159,22 +178,32 @@ def to_compact_write_form_special(smallJson, art_names, response, category):
         if category == 'basic':
             write_card = dict()
             # do not repeat art
-            if 'illustration_id' not in card or card['illustration_id'] in art_names:
+            digital_holder = -1
+            if 'illustration_id' not in card or card['illustration_id'] in art_names and (art_names[card['illustration_id']] < 0 or card['digital']):
                 continue
             else:
-                write_art(art_names, card['illustration_id'], len(data)+len(smallJson['data']), card['digital'])
+                ind = len(data)+len(smallJson['data'])
+                if (card['illustration_id'] in art_names):
+                    digital_holder = ind
+                    ind = -1
+                write_art(
+                    art_names, card['illustration_id'], ind, card['digital'])
             for field in fieldsInBasic:
                 if field == 'image_uris':
-                    write_card['image_uris'] = write_image_uris(card['image_uris'])
+                    write_card['image_uris'] = write_image_uris(
+                        card['image_uris'])
                 elif field == 'set':
                     write_card['name'] = card['set']
                 elif field in card:
                     write_card[field] = card[field]
-            data.append(write_card)
+            if digital_holder != -1:
+                data[digital_holder] = write_card
+            else:
+                data.append(write_card)
         else:
             if card['set_type'] != 'token':
-                smallJson[card['code']] = [card['name'],card['icon_svg_uri']]
-        
+                smallJson[card['code']] = [card['name'], card['icon_svg_uri']]
+
     smallJson['data'] += data
 
 
@@ -198,7 +227,8 @@ if __name__ == "__main__":
         fetch_and_write_all(category, generate_initial_query(category))
     for category in specialCategories:
         print(category)
-        fetch_and_write_all_special(category, generate_initial_special_query(category))
+        fetch_and_write_all_special(
+            category, generate_initial_special_query(category))
         print("artistList")
     with open('jsons/artistList.json', 'w') as f:
         json.dump(artists, f)
