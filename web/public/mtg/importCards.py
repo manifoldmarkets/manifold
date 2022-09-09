@@ -55,7 +55,7 @@ def fetch_and_write_all(category, query):
     count = 1
     will_repeat = True
     all_cards = {'data' : []}
-    art_names = set()
+    art_names = dict()
     while will_repeat:
         response = fetch(query, count)
         will_repeat = response['has_more']
@@ -70,7 +70,7 @@ def fetch_and_write_all_special(category, query):
     count = 1
     will_repeat = True
     all_cards = {'data' : []}
-    art_names = set()
+    art_names = dict()
     while will_repeat:
         if category == 'set':
             response = fetch_special(query)
@@ -96,6 +96,12 @@ def fetch_special(query):
     time.sleep(0.1)
     return response
 
+def write_art(art_names, id, index, digital):
+    if digital:
+        art_names[id] = index
+    else:
+        art_names[id] = -1
+
 
 def to_compact_write_form(smallJson, art_names, response, category):
     fieldsInCard = ['name', 'image_uris', 'flavor_name', 'reprint', 'frame_effects', 'digital', 'set_type']
@@ -109,16 +115,17 @@ def to_compact_write_form(smallJson, art_names, response, category):
         if category == 'artist' and len(card['artist_ids']) != 1:
             continue
         # do not repeat art
+        digital_holder = False
         if 'card_faces' in card:
             card_face = card['card_faces'][0]
-            if 'illustration_id' not in card_face or card_face['illustration_id'] in art_names:
+            if 'illustration_id' not in card_face or card_face['illustration_id'] in art_names and (art_names[card_face['illustration_id']] < 0 or card['digital']):
                 continue
             else:
-                art_names.add(card_face['illustration_id'])
+                write_art(art_names, card_face['illustration_id'], len(data)+len(smallJson['data']), card['digital'])
         elif 'illustration_id' not in card or card['illustration_id'] in art_names:
             continue
         else:
-            art_names.add(card['illustration_id'])
+            write_art(art_names, card['illustration_id'], len(data)+len(smallJson['data']), card['digital'])
         write_card = dict()
         for field in fieldsInCard:
             # if field == 'name' and category == 'artifact':
@@ -155,7 +162,7 @@ def to_compact_write_form_special(smallJson, art_names, response, category):
             if 'illustration_id' not in card or card['illustration_id'] in art_names:
                 continue
             else:
-                art_names.add(card['illustration_id'])
+                write_art(art_names, card['illustration_id'], len(data)+len(smallJson['data']), card['digital'])
             for field in fieldsInBasic:
                 if field == 'image_uris':
                     write_card['image_uris'] = write_image_uris(card['image_uris'])
