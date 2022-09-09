@@ -31,44 +31,9 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
 }
 
 export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
-  const { resolution } = contract
-  const resolutionProb =
-    contract.outcomeType == 'BINARY'
-      ? contract.resolutionProbability
-      : undefined
-
-  const [closedBets, openBets] = partition(
-    bets,
-    (bet) => bet.isSold || bet.sale
-  )
-  const { payouts: resolvePayouts } = getPayouts(
-    resolution as string,
-    contract,
-    openBets,
-    [],
-    {},
-    resolutionProb
-  )
-
-  const salePayouts = closedBets.map((bet) => {
-    const { userId, sale } = bet
-    return { userId, payout: sale ? sale.amount : 0 }
-  })
-
-  const investments = bets
-    .filter((bet) => !bet.sale)
-    .map((bet) => {
-      const { userId, amount, loanAmount } = bet
-      const payout = -amount - (loanAmount ?? 0)
-      return { userId, payout }
-    })
-
-  const profits = openBets.map((bet) => {
+  const profits = bets.map((bet) => {
     const { userId } = bet
-    if (contract.isResolved) {
-      return { userId: userId, payout: 0 }
-    }
-    const payout = getContractBetMetrics(contract, [bet]).payout
+    const payout = getContractBetMetrics(contract, [bet]).profit
     console.log({
       userId: userId,
       metrics: getContractBetMetrics(contract, [bet]),
@@ -76,12 +41,7 @@ export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
     return { userId: userId, payout: payout }
   })
 
-  const netPayouts = [
-    ...resolvePayouts,
-    ...salePayouts,
-    ...investments,
-    ...profits,
-  ]
+  const netPayouts = [...profits]
 
   const userScore = mapValues(
     groupBy(netPayouts, (payout) => payout.userId),
