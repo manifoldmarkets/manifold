@@ -13,7 +13,6 @@ import { addObjects } from './util/object'
 export const getDpmCancelPayouts = (contract: DPMContract, bets: Bet[]) => {
   const { pool } = contract
   const poolTotal = sum(Object.values(pool))
-  console.log('resolved N/A, pool M$', poolTotal)
 
   const betSum = sumBy(bets, (b) => b.amount)
 
@@ -58,17 +57,6 @@ export const getDpmStandardPayouts = (
     liquidityFee: 0,
   })
 
-  console.log(
-    'resolved',
-    outcome,
-    'pool',
-    poolTotal,
-    'profits',
-    profits,
-    'creator fee',
-    creatorFee
-  )
-
   return {
     payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
     creatorPayout: creatorFee,
@@ -109,17 +97,6 @@ export const getNumericDpmPayouts = (
     platformFee,
     liquidityFee: 0,
   })
-
-  console.log(
-    'resolved numeric bucket: ',
-    outcome,
-    'pool',
-    poolTotal,
-    'profits',
-    profits,
-    'creator fee',
-    creatorFee
-  )
 
   return {
     payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
@@ -163,17 +140,6 @@ export const getDpmMktPayouts = (
     liquidityFee: 0,
   })
 
-  console.log(
-    'resolved MKT',
-    p,
-    'pool',
-    pool,
-    'profits',
-    profits,
-    'creator fee',
-    creatorFee
-  )
-
   return {
     payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
     creatorPayout: creatorFee,
@@ -216,16 +182,6 @@ export const getPayoutsMultiOutcome = (
     liquidityFee: 0,
   })
 
-  console.log(
-    'resolved',
-    resolutions,
-    'pool',
-    poolTotal,
-    'profits',
-    profits,
-    'creator fee',
-    creatorFee
-  )
   return {
     payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
     creatorPayout: creatorFee,
