@@ -34,17 +34,11 @@ export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
   const profits = bets.map((bet) => {
     const { userId } = bet
     const payout = getContractBetMetrics(contract, [bet]).profit
-    console.log({
-      userId: userId,
-      metrics: getContractBetMetrics(contract, [bet]),
-    })
-    return { userId: userId, payout: payout }
+    return { userId, payout }
   })
 
-  const netPayouts = [...profits]
-
   const userScore = mapValues(
-    groupBy(netPayouts, (payout) => payout.userId),
+    groupBy(profits, (payout) => payout.userId),
     (payouts) => sumBy(payouts, ({ payout }) => payout)
   )
 
