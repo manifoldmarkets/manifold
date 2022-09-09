@@ -47,13 +47,13 @@ export function ConfirmationButton(props: {
           {children}
           <Row className="gap-4">
             <div
-              className={clsx('btn normal-case', cancelBtn?.className)}
+              className={clsx('btn', cancelBtn?.className)}
               onClick={() => updateOpen(false)}
             >
               {cancelBtn?.label ?? 'Cancel'}
             </div>
             <div
-              className={clsx('btn normal-case', submitBtn?.className)}
+              className={clsx('btn', submitBtn?.className)}
               onClick={
                 onSubmitWithSuccess
                   ? () =>
@@ -69,7 +69,7 @@ export function ConfirmationButton(props: {
         </Col>
       </Modal>
       <div
-        className={clsx('btn normal-case', openModalBtn.className)}
+        className={clsx('btn', openModalBtn.className)}
         onClick={() => updateOpen(true)}
       >
         {openModalBtn.icon}
