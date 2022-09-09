@@ -4,7 +4,6 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
 import { Avatar } from './avatar'
 import { TextEditor, useTextEditor } from './editor'
@@ -80,7 +79,6 @@ export function CommentInputTextArea(props: {
   upload: Parameters<typeof TextEditor>[0]['upload']
   submitComment: (id?: string) => void
   isSubmitting: boolean
-  submitOnEnter?: boolean
   presetId?: string
 }) {
   const {
@@ -90,11 +88,8 @@ export function CommentInputTextArea(props: {
     submitComment,
     presetId,
     isSubmitting,
-    submitOnEnter,
     replyToUser,
   } = props
-  const isMobile = (useWindowSize().width ?? 0) < 768 // TODO: base off input device (keybord vs touch)
-
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -108,15 +103,14 @@ export function CommentInputTextArea(props: {
     if (!editor) {
       return
     }
-    // submit on Enter key
+    // Submit on ctrl+enter or mod+enter key
     editor.setOptions({
       editorProps: {
         handleKeyDown: (view, event) => {
           if (
-            submitOnEnter &&
             event.key === 'Enter' &&
             !event.shiftKey &&
-            (!isMobile || event.ctrlKey || event.metaKey) &&
+            (event.ctrlKey || event.metaKey) &&
             // mention list is closed
             !(view.state as any).mention$.active
           ) {
