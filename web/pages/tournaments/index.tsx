@@ -169,7 +169,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
                   award={tourney.award}
                   endTime={tourney.endTime}
                 />
-                <span>{tourney.blurb}</span>
+                <span className="text-gray-500">{tourney.blurb}</span>
                 <MarketCarousel slug={slug} />
               </div>
             )
@@ -181,7 +181,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
             award={Salem.award}
             endTime={Salem.endTime}
           />
-          <span>{Salem.blurb}</span>
+          <span className="text-gray-500">{Salem.blurb}</span>
           <ImageCarousel url={Salem.url} images={Salem.images} />
         </div>
 
@@ -211,11 +211,22 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
                   award={tourney.award}
                   endTime={tourney.endTime}
                 />
-                <span>{tourney.blurb}</span>
+                <span className="text-gray-500">{tourney.blurb}</span>
                 <MarketCarousel slug={slug} />
               </div>
             )
         )}
+
+        <p className="pb-10 italic text-gray-500">
+          We'd love to sponsor more tournaments and groups. Have an idea? Ping{' '}
+          <SiteLink
+            className="font-semibold"
+            href="https://discord.com/invite/eHQBNBqXuh"
+          >
+            Austin on Discord
+          </SiteLink>
+          !
+        </p>
       </Col>
     </Page>
   )
@@ -232,9 +243,7 @@ const SectionHeader = (props: {
   return (
     <Link href={url}>
       <a className="group mb-3 flex flex-wrap justify-between">
-        <h2 className="text-xl font-semibold group-hover:underline md:text-3xl">
-          {title}
-        </h2>
+        <h2 className="text-xl group-hover:underline md:text-3xl">{title}</h2>
         <Row className="my-2 items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
           {!!award && <span className="flex items-center">🏆 {award}</span>}
           {!!ppl && (
