@@ -52,21 +52,10 @@ const Home = () => {
 
         <DailyProfitAndBalance userId={user?.id} />
 
-        <div className="text-xl text-gray-800">Daily movers</div>
-        <ProbChangeTable userId={user?.id} />
-
         {sections.map((item) => {
           const { id } = item
-          if (id === 'your-bets') {
-            return (
-              <SearchSection
-                key={id}
-                label={'Your trades'}
-                sort={'newest'}
-                user={user}
-                yourBets
-              />
-            )
+          if (id === 'daily-movers') {
+            return <DailyMoversSection key={id} userId={user?.id} />
           }
           const sort = SORTS.find((sort) => sort.value === id)
           if (sort)
@@ -157,6 +146,22 @@ function GroupSection(props: { group: Group; user: User | null | undefined }) {
         maxResults={6}
         persistPrefix={`experimental-home-${group.slug}`}
       />
+    </Col>
+  )
+}
+
+function DailyMoversSection(props: { userId: string | null | undefined }) {
+  const { userId } = props
+  return (
+    <Col className="gap-2">
+      <SiteLink className="text-xl" href={'/daily-movers'}>
+        Daily movers{' '}
+        <ArrowSmRightIcon
+          className="mb-0.5 inline h-6 w-6 text-gray-500"
+          aria-hidden="true"
+        />
+      </SiteLink>
+      <ProbChangeTable userId={userId} />
     </Col>
   )
 }

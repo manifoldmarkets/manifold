@@ -108,6 +108,7 @@ const SectionItem = (props: {
 
 export const getHomeItems = (groups: Group[], sections: string[]) => {
   const items = [
+    { label: 'Daily movers', id: 'daily-movers' },
     { label: 'Trending', id: 'score' },
     { label: 'New for you', id: 'newest' },
     ...groups.map((g) => ({
