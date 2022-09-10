@@ -38,10 +38,8 @@ const Home = () => {
 
   const groups = useMemberGroups(user?.id) ?? []
 
-  const [homeSections] = useState(
-    user?.homeSections ?? { visible: [], hidden: [] }
-  )
-  const { visibleItems } = getHomeItems(groups, homeSections)
+  const [homeSections] = useState(user?.homeSections ?? [])
+  const { sections } = getHomeItems(groups, homeSections)
 
   return (
     <Page>
@@ -57,7 +55,7 @@ const Home = () => {
         <div className="text-xl text-gray-800">Daily movers</div>
         <ProbChangeTable userId={user?.id} />
 
-        {visibleItems.map((item) => {
+        {sections.map((item) => {
           const { id } = item
           if (id === 'your-bets') {
             return (

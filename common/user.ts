@@ -34,7 +34,7 @@ export type User = {
   followerCountCached: number
 
   followedCategories?: string[]
-  homeSections?: { visible: string[]; hidden: string[] }
+  homeSections?: string[]
 
   referredByUserId?: string
   referredByContractId?: string

@@ -16,14 +16,9 @@ export default function Home() {
 
   useTracking('edit home')
 
-  const [homeSections, setHomeSections] = useState(
-    user?.homeSections ?? { visible: [], hidden: [] }
-  )
+  const [homeSections, setHomeSections] = useState(user?.homeSections ?? [])
 
-  const updateHomeSections = (newHomeSections: {
-    visible: string[]
-    hidden: string[]
-  }) => {
+  const updateHomeSections = (newHomeSections: string[]) => {
     if (!user) return
     updateUser(user.id, { homeSections: newHomeSections })
     setHomeSections(newHomeSections)
@@ -31,7 +26,7 @@ export default function Home() {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 px-4 pb-12">
+      <Col className="pm:mx-10 gap-4 px-4 pb-6 pt-2">
         <Row className={'w-full items-center justify-between'}>
           <Title text="Edit your home page" />
           <DoneButton />
