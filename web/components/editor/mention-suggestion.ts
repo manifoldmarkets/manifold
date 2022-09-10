@@ -3,7 +3,8 @@ import { ReactRenderer } from '@tiptap/react'
 import { searchInAny } from 'common/util/parse'
 import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
-import { getCachedUsers } from 'web/hooks/use-users'
+import { getCachedContracts } from 'web/hooks/use-contracts'
+// import { getCachedUsers } from 'web/hooks/use-users'
 import { MentionList } from './mention-list'
 
 type Suggestion = MentionOptions['suggestion']
@@ -15,13 +16,10 @@ const beginsWith = (text: string, query: string) =>
 export const mentionSuggestion: Suggestion = {
   items: async ({ query }) =>
     orderBy(
-      (await getCachedUsers()).filter((u) =>
-        searchInAny(query, u.username, u.name)
+      (await getCachedContracts()).filter((c) =>
+        searchInAny(query, c.question)
       ),
-      [
-        (u) => [u.name, u.username].some((s) => beginsWith(s, query)),
-        'followerCountCached',
-      ],
+      [(c) => [c.question].some((s) => beginsWith(s, query))],
       ['desc', 'desc']
     ).slice(0, 5),
   render: () => {

@@ -5,14 +5,18 @@ import {
   ReactNodeViewRenderer,
 } from '@tiptap/react'
 import clsx from 'clsx'
-import { Linkify } from '../linkify'
+import { useContract } from 'web/hooks/use-contract'
+import { ContractCard } from '../contract/contract-card'
 
 const name = 'mention-component'
 
 const MentionComponent = (props: any) => {
+  const contract = useContract(props.node.attrs.id)
+
   return (
     <NodeViewWrapper className={clsx(name, 'not-prose text-indigo-700')}>
-      <Linkify text={'@' + props.node.attrs.label} />
+      {/* <Linkify text={'@' + props.node.attrs.label} /> */}
+      {contract && <ContractCard contract={contract} />}
     </NodeViewWrapper>
   )
 }
