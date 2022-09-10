@@ -27,21 +27,44 @@ import {
 } from 'common/contract'
 import { ContractDetails, ExtraMobileContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
+import { QuickBetButtons } from 'web/components/contract/quick-bet-button'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-2xl text-indigo-700 md:text-3xl" text={props.text} />
 )
 
 const BetWidget = (props: { contract: CPMMContract }) => {
+  const { contract } = props
   const user = useUser()
   return (
-    <Col>
-      <BetButton contract={props.contract} />
-      {!user && (
-        <div className="mt-1 text-center text-sm text-gray-500">
-          (with play money!)
-        </div>
-      )}
+    <Col className={'justify-center'}>
+      <Row className={'gap-4'}>
+        {contract.outcomeType === 'BINARY' &&
+          user &&
+          QuickBetButtons({
+            contract: contract as CPMMBinaryContract,
+            user: user,
+            side: 'NO',
+            className: 'self-end min-w-[60px]',
+          })}
+        <BetButton contract={props.contract} />
+
+        {contract.outcomeType === 'BINARY' &&
+          user &&
+          QuickBetButtons({
+            contract: contract as CPMMBinaryContract,
+            user: user,
+            side: 'YES',
+            className: 'self-end min-w-[60px]',
+          })}
+      </Row>
+      <Row className={'items-center justify-center'}>
+        {!user && (
+          <div className="mt-1 text-center text-sm text-gray-500">
+            (with play money!)
+          </div>
+        )}
+      </Row>
     </Col>
   )
 }
@@ -85,13 +108,13 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
           <BinaryResolutionOrChance contract={contract} />
-          <ExtraMobileContractDetails contract={contract} />
           {tradingAllowed(contract) && (
             <BetWidget contract={contract as CPMMBinaryContract} />
           )}
         </Row>
       </Col>
       <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
+      <ExtraMobileContractDetails contract={contract} />
     </Col>
   )
 }
@@ -140,11 +163,11 @@ const PseudoNumericOverview = (props: {
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
           <PseudoNumericResolutionOrExpectation contract={contract} />
-          <ExtraMobileContractDetails contract={contract} />
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>
       <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
+      <ExtraMobileContractDetails contract={contract} />
     </Col>
   )
 }
