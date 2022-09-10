@@ -99,13 +99,6 @@ const tourneys: Tourney[] = [
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
   },
-  {
-    title: 'SF 2022 Ballot',
-    blurb: 'Which ballot initiatives will pass this year in SF and CA?',
-    award: '',
-    endTime: toDate('Nov 8, 2022'),
-    groupId: 'VkWZyS5yxs8XWUJrX9eq',
-  },
   // {
   //   title: 'Clearer Thinking Regrant Project',
   //   blurb: 'Something amazing',
@@ -113,6 +106,27 @@ const tourneys: Tourney[] = [
   //   endTime: toDate('Sep 22, 2022'),
   //   groupId: '2VsVVFGhKtIdJnQRAXVb',
   // },
+
+  // Tournaments without awards get featured belows
+  {
+    title: 'SF 2022 Ballot',
+    blurb: 'Which ballot initiatives will pass this year in SF and CA?',
+    endTime: toDate('Nov 8, 2022'),
+    groupId: 'VkWZyS5yxs8XWUJrX9eq',
+  },
+
+  {
+    title: '2024 Democratic Nominees',
+    blurb: 'How would different Democratic candidates fare in 2024?',
+    endTime: toDate('Nov 2, 2024'),
+    groupId: 'gFhjgFVrnYeFYfxhoLNn',
+  },
+  {
+    title: 'Private Tech Companies',
+    blurb: 'What will these companies exit for?',
+    endTime: toDate('Dec 31, 2030'),
+    groupId: 'faNUnphw6Eoq7OJBRJds',
+  },
 ]
 
 type SectionInfo = {
@@ -144,19 +158,22 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
         description="Win money by betting in forecasting touraments on current events, sports, science, and more"
       />
       <Col className="m-4 gap-10 sm:mx-10 sm:gap-24 xl:w-[125%]">
-        {sections.map(({ tourney, slug, numPeople }) => (
-          <div key={slug}>
-            <SectionHeader
-              url={groupPath(slug, 'about')}
-              title={tourney.title}
-              ppl={numPeople}
-              award={tourney.award}
-              endTime={tourney.endTime}
-            />
-            <span>{tourney.blurb}</span>
-            <MarketCarousel slug={slug} />
-          </div>
-        ))}
+        {sections.map(
+          ({ tourney, slug, numPeople }) =>
+            tourney.award && (
+              <div key={slug}>
+                <SectionHeader
+                  url={groupPath(slug, 'about')}
+                  title={tourney.title}
+                  ppl={numPeople}
+                  award={tourney.award}
+                  endTime={tourney.endTime}
+                />
+                <span>{tourney.blurb}</span>
+                <MarketCarousel slug={slug} />
+              </div>
+            )
+        )}
         <div>
           <SectionHeader
             url={Salem.url}
@@ -167,6 +184,38 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
           <span>{Salem.blurb}</span>
           <ImageCarousel url={Salem.url} images={Salem.images} />
         </div>
+
+        {/* Title break */}
+        <div className="relative">
+          <div
+            className="absolute inset-0 flex items-center"
+            aria-hidden="true"
+          >
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-gray-50 px-3 text-lg font-medium text-gray-900">
+              Featured Groups
+            </span>
+          </div>
+        </div>
+
+        {sections.map(
+          ({ tourney, slug, numPeople }) =>
+            !tourney.award && (
+              <div key={slug}>
+                <SectionHeader
+                  url={groupPath(slug, 'about')}
+                  title={tourney.title}
+                  ppl={numPeople}
+                  award={tourney.award}
+                  endTime={tourney.endTime}
+                />
+                <span>{tourney.blurb}</span>
+                <MarketCarousel slug={slug} />
+              </div>
+            )
+        )}
       </Col>
     </Page>
   )
