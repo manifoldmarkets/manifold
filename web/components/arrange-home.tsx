@@ -82,16 +82,13 @@ function DraggableList(props: {
                   {...provided.draggableProps}
                   {...provided.dragHandleProps}
                   style={provided.draggableProps.style}
-                  className={clsx(
-                    'flex flex-row items-center gap-4 rounded bg-gray-50 p-2',
-                    snapshot.isDragging && 'z-[9000] bg-gray-300'
-                  )}
                 >
-                  <MenuIcon
-                    className="h-5 w-5 flex-shrink-0 text-gray-500"
-                    aria-hidden="true"
-                  />{' '}
-                  {item.label}
+                  <SectionItem
+                    className={clsx(
+                      snapshot.isDragging && 'z-[9000] bg-gray-300'
+                    )}
+                    item={item}
+                  />
                 </div>
               )}
             </Draggable>
@@ -103,14 +100,35 @@ function DraggableList(props: {
   )
 }
 
+const SectionItem = (props: {
+  item: { id: string; label: string }
+  className?: string
+}) => {
+  const { item, className } = props
+
+  return (
+    <div
+      className={clsx(
+        className,
+        'flex flex-row items-center gap-4 rounded bg-gray-50 p-2'
+      )}
+    >
+      <MenuIcon
+        className="h-5 w-5 flex-shrink-0 text-gray-500"
+        aria-hidden="true"
+      />{' '}
+      {item.label}
+    </div>
+  )
+}
+
 export const getHomeItems = (
   groups: Group[],
   homeSections: { visible: string[]; hidden: string[] }
 ) => {
   const items = [
     { label: 'Trending', id: 'score' },
-    { label: 'Newest', id: 'newest' },
-    { label: 'Your trades', id: 'your-bets' },
+    { label: 'New for you', id: 'newest' },
     ...groups.map((g) => ({
       label: g.name,
       id: g.id,
