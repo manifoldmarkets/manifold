@@ -18,6 +18,7 @@ import { useUnfilledBets } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 import { quickOutcome } from 'web/components/contract/quick-bet-arrows'
 import { Button } from 'web/components/button'
+import { Col } from 'web/components/layout/col'
 
 const BET_SIZE = 10
 
@@ -34,15 +35,16 @@ export function QuickBetButtons(props: {
 
   const userBets = useUserContractBets(user.id, contract.id)
   const unfilledBets = useUnfilledBets(contract.id) ?? []
-
-  const { yesShares, noShares } = useSaveBinaryShares(contract, userBets)
+  const { hasYesShares, hasNoShares, yesShares, noShares } =
+    useSaveBinaryShares(contract, userBets)
   const oppositeShares = side === 'YES' ? noShares : yesShares
+
   if (oppositeShares > 0.01) {
     sellOutcome = side === 'YES' ? 'NO' : 'YES'
 
     const prob = getProb(contract)
     const maxSharesSold =
-      (BET_SIZE + 0.05) / (sellOutcome === 'YES' ? prob : 1 - prob)
+      (BET_SIZE + 1) / (sellOutcome === 'YES' ? prob : 1 - prob)
     sharesSold = Math.min(oppositeShares, maxSharesSold)
 
     const { saleValue } = calculateCpmmSale(
@@ -53,6 +55,16 @@ export function QuickBetButtons(props: {
     )
     saleAmount = saleValue
   }
+  const getValueOfShares = () => {
+    const { saleValue } = calculateCpmmSale(
+      contract,
+      side === 'YES' ? yesShares : noShares,
+      side,
+      unfilledBets
+    )
+    return saleValue
+  }
+  const saleValueOfShares = getValueOfShares()
 
   async function placeQuickBet() {
     const betPromise = async () => {
@@ -91,14 +103,28 @@ export function QuickBetButtons(props: {
   }
 
   return (
-    <Button
-      size={'lg'}
-      onClick={() => placeQuickBet()}
-      color={side === 'YES' ? 'green' : 'red'}
-      className={props.className}
-    >
-      {side === 'YES' ? 'Yes' : 'No'}
-    </Button>
+    <Col>
+      {user && (
+        <div className={'min-w-sm mb-1 text-center text-sm text-gray-500'}>
+          {saleValueOfShares > 0.1 &&
+            hasYesShares &&
+            side === 'YES' &&
+            `${formatMoney(saleValueOfShares)}`}
+          {saleValueOfShares > 0.1 &&
+            hasNoShares &&
+            side === 'NO' &&
+            `${formatMoney(saleValueOfShares)}`}
+        </div>
+      )}
+      <Button
+        size={'lg'}
+        onClick={() => placeQuickBet()}
+        color={side === 'YES' ? 'green' : 'red'}
+        className={props.className}
+      >
+        {side === 'YES' ? 'Yes' : 'No'}
+      </Button>
+    </Col>
   )
 }
 
