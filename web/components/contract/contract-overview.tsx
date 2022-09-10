@@ -38,7 +38,7 @@ const BetWidget = (props: { contract: CPMMContract }) => {
   const user = useUser()
   return (
     <Col className={'justify-center'}>
-      <Row className={'gap-4'}>
+      <Row className={'items-end gap-4'}>
         {contract.outcomeType === 'BINARY' &&
           user &&
           QuickBetButtons({

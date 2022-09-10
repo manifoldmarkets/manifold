@@ -23,26 +23,11 @@ export default function BetButton(props: {
 
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const { yesShares, noShares, hasYesShares, hasNoShares } =
-    useSaveBinaryShares(contract, userBets)
-
-  const { outcomeType } = contract
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
 
   return (
     <>
       <Col className={clsx('items-center', className)}>
-        {user && (
-          <div className={'mb-1 w-24 text-center text-sm text-gray-500'}>
-            {hasYesShares
-              ? `(${Math.floor(yesShares)} ${
-                  isPseudoNumeric ? 'HIGHER' : 'YES'
-                })`
-              : hasNoShares
-              ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'NO'})`
-              : ''}
-          </div>
-        )}
         {user ? (
           <Button
             size="lg"
