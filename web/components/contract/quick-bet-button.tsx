@@ -41,7 +41,8 @@ export function QuickBetButtons(props: {
     sellOutcome = side === 'YES' ? 'NO' : 'YES'
 
     const prob = getProb(contract)
-    const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
+    const maxSharesSold =
+      (BET_SIZE + 0.05) / (sellOutcome === 'YES' ? prob : 1 - prob)
     sharesSold = Math.min(oppositeShares, maxSharesSold)
 
     const { saleValue } = calculateCpmmSale(
