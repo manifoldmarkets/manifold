@@ -38,7 +38,7 @@ import { getBinaryProb } from 'common/contract-details'
 
 const BET_SIZE = 10
 
-export function QuickBetArrows(props: {
+export function QuickBet(props: {
   contract: BinaryContract | PseudoNumericContract
   user: User
   className?: string
@@ -243,7 +243,7 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
   )
 }
 
-export function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
+function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
   const { outcomeType } = contract
 
   if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {

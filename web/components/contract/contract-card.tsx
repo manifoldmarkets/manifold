@@ -25,11 +25,7 @@ import {
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import {
-  getColor,
-  ProbBar,
-  QuickBetArrows,
-} from 'web/components/contract/quick-bet-arrows'
+import { getColor, ProbBar, QuickBet } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
@@ -105,7 +101,7 @@ export function ContractCard(props: {
           ))}
       </Col>
       {showQuickBet ? (
-        <QuickBetArrows contract={contract} user={user} className="z-10" />
+        <QuickBet contract={contract} user={user} className="z-10" />
       ) : (
         <>
           {outcomeType === 'BINARY' && (
