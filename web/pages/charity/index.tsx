@@ -178,7 +178,7 @@ export default function Charity(props: {
             className="input input-bordered mb-6 w-full"
           />
         </Col>
-        <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 self-center lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
           {filterCharities.map((charity) => (
             <CharityCard
               charity={charity}
@@ -203,18 +203,26 @@ export default function Charity(props: {
           ></iframe>
         </div>
 
-        <div className="mt-10 text-gray-500">
-          <span className="font-semibold">Notes</span>
-          <br />
-          - Don't see your favorite charity? Recommend it by emailing
-          charity@manifold.markets!
-          <br />
-          - Manifold is not affiliated with non-Featured charities; we're just
-          fans of their work.
-          <br />
-          - As Manifold itself is a for-profit entity, your contributions will
-          not be tax deductible.
-          <br />- Donations + matches are wired once each quarter.
+        <div className="prose mt-10 max-w-none text-gray-500">
+          <span className="text-lg font-semibold">Notes</span>
+          <ul>
+            <li>
+              Don't see your favorite charity? Recommend it by emailing{' '}
+              <a href="mailto:charity@manifold.markets?subject=Add%20Charity">
+                charity@manifold.markets
+              </a>
+              !
+            </li>
+            <li>
+              Manifold is not affiliated with non-Featured charities; we're just
+              fans of their work.
+            </li>
+            <li>
+              As Manifold itself is a for-profit entity, your contributions will
+              not be tax deductible.
+            </li>
+            <li>Donations + matches are wired once each quarter.</li>
+          </ul>
         </div>
       </Col>
     </Page>
