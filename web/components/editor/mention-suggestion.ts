@@ -14,6 +14,8 @@ const beginsWith = (text: string, query: string) =>
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const mentionSuggestion: Suggestion = {
+  char: '%',
+  allowSpaces: true,
   items: async ({ query }) =>
     orderBy(
       (await getCachedContracts()).filter((c) =>
