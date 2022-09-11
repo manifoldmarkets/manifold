@@ -26,20 +26,31 @@ def generate_initial_query(category):
                         '.*player%28%5C.%7C+or+planeswalker%29%7C.*opponent%28%5C.%7C+or+planeswalker%29%29%2F%29' \
                         '+%28type%3Ainstant+or+type%3Asorcery%29+not%3Aadventure+not%3Adfc'
     elif category == 'commander':
-        string_query += 'is%3Acommander+%28not%3Adigital+-banned%3Acommander+or+is%3Adigital+legal%3Ahistoricbrawl+or+legal%3Acommander+or+legal%3Abrawl%29'
+        string_query += 'is%3Acommander+%28not%3Adigital+-banned%3Acommander+or+is%3Adigital+legal%3Ahistoricbrawl' \
+            '+or+legal%3Acommander+or+legal%3Abrawl%29'
     # elif category == 'zombie':
     #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken'
     # elif category == 'artifact':
         # string_query += 't%3Aartifact&order=released&dir=asc&unique=prints&page='
     elif category == 'artist':
-        string_query += '%28a%3A"Carl+Critchlow"+or+a%3A"Chippy"+or+a%3A"Christopher+Moeller"+or+a%3A"christopher+rush"+or+a%3A"Daarken"+or+a%3A"Donato+Giancola"+or+a%3A"Douglas+Shuler"+or+a%3A"Eric+Deschamps"+or+a%3A"greg+staples"+or+a%3A"heather+Hudson"+or+a%3A"igor+kieryluk"+or+a%3A"Jeff+Miracola"+or+a%3A"johannes+voss"+or+a%3A"Julie+Baroh"+or+a%3A"kev+walker"+or+a%3A"Lius+Lasahido"+or+a%3A"Livia+Prima"+or+a%3A"Magali+Villeneuve"+or+a%3A"Mark+Poole"+or+a%3A"Mark+Tedin"+or+a%3A"Mark+Zug"+or+a%3A"Nils+Hamm"+or+a%3A"pete+venters"+or+a%3A"randy+gallegos"+or+a%3A"rebecca+guay"+or+a%3A"rk+post"+or+a%3A"rob+alexander"+or+a%3A"ron+spencer"+or+a%3A"Scott+M+Fischer"+or+a%3A"seb+mckinnon"+or+a%3A"steve+argyle"+or+a%3A"Svetlin+Velinov"+or+a%3A"Veronique+Meignaud"+or+a%3A"Wylie+Beckert"+or+a%3A“Amy+Weber”+or+a%3A“Dan+Frazier”+or+a%3A“David+Martin”+or+a%3A“DiTerlizzi”+or+a%3A“Ernanda+Souza”+or+a%3A“Franz+Vohwinkel”+or+a%3A“Phil+Foglio”+or+a%3A“Rachta+Lin”+or+a%3A“Thomas+M.+Baxa”+or+a%3A“Victor+Adame+Minguez”+or+a%3A“Volkan+Baǵa”%29+not%3Adfc'
+        string_query += '%28a%3A"Carl+Critchlow"+or+a%3A"Chippy"+or+a%3A"Christopher+Moeller"+or+a%3A"christopher+rush"' \
+            '+or+a%3A"Daarken"+or+a%3A"Donato+Giancola"+or+a%3A"Douglas+Shuler"+or+a%3A"Eric+Deschamps"' \
+            '+or+a%3A"greg+staples"+or+a%3A"heather+Hudson"+or+a%3A"igor+kieryluk"+or+a%3A"Jeff+Miracola"+or+' \
+            'a%3A"johannes+voss"+or+a%3A"Julie+Baroh"+or+a%3A"kev+walker"+or+a%3A"Lius+Lasahido"+or+a%3A"Livia+Prima"' \
+            '+or+a%3A"Magali+Villeneuve"+or+a%3A"Mark+Poole"+or+a%3A"Mark+Tedin"+or+a%3A"Mark+Zug"+or+a%3A"Nils+Hamm"' \
+            '+or+a%3A"pete+venters"+or+a%3A"randy+gallegos"+or+a%3A"rebecca+guay"+or+a%3A"rk+post"+or+a%3A"rob+alexander"' \
+            '+or+a%3A"ron+spencer"+or+a%3A"Scott+M+Fischer"+or+a%3A"seb+mckinnon"+or+a%3A"steve+argyle"+or+' \
+            'a%3A"Svetlin+Velinov"+or+a%3A"Veronique+Meignaud"+or+a%3A"Wylie+Beckert"+or+a%3A“Amy+Weber”+or+' \
+            'a%3A“Dan+Frazier”+or+a%3A“David+Martin”+or+a%3A“DiTerlizzi”+or+a%3A“Ernanda+Souza”+or+a%3A“Franz+Vohwinkel”' \
+            '+or+a%3A“Phil+Foglio”+or+a%3A“Thomas+M.+Baxa”+or+a%3A“Victor+Adame+Minguez”+or' \
+            '+a%3A“Volkan+Baǵa”%29+artists%3D1'
     # add category string query here
     if category != 'artist':
-        string_query += '+-%28set%3Asld+%28%28cn>%3D231+cn<%3D233%29+or+%28cn>%3D321+cn<%3D324%29+or+%28cn>%3D185+cn' \
-            '<%3D189%29+or+%28cn>%3D138+cn<%3D142%29+or+%28cn>%3D364+cn<%3D368%29+or+cn%3A669+or+cn%3A670%29+-set%3Acmb2+-set%3Acmb1+-set%3Aplist' \
-            '%29'
+        string_query += '+-%28set%3Asld+%28cn>%3D231+cn<%3D233+or+cn>%3D436+cn<%3D440+or+cn>%3D321+cn<%3D324+or' \
+            '+cn>%3D185+cn<%3D189+or+cn>%3D138+cn<%3D142+or+cn>%3D364+cn<%3D368+or+cn%3A669+or+cn%3A670%29%29+' \
+            '-%28set%3Asta+cn>%3D64+cn<%3D126%29+-set%3Acmb2+-set%3Acmb1+-set%3Aplist'
     string_query += '+-name%3A%2F%5EA-%2F+not%3Asplit+-st%3Amemorabilia' \
-        '+language%3Aenglish&order=released&dir=asc&unique=prints&page='
+        '&order=released&dir=asc&unique=prints&page='
     print(string_query)
     return string_query
 
@@ -53,6 +64,11 @@ def generate_initial_special_query(category):
     # add category string query here
     print(string_query)
     return string_query
+
+# def generate_initial_artist_query():
+#     string_query = 'https://api.scryfall.com/cards/search?q=artists%3D1+-st%3Afunny+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
+#     print(string_query)
+#     return string_query
 
 
 def fetch_and_write_all(category, query):
@@ -228,6 +244,6 @@ if __name__ == "__main__":
         print(category)
         fetch_and_write_all_special(
             category, generate_initial_special_query(category))
-        print("artistList")
+    print("artistList")
     with open('jsons/artistList.json', 'w') as f:
         json.dump(artists, f)

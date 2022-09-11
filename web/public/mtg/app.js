@@ -1,9 +1,10 @@
 mode = 'PLAY'
 allData = {}
 total = 0
-unseenTotal = 0
 probList = []
 nameList = []
+weightedCards = []
+indWeighedCards = 0
 k = 12
 extra = 3
 artDict = {}
@@ -50,13 +51,21 @@ fetchToResponse(firstFetch)
 
 function putIntoMapAndFetch(data) {
   putIntoMap(data.data)
+  if (whichGuesser == 'artist') {
+    newArtistData = createNewArtistMap()
+    allData = newArtistData[0]
+    total = newArtistData[1]
+  }
   for (const [key, value] of Object.entries(allData)) {
     nameList.push(key)
     probList.push(
       value.length + (probList.length === 0 ? 0 : probList[probList.length - 1])
     )
-    unseenTotal = total
+    for (let j = 0; j < value.length; j++) {
+      weightedCards.push(key)
+    }
   }
+  shuffleArray(weightedCards)
   window.console.log(allData)
   window.console.log(total)
   window.console.log(probList)
@@ -74,31 +83,35 @@ function putIntoMapAndFetch(data) {
   } else if (whichGuesser === 'artist') {
     document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
   }
+  window.console.log(whichGuesser)
   setUpNewGame()
 }
 
 function getKSamples() {
   let usedCounters = new Set()
-  let currentTotal = unseenTotal
   let samples = {}
   let i = 0
-  while (i < k) {
-    let rand = Math.floor(Math.random() * currentTotal)
-    let count = 0
-    for (const [key, value] of Object.entries(allData)) {
-      if (usedCounters.has(key)) {
-        continue
-      } else if (count >= rand) {
-        usedCounters.add(key)
-        currentTotal -= value.length
-        unseenTotal--
-        let randIndex = Math.floor(Math.random() * value.length)
-        let arts = allData[key].splice(randIndex, 1)
-        samples[arts[0].artImg] = [key, arts[0].normalImg]
-        i++
+  let allCards = []
+  for (const [key, value] of Object.entries(allData)) {
+    for (let j = 0; j < value.length; j++) {
+      allCards.push(key)
+    }
+  }
+  shuffleArray(allCards)
+  for (let j = 0; j < allCards.length; j++) {
+    key = allCards[j]
+    value = allData[key]
+    if (usedCounters.has(key)) {
+      continue
+    } else {
+      window.console.log(key)
+      usedCounters.add(key)
+      let randIndex = Math.floor(Math.random() * value.length)
+      let arts = allData[key].splice(randIndex, 1)
+      samples[arts[0].artImg] = [key, arts[0].normalImg]
+      i++
+      if (i >= k) {
         break
-      } else {
-        count += value.length
       }
     }
   }
@@ -108,15 +121,18 @@ function getKSamples() {
     }
   }
   let count = 0
-  while (count < extra) {
-    let rand = Math.floor(Math.random() * total)
-    for (let j = 0; j < nameList.length; j++) {
-      if (j >= rand) {
-        if (usedCounters.has(nameList[j])) {
-          break
-        }
-        usedCounters.add(nameList[j])
-        count += 1
+  let ind = 0
+  shuffleArray(weightedCards)
+  for (let j = 0; j < weightedCards.length; j++) {
+    key = weightedCards[j]
+    value = weightedCards[key]
+    if (usedCounters.has(key)) {
+      continue
+    } else {
+      window.console.log(key)
+      usedCounters.add(key)
+      count++
+      if (count >= extra) {
         break
       }
     }
@@ -124,12 +140,35 @@ function getKSamples() {
   return [samples, usedCounters]
 }
 
+function createNewArtistMap() {
+  let usedCounters = new Set()
+  let samples = {}
+  let i = 0
+  let newTotal = 0
+  while (i < k + extra) {
+    let rand = Math.floor(Math.random() * total)
+    let count = 0
+    for (const [key, value] of Object.entries(allData)) {
+      if (usedCounters.has(key)) {
+        continue
+      } else if (count >= rand) {
+        usedCounters.add(key)
+        samples[key] = value
+        newTotal += value.length
+        i++
+        break
+      } else {
+        count += value.length
+      }
+    }
+  }
+  return [samples, newTotal]
+}
+
 function fetchToResponse(fetch) {
   return fetch
     .then((response) => response.json())
-    .then((json) => {
-      putIntoMapAndFetch(json)
-    })
+    .then((json) => putIntoMapAndFetch(json))
 }
 
 function determineIfSkip(card) {
@@ -157,7 +196,8 @@ function determineIfSkip(card) {
         card.set_type === 'token' ||
         card.set_type === 'vanguard' ||
         card.set_type === 'planechase' ||
-        card.set_type === 'archenemy'
+        card.set_type === 'archenemy' ||
+        card.set_type === 'memorabilia'
       ) {
         return true
       }
@@ -241,7 +281,9 @@ function setUpNewGame() {
 
   setWordsLeft()
   // select new cards
+  window.console.log(k)
   let sampledData = getKSamples()
+  window.console.log(k)
   artDict = sampledData[0]
   let randomImages = Object.keys(artDict)
   shuffleArray(randomImages)
@@ -278,17 +320,32 @@ function checkAnswers() {
     let incorrect = true
     if (currCard.dataset.name) {
       // remove image text
-      let guess = removeSymbol(
-        document.getElementById(currCard.dataset.name).innerText
-      )
-      let ans = removeSymbol(artDict[currCard.dataset.url][0])
-      window.console.log(ans, guess)
+      let guessWithSymbol = document.getElementById(
+        currCard.dataset.name
+      ).innerHTML
+      let ansWithSymbol = artDict[currCard.dataset.url][0]
+      let guess = removeSymbol(guessWithSymbol)
+      let ans = removeSymbol(ansWithSymbol)
       incorrect = ans !== guess
       // decide if their guess was correct
+      // window.console.log(ans, guess, incorrect)
+      if (incorrect) {
+        window.console.log(
+          document.getElementById(currCard.dataset.name),
+          guess,
+          ans
+        )
+        document.getElementById(currCard.dataset.name).innerHTML =
+          '<strike>' + guessWithSymbol + '</strike><br/>' + ansWithSymbol
+      }
     }
-    if (incorrect) currCard.classList.add('incorrect')
-    // tally some kind of score
-    if (incorrect) score--
+    if (incorrect) {
+      currCard.classList.add('incorrect')
+      // tally some kind of score
+      score--
+      // show the correct answer
+    }
+
     // show the correct card
     currCard.style.backgroundImage =
       "url('" + artDict[currCard.dataset.url][1] + "')"
