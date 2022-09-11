@@ -32,17 +32,6 @@ export default function BetButton(props: {
   return (
     <>
       <Col className={clsx('items-center', className)}>
-        {user && (
-          <div className={'mb-1 w-24 text-center text-sm text-gray-500'}>
-            {hasYesShares
-              ? `(${Math.floor(yesShares)} ${
-                  isPseudoNumeric ? 'HIGHER' : 'YES'
-                })`
-              : hasNoShares
-              ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'NO'})`
-              : ''}
-          </div>
-        )}
         {user ? (
           <Button
             size="lg"
@@ -56,6 +45,18 @@ export default function BetButton(props: {
           </Button>
         ) : (
           <BetSignUpPrompt />
+        )}
+
+        {user && (
+          <div className={'mt-1 w-24 text-center text-sm text-gray-500'}>
+            {hasYesShares
+              ? `(${Math.floor(yesShares)} ${
+                  isPseudoNumeric ? 'HIGHER' : 'YES'
+                })`
+              : hasNoShares
+              ? `(${Math.floor(noShares)} ${isPseudoNumeric ? 'LOWER' : 'NO'})`
+              : ''}
+          </div>
         )}
       </Col>
 
