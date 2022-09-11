@@ -1,8 +1,6 @@
 mode = 'PLAY'
 allData = {}
 total = 0
-probList = []
-nameList = []
 weightedCards = []
 indWeighedCards = 0
 k = 12
@@ -57,10 +55,6 @@ function putIntoMapAndFetch(data) {
     total = newArtistData[1]
   }
   for (const [key, value] of Object.entries(allData)) {
-    nameList.push(key)
-    probList.push(
-      value.length + (probList.length === 0 ? 0 : probList[probList.length - 1])
-    )
     for (let j = 0; j < value.length; j++) {
       weightedCards.push(key)
     }
@@ -68,8 +62,6 @@ function putIntoMapAndFetch(data) {
   shuffleArray(weightedCards)
   window.console.log(allData)
   window.console.log(total)
-  window.console.log(probList)
-  window.console.log(nameList)
   if (whichGuesser === 'counterspell') {
     document.getElementById('guess-type').innerText = 'Counterspell Guesser'
   } else if (whichGuesser === 'burn') {
