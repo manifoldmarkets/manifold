@@ -254,7 +254,11 @@ export function RichContent(props: {
     content,
     editable: false,
   })
-  useEffect(() => void editor?.commands?.setContent(content), [editor, content])
+  useEffect(
+    // Check isDestroyed here so hot reload works, see https://github.com/ueberdosis/tiptap/issues/1451#issuecomment-941988769
+    () => void !editor?.isDestroyed && editor?.commands?.setContent(content),
+    [editor, content]
+  )
 
   return <EditorContent className={className} editor={editor} />
 }
