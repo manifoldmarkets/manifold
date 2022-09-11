@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 import Head from 'next/head'
 import { Challenge } from 'common/challenge'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type OgCardProps = {
   question: string
@@ -88,7 +89,7 @@ export function SEO(props: {
       {url && (
         <meta
           property="og:url"
-          content={'https://manifold.markets' + url}
+          content={'https://' + ENV_CONFIG.domain + url}
           key="url"
         />
       )}
