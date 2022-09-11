@@ -55,11 +55,14 @@ function putIntoMapAndFetch(data) {
     total = newArtistData[1]
   }
   for (const [key, value] of Object.entries(allData)) {
-    for (let j = 0; j < value.length; j++) {
+    if (whichGuesser == 'artist') {
       weightedCards.push(key)
+    } else {
+      for (let j = 0; j < value.length; j++) {
+        weightedCards.push(key)
+      }
     }
   }
-  shuffleArray(weightedCards)
   window.console.log(allData)
   window.console.log(total)
   if (whichGuesser === 'counterspell') {
@@ -84,9 +87,13 @@ function getKSamples() {
   let samples = {}
   let i = 0
   let allCards = []
-  for (const [key, value] of Object.entries(allData)) {
-    for (let j = 0; j < value.length; j++) {
-      allCards.push(key)
+  if (whichGuesser == 'artist') {
+    allCards = weightedCards
+  } else {
+    for (const [key, value] of Object.entries(allData)) {
+      for (let j = 0; j < value.length; j++) {
+        allCards.push(key)
+      }
     }
   }
   shuffleArray(allCards)
@@ -112,20 +119,23 @@ function getKSamples() {
       delete allData[key]
     }
   }
-  let count = 0
-  let ind = 0
-  shuffleArray(weightedCards)
-  for (let j = 0; j < weightedCards.length; j++) {
-    key = weightedCards[j]
-    value = weightedCards[key]
-    if (usedCounters.has(key)) {
-      continue
-    } else {
-      window.console.log(key)
-      usedCounters.add(key)
-      count++
-      if (count >= extra) {
-        break
+  if (whichGuesser == 'artist') {
+    usedCounters = new Set(weightedCards)
+  } else {
+    let count = 0
+    shuffleArray(weightedCards)
+    for (let j = 0; j < weightedCards.length; j++) {
+      key = weightedCards[j]
+      value = weightedCards[key]
+      if (usedCounters.has(key)) {
+        continue
+      } else {
+        window.console.log(key)
+        usedCounters.add(key)
+        count++
+        if (count >= extra) {
+          break
+        }
       }
     }
   }
