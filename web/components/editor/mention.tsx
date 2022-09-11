@@ -14,9 +14,13 @@ const MentionComponent = (props: any) => {
   const contract = useContract(props.node.attrs.id)
 
   return (
-    <NodeViewWrapper className={clsx(name, 'not-prose text-indigo-700')}>
-      {/* <Linkify text={'@' + props.node.attrs.label} /> */}
-      {contract && <ContractCard contract={contract} />}
+    <NodeViewWrapper className={clsx(name, 'not-prose')}>
+      {contract && (
+        <ContractCard
+          contract={contract}
+          className="my-2 w-full border border-gray-100"
+        />
+      )}
     </NodeViewWrapper>
   )
 }
@@ -30,5 +34,8 @@ export const DisplayMention = Mention.extend({
   parseHTML: () => [{ tag: name }],
   renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
   addNodeView: () =>
-    ReactNodeViewRenderer(MentionComponent, { className: 'inline-block' }),
+    ReactNodeViewRenderer(MentionComponent, {
+      // On desktop, render cards below half-width so you can stack two
+      className: 'inline-block sm:w-[calc(50%-1rem)] sm:mr-1',
+    }),
 })
