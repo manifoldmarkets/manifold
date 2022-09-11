@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import Router from 'next/router'
 import {
   PencilIcon,
@@ -28,6 +28,7 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { formatMoney } from 'common/util/format'
+import { useProbChanges } from 'web/hooks/use-prob-changes'
 
 const Home = () => {
   const user = useUser()
@@ -38,8 +39,7 @@ const Home = () => {
 
   const groups = useMemberGroups(user?.id) ?? []
 
-  const [homeSections] = useState(user?.homeSections ?? [])
-  const { sections } = getHomeItems(groups, homeSections)
+  const { sections } = getHomeItems(groups, user?.homeSections ?? [])
 
   return (
     <Page>
@@ -152,6 +152,8 @@ function GroupSection(props: { group: Group; user: User | null | undefined }) {
 
 function DailyMoversSection(props: { userId: string | null | undefined }) {
   const { userId } = props
+  const changes = useProbChanges(userId ?? '')
+
   return (
     <Col className="gap-2">
       <SiteLink className="text-xl" href={'/daily-movers'}>
@@ -161,7 +163,7 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
           aria-hidden="true"
         />
       </SiteLink>
-      <ProbChangeTable userId={userId} />
+      <ProbChangeTable changes={changes} />
     </Col>
   )
 }
