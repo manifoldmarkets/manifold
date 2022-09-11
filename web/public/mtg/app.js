@@ -1,8 +1,7 @@
 mode = 'PLAY'
 allData = {}
 total = 0
-weightedCards = []
-indWeighedCards = 0
+cardNames = []
 k = 12
 extra = 3
 artDict = {}
@@ -54,15 +53,7 @@ function putIntoMapAndFetch(data) {
     allData = newArtistData[0]
     total = newArtistData[1]
   }
-  for (const [key, value] of Object.entries(allData)) {
-    if (whichGuesser == 'artist') {
-      weightedCards.push(key)
-    } else {
-      for (let j = 0; j < value.length; j++) {
-        weightedCards.push(key)
-      }
-    }
-  }
+  cardNames = Array.from(Object.keys(allData))
   window.console.log(allData)
   window.console.log(total)
   if (whichGuesser === 'counterspell') {
@@ -86,17 +77,9 @@ function getKSamples() {
   let usedCounters = new Set()
   let samples = {}
   let i = 0
-  let allCards = []
-  if (whichGuesser == 'artist') {
-    allCards = weightedCards
-  } else {
-    for (const [key, value] of Object.entries(allData)) {
-      for (let j = 0; j < value.length; j++) {
-        allCards.push(key)
-      }
-    }
-  }
+  let allCards = Array.from(Object.keys(allData))
   shuffleArray(allCards)
+  window.console.log(allCards)
   for (let j = 0; j < allCards.length; j++) {
     key = allCards[j]
     value = allData[key]
@@ -120,13 +103,13 @@ function getKSamples() {
     }
   }
   if (whichGuesser == 'artist') {
-    usedCounters = new Set(weightedCards)
+    usedCounters = new Set(cardNames)
   } else {
     let count = 0
-    shuffleArray(weightedCards)
-    for (let j = 0; j < weightedCards.length; j++) {
-      key = weightedCards[j]
-      value = weightedCards[key]
+    shuffleArray(cardNames)
+    for (let j = 0; j < cardNames.length; j++) {
+      key = cardNames[j]
+      value = cardNames[key]
       if (usedCounters.has(key)) {
         continue
       } else {
@@ -283,9 +266,7 @@ function setUpNewGame() {
 
   setWordsLeft()
   // select new cards
-  window.console.log(k)
   let sampledData = getKSamples()
-  window.console.log(k)
   artDict = sampledData[0]
   let randomImages = Object.keys(artDict)
   shuffleArray(randomImages)
