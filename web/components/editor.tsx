@@ -37,6 +37,7 @@ import { Tooltip } from './tooltip'
 import BoldIcon from 'web/lib/icons/bold-icon'
 import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
+import { getUrl } from 'common/util/parse'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -160,13 +161,9 @@ function FloatingMenu(props: { editor: Editor | null }) {
   const isLink = editor.isActive('link')
 
   const setLink = () => {
-    if (url) {
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange('link')
-        .setLink({ href: url })
-        .run()
+    const href = url && getUrl(url)
+    if (href) {
+      editor.chain().focus().extendMarkRange('link').setLink({ href }).run()
     }
   }
 
