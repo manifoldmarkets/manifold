@@ -166,14 +166,13 @@ export default class App {
 
         const registerTwitchReturnPromises: { [k: string]: Response } = {};
 
-        this.app.get("/registerchanneltwitch", async (request, response) => {
-            const params = getParamsFromURL(request.url);
-            const code = params["code"];
-            log.info(`Got a Twitch link request: ${code}`);
+        this.app.post("/registerchanneltwitch", async (request, response) => {
+            const apiKey = request.body["apiKey"];
+            log.info(`Got a Twitch link request: ${apiKey}`);
             try {
-                const twitchUser: Twitch.TwitchUser = await Twitch.getTwitchDetailsFromLinkCode(code);
-                log.info(`Authorized Twitch user ${twitchUser.display_name}`);
-                this.bot.joinChannel(twitchUser.login);
+                const user = await this.firestore.getUserForManifoldAPIKey(apiKey);
+                log.info(`Authorized Twitch user ${user.twitchDisplayName}`);
+                this.bot.joinChannel(user.data.twitchLogin);
                 response.send("<html><head><script>close();</script></head><html>");
             } catch (e) {
                 log.trace(e);
@@ -279,6 +278,6 @@ export default class App {
         });
 
         this.app.use(express.static(path.resolve("static"), { index: false, extensions: ["html"] }));
-        this.app.get("*", (req, res) => res.sendFile(path.resolve("static/404.html")));
+        //!!! this.app.get("*", (req, res) => res.sendFile(path.resolve("static/404.html")));
     }
 }

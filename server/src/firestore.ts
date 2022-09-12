@@ -47,6 +47,13 @@ export default class AppFirestore {
         return new User(data);
     }
 
+    async getUserForManifoldAPIKey(apiKey: string): Promise<User> {
+        const d = await getDocs(query(this.userCollection, where("APIKey", "==", apiKey)));
+        if (d.empty) throw new UserNotRegisteredException(`No user record for API key ${apiKey}`);
+        const data = <UserData>d.docs[0].data();
+        return new User(data);
+    }
+
     async getUserForControlToken(controlToken: string): Promise<User> {
         log.debug(`Examining control token: ${controlToken}`);
         if (!controlToken) return null;

@@ -1,25 +1,23 @@
 import { ChatUserstate, Client } from "tmi.js";
 
-import { LiteUser } from "common/manifold-defs";
 import { InsufficientBalanceException, ResourceNotFoundException, UserNotRegisteredException } from "common/exceptions";
+import { LiteUser } from "common/manifold-defs";
 
-import App from "./app";
-import log from "./logger";
-import User from "./user";
-import { Market } from "./market";
-import * as Manifold from "./manifold-api";
-import { PUBLIC_FACING_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from "./envs";
 import { ResolutionOutcome } from "common/outcome";
+import App from "./app";
+import { MANIFOLD_SIGNUP_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from "./envs";
+import log from "./logger";
+import * as Manifold from "./manifold-api";
+import { Market } from "./market";
 import { sanitizeTwitchChannelName } from "./twitch-api";
+import User from "./user";
 
 const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
-const SIGNUP_LINK = `${PUBLIC_FACING_URL}/profile`; //!!! Update to correct link
-
 const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) => `Sorry ${username}, you don't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a market LUL`;
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
-const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${SIGNUP_LINK}!`;
-const MSG_HELP = () => `Check out the full list of commands and how to play here: ${SIGNUP_LINK}`;
+const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${MANIFOLD_SIGNUP_URL}!`;
+const MSG_HELP = () => `Check out the full list of commands and how to play here: ${MANIFOLD_SIGNUP_URL}`;
 const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) => {
     const maxWinners = 10;
     let message = `The market has resolved to ${outcome === ResolutionOutcome.CANCEL ? "N/A" : outcome}!`;
