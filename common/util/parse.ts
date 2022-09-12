@@ -23,7 +23,14 @@ import { Link } from '@tiptap/extension-link'
 import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
 import TiptapTweet from './tiptap-tweet-type'
+import { find } from 'linkifyjs'
 import { uniq } from 'lodash'
+
+/** get first url in text. like "notion.so " -> "http://notion.so"; "notion" -> null */
+export function getUrl(text: string) {
+  const results = find(text, 'url')
+  return results.length ? results[0].href : null
+}
 
 export function parseTags(text: string) {
   const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
