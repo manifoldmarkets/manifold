@@ -34,6 +34,8 @@ export function AnswersPanel(props: {
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
   const answers = useAnswers(contract.id) ?? contract.answers
+  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] === 0)
+
   const [winningAnswers, losingAnswers] = partition(
     answers.filter((answer) =>
       (answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE') && showAllAnswers
@@ -130,7 +132,7 @@ export function AnswersPanel(props: {
               </div>
             ))}
             <Row className={'justify-end'}>
-              {!showAllAnswers && (
+              {hasZeroBetAnswers && !showAllAnswers && (
                 <Button
                   color={'gray-white'}
                   onClick={() => setShowAllAnswers(true)}
