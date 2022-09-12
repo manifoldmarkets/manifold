@@ -17,15 +17,19 @@ export function ProbChangeTable(props: {
   if (!changes) return <LoadingIndicator />
 
   const { positiveChanges, negativeChanges } = changes
-  if (positiveChanges.length === 0 && negativeChanges.length === 0) return null
 
-  const rows = Math.min(
-    Math.min(positiveChanges.length, negativeChanges.length),
-    3
+  const threshold = 0.075
+  const countOverThreshold = Math.max(
+    positiveChanges.findIndex((c) => c.probChanges.day < threshold) + 1,
+    negativeChanges.findIndex((c) => c.probChanges.day > -threshold) + 1
   )
+  const maxRows = Math.min(positiveChanges.length, negativeChanges.length)
+  const rows = Math.min(3, Math.min(maxRows, countOverThreshold))
 
   const filteredPositiveChanges = positiveChanges.slice(0, rows)
   const filteredNegativeChanges = negativeChanges.slice(0, rows)
+
+  if (rows === 0) return <div className="px-4 text-gray-500">None</div>
 
   return (
     <Col className="mb-4 w-full divide-x-2 divide-y rounded-lg bg-white shadow-md md:flex-row md:divide-y-0">
