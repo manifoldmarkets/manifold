@@ -187,7 +187,11 @@ export async function updateMetricsCore() {
         (e) => contractsById[e.contractId]
       )
       const bets = groupContracts.map((e) => {
-        return betsByContract[e.id] ?? []
+        if (e.id in betsByContract) {
+          return betsByContract[e.id] ?? []
+        } else {
+          return []
+        }
       })
 
       const creatorScores = scoreCreators(groupContracts)
