@@ -96,6 +96,7 @@ export const createNotification = async (
       if (!sendToEmail) continue
 
       if (reason === 'your_contract_closed' && privateUser && sourceContract) {
+        // TODO: include number and names of bettors waiting for creator to resolve their market
         await sendMarketCloseEmail(
           reason,
           sourceUser,
@@ -287,6 +288,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     }
     if (sendToEmail) {
       if (sourceType === 'comment') {
+        // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
         await sendNewCommentEmail(
           reason,
           privateUser,

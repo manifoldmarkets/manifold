@@ -153,7 +153,7 @@ export const sendWelcomeEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
+  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
     'onboarding_flow' as keyof notification_subscription_types
   }`
 
@@ -163,7 +163,7 @@ export const sendWelcomeEmail = async (
     'welcome',
     {
       name: firstName,
-      unsubscribeLink,
+      unsubscribeUrl,
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
@@ -221,7 +221,7 @@ export const sendOneWeekBonusEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
+  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
     'onboarding_flow' as keyof notification_subscription_types
   }`
   return await sendTemplateEmail(
@@ -230,7 +230,7 @@ export const sendOneWeekBonusEmail = async (
     'one-week',
     {
       name: firstName,
-      unsubscribeLink,
+      unsubscribeUrl,
       manalink: 'https://manifold.markets/link/lj4JbBvE',
     },
     {
@@ -254,7 +254,7 @@ export const sendCreatorGuideEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
+  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
     'onboarding_flow' as keyof notification_subscription_types
   }`
   return await sendTemplateEmail(
@@ -263,7 +263,7 @@ export const sendCreatorGuideEmail = async (
     'creating-market',
     {
       name: firstName,
-      unsubscribeLink,
+      unsubscribeUrl,
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
@@ -288,7 +288,7 @@ export const sendThankYouEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
+  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
     'thank_you_for_purchases' as keyof notification_subscription_types
   }`
 
@@ -298,7 +298,7 @@ export const sendThankYouEmail = async (
     'thank-you',
     {
       name: firstName,
-      unsubscribeLink,
+      unsubscribeUrl,
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
@@ -479,7 +479,7 @@ export const sendInterestingMarketsEmail = async (
     'interesting-markets',
     {
       name: firstName,
-      unsubscribeLink: unsubscribeUrl,
+      unsubscribeUrl,
 
       question1Title: contractsToSend[0].question,
       question1Link: contractUrl(contractsToSend[0]),
