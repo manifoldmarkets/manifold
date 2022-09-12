@@ -1,6 +1,7 @@
 import time
 import requests
 import json
+import math
 
 # queued categories: 'terror', 'wrath', 'zombie', 'artifact']
 # add category name here
@@ -61,10 +62,10 @@ def generate_initial_artist_query():
 
 
 def generate_individual_artist_query(artists, artist_list):
-    string_query = 'https://api.scryfall.com/cards/search?q=%28a'
+    string_query = 'https://api.scryfall.com/cards/search?q=%28'
     for artist in artists:
         artist_split = artist_list[artist][0].split()
-        string_query += '%3A“' + '+'.join(artist_split) + '”+or+'
+        string_query += 'a%3A“' + '+'.join(artist_split) + '”+or+'
     string_query = string_query[:-4]
     string_query += '%29+-set%3Aplist+artists%3D1+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
     return string_query
@@ -109,9 +110,17 @@ def fetch_and_write_all_artist():
     count = 1
     artists = json.load(open('jsons/artistList.json'))
     artist_ids = list(artists.keys())
-    for i in range(-1*len(artist_ids)//-36):
-        queried_artists = artist_ids[i*36:min((i+1)*36, len(artist_ids))]
+    print(math.ceil(len(artist_ids)/37.0))
+    for i in range(math.ceil(len(artist_ids)/37.0)):
+        queried_artists_pre = artist_ids[i*37:min((i+1)*37, len(artist_ids))]
+        queried_artists = []
+        for j in range(len(queried_artists_pre)):
+            if artists[queried_artists_pre[j]][1] >= 76:
+                queried_artists.append(queried_artists_pre[j])
         print(queried_artists)
+        print(i)
+        if len(queried_artists) == 0:
+            continue
         count = 1
         will_repeat = True
         art_names = dict()
@@ -294,5 +303,6 @@ if __name__ == "__main__":
     #     print(category)
     #     fetch_and_write_all_special(
     #         category, generate_initial_special_query(category))
+    # uncomment this once in a while, but it's expensive to run
     # fetch_and_write_initial_artist_query()
     fetch_and_write_all_artist()
