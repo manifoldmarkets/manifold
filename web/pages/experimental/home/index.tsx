@@ -97,17 +97,10 @@ function SearchSection(props: {
   followed?: boolean
 }) {
   const { label, user, sort, yourBets, followed } = props
-  const href = `/home?s=${sort}`
 
   return (
     <Col>
-      <SiteLink className="mb-2 text-xl" href={href}>
-        {label}{' '}
-        <ArrowSmRightIcon
-          className="mb-0.5 inline h-6 w-6 text-gray-500"
-          aria-hidden="true"
-        />
-      </SiteLink>
+      <SectionHeader label={label} href={`/home?s=${sort}`} />
       <ContractSearch
         user={user}
         defaultSort={sort}
@@ -134,13 +127,7 @@ function GroupSection(props: {
 
   return (
     <Col>
-      <SiteLink className="mb-2 text-xl" href={groupPath(group.slug)}>
-        {group.name}{' '}
-        <ArrowSmRightIcon
-          className="mb-0.5 inline h-6 w-6 text-gray-500"
-          aria-hidden="true"
-        />
-      </SiteLink>
+      <SectionHeader label={group.name} href={groupPath(group.slug)} />
       <ContractSearch
         user={user}
         defaultSort={'score'}
@@ -159,15 +146,25 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
 
   return (
     <Col className="gap-2">
-      <SiteLink className="text-xl" href={'/daily-movers'}>
-        Daily movers{' '}
+      <SectionHeader label="Daily movers" href="daily-movers" />
+      <ProbChangeTable changes={changes} />
+    </Col>
+  )
+}
+
+function SectionHeader(props: { label: string; href: string }) {
+  const { label, href } = props
+
+  return (
+    <Row className="mb-3 items-center justify-between">
+      <SiteLink className="text-xl" href={href}>
+        {label}{' '}
         <ArrowSmRightIcon
           className="mb-0.5 inline h-6 w-6 text-gray-500"
           aria-hidden="true"
         />
       </SiteLink>
-      <ProbChangeTable changes={changes} />
-    </Col>
+    </Row>
   )
 }
 
