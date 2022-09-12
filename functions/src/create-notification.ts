@@ -316,8 +316,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
         await sendMarketResolutionEmail(
           reason,
           privateUser,
-          resolutionData.userInvestments[userId],
-          resolutionData.userPayouts[userId],
+          resolutionData.userInvestments[userId] ?? 0,
+          resolutionData.userPayouts[userId] ?? 0,
           sourceUser,
           resolutionData.creatorPayout,
           sourceContract,
