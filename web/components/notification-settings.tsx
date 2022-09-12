@@ -220,7 +220,7 @@ export function NotificationSettings(props: {
               <SwitchSetting
                 checked={inAppEnabled}
                 onChange={setInAppEnabled}
-                label={'Website'}
+                label={'Web'}
               />
             )}
             {emailsEnabled.includes(key) && (
