@@ -3,9 +3,8 @@ import { ReactRenderer } from '@tiptap/react'
 import { searchInAny } from 'common/util/parse'
 import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
-import { getCachedContracts } from 'web/hooks/use-contracts'
-// import { getCachedUsers } from 'web/hooks/use-users'
-import { MentionList } from './contract-mention-list'
+import { getCachedUsers } from 'web/hooks/use-users'
+import { MentionList } from './mention-list'
 
 type Suggestion = MentionOptions['suggestion']
 
@@ -13,16 +12,16 @@ const beginsWith = (text: string, query: string) =>
   text.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
-// TODO: merge with mention-suggestion.ts?
-export const contractMentionSuggestion: Suggestion = {
-  char: '%',
-  allowSpaces: true,
+export const mentionSuggestion: Suggestion = {
   items: async ({ query }) =>
     orderBy(
-      (await getCachedContracts()).filter((c) =>
-        searchInAny(query, c.question)
+      (await getCachedUsers()).filter((u) =>
+        searchInAny(query, u.username, u.name)
       ),
-      [(c) => [c.question].some((s) => beginsWith(s, query))],
+      [
+        (u) => [u.name, u.username].some((s) => beginsWith(s, query)),
+        'followerCountCached',
+      ],
       ['desc', 'desc']
     ).slice(0, 5),
   render: () => {
