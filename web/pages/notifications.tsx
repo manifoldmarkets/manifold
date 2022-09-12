@@ -26,6 +26,7 @@ import {
 import {
   NotificationGroup,
   useGroupedNotifications,
+  useUnseenGroupedNotification,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
@@ -153,16 +154,13 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
   const [page, setPage] = useState(0)
   const allGroupedNotifications = useGroupedNotifications(privateUser)
+  const unseenGroupedNotifications = useUnseenGroupedNotification(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
     if (!allGroupedNotifications) return
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
     const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
-    const remainingNotification = allGroupedNotifications.slice(end)
-    for (const notification of remainingNotification) {
-      if (notification.isSeen) break
-      else setNotificationsAsSeen(notification.notifications)
-    }
+
     const local = safeLocalStorage()
     local?.setItem(
       'notification-groups',
@@ -170,6 +168,19 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
     )
     return maxNotificationsToShow
   }, [allGroupedNotifications, page])
+
+  // Set all notifications that don't fit on the first page to seen
+  useEffect(() => {
+    if (
+      paginatedGroupedNotifications &&
+      paginatedGroupedNotifications?.length >= NOTIFICATIONS_PER_PAGE
+    ) {
+      const allUnseenNotifications = unseenGroupedNotifications
+        ?.map((ng) => ng.notifications)
+        .flat()
+      allUnseenNotifications && setNotificationsAsSeen(allUnseenNotifications)
+    }
+  }, [paginatedGroupedNotifications, unseenGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />

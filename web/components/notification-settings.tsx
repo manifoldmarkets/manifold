@@ -54,21 +54,20 @@ export function NotificationSettings(props: {
     'resolutions_on_watched_markets_with_shares_in',
     'resolutions_on_watched_markets',
 
-    'tagged_user',
     'trending_markets',
     'onboarding_flow',
     'thank_you_for_purchases',
 
     // TODO: add these
+    'tagged_user',
     // 'contract_from_followed_user',
     // 'referral_bonuses',
     // 'unique_bettors_on_your_contract',
+    // 'on_new_follow',
+    // 'profit_loss_updates',
     // 'tips_on_your_markets',
     // 'tips_on_your_comments',
-    // 'subsidized_your_market',
-    // 'on_new_follow',
     // maybe the following?
-    // 'profit_loss_updates',
     // 'probability_updates_on_watched_markets',
     // 'limit_order_fills',
   ]
