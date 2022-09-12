@@ -8,7 +8,6 @@ import {
   notification_destination_types,
 } from 'common/user'
 import { updatePrivateUser } from 'web/lib/firebase/users'
-import { Switch } from '@headlessui/react'
 import { Col } from 'web/components/layout/col'
 import {
   CashIcon,
@@ -26,6 +25,7 @@ import {
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { filterDefined } from 'common/util/array'
 import toast from 'react-hot-toast'
+import { SwitchSetting } from 'web/components/switch'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
@@ -218,54 +218,18 @@ export function NotificationSettings(props: {
           </Row>
           <Row className={'gap-4'}>
             {!browserDisabled.includes(key) && (
-              <Switch.Group as="div" className="flex items-center">
-                <Switch
-                  checked={inAppEnabled}
-                  onChange={setInAppEnabled}
-                  className={clsx(
-                    inAppEnabled ? 'bg-indigo-600' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={clsx(
-                      inAppEnabled ? 'translate-x-5' : 'translate-x-0',
-                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-                    )}
-                  />
-                </Switch>
-                <Switch.Label as="span" className="ml-3">
-                  <span className="text-sm font-medium text-gray-900">
-                    In-app
-                  </span>
-                </Switch.Label>
-              </Switch.Group>
+              <SwitchSetting
+                checked={inAppEnabled}
+                onChange={setInAppEnabled}
+                label={'In App'}
+              />
             )}
             {emailsEnabled.includes(key) && (
-              <Switch.Group as="div" className="flex items-center">
-                <Switch
-                  checked={emailEnabled}
-                  onChange={setEmailEnabled}
-                  className={clsx(
-                    emailEnabled ? 'bg-indigo-600' : 'bg-gray-200',
-                    'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={clsx(
-                      emailEnabled ? 'translate-x-5' : 'translate-x-0',
-                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out'
-                    )}
-                  />
-                </Switch>
-                <Switch.Label as="span" className="ml-3">
-                  <span className="text-sm font-medium text-gray-900">
-                    Emails
-                  </span>
-                </Switch.Label>
-              </Switch.Group>
+              <SwitchSetting
+                checked={emailEnabled}
+                onChange={setEmailEnabled}
+                label={'Emails'}
+              />
             )}
           </Row>
         </Col>
