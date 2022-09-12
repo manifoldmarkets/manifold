@@ -183,9 +183,9 @@ export async function updateMetricsCore() {
   try {
     const groupUpdates = groups.map((group, index) => {
       const groupContractIds = contractsByGroup[index] as GroupContractDoc[]
-      const groupContracts = groupContractIds.map(
-        (e) => contractsById[e.contractId]
-      )
+      const groupContracts = groupContractIds
+        .map((e) => contractsById[e.contractId])
+        .filter((e) => e !== undefined) as Contract[]
       const bets = groupContracts.map((e) => {
         if (e != null && e.id in betsByContract) {
           return betsByContract[e.id] ?? []
