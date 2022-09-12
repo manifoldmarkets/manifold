@@ -1,12 +1,12 @@
 import { Page } from 'web/components/page'
 
-import { postPath, getPostBySlug } from 'web/lib/firebase/posts'
+import { postPath, getPostBySlug, updatePost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { Content } from 'web/components/editor'
+import { Content, TextEditor, useTextEditor } from 'web/components/editor'
 import { getUser, User } from 'web/lib/firebase/users'
-import { ShareIcon } from '@heroicons/react/solid'
+import { PencilIcon, ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Button } from 'web/components/button'
 import { useState } from 'react'
@@ -22,6 +22,8 @@ import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
 import { PostCommentInput, PostCommentThread } from 'web/posts/post-comments'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
+import { useUser } from 'web/hooks/use-user'
+import { usePost } from 'web/hooks/use-post'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -51,12 +53,14 @@ export default function PostPage(props: {
   comments: PostComment[]
 }) {
   const [isShareOpen, setShareOpen] = useState(false)
-  const { post, creator } = props
+  const { creator } = props
+  const post = usePost(props.post.id) ?? props.post
 
   const tips = useTipTxns({ postId: post.id })
   const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
   const updatedComments = useCommentsOnPost(post.id)
   const comments = updatedComments ?? props.comments
+  const user = useUser()
 
   if (post == null) {
     return <Custom404 />
@@ -65,10 +69,9 @@ export default function PostPage(props: {
   return (
     <Page>
       <div className="mx-auto w-full max-w-3xl ">
-        <Spacer h={1} />
-        <Title className="!mt-0" text={post.title} />
+        <Title className="!mt-0 py-4 px-2" text={post.title} />
         <Row>
-          <Col className="flex-1">
+          <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
               <UserLink
@@ -78,7 +81,7 @@ export default function PostPage(props: {
               />
             </div>
           </Col>
-          <Col>
+          <Col className="px-2">
             <Button
               size="lg"
               color="gray-white"
@@ -104,11 +107,15 @@ export default function PostPage(props: {
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <div className="form-control w-full py-2">
-            <Content content={post.content} />
+            {user && user.id === post.creatorId ? (
+              <RichEditPost post={post} />
+            ) : (
+              <Content content={post.content} />
+            )}
           </div>
         </div>
 
-        <Spacer h={2} />
+        <Spacer h={4} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <PostCommentsActivity
             post={post}
@@ -137,7 +144,7 @@ export function PostCommentsActivity(props: {
   )
 
   return (
-    <>
+    <Col className="p-2">
       <PostCommentInput post={post} />
       {topLevelComments.map((parent) => (
         <PostCommentThread
@@ -153,6 +160,68 @@ export function PostCommentsActivity(props: {
           commentsByUserId={commentsByUserId}
         />
       ))}
+    </Col>
+  )
+}
+
+function RichEditPost(props: { post: Post }) {
+  const { post } = props
+  const [editing, setEditing] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { editor, upload } = useTextEditor({
+    defaultValue: post.content,
+    disabled: isSubmitting,
+  })
+
+  async function savePost() {
+    if (!editor) return
+
+    await updatePost(post, {
+      content: editor.getJSON(),
+    })
+  }
+
+  return editing ? (
+    <>
+      <TextEditor editor={editor} upload={upload} />
+      <Spacer h={2} />
+      <Row className="gap-2">
+        <Button
+          onClick={async () => {
+            setIsSubmitting(true)
+            await savePost()
+            setEditing(false)
+            setIsSubmitting(false)
+          }}
+        >
+          Save
+        </Button>
+        <Button color="gray" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </Row>
+    </>
+  ) : (
+    <>
+      <div className="relative">
+        <div className="absolute top-0 right-0 z-10 space-x-2">
+          <Button
+            color="gray"
+            size="xs"
+            onClick={() => {
+              setEditing(true)
+              editor?.commands.focus('end')
+            }}
+          >
+            <PencilIcon className="inline h-4 w-4" />
+            Edit
+          </Button>
+        </div>
+
+        <Content content={post.content} />
+        <Spacer h={2} />
+      </div>
     </>
   )
 }

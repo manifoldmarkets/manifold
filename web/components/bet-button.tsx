@@ -41,7 +41,7 @@ export default function BetButton(props: {
             )}
             onClick={() => setOpen(true)}
           >
-            Trade
+            Predict
           </Button>
         ) : (
           <BetSignUpPrompt />
@@ -60,7 +60,7 @@ export default function BetButton(props: {
         )}
       </Col>
 
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} position="center">
         <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}

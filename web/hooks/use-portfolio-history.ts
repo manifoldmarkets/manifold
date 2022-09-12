@@ -1,6 +1,6 @@
 import { useQueryClient } from 'react-query'
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   getPortfolioHistory,
   getPortfolioHistoryQuery,
@@ -15,8 +15,10 @@ const getCutoff = (period: Period) => {
 export const usePrefetchPortfolioHistory = (userId: string, period: Period) => {
   const queryClient = useQueryClient()
   const cutoff = getCutoff(period)
-  return queryClient.prefetchQuery(['portfolio-history', userId, cutoff], () =>
-    getPortfolioHistory(userId, cutoff)
+  return queryClient.prefetchQuery(
+    ['portfolio-history', userId, cutoff],
+    () => getPortfolioHistory(userId, cutoff),
+    { staleTime: 15 * MINUTE_MS }
   )
 }
 
@@ -24,7 +26,9 @@ export const usePortfolioHistory = (userId: string, period: Period) => {
   const cutoff = getCutoff(period)
   const result = useFirestoreQueryData(
     ['portfolio-history', userId, cutoff],
-    getPortfolioHistoryQuery(userId, cutoff)
+    getPortfolioHistoryQuery(userId, cutoff),
+    {},
+    { staleTime: 15 * MINUTE_MS }
   )
   return result.data
 }

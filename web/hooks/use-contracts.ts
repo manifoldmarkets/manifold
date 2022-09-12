@@ -13,6 +13,7 @@ import {
   getUserBetContractsQuery,
 } from 'web/lib/firebase/contracts'
 import { useQueryClient } from 'react-query'
+import { MINUTE_MS } from 'common/util/time'
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -96,8 +97,10 @@ export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
 
 export const usePrefetchUserBetContracts = (userId: string) => {
   const queryClient = useQueryClient()
-  return queryClient.prefetchQuery(['contracts', 'bets', userId], () =>
-    getUserBetContracts(userId)
+  return queryClient.prefetchQuery(
+    ['contracts', 'bets', userId],
+    () => getUserBetContracts(userId),
+    { staleTime: 5 * MINUTE_MS }
   )
 }
 

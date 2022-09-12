@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from 'common/answer'
@@ -25,8 +25,7 @@ import {
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { BetSignUpPrompt } from '../sign-up-prompt'
-import { isIOS } from 'web/lib/util/device'
-import { AlertBox } from '../alert-box'
+import { WarningConfirmationButton } from '../warning-confirmation-button'
 
 export function AnswerBetPanel(props: {
   answer: Answer
@@ -43,12 +42,6 @@ export function AnswerBetPanel(props: {
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const inputRef = useRef<HTMLElement>(null)
-  useEffect(() => {
-    if (isIOS()) window.scrollTo(0, window.scrollY + 200)
-    inputRef.current && inputRef.current.focus()
-  }, [])
 
   async function submitBet() {
     if (!user || !betAmount) return
@@ -116,6 +109,15 @@ export function AnswerBetPanel(props: {
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
+  const warning =
+    (betAmount ?? 0) >= 100 && bankrollFraction >= 0.5 && bankrollFraction <= 1
+      ? `You might not want to spend ${formatPercent(
+          bankrollFraction
+        )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
+          user?.balance ?? 0
+        )}`
+      : undefined
+
   return (
     <Col className={clsx('px-2 pb-2 pt-4 sm:pt-0', className)}>
       <Row className="items-center justify-between self-stretch">
@@ -144,24 +146,8 @@ export function AnswerBetPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        inputRef={inputRef}
         showSliderOnMobile
       />
-
-      {(betAmount ?? 0) > 10 &&
-      bankrollFraction >= 0.5 &&
-      bankrollFraction <= 1 ? (
-        <AlertBox
-          title="Whoa, there!"
-          text={`You might not want to spend ${formatPercent(
-            bankrollFraction
-          )} of your balance on a single bet. \n\nCurrent balance: ${formatMoney(
-            user?.balance ?? 0
-          )}`}
-        />
-      ) : (
-        ''
-      )}
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center justify-between text-sm">
@@ -198,16 +184,17 @@ export function AnswerBetPanel(props: {
       <Spacer h={6} />
 
       {user ? (
-        <button
-          className={clsx(
+        <WarningConfirmationButton
+          warning={warning}
+          onSubmit={submitBet}
+          isSubmitting={isSubmitting}
+          disabled={!!betDisabled}
+          openModalButtonClass={clsx(
             'btn self-stretch',
             betDisabled ? 'btn-disabled' : 'btn-primary',
             isSubmitting ? 'loading' : ''
           )}
-          onClick={betDisabled ? undefined : submitBet}
-        >
-          {isSubmitting ? 'Submitting...' : 'Submit'}
-        </button>
+        />
       ) : (
         <BetSignUpPrompt />
       )}

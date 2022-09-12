@@ -91,7 +91,7 @@ const Home = () => {
 
 function SearchSection(props: {
   label: string
-  user: User | null | undefined
+  user: User | null | undefined | undefined
   sort: Sort
   yourBets?: boolean
   followed?: boolean
@@ -126,7 +126,10 @@ function SearchSection(props: {
   )
 }
 
-function GroupSection(props: { group: Group; user: User | null | undefined }) {
+function GroupSection(props: {
+  group: Group
+  user: User | null | undefined | undefined
+}) {
   const { group, user } = props
 
   return (
