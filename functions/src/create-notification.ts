@@ -222,7 +222,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     repliedToId,
   } = miscData ?? {}
 
-  const recipientIdsList: string[] = []
+  const browserRecipientIdsList: string[] = []
+  const emailRecipientIdsList: string[] = []
 
   const contractFollowersSnap = await firestore
     .collection(`contracts/${sourceContract.id}/follows`)
@@ -271,8 +272,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   ) => {
     if (
       !stillFollowingContract(sourceContract.creatorId) ||
-      sourceUser.id == userId ||
-      recipientIdsList.includes(userId)
+      sourceUser.id == userId
     )
       return
     const privateUser = await getPrivateUser(userId)
@@ -282,11 +282,11 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       reason
     )
 
-    if (sendToBrowser) {
+    if (sendToBrowser && !browserRecipientIdsList.includes(userId)) {
       await createBrowserNotification(userId, reason)
-      recipientIdsList.push(userId)
+      browserRecipientIdsList.push(userId)
     }
-    if (sendToEmail) {
+    if (sendToEmail && !emailRecipientIdsList.includes(userId)) {
       if (sourceType === 'comment') {
         // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
         await sendNewCommentEmail(
@@ -327,7 +327,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
           resolutionData.resolutionProbability,
           resolutionData.resolutions
         )
-      recipientIdsList.push(userId)
+      emailRecipientIdsList.push(userId)
     }
   }
 
