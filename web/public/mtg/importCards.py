@@ -7,7 +7,8 @@ import math
 # add category name here
 allCategories = ['counterspell', 'beast', 'burn', 'commander']
 specialCategories = ['set', 'basic']
-artist_blacklist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
+artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
+artist_allowlist = {'David Martin', 'V\u00e9ronique Meignaud'}
 
 
 def generate_initial_query(category):
@@ -54,7 +55,7 @@ def generate_initial_special_query(category):
 
 
 def generate_initial_artist_query():
-    string_query = 'https://api.scryfall.com/cards/search?q=' + artist_blacklist + \
+    string_query = 'https://api.scryfall.com/cards/search?q=' + artist_denylist + \
         '+artists%3D1+-st%3Afunny+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
     print("artistList")
     print(string_query)
@@ -115,7 +116,7 @@ def fetch_and_write_all_artist():
         queried_artists_pre = artist_ids[i*37:min((i+1)*37, len(artist_ids))]
         queried_artists = []
         for j in range(len(queried_artists_pre)):
-            if artists[queried_artists_pre[j]][1] >= 76:
+            if artists[queried_artists_pre[j]][1] >= 50 or artists[queried_artists_pre[j]][0] in artist_allowlist:
                 queried_artists.append(queried_artists_pre[j])
         print(queried_artists)
         print(i)
