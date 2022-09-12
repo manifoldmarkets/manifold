@@ -202,14 +202,14 @@ function DailyProfitAndBalance(props: {
   return (
     <div className={clsx(className, 'text-lg')}>
       <span className={clsx(profit >= 0 ? 'text-green-500' : 'text-red-500')}>
-        {profit >= 0 ? '+' : '-'}
+        {profit >= 0 && '+'}
         {formatMoney(profit)}
       </span>{' '}
       profit and{' '}
       <span
         className={clsx(balanceChange >= 0 ? 'text-green-500' : 'text-red-500')}
       >
-        {balanceChange >= 0 ? '+' : '-'}
+        {balanceChange >= 0 && '+'}
         {formatMoney(balanceChange)}
       </span>{' '}
       balance today
