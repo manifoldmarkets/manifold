@@ -2,11 +2,11 @@ import time
 import requests
 import json
 
+# queued categories: 'terror', 'wrath', 'zombie', 'artifact']
 # add category name here
-# , 'terror', 'wrath', 'zombie', 'artifact']
-allCategories = ['counterspell', 'beast', 'burn', 'commander', 'artist']
+allCategories = ['counterspell', 'beast', 'burn', 'commander']
 specialCategories = ['set', 'basic']
-artists = dict()
+artist_blacklist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
 
 
 def generate_initial_query(category):
@@ -32,25 +32,11 @@ def generate_initial_query(category):
     #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken'
     # elif category == 'artifact':
         # string_query += 't%3Aartifact&order=released&dir=asc&unique=prints&page='
-    elif category == 'artist':
-        string_query += '%28a%3A"Carl+Critchlow"+or+a%3A"Chippy"+or+a%3A"Christopher+Moeller"+or+a%3A"christopher+rush"' \
-            '+or+a%3A"Daarken"+or+a%3A"Donato+Giancola"+or+a%3A"Douglas+Shuler"+or+a%3A"Eric+Deschamps"' \
-            '+or+a%3A"greg+staples"+or+a%3A"heather+Hudson"+or+a%3A"igor+kieryluk"+or+a%3A"Jeff+Miracola"+or+' \
-            'a%3A"johannes+voss"+or+a%3A"Julie+Baroh"+or+a%3A"kev+walker"+or+a%3A"Lius+Lasahido"+or+a%3A"Livia+Prima"' \
-            '+or+a%3A"Magali+Villeneuve"+or+a%3A"Mark+Poole"+or+a%3A"Mark+Tedin"+or+a%3A"Mark+Zug"+or+a%3A"Nils+Hamm"' \
-            '+or+a%3A"pete+venters"+or+a%3A"randy+gallegos"+or+a%3A"rebecca+guay"+or+a%3A"rk+post"+or+a%3A"rob+alexander"' \
-            '+or+a%3A"ron+spencer"+or+a%3A"Scott+M+Fischer"+or+a%3A"seb+mckinnon"+or+a%3A"steve+argyle"+or+' \
-            'a%3A"Svetlin+Velinov"+or+a%3A"Veronique+Meignaud"+or+a%3A"Wylie+Beckert"+or+a%3A“Amy+Weber”+or+' \
-            'a%3A“Dan+Frazier”+or+a%3A“David+Martin”+or+a%3A“DiTerlizzi”+or+a%3A“Ernanda+Souza”+or+a%3A“Franz+Vohwinkel”' \
-            '+or+a%3A“Phil+Foglio”+or+a%3A“Thomas+M.+Baxa”+or+a%3A“Victor+Adame+Minguez”+or' \
-            '+a%3A“Volkan+Baǵa”%29+artists%3D1'
     # add category string query here
-    if category != 'artist':
-        string_query += '+-%28set%3Asld+%28cn>%3D231+cn<%3D233+or+cn>%3D436+cn<%3D440+or+cn>%3D321+cn<%3D324+or' \
-            '+cn>%3D185+cn<%3D189+or+cn>%3D138+cn<%3D142+or+cn>%3D364+cn<%3D368+or+cn%3A669+or+cn%3A670%29%29+' \
-            '-%28set%3Asta+cn>%3D64+cn<%3D126%29+-set%3Acmb2+-set%3Acmb1+-set%3Aplist'
-    string_query += '+-name%3A%2F%5EA-%2F+not%3Asplit+-st%3Amemorabilia' \
-        '&order=released&dir=asc&unique=prints&page='
+    string_query += '+-%28set%3Asld+%28cn>%3D231+cn<%3D233+or+cn>%3D436+cn<%3D440+or+cn>%3D321+cn<%3D324+or' \
+        '+cn>%3D185+cn<%3D189+or+cn>%3D138+cn<%3D142+or+cn>%3D364+cn<%3D368+or+cn%3A669+or+cn%3A670%29%29+' \
+        '-%28set%3Asta+cn>%3D64+cn<%3D126%29+-set%3Acmb2+-set%3Acmb1+not%3Asplit+-st%3Amemorabilia'
+    string_query += '+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
     print(string_query)
     return string_query
 
@@ -65,10 +51,23 @@ def generate_initial_special_query(category):
     print(string_query)
     return string_query
 
-# def generate_initial_artist_query():
-#     string_query = 'https://api.scryfall.com/cards/search?q=artists%3D1+-st%3Afunny+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
-#     print(string_query)
-#     return string_query
+
+def generate_initial_artist_query():
+    string_query = 'https://api.scryfall.com/cards/search?q=' + artist_blacklist + \
+        '+artists%3D1+-st%3Afunny+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
+    print("artistList")
+    print(string_query)
+    return string_query
+
+
+def generate_individual_artist_query(artists, artist_list):
+    string_query = 'https://api.scryfall.com/cards/search?q=%28a'
+    for artist in artists:
+        artist_split = artist_list[artist][0].split()
+        string_query += '%3A“' + '+'.join(artist_split) + '”+or+'
+    string_query = string_query[:-4]
+    string_query += '%29+-set%3Aplist+artists%3D1+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
+    return string_query
 
 
 def fetch_and_write_all(category, query):
@@ -104,6 +103,47 @@ def fetch_and_write_all_special(category, query):
         json.dump(all_cards, f)
 
 
+def fetch_and_write_all_artist():
+    all_cards = {'data': []}
+    will_repeat = True
+    count = 1
+    artists = json.load(open('jsons/artistList.json'))
+    artist_ids = list(artists.keys())
+    for i in range(-1*len(artist_ids)//-36):
+        queried_artists = artist_ids[i*36:min((i+1)*36, len(artist_ids))]
+        print(queried_artists)
+        count = 1
+        will_repeat = True
+        art_names = dict()
+        query = generate_individual_artist_query(
+            queried_artists, artists)
+        print(query)
+        while will_repeat:
+            response = fetch(query, count)
+            will_repeat = response['has_more']
+            count += 1
+            to_compact_write_form(all_cards, art_names, response, 'artist')
+
+    with open('jsons/artist.json', 'w') as f:
+        json.dump(all_cards, f)
+
+
+def fetch_and_write_initial_artist_query():
+    prev_artist = "dummy_artist"
+    artists = {"dummy_artist": [1, 1]}
+    all_artists_query = generate_initial_artist_query()
+    will_repeat = True
+    count = 1
+    while will_repeat:
+        print("artist fetching: "+str(count))
+        response = fetch(all_artists_query, count)
+        will_repeat = response['has_more']
+        count += 1
+        prev_artist = write_to_artist_list(response, artists, prev_artist)
+    with open('jsons/artistList.json', 'w') as f:
+        json.dump(artists, f)
+
+
 def fetch(query, count):
     query += str(count)
     response = requests.get(f"{query}").json()
@@ -133,9 +173,6 @@ def to_compact_write_form(smallJson, art_names, response, category):
         # do not include racist cards
         if 'content_warning' in card and card['content_warning'] == True:
             continue
-        # for artist category, do not use multiple artists
-        if category == 'artist' and len(card['artist_ids']) != 1:
-            continue
         # do not repeat art
         digital_holder = -1
         if 'card_faces' in card:
@@ -162,10 +199,6 @@ def to_compact_write_form(smallJson, art_names, response, category):
             # if field == 'name' and category == 'artifact':
             #     write_card['name'] = card['released_at'].split('-')[0]
             if field == 'name' and category == 'artist':
-                artist_id = card['artist_ids'][0]
-                artist = card['artist']
-                if artist_id not in artists or len(artists[artist_id]) > len(artist):
-                    artists[artist_id] = artist
                 write_card['name'] = card['artist_ids'][0]
             elif field == 'name' and 'card_faces' in card:
                 write_card['name'] = card['card_faces'][0]['name']
@@ -222,6 +255,23 @@ def to_compact_write_form_special(smallJson, art_names, response, category):
                 smallJson[card['code']] = [card['name'], card['icon_svg_uri']]
 
 
+def write_to_artist_list(response, artists, prev_artist):
+    for card in response['data']:
+        artist_id = card['artist_ids'][0]
+        artist = card['artist']
+        if artist_id not in artists:
+            if artists[prev_artist][1] < 20:
+                del artists[prev_artist]
+            prev_artist = artist_id
+            print(artist)
+            artists[artist_id] = [artist, 1]
+        else:
+            if len(artist) < len(artists[artist_id][0]):
+                artists[artist_id][0] = artist
+            artists[artist_id][1] += 1
+    return prev_artist
+
+
 # only write images needed
 def write_image_uris(card_image_uris):
     image_uris = dict()
@@ -237,13 +287,12 @@ def write_image_uris(card_image_uris):
 
 
 if __name__ == "__main__":
-    for category in allCategories:
-        print(category)
-        fetch_and_write_all(category, generate_initial_query(category))
-    for category in specialCategories:
-        print(category)
-        fetch_and_write_all_special(
-            category, generate_initial_special_query(category))
-    print("artistList")
-    with open('jsons/artistList.json', 'w') as f:
-        json.dump(artists, f)
+    # for category in allCategories:
+    #     print(category)
+    #     fetch_and_write_all(category, generate_initial_query(category))
+    # for category in specialCategories:
+    #     print(category)
+    #     fetch_and_write_all_special(
+    #         category, generate_initial_special_query(category))
+    # fetch_and_write_initial_artist_query()
+    fetch_and_write_all_artist()

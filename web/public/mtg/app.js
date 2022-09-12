@@ -130,20 +130,27 @@ function createNewArtistMap() {
   let samples = {}
   let i = 0
   let newTotal = 0
-  while (i < k + extra) {
-    let rand = Math.floor(Math.random() * total)
-    let count = 0
-    for (const [key, value] of Object.entries(allData)) {
-      if (usedCounters.has(key)) {
-        continue
-      } else if (count >= rand) {
-        usedCounters.add(key)
-        samples[key] = value
-        newTotal += value.length
-        i++
+  let allCards = []
+  for (const [key, value] of Object.entries(allData)) {
+    for (let j = 0; j < value.length; j++) {
+      allCards.push(key)
+    }
+  }
+  shuffleArray(allCards)
+  window.console.log(allCards)
+  for (let j = 0; j < allCards.length; j++) {
+    key = allCards[j]
+    value = allData[key]
+    if (usedCounters.has(key)) {
+      continue
+    } else {
+      window.console.log(key)
+      usedCounters.add(key)
+      samples[key] = value
+      newTotal += value.length
+      i++
+      if (i >= k + extra) {
         break
-      } else {
-        count += value.length
       }
     }
   }
@@ -221,7 +228,7 @@ function putIntoMap(data) {
         '" /> ' +
         sets[name][0]
     } else if (whichGuesser === 'artist') {
-      name = sets[name]
+      name = sets[name][0]
     }
     let normalImg = ''
     if (card.image_uris.normal) {
