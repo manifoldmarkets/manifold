@@ -25,7 +25,7 @@ import {
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { filterDefined } from 'common/util/array'
 import toast from 'react-hot-toast'
-import { SwitchSetting } from 'web/components/switch'
+import { SwitchSetting } from 'web/components/switch-setting'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined

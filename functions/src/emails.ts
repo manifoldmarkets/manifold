@@ -153,7 +153,7 @@ export const sendWelcomeEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?section=${
+  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
     'onboarding_flow' as keyof notification_subscription_types
   }`
 
@@ -221,7 +221,7 @@ export const sendOneWeekBonusEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?section=${
+  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
     'onboarding_flow' as keyof notification_subscription_types
   }`
   return await sendTemplateEmail(
@@ -254,7 +254,7 @@ export const sendCreatorGuideEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?section=${
+  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
     'onboarding_flow' as keyof notification_subscription_types
   }`
   return await sendTemplateEmail(
@@ -288,7 +288,7 @@ export const sendThankYouEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeLink = `${DOMAIN}/notifications?section=${
+  const unsubscribeLink = `${DOMAIN}/notifications?tab=settings&section=${
     'thank_you_for_purchases' as keyof notification_subscription_types
   }`
 
@@ -466,7 +466,7 @@ export const sendInterestingMarketsEmail = async (
   )
     return
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?section=${
+  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
     'trending_markets' as keyof notification_subscription_types
   }`
 

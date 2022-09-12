@@ -85,8 +85,19 @@ export default function Notifications() {
               labelClassName={'pb-2 pt-1 '}
               className={'mb-0 sm:mb-2'}
               activeIndex={activeIndex}
-              onClick={(title, index) => {
-                setActiveIndex(index)
+              onClick={(title, i) => {
+                router.replace(
+                  {
+                    query: {
+                      ...router.query,
+                      tab: title.toLowerCase(),
+                      section: '',
+                    },
+                  },
+                  undefined,
+                  { shallow: true }
+                )
+                setActiveIndex(i)
               }}
               tabs={[
                 {

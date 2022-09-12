@@ -154,6 +154,6 @@ export const getDestinationsForUser = async (
   return {
     sendToEmail: destinations.includes('email'),
     sendToBrowser: destinations.includes('browser'),
-    urlToManageThisNotification: `${DOMAIN}/notifications?section=${subscriptionType}`,
+    urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
   }
 }
