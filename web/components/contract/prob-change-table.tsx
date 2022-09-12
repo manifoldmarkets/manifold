@@ -2,74 +2,69 @@ import clsx from 'clsx'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
-import { useProbChanges } from 'web/hooks/use-prob-changes'
-import { linkClass, SiteLink } from '../site-link'
+import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { useState } from 'react'
+import { LoadingIndicator } from '../loading-indicator'
 
-export function ProbChangeTable(props: { userId: string | undefined }) {
-  const { userId } = props
+export function ProbChangeTable(props: {
+  changes:
+    | { positiveChanges: CPMMContract[]; negativeChanges: CPMMContract[] }
+    | undefined
+}) {
+  const { changes } = props
 
-  const changes = useProbChanges(userId ?? '')
-  const [expanded, setExpanded] = useState(false)
-
-  if (!changes) {
-    return null
-  }
-
-  const count = expanded ? 16 : 4
+  if (!changes) return <LoadingIndicator />
 
   const { positiveChanges, negativeChanges } = changes
-  const filteredPositiveChanges = positiveChanges.slice(0, count / 2)
-  const filteredNegativeChanges = negativeChanges.slice(0, count / 2)
-  const filteredChanges = [
-    ...filteredPositiveChanges,
-    ...filteredNegativeChanges,
-  ]
+
+  const threshold = 0.075
+  const countOverThreshold = Math.max(
+    positiveChanges.findIndex((c) => c.probChanges.day < threshold) + 1,
+    negativeChanges.findIndex((c) => c.probChanges.day > -threshold) + 1
+  )
+  const maxRows = Math.min(positiveChanges.length, negativeChanges.length)
+  const rows = Math.min(3, Math.min(maxRows, countOverThreshold))
+
+  const filteredPositiveChanges = positiveChanges.slice(0, rows)
+  const filteredNegativeChanges = negativeChanges.slice(0, rows)
+
+  if (rows === 0) return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col>
-      <Col className="mb-4 w-full divide-x-2 divide-y rounded-lg bg-white shadow-md md:flex-row md:divide-y-0">
-        <Col className="flex-1 divide-y">
-          {filteredChanges.slice(0, count / 2).map((contract) => (
-            <Row className="items-center hover:bg-gray-100">
-              <ProbChange
-                className="p-4 text-right text-xl"
-                contract={contract}
-              />
-              <SiteLink
-                className="p-4 pl-2 font-semibold text-indigo-700"
-                href={contractPath(contract)}
-              >
-                <span className="line-clamp-2">{contract.question}</span>
-              </SiteLink>
-            </Row>
-          ))}
-        </Col>
-        <Col className="flex-1 divide-y">
-          {filteredChanges.slice(count / 2).map((contract) => (
-            <Row className="items-center hover:bg-gray-100">
-              <ProbChange
-                className="p-4 text-right text-xl"
-                contract={contract}
-              />
-              <SiteLink
-                className="p-4 pl-2 font-semibold text-indigo-700"
-                href={contractPath(contract)}
-              >
-                <span className="line-clamp-2">{contract.question}</span>
-              </SiteLink>
-            </Row>
-          ))}
-        </Col>
+    <Col className="mb-4 w-full divide-x-2 divide-y rounded-lg bg-white shadow-md md:flex-row md:divide-y-0">
+      <Col className="flex-1 divide-y">
+        {filteredPositiveChanges.map((contract) => (
+          <Row className="items-center hover:bg-gray-100">
+            <ProbChange
+              className="p-4 text-right text-xl"
+              contract={contract}
+            />
+            <SiteLink
+              className="p-4 pl-2 font-semibold text-indigo-700"
+              href={contractPath(contract)}
+            >
+              <span className="line-clamp-2">{contract.question}</span>
+            </SiteLink>
+          </Row>
+        ))}
       </Col>
-      <div
-        className={clsx(linkClass, 'cursor-pointer self-end')}
-        onClick={() => setExpanded(!expanded)}
-      >
-        {expanded ? 'Show less' : 'Show more'}
-      </div>
+      <Col className="flex-1 divide-y">
+        {filteredNegativeChanges.map((contract) => (
+          <Row className="items-center hover:bg-gray-100">
+            <ProbChange
+              className="p-4 text-right text-xl"
+              contract={contract}
+            />
+            <SiteLink
+              className="p-4 pl-2 font-semibold text-indigo-700"
+              href={contractPath(contract)}
+            >
+              <span className="line-clamp-2">{contract.question}</span>
+            </SiteLink>
+          </Row>
+        ))}
+      </Col>
     </Col>
   )
 }
