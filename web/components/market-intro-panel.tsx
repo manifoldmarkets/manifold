@@ -15,9 +15,9 @@ export function MarketIntroPanel() {
         src="/flappy-logo.gif"
       />
 
-      <div className="text-sm mb-4">
-        Manifold Markets is a play-money prediction market platform where you can
-        forecast anything.
+      <div className="mb-4 text-sm">
+        Manifold Markets is a play-money prediction market platform where you
+        can forecast anything.
       </div>
 
       <BetSignUpPrompt />
