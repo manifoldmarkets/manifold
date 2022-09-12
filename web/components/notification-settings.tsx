@@ -92,6 +92,8 @@ export function NotificationSettings(props: {
       all_comments_on_contracts_with_shares_in_on_watched_markets: `Only on markets you're invested in`,
       all_replies_to_my_comments_on_watched_markets:
         'Only replies to your comments',
+      all_replies_to_my_answers_on_watched_markets:
+        'Only replies to your answers',
       // comments_by_followed_users_on_watched_markets: 'By followed users',
     },
   }
@@ -101,8 +103,6 @@ export function NotificationSettings(props: {
     subscriptionTypeToDescription: {
       all_answers_on_watched_markets: 'All new answers',
       all_answers_on_contracts_with_shares_in_on_watched_markets: `Only on markets you're invested in`,
-      all_replies_to_my_answers_on_watched_markets:
-        'Only replies to your answers',
       // answers_by_followed_users_on_watched_markets: 'By followed users',
       // answers_by_market_creator_on_watched_markets: 'By market creator',
     },
