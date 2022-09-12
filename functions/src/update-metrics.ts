@@ -210,9 +210,7 @@ export async function updateMetricsCore() {
         },
       }
     })
-    // Shipping without this for now to check it's working as intended
-    console.log('Group Leaderboard Updates', groupUpdates)
-    //await writeAsync(firestore, groupUpdates)
+    await writeAsync(firestore, groupUpdates)
   } catch (e) {
     console.log('Error While Updating Group Leaderboards', e)
   }
