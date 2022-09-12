@@ -178,7 +178,8 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     if (resolutionText === 'MKT' && value) resolutionText = `${value}`
   }
-  console.log('resolutionText: ', resolutionText)
+
+  // TODO: this actually may be too slow to complete with a ton of users to notify?
   await createCommentOrAnswerOrUpdatedContractNotification(
     contract.id,
     'contract',

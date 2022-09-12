@@ -45,7 +45,7 @@ export const createNotification = async (
 ) => {
   const { contract: sourceContract, recipients, slug, title } = miscData ?? {}
 
-  const shouldGetNotification = (
+  const shouldReceiveNotification = (
     userId: string,
     userToReasonTexts: recipients_to_reason_texts
   ) => {
@@ -126,7 +126,7 @@ export const createNotification = async (
       const followerUserId = doc.ref.parent.parent?.id
       if (
         followerUserId &&
-        shouldGetNotification(followerUserId, userToReasonTexts)
+        shouldReceiveNotification(followerUserId, userToReasonTexts)
       ) {
         userToReasonTexts[followerUserId] = {
           reason: 'contract_from_followed_user',
@@ -135,50 +135,27 @@ export const createNotification = async (
     })
   }
 
-  const notifyFollowedUser = (
-    userToReasonTexts: recipients_to_reason_texts,
-    followedUserId: string
-  ) => {
-    if (shouldGetNotification(followedUserId, userToReasonTexts))
-      userToReasonTexts[followedUserId] = {
-        reason: 'on_new_follow',
-      }
-  }
-
   const notifyTaggedUsers = (
     userToReasonTexts: recipients_to_reason_texts,
     userIds: (string | undefined)[]
   ) => {
     userIds.forEach((id) => {
-      if (id && shouldGetNotification(id, userToReasonTexts))
+      if (id && shouldReceiveNotification(id, userToReasonTexts))
         userToReasonTexts[id] = {
           reason: 'tagged_user',
         }
     })
   }
 
-  const notifyContractCreator = async (
-    userToReasonTexts: recipients_to_reason_texts,
-    sourceContract: Contract,
-    options?: { force: boolean }
-  ) => {
-    if (
-      options?.force ||
-      shouldGetNotification(sourceContract.creatorId, userToReasonTexts)
-    )
-      userToReasonTexts[sourceContract.creatorId] = {
-        reason:
-          sourceType === 'liquidity'
-            ? 'subsidized_your_market'
-            : 'your_contract_closed',
-      }
-  }
-
   // The following functions modify the userToReasonTexts object in place.
   const userToReasonTexts: recipients_to_reason_texts = {}
 
   if (sourceType === 'follow' && recipients?.[0]) {
-    notifyFollowedUser(userToReasonTexts, recipients[0])
+    if (shouldReceiveNotification(recipients[0], userToReasonTexts))
+      userToReasonTexts[recipients[0]] = {
+        reason: 'on_new_follow',
+      }
+    return await sendNotificationsIfSettingsPermit(userToReasonTexts)
   } else if (
     sourceType === 'contract' &&
     sourceUpdateType === 'created' &&
@@ -186,23 +163,27 @@ export const createNotification = async (
   ) {
     await notifyUsersFollowers(userToReasonTexts)
     notifyTaggedUsers(userToReasonTexts, recipients ?? [])
+    return await sendNotificationsIfSettingsPermit(userToReasonTexts)
   } else if (
     sourceType === 'contract' &&
     sourceUpdateType === 'closed' &&
     sourceContract
   ) {
-    await notifyContractCreator(userToReasonTexts, sourceContract, {
-      force: true,
-    })
+    userToReasonTexts[sourceContract.creatorId] = {
+      reason: 'your_contract_closed',
+    }
+    return await sendNotificationsIfSettingsPermit(userToReasonTexts)
   } else if (
     sourceType === 'liquidity' &&
     sourceUpdateType === 'created' &&
     sourceContract
   ) {
-    await notifyContractCreator(userToReasonTexts, sourceContract)
+    if (shouldReceiveNotification(sourceContract.creatorId, userToReasonTexts))
+      userToReasonTexts[sourceContract.creatorId] = {
+        reason: 'subsidized_your_market',
+      }
+    return await sendNotificationsIfSettingsPermit(userToReasonTexts)
   }
-
-  await sendNotificationsIfSettingsPermit(userToReasonTexts)
 }
 
 export const createCommentOrAnswerOrUpdatedContractNotification = async (
