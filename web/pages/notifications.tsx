@@ -67,9 +67,11 @@ export default function Notifications() {
 
   useEffect(() => {
     const query = { ...router.query }
+    if (query.tab === 'settings') {
+      setActiveIndex(1)
+    }
     if (query.section) {
       setNavigateToSection(query.section as string)
-      setActiveIndex(1)
     }
   }, [router.query])
 
