@@ -5,7 +5,7 @@ import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
 import { getCachedContracts } from 'web/hooks/use-contracts'
 // import { getCachedUsers } from 'web/hooks/use-users'
-import { MentionList } from './mention-list'
+import { MentionList } from './contract-mention-list'
 
 type Suggestion = MentionOptions['suggestion']
 
@@ -13,6 +13,7 @@ const beginsWith = (text: string, query: string) =>
   text.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
+// TODO: merge with mention-suggestion.ts?
 export const mentionSuggestion: Suggestion = {
   char: '%',
   allowSpaces: true,

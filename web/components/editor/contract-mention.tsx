@@ -8,9 +8,9 @@ import clsx from 'clsx'
 import { useContract } from 'web/hooks/use-contract'
 import { ContractCard } from '../contract/contract-card'
 
-const name = 'mention-component'
+const name = 'contract-mention-component'
 
-const MentionComponent = (props: any) => {
+const ContractMentionComponent = (props: any) => {
   const contract = useContract(props.node.attrs.id)
 
   return (
@@ -30,11 +30,11 @@ const MentionComponent = (props: any) => {
  *  https://tiptap.dev/guide/custom-extensions#extend-existing-extensions
  *  https://tiptap.dev/guide/node-views/react#render-a-react-component
  */
-export const DisplayMention = Mention.extend({
+export const DisplayContractMention = Mention.extend({
   parseHTML: () => [{ tag: name }],
   renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
   addNodeView: () =>
-    ReactNodeViewRenderer(MentionComponent, {
+    ReactNodeViewRenderer(ContractMentionComponent, {
       // On desktop, render cards below half-width so you can stack two
       className: 'inline-block sm:w-[calc(50%-1rem)] sm:mr-1',
     }),

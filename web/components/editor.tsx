@@ -18,8 +18,8 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
-import { mentionSuggestion } from './editor/mention-suggestion'
-import { DisplayMention } from './editor/mention'
+import { mentionSuggestion } from './editor/contract-mention-suggestion'
+import { DisplayContractMention } from './editor/contract-mention'
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
 import { EmbedModal } from './editor/embed-modal'
@@ -90,7 +90,7 @@ export function useTextEditor(props: {
       CharacterCount.configure({ limit: max }),
       simple ? DisplayImage : Image,
       DisplayLink,
-      DisplayMention.configure({ suggestion: mentionSuggestion }),
+      DisplayContractMention.configure({ suggestion: mentionSuggestion }),
       Iframe,
       TiptapTweet,
     ],
@@ -247,7 +247,7 @@ export function RichContent(props: {
       StarterKit,
       smallImage ? DisplayImage : Image,
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
-      DisplayMention,
+      DisplayContractMention,
       Iframe,
       TiptapTweet,
     ],
