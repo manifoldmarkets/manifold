@@ -162,8 +162,9 @@ export const createNotification = async (
     sourceUpdateType === 'created' &&
     sourceContract
   ) {
-    await notifyUsersFollowers(userToReasonTexts)
-    notifyTaggedUsers(userToReasonTexts, recipients ?? [])
+    if (sourceContract.visibility === 'public')
+      await notifyUsersFollowers(userToReasonTexts)
+    await notifyTaggedUsers(userToReasonTexts, recipients ?? [])
     return await sendNotificationsIfSettingsPermit(userToReasonTexts)
   } else if (
     sourceType === 'contract' &&
