@@ -188,6 +188,15 @@ export const createNotification = async (
   }
 }
 
+export type replied_users_info = {
+  [key: string]: {
+    repliedToType: 'comment' | 'answer'
+    repliedToAnswerText: string | undefined
+    repliedToId: string | undefined
+    bet: Bet | undefined
+  }
+}
+
 export const createCommentOrAnswerOrUpdatedContractNotification = async (
   sourceId: string,
   sourceType: 'comment' | 'answer' | 'contract',
@@ -197,11 +206,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   sourceText: string,
   sourceContract: Contract,
   miscData?: {
-    repliedToType?: 'comment' | 'answer'
-    repliedToId?: string
-    repliedToContent?: string
-    repliedUserId?: string
-    taggedUserIds?: string[]
+    repliedUsersInfo: replied_users_info
+    taggedUserIds: string[]
   },
   resolutionData?: {
     bets: Bet[]
@@ -215,13 +221,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     resolutions?: { [outcome: string]: number }
   }
 ) => {
-  const {
-    repliedToType,
-    repliedToContent,
-    repliedUserId,
-    taggedUserIds,
-    repliedToId,
-  } = miscData ?? {}
+  const { repliedUsersInfo, taggedUserIds } = miscData ?? {}
 
   const browserRecipientIdsList: string[] = []
   const emailRecipientIdsList: string[] = []
@@ -289,6 +289,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     }
     if (sendToEmail && !emailRecipientIdsList.includes(userId)) {
       if (sourceType === 'comment') {
+        const { repliedToType, repliedToAnswerText, repliedToId, bet } =
+          repliedUsersInfo?.[userId] ?? {}
         // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
         await sendNewCommentEmail(
           reason,
@@ -297,9 +299,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
           sourceContract,
           sourceText,
           sourceId,
-          // TODO: Add any paired bets to the comment
-          undefined,
-          repliedToType === 'answer' ? repliedToContent : undefined,
+          bet,
+          repliedToAnswerText,
           repliedToType === 'answer' ? repliedToId : undefined
         )
       } else if (sourceType === 'answer')
@@ -437,12 +438,16 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyRepliedUser = async () => {
-    if (sourceType === 'comment' && repliedUserId && repliedToType)
-      await sendNotificationsIfSettingsPermit(
-        repliedUserId,
-        repliedToType === 'answer'
-          ? 'reply_to_users_answer'
-          : 'reply_to_users_comment'
+    if (sourceType === 'comment' && repliedUsersInfo)
+      await Promise.all(
+        Object.keys(repliedUsersInfo).map((userId) =>
+          sendNotificationsIfSettingsPermit(
+            userId,
+            repliedUsersInfo[userId].repliedToType === 'answer'
+              ? 'reply_to_users_answer'
+              : 'reply_to_users_comment'
+          )
+        )
       )
   }
 

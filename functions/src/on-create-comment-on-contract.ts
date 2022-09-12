@@ -5,7 +5,10 @@ import { getContract, getUser, getValues } from './utils'
 import { ContractComment } from '../../common/comment'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
-import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
+import {
+  createCommentOrAnswerOrUpdatedContractNotification,
+  replied_users_info,
+} from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
 
@@ -83,6 +86,36 @@ export const onCreateCommentOnContract = functions
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
 
+    const mentionedUsers = compact(parseMentions(comment.content))
+    const repliedUsers: replied_users_info = {}
+
+    // The parent of the reply chain could be a comment or an answer
+    if (repliedUserId && repliedToType)
+      repliedUsers[repliedUserId] = {
+        repliedToType,
+        repliedToAnswerText: answer ? answer.text : undefined,
+        repliedToId: comment.replyToCommentId || answer?.id,
+        bet: bet,
+      }
+
+    const commentsInSameReplyChain = comments.filter((c) =>
+      repliedToType === 'answer'
+        ? c.answerOutcome === answer?.id
+        : repliedToType === 'comment'
+        ? c.replyToCommentId === comment.replyToCommentId
+        : false
+    )
+    // The rest of the children in the chain are always comments
+    commentsInSameReplyChain.forEach((c) => {
+      if (c.userId !== comment.userId && c.userId !== repliedUserId) {
+        repliedUsers[c.userId] = {
+          repliedToType: 'comment',
+          repliedToAnswerText: undefined,
+          repliedToId: c.id,
+          bet: undefined,
+        }
+      }
+    })
     await createCommentOrAnswerOrUpdatedContractNotification(
       comment.id,
       'comment',
@@ -92,11 +125,8 @@ export const onCreateCommentOnContract = functions
       richTextToString(comment.content),
       contract,
       {
-        repliedToType,
-        repliedToId: comment.replyToCommentId || answer?.id,
-        repliedToContent: answer ? answer.text : undefined,
-        repliedUserId,
-        taggedUserIds: compact(parseMentions(comment.content)),
+        repliedUsersInfo: repliedUsers,
+        taggedUserIds: mentionedUsers,
       }
     )
   })
