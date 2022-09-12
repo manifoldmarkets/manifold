@@ -5,8 +5,7 @@ import { Contract } from '../../common/contract'
 import { User } from '../../common/user'
 import { getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
-import { getContract, getValues } from './utils'
-import { sendNewAnswerEmail } from './emails'
+import { getValues } from './utils'
 import { APIError, newEndpoint, validate } from './api'
 
 const bodySchema = z.object({
@@ -96,10 +95,6 @@ export const createanswer = newEndpoint(opts, async (req, auth) => {
 
     return answer
   })
-
-  const contract = await getContract(contractId)
-
-  if (answer && contract) await sendNewAnswerEmail(answer, contract)
 
   return answer
 })

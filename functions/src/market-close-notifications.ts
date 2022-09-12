@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getUserByUsername } from './utils'
-import { sendMarketCloseEmail } from './emails'
 import { createNotification } from './create-notification'
 
 export const marketCloseNotifications = functions
@@ -56,7 +55,6 @@ async function sendMarketCloseEmails() {
     const privateUser = await getPrivateUser(user.id)
     if (!privateUser) continue
 
-    await sendMarketCloseEmail(user, privateUser, contract)
     await createNotification(
       contract.id,
       'contract',
