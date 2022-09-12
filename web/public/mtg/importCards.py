@@ -8,7 +8,8 @@ import math
 allCategories = ['counterspell', 'beast', 'burn', 'commander']
 specialCategories = ['set', 'basic']
 artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
-artist_allowlist = {'David Martin', 'V\u00e9ronique Meignaud'}
+artist_allowlist = {'David Martin',
+                    'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay'}
 
 
 def generate_initial_query(category):
@@ -116,7 +117,7 @@ def fetch_and_write_all_artist():
         queried_artists_pre = artist_ids[i*37:min((i+1)*37, len(artist_ids))]
         queried_artists = []
         for j in range(len(queried_artists_pre)):
-            if artists[queried_artists_pre[j]][1] >= 50 or artists[queried_artists_pre[j]][0] in artist_allowlist:
+            if artists[queried_artists_pre[j]][1] >= 100 or artists[queried_artists_pre[j]][0] in artist_allowlist:
                 queried_artists.append(queried_artists_pre[j])
         print(queried_artists)
         print(i)
@@ -297,13 +298,13 @@ def write_image_uris(card_image_uris):
 
 
 if __name__ == "__main__":
-    for category in allCategories:
-        print(category)
-        fetch_and_write_all(category, generate_initial_query(category))
-    for category in specialCategories:
-        print(category)
-        fetch_and_write_all_special(
-            category, generate_initial_special_query(category))
+    # for category in allCategories:
+    #     print(category)
+    #     fetch_and_write_all(category, generate_initial_query(category))
+    # for category in specialCategories:
+    #     print(category)
+    #     fetch_and_write_all_special(
+    #         category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
     # fetch_and_write_initial_artist_query()
     fetch_and_write_all_artist()
