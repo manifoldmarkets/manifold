@@ -12,7 +12,22 @@ export type Group = {
   aboutPostId?: string
   chatDisabled?: boolean
   mostRecentContractAddedTime?: number
+  /** @deprecated - members and contracts now stored as subcollections*/
+  memberIds?: string[] // Deprecated
+  /** @deprecated - members and contracts now stored as subcollections*/
+  contractIds?: string[] // Deprecated
+  cachedLeaderboard?: {
+    topTraders: {
+      userId: string
+      score: number
+    }[]
+    topCreators: {
+      userId: string
+      score: number
+    }[]
+  }
 }
+
 export const MAX_GROUP_NAME_LENGTH = 75
 export const MAX_ABOUT_LENGTH = 140
 export const MAX_ID_LENGTH = 60
