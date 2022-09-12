@@ -1,6 +1,6 @@
-import { Tabs } from 'web/components/layout/tabs'
+import { ControlledTabs } from 'web/components/layout/tabs'
 import React, { useEffect, useMemo, useState } from 'react'
-import Router from 'next/router'
+import Router, { useRouter } from 'next/router'
 import { Notification, notification_source_types } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
@@ -40,7 +40,7 @@ import { Pagination } from 'web/components/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { SiteLink } from 'web/components/site-link'
-import { NotificationSettings } from 'web/components/NotificationSettings'
+import { NotificationSettings } from 'web/components/notification-settings'
 import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { UserLink } from 'web/components/user-link'
@@ -56,10 +56,21 @@ const HIGHLIGHT_CLASS = 'bg-indigo-50'
 
 export default function Notifications() {
   const privateUser = usePrivateUser()
+  const router = useRouter()
+  const [navigateToSection, setNavigateToSection] = useState<string>()
+  const [activeIndex, setActiveIndex] = useState(0)
 
   useEffect(() => {
     if (privateUser === null) Router.push('/')
   })
+
+  useEffect(() => {
+    const query = { ...router.query }
+    if (query.section) {
+      setNavigateToSection(query.section as string)
+      setActiveIndex(1)
+    }
+  }, [router.query])
 
   return (
     <Page>
@@ -67,13 +78,27 @@ export default function Notifications() {
         <Title text={'Notifications'} className={'hidden md:block'} />
         <SEO title="Notifications" description="Manifold user notifications" />
 
-        {privateUser && (
+        {privateUser && router.isReady && (
           <div>
-            <Tabs
+            <ControlledTabs
               currentPageForAnalytics={'notifications'}
               labelClassName={'pb-2 pt-1 '}
               className={'mb-0 sm:mb-2'}
-              defaultIndex={0}
+              activeIndex={activeIndex}
+              onClick={(title, i) => {
+                router.replace(
+                  {
+                    query: {
+                      ...router.query,
+                      tab: title.toLowerCase(),
+                      section: '',
+                    },
+                  },
+                  undefined,
+                  { shallow: true }
+                )
+                setActiveIndex(i)
+              }}
               tabs={[
                 {
                   title: 'Notifications',
@@ -82,9 +107,9 @@ export default function Notifications() {
                 {
                   title: 'Settings',
                   content: (
-                    <div className={''}>
-                      <NotificationSettings />
-                    </div>
+                    <NotificationSettings
+                      navigateToSection={navigateToSection}
+                    />
                   ),
                 },
               ]}
@@ -992,6 +1017,7 @@ function getReasonForShowingNotification(
 ) {
   const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
   let reasonText: string
+  // TODO: we could leave out this switch and just use the reason field now that they have more information
   switch (sourceType) {
     case 'comment':
       if (reason === 'reply_to_users_answer')
@@ -1003,7 +1029,7 @@ function getReasonForShowingNotification(
       else reasonText = justSummary ? `commented` : `commented on`
       break
     case 'contract':
-      if (reason === 'you_follow_user')
+      if (reason === 'contract_from_followed_user')
         reasonText = justSummary ? 'asked the question' : 'asked'
       else if (sourceUpdateType === 'resolved')
         reasonText = justSummary ? `resolved the question` : `resolved`
@@ -1011,7 +1037,8 @@ function getReasonForShowingNotification(
       else reasonText = justSummary ? 'updated the question' : `updated`
       break
     case 'answer':
-      if (reason === 'on_users_contract') reasonText = `answered your question `
+      if (reason === 'answer_on_your_contract')
+        reasonText = `answered your question `
       else reasonText = `answered`
       break
     case 'follow':
