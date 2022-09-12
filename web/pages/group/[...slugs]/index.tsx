@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { sortBy, take } from 'lodash'
 import { toast } from 'react-hot-toast'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Page } from 'web/components/page'
-import { listAllBets } from 'web/lib/firebase/bets'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   addContractToGroup,
@@ -25,7 +23,6 @@ import {
   useGroupContractIds,
   useMemberIds,
 } from 'web/hooks/use-group'
-import { scoreCreators, scoreTraders } from 'common/scoring'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
 import { EditGroupButton } from 'web/components/groups/edit-group-button'
@@ -72,19 +69,15 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       : 'open'
   const aboutPost =
     group && group.aboutPostId != null && (await getPost(group.aboutPostId))
-  const bets = await Promise.all(
-    contracts.map((contract: Contract) => listAllBets(contract.id))
-  )
   const messages = group && (await listAllCommentsOnGroup(group.id))
 
-  const creatorScores = scoreCreators(contracts)
-  const traderScores = scoreTraders(contracts, bets)
-  const [topCreators, topTraders] =
-    (memberIds && [
-      await toTopUsers(creatorScores, memberIds),
-      await toTopUsers(traderScores, memberIds),
-    ]) ??
-    []
+  const cachedTopTraderIds =
+    (group && group.cachedLeaderboard?.topTraders) ?? []
+  const cachedTopCreatorIds =
+    (group && group.cachedLeaderboard?.topCreators) ?? []
+  const topTraders = await toTopUsers(cachedTopTraderIds)
+
+  const topCreators = await toTopUsers(cachedTopCreatorIds)
 
   const creator = await creatorPromise
   // Only count unresolved markets
@@ -96,9 +89,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       group,
       memberIds,
       creator,
-      traderScores,
       topTraders,
-      creatorScores,
       topCreators,
       messages,
       aboutPost,
@@ -107,22 +98,6 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
     revalidate: 60, // regenerate after a minute
   }
-}
-
-function toTopUsers(
-  userScores: { [userId: string]: number },
-  userIds: string[]
-) {
-  const topUserPairs = take(
-    sortBy(Object.entries(userScores), ([_, score]) => -1 * score),
-    10
-  ).filter(([_, score]) => score >= 0.5)
-
-  const topUserIds = topUserPairs
-    .map(([userId]) => userIds.filter((uid) => uid === userId)[0])
-    .filter((userId) => userId != null) as string[]
-
-  return Promise.all(topUserIds.map(getUser))
 }
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
@@ -140,10 +115,8 @@ export default function GroupPage(props: {
   group: Group | null
   memberIds: string[]
   creator: User
-  traderScores: { [userId: string]: number }
-  topTraders: User[]
-  creatorScores: { [userId: string]: number }
-  topCreators: User[]
+  topTraders: { user: User; score: number }[]
+  topCreators: { user: User; score: number }[]
   messages: GroupComment[]
   aboutPost: Post
   suggestedFilter: 'open' | 'all'
@@ -153,22 +126,13 @@ export default function GroupPage(props: {
     group: null,
     memberIds: [],
     creator: null,
-    traderScores: {},
     topTraders: [],
-    creatorScores: {},
     topCreators: [],
     messages: [],
     suggestedFilter: 'open',
   }
-  const {
-    contractsCount,
-    creator,
-    traderScores,
-    topTraders,
-    creatorScores,
-    topCreators,
-    suggestedFilter,
-  } = props
+  const { contractsCount, creator, topTraders, topCreators, suggestedFilter } =
+    props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -191,17 +155,24 @@ export default function GroupPage(props: {
   }
   const isCreator = user && group && user.id === group.creatorId
   const isMember = user && memberIds.includes(user.id)
+  const maxLeaderboardSize = 50
 
   const leaderboard = (
     <Col>
-      <GroupLeaderboards
-        traderScores={traderScores}
-        creatorScores={creatorScores}
-        topTraders={topTraders}
-        topCreators={topCreators}
-        memberIds={memberIds}
-        user={user}
-      />
+      <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
+        <GroupLeaderboard
+          topUsers={topTraders}
+          title="🏅 Top traders"
+          header="Profit"
+          maxToShow={maxLeaderboardSize}
+        />
+        <GroupLeaderboard
+          topUsers={topCreators}
+          title="🏅 Top creators"
+          header="Market volume"
+          maxToShow={maxLeaderboardSize}
+        />
+      </div>
     </Col>
   )
 
@@ -408,93 +379,29 @@ function GroupOverview(props: {
   )
 }
 
-function SortedLeaderboard(props: {
-  users: User[]
-  scoreFunction: (user: User) => number
+function GroupLeaderboard(props: {
+  topUsers: { user: User; score: number }[]
   title: string
+  maxToShow: number
   header: string
-  maxToShow?: number
 }) {
-  const { users, scoreFunction, title, header, maxToShow } = props
+  const { topUsers, title, maxToShow, header } = props
+
+  const scoresByUser = topUsers.reduce((acc, { user, score }) => {
+    acc[user.id] = score
+    return acc
+  }, {} as { [key: string]: number })
 
   return (
     <Leaderboard
       className="max-w-xl"
-      users={users}
+      users={topUsers.map((t) => t.user)}
       title={title}
       columns={[
-        { header, renderCell: (user) => formatMoney(scoreFunction(user)) },
+        { header, renderCell: (user) => formatMoney(scoresByUser[user.id]) },
       ]}
       maxToShow={maxToShow}
     />
-  )
-}
-
-function GroupLeaderboards(props: {
-  traderScores: { [userId: string]: number }
-  creatorScores: { [userId: string]: number }
-  topTraders: User[]
-  topCreators: User[]
-  memberIds: string[]
-  user: User | null | undefined
-}) {
-  const { traderScores, creatorScores, memberIds, topTraders, topCreators } =
-    props
-  const maxToShow = 50
-  // Consider hiding M$0
-  // If it's just one member (curator), show all bettors, otherwise just show members
-
-  return (
-    <Col>
-      <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
-        {memberIds.length > 1 ? (
-          <>
-            <SortedLeaderboard
-              users={topTraders}
-              scoreFunction={(user) => traderScores[user.id] ?? 0}
-              title="🏅 Top traders"
-              header="Profit"
-              maxToShow={maxToShow}
-            />
-            <SortedLeaderboard
-              users={topCreators}
-              scoreFunction={(user) => creatorScores[user.id] ?? 0}
-              title="🏅 Top creators"
-              header="Market volume"
-              maxToShow={maxToShow}
-            />
-          </>
-        ) : (
-          <>
-            <Leaderboard
-              className="max-w-xl"
-              title="🏅 Top traders"
-              users={topTraders}
-              columns={[
-                {
-                  header: 'Profit',
-                  renderCell: (user) => formatMoney(traderScores[user.id] ?? 0),
-                },
-              ]}
-              maxToShow={maxToShow}
-            />
-            <Leaderboard
-              className="max-w-xl"
-              title="🏅 Top creators"
-              users={topCreators}
-              columns={[
-                {
-                  header: 'Market volume',
-                  renderCell: (user) =>
-                    formatMoney(creatorScores[user.id] ?? 0),
-                },
-              ]}
-              maxToShow={maxToShow}
-            />
-          </>
-        )}
-      </div>
-    </Col>
   )
 }
 
@@ -634,3 +541,15 @@ function JoinGroupButton(props: {
     </div>
   )
 }
+
+const toTopUsers = async (
+  cachedUserIds: { userId: string; score: number }[]
+): Promise<{ user: User; score: number }[]> =>
+  (
+    await Promise.all(
+      cachedUserIds.map(async (e) => {
+        const user = await getUser(e.userId)
+        return { user, score: e.score ?? 0 }
+      })
+    )
+  ).filter((e) => e.user != null)
