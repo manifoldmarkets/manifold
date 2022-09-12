@@ -57,6 +57,7 @@ export async function updateMetricsCore() {
 
   const now = Date.now()
   const betsByContract = groupBy(bets, (bet) => bet.contractId)
+
   const contractUpdates = contracts
     .filter((contract) => contract.id)
     .map((contract) => {
@@ -179,32 +180,38 @@ export async function updateMetricsCore() {
   )
   log(`Updated metrics for ${users.length} users.`)
 
-  const groupUpdates = groups.map((group, index) => {
-    const groupContractIds = contractsByGroup[index] as GroupContractDoc[]
-    const groupContracts = groupContractIds.map(
-      (e) => contractsById[e.contractId]
-    )
-    const bets = groupContracts.map((e) => {
-      return betsByContract[e.id] ?? []
-    })
+  try {
+    const groupUpdates = groups.map((group, index) => {
+      const groupContractIds = contractsByGroup[index] as GroupContractDoc[]
+      const groupContracts = groupContractIds.map(
+        (e) => contractsById[e.contractId]
+      )
+      const bets = groupContracts.map((e) => {
+        return betsByContract[e.id] ?? []
+      })
 
-    const creatorScores = scoreCreators(groupContracts)
-    const traderScores = scoreTraders(groupContracts, bets)
+      const creatorScores = scoreCreators(groupContracts)
+      const traderScores = scoreTraders(groupContracts, bets)
 
-    const topTraderScores = topUserScores(traderScores)
-    const topCreatorScores = topUserScores(creatorScores)
+      const topTraderScores = topUserScores(traderScores)
+      const topCreatorScores = topUserScores(creatorScores)
 
-    return {
-      doc: firestore.collection('groups').doc(group.id),
-      fields: {
-        cachedLeaderboard: {
-          topTraders: topTraderScores,
-          topCreators: topCreatorScores,
+      return {
+        doc: firestore.collection('groups').doc(group.id),
+        fields: {
+          cachedLeaderboard: {
+            topTraders: topTraderScores,
+            topCreators: topCreatorScores,
+          },
         },
-      },
-    }
-  })
-  await writeAsync(firestore, groupUpdates)
+      }
+    })
+    // Shipping without this for now to check it's working as intended
+    console.log('Group Leaderboard Updates', groupUpdates)
+    //await writeAsync(firestore, groupUpdates)
+  } catch (e) {
+    console.log('Error While Updating Group Leaderboards', e)
+  }
 }
 
 const topUserScores = (scores: { [userId: string]: number }) => {
