@@ -7,7 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { Subtitle } from 'web/components/subtitle'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { filterDefined } from 'common/util/array'
-import { keyBy } from 'lodash'
+import { isArray, keyBy } from 'lodash'
 import { User } from 'common/user'
 import { Group } from 'common/group'
 
@@ -107,6 +107,9 @@ const SectionItem = (props: {
 }
 
 export const getHomeItems = (groups: Group[], sections: string[]) => {
+  // Accommodate old home sections.
+  if (!isArray(sections)) sections = []
+
   const items = [
     { label: 'Daily movers', id: 'daily-movers' },
     { label: 'Trending', id: 'score' },
