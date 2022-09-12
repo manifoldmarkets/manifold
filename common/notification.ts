@@ -1,4 +1,5 @@
-import { notification_subscription_types } from 'common/user'
+import { notification_subscription_types, PrivateUser } from './user'
+import { DOMAIN } from './envs/constants'
 
 export type Notification = {
   id: string
@@ -53,6 +54,7 @@ export type notification_source_update_types =
   | 'deleted'
   | 'closed'
 
+/* Optional - if possible use a keyof notification_subscription_types */
 export type notification_reason_types =
   | 'tagged_user'
   | 'on_new_follow'
@@ -90,7 +92,11 @@ export type notification_reason_types =
   | 'your_contract_closed'
   | 'subsidized_your_market'
 
-// Adding a new key:value here is optional, you can also just use a key of notification_subscription_types
+// Adding a new key:value here is optional, you can just use a key of notification_subscription_types
+// You might want to add a key:value here if there will be multiple notification reasons that map to the same
+// subscription type, i.e. 'comment_on_contract_you_follow' and 'comment_on_contract_with_users_answer' both map to
+// 'all_comments_on_watched_markets' subscription type
+// TODO: perhaps better would be to map notification_subscription_types to arrays of notification_reason_types
 export const notificationReasonToSubscriptionType: Partial<
   Record<notification_reason_types, keyof notification_subscription_types>
 > = {
@@ -126,4 +132,28 @@ export const notificationReasonToSubscriptionType: Partial<
   resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
   reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
+}
+
+export const getDestinationsForUser = async (
+  privateUser: PrivateUser,
+  reason: notification_reason_types | keyof notification_subscription_types
+) => {
+  const notificationSettings = privateUser.notificationSubscriptionTypes
+  let destinations
+  let subscriptionType: keyof notification_subscription_types | undefined
+  if (Object.keys(notificationSettings).includes(reason)) {
+    subscriptionType = reason as keyof notification_subscription_types
+    destinations = notificationSettings[subscriptionType]
+  } else {
+    const key = reason as notification_reason_types
+    subscriptionType = notificationReasonToSubscriptionType[key]
+    destinations = subscriptionType
+      ? notificationSettings[subscriptionType]
+      : []
+  }
+  return {
+    sendToEmail: destinations.includes('email'),
+    sendToBrowser: destinations.includes('browser'),
+    urlToManageThisNotification: `${DOMAIN}/notifications?section=${subscriptionType}`,
+  }
 }

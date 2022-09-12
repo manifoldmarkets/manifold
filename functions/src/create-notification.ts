@@ -1,10 +1,10 @@
 import * as admin from 'firebase-admin'
 import {
+  getDestinationsForUser,
   Notification,
   notification_reason_types,
-  notificationReasonToSubscriptionType,
 } from '../../common/notification'
-import { notification_subscription_types, User } from '../../common/user'
+import { User } from '../../common/user'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
@@ -23,7 +23,6 @@ import {
   sendNewAnswerEmail,
   sendNewCommentEmail,
 } from './emails'
-import { DOMAIN } from 'common/lib/envs/constants'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -61,8 +60,12 @@ export const createNotification = async (
   ) => {
     for (const userId in userToReasonTexts) {
       const { reason } = userToReasonTexts[userId]
-      const { sendToBrowser, sendToEmail, privateUser } =
-        await getDestinationsForUser(userId, reason)
+      const privateUser = await getPrivateUser(userId)
+      if (!privateUser) continue
+      const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+        privateUser,
+        reason
+      )
       if (sendToBrowser) {
         const notificationRef = firestore
           .collection(`/users/${userId}/notifications`)
@@ -93,7 +96,12 @@ export const createNotification = async (
       if (!sendToEmail) continue
 
       if (reason === 'your_contract_closed' && privateUser && sourceContract) {
-        await sendMarketCloseEmail(reason, sourceUser, sourceContract)
+        await sendMarketCloseEmail(
+          reason,
+          sourceUser,
+          privateUser,
+          sourceContract
+        )
       } else if (reason === 'tagged_user') {
         // TODO: send email to tagged user in new contract
       } else if (reason === 'subsidized_your_market') {
@@ -197,35 +205,6 @@ export const createNotification = async (
   await sendNotificationsIfSettingsPermit(userToReasonTexts)
 }
 
-export const getDestinationsForUser = async (
-  userId: string,
-  reason: notification_reason_types | keyof notification_subscription_types
-) => {
-  const privateUser = await getPrivateUser(userId)
-  if (!privateUser)
-    return { sendToEmail: false, sendToBrowser: false, privateUser: null }
-
-  const notificationSettings = privateUser.notificationSubscriptionTypes
-  let destinations
-  let subscriptionType: keyof notification_subscription_types | undefined
-  if (Object.keys(notificationSettings).includes(reason)) {
-    subscriptionType = reason as keyof notification_subscription_types
-    destinations = notificationSettings[subscriptionType]
-  } else {
-    const key = reason as notification_reason_types
-    subscriptionType = notificationReasonToSubscriptionType[key]
-    destinations = subscriptionType
-      ? notificationSettings[subscriptionType]
-      : []
-  }
-  return {
-    sendToEmail: destinations.includes('email'),
-    sendToBrowser: destinations.includes('browser'),
-    privateUser,
-    urlToManageThisNotification: `${DOMAIN}/notifications?section=${subscriptionType}`,
-  }
-}
-
 export const createCommentOrAnswerOrUpdatedContractNotification = async (
   sourceId: string,
   sourceType: 'comment' | 'answer' | 'contract',
@@ -314,9 +293,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       recipientIdsList.includes(userId)
     )
       return
-
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
     const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
-      userId,
+      privateUser,
       reason
     )
 
@@ -328,7 +308,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       if (sourceType === 'comment') {
         await sendNewCommentEmail(
           reason,
-          userId,
+          privateUser,
           sourceUser,
           sourceContract,
           sourceText,
@@ -341,7 +321,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       } else if (sourceType === 'answer')
         await sendNewAnswerEmail(
           reason,
-          userId,
+          privateUser,
           sourceUser.name,
           sourceText,
           sourceContract,
@@ -354,7 +334,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       )
         await sendMarketResolutionEmail(
           reason,
-          userId,
+          privateUser,
           resolutionData.userInvestments[userId],
           resolutionData.userPayouts[userId],
           sourceUser,
@@ -534,8 +514,10 @@ export const createTipNotification = async (
   contract?: Contract,
   group?: Group
 ) => {
+  const privateUser = await getPrivateUser(toUser.id)
+  if (!privateUser) return
   const { sendToBrowser } = await getDestinationsForUser(
-    toUser.id,
+    privateUser,
     'tip_received'
   )
   if (!sendToBrowser) return
@@ -565,6 +547,7 @@ export const createTipNotification = async (
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 
+  // TODO: send notification to users that are watching the contract and want highly tipped comments only
   // maybe TODO: send email notification to bet creator
 }
 
@@ -576,7 +559,12 @@ export const createBetFillNotification = async (
   contract: Contract,
   idempotencyKey: string
 ) => {
-  const { sendToBrowser } = await getDestinationsForUser(toUser.id, 'bet_fill')
+  const privateUser = await getPrivateUser(toUser.id)
+  if (!privateUser) return
+  const { sendToBrowser } = await getDestinationsForUser(
+    privateUser,
+    'bet_fill'
+  )
   if (!sendToBrowser) return
 
   const fill = userBet.fills.find((fill) => fill.matchedBetId === bet.id)
@@ -616,8 +604,10 @@ export const createReferralNotification = async (
   referredByContract?: Contract,
   referredByGroup?: Group
 ) => {
+  const privateUser = await getPrivateUser(toUser.id)
+  if (!privateUser) return
   const { sendToBrowser } = await getDestinationsForUser(
-    toUser.id,
+    privateUser,
     'you_referred_user'
   )
   if (!sendToBrowser) return
@@ -668,8 +658,10 @@ export const createLoanIncomeNotification = async (
   idempotencyKey: string,
   income: number
 ) => {
+  const privateUser = await getPrivateUser(toUser.id)
+  if (!privateUser) return
   const { sendToBrowser } = await getDestinationsForUser(
-    toUser.id,
+    privateUser,
     'loan_income'
   )
   if (!sendToBrowser) return
@@ -704,8 +696,10 @@ export const createChallengeAcceptedNotification = async (
   acceptedAmount: number,
   contract: Contract
 ) => {
+  const privateUser = await getPrivateUser(challengeCreator.id)
+  if (!privateUser) return
   const { sendToBrowser } = await getDestinationsForUser(
-    challengeCreator.id,
+    privateUser,
     'challenge_accepted'
   )
   if (!sendToBrowser) return
@@ -743,8 +737,10 @@ export const createBettingStreakBonusNotification = async (
   amount: number,
   idempotencyKey: string
 ) => {
+  const privateUser = await getPrivateUser(user.id)
+  if (!privateUser) return
   const { sendToBrowser } = await getDestinationsForUser(
-    user.id,
+    privateUser,
     'betting_streak_incremented'
   )
   if (!sendToBrowser) return
@@ -784,8 +780,10 @@ export const createLikeNotification = async (
   contract: Contract,
   tip?: TipTxn
 ) => {
+  const privateUser = await getPrivateUser(toUser.id)
+  if (!privateUser) return
   const { sendToBrowser } = await getDestinationsForUser(
-    toUser.id,
+    privateUser,
     'liked_and_tipped_your_contract'
   )
   if (!sendToBrowser) return
@@ -828,8 +826,11 @@ export const createUniqueBettorBonusNotification = async (
   amount: number,
   idempotencyKey: string
 ) => {
+  console.log('createUniqueBettorBonusNotification')
+  const privateUser = await getPrivateUser(contractCreatorId)
+  if (!privateUser) return
   const { sendToBrowser } = await getDestinationsForUser(
-    contractCreatorId,
+    privateUser,
     'unique_bettors_on_your_contract'
   )
   if (!sendToBrowser) return

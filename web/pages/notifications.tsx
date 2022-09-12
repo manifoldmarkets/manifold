@@ -1006,6 +1006,7 @@ function getReasonForShowingNotification(
 ) {
   const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
   let reasonText: string
+  // TODO: we could leave out this switch and just use the reason field now that they have more information
   switch (sourceType) {
     case 'comment':
       if (reason === 'reply_to_users_answer')

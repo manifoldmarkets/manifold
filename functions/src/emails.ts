@@ -18,12 +18,14 @@ import { formatNumericProbability } from '../../common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getUser } from './utils'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
-import { notification_reason_types } from '../../common/notification'
-import { getDestinationsForUser } from './create-notification'
+import {
+  notification_reason_types,
+  getDestinationsForUser,
+} from '../../common/notification'
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
-  userId: string,
+  privateUser: PrivateUser,
   investment: number,
   payout: number,
   creator: User,
@@ -33,14 +35,11 @@ export const sendMarketResolutionEmail = async (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
-  const {
-    privateUser,
-    sendToEmail,
-    urlToManageThisNotification: unsubscribeUrl,
-  } = await getDestinationsForUser(userId, reason)
+  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
+    await getDestinationsForUser(privateUser, reason)
   if (!privateUser || !privateUser.email || !sendToEmail) return
 
-  const user = await getUser(userId)
+  const user = await getUser(privateUser.id)
   if (!user) return
 
   const outcome = toDisplayResolution(
@@ -53,7 +52,7 @@ export const sendMarketResolutionEmail = async (
   const subject = `Resolved ${outcome}: ${contract.question}`
 
   const creatorPayoutText =
-    creatorPayout >= 1 && userId === creator.id
+    creatorPayout >= 1 && privateUser.id === creator.id
       ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
       : ''
 
@@ -310,15 +309,13 @@ export const sendThankYouEmail = async (
 export const sendMarketCloseEmail = async (
   reason: notification_reason_types,
   user: User,
+  privateUser: PrivateUser,
   contract: Contract
 ) => {
-  const {
-    privateUser,
-    sendToEmail,
-    urlToManageThisNotification: unsubscribeUrl,
-  } = await getDestinationsForUser(user.id, reason)
+  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
+    await getDestinationsForUser(privateUser, reason)
 
-  if (!privateUser || !privateUser.email || !sendToEmail) return
+  if (!privateUser.email || !sendToEmail) return
 
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
@@ -344,7 +341,7 @@ export const sendMarketCloseEmail = async (
 
 export const sendNewCommentEmail = async (
   reason: notification_reason_types,
-  userId: string,
+  privateUser: PrivateUser,
   commentCreator: User,
   contract: Contract,
   commentText: string,
@@ -353,11 +350,8 @@ export const sendNewCommentEmail = async (
   answerText?: string,
   answerId?: string
 ) => {
-  const {
-    privateUser,
-    sendToEmail,
-    urlToManageThisNotification: unsubscribeUrl,
-  } = await getDestinationsForUser(userId, reason)
+  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
+    await getDestinationsForUser(privateUser, reason)
   if (!privateUser || !privateUser.email || !sendToEmail) return
 
   const { question } = contract
@@ -421,7 +415,7 @@ export const sendNewCommentEmail = async (
 
 export const sendNewAnswerEmail = async (
   reason: notification_reason_types,
-  userId: string,
+  privateUser: PrivateUser,
   name: string,
   text: string,
   contract: Contract,
@@ -429,14 +423,11 @@ export const sendNewAnswerEmail = async (
 ) => {
   const { creatorId } = contract
   // Don't send the creator's own answers.
-  if (userId === creatorId) return
+  if (privateUser.id === creatorId) return
 
-  const {
-    privateUser,
-    sendToEmail,
-    urlToManageThisNotification: unsubscribeUrl,
-  } = await getDestinationsForUser(userId, reason)
-  if (!privateUser || !privateUser.email || !sendToEmail) return
+  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
+    await getDestinationsForUser(privateUser, reason)
+  if (!privateUser.email || !sendToEmail) return
 
   const { question, creatorUsername, slug } = contract
 
