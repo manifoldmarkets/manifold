@@ -7,10 +7,15 @@ import {
   getUserBetsQuery,
   listenForUserContractBets,
 } from 'web/lib/firebase/bets'
+import { MINUTE_MS } from 'common/util/time'
 
 export const usePrefetchUserBets = (userId: string) => {
   const queryClient = useQueryClient()
-  return queryClient.prefetchQuery(['bets', userId], () => getUserBets(userId))
+  return queryClient.prefetchQuery(
+    ['bets', userId],
+    () => getUserBets(userId),
+    { staleTime: MINUTE_MS }
+  )
 }
 
 export const useUserBets = (userId: string) => {

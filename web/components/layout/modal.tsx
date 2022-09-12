@@ -8,9 +8,10 @@ export function Modal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  position?: 'center' | 'top' | 'bottom'
   className?: string
 }) {
-  const { children, open, setOpen, size = 'md', className } = props
+  const { children, position, open, setOpen, size = 'md', className } = props
 
   const sizeClass = {
     sm: 'max-w-sm',
@@ -19,6 +20,12 @@ export function Modal(props: {
     xl: 'max-w-5xl',
   }[size]
 
+  const positionClass = {
+    center: 'items-center',
+    top: 'items-start',
+    bottom: 'items-end',
+  }[position ?? 'bottom']
+
   return (
     <Transition.Root show={open} as={Fragment}>
       <Dialog
@@ -26,7 +33,12 @@ export function Modal(props: {
         className="fixed inset-0 z-50 overflow-y-auto"
         onClose={setOpen}
       >
-        <div className="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:p-0">
+        <div
+          className={clsx(
+            'flex min-h-screen justify-center px-4 pt-4 pb-20 text-center sm:p-0',
+            positionClass
+          )}
+        >
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"

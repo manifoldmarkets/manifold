@@ -35,10 +35,13 @@ export default function BetButton(props: {
         {user ? (
           <Button
             size="lg"
-            className={clsx('my-auto inline-flex min-w-[75px] ', btnClassName)}
+            className={clsx(
+              'my-auto inline-flex min-w-[75px] whitespace-nowrap',
+              btnClassName
+            )}
             onClick={() => setOpen(true)}
           >
-            Bet
+            Predict
           </Button>
         ) : (
           <BetSignUpPrompt />
@@ -57,7 +60,7 @@ export default function BetButton(props: {
         )}
       </Col>
 
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} position="center">
         <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}

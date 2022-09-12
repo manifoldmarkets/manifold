@@ -49,7 +49,7 @@ export function ContractLeaderboard(props: {
 
   return users && users.length > 0 ? (
     <Leaderboard
-      title="🏅 Top bettors"
+      title="🏅 Top traders"
       users={users || []}
       columns={[
         {

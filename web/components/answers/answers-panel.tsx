@@ -194,7 +194,7 @@ function OpenAnswer(props: {
 
   return (
     <Col className={'border-base-200 bg-base-200 flex-1 rounded-md px-2'}>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} position="center">
         <AnswerBetPanel
           answer={answer}
           contract={contract}

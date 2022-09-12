@@ -37,6 +37,45 @@ export const changeUser = async (
     avatarUrl?: string
   }
 ) => {
+  // Update contracts, comments, and answers outside of a transaction to avoid contention.
+  // Using bulkWriter to supports >500 writes at a time
+  const contractsRef = firestore
+    .collection('contracts')
+    .where('creatorId', '==', user.id)
+
+  const contracts = await contractsRef.get()
+
+  const contractUpdate: Partial<Contract> = removeUndefinedProps({
+    creatorName: update.name,
+    creatorUsername: update.username,
+    creatorAvatarUrl: update.avatarUrl,
+  })
+
+  const commentSnap = await firestore
+    .collectionGroup('comments')
+    .where('userUsername', '==', user.username)
+    .get()
+
+  const commentUpdate: Partial<Comment> = removeUndefinedProps({
+    userName: update.name,
+    userUsername: update.username,
+    userAvatarUrl: update.avatarUrl,
+  })
+
+  const answerSnap = await firestore
+    .collectionGroup('answers')
+    .where('username', '==', user.username)
+    .get()
+  const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
+
+  const bulkWriter = firestore.bulkWriter()
+  commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
+  answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
+  contracts.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
+  await bulkWriter.flush()
+  console.log('Done writing!')
+
+  // Update the username inside a transaction
   return await firestore.runTransaction(async (transaction) => {
     if (update.username) {
       update.username = cleanUsername(update.username)
@@ -58,42 +97,7 @@ export const changeUser = async (
 
     const userRef = firestore.collection('users').doc(user.id)
     const userUpdate: Partial<User> = removeUndefinedProps(update)
-
-    const contractsRef = firestore
-      .collection('contracts')
-      .where('creatorId', '==', user.id)
-
-    const contracts = await transaction.get(contractsRef)
-
-    const contractUpdate: Partial<Contract> = removeUndefinedProps({
-      creatorName: update.name,
-      creatorUsername: update.username,
-      creatorAvatarUrl: update.avatarUrl,
-    })
-
-    const commentSnap = await transaction.get(
-      firestore
-        .collectionGroup('comments')
-        .where('userUsername', '==', user.username)
-    )
-
-    const commentUpdate: Partial<Comment> = removeUndefinedProps({
-      userName: update.name,
-      userUsername: update.username,
-      userAvatarUrl: update.avatarUrl,
-    })
-
-    const answerSnap = await transaction.get(
-      firestore
-        .collectionGroup('answers')
-        .where('username', '==', user.username)
-    )
-    const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
-
     transaction.update(userRef, userUpdate)
-    commentSnap.docs.forEach((d) => transaction.update(d.ref, commentUpdate))
-    answerSnap.docs.forEach((d) => transaction.update(d.ref, answerUpdate))
-    contracts.docs.forEach((d) => transaction.update(d.ref, contractUpdate))
   })
 }
 

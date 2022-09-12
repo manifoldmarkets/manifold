@@ -2,6 +2,7 @@ import Router from 'next/router'
 import clsx from 'clsx'
 import { MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
+import Image from 'next/future/image'
 
 export function Avatar(props: {
   username?: string
@@ -14,6 +15,7 @@ export function Avatar(props: {
   const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
   useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
   const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
+  const sizeInPx = s * 4
 
   const onClick =
     noLink && username
@@ -26,7 +28,9 @@ export function Avatar(props: {
   // there can be no avatar URL or username in the feed, we show a "submit comment"
   // item with a fake grey user circle guy even if you aren't signed in
   return avatarUrl ? (
-    <img
+    <Image
+      width={sizeInPx}
+      height={sizeInPx}
       className={clsx(
         'flex-shrink-0 rounded-full bg-white object-cover',
         `w-${s} h-${s}`,

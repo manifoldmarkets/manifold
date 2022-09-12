@@ -294,7 +294,7 @@ export function ExtraMobileContractDetails(props: {
           <Tooltip
             text={`${formatMoney(
               volume
-            )} bet - ${uniqueBettors} unique bettors`}
+            )} bet - ${uniqueBettors} unique traders`}
           >
             {volumeTranslation}
           </Tooltip>

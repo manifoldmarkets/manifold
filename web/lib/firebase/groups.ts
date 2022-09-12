@@ -31,7 +31,7 @@ export const groupMembers = (groupId: string) =>
 export const groupContracts = (groupId: string) =>
   collection(groups, groupId, 'groupContracts')
 const openGroupsQuery = query(groups, where('anyoneCanJoin', '==', true))
-const memberGroupsQuery = (userId: string) =>
+export const memberGroupsQuery = (userId: string) =>
   query(collectionGroup(db, 'groupMembers'), where('userId', '==', userId))
 
 export function groupPath(
@@ -110,6 +110,15 @@ export function listenForGroup(
   setGroup: (group: Group | null) => void
 ) {
   return listenForValue(doc(groups, groupId), setGroup)
+}
+
+export async function getMemberGroups(userId: string) {
+  const snapshot = await getDocs(memberGroupsQuery(userId))
+  const groupIds = filterDefined(
+    snapshot.docs.map((doc) => doc.ref.parent.parent?.id)
+  )
+  const groups = await Promise.all(groupIds.map(getGroup))
+  return filterDefined(groups)
 }
 
 export function listenForMemberGroupIds(

@@ -114,6 +114,7 @@ export function CreatorContractsList(props: {
       additionalFilter={{
         creatorId: creator.id,
       }}
+      persistPrefix={`user-${creator.id}`}
     />
   )
 }

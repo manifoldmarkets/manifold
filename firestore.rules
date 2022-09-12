@@ -12,7 +12,9 @@ service cloud.firestore {
         'taowell@gmail.com',
         'abc.sinclair@gmail.com',
         'manticmarkets@gmail.com',
-        'iansphilips@gmail.com'
+        'iansphilips@gmail.com',
+        'd4vidchee@gmail.com',
+        'federicoruizcassarino@gmail.com'
       ]
     }
 
@@ -203,6 +205,10 @@ service cloud.firestore {
                          .affectedKeys()
                          .hasOnly(['name', 'content']);
         allow delete: if isAdmin() || request.auth.uid == resource.data.creatorId;
+         match /comments/{commentId} {
+          	allow read;
+            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) ;
+          }
       }
   }
 }

@@ -1,8 +1,8 @@
-import { groupBy, sumBy, mapValues, partition } from 'lodash'
+import { groupBy, sumBy, mapValues } from 'lodash'
 
 import { Bet } from './bet'
+import { getContractBetMetrics } from './calculate'
 import { Contract } from './contract'
-import { getPayouts } from './payouts'
 
 export function scoreCreators(contracts: Contract[]) {
   const creatorScore = mapValues(
@@ -30,46 +30,8 @@ export function scoreTraders(contracts: Contract[], bets: Bet[][]) {
 }
 
 export function scoreUsersByContract(contract: Contract, bets: Bet[]) {
-  const { resolution } = contract
-  const resolutionProb =
-    contract.outcomeType == 'BINARY'
-      ? contract.resolutionProbability
-      : undefined
-
-  const [closedBets, openBets] = partition(
-    bets,
-    (bet) => bet.isSold || bet.sale
-  )
-  const { payouts: resolvePayouts } = getPayouts(
-    resolution as string,
-    contract,
-    openBets,
-    [],
-    {},
-    resolutionProb
-  )
-
-  const salePayouts = closedBets.map((bet) => {
-    const { userId, sale } = bet
-    return { userId, payout: sale ? sale.amount : 0 }
-  })
-
-  const investments = bets
-    .filter((bet) => !bet.sale)
-    .map((bet) => {
-      const { userId, amount, loanAmount } = bet
-      const payout = -amount - (loanAmount ?? 0)
-      return { userId, payout }
-    })
-
-  const netPayouts = [...resolvePayouts, ...salePayouts, ...investments]
-
-  const userScore = mapValues(
-    groupBy(netPayouts, (payout) => payout.userId),
-    (payouts) => sumBy(payouts, ({ payout }) => payout)
-  )
-
-  return userScore
+  const betsByUser = groupBy(bets, bet => bet.userId)
+  return mapValues(betsByUser, bets => getContractBetMetrics(contract, bets).profit)
 }
 
 export function addUserScores(

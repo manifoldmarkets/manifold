@@ -60,23 +60,27 @@ Parameters:
 
 Requires no authorization.
 
-### `GET /v0/groups/[slug]`
+### `GET /v0/group/[slug]`
 
 Gets a group by its slug.
 
-Requires no authorization.
+Requires no authorization.  
+Note: group is singular in the URL.
 
 ### `GET /v0/group/by-id/[id]`
 
 Gets a group by its unique ID.
 
-Requires no authorization.
+Requires no authorization.  
+Note: group is singular in the URL.
 
 ### `GET /v0/group/by-id/[id]/markets`
 
 Gets a group's markets by its unique ID.
 
-Requires no authorization.
+Requires no authorization.  
+Note: group is singular in the URL.
+
 
 ### `GET /v0/markets`
 
