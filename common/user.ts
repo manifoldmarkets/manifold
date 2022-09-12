@@ -65,12 +65,12 @@ export type PrivateUser = {
   initialDeviceToken?: string
   initialIpAddress?: string
   apiKey?: string
+  /** @deprecated - use notificationSubscriptionTypes */
   notificationPreferences?: notification_subscribe_types
   notificationSubscriptionTypes: notification_subscription_types
 }
 
 export type notification_destination_types = 'email' | 'browser'
-
 export type notification_subscription_types = {
   // Watched Markets
   all_comments_on_watched_markets: notification_destination_types[]

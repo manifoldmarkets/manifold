@@ -165,20 +165,20 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     groupBy(bets, (bet) => bet.userId),
     (bets) => getContractBetMetrics(contract, bets).invested
   )
-  let resolutionText = contract.resolution ?? contract.question
+  let resolutionText = outcome ?? contract.question
   if (contract.outcomeType === 'FREE_RESPONSE') {
     const answerText = contract.answers.find(
-      (answer) => answer.id === contract.resolution
+      (answer) => answer.id === outcome
     )?.text
     if (answerText) resolutionText = answerText
   } else if (contract.outcomeType === 'BINARY') {
-    if (resolutionText === 'MKT' && contract.resolutionProbability)
-      resolutionText = `${contract.resolutionProbability}%`
+    if (resolutionText === 'MKT' && probabilityInt)
+      resolutionText = `${probabilityInt}%`
     else if (resolutionText === 'MKT') resolutionText = 'PROB'
   } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    if (resolutionText === 'MKT' && contract.resolutionValue)
-      resolutionText = `${contract.resolutionValue}`
+    if (resolutionText === 'MKT' && value) resolutionText = `${value}`
   }
+  console.log('resolutionText: ', resolutionText)
   await createCommentOrAnswerOrUpdatedContractNotification(
     contract.id,
     'contract',
