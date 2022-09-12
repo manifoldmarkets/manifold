@@ -21,7 +21,7 @@ def generate_initial_query(category):
     #     string_query += 'otag%3Acreature-removal+o%3A%2Fdestroy+target.%2A+%28creature%7Cpermanent%29%2F+%28t' \
     #                     '%3Ainstant+or+t%3Asorcery%29+o%3Atarget+not%3Aadventure'
     # elif category == 'wrath':
-    #     string_query += 'otag%3Asweeper-creature+%28t%3Ainstant+or+t%3Asorcery%29+not%3Aadventure'
+    #     string_query += 'otag%3Asweeper-creature+%28t%3Ainstant+or+t%3Asorcery%29+not%3Aadventure+not%3Adfc'
     elif category == 'burn':
         string_query += '%28c>%3Dr+or+mana>%3Dr%29+%28o%3A%2Fdamage+to+them%2F+or+%28o%3Adeals+o%3Adamage+o%3A' \
                         '%2Fcontroller%28%5C.%7C+%29%2F%29+or+o%3A%2F~+deals+%28.%7C..%29+damage+to+%28any+target%7C' \
@@ -31,14 +31,14 @@ def generate_initial_query(category):
         string_query += 'is%3Acommander+%28not%3Adigital+-banned%3Acommander+or+is%3Adigital+legal%3Ahistoricbrawl' \
             '+or+legal%3Acommander+or+legal%3Abrawl%29'
     # elif category == 'zombie':
-    #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken'
+    #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken+not%3Adfc'
     # elif category == 'artifact':
-        # string_query += 't%3Aartifact&order=released&dir=asc&unique=prints&page='
+        # string_query += 't%3Aartifact+not%3Adatestamped+not%3Adfc&order=released&dir=asc&unique=prints&page='
     # add category string query here
     string_query += '+-%28set%3Asld+%28cn>%3D231+cn<%3D233+or+cn>%3D436+cn<%3D440+or+cn>%3D321+cn<%3D324+or' \
         '+cn>%3D185+cn<%3D189+or+cn>%3D138+cn<%3D142+or+cn>%3D364+cn<%3D368+or+cn%3A669+or+cn%3A670%29%29+' \
-        '-%28set%3Asta+cn>%3D64+cn<%3D126%29+-set%3Acmb2+-set%3Acmb1+not%3Asplit+-st%3Amemorabilia'
-    string_query += '+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
+        '-%28set%3Asta+cn>%3D64+cn<%3D126%29+-set%3Acmb2+-set%3Acmb1+not%3Asplit'
+    string_query += '+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
     print(string_query)
     return string_query
 
@@ -167,8 +167,8 @@ def fetch_special(query):
     return response
 
 
-def write_art(art_names, id, index, digital):
-    if digital:
+def write_art(art_names, id, index, card):
+    if card['digital'] or card['set_type'] == 'promo':
         art_names[id] = index
     else:
         art_names[id] = -1
@@ -195,7 +195,7 @@ def to_compact_write_form(smallJson, art_names, response, category):
                     digital_holder = art_names[card['illustration_id']]
                     ind = -1
                 write_art(
-                    art_names, card_face['illustration_id'], ind, card['digital'])
+                    art_names, card_face['illustration_id'], ind, card)
         elif 'illustration_id' not in card or card['illustration_id'] in art_names and (art_names[card['illustration_id']] < 0 or card['digital']):
             continue
         else:
@@ -203,7 +203,7 @@ def to_compact_write_form(smallJson, art_names, response, category):
             if (card['illustration_id'] in art_names):
                 digital_holder = art_names[card['illustration_id']]
                 ind = -1
-            write_art(art_names, card['illustration_id'], ind, card['digital'])
+            write_art(art_names, card['illustration_id'], ind, card)
         write_card = dict()
         for field in fieldsInCard:
             # if field == 'name' and category == 'artifact':
@@ -247,7 +247,7 @@ def to_compact_write_form_special(smallJson, art_names, response, category):
                     digital_holder = art_names[card['illustration_id']]
                     ind = -1
                 write_art(
-                    art_names, card['illustration_id'], ind, card['digital'])
+                    art_names, card['illustration_id'], ind, card)
             for field in fieldsInBasic:
                 if field == 'image_uris':
                     write_card['image_uris'] = write_image_uris(
