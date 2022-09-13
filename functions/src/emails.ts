@@ -56,10 +56,9 @@ export const sendMarketResolutionEmail = async (
       ? ` (plus ${formatMoney(creatorPayout)} in commissions)`
       : ''
 
-  const displayedInvestment =
-    Number.isNaN(investment) || investment < 0
-      ? formatMoney(0)
-      : formatMoney(investment)
+  const correctedInvestment =
+    Number.isNaN(investment) || investment < 0 ? 0 : investment
+  const displayedInvestment = formatMoney(correctedInvestment)
 
   const displayedPayout = formatMoney(payout)
 
@@ -81,7 +80,7 @@ export const sendMarketResolutionEmail = async (
   return await sendTemplateEmail(
     privateUser.email,
     subject,
-    'market-resolved',
+    correctedInvestment === 0 ? 'market-resolved-no-bets' : 'market-resolved',
     templateData
   )
 }
