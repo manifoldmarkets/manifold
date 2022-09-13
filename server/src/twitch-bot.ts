@@ -44,6 +44,9 @@ export default class TwitchBot {
 
     private defaultGroupID: string = null;
 
+    private rejoinChannelTimer: NodeJS.Timeout = null;
+    private isMuted = false;
+
     constructor(app: App) {
         this.app = app;
 
@@ -195,6 +198,7 @@ export default class TwitchBot {
 
         this.client.on("message", async (channel, tags, message, self) => {
             if (self) return; // Ignore echoed messages.
+            if (this.isMuted) return;
 
             channel = sanitizeTwitchChannelName(channel);
 
@@ -256,6 +260,7 @@ export default class TwitchBot {
     }
 
     public resolveMarket(channel: string, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
+        if (this.isMuted) return;
         this.client.say(channel, MSG_RESOLVED(outcome, winners));
     }
 
@@ -269,8 +274,33 @@ export default class TwitchBot {
         }
     }
 
+    public isInChannel(channelName: string) {
+        return this.client.getChannels().indexOf(`#${channelName}`) >= 0;
+    }
+
+    public temporarilyMute() {
+        if (this.isMuted) {
+            this.rejoinChannelTimer.refresh();
+            return;  
+        }
+
+        this.client.getChannels().forEach(c => {
+            this.client.say(c, "A dev bot is temporarily taking over my job. See you later!");
+        });
+        this.isMuted = true;
+
+        clearTimeout(this.rejoinChannelTimer);
+        
+        this.rejoinChannelTimer = setTimeout(() => {
+            this.client.getChannels().forEach(c => {
+                this.client.say(c, "I'm baaaack");
+            });
+            this.isMuted = false;
+        }, 10000);
+    }
+
     public joinChannel(channelName: string) {
-        if (this.client.getChannels().indexOf(`#${channelName}`) >= 0) {
+        if (this.isInChannel(channelName)) {
             throw new Error(`Bot already added to channel '${channelName}'`);
         }
         this.client
@@ -290,7 +320,7 @@ export default class TwitchBot {
     }
 
     public leaveChannel(channelName: string) {
-        if (this.client.getChannels().indexOf(`#${channelName}`) >= 0) {
+        if (this.isInChannel(channelName)) {
             this.client.say(channelName, "Goodbye cruel world.");
             this.client.part(channelName).then(() => {
                 this.app.firestore.unregisterTwitchChannel(channelName);

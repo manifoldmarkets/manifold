@@ -14,7 +14,7 @@ import { UNFEATURE_MARKET } from "common/packet-ids";
 import { PacketTwitchLinkComplete } from "common/packets";
 import DockClient from "./clients/dock";
 import OverlayClient from "./clients/overlay";
-import { PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
+import { IS_DEV, PORT, PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
 import AppFirestore from "./firestore";
 import log from "./logger";
 import * as Manifold from "./manifold-api";
@@ -118,7 +118,17 @@ export default class App {
     async launch() {
         await this.bot.connect();
 
-        const server = this.app.listen(9172, () => {
+        if (!IS_DEV) {
+            this.firestore.onDevBotActiveUpdated((d) => {
+                if (d.devBotLastActive && d.devBotLastActive > Date.now() - 1000 * 10) {
+                    this.bot.temporarilyMute();
+                }
+            });
+        } else {
+            setInterval(() => this.firestore.updateDevBotLastActive(), 5000);
+        }
+
+        const server = this.app.listen(PORT, () => {
             const addressInfo = <AddressInfo>server.address();
             const host = addressInfo.address;
             const port = addressInfo.port;
@@ -173,7 +183,7 @@ export default class App {
                 const user = await this.firestore.getUserForManifoldAPIKey(apiKey);
                 log.info(`Authorized Twitch user ${user.twitchDisplayName}`);
                 this.bot.joinChannel(user.data.twitchLogin);
-                response.send("<html><head><script>close();</script></head><html>");
+                response.send("<html><head><script>close();</script></head><html>"); //!!! Proper response (API type class)
             } catch (e) {
                 log.trace(e);
                 response.status(400).json({ error: e.message, message: "Failed to register bot." });
@@ -260,7 +270,6 @@ export default class App {
                 } else {
                     log.info("No waiting response");
                 }
-
 
                 this.firestore.addNewUser(user);
                 try {

@@ -8,6 +8,8 @@ export type UserData = {
     manifoldID: string;
     APIKey: string;
     controlToken: string;
+    botEnabled?: boolean;
+    devBotLastActive?: number;
 }
 
 export default class User {

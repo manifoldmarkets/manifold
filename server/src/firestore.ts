@@ -1,10 +1,9 @@
-import { FirebaseApp, initializeApp } from "firebase/app";
-import { collection, getFirestore, Firestore, getDocs, query, CollectionReference, where, setDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
-import crypto from "crypto";
-import { FIREBASE_API_KEY, PUBLIC_FACING_URL, TWITCH_APP_CLIENT_SECRET } from "./envs";
-import User, { UserData } from "./user";
-import log from "./logger";
 import { UserNotRegisteredException } from "common/exceptions";
+import { FirebaseApp, initializeApp } from "firebase/app";
+import { collection, CollectionReference, deleteField, doc, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { FIREBASE_API_KEY, MANIFOLD_DB_LOCATION } from "./envs";
+import log from "./logger";
+import User, { UserData } from "./user";
 
 const firebaseConfig = {
     apiKey: FIREBASE_API_KEY,
@@ -18,17 +17,27 @@ const firebaseConfig = {
 export default class AppFirestore {
     readonly app: FirebaseApp;
     readonly db: Firestore;
+    readonly dbCollection: CollectionReference;
     readonly userCollection: CollectionReference;
-    readonly channelCollection: CollectionReference;
-    readonly settingsCollection: CollectionReference;
 
     constructor() {
         this.app = initializeApp(firebaseConfig);
         this.db = getFirestore(this.app);
-        const baseID = crypto.createHash("md5").update(TWITCH_APP_CLIENT_SECRET + PUBLIC_FACING_URL).digest("hex");
-        this.userCollection = collection(this.db, "bots", baseID, "users");
-        this.channelCollection = collection(this.db, "bots", baseID, "channels");
-        this.settingsCollection = collection(this.db, "bots", baseID, "settings");
+        this.dbCollection = collection(this.db, "manifold-db");
+        this.userCollection = collection(this.dbCollection, MANIFOLD_DB_LOCATION, "users");
+    }
+
+    onDevBotActiveUpdated(callback: (d: {devBotLastActive: number}) => void) {
+        onSnapshot(this.dbCollection, (doc) => {
+            doc.docs.forEach((d) => {
+                const data = <{devBotLastActive: number}>d.data();
+                callback(data);
+            });
+        });
+    }
+
+    async updateDevBotLastActive() {
+        updateDoc(doc(this.dbCollection, MANIFOLD_DB_LOCATION), {devBotLastActive: Date.now()});
     }
 
     async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
@@ -68,19 +77,27 @@ export default class AppFirestore {
     }
 
     async getRegisteredTwitchChannels(): Promise<string[]> {
-        const docs = await getDocs(this.channelCollection);
+        const docs = await getDocs(query(this.userCollection, where("botEnabled", "==", true)));
         const channelNames = [];
         docs.forEach((doc) => {
-            channelNames.push(doc.id);
+            channelNames.push(doc.data().twitchLogin);
         });
         return channelNames;
     }
 
     async registerTwitchChannel(channelTwitchLogin: string) {
-        await setDoc(doc(this.db, this.channelCollection.path, channelTwitchLogin), {});
+        const d = await getDocs(query(this.userCollection, where("twitchLogin", "==", channelTwitchLogin)));
+        if (d.empty) {
+            throw new Error("No user found with Twitch channel " + channelTwitchLogin);
+        }
+        await updateDoc(doc(this.userCollection, d.docs[0].id), <Partial<UserData>>{ botEnabled: true });
     }
 
     async unregisterTwitchChannel(channelTwitchLogin: string) {
-        await deleteDoc(doc(this.db, this.channelCollection.path, channelTwitchLogin));
+        const d = await getDocs(query(this.userCollection, where("twitchLogin", "==", channelTwitchLogin)));
+        if (d.empty) {
+            throw new Error("No user found with Twitch channel " + channelTwitchLogin);
+        }
+        await updateDoc(doc(this.userCollection, d.docs[0].id), <Partial<UserData>>{ botEnabled: <unknown> deleteField() });
     }
 }

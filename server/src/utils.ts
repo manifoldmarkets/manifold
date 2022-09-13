@@ -19,3 +19,9 @@ export function buildURL(baseURL: string, params: {[k: string]: unknown}) {
         .join("&");
     return `${baseURL}?${paramString}`;
 }
+
+// From https://stackoverflow.com/questions/8498592/extract-hostname-name-from-string
+export function getDomainFromURL(url: string) {
+    const matches = url.match(/^https?:\/\/([^/?#]+)(?:[/?#]|$)/i);
+    return matches && matches[1]; // will be null if no match is found
+}
