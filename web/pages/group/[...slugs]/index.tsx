@@ -31,8 +31,6 @@ import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { ContractSearch } from 'web/components/contract-search'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
@@ -406,10 +404,8 @@ function AddContractButton(props: { group: Group; user: User }) {
 
   async function onSubmit(contracts: Contract[]) {
     await Promise.all(
-      contracts.map((contract) => 
-        addContractToGroup(group, contract, user.id)
-      )
-    )   
+      contracts.map((contract) => addContractToGroup(group, contract, user.id))
+    )
   }
 
   return (
@@ -442,7 +438,9 @@ function AddContractButton(props: { group: Group; user: User }) {
         }
         submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
         onSubmit={onSubmit}
-        contractSearchOptions={{additionalFilter: { excludeContractIds: groupContractIds}}}
+        contractSearchOptions={{
+          additionalFilter: { excludeContractIds: groupContractIds },
+        }}
       />
     </>
   )
