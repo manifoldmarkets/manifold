@@ -9,7 +9,7 @@
 <head>
   <meta name="viewport" content="width=device-width" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <title>Market comment</title>
+  <title>Market resolved</title>
 
   <style type="text/css">
     img {
@@ -183,13 +183,98 @@
                           font-size: 16px;
                           vertical-align: top;
                           margin: 0;
-                          padding: 0 0 0px 0;
+                          padding: 0 0 40px 0;
                           text-align: left;
                         " valign="top">
                       <a href="https://manifold.markets" target="_blank">
                         <img src="https://manifold.markets/logo-banner.png" width="300" style="height: auto"
                           alt="Manifold Markets" />
                       </a>
+                    </td>
+                  </tr>
+                  <tr style="
+                        font-family: 'Helvetica Neue', Helvetica, Arial,
+                          sans-serif;
+                        box-sizing: border-box;
+                        font-size: 14px;
+                        margin: 0;
+                        padding: 0;
+                      ">
+                    <td class="content-block" style="
+                          font-family: 'Helvetica Neue', Helvetica, Arial,
+                            sans-serif;
+                          box-sizing: border-box;
+                          font-size: 16px;
+                          vertical-align: top;
+                          margin: 0;
+                          padding: 0 0 6px 0;
+                          text-align: left;
+                        " valign="top">
+                      {{creatorName}} asked
+                    </td>
+                  </tr>
+                  <tr style="
+                        font-family: 'Helvetica Neue', Helvetica, Arial,
+                          sans-serif;
+                        box-sizing: border-box;
+                        font-size: 14px;
+                        margin: 0;
+                      ">
+                    <td class="content-block" style="
+                          font-family: 'Helvetica Neue', Helvetica, Arial,
+                            sans-serif;
+                          box-sizing: border-box;
+                          font-size: 14px;
+                          vertical-align: top;
+                          margin: 0;
+                          padding: 0 0 20px;
+                        " valign="top">
+                      <a href="{{url}}" style="
+                            font-family: 'Helvetica Neue', Helvetica, Arial,
+                              'Lucida Grande', sans-serif;
+                            box-sizing: border-box;
+                            font-size: 24px;
+                            color: #000;
+                            line-height: 1.2em;
+                            font-weight: 500;
+                            text-align: left;
+                            margin: 0 0 0 0;
+                            color: #4337c9;
+                            display: block;
+                            text-decoration: none;
+                          ">
+                        {{question}}</a>
+                    </td>
+                  </tr>
+                  <tr style="
+                        font-family: 'Helvetica Neue', Helvetica, Arial,
+                          sans-serif;
+                        box-sizing: border-box;
+                        font-size: 14px;
+                        margin: 0;
+                      ">
+                    <td class="content-block" style="
+                          font-family: 'Helvetica Neue', Helvetica, Arial,
+                            sans-serif;
+                          box-sizing: border-box;
+                          font-size: 14px;
+                          vertical-align: top;
+                          margin: 0;
+                          padding: 0 0 0px;
+                        " valign="top">
+                      <h2 class="aligncenter" style="
+                            font-family: 'Helvetica Neue', Helvetica, Arial,
+                              'Lucida Grande', sans-serif;
+                            box-sizing: border-box;
+                            font-size: 24px;
+                            color: #000;
+                            line-height: 1.2em;
+                            font-weight: 500;
+                            text-align: center;
+                            margin: 10px 0 0;
+                          " align="center">
+                        Resolved {{outcome}}
+                      </h2>
                     </td>
                   </tr>
                   <tr style="
@@ -217,35 +302,7 @@
                             text-align: left;
                             width: 80%;
                             margin: 40px auto;
-                            margin-top: 10px;
                           ">
-                        <tr style="
-                              font-family: 'Helvetica Neue', Helvetica, Arial,
-                                sans-serif;
-                              box-sizing: border-box;
-                              font-size: 16px;
-                              margin: 0;
-                            ">
-                          <td style="
-                                font-family: 'Helvetica Neue', Helvetica, Arial,
-                                  sans-serif;
-                                box-sizing: border-box;
-                                font-size: 14px;
-                                margin: 0;
-                                padding: 5px 0;
-                              " valign="top">
-                            <div>
-                              <img src="{{commentorAvatarUrl}}" width="30" height="30" style="
-                                    border-radius: 30px;
-                                    overflow: hidden;
-                                    vertical-align: middle;
-                                    margin-right: 4px;
-                                  " alt="" />
-                              <span style="font-weight: bold">{{commentorName}}</span>
-                              {{betDescription}}
-                            </div>
-                          </td>
-                        </tr>
                         <tr style="
                               font-family: 'Helvetica Neue', Helvetica, Arial,
                                 sans-serif;
@@ -262,15 +319,59 @@
                                 margin: 0;
                                 padding: 5px 0;
                               " valign="top">
-                            <div style="
+                            Dear {{name}},
+                            <br style="
                                   font-family: 'Helvetica Neue', Helvetica,
                                     Arial, sans-serif;
                                   box-sizing: border-box;
                                   font-size: 16px;
                                   margin: 0;
-                                ">
-                              <span style="white-space: pre-line">{{comment}}</span>
-                            </div>
+                                " />
+                            <br style="
+                                  font-family: 'Helvetica Neue', Helvetica,
+                                    Arial, sans-serif;
+                                  box-sizing: border-box;
+                                  font-size: 16px;
+                                  margin: 0;
+                                " />
+                            A market you were following has been resolved!
+                            <br style="
+                                  font-family: 'Helvetica Neue', Helvetica,
+                                    Arial, sans-serif;
+                                  box-sizing: border-box;
+                                  font-size: 16px;
+                                  margin: 0;
+                                " />
+                            <br style="
+                                  font-family: 'Helvetica Neue', Helvetica,
+                                    Arial, sans-serif;
+                                  box-sizing: border-box;
+                                  font-size: 16px;
+                                  margin: 0;
+                                " />
+                            Thanks,
+                            <br style="
+                                  font-family: 'Helvetica Neue', Helvetica,
+                                    Arial, sans-serif;
+                                  box-sizing: border-box;
+                                  font-size: 16px;
+                                  margin: 0;
+                                " />
+                            Manifold Team
+                            <br style="
+                                  font-family: 'Helvetica Neue', Helvetica,
+                                    Arial, sans-serif;
+                                  box-sizing: border-box;
+                                  font-size: 16px;
+                                  margin: 0;
+                                " />
+                            <br style="
+                                  font-family: 'Helvetica Neue', Helvetica,
+                                    Arial, sans-serif;
+                                  box-sizing: border-box;
+                                  font-size: 16px;
+                                  margin: 0;
+                                " />
                           </td>
                         </tr>
                         <tr style="
@@ -280,10 +381,10 @@
                               font-size: 16px;
                               margin: 0;
                             ">
-                          <td style="padding: 20px 0 0 0; margin: 0">
+                          <td style="padding: 10px 0 0 0; margin: 0">
                             <div align="center">
                               <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0; border-collapse: collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-family:arial,helvetica,sans-serif;"><tr><td style="font-family:arial,helvetica,sans-serif;" align="center"><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="" style="height:37px; v-text-anchor:middle; width:110px;" arcsize="11%" stroke="f" fillcolor="#3AAEE0"><w:anchorlock/><center style="color:#FFFFFF;font-family:arial,helvetica,sans-serif;"><![endif]-->
-                              <a href="{{marketUrl}}" target="_blank" style="
+                              <a href="{{url}}" target="_blank" style="
                                     box-sizing: border-box;
                                     display: inline-block;
                                     font-family: arial, helvetica, sans-serif;
@@ -310,7 +411,7 @@
                                         font-size: 16px;
                                         font-weight: bold;
                                         line-height: 18.8px;
-                                      ">View comment</span></span>
+                                      ">View market</span></span>
                               </a>
                               <!--[if mso]></center></v:roundrect></td></tr></table><![endif]-->
                             </div>

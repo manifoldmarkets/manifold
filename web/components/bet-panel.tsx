@@ -42,6 +42,7 @@ import { YesNoSelector } from './yes-no-selector'
 import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from './warning-confirmation-button'
+import { MarketIntroPanel } from './market-intro-panel'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -90,10 +91,7 @@ export function BetPanel(props: {
             />
           </>
         ) : (
-          <>
-            <BetSignUpPrompt />
-            <PlayMoneyDisclaimer />
-          </>
+          <MarketIntroPanel />
         )}
       </Col>
 

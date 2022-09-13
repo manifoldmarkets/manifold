@@ -1,14 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { compact, uniq } from 'lodash'
+import { compact } from 'lodash'
 import { getContract, getUser, getValues } from './utils'
 import { ContractComment } from '../../common/comment'
-import { sendNewCommentEmail } from './emails'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import {
   createCommentOrAnswerOrUpdatedContractNotification,
-  filterUserIdsForOnlyFollowerIds,
+  replied_users_info,
 } from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
@@ -77,16 +76,46 @@ export const onCreateCommentOnContract = functions
     const comments = await getValues<ContractComment>(
       firestore.collection('contracts').doc(contractId).collection('comments')
     )
-    const relatedSourceType = comment.replyToCommentId
-      ? 'comment'
-      : comment.answerOutcome
+    const repliedToType = answer
       ? 'answer'
+      : comment.replyToCommentId
+      ? 'comment'
       : undefined
 
     const repliedUserId = comment.replyToCommentId
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
 
+    const mentionedUsers = compact(parseMentions(comment.content))
+    const repliedUsers: replied_users_info = {}
+
+    // The parent of the reply chain could be a comment or an answer
+    if (repliedUserId && repliedToType)
+      repliedUsers[repliedUserId] = {
+        repliedToType,
+        repliedToAnswerText: answer ? answer.text : undefined,
+        repliedToId: comment.replyToCommentId || answer?.id,
+        bet: bet,
+      }
+
+    const commentsInSameReplyChain = comments.filter((c) =>
+      repliedToType === 'answer'
+        ? c.answerOutcome === answer?.id
+        : repliedToType === 'comment'
+        ? c.replyToCommentId === comment.replyToCommentId
+        : false
+    )
+    // The rest of the children in the chain are always comments
+    commentsInSameReplyChain.forEach((c) => {
+      if (c.userId !== comment.userId && c.userId !== repliedUserId) {
+        repliedUsers[c.userId] = {
+          repliedToType: 'comment',
+          repliedToAnswerText: undefined,
+          repliedToId: c.id,
+          bet: undefined,
+        }
+      }
+    })
     await createCommentOrAnswerOrUpdatedContractNotification(
       comment.id,
       'comment',
@@ -96,31 +125,8 @@ export const onCreateCommentOnContract = functions
       richTextToString(comment.content),
       contract,
       {
-        relatedSourceType,
-        repliedUserId,
-        taggedUserIds: compact(parseMentions(comment.content)),
+        repliedUsersInfo: repliedUsers,
+        taggedUserIds: mentionedUsers,
       }
-    )
-
-    const recipientUserIds = await filterUserIdsForOnlyFollowerIds(
-      uniq([
-        contract.creatorId,
-        ...comments.map((comment) => comment.userId),
-      ]).filter((id) => id !== comment.userId),
-      contractId
-    )
-
-    await Promise.all(
-      recipientUserIds.map((userId) =>
-        sendNewCommentEmail(
-          userId,
-          commentCreator,
-          contract,
-          comment,
-          bet,
-          answer?.text,
-          answer?.id
-        )
-      )
     )
   })
