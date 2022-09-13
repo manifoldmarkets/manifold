@@ -33,15 +33,13 @@ export function AnswersPanel(props: {
     contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
-  const answers = useAnswers(contract.id) ?? contract.answers
-  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] === 0)
+  const answers = (useAnswers(contract.id) ?? contract.answers).filter(
+    (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
+  )
+  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] < 1)
 
   const [winningAnswers, losingAnswers] = partition(
-    answers.filter((answer) =>
-      (answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE') && showAllAnswers
-        ? true
-        : totalBets[answer.id] > 0
-    ),
+    answers.filter((a) => (showAllAnswers ? true : totalBets[a.id] > 0)),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
