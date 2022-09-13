@@ -22,7 +22,9 @@ import {
   sendMarketResolutionEmail,
   sendNewAnswerEmail,
   sendNewCommentEmail,
+  sendNewFollowedMarketEmail,
 } from './emails'
+import { filterDefined } from '../../common/util/array'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -103,49 +105,12 @@ export const createNotification = async (
           privateUser,
           sourceContract
         )
-      } else if (reason === 'tagged_user') {
-        // TODO: send email to tagged user in new contract
       } else if (reason === 'subsidized_your_market') {
         // TODO: send email to creator of market that was subsidized
-      } else if (reason === 'contract_from_followed_user') {
-        // TODO: send email to follower of user who created market
       } else if (reason === 'on_new_follow') {
         // TODO: send email to user who was followed
       }
     }
-  }
-
-  const notifyUsersFollowers = async (
-    userToReasonTexts: recipients_to_reason_texts
-  ) => {
-    const followers = await firestore
-      .collectionGroup('follows')
-      .where('userId', '==', sourceUser.id)
-      .get()
-
-    followers.docs.forEach((doc) => {
-      const followerUserId = doc.ref.parent.parent?.id
-      if (
-        followerUserId &&
-        shouldReceiveNotification(followerUserId, userToReasonTexts)
-      ) {
-        userToReasonTexts[followerUserId] = {
-          reason: 'contract_from_followed_user',
-        }
-      }
-    })
-  }
-
-  const notifyTaggedUsers = (
-    userToReasonTexts: recipients_to_reason_texts,
-    userIds: (string | undefined)[]
-  ) => {
-    userIds.forEach((id) => {
-      if (id && shouldReceiveNotification(id, userToReasonTexts))
-        userToReasonTexts[id] = {
-          reason: 'tagged_user',
-        }
-    })
   }
 
   // The following functions modify the userToReasonTexts object in place.
@@ -156,15 +121,6 @@ export const createNotification = async (
       userToReasonTexts[recipients[0]] = {
         reason: 'on_new_follow',
       }
-    return await sendNotificationsIfSettingsPermit(userToReasonTexts)
-  } else if (
-    sourceType === 'contract' &&
-    sourceUpdateType === 'created' &&
-    sourceContract
-  ) {
-    if (sourceContract.visibility === 'public')
-      await notifyUsersFollowers(userToReasonTexts)
-    await notifyTaggedUsers(userToReasonTexts, recipients ?? [])
     return await sendNotificationsIfSettingsPermit(userToReasonTexts)
   } else if (
     sourceType === 'contract' &&
@@ -283,52 +239,57 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       reason
     )
 
+    // Browser notifications
     if (sendToBrowser && !browserRecipientIdsList.includes(userId)) {
       await createBrowserNotification(userId, reason)
       browserRecipientIdsList.push(userId)
     }
-    if (sendToEmail && !emailRecipientIdsList.includes(userId)) {
-      if (sourceType === 'comment') {
-        const { repliedToType, repliedToAnswerText, repliedToId, bet } =
-          repliedUsersInfo?.[userId] ?? {}
-        // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
-        await sendNewCommentEmail(
-          reason,
-          privateUser,
-          sourceUser,
-          sourceContract,
-          sourceText,
-          sourceId,
-          bet,
-          repliedToAnswerText,
-          repliedToType === 'answer' ? repliedToId : undefined
-        )
-      } else if (sourceType === 'answer')
-        await sendNewAnswerEmail(
-          reason,
-          privateUser,
-          sourceUser.name,
-          sourceText,
-          sourceContract,
-          sourceUser.avatarUrl
-        )
-      else if (
-        sourceType === 'contract' &&
-        sourceUpdateType === 'resolved' &&
-        resolutionData
+
+    // Emails notifications
+    if (!sendToEmail || emailRecipientIdsList.includes(userId)) return
+    if (sourceType === 'comment') {
+      const { repliedToType, repliedToAnswerText, repliedToId, bet } =
+        repliedUsersInfo?.[userId] ?? {}
+      // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
+      await sendNewCommentEmail(
+        reason,
+        privateUser,
+        sourceUser,
+        sourceContract,
+        sourceText,
+        sourceId,
+        bet,
+        repliedToAnswerText,
+        repliedToType === 'answer' ? repliedToId : undefined
       )
-        await sendMarketResolutionEmail(
-          reason,
-          privateUser,
-          resolutionData.userInvestments[userId] ?? 0,
-          resolutionData.userPayouts[userId] ?? 0,
-          sourceUser,
-          resolutionData.creatorPayout,
-          sourceContract,
-          resolutionData.outcome,
-          resolutionData.resolutionProbability,
-          resolutionData.resolutions
-        )
+      emailRecipientIdsList.push(userId)
+    } else if (sourceType === 'answer') {
+      await sendNewAnswerEmail(
+        reason,
+        privateUser,
+        sourceUser.name,
+        sourceText,
+        sourceContract,
+        sourceUser.avatarUrl
+      )
+      emailRecipientIdsList.push(userId)
+    } else if (
+      sourceType === 'contract' &&
+      sourceUpdateType === 'resolved' &&
+      resolutionData
+    ) {
+      await sendMarketResolutionEmail(
+        reason,
+        privateUser,
+        resolutionData.userInvestments[userId] ?? 0,
+        resolutionData.userPayouts[userId] ?? 0,
+        sourceUser,
+        resolutionData.creatorPayout,
+        sourceContract,
+        resolutionData.outcome,
+        resolutionData.resolutionProbability,
+        resolutionData.resolutions
+      )
       emailRecipientIdsList.push(userId)
     }
   }
@@ -851,4 +812,80 @@ export const createUniqueBettorBonusNotification = async (
   return await notificationRef.set(removeUndefinedProps(notification))
 
   // TODO send email notification
+}
+
+export const createNewContractNotification = async (
+  contractCreator: User,
+  contract: Contract,
+  idempotencyKey: string,
+  text: string,
+  mentionedUserIds: string[]
+) => {
+  if (contract.visibility !== 'public') return
+
+  const sendNotificationsIfSettingsAllow = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+      privateUser,
+      reason
+    )
+    if (sendToBrowser) {
+      const notificationRef = firestore
+        .collection(`/users/${userId}/notifications`)
+        .doc(idempotencyKey)
+      const notification: Notification = {
+        id: idempotencyKey,
+        userId: userId,
+        reason,
+        createdTime: Date.now(),
+        isSeen: false,
+        sourceId: contract.id,
+        sourceType: 'contract',
+        sourceUpdateType: 'created',
+        sourceUserName: contractCreator.name,
+        sourceUserUsername: contractCreator.username,
+        sourceUserAvatarUrl: contractCreator.avatarUrl,
+        sourceText: text,
+        sourceSlug: contract.slug,
+        sourceTitle: contract.question,
+        sourceContractSlug: contract.slug,
+        sourceContractId: contract.id,
+        sourceContractTitle: contract.question,
+        sourceContractCreatorUsername: contract.creatorUsername,
+      }
+      await notificationRef.set(removeUndefinedProps(notification))
+    }
+    if (!sendToEmail) return
+    if (reason === 'contract_from_followed_user')
+      await sendNewFollowedMarketEmail(reason, userId, privateUser, contract)
+  }
+  const followersSnapshot = await firestore
+    .collectionGroup('follows')
+    .where('userId', '==', contractCreator.id)
+    .get()
+
+  const followerUserIds = filterDefined(
+    followersSnapshot.docs.map((doc) => {
+      const followerUserId = doc.ref.parent.parent?.id
+      return followerUserId && followerUserId != contractCreator.id
+        ? followerUserId
+        : undefined
+    })
+  )
+
+  // As it is coded now, the tag notification usurps the new contract notification
+  // It'd be easy to append the reason to the eventId if desired
+  for (const followerUserId of followerUserIds) {
+    await sendNotificationsIfSettingsAllow(
+      followerUserId,
+      'contract_from_followed_user'
+    )
+  }
+  for (const mentionedUserId of mentionedUserIds) {
+    await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
+  }
 }
