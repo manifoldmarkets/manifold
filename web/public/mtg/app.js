@@ -50,6 +50,7 @@ function putIntoMapAndFetch(data) {
   }
   cardNames = Array.from(Object.keys(allData))
   window.console.log(allData)
+  window.console.log(cardNames)
   window.console.log(total)
   if (whichGuesser === 'counterspell') {
     document.getElementById('guess-type').innerText = 'Counterspell Guesser'
@@ -97,26 +98,23 @@ function getKSamples() {
       delete allData[key]
     }
   }
-  if (whichGuesser == 'artist') {
-    usedCounters = new Set(cardNames)
-  } else {
-    let count = 0
-    shuffleArray(cardNames)
-    for (let j = 0; j < cardNames.length; j++) {
-      key = cardNames[j]
-      value = cardNames[key]
-      if (usedCounters.has(key)) {
-        continue
-      } else {
-        window.console.log(key)
-        usedCounters.add(key)
-        count++
-        if (count >= extra) {
-          break
-        }
+  let count = 0
+  shuffleArray(cardNames)
+  for (let j = 0; j < cardNames.length; j++) {
+    key = cardNames[j]
+    value = cardNames[key]
+    if (usedCounters.has(key)) {
+      continue
+    } else {
+      window.console.log(key)
+      usedCounters.add(key)
+      count++
+      if (count >= extra) {
+        break
       }
     }
   }
+
   return [samples, usedCounters]
 }
 
@@ -144,7 +142,7 @@ function createNewArtistMap() {
       samples[key] = value
       newTotal += value.length
       i++
-      if (i >= k + extra) {
+      if (i >= k + extra * 2) {
         break
       }
     }
