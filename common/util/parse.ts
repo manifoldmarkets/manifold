@@ -1,12 +1,5 @@
 import { MAX_TAG_LENGTH } from '../contract'
-import {
-  getText,
-  getTextSerializersFromSchema,
-  getSchema,
-  JSONContent,
-} from '@tiptap/core'
-import { Node as ProseMirrorNode } from 'prosemirror-model'
-
+import { generateText, JSONContent } from '@tiptap/core'
 // Tiptap starter extensions
 import { Blockquote } from '@tiptap/extension-blockquote'
 import { Bold } from '@tiptap/extension-bold'
@@ -104,6 +97,7 @@ export const exhibitExts = [
   Paragraph,
   Strike,
   Text,
+
   Image,
   Link,
   Mention,
@@ -111,15 +105,6 @@ export const exhibitExts = [
   TiptapTweet,
 ]
 
-const exhibitSchema = getSchema(exhibitExts)
-
 export function richTextToString(text?: JSONContent) {
-  if (!text) {
-    return ''
-  }
-  const contentNode = ProseMirrorNode.fromJSON(exhibitSchema, text)
-  return getText(contentNode, {
-    blockSeparator: '\n\n',
-    textSerializers: getTextSerializersFromSchema(exhibitSchema),
-  })
+  return !text ? '' : generateText(text, exhibitExts)
 }
