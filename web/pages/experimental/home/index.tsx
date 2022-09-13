@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import Router from 'next/router'
 import {
   PencilIcon,
@@ -28,6 +28,7 @@ import { groupPath } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { formatMoney } from 'common/util/format'
+import { useProbChanges } from 'web/hooks/use-prob-changes'
 
 const Home = () => {
   const user = useUser()
@@ -38,10 +39,7 @@ const Home = () => {
 
   const groups = useMemberGroups(user?.id) ?? []
 
-  const [homeSections] = useState(
-    user?.homeSections ?? { visible: [], hidden: [] }
-  )
-  const { visibleItems } = getHomeItems(groups, homeSections)
+  const { sections } = getHomeItems(groups, user?.homeSections ?? [])
 
   return (
     <Page>
@@ -54,29 +52,19 @@ const Home = () => {
 
         <DailyProfitAndBalance userId={user?.id} />
 
-        <div className="text-xl text-gray-800">Daily movers</div>
-        <ProbChangeTable userId={user?.id} />
-
-        {visibleItems.map((item) => {
+        {sections.map((item) => {
           const { id } = item
-          if (id === 'your-bets') {
-            return (
-              <SearchSection
-                key={id}
-                label={'Your trades'}
-                sort={'newest'}
-                user={user}
-                yourBets
-              />
-            )
+          if (id === 'daily-movers') {
+            return <DailyMoversSection key={id} userId={user?.id} />
           }
           const sort = SORTS.find((sort) => sort.value === id)
           if (sort)
             return (
               <SearchSection
                 key={id}
-                label={sort.label}
+                label={sort.value === 'newest' ? 'New for you' : sort.label}
                 sort={sort.value}
+                followed={sort.value === 'newest'}
                 user={user}
               />
             )
@@ -103,11 +91,12 @@ const Home = () => {
 
 function SearchSection(props: {
   label: string
-  user: User | null | undefined
+  user: User | null | undefined | undefined
   sort: Sort
   yourBets?: boolean
+  followed?: boolean
 }) {
-  const { label, user, sort, yourBets } = props
+  const { label, user, sort, yourBets, followed } = props
   const href = `/home?s=${sort}`
 
   return (
@@ -122,7 +111,13 @@ function SearchSection(props: {
       <ContractSearch
         user={user}
         defaultSort={sort}
-        additionalFilter={yourBets ? { yourBets: true } : { followed: true }}
+        additionalFilter={
+          yourBets
+            ? { yourBets: true }
+            : followed
+            ? { followed: true }
+            : undefined
+        }
         noControls
         maxResults={6}
         persistPrefix={`experimental-home-${sort}`}
@@ -131,7 +126,10 @@ function SearchSection(props: {
   )
 }
 
-function GroupSection(props: { group: Group; user: User | null | undefined }) {
+function GroupSection(props: {
+  group: Group
+  user: User | null | undefined | undefined
+}) {
   const { group, user } = props
 
   return (
@@ -151,6 +149,24 @@ function GroupSection(props: { group: Group; user: User | null | undefined }) {
         maxResults={6}
         persistPrefix={`experimental-home-${group.slug}`}
       />
+    </Col>
+  )
+}
+
+function DailyMoversSection(props: { userId: string | null | undefined }) {
+  const { userId } = props
+  const changes = useProbChanges(userId ?? '')
+
+  return (
+    <Col className="gap-2">
+      <SiteLink className="text-xl" href={'/daily-movers'}>
+        Daily movers{' '}
+        <ArrowSmRightIcon
+          className="mb-0.5 inline h-6 w-6 text-gray-500"
+          aria-hidden="true"
+        />
+      </SiteLink>
+      <ProbChangeTable changes={changes} />
     </Col>
   )
 }
@@ -186,14 +202,14 @@ function DailyProfitAndBalance(props: {
   return (
     <div className={clsx(className, 'text-lg')}>
       <span className={clsx(profit >= 0 ? 'text-green-500' : 'text-red-500')}>
-        {profit >= 0 ? '+' : '-'}
+        {profit >= 0 && '+'}
         {formatMoney(profit)}
       </span>{' '}
       profit and{' '}
       <span
         className={clsx(balanceChange >= 0 ? 'text-green-500' : 'text-red-500')}
       >
-        {balanceChange >= 0 ? '+' : '-'}
+        {balanceChange >= 0 && '+'}
         {formatMoney(balanceChange)}
       </span>{' '}
       balance today

@@ -4,7 +4,7 @@ import { EyeIcon } from '@heroicons/react/outline'
 import React from 'react'
 import clsx from 'clsx'
 
-export const FollowMarketModal = (props: {
+export const WatchMarketModal = (props: {
   open: boolean
   setOpen: (b: boolean) => void
   title?: string
@@ -18,20 +18,21 @@ export const FollowMarketModal = (props: {
         <Col className={'gap-2'}>
           <span className={'text-indigo-700'}>• What is watching?</span>
           <span className={'ml-2'}>
-            You can receive notifications on questions you're interested in by
+            You'll receive notifications on markets by betting, commenting, or
             clicking the
             <EyeIcon
               className={clsx('ml-1 inline h-6 w-6 align-top')}
               aria-hidden="true"
             />
-            ️ button on a question.
+            ️ button on them.
           </span>
           <span className={'text-indigo-700'}>
             • What types of notifications will I receive?
           </span>
           <span className={'ml-2'}>
-            You'll receive in-app notifications for new comments, answers, and
-            updates to the question.
+            You'll receive notifications for new comments, answers, and updates
+            to the question. See the notifications settings pages to customize
+            which types of notifications you receive on watched markets.
           </span>
         </Col>
       </Col>

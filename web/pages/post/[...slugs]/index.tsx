@@ -69,10 +69,9 @@ export default function PostPage(props: {
   return (
     <Page>
       <div className="mx-auto w-full max-w-3xl ">
-        <Spacer h={1} />
-        <Title className="!mt-0" text={post.title} />
+        <Title className="!mt-0 py-4 px-2" text={post.title} />
         <Row>
-          <Col className="flex-1">
+          <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
               <UserLink
@@ -82,7 +81,7 @@ export default function PostPage(props: {
               />
             </div>
           </Col>
-          <Col>
+          <Col className="px-2">
             <Button
               size="lg"
               color="gray-white"
@@ -116,7 +115,7 @@ export default function PostPage(props: {
           </div>
         </div>
 
-        <Spacer h={2} />
+        <Spacer h={4} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
           <PostCommentsActivity
             post={post}
@@ -145,7 +144,7 @@ export function PostCommentsActivity(props: {
   )
 
   return (
-    <>
+    <Col className="p-2">
       <PostCommentInput post={post} />
       {topLevelComments.map((parent) => (
         <PostCommentThread
@@ -161,7 +160,7 @@ export function PostCommentsActivity(props: {
           commentsByUserId={commentsByUserId}
         />
       ))}
-    </>
+    </Col>
   )
 }
 

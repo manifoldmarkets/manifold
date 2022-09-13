@@ -77,26 +77,27 @@ const Salem = {
 
 const tourneys: Tourney[] = [
   {
-    title: 'Cause Exploration Prizes',
+    title: 'Manifold F2P Tournament',
     blurb:
-      'Which new charity ideas will Open Philanthropy find most promising?',
-    award: 'M$100k',
-    endTime: toDate('Sep 9, 2022'),
-    groupId: 'cMcpBQ2p452jEcJD2SFw',
+      'Who can amass the most mana starting from a free-to-play (F2P) account?',
+    award: 'Poem',
+    endTime: toDate('Sep 15, 2022'),
+    groupId: '6rrIja7tVW00lUVwtsYS',
   },
+  // {
+  //   title: 'Cause Exploration Prizes',
+  //   blurb:
+  //     'Which new charity ideas will Open Philanthropy find most promising?',
+  //   award: 'M$100k',
+  //   endTime: toDate('Sep 9, 2022'),
+  //   groupId: 'cMcpBQ2p452jEcJD2SFw',
+  // },
   {
     title: 'Fantasy Football Stock Exchange',
     blurb: 'How many points will each NFL player score this season?',
     award: '$2,500',
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
-  },
-  {
-    title: 'SF 2022 Ballot',
-    blurb: 'Which ballot initiatives will pass this year in SF and CA?',
-    award: '',
-    endTime: toDate('Nov 8, 2022'),
-    groupId: 'VkWZyS5yxs8XWUJrX9eq',
   },
   // {
   //   title: 'Clearer Thinking Regrant Project',
@@ -105,6 +106,27 @@ const tourneys: Tourney[] = [
   //   endTime: toDate('Sep 22, 2022'),
   //   groupId: '2VsVVFGhKtIdJnQRAXVb',
   // },
+
+  // Tournaments without awards get featured belows
+  {
+    title: 'SF 2022 Ballot',
+    blurb: 'Which ballot initiatives will pass this year in SF and CA?',
+    endTime: toDate('Nov 8, 2022'),
+    groupId: 'VkWZyS5yxs8XWUJrX9eq',
+  },
+
+  {
+    title: '2024 Democratic Nominees',
+    blurb: 'How would different Democratic candidates fare in 2024?',
+    endTime: toDate('Nov 2, 2024'),
+    groupId: 'gFhjgFVrnYeFYfxhoLNn',
+  },
+  {
+    title: 'Private Tech Companies',
+    blurb: 'What will these companies exit for?',
+    endTime: toDate('Dec 31, 2030'),
+    groupId: 'faNUnphw6Eoq7OJBRJds',
+  },
 ]
 
 type SectionInfo = {
@@ -135,20 +157,23 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
         title="Tournaments"
         description="Win money by betting in forecasting touraments on current events, sports, science, and more"
       />
-      <Col className="mx-4 mt-4 gap-10 sm:mx-10 xl:w-[125%]">
-        {sections.map(({ tourney, slug, numPeople }) => (
-          <div key={slug}>
-            <SectionHeader
-              url={groupPath(slug)}
-              title={tourney.title}
-              ppl={numPeople}
-              award={tourney.award}
-              endTime={tourney.endTime}
-            />
-            <span>{tourney.blurb}</span>
-            <MarketCarousel slug={slug} />
-          </div>
-        ))}
+      <Col className="m-4 gap-10 sm:mx-10 sm:gap-24 xl:w-[125%]">
+        {sections.map(
+          ({ tourney, slug, numPeople }) =>
+            tourney.award && (
+              <div key={slug}>
+                <SectionHeader
+                  url={groupPath(slug, 'about')}
+                  title={tourney.title}
+                  ppl={numPeople}
+                  award={tourney.award}
+                  endTime={tourney.endTime}
+                />
+                <span className="text-gray-500">{tourney.blurb}</span>
+                <MarketCarousel slug={slug} />
+              </div>
+            )
+        )}
         <div>
           <SectionHeader
             url={Salem.url}
@@ -156,9 +181,52 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
             award={Salem.award}
             endTime={Salem.endTime}
           />
-          <span>{Salem.blurb}</span>
+          <span className="text-gray-500">{Salem.blurb}</span>
           <ImageCarousel url={Salem.url} images={Salem.images} />
         </div>
+
+        {/* Title break */}
+        <div className="relative">
+          <div
+            className="absolute inset-0 flex items-center"
+            aria-hidden="true"
+          >
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-gray-50 px-3 text-lg font-medium text-gray-900">
+              Featured Groups
+            </span>
+          </div>
+        </div>
+
+        {sections.map(
+          ({ tourney, slug, numPeople }) =>
+            !tourney.award && (
+              <div key={slug}>
+                <SectionHeader
+                  url={groupPath(slug, 'about')}
+                  title={tourney.title}
+                  ppl={numPeople}
+                  award={tourney.award}
+                  endTime={tourney.endTime}
+                />
+                <span className="text-gray-500">{tourney.blurb}</span>
+                <MarketCarousel slug={slug} />
+              </div>
+            )
+        )}
+
+        <p className="pb-10 italic text-gray-500">
+          We'd love to sponsor more tournaments and groups. Have an idea? Ping{' '}
+          <SiteLink
+            className="font-semibold"
+            href="https://discord.com/invite/eHQBNBqXuh"
+          >
+            Austin on Discord
+          </SiteLink>
+          !
+        </p>
       </Col>
     </Page>
   )
@@ -175,9 +243,7 @@ const SectionHeader = (props: {
   return (
     <Link href={url}>
       <a className="group mb-3 flex flex-wrap justify-between">
-        <h2 className="text-xl font-semibold group-hover:underline md:text-3xl">
-          {title}
-        </h2>
+        <h2 className="text-xl group-hover:underline md:text-3xl">{title}</h2>
         <Row className="my-2 items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
           {!!award && <span className="flex items-center">🏆 {award}</span>}
           {!!ppl && (

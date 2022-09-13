@@ -2,6 +2,7 @@ import CharacterCount from '@tiptap/extension-character-count'
 import Placeholder from '@tiptap/extension-placeholder'
 import {
   useEditor,
+  BubbleMenu,
   EditorContent,
   JSONContent,
   Content,
@@ -18,20 +19,25 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
-import { useUsers } from 'web/hooks/use-users'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
 import { EmbedModal } from './editor/embed-modal'
 import {
+  CheckIcon,
   CodeIcon,
   PhotographIcon,
   PresentationChartLineIcon,
+  TrashIcon,
 } from '@heroicons/react/solid'
 import { MarketModal } from './editor/market-modal'
 import { insertContent } from './editor/utils'
 import { Tooltip } from './tooltip'
+import BoldIcon from 'web/lib/icons/bold-icon'
+import ItalicIcon from 'web/lib/icons/italic-icon'
+import LinkIcon from 'web/lib/icons/link-icon'
+import { getUrl } from 'common/util/parse'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -68,8 +74,6 @@ export function useTextEditor(props: {
 }) {
   const { placeholder, max, defaultValue = '', disabled, simple } = props
 
-  const users = useUsers()
-
   const editorClass = clsx(
     proseClass,
     !simple && 'min-h-[6em]',
@@ -78,32 +82,27 @@ export function useTextEditor(props: {
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, emebeds
   )
 
-  const editor = useEditor(
-    {
-      editorProps: { attributes: { class: editorClass } },
-      extensions: [
-        StarterKit.configure({
-          heading: simple ? false : { levels: [1, 2, 3] },
-          horizontalRule: simple ? false : {},
-        }),
-        Placeholder.configure({
-          placeholder,
-          emptyEditorClass:
-            'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
-        }),
-        CharacterCount.configure({ limit: max }),
-        simple ? DisplayImage : Image,
-        DisplayLink,
-        DisplayMention.configure({
-          suggestion: mentionSuggestion(users),
-        }),
-        Iframe,
-        TiptapTweet,
-      ],
-      content: defaultValue,
-    },
-    [!users.length] // passed as useEffect dependency. (re-render editor when users load, to update mention menu)
-  )
+  const editor = useEditor({
+    editorProps: { attributes: { class: editorClass } },
+    extensions: [
+      StarterKit.configure({
+        heading: simple ? false : { levels: [1, 2, 3] },
+        horizontalRule: simple ? false : {},
+      }),
+      Placeholder.configure({
+        placeholder,
+        emptyEditorClass:
+          'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
+      }),
+      CharacterCount.configure({ limit: max }),
+      simple ? DisplayImage : Image,
+      DisplayLink,
+      DisplayMention.configure({ suggestion: mentionSuggestion }),
+      Iframe,
+      TiptapTweet,
+    ],
+    content: defaultValue,
+  })
 
   const upload = useUploadMutation(editor)
 
@@ -149,6 +148,66 @@ function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
 
+function FloatingMenu(props: { editor: Editor | null }) {
+  const { editor } = props
+
+  const [url, setUrl] = useState<string | null>(null)
+
+  if (!editor) return null
+
+  // current selection
+  const isBold = editor.isActive('bold')
+  const isItalic = editor.isActive('italic')
+  const isLink = editor.isActive('link')
+
+  const setLink = () => {
+    const href = url && getUrl(url)
+    if (href) {
+      editor.chain().focus().extendMarkRange('link').setLink({ href }).run()
+    }
+  }
+
+  const unsetLink = () => editor.chain().focus().unsetLink().run()
+
+  return (
+    <BubbleMenu
+      editor={editor}
+      className="flex gap-2 rounded-sm bg-slate-700 p-1 text-white"
+    >
+      {url === null ? (
+        <>
+          <button onClick={() => editor.chain().focus().toggleBold().run()}>
+            <BoldIcon className={clsx('h-5', isBold && 'text-indigo-200')} />
+          </button>
+          <button onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <ItalicIcon
+              className={clsx('h-5', isItalic && 'text-indigo-200')}
+            />
+          </button>
+          <button onClick={() => (isLink ? unsetLink() : setUrl(''))}>
+            <LinkIcon className={clsx('h-5', isLink && 'text-indigo-200')} />
+          </button>
+        </>
+      ) : (
+        <>
+          <input
+            type="text"
+            className="h-5 border-0 bg-inherit text-sm !shadow-none !ring-0"
+            placeholder="Type or paste a link"
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          <button onClick={() => (setLink(), setUrl(null))}>
+            <CheckIcon className="h-5 w-5" />
+          </button>
+          <button onClick={() => (unsetLink(), setUrl(null))}>
+            <TrashIcon className="h-5 w-5" />
+          </button>
+        </>
+      )}
+    </BubbleMenu>
+  )
+}
+
 export function TextEditor(props: {
   editor: Editor | null
   upload: ReturnType<typeof useUploadMutation>
@@ -163,6 +222,7 @@ export function TextEditor(props: {
       {/* hide placeholder when focused */}
       <div className="relative w-full [&:focus-within_p.is-empty]:before:content-none">
         <div className="rounded-lg border border-gray-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+          <FloatingMenu editor={editor} />
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">

@@ -5,7 +5,7 @@ import { Comment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { JSONContent } from '@tiptap/core'
 import { richTextToString } from 'common/util/parse'
 
@@ -121,7 +121,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
         : closeTime,
     question,
     tags,
-    url: `https://manifold.markets/${creatorUsername}/${slug}`,
+    url: `https://${DOMAIN}/${creatorUsername}/${slug}`,
     pool,
     probability,
     p,

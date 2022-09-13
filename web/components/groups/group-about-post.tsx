@@ -22,7 +22,7 @@ export function GroupAboutPost(props: {
   const post = usePost(group.aboutPostId) ?? props.post
 
   return (
-    <div className="rounded-md bg-white p-4">
+    <div className="rounded-md bg-white p-4 ">
       {isEditable ? (
         <RichEditGroupAboutPost group={group} post={post} />
       ) : (
