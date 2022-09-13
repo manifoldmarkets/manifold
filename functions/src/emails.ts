@@ -22,6 +22,7 @@ import {
   notification_reason_types,
   getDestinationsForUser,
 } from '../../common/notification'
+import { Dictionary } from 'lodash'
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
@@ -541,6 +542,66 @@ export const sendNewFollowedMarketEmail = async (
     },
     {
       from: `${creatorName} on Manifold <no-reply@manifold.markets>`,
+    }
+  )
+}
+export const sendNewUniqueBettorsEmail = async (
+  reason: notification_reason_types,
+  userId: string,
+  privateUser: PrivateUser,
+  contract: Contract,
+  totalPredictors: number,
+  newPredictors: User[],
+  userBets: Dictionary<[Bet, ...Bet[]]>,
+  bonusAmount: number
+) => {
+  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
+    await getDestinationsForUser(privateUser, reason)
+  if (!privateUser.email || !sendToEmail) return
+  const user = await getUser(privateUser.id)
+  if (!user) return
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+  const creatorName = contract.creatorName
+  // make the emails stack for the same contract
+  const subject = `You made a popular market! ${
+    contract.question.length > 50
+      ? contract.question.slice(0, 50) + '...'
+      : contract.question
+  } just got ${
+    newPredictors.length
+  } new predictions. Check out who's betting on it inside.`
+  const templateData: Record<string, string> = {
+    name: firstName,
+    creatorName,
+    totalPredictors: totalPredictors.toString(),
+    bonusString: formatMoney(bonusAmount),
+    marketTitle: contract.question,
+    marketUrl: contractUrl(contract),
+    unsubscribeUrl,
+    newPredictors: newPredictors.length.toString(),
+  }
+
+  newPredictors.forEach((p, i) => {
+    templateData[`bettor${i + 1}Name`] = p.name
+    if (p.avatarUrl) templateData[`bettor${i + 1}AvatarUrl`] = p.avatarUrl
+    const bet = userBets[p.id][0]
+    if (bet) {
+      const { amount, sale } = bet
+      templateData[`bet${i + 1}Description`] = `${
+        sale || amount < 0 ? 'sold' : 'bought'
+      } ${formatMoney(Math.abs(amount))}`
+    }
+  })
+
+  return await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    newPredictors.length === 1 ? 'new-unique-bettor' : 'new-unique-bettors',
+    templateData,
+    {
+      from: `Manifold Markets <no-reply@manifold.markets>`,
     }
   )
 }
