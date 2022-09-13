@@ -426,7 +426,7 @@ export function NewContract(props: {
       <div className="form-control mb-1 items-start">
         <label className="label mb-1 gap-2">
           <span>Question closes in</span>
-          <InfoTooltip text="Betting will be halted after this time (local timezone)." />
+          <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
           <ChoicesToggleGroup
@@ -483,7 +483,7 @@ export function NewContract(props: {
           <label className="label mb-1 gap-2">
             <span>Cost</span>
             <InfoTooltip
-              text={`Cost to create your question. This amount is used to subsidize betting.`}
+              text={`Cost to create your question. This amount is used to subsidize predictions.`}
             />
           </label>
           {!deservesFreeMarket ? (

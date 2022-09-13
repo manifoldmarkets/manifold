@@ -571,7 +571,7 @@ export const sendNewUniqueBettorsEmail = async (
       : contract.question
   } just got ${
     newPredictors.length
-  } new predictions. Check out who's betting on it inside.`
+  } new predictions. Check out who's predicting on it inside.`
   const templateData: Record<string, string> = {
     name: firstName,
     creatorName,
