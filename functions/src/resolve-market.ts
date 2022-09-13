@@ -166,7 +166,10 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     (bets) => getContractBetMetrics(contract, bets).invested
   )
   let resolutionText = outcome ?? contract.question
-  if (contract.outcomeType === 'FREE_RESPONSE') {
+  if (
+    contract.outcomeType === 'FREE_RESPONSE' ||
+    contract.outcomeType === 'MULTIPLE_CHOICE'
+  ) {
     const answerText = contract.answers.find(
       (answer) => answer.id === outcome
     )?.text
