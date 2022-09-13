@@ -1031,52 +1031,53 @@ function getReasonForShowingNotification(
   const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
   let reasonText: string
   // TODO: we could leave out this switch and just use the reason field now that they have more information
-  switch (sourceType) {
-    case 'comment':
-      if (reason === 'reply_to_users_answer')
-        reasonText = justSummary ? 'replied' : 'replied to you on'
-      else if (reason === 'tagged_user')
-        reasonText = justSummary ? 'tagged you' : 'tagged you on'
-      else if (reason === 'reply_to_users_comment')
-        reasonText = justSummary ? 'replied' : 'replied to you on'
-      else reasonText = justSummary ? `commented` : `commented on`
-      break
-    case 'contract':
-      if (reason === 'contract_from_followed_user')
-        reasonText = justSummary ? 'asked the question' : 'asked'
-      else if (sourceUpdateType === 'resolved')
-        reasonText = justSummary ? `resolved the question` : `resolved`
-      else if (sourceUpdateType === 'closed') reasonText = `Please resolve`
-      else reasonText = justSummary ? 'updated the question' : `updated`
-      break
-    case 'answer':
-      if (reason === 'answer_on_your_contract')
-        reasonText = `answered your question `
-      else reasonText = `answered`
-      break
-    case 'follow':
-      reasonText = 'followed you'
-      break
-    case 'liquidity':
-      reasonText = 'added a subsidy to your question'
-      break
-    case 'group':
-      reasonText = 'added you to the group'
-      break
-    case 'user':
-      if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
-        reasonText = 'joined to bet on your market'
-      else if (sourceSlug) reasonText = 'joined because you shared'
-      else reasonText = 'joined because of you'
-      break
-    case 'bet':
-      reasonText = 'bet against you'
-      break
-    case 'challenge':
-      reasonText = 'accepted your challenge'
-      break
-    default:
-      reasonText = ''
-  }
+  if (reason === 'tagged_user')
+    reasonText = justSummary ? 'tagged you' : 'tagged you on'
+  else
+    switch (sourceType) {
+      case 'comment':
+        if (reason === 'reply_to_users_answer')
+          reasonText = justSummary ? 'replied' : 'replied to you on'
+        else if (reason === 'reply_to_users_comment')
+          reasonText = justSummary ? 'replied' : 'replied to you on'
+        else reasonText = justSummary ? `commented` : `commented on`
+        break
+      case 'contract':
+        if (reason === 'contract_from_followed_user')
+          reasonText = justSummary ? 'asked the question' : 'asked'
+        else if (sourceUpdateType === 'resolved')
+          reasonText = justSummary ? `resolved the question` : `resolved`
+        else if (sourceUpdateType === 'closed') reasonText = `Please resolve`
+        else reasonText = justSummary ? 'updated the question' : `updated`
+        break
+      case 'answer':
+        if (reason === 'answer_on_your_contract')
+          reasonText = `answered your question `
+        else reasonText = `answered`
+        break
+      case 'follow':
+        reasonText = 'followed you'
+        break
+      case 'liquidity':
+        reasonText = 'added a subsidy to your question'
+        break
+      case 'group':
+        reasonText = 'added you to the group'
+        break
+      case 'user':
+        if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
+          reasonText = 'joined to bet on your market'
+        else if (sourceSlug) reasonText = 'joined because you shared'
+        else reasonText = 'joined because of you'
+        break
+      case 'bet':
+        reasonText = 'bet against you'
+        break
+      case 'challenge':
+        reasonText = 'accepted your challenge'
+        break
+      default:
+        reasonText = ''
+    }
   return reasonText
 }

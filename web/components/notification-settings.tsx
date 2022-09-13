@@ -58,9 +58,9 @@ export function NotificationSettings(props: {
     'onboarding_flow',
     'thank_you_for_purchases',
 
+    'tagged_user', // missing tagged on contract description email
+    'contract_from_followed_user',
     // TODO: add these
-    'tagged_user',
-    // 'contract_from_followed_user',
     // 'referral_bonuses',
     // 'unique_bettors_on_your_contract',
     // 'on_new_follow',
@@ -90,6 +90,7 @@ export function NotificationSettings(props: {
     subscriptionTypeToDescription: {
       all_comments_on_watched_markets: 'All new comments',
       all_comments_on_contracts_with_shares_in_on_watched_markets: `Only on markets you're invested in`,
+      // TODO: combine these two
       all_replies_to_my_comments_on_watched_markets:
         'Only replies to your comments',
       all_replies_to_my_answers_on_watched_markets:

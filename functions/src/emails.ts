@@ -510,3 +510,37 @@ function contractUrl(contract: Contract) {
 function imageSourceUrl(contract: Contract) {
   return buildCardUrl(getOpenGraphProps(contract))
 }
+
+export const sendNewFollowedMarketEmail = async (
+  reason: notification_reason_types,
+  userId: string,
+  privateUser: PrivateUser,
+  contract: Contract
+) => {
+  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
+    await getDestinationsForUser(privateUser, reason)
+  if (!privateUser.email || !sendToEmail) return
+  const user = await getUser(privateUser.id)
+  if (!user) return
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+  const creatorName = contract.creatorName
+
+  return await sendTemplateEmail(
+    privateUser.email,
+    `${creatorName} asked ${contract.question}`,
+    'new-market-from-followed-user',
+    {
+      name: firstName,
+      creatorName,
+      unsubscribeUrl,
+      questionTitle: contract.question,
+      questionUrl: contractUrl(contract),
+      questionImgSrc: imageSourceUrl(contract),
+    },
+    {
+      from: `${creatorName} on Manifold <no-reply@manifold.markets>`,
+    }
+  )
+}
