@@ -47,7 +47,11 @@ function DoneButton(props: { className?: string }) {
 
   return (
     <SiteLink href="/experimental/home">
-      <Button size="lg" color="blue" className={clsx(className, 'flex whitespace-nowrap')}>
+      <Button
+        size="lg"
+        color="blue"
+        className={clsx(className, 'flex whitespace-nowrap')}
+      >
         Done
       </Button>
     </SiteLink>
