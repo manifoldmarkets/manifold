@@ -31,8 +31,6 @@ import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Tabs } from 'web/components/layout/tabs'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { ContractSearch } from 'web/components/contract-search'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
@@ -51,6 +49,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { usePost } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from '@amplitude/analytics-browser'
+import { SelectMarketsModal } from 'web/components/contract-select-modal'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -401,27 +400,12 @@ function GroupLeaderboard(props: {
 function AddContractButton(props: { group: Group; user: User }) {
   const { group, user } = props
   const [open, setOpen] = useState(false)
-  const [contracts, setContracts] = useState<Contract[]>([])
-  const [loading, setLoading] = useState(false)
   const groupContractIds = useGroupContractIds(group.id)
 
-  async function addContractToCurrentGroup(contract: Contract) {
-    if (contracts.map((c) => c.id).includes(contract.id)) {
-      setContracts(contracts.filter((c) => c.id !== contract.id))
-    } else setContracts([...contracts, contract])
-  }
-
-  async function doneAddingContracts() {
-    Promise.all(
-      contracts.map(async (contract) => {
-        setLoading(true)
-        await addContractToGroup(group, contract, user.id)
-      })
-    ).then(() => {
-      setLoading(false)
-      setOpen(false)
-      setContracts([])
-    })
+  async function onSubmit(contracts: Contract[]) {
+    await Promise.all(
+      contracts.map((contract) => addContractToGroup(group, contract, user.id))
+    )
   }
 
   return (
@@ -437,71 +421,27 @@ function AddContractButton(props: { group: Group; user: User }) {
         </Button>
       </div>
 
-      <Modal
+      <SelectMarketsModal
         open={open}
         setOpen={setOpen}
-        className={'max-w-4xl sm:p-0'}
-        size={'xl'}
-      >
-        <Col
-          className={'min-h-screen w-full max-w-4xl gap-4 rounded-md bg-white'}
-        >
-          <Col className="p-8 pb-0">
-            <div className={'text-xl text-indigo-700'}>Add markets</div>
-
-            <div className={'text-md my-4 text-gray-600'}>
-              Add pre-existing markets to this group, or{' '}
-              <Link href={`/create?groupId=${group.id}`}>
-                <span className="cursor-pointer font-semibold underline">
-                  create a new one
-                </span>
-              </Link>
-              .
-            </div>
-
-            {contracts.length > 0 && (
-              <Col className={'w-full '}>
-                {!loading ? (
-                  <Row className={'justify-end gap-4'}>
-                    <Button onClick={doneAddingContracts} color={'indigo'}>
-                      Add {contracts.length} question
-                      {contracts.length > 1 && 's'}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setContracts([])
-                      }}
-                      color={'gray'}
-                    >
-                      Cancel
-                    </Button>
-                  </Row>
-                ) : (
-                  <Row className={'justify-center'}>
-                    <LoadingIndicator />
-                  </Row>
-                )}
-              </Col>
-            )}
-          </Col>
-
-          <div className={'overflow-y-scroll sm:px-8'}>
-            <ContractSearch
-              user={user}
-              hideOrderSelector={true}
-              onContractClick={addContractToCurrentGroup}
-              cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
-              additionalFilter={{
-                excludeContractIds: groupContractIds,
-              }}
-              highlightOptions={{
-                contractIds: contracts.map((c) => c.id),
-                highlightClassName: '!bg-indigo-100 border-indigo-100 border-2',
-              }}
-            />
+        title="Add markets"
+        description={
+          <div className={'text-md my-4 text-gray-600'}>
+            Add pre-existing markets to this group, or{' '}
+            <Link href={`/create?groupId=${group.id}`}>
+              <span className="cursor-pointer font-semibold underline">
+                create a new one
+              </span>
+            </Link>
+            .
           </div>
-        </Col>
-      </Modal>
+        }
+        submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
+        onSubmit={onSubmit}
+        contractSearchOptions={{
+          additionalFilter: { excludeContractIds: groupContractIds },
+        }}
+      />
     </>
   )
 }
