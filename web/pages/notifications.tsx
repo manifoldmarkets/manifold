@@ -112,6 +112,7 @@ export default function Notifications() {
                   content: (
                     <NotificationSettings
                       navigateToSection={navigateToSection}
+                      privateUser={privateUser}
                     />
                   ),
                 },
