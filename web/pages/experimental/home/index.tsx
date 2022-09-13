@@ -50,7 +50,7 @@ const Home = () => {
           <EditButton />
         </Row>
 
-        <DailyProfitAndBalance userId={user?.id} />
+        <DailyProfitAndBalance className="self-end" userId={user?.id} />
 
         {sections.map((item) => {
           const { id } = item
@@ -194,22 +194,13 @@ function DailyProfitAndBalance(props: {
   const profit =
     calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
 
-  const balanceChange = last.balance - first.balance
-
   return (
     <div className={clsx(className, 'text-lg')}>
       <span className={clsx(profit >= 0 ? 'text-green-500' : 'text-red-500')}>
         {profit >= 0 && '+'}
         {formatMoney(profit)}
       </span>{' '}
-      profit and{' '}
-      <span
-        className={clsx(balanceChange >= 0 ? 'text-green-500' : 'text-red-500')}
-      >
-        {balanceChange >= 0 && '+'}
-        {formatMoney(balanceChange)}
-      </span>{' '}
-      balance today
+      profit today
     </div>
   )
 }
