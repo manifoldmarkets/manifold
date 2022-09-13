@@ -238,7 +238,6 @@ export function ContractPageContent(
         )}
 
         <ContractOverview contract={contract} bets={nonChallengeBets} />
-        <ExtraContractActionsRow contract={contract} />
         <ContractDescription className="mb-6 px-2" contract={contract} />
 
         {outcomeType === 'NUMERIC' && (

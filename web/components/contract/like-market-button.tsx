@@ -38,15 +38,16 @@ export function LikeMarketButton(props: {
 
   return (
     <Button
-      size={'lg'}
+      size={'sm'}
       className={'max-w-xs self-center'}
       color={'gray-white'}
       onClick={onLike}
     >
-      <Col className={'items-center sm:flex-row'}>
+      <Col className={'relative items-center sm:flex-row'}>
         <HeartIcon
           className={clsx(
-            'h-[24px] w-5 sm:mr-2',
+            'h-5 w-5 sm:h-6 sm:w-6',
+            totalTipped > 0 ? 'mr-2' : '',
             user &&
               (userLikedContractIds?.includes(contract.id) ||
                 (!likes && contract.likedByUserIds?.includes(user.id)))
@@ -54,7 +55,19 @@ export function LikeMarketButton(props: {
               : ''
           )}
         />
-        Tip {totalTipped > 0 ? `(${formatMoney(totalTipped)})` : ''}
+        {totalTipped > 0 && (
+          <div
+            className={clsx(
+              'bg-greyscale-6 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
+              totalTipped > 99
+                ? 'text-[0.4rem] sm:text-[0.5rem]'
+                : 'sm:text-2xs text-[0.5rem]'
+            )}
+          >
+            {totalTipped}
+          </div>
+        )}
+        {/* Tip {totalTipped > 0 ? `(${formatMoney(totalTipped)})` : ''} */}
       </Col>
     </Button>
   )

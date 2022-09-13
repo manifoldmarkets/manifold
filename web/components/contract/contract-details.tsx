@@ -18,7 +18,7 @@ import { Avatar } from '../avatar'
 import { useState } from 'react'
 import { ContractInfoDialog } from './contract-info-dialog'
 import NewContractBadge from '../new-contract-badge'
-import { UserFollowButton } from '../follow-button'
+import { MiniUserFollowButton, UserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { exhibitExts } from 'common/util/parse'
@@ -34,6 +34,8 @@ import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { ExtraContractActionsRow } from './extra-contract-actions-row'
+import { PlusCircleIcon } from '@heroicons/react/solid'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -133,8 +135,10 @@ export function ContractDetails(props: {
           isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
         )}
       >
-        <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-        <span className="items-center truncate">{groupToDisplay.name}</span>
+        {/* <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" /> */}
+        <div className="bg-greyscale-6 items-center truncate rounded-full px-2 text-white">
+          {groupToDisplay.name}
+        </div>
       </a>
     </Link>
   ) : (
@@ -145,100 +149,111 @@ export function ContractDetails(props: {
       onClick={() => !groupToDisplay && setOpen(true)}
     >
       <Row>
-        <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" />
-        <span className="truncate">No Group</span>
+        {/* <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" /> */}
+        <div className="bg-greyscale-6 items-center truncate rounded-full px-2 text-white">
+          No Group
+        </div>
       </Row>
     </Button>
   )
 
   return (
-    <Row className="flex-1 flex-wrap items-center gap-2 text-sm text-gray-500 md:gap-x-4 md:gap-y-2">
-      <Row className="items-center gap-2">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          noLink={disabled}
-          size={6}
-        />
-        {disabled ? (
-          creatorName
-        ) : (
-          <UserLink
-            className="whitespace-nowrap"
-            name={creatorName}
-            username={creatorUsername}
-            short={isMobile}
-          />
-        )}
-        {!disabled && <UserFollowButton userId={creatorId} small />}
-      </Row>
-      <Row>
-        {disabled ? (
-          groupInfo
-        ) : !groupToDisplay && !user ? (
-          <div />
-        ) : (
-          <Row>
-            {groupInfo}
-            {user && groupToDisplay && (
-              <Button
-                size={'xs'}
-                color={'gray-white'}
-                onClick={() => setOpen(!open)}
-              >
-                <PencilIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
-              </Button>
-            )}
-          </Row>
-        )}
-      </Row>
-      <Modal open={open} setOpen={setOpen} size={'md'}>
-        <Col
-          className={
-            'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
-          }
-        >
-          <ContractGroupsList contract={contract} user={user} />
-        </Col>
-      </Modal>
-
-      {(!!closeTime || !!resolvedDate) && (
-        <Row className="hidden items-center gap-1 md:inline-flex">
-          {resolvedDate && resolutionTime ? (
-            <>
-              <ClockIcon className="h-5 w-5" />
-              <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
-                {resolvedDate}
-              </DateTimeTooltip>
-            </>
-          ) : null}
-
-          {!resolvedDate && closeTime && user && (
-            <>
-              <ClockIcon className="h-5 w-5" />
-              <EditableCloseDate
-                closeTime={closeTime}
-                contract={contract}
-                isCreator={isCreator ?? false}
-              />
-            </>
-          )}
-        </Row>
+    <Row>
+      <Avatar
+        username={creatorUsername}
+        avatarUrl={creatorAvatarUrl}
+        noLink={disabled}
+        size={9}
+      />
+      {!disabled && (
+        <div className="absolute mt-4">
+          <MiniUserFollowButton userId={creatorId} />
+        </div>
       )}
-      {user && (
-        <>
-          <Row className="hidden items-center gap-1 md:inline-flex">
-            <DatabaseIcon className="h-5 w-5" />
-            <div className="whitespace-nowrap">{volumeLabel}</div>
-          </Row>
-          {!disabled && (
-            <ContractInfoDialog
-              contract={contract}
-              className={'hidden md:inline-flex'}
+      <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
+        <Row className="w-full justify-between ">
+          {disabled ? (
+            creatorName
+          ) : (
+            <UserLink
+              className="my-auto whitespace-nowrap"
+              name={creatorName}
+              username={creatorUsername}
+              short={isMobile}
             />
           )}
-        </>
-      )}
+        </Row>
+        <Row className="text-2xs text-greyscale-4 sm:text-xs">
+          {(!!closeTime || !!resolvedDate) && (
+            <Row className="items-center gap-1">
+              {resolvedDate && resolutionTime ? (
+                <>
+                  <DateTimeTooltip
+                    text="Market resolved:"
+                    time={resolutionTime}
+                  >
+                    <Row>
+                      <div>resolved&nbsp;</div>
+                      <b>{resolvedDate}</b>
+                    </Row>
+                  </DateTimeTooltip>
+                </>
+              ) : null}
+
+              {!resolvedDate && closeTime && user && (
+                <Row>
+                  <div>Closes&nbsp;</div>
+                  <EditableCloseDate
+                    closeTime={closeTime}
+                    contract={contract}
+                    isCreator={isCreator ?? false}
+                  />
+                </Row>
+              )}
+            </Row>
+          )}
+          {/* <Row>
+            {disabled ? (
+              groupInfo
+            ) : !groupToDisplay && !user ? (
+              <div />
+            ) : (
+              <Row>
+                {groupInfo}
+                {user && groupToDisplay && (
+                  <Button
+                    size={'xs'}
+                    color={'gray-white'}
+                    onClick={() => setOpen(!open)}
+                  >
+                    <PlusCircleIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
+                  </Button>
+                )}
+              </Row>
+            )}
+          </Row>
+          <Modal open={open} setOpen={setOpen} size={'md'}>
+            <Col
+              className={
+                'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
+              }
+            >
+              <ContractGroupsList contract={contract} user={user} />
+            </Col>
+          </Modal> */}
+          {/* {user && (
+            <>
+              <Row className="hidden items-center gap-1 md:inline-flex">
+                <DatabaseIcon className="h-5 w-5" />
+                <div className="whitespace-nowrap">{volumeLabel}</div>
+              </Row>
+            </>
+          )} */}
+        </Row>
+      </Col>
+      <div className="mt-0">
+        <ExtraContractActionsRow contract={contract} />
+      </div>
     </Row>
   )
 }
@@ -280,12 +295,12 @@ export function ExtraMobileContractDetails(props: {
         !resolvedDate &&
         closeTime && (
           <Col className={'items-center text-sm text-gray-500'}>
+            <Row className={'text-gray-400'}>Closes&nbsp;</Row>
             <EditableCloseDate
               closeTime={closeTime}
               contract={contract}
               isCreator={creatorId === user?.id}
             />
-            <Row className={'text-gray-400'}>Ends</Row>
           </Col>
         )
       )}

@@ -26,6 +26,7 @@ module.exports = {
         'greyscale-5': '#9191A7',
         'greyscale-6': '#66667C',
         'greyscale-7': '#111140',
+        'highlight-blue': '#5BCEFF',
       },
       typography: {
         quoteless: {

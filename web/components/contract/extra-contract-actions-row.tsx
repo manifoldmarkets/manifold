@@ -23,26 +23,27 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
   const [isShareOpen, setShareOpen] = useState(false)
   const [openCreateChallengeModal, setOpenCreateChallengeModal] =
     useState(false)
-  const showChallenge =
-    user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
+  // const showChallenge =
+  //   user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
 
   return (
-    <Row className={'mt-0.5 justify-around sm:mt-2 lg:justify-start'}>
+    <Row>
+      {/* <FollowMarketButton contract={contract} user={user} />
+      {user?.id !== contract.creatorId && (
+        <LikeMarketButton contract={contract} user={user} />
+      )} */}
       <Button
-        size="lg"
+        size="sm"
         color="gray-white"
         className={'flex'}
         onClick={() => {
           setShareOpen(true)
         }}
       >
-        <Col className={'items-center sm:flex-row'}>
-          <ShareIcon
-            className={clsx('h-[24px] w-5 sm:mr-2')}
-            aria-hidden="true"
-          />
-          <span>Share</span>
-        </Col>
+        <Row>
+          <ShareIcon className={clsx('h-5 w-5')} aria-hidden="true" />
+          {/* <span className="hidden sm:block">Share</span> */}
+        </Row>
         <ShareModal
           isOpen={isShareOpen}
           setOpen={setShareOpen}
@@ -51,7 +52,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
         />
       </Button>
 
-      {showChallenge && (
+      {/* {showChallenge && (
         <Button
           size="lg"
           color="gray-white"
@@ -72,13 +73,8 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
             contract={contract}
           />
         </Button>
-      )}
-
-      <FollowMarketButton contract={contract} user={user} />
-      {user?.id !== contract.creatorId && (
-        <LikeMarketButton contract={contract} user={user} />
-      )}
-      <Col className={'justify-center md:hidden'}>
+      )} */}
+      <Col className={'justify-center'}>
         <ContractInfoDialog contract={contract} />
       </Col>
     </Row>

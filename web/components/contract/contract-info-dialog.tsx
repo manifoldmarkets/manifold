@@ -18,6 +18,7 @@ import { deleteField } from 'firebase/firestore'
 import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../copy-contract-button'
 import { Row } from '../layout/row'
+import { Button } from '../button'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -67,15 +68,17 @@ export function ContractInfoDialog(props: {
 
   return (
     <>
-      <button
+      <Button
+        size="sm"
+        color="gray-white"
         className={clsx(contractDetailsButtonClassName, className)}
         onClick={() => setOpen(true)}
       >
         <DotsHorizontalIcon
-          className={clsx('h-6 w-6 flex-shrink-0')}
+          className={clsx('h-5 w-5 flex-shrink-0')}
           aria-hidden="true"
         />
-      </button>
+      </Button>
 
       <Modal open={open} setOpen={setOpen}>
         <Col className="gap-4 rounded bg-white p-6">
