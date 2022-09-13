@@ -1,22 +1,44 @@
 import clsx from 'clsx'
-import React, { useState } from 'react'
+import React, { MouseEventHandler, ReactNode, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import { copyToClipboard } from 'web/lib/util/copy'
-import { linkTwitchAccount } from 'web/lib/twitch/link-twitch-account'
+import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
 import { LinkIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
-import { Button } from './../button'
+import { Button, ColorType } from './../button'
 import { LoadingIndicator } from './../loading-indicator'
 import { Row } from './../layout/row'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { updatePrivateUser } from 'web/lib/firebase/users'
+import { deleteField } from 'firebase/firestore'
+
+function BouncyButton(props: {
+  children: ReactNode
+  onClick?: MouseEventHandler<any>
+  color?: ColorType
+}) {
+  const { children, onClick, color } = props
+  return (
+    <Button
+      color={color}
+      size="lg"
+      onClick={onClick}
+      className="btn h-[inherit] flex-shrink-[inherit] border-none font-normal normal-case"
+    >
+      {children}
+    </Button>
+  )
+}
 
 export function TwitchPanel() {
   const user = useUser()
   const privateUser = usePrivateUser()
 
+  const twitchInfo = privateUser?.twitchInfo
   const twitchName = privateUser?.twitchInfo?.twitchName
   const twitchToken = privateUser?.twitchInfo?.controlToken
+  const twitchBotConnected = privateUser?.twitchInfo?.botEnabled
 
   const linkIcon = <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
 
@@ -34,13 +56,20 @@ export function TwitchPanel() {
     })
   }
 
+  const updateBotConnected = (connected: boolean) => async () => {
+    if (user && twitchInfo) {
+      twitchInfo.botEnabled = connected
+      await updatePrivateUser(user.id, { twitchInfo })
+    }
+  }
+
   const [twitchLoading, setTwitchLoading] = useState(false)
 
   const createLink = async () => {
     if (!user || !privateUser) return
     setTwitchLoading(true)
 
-    const promise = linkTwitchAccount(user, privateUser)
+    const promise = linkTwitchAccountRedirect(user, privateUser)
     track('link twitch from profile')
     await promise
 
@@ -81,12 +110,21 @@ export function TwitchPanel() {
               )}
               data-tip="You must link your Twitch account first"
             >
-              <Button color="blue" size="lg" onClick={copyOverlayLink}>
+              <BouncyButton color="blue" onClick={copyOverlayLink}>
                 Copy overlay link
-              </Button>
-              <Button color="indigo" size="lg" onClick={copyDockLink}>
+              </BouncyButton>
+              <BouncyButton color="indigo" onClick={copyDockLink}>
                 Copy dock link
-              </Button>
+              </BouncyButton>
+              {twitchBotConnected ? (
+                <BouncyButton color="red" onClick={updateBotConnected(false)}>
+                  Remove bot from your channel
+                </BouncyButton>
+              ) : (
+                <BouncyButton color="green" onClick={updateBotConnected(true)}>
+                  Add bot to your channel
+                </BouncyButton>
+              )}
             </div>
           </div>
         </div>

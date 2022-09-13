@@ -29,20 +29,14 @@ export async function initLinkTwitchAccount(
   return [responseData.twitchAuthURL, responseFetch.then((r) => r.json())]
 }
 
-export async function linkTwitchAccount(user: User, privateUser: PrivateUser) {
+export async function linkTwitchAccountRedirect(
+  user: User,
+  privateUser: PrivateUser
+) {
   const apiKey = privateUser.apiKey ?? (await generateNewApiKey(user.id))
   if (!apiKey) throw new Error("Couldn't retrieve or create Manifold api key")
 
-  const [twitchAuthURL, linkSuccessPromise] = await initLinkTwitchAccount(
-    user.id,
-    apiKey
-  )
+  const [twitchAuthURL] = await initLinkTwitchAccount(user.id, apiKey)
 
-  console.log('opening twitch link', twitchAuthURL)
   window.location.href = twitchAuthURL
-
-  const twitchInfo = await linkSuccessPromise
-  await updatePrivateUser(user.id, { twitchInfo })
-
-  console.log(`Successfully linked Twitch account '${twitchInfo.twitchName}'`)
 }

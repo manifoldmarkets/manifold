@@ -11,7 +11,7 @@ import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/button'
 import { useTracking } from 'web/hooks/use-tracking'
-import { linkTwitchAccount } from 'web/lib/twitch/link-twitch-account'
+import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import toast from 'react-hot-toast'
@@ -26,7 +26,7 @@ export default function TwitchLandingPage() {
 
   const callback =
     user && privateUser
-      ? () => linkTwitchAccount(user, privateUser)
+      ? () => linkTwitchAccountRedirect(user, privateUser)
       : async () => {
           const result = await firebaseLogin()
 
@@ -34,7 +34,7 @@ export default function TwitchLandingPage() {
           const { user, privateUser } = await getUserAndPrivateUser(userId)
           if (!user || !privateUser) return
 
-          await linkTwitchAccount(user, privateUser)
+          await linkTwitchAccountRedirect(user, privateUser)
         }
 
   const [isLoading, setLoading] = useState(false)
@@ -49,7 +49,6 @@ export default function TwitchLandingPage() {
     } catch (e) {
       console.error(e)
       toast.error('Failed to sign up. Please try again later.')
-    } finally {
       setLoading(false)
     }
   }
