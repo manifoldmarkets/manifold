@@ -1,11 +1,10 @@
-import { usePrivateUser } from 'web/hooks/use-user'
-import React, { ReactNode, useEffect, useState } from 'react'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import React, { memo, ReactNode, useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import {
   notification_subscription_types,
   notification_destination_types,
+  PrivateUser,
 } from 'common/user'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
@@ -23,20 +22,21 @@ import {
   UsersIcon,
 } from '@heroicons/react/outline'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
-import { filterDefined } from 'common/util/array'
 import toast from 'react-hot-toast'
 import { SwitchSetting } from 'web/components/switch-setting'
+import { uniq } from 'lodash'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
+  privateUser: PrivateUser
 }) {
-  const { navigateToSection } = props
-  const privateUser = usePrivateUser()
+  const { navigateToSection, privateUser } = props
   const [showWatchModal, setShowWatchModal] = useState(false)
-
-  if (!privateUser || !privateUser.notificationSubscriptionTypes) {
-    return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
-  }
 
   const emailsEnabled: Array<keyof notification_subscription_types> = [
     'all_comments_on_watched_markets',
@@ -165,32 +165,29 @@ export function NotificationSettings(props: {
     },
   }
 
-  const NotificationSettingLine = (
-    description: string,
-    key: keyof notification_subscription_types,
-    value: notification_destination_types[]
-  ) => {
-    const previousInAppValue = value.includes('browser')
-    const previousEmailValue = value.includes('email')
+  function NotificationSettingLine(props: {
+    description: string
+    subscriptionTypeKey: keyof notification_subscription_types
+    destinations: notification_destination_types[]
+  }) {
+    const { description, subscriptionTypeKey, destinations } = props
+    const previousInAppValue = destinations.includes('browser')
+    const previousEmailValue = destinations.includes('email')
     const [inAppEnabled, setInAppEnabled] = useState(previousInAppValue)
     const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
     const loading = 'Changing Notifications Settings'
     const success = 'Changed Notification Settings!'
-    const highlight = navigateToSection === key
+    const highlight = navigateToSection === subscriptionTypeKey
 
-    useEffect(() => {
-      if (
-        inAppEnabled !== previousInAppValue ||
-        emailEnabled !== previousEmailValue
-      ) {
-        toast.promise(
+    const changeSetting = (setting: 'browser' | 'email', newValue: boolean) => {
+      toast
+        .promise(
           updatePrivateUser(privateUser.id, {
             notificationSubscriptionTypes: {
               ...privateUser.notificationSubscriptionTypes,
-              [key]: filterDefined([
-                inAppEnabled ? 'browser' : undefined,
-                emailEnabled ? 'email' : undefined,
-              ]),
+              [subscriptionTypeKey]: destinations.includes(setting)
+                ? destinations.filter((d) => d !== setting)
+                : uniq([...destinations, setting]),
             },
           }),
           {
@@ -199,14 +196,14 @@ export function NotificationSettings(props: {
             error: 'Error changing notification settings. Try again?',
           }
         )
-      }
-    }, [
-      inAppEnabled,
-      emailEnabled,
-      previousInAppValue,
-      previousEmailValue,
-      key,
-    ])
+        .then(() => {
+          if (setting === 'browser') {
+            setInAppEnabled(newValue)
+          } else {
+            setEmailEnabled(newValue)
+          }
+        })
+    }
 
     return (
       <Row
@@ -220,17 +217,17 @@ export function NotificationSettings(props: {
             <span>{description}</span>
           </Row>
           <Row className={'gap-4'}>
-            {!browserDisabled.includes(key) && (
+            {!browserDisabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={inAppEnabled}
-                onChange={setInAppEnabled}
+                onChange={(newVal) => changeSetting('browser', newVal)}
                 label={'Web'}
               />
             )}
-            {emailsEnabled.includes(key) && (
+            {emailsEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={emailEnabled}
-                onChange={setEmailEnabled}
+                onChange={(newVal) => changeSetting('email', newVal)}
                 label={'Email'}
               />
             )}
@@ -246,12 +243,22 @@ export function NotificationSettings(props: {
     return privateUser.notificationSubscriptionTypes[key] ?? []
   }
 
-  const Section = (icon: ReactNode, data: sectionData) => {
+  const Section = memo(function Section(props: {
+    icon: ReactNode
+    data: sectionData
+  }) {
+    const { icon, data } = props
     const { label, subscriptionTypeToDescription } = data
     const expand =
       navigateToSection &&
       Object.keys(subscriptionTypeToDescription).includes(navigateToSection)
-    const [expanded, setExpanded] = useState(expand)
+
+    // Not sure how to prevent re-render (and collapse of an open section)
+    // due to a private user settings change. Just going to persist expanded state here
+    const [expanded, setExpanded] = usePersistentState(expand ?? false, {
+      key: 'NotificationsSettingsSection-' + label,
+      store: storageStore(safeLocalStorage()),
+    })
 
     // Not working as the default value for expanded, so using a useEffect
     useEffect(() => {
@@ -278,19 +285,19 @@ export function NotificationSettings(props: {
           )}
         </Row>
         <Col className={clsx(expanded ? 'block' : 'hidden', 'gap-2 p-2')}>
-          {Object.entries(subscriptionTypeToDescription).map(([key, value]) =>
-            NotificationSettingLine(
-              value,
-              key as keyof notification_subscription_types,
-              getUsersSavedPreference(
+          {Object.entries(subscriptionTypeToDescription).map(([key, value]) => (
+            <NotificationSettingLine
+              subscriptionTypeKey={key as keyof notification_subscription_types}
+              destinations={getUsersSavedPreference(
                 key as keyof notification_subscription_types
-              )
-            )
-          )}
+              )}
+              description={value}
+            />
+          ))}
         </Col>
       </Col>
     )
-  }
+  })
 
   return (
     <div className={'p-2'}>
@@ -302,20 +309,38 @@ export function NotificationSettings(props: {
             onClick={() => setShowWatchModal(true)}
           />
         </Row>
-        {Section(<ChatIcon className={'h-6 w-6'} />, comments)}
-        {Section(<LightBulbIcon className={'h-6 w-6'} />, answers)}
-        {Section(<TrendingUpIcon className={'h-6 w-6'} />, updates)}
-        {Section(<UserIcon className={'h-6 w-6'} />, yourMarkets)}
+        <Section icon={<ChatIcon className={'h-6 w-6'} />} data={comments} />
+        <Section
+          icon={<TrendingUpIcon className={'h-6 w-6'} />}
+          data={updates}
+        />
+        <Section
+          icon={<LightBulbIcon className={'h-6 w-6'} />}
+          data={answers}
+        />
+        <Section icon={<UserIcon className={'h-6 w-6'} />} data={yourMarkets} />
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>Balance Changes</span>
         </Row>
-        {Section(<CurrencyDollarIcon className={'h-6 w-6'} />, bonuses)}
-        {Section(<CashIcon className={'h-6 w-6'} />, otherBalances)}
+        <Section
+          icon={<CurrencyDollarIcon className={'h-6 w-6'} />}
+          data={bonuses}
+        />
+        <Section
+          icon={<CashIcon className={'h-6 w-6'} />}
+          data={otherBalances}
+        />
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>General</span>
         </Row>
-        {Section(<UsersIcon className={'h-6 w-6'} />, userInteractions)}
-        {Section(<InboxInIcon className={'h-6 w-6'} />, generalOther)}
+        <Section
+          icon={<UsersIcon className={'h-6 w-6'} />}
+          data={userInteractions}
+        />
+        <Section
+          icon={<InboxInIcon className={'h-6 w-6'} />}
+          data={generalOther}
+        />
         <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </div>
