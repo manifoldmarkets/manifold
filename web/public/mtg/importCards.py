@@ -9,7 +9,7 @@ allCategories = ['counterspell', 'beast', 'burn', 'commander']
 specialCategories = ['set', 'basic']
 artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
 artist_allowlist = {'David Martin',
-                    'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay'}
+                    'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay', 'DiTerlizzi'}
 
 
 def generate_initial_query(category):
@@ -57,7 +57,7 @@ def generate_initial_special_query(category):
 
 def generate_initial_artist_query():
     string_query = 'https://api.scryfall.com/cards/search?q=' + artist_denylist + \
-        '+artists%3D1+-st%3Afunny+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
+        '+artists%3D1+-set%3Adbl+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
     print("artistList")
     print(string_query)
     return string_query
@@ -321,13 +321,13 @@ def write_image_uris(card_image_uris):
 
 
 if __name__ == "__main__":
-    # for category in allCategories:
-    #     print(category)
-    #     fetch_and_write_all(category, generate_initial_query(category))
-    # for category in specialCategories:
-    #     print(category)
-    #     fetch_and_write_all_special(
-    #         category, generate_initial_special_query(category))
+    for category in allCategories:
+        print(category)
+        fetch_and_write_all(category, generate_initial_query(category))
+    for category in specialCategories:
+        print(category)
+        fetch_and_write_all_special(
+            category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
     # fetch_and_write_initial_artist_query()
     fetch_and_write_all_artist()
