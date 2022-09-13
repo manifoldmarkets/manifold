@@ -1,10 +1,9 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { toast } from 'react-hot-toast'
+import { toast, Toaster } from 'react-hot-toast'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
-import { Page } from 'web/components/page'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   addContractToGroup,
@@ -30,7 +29,6 @@ import Custom404 from '../../404'
 import { SEO } from 'web/components/SEO'
 import { Linkify } from 'web/components/linkify'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { Tabs } from 'web/components/layout/tabs'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Modal } from 'web/components/layout/modal'
 import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
@@ -51,6 +49,9 @@ import { Spacer } from 'web/components/layout/spacer'
 import { usePost } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from '@amplitude/analytics-browser'
+import GroupSidebar from 'web/components/nav/group-sidebar'
+import { GroupNavBar } from 'web/components/nav/group-nav-bar'
+import { ArrowLeftIcon } from '@heroicons/react/solid'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -144,6 +145,7 @@ export default function GroupPage(props: {
   const user = useUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
+  const [sidebarIndex, setSidebarIndex] = useState(0)
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -157,7 +159,7 @@ export default function GroupPage(props: {
   const isMember = user && memberIds.includes(user.id)
   const maxLeaderboardSize = 50
 
-  const leaderboard = (
+  const leaderboardPage = (
     <Col>
       <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
         <GroupLeaderboard
@@ -176,7 +178,7 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const aboutTab = (
+  const aboutPage = (
     <Col>
       {(group.aboutPostId != null || isCreator || isAdmin) && (
         <GroupAboutPost
@@ -196,74 +198,106 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const questionsTab = (
-    <ContractSearch
-      user={user}
-      defaultSort={'newest'}
-      defaultFilter={suggestedFilter}
-      additionalFilter={{ groupSlug: group.slug }}
-      persistPrefix={`group-${group.slug}`}
-    />
+  const questionsPage = (
+    <>
+      {/* align the divs to the right */}
+      <div className={' flex justify-end px-2 pb-2 sm:hidden'}>
+        <div>
+          <JoinGroupButton group={group} user={user} />
+        </div>
+      </div>
+      <ContractSearch
+        user={user}
+        defaultSort={'newest'}
+        defaultFilter={suggestedFilter}
+        additionalFilter={{ groupSlug: group.slug }}
+        persistPrefix={`group-${group.slug}`}
+      />
+    </>
   )
 
-  const tabs = [
+  const sidebarPages = [
     {
       badge: `${contractsCount}`,
       title: 'Markets',
-      content: questionsTab,
+      content: questionsPage,
       href: groupPath(group.slug, 'markets'),
+      key: 'markets',
     },
     {
       title: 'Leaderboards',
-      content: leaderboard,
+      content: leaderboardPage,
       href: groupPath(group.slug, 'leaderboards'),
+      key: 'leaderboards',
     },
     {
       title: 'About',
-      content: aboutTab,
+      content: aboutPage,
       href: groupPath(group.slug, 'about'),
+      key: 'about',
     },
   ]
 
-  const tabIndex = tabs
-    .map((t) => t.title.toLowerCase())
-    .indexOf(page ?? 'markets')
+  const pageContent = sidebarPages[sidebarIndex].content
+  const onSidebarClick = (key: string) => {
+    const index = sidebarPages.findIndex((t) => t.key === key)
+    setSidebarIndex(index)
+  }
+
+  const joinOrAddQuestionsButton = (
+    <JoinOrAddQuestionsButtons
+      group={group}
+      user={user}
+      isMember={!!isMember}
+    />
+  )
 
   return (
-    <Page>
-      <SEO
-        title={group.name}
-        description={`Created by ${creator.name}. ${group.about}`}
-        url={groupPath(group.slug)}
-      />
-      <Col className="relative px-3">
-        <Row className={'items-center justify-between gap-4'}>
-          <div className={'sm:mb-1'}>
-            <div
-              className={'line-clamp-1 my-2 text-2xl text-indigo-700 sm:my-3'}
-            >
+    <>
+      <header className="sticky top-0 z-50 w-full pb-2 md:hidden lg:col-span-12">
+        <div className="flex items-center  border-b border-gray-200 bg-white  px-4">
+          <div className="flex-shrink-0">
+            <Link href="/">
+              <a className="text-indigo-700 hover:text-gray-500 ">
+                <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+              </a>
+            </Link>
+          </div>
+          <div className="ml-3">
+            <h1 className="text-lg font-medium text-indigo-700">
               {group.name}
-            </div>
-            <div className={'hidden sm:block'}>
-              <Linkify text={group.about} />
-            </div>
+            </h1>
           </div>
-          <div className="mt-2">
-            <JoinOrAddQuestionsButtons
-              group={group}
-              user={user}
-              isMember={!!isMember}
-            />
-          </div>
-        </Row>
-      </Col>
-      <Tabs
-        currentPageForAnalytics={groupPath(group.slug)}
-        className={'mx-2 mb-0 sm:mb-2'}
-        defaultIndex={tabIndex > 0 ? tabIndex : 0}
-        tabs={tabs}
-      />
-    </Page>
+        </div>
+      </header>
+      <div>
+        <div
+          className={
+            'mx-auto w-full pb-[58px] lg:grid lg:grid-cols-12 lg:gap-x-2 lg:pb-0 xl:max-w-7xl xl:gap-x-8'
+          }
+        >
+          <Toaster />
+          <GroupSidebar
+            groupName={group.name}
+            className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex"
+            onClick={onSidebarClick}
+            joinOrAddQuestionsButton={joinOrAddQuestionsButton}
+            currentKey={sidebarPages[sidebarIndex].key}
+          />
+
+          <SEO
+            title={group.name}
+            description={`Created by ${creator.name}. ${group.about}`}
+            url={groupPath(group.slug)}
+          />
+          <main className={'px-2 pt-1 xl:col-span-8'}>{pageContent}</main>
+        </div>
+        <GroupNavBar
+          currentPage={sidebarPages[sidebarIndex].key}
+          onClick={onSidebarClick}
+        />
+      </div>
+    </>
   )
 }
 
@@ -271,10 +305,11 @@ function JoinOrAddQuestionsButtons(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean
+  className?: string
 }) {
   const { group, user, isMember } = props
   return user && isMember ? (
-    <Row className={'mt-0 justify-end'}>
+    <Row className={'w-full self-start pt-4'}>
       <AddContractButton group={group} user={user} />
     </Row>
   ) : group.anyoneCanJoin ? (
@@ -433,9 +468,9 @@ function AddContractButton(props: { group: Group; user: User }) {
 
   return (
     <>
-      <div className={'flex justify-center'}>
+      <div className={'flex w-full justify-center'}>
         <Button
-          className="whitespace-nowrap"
+          className="w-full whitespace-nowrap"
           size="md"
           color="indigo"
           onClick={() => setOpen(true)}
@@ -534,7 +569,9 @@ function JoinGroupButton(props: {
     <div>
       <button
         onClick={follow}
-        className={'btn-md btn-outline btn whitespace-nowrap normal-case'}
+        className={
+          'btn-md btn-outline btn w-full whitespace-nowrap normal-case'
+        }
       >
         Follow
       </button>
