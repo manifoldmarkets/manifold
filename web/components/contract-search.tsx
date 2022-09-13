@@ -14,12 +14,10 @@ import { useEffect, useLayoutEffect, useRef, useMemo, ReactNode } from 'react'
 import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
-  storageStore,
   historyStore,
   urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -207,7 +205,6 @@ export function ContractSearch(props: {
         defaultFilter={defaultFilter}
         additionalFilter={additionalFilter}
         hideOrderSelector={hideOrderSelector}
-        persistPrefix={persistPrefix ? `${persistPrefix}-controls` : undefined}
         useQueryUrlParam={useQueryUrlParam}
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
@@ -236,7 +233,6 @@ function ContractSearchControls(props: {
   additionalFilter?: AdditionalFilter
   hideOrderSelector?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
-  persistPrefix?: string
   useQueryUrlParam?: boolean
   user?: User | null
   noControls?: boolean
@@ -248,7 +244,6 @@ function ContractSearchControls(props: {
     additionalFilter,
     hideOrderSelector,
     onSearchParametersChanged,
-    persistPrefix,
     useQueryUrlParam,
     user,
     noControls,
@@ -265,17 +260,31 @@ function ContractSearchControls(props: {
         }
   )
 
-  const [state, setState] = usePersistentState(
-    {
-      sort: defaultSort ?? 'score',
-      filter: defaultFilter ?? 'open',
-      pillFilter: null as string | null,
-    },
-    !persistPrefix
+  const [sort, setSort] = usePersistentState(
+    defaultSort ?? 'score',
+    !useQueryUrlParam
       ? undefined
       : {
-          key: `${persistPrefix}-params`,
-          store: storageStore(safeLocalStorage()),
+          key: 's',
+          store: urlParamStore(router),
+        }
+  )
+  const [filter, setFilter] = usePersistentState(
+    defaultFilter ?? 'open',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'f',
+          store: urlParamStore(router),
+        }
+  )
+  const [pill, setPill] = usePersistentState(
+    '',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'p',
+          store: urlParamStore(router),
         }
   )
 
@@ -329,31 +338,25 @@ function ContractSearchControls(props: {
         ...additionalFilters,
         additionalFilter ? '' : 'visibility:public',
 
-        state.filter === 'open' ? 'isResolved:false' : '',
-        state.filter === 'closed' ? 'isResolved:false' : '',
-        state.filter === 'resolved' ? 'isResolved:true' : '',
+        filter === 'open' ? 'isResolved:false' : '',
+        filter === 'closed' ? 'isResolved:false' : '',
+        filter === 'resolved' ? 'isResolved:true' : '',
 
-        state.pillFilter &&
-        state.pillFilter !== 'personal' &&
-        state.pillFilter !== 'your-bets'
-          ? `groupLinks.slug:${state.pillFilter}`
+        pill && pill !== 'personal' && pill !== 'your-bets'
+          ? `groupLinks.slug:${pill}`
           : '',
-        ...(state.pillFilter === 'personal' ? personalFilters : []),
-        state.pillFilter === 'your-bets' && user
+        ...(pill === 'personal' ? personalFilters : []),
+        pill === 'your-bets' && user
           ? // Show contracts bet on by the user
             `uniqueBettorIds:${user.id}`
           : '',
       ].filter((f) => f)
 
   const openClosedFilter =
-    state.filter === 'open'
-      ? 'open'
-      : state.filter === 'closed'
-      ? 'closed'
-      : undefined
+    filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
 
   const selectPill = (pill: string | null) => () => {
-    setState({ ...state, pillFilter: pill })
+    setPill(pill ?? '')
     track('select search category', { category: pill ?? 'all' })
   }
 
@@ -362,25 +365,25 @@ function ContractSearchControls(props: {
   }
 
   const selectFilter = (newFilter: filter) => {
-    if (newFilter === state.filter) return
-    setState({ ...state, filter: newFilter })
+    if (newFilter === filter) return
+    setFilter(newFilter)
     track('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
-    if (newSort === state.sort) return
-    setState({ ...state, sort: newSort })
+    if (newSort === sort) return
+    setSort(newSort)
     track('select search sort', { sort: newSort })
   }
 
   useEffect(() => {
     onSearchParametersChanged({
       query: query,
-      sort: state.sort,
+      sort: sort as Sort,
       openClosedFilter: openClosedFilter,
       facetFilters: facetFilters,
     })
-  }, [query, state.sort, openClosedFilter, JSON.stringify(facetFilters)])
+  }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
   if (noControls) {
     return <></>
@@ -402,7 +405,7 @@ function ContractSearchControls(props: {
         {!query && (
           <select
             className="select select-bordered"
-            value={state.filter}
+            value={filter}
             onChange={(e) => selectFilter(e.target.value as filter)}
           >
             <option value="open">Open</option>
@@ -414,7 +417,7 @@ function ContractSearchControls(props: {
         {!hideOrderSelector && !query && (
           <select
             className="select select-bordered"
-            value={state.sort}
+            value={sort}
             onChange={(e) => selectSort(e.target.value as Sort)}
           >
             {SORTS.map((option) => (
@@ -428,16 +431,12 @@ function ContractSearchControls(props: {
 
       {!additionalFilter && !query && (
         <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
-          <PillButton
-            key={'all'}
-            selected={state.pillFilter === undefined}
-            onSelect={selectPill(null)}
-          >
+          <PillButton key={'all'} selected={!pill} onSelect={selectPill(null)}>
             All
           </PillButton>
           <PillButton
             key={'personal'}
-            selected={state.pillFilter === 'personal'}
+            selected={pill === 'personal'}
             onSelect={selectPill('personal')}
           >
             {user ? 'For you' : 'Featured'}
@@ -446,7 +445,7 @@ function ContractSearchControls(props: {
           {user && (
             <PillButton
               key={'your-bets'}
-              selected={state.pillFilter === 'your-bets'}
+              selected={pill === 'your-bets'}
               onSelect={selectPill('your-bets')}
             >
               Your trades
@@ -457,7 +456,7 @@ function ContractSearchControls(props: {
             return (
               <PillButton
                 key={slug}
-                selected={state.pillFilter === slug}
+                selected={pill === slug}
                 onSelect={selectPill(slug)}
               >
                 {name}
