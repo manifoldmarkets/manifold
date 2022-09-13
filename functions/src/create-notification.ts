@@ -8,7 +8,7 @@ import { User } from '../../common/user'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
-import { uniq } from 'lodash'
+import { groupBy, uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { getContractBetMetrics } from '../../common/calculate'
@@ -23,6 +23,7 @@ import {
   sendNewAnswerEmail,
   sendNewCommentEmail,
   sendNewFollowedMarketEmail,
+  sendNewUniqueBettorsEmail,
 } from './emails'
 import { filterDefined } from '../../common/util/array'
 const firestore = admin.firestore()
@@ -774,44 +775,84 @@ export const createUniqueBettorBonusNotification = async (
   txnId: string,
   contract: Contract,
   amount: number,
+  uniqueBettorIds: string[],
   idempotencyKey: string
 ) => {
-  console.log('createUniqueBettorBonusNotification')
   const privateUser = await getPrivateUser(contractCreatorId)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
     privateUser,
     'unique_bettors_on_your_contract'
   )
-  if (!sendToBrowser) return
-
-  const notificationRef = firestore
-    .collection(`/users/${contractCreatorId}/notifications`)
-    .doc(idempotencyKey)
-  const notification: Notification = {
-    id: idempotencyKey,
-    userId: contractCreatorId,
-    reason: 'unique_bettors_on_your_contract',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: txnId,
-    sourceType: 'bonus',
-    sourceUpdateType: 'created',
-    sourceUserName: bettor.name,
-    sourceUserUsername: bettor.username,
-    sourceUserAvatarUrl: bettor.avatarUrl,
-    sourceText: amount.toString(),
-    sourceSlug: contract.slug,
-    sourceTitle: contract.question,
-    // Perhaps not necessary, but just in case
-    sourceContractSlug: contract.slug,
-    sourceContractId: contract.id,
-    sourceContractTitle: contract.question,
-    sourceContractCreatorUsername: contract.creatorUsername,
+  if (sendToBrowser) {
+    const notificationRef = firestore
+      .collection(`/users/${contractCreatorId}/notifications`)
+      .doc(idempotencyKey)
+    const notification: Notification = {
+      id: idempotencyKey,
+      userId: contractCreatorId,
+      reason: 'unique_bettors_on_your_contract',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: txnId,
+      sourceType: 'bonus',
+      sourceUpdateType: 'created',
+      sourceUserName: bettor.name,
+      sourceUserUsername: bettor.username,
+      sourceUserAvatarUrl: bettor.avatarUrl,
+      sourceText: amount.toString(),
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+      // Perhaps not necessary, but just in case
+      sourceContractSlug: contract.slug,
+      sourceContractId: contract.id,
+      sourceContractTitle: contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+    }
+    await notificationRef.set(removeUndefinedProps(notification))
   }
-  return await notificationRef.set(removeUndefinedProps(notification))
 
-  // TODO send email notification
+  if (!sendToEmail) return
+  const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
+    (id) => id !== contractCreatorId
+  )
+  // only send on 1st and 6th bettor
+  if (
+    uniqueBettorsExcludingCreator.length !== 1 &&
+    uniqueBettorsExcludingCreator.length !== 6
+  )
+    return
+  const totalNewBettorsToReport =
+    uniqueBettorsExcludingCreator.length === 1 ? 1 : 5
+
+  const mostRecentUniqueBettors = await getValues<User>(
+    firestore
+      .collection('users')
+      .where(
+        'id',
+        'in',
+        uniqueBettorsExcludingCreator.slice(
+          uniqueBettorsExcludingCreator.length - totalNewBettorsToReport,
+          uniqueBettorsExcludingCreator.length
+        )
+      )
+  )
+
+  const bets = await getValues<Bet>(
+    firestore.collection('contracts').doc(contract.id).collection('bets')
+  )
+  // group bets by bettors
+  const bettorsToTheirBets = groupBy(bets, (bet) => bet.userId)
+  await sendNewUniqueBettorsEmail(
+    'unique_bettors_on_your_contract',
+    contractCreatorId,
+    privateUser,
+    contract,
+    uniqueBettorsExcludingCreator.length,
+    mostRecentUniqueBettors,
+    bettorsToTheirBets,
+    Math.round(amount * totalNewBettorsToReport)
+  )
 }
 
 export const createNewContractNotification = async (

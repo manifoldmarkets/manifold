@@ -28,8 +28,9 @@ import { User } from '../../common/user'
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
 
-export const onCreateBet = functions.firestore
-  .document('contracts/{contractId}/bets/{betId}')
+export const onCreateBet = functions
+  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .firestore.document('contracts/{contractId}/bets/{betId}')
   .onCreate(async (change, context) => {
     const { contractId } = context.params as {
       contractId: string
@@ -198,6 +199,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       result.txn.id,
       contract,
       result.txn.amount,
+      newUniqueBettorIds,
       eventId + '-unique-bettor-bonus'
     )
   }

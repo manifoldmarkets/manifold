@@ -200,7 +200,7 @@ export function ContractSearch(props: {
   }
 
   return (
-    <Col className="h-full">
+    <Col>
       <ContractSearchControls
         className={headerClassName}
         defaultSort={defaultSort}
