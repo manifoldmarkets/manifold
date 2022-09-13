@@ -81,14 +81,14 @@ export function NotificationSettings(props: {
     'thank_you_for_purchases',
   ]
 
-  type sectionData = {
+  type SectionData = {
     label: string
     subscriptionTypeToDescription: {
       [key in keyof Partial<notification_subscription_types>]: string
     }
   }
 
-  const comments: sectionData = {
+  const comments: SectionData = {
     label: 'New Comments',
     subscriptionTypeToDescription: {
       all_comments_on_watched_markets: 'All new comments',
@@ -102,7 +102,7 @@ export function NotificationSettings(props: {
     },
   }
 
-  const answers: sectionData = {
+  const answers: SectionData = {
     label: 'New Answers',
     subscriptionTypeToDescription: {
       all_answers_on_watched_markets: 'All new answers',
@@ -111,7 +111,7 @@ export function NotificationSettings(props: {
       // answers_by_market_creator_on_watched_markets: 'By market creator',
     },
   }
-  const updates: sectionData = {
+  const updates: SectionData = {
     label: 'Updates & Resolutions',
     subscriptionTypeToDescription: {
       market_updates_on_watched_markets: 'All creator updates',
@@ -121,7 +121,7 @@ export function NotificationSettings(props: {
       // probability_updates_on_watched_markets: 'Probability updates',
     },
   }
-  const yourMarkets: sectionData = {
+  const yourMarkets: SectionData = {
     label: 'Markets You Created',
     subscriptionTypeToDescription: {
       your_contract_closed: 'Your market has closed (and needs resolution)',
@@ -131,7 +131,7 @@ export function NotificationSettings(props: {
       tips_on_your_markets: 'Likes on your markets',
     },
   }
-  const bonuses: sectionData = {
+  const bonuses: SectionData = {
     label: 'Bonuses',
     subscriptionTypeToDescription: {
       betting_streaks: 'Prediction streak bonuses',
@@ -139,7 +139,7 @@ export function NotificationSettings(props: {
       unique_bettors_on_your_contract: 'Unique bettor bonuses on your markets',
     },
   }
-  const otherBalances: sectionData = {
+  const otherBalances: SectionData = {
     label: 'Other',
     subscriptionTypeToDescription: {
       loan_income: 'Automatic loans from your profitable bets',
@@ -147,7 +147,7 @@ export function NotificationSettings(props: {
       tips_on_your_comments: 'Tips on your comments',
     },
   }
-  const userInteractions: sectionData = {
+  const userInteractions: SectionData = {
     label: 'Users',
     subscriptionTypeToDescription: {
       tagged_user: 'A user tagged you',
@@ -155,7 +155,7 @@ export function NotificationSettings(props: {
       contract_from_followed_user: 'New markets created by users you follow',
     },
   }
-  const generalOther: sectionData = {
+  const generalOther: SectionData = {
     label: 'Other',
     subscriptionTypeToDescription: {
       trending_markets: 'Weekly interesting markets',
@@ -245,7 +245,7 @@ export function NotificationSettings(props: {
 
   const Section = memo(function Section(props: {
     icon: ReactNode
-    data: sectionData
+    data: SectionData
   }) {
     const { icon, data } = props
     const { label, subscriptionTypeToDescription } = data
@@ -256,14 +256,16 @@ export function NotificationSettings(props: {
     // Not sure how to prevent re-render (and collapse of an open section)
     // due to a private user settings change. Just going to persist expanded state here
     const [expanded, setExpanded] = usePersistentState(expand ?? false, {
-      key: 'NotificationsSettingsSection-' + label,
+      key:
+        'NotificationsSettingsSection-' +
+        Object.keys(subscriptionTypeToDescription).join('-'),
       store: storageStore(safeLocalStorage()),
     })
 
     // Not working as the default value for expanded, so using a useEffect
     useEffect(() => {
       if (expand) setExpanded(true)
-    }, [expand])
+    }, [expand, setExpanded])
 
     return (
       <Col className={clsx('ml-2 gap-2')}>
