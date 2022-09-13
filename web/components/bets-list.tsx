@@ -754,7 +754,10 @@ function SellButton(props: {
   )
 }
 
-function ProfitBadge(props: { profitPercent: number; className?: string }) {
+export function ProfitBadge(props: {
+  profitPercent: number
+  className?: string
+}) {
   const { profitPercent, className } = props
   if (!profitPercent) return null
   const colors =
