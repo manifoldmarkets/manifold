@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 import { TWITCH_APP_CLIENT_SECRET, TWTICH_APP_CLIENT_ID } from "./envs";
 import log from "./logger";
 
-export class TwitchUser {
+export type TwitchUser = {
     broadcaster_type: "partner" | "affiliate" | "";
     description: string;
     display_name: string;
