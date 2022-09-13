@@ -134,7 +134,7 @@ export function NotificationSettings(props: {
   const bonuses: sectionData = {
     label: 'Bonuses',
     subscriptionTypeToDescription: {
-      betting_streaks: 'Betting streak bonuses',
+      betting_streaks: 'Prediction streak bonuses',
       referral_bonuses: 'Referral bonuses from referring users',
       unique_bettors_on_your_contract: 'Unique bettor bonuses on your markets',
     },

@@ -428,7 +428,7 @@ function IncomeNotificationItem(props: {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } new traders on`
+          } new predictors on`
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
@@ -436,7 +436,7 @@ function IncomeNotificationItem(props: {
       if (sourceText && +sourceText === 50) reasonText = '(max) for your'
       else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
-      reasonText = `of your invested bets returned as a`
+      reasonText = `of your invested predictions returned as a`
       // TODO: support just 'like' notification without a tip
     } else if (sourceType === 'tip_and_like' && sourceText) {
       reasonText = !simple ? `liked` : `in likes on`
@@ -448,7 +448,9 @@ function IncomeNotificationItem(props: {
         : user?.currentBettingStreak ?? 0
     const bettingStreakText =
       sourceType === 'betting_streak_bonus' &&
-      (sourceText ? `🔥 ${streakInDays} day Betting Streak` : 'Betting Streak')
+      (sourceText
+        ? `🔥 ${streakInDays} day Prediction Streak`
+        : 'Prediction Streak')
 
     return (
       <>
@@ -546,7 +548,7 @@ function IncomeNotificationItem(props: {
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
               userInfos={userLinks}
-              modalLabel={isTip ? 'Who tipped you' : 'Unique traders'}
+              modalLabel={isTip ? 'Who tipped you' : 'Unique predictors'}
             />
           )}
           <Row className={'line-clamp-2 flex max-w-xl'}>
