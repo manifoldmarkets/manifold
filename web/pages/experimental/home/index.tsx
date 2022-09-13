@@ -1,7 +1,7 @@
 import React from 'react'
 import Router from 'next/router'
 import {
-  PencilIcon,
+  AdjustmentsIcon,
   PlusSmIcon,
   ArrowSmRightIcon,
 } from '@heroicons/react/solid'
@@ -26,11 +26,12 @@ import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
+import { ProfitBadge } from 'web/components/bets-list'
+import { calculatePortfolioProfit } from 'common/calculate-metrics'
 
-const Home = () => {
+export default function Home() {
   const user = useUser()
 
   useTracking('view home')
@@ -44,13 +45,13 @@ const Home = () => {
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-12">
-        <Row className={'w-full items-center justify-between'}>
-          <Title className="!mb-0" text="Home" />
-
-          <EditButton />
+        <Row className={'mt-4 w-full items-start justify-between'}>
+          <Row className="items-end gap-4">
+            <Title className="!mb-1 !mt-0" text="Home" />
+            <EditButton />
+          </Row>
+          <DailyProfitAndBalance className="" user={user} />
         </Row>
-
-        <DailyProfitAndBalance className="self-end" userId={user?.id} />
 
         {sections.map((item) => {
           const { id } = item
@@ -173,36 +174,42 @@ function EditButton(props: { className?: string }) {
 
   return (
     <SiteLink href="/experimental/home/edit">
-      <Button size="lg" color="gray-white" className={clsx(className, 'flex')}>
-        <PencilIcon className={clsx('mr-2 h-[24px] w-5')} aria-hidden="true" />{' '}
-        Edit
+      <Button size="sm" color="gray-white" className={clsx(className, 'flex')}>
+        <AdjustmentsIcon className={clsx('h-[24px] w-5')} aria-hidden="true" />
       </Button>
     </SiteLink>
   )
 }
 
 function DailyProfitAndBalance(props: {
-  userId: string | null | undefined
+  user: User | null | undefined
   className?: string
 }) {
-  const { userId, className } = props
-  const metrics = usePortfolioHistory(userId ?? '', 'daily') ?? []
+  const { user, className } = props
+  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
   const [first, last] = [metrics[0], metrics[metrics.length - 1]]
 
   if (first === undefined || last === undefined) return null
 
   const profit =
     calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
+  const profitPercent = profit / first.investmentValue
 
   return (
-    <div className={clsx(className, 'text-lg')}>
-      <span className={clsx(profit >= 0 ? 'text-green-500' : 'text-red-500')}>
-        {profit >= 0 && '+'}
-        {formatMoney(profit)}
-      </span>{' '}
-      profit today
-    </div>
+    <Row className={'gap-4'}>
+      <Col>
+        <div className="text-gray-500">Daily profit</div>
+        <Row className={clsx(className, 'items-center text-lg')}>
+          <span>{formatMoney(profit)}</span>{' '}
+          <ProfitBadge profitPercent={profitPercent * 100} />
+        </Row>
+      </Col>
+      <Col>
+        <div className="text-gray-500">Streak</div>
+        <Row className={clsx(className, 'items-center text-lg')}>
+          <span>🔥 {user?.currentBettingStreak ?? 0}</span>
+        </Row>
+      </Col>
+    </Row>
   )
 }
-
-export default Home

@@ -28,7 +28,7 @@ export default function Home() {
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-6 pt-2">
         <Row className={'w-full items-center justify-between'}>
-          <Title text="Edit your home page" />
+          <Title text="Customize your home page" />
           <DoneButton />
         </Row>
 
@@ -47,7 +47,7 @@ function DoneButton(props: { className?: string }) {
 
   return (
     <SiteLink href="/experimental/home">
-      <Button size="lg" color="blue" className={clsx(className, 'flex')}>
+      <Button size="lg" color="blue" className={clsx(className, 'flex whitespace-nowrap')}>
         Done
       </Button>
     </SiteLink>
