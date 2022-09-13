@@ -1,6 +1,5 @@
-import { User, PrivateUser } from 'common/user'
+import { PrivateUser, User } from 'common/user'
 import { generateNewApiKey } from '../api/api-key'
-import { updatePrivateUser } from '../firebase/users'
 
 const TWITCH_BOT_PUBLIC_URL = 'https://king-prawn-app-5btyw.ondigitalocean.app' // TODO: Add this to env config appropriately
 

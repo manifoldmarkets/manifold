@@ -1,17 +1,16 @@
 import clsx from 'clsx'
-import React, { MouseEventHandler, ReactNode, useState } from 'react'
+import { MouseEventHandler, ReactNode, useState } from 'react'
 import toast from 'react-hot-toast'
 
-import { copyToClipboard } from 'web/lib/util/copy'
-import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
 import { LinkIcon } from '@heroicons/react/solid'
-import { track } from 'web/lib/service/analytics'
-import { Button, ColorType } from './../button'
-import { LoadingIndicator } from './../loading-indicator'
-import { Row } from './../layout/row'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { updatePrivateUser } from 'web/lib/firebase/users'
-import { deleteField } from 'firebase/firestore'
+import { track } from 'web/lib/service/analytics'
+import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { Button, ColorType } from './../button'
+import { Row } from './../layout/row'
+import { LoadingIndicator } from './../loading-indicator'
 
 function BouncyButton(props: {
   children: ReactNode
