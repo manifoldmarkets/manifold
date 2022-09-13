@@ -37,11 +37,6 @@ if (whichGuesser === 'basic') {
     .then((response) => response.json())
     .then((data) => (sets = data))
 }
-if (whichGuesser === 'artist') {
-  fetch('jsons/artistList.json')
-    .then((response) => response.json())
-    .then((data) => (sets = data))
-}
 
 let firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
@@ -227,8 +222,6 @@ function putIntoMap(data) {
         sets[name][1] +
         '" /> ' +
         sets[name][0]
-    } else if (whichGuesser === 'artist') {
-      name = sets[name][0]
     }
     let normalImg = ''
     if (card.image_uris.normal) {
