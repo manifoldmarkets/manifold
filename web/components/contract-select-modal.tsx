@@ -81,7 +81,7 @@ export function SelectMarketsModal(props: {
           </div>
         )}
 
-        <div className="overflow-y-scroll sm:px-8">
+        <div className="overflow-y-auto sm:px-8">
           <ContractSearch
             hideOrderSelector
             onContractClick={addContract}
