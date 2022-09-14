@@ -17,7 +17,7 @@ import { partition, sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract, CPMMContract } from 'common/contract'
-import { createRNG, shuffle } from 'common/util/random'
+import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
 import { Bet } from 'common/bet'
@@ -236,13 +236,6 @@ export async function followContract(contractId: string, userId: string) {
 export async function unFollowContract(contractId: string, userId: string) {
   const followDoc = doc(collection(contracts, contractId, 'follows'), userId)
   await deleteDoc(followDoc)
-}
-
-function chooseRandomSubset(contracts: Contract[], count: number) {
-  const fiveMinutes = 5 * 60 * 1000
-  const seed = Math.round(Date.now() / fiveMinutes).toString()
-  shuffle(contracts, createRNG(seed))
-  return contracts.slice(0, count)
 }
 
 const hotContractsQuery = query(

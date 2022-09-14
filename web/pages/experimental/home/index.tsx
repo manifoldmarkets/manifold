@@ -7,6 +7,7 @@ import {
   SearchIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import Masonry from 'react-masonry-css'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -19,7 +20,11 @@ import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { SiteLink } from 'web/components/site-link'
 import { useUser } from 'web/hooks/use-user'
-import { useMemberGroups } from 'web/hooks/use-group'
+import {
+  useMemberGroupIds,
+  useMemberGroups,
+  useTrendingGroups,
+} from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
 import { getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
@@ -31,6 +36,8 @@ import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
 import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
+import { GroupCard } from 'web/pages/groups'
+import { chooseRandomSubset } from 'common/util/random'
 
 export default function Home() {
   const user = useUser()
@@ -78,6 +85,7 @@ export default function Home() {
 
           return null
         })}
+        <TrendingGroupsSection user={user} />
       </Col>
       <button
         type="button"
@@ -90,6 +98,22 @@ export default function Home() {
         <PlusSmIcon className="h-8 w-8" aria-hidden="true" />
       </button>
     </Page>
+  )
+}
+
+function SectionHeader(props: { label: string; href: string }) {
+  const { label, href } = props
+
+  return (
+    <Row className="mb-3 items-center justify-between">
+      <SiteLink className="text-xl" href={href}>
+        {label}{' '}
+        <ArrowSmRightIcon
+          className="mb-0.5 inline h-6 w-6 text-gray-500"
+          aria-hidden="true"
+        />
+      </SiteLink>
+    </Row>
   )
 }
 
@@ -152,22 +176,6 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
   )
 }
 
-function SectionHeader(props: { label: string; href: string }) {
-  const { label, href } = props
-
-  return (
-    <Row className="mb-3 items-center justify-between">
-      <SiteLink className="text-xl" href={href}>
-        {label}{' '}
-        <ArrowSmRightIcon
-          className="mb-0.5 inline h-6 w-6 text-gray-500"
-          aria-hidden="true"
-        />
-      </SiteLink>
-    </Row>
-  )
-}
-
 function EditButton(props: { className?: string }) {
   const { className } = props
 
@@ -227,5 +235,40 @@ function DailyProfitAndBalance(props: {
         </Row>
       </Col>
     </Row>
+  )
+}
+
+function TrendingGroupsSection(props: { user: User | null | undefined }) {
+  const { user } = props
+  const memberGroupIds = useMemberGroupIds(user) || []
+
+  const groups = useTrendingGroups().filter(
+    (g) => !memberGroupIds.includes(g.id)
+  )
+  const chosenGroups = chooseRandomSubset(groups.slice(0, 25), 9)
+
+  return (
+    <Col>
+      <SectionHeader
+        label="Trending groups"
+        href="/experimental/explore-groups"
+      />
+      <Masonry
+        breakpointCols={{ default: 3, 768: 2, 480: 1 }}
+        className="-ml-4 flex w-auto self-center"
+        columnClassName="pl-4 bg-clip-padding"
+      >
+        {chosenGroups.map((g) => (
+          <GroupCard
+            key={g.id}
+            className="mb-4 !min-w-[250px]"
+            group={g}
+            creator={null}
+            user={user}
+            isMember={memberGroupIds.includes(g.id)}
+          />
+        ))}
+      </Masonry>
+    </Col>
   )
 }
