@@ -3,6 +3,7 @@
 
 import { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 import { isEqual, zip } from 'lodash'
+import { UpdateSpec } from '../utils'
 
 export type DocumentValue = {
   doc: DocumentSnapshot
@@ -20,7 +21,10 @@ export type DocumentDiff = {
 
 type PathPair = readonly [string, string]
 
-export function findDiffs(docs: DocumentMapping[], ...paths: PathPair[]) {
+export function findDiffs(
+  docs: readonly DocumentMapping[],
+  ...paths: PathPair[]
+) {
   const diffs: DocumentDiff[] = []
   const srcPaths = paths.map((p) => p[0])
   const destPaths = paths.map((p) => p[1])
@@ -46,8 +50,14 @@ export function describeDiff(diff: DocumentDiff) {
   return `${describeDocVal(diff.src)} -> ${describeDocVal(diff.dest)}`
 }
 
+export function getDiffUpdate(diff: DocumentDiff) {
+  return {
+    doc: diff.dest.doc.ref,
+    fields: Object.fromEntries(zip(diff.dest.fields, diff.src.vals)),
+  } as UpdateSpec
+}
+
 export function applyDiff(transaction: Transaction, diff: DocumentDiff) {
-  const { src, dest } = diff
-  const updateSpec = Object.fromEntries(zip(dest.fields, src.vals))
-  transaction.update(dest.doc.ref, updateSpec)
+  const update = getDiffUpdate(diff)
+  transaction.update(update.doc, update.fields)
 }
