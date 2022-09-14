@@ -24,6 +24,8 @@ import {
 } from '../../common/antes'
 import { APIError } from '../../common/api'
 import { User } from '../../common/user'
+import { UNIQUE_BETTOR_LIQUIDITY_AMOUNT } from '../../common/antes'
+import { addHouseLiquidity } from './add-liquidity'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -149,16 +151,21 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   }
 
   const isNewUniqueBettor = !previousUniqueBettorIds.includes(bettor.id)
-
   const newUniqueBettorIds = uniq([...previousUniqueBettorIds, bettor.id])
+
   // Update contract unique bettors
   if (!contract.uniqueBettorIds || isNewUniqueBettor) {
     log(`Got ${previousUniqueBettorIds} unique bettors`)
     isNewUniqueBettor && log(`And a new unique bettor ${bettor.id}`)
+
     await firestore.collection(`contracts`).doc(contract.id).update({
       uniqueBettorIds: newUniqueBettorIds,
       uniqueBettorCount: newUniqueBettorIds.length,
     })
+  }
+
+  if (contract.mechanism === 'cpmm-1' && isNewUniqueBettor) {
+    await addHouseLiquidity(contract, UNIQUE_BETTOR_LIQUIDITY_AMOUNT)
   }
 
   // No need to give a bonus for the creator's bet
