@@ -2,16 +2,16 @@ import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { useEffect, useState } from 'react'
 import {
   Contract,
-  listenForActiveContracts,
   listenForContracts,
   listenForHotContracts,
   listenForInactiveContracts,
-  listenForNewContracts,
   getUserBetContracts,
   getUserBetContractsQuery,
+  trendingContractsQuery,
 } from 'web/lib/firebase/contracts'
 import { useQueryClient } from 'react-query'
 import { MINUTE_MS } from 'common/util/time'
+import { query, limit } from 'firebase/firestore'
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -23,23 +23,12 @@ export const useContracts = () => {
   return contracts
 }
 
-export const useActiveContracts = () => {
-  const [activeContracts, setActiveContracts] = useState<
-    Contract[] | undefined
-  >()
-  const [newContracts, setNewContracts] = useState<Contract[] | undefined>()
-
-  useEffect(() => {
-    return listenForActiveContracts(setActiveContracts)
-  }, [])
-
-  useEffect(() => {
-    return listenForNewContracts(setNewContracts)
-  }, [])
-
-  if (!activeContracts || !newContracts) return undefined
-
-  return [...activeContracts, ...newContracts]
+export const useTrendingContracts = (maxContracts: number) => {
+  const result = useFirestoreQueryData(
+    ['trending-contracts', maxContracts],
+    query(trendingContractsQuery, limit(maxContracts))
+  )
+  return result.data
 }
 
 export const useInactiveContracts = () => {

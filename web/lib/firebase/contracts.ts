@@ -176,23 +176,6 @@ export function getUserBetContractsQuery(userId: string) {
   ) as Query<Contract>
 }
 
-const activeContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('visibility', '==', 'public'),
-  where('volume7Days', '>', 0)
-)
-
-export function getActiveContracts() {
-  return getValues<Contract>(activeContractsQuery)
-}
-
-export function listenForActiveContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(activeContractsQuery, setContracts)
-}
-
 const inactiveContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
@@ -282,16 +265,17 @@ export function listenForHotContracts(
   })
 }
 
-const trendingContractsQuery = query(
+export const trendingContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
-  orderBy('popularityScore', 'desc'),
-  limit(10)
+  orderBy('popularityScore', 'desc')
 )
 
-export async function getTrendingContracts() {
-  return await getValues<Contract>(trendingContractsQuery)
+export async function getTrendingContracts(maxContracts = 10) {
+  return await getValues<Contract>(
+    query(trendingContractsQuery, limit(maxContracts))
+  )
 }
 
 export async function getContractsBySlugs(slugs: string[]) {

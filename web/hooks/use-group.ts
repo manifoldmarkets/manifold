@@ -11,6 +11,7 @@ import {
   listenForMemberGroupIds,
   listenForOpenGroups,
   listGroups,
+  topFollowedGroupsQuery,
 } from 'web/lib/firebase/groups'
 import { getUser } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
@@ -18,6 +19,8 @@ import { Contract } from 'common/contract'
 import { uniq } from 'lodash'
 import { listenForValues } from 'web/lib/firebase/utils'
 import { useQuery } from 'react-query'
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
+import { limit, query } from 'firebase/firestore'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -47,6 +50,14 @@ export const useOpenGroups = () => {
   }, [])
 
   return groups
+}
+
+export const useTopFollowedGroups = (count: number) => {
+  const result = useFirestoreQueryData(
+    ['top-followed-contracts', count],
+    query(topFollowedGroupsQuery, limit(count))
+  )
+  return result.data
 }
 
 export const useMemberGroups = (userId: string | null | undefined) => {
