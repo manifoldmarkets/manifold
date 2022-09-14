@@ -111,9 +111,9 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
   if (!isArray(sections)) sections = []
 
   const items = [
-    { label: 'Daily movers', id: 'daily-movers' },
     { label: 'Trending', id: 'score' },
     { label: 'New for you', id: 'newest' },
+    { label: 'Daily movers', id: 'daily-movers' },
     ...groups.map((g) => ({
       label: g.name,
       id: g.id,

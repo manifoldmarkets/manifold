@@ -139,7 +139,14 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     }
 
     const betDoc = contractDoc.collection('bets').doc()
-    trans.create(betDoc, { id: betDoc.id, userId: user.id, ...newBet })
+    trans.create(betDoc, {
+      id: betDoc.id,
+      userId: user.id,
+      userAvatarUrl: user.avatarUrl,
+      userUsername: user.username,
+      userName: user.name,
+      ...newBet,
+    })
     log('Created new bet document.')
 
     if (makers) {

@@ -9,10 +9,11 @@ export function MarketIntroPanel() {
       <div className="text-xl">Play-money predictions</div>
 
       <Image
-        height={150}
-        width={150}
-        className="self-center"
-        src="/flappy-logo.gif"
+        height={125}
+        width={125}
+        className="my-4 self-center"
+        src="/welcome/manipurple.png"
+        alt="Manifold Markets gradient logo"
       />
 
       <div className="mb-4 text-sm">
