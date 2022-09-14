@@ -15,8 +15,12 @@ import { Answer } from './answer'
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
 export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
-
 export const UNIQUE_BETTOR_LIQUIDITY_AMOUNT = 20
+
+type NormalizedBet<T extends Bet = Bet> = Omit<
+  T,
+  'userAvatarUrl' | 'userName' | 'userUsername'
+>
 
 export function getCpmmInitialLiquidity(
   providerId: string,
@@ -53,7 +57,7 @@ export function getAnteBets(
 
   const { createdTime } = contract
 
-  const yesBet: Bet = {
+  const yesBet: NormalizedBet = {
     id: yesAnteId,
     userId: creator.id,
     contractId: contract.id,
@@ -67,7 +71,7 @@ export function getAnteBets(
     fees: noFees,
   }
 
-  const noBet: Bet = {
+  const noBet: NormalizedBet = {
     id: noAnteId,
     userId: creator.id,
     contractId: contract.id,
@@ -95,7 +99,7 @@ export function getFreeAnswerAnte(
 
   const { createdTime } = contract
 
-  const anteBet: Bet = {
+  const anteBet: NormalizedBet = {
     id: anteBetId,
     userId: anteBettorId,
     contractId: contract.id,
@@ -125,7 +129,7 @@ export function getMultipleChoiceAntes(
 
   const { createdTime } = contract
 
-  const bets: Bet[] = answers.map((answer, i) => ({
+  const bets: NormalizedBet[] = answers.map((answer, i) => ({
     id: betDocIds[i],
     userId: creator.id,
     contractId: contract.id,
@@ -175,7 +179,7 @@ export function getNumericAnte(
     range(0, bucketCount).map((_, i) => [i, betAnte])
   )
 
-  const anteBet: NumericBet = {
+  const anteBet: NormalizedBet<NumericBet> = {
     id: newBetId,
     userId: anteBettorId,
     contractId: contract.id,

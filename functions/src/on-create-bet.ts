@@ -61,6 +61,12 @@ export const onCreateBet = functions
     const bettor = await getUser(bet.userId)
     if (!bettor) return
 
+    await change.ref.update({
+      userAvatarUrl: bettor.avatarUrl,
+      userName: bettor.name,
+      userUsername: bettor.username,
+    })
+
     await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
     await updateBettingStreak(bettor, bet, contract, eventId)

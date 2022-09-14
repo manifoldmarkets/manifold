@@ -3,6 +3,12 @@ import { Fees } from './fees'
 export type Bet = {
   id: string
   userId: string
+
+  // denormalized for bet lists
+  userAvatarUrl?: string
+  userUsername: string
+  userName: string
+
   contractId: string
   createdTime: number
 

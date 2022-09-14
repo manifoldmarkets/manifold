@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { getUser } from './utils'
+import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
@@ -68,10 +69,21 @@ export const changeUser = async (
     .get()
   const answerUpdate: Partial<Answer> = removeUndefinedProps(update)
 
+  const betsSnap = await firestore
+    .collectionGroup('bets')
+    .where('userId', '==', user.id)
+    .get()
+  const betsUpdate: Partial<Bet> = removeUndefinedProps({
+    userName: update.name,
+    userUsername: update.username,
+    userAvatarUrl: update.avatarUrl,
+  })
+
   const bulkWriter = firestore.bulkWriter()
   commentSnap.docs.forEach((d) => bulkWriter.update(d.ref, commentUpdate))
   answerSnap.docs.forEach((d) => bulkWriter.update(d.ref, answerUpdate))
   contracts.docs.forEach((d) => bulkWriter.update(d.ref, contractUpdate))
+  betsSnap.docs.forEach((d) => bulkWriter.update(d.ref, betsUpdate))
   await bulkWriter.flush()
   console.log('Done writing!')
 
