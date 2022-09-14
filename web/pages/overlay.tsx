@@ -322,14 +322,14 @@ export default () => {
                                         backgroundPosition: "center",
                                         aspectRatio: "1",
                                         display: "block",
-                                        height: "1.5em",
+                                        height: "2.0em",
                                     }}
                                 ></div>
-                                <div className="text-[0.4em] whitespace-nowrap" style={{ fontFamily: "Major Mono Display, monospace" }}>
+                                {/* <div className="text-[0.4em] whitespace-nowrap" style={{ fontFamily: "Major Mono Display, monospace" }}>
                                     manifold
                                     <br />
                                     markets
-                                </div>
+                                </div> */}
                                 <div className="text-center text-[0.7em]" style={{ fontWeight: "bold" }}>
                                     !signup
                                 </div>

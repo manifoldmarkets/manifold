@@ -55,9 +55,12 @@ export default class Chart {
     render() {
         const ctx = this.ctx;
 
+        const fontSize_px = window.innerWidth * 0.045 * 0.7; // To match HTML/CSS sizing of text
+        ctx.font = fontSize_px + "px Readex Pro";
+
         const padding_px = 10;
         const xAxisHeight_px = 15;
-        const yAxisWidth_px = 45;
+        const yAxisWidth_px = ctx.measureText("100%").width;
         const numXAxisLines = 6;
         const numYAxisLines = 3;
         const chartXTime_min = 10;
@@ -95,7 +98,6 @@ export default class Chart {
         {
             // Draw Y-axis labels:
             ctx.fillStyle = "#FFF";
-            ctx.font = "15px Readex Pro";
             for (let i = 0; i < numYAxisLines; i++) {
                 const y = graphHeight_px - (0.5 + (i * graphHeight_px / (numYAxisLines - 1)) >> 0);
                 const labelText = `${(i * (100 / (numYAxisLines - 1))).toFixed(0)}%`;
