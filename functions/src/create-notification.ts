@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin'
 import {
   BettingStreakData,
-  getDestinationsForUser,
   Notification,
   notification_reason_types,
 } from '../../common/notification'
@@ -27,6 +26,7 @@ import {
   sendNewUniqueBettorsEmail,
 } from './emails'
 import { filterDefined } from '../../common/util/array'
+import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -66,7 +66,7 @@ export const createNotification = async (
       const { reason } = userToReasonTexts[userId]
       const privateUser = await getPrivateUser(userId)
       if (!privateUser) continue
-      const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+      const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
         privateUser,
         reason
       )
@@ -236,7 +236,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       return
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
-    const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       reason
     )
@@ -468,7 +468,7 @@ export const createTipNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'tip_received'
   )
@@ -513,7 +513,7 @@ export const createBetFillNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'bet_fill'
   )
@@ -558,7 +558,7 @@ export const createReferralNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'you_referred_user'
   )
@@ -612,7 +612,7 @@ export const createLoanIncomeNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'loan_income'
   )
@@ -650,7 +650,7 @@ export const createChallengeAcceptedNotification = async (
 ) => {
   const privateUser = await getPrivateUser(challengeCreator.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'challenge_accepted'
   )
@@ -692,7 +692,7 @@ export const createBettingStreakBonusNotification = async (
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'betting_streak_incremented'
   )
@@ -739,7 +739,7 @@ export const createLikeNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'liked_and_tipped_your_contract'
   )
@@ -786,7 +786,7 @@ export const createUniqueBettorBonusNotification = async (
 ) => {
   const privateUser = await getPrivateUser(contractCreatorId)
   if (!privateUser) return
-  const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+  const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
     'unique_bettors_on_your_contract'
   )
@@ -876,7 +876,7 @@ export const createNewContractNotification = async (
   ) => {
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
-    const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       reason
     )
