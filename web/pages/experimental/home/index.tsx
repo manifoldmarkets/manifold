@@ -102,7 +102,7 @@ function SearchSection(props: {
     <Col>
       <SectionHeader
         label={label}
-        href={`/home?s=${sort}${pill ? `&p=${pill}` : ''}`}
+        href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
       />
       <ContractSearch
         user={user}
@@ -185,11 +185,12 @@ function DailyProfitAndBalance(props: {
   const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
   const [first, last] = [metrics[0], metrics[metrics.length - 1]]
 
-  if (first === undefined || last === undefined) return null
-
-  const profit =
-    calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-  const profitPercent = profit / first.investmentValue
+  let profit = 0
+  let profitPercent = 0
+  if (first && last) {
+    profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
+    profitPercent = profit / first.investmentValue
+  }
 
   return (
     <Row className={'gap-4'}>
