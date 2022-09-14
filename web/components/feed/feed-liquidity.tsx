@@ -36,7 +36,7 @@ export function FeedLiquidity(props: {
     return <></>
 
   return (
-    <Row className="flex w-full gap-2 pt-3">
+    <Row className="items-center gap-2 pt-3">
       {isSelf ? (
         <Avatar avatarUrl={user.avatarUrl} username={user.username} />
       ) : bettor ? (
