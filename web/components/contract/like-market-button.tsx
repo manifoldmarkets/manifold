@@ -67,7 +67,6 @@ export function LikeMarketButton(props: {
             {totalTipped}
           </div>
         )}
-        {/* Tip {totalTipped > 0 ? `(${formatMoney(totalTipped)})` : ''} */}
       </Col>
     </Button>
   )

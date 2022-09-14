@@ -59,7 +59,8 @@ export function Button(props: {
         color === 'gray-white' &&
           'text-greyscale-6 hover:bg-greyscale-2 border-none shadow-none',
         color === 'highlight-blue' &&
-          'text-highlight-blue border-none shadow-none'
+          'text-highlight-blue border-none shadow-none',
+        className
       )}
       disabled={disabled}
       onClick={onClick}
