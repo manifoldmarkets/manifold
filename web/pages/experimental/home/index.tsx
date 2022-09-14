@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
   PlusSmIcon,
   ArrowSmRightIcon,
   SearchIcon,
+  DotsHorizontalIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Masonry from 'react-masonry-css'
@@ -30,7 +31,7 @@ import { getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import { groupPath } from 'web/lib/firebase/groups'
+import { groupPath, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
@@ -38,6 +39,7 @@ import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { GroupCard } from 'web/pages/groups'
 import { chooseRandomSubset } from 'common/util/random'
+import { MenuButton } from 'web/components/nav/menu'
 
 export default function Home() {
   const user = useUser()
@@ -101,8 +103,12 @@ export default function Home() {
   )
 }
 
-function SectionHeader(props: { label: string; href: string }) {
-  const { label, href } = props
+function SectionHeader(props: {
+  label: string
+  href: string
+  children?: ReactNode
+}) {
+  const { label, href, children } = props
 
   return (
     <Row className="mb-3 items-center justify-between">
@@ -113,6 +119,7 @@ function SectionHeader(props: { label: string; href: string }) {
           aria-hidden="true"
         />
       </SiteLink>
+      {children}
     </Row>
   )
 }
@@ -151,7 +158,26 @@ function GroupSection(props: {
 
   return (
     <Col>
-      <SectionHeader label={group.name} href={groupPath(group.slug)} />
+      <SectionHeader label={group.name} href={groupPath(group.slug)}>
+        <MenuButton
+          buttonContent={
+            <button className="text-gray-500 hover:text-gray-700">
+              <DotsHorizontalIcon
+                className={clsx('h-6 w-6 flex-shrink-0')}
+                aria-hidden="true"
+              />
+            </button>
+          }
+          menuItems={[
+            {
+              name: 'Unfollow',
+              onClick: () => {
+                user && leaveGroup(group, user?.id)
+              },
+            },
+          ]}
+        />
+      </SectionHeader>
       <ContractSearch
         user={user}
         defaultSort={'score'}
