@@ -143,9 +143,17 @@ export function ContractPageSidebar(props: {
         ))}
       {allowResolve &&
         (isNumeric || isPseudoNumeric ? (
-          <NumericResolutionPanel creator={user} contract={contract} />
+          <NumericResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            contract={contract}
+          />
         ) : (
-          <ResolutionPanel creator={user} contract={contract} />
+          <ResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            contract={contract}
+          />
         ))}
     </Col>
   ) : null
