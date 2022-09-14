@@ -83,7 +83,7 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     req.body
   )
 
-  if (creatorId !== auth.uid && !isManifoldId(auth.uid) && !isAdmin())
+  if (creatorId !== auth.uid && !isManifoldId(auth.uid) && !isAdmin(user.email))
     throw new APIError(403, 'User is not creator of contract')
 
   if (contract.resolution) throw new APIError(400, 'Contract already resolved')
