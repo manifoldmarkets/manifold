@@ -53,16 +53,18 @@ export default function Home() {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-2 sm:pt-0">
+      <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
         <Row className={'w-full items-start justify-between gap-8'}>
           <Row className="items-end gap-4">
             <Title className="!mb-1 !mt-0" text="Home" />
             <EditButton />
           </Row>
-          <DailyProfitAndBalance className="" user={user} />
         </Row>
 
-        <SearchRow />
+        <Row className={'w-full items-center gap-8'}>
+          <SearchRow />
+          <DailyProfitAndBalance className="" user={user} />
+        </Row>
 
         {sections.map((item) => {
           const { id } = item
@@ -215,7 +217,7 @@ function EditButton(props: { className?: string }) {
 
 function SearchRow() {
   return (
-    <SiteLink href="/search" className="hover:no-underline">
+    <SiteLink href="/search" className="flex-1 hover:no-underline">
       <input className="input input-bordered w-full" placeholder="Search" />
     </SiteLink>
   )
