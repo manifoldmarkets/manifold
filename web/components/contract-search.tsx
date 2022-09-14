@@ -91,6 +91,7 @@ export function ContractSearch(props: {
     contracts: Contract[] | undefined,
     loadMore: () => void
   ) => ReactNode
+  autoFocus?: boolean
 }) {
   const {
     user,
@@ -109,6 +110,7 @@ export function ContractSearch(props: {
     noControls,
     maxResults,
     renderContracts,
+    autoFocus,
   } = props
 
   const [state, setState] = usePersistentState(
@@ -210,6 +212,7 @@ export function ContractSearch(props: {
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
+        autoFocus={autoFocus}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
@@ -238,6 +241,7 @@ function ContractSearchControls(props: {
   useQueryUrlParam?: boolean
   user?: User | null
   noControls?: boolean
+  autoFocus?: boolean
 }) {
   const {
     className,
@@ -250,6 +254,7 @@ function ContractSearchControls(props: {
     useQueryUrlParam,
     user,
     noControls,
+    autoFocus,
   } = props
 
   const router = useRouter()
@@ -399,6 +404,7 @@ function ContractSearchControls(props: {
           onBlur={trackCallback('search', { query: query })}
           placeholder={'Search'}
           className="input input-bordered w-full"
+          autoFocus={autoFocus}
         />
         {!query && (
           <select

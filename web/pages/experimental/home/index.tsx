@@ -4,6 +4,7 @@ import {
   AdjustmentsIcon,
   PlusSmIcon,
   ArrowSmRightIcon,
+  SearchIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
@@ -44,8 +45,10 @@ export default function Home() {
 
   return (
     <Page>
-      <Col className="pm:mx-10 gap-4 px-4 pb-12">
-        <Row className={'mt-4 w-full items-start justify-between'}>
+      <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-2 sm:pt-0">
+        <SearchRow />
+
+        <Row className={'w-full items-start justify-between gap-8'}>
           <Row className="items-end gap-4">
             <Title className="!mb-1 !mt-0" text="Home" />
             <EditButton />
@@ -173,6 +176,22 @@ function EditButton(props: { className?: string }) {
       <Button size="sm" color="gray-white" className={clsx(className, 'flex')}>
         <AdjustmentsIcon className={clsx('h-[24px] w-5')} aria-hidden="true" />
       </Button>
+    </SiteLink>
+  )
+}
+
+function SearchRow() {
+  return (
+    <SiteLink href="/search" className="hover:no-underline">
+      <Row>
+        <Button size="sm" color="gray-white">
+          <SearchIcon className={clsx('h-[24px] w-5')} aria-hidden="true" />
+        </Button>
+        <input
+          className="input pointer-events-none w-full"
+          placeholder="Search"
+        />
+      </Row>
     </SiteLink>
   )
 }
