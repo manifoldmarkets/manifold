@@ -2,32 +2,40 @@
 // another set of documents.
 
 import { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
+import { isEqual, zip } from 'lodash'
+import { UpdateSpec } from '../utils'
 
 export type DocumentValue = {
   doc: DocumentSnapshot
-  field: string
-  val: unknown
+  fields: string[]
+  vals: unknown[]
 }
-export type DocumentCorrespondence = [DocumentSnapshot, DocumentSnapshot[]]
+export type DocumentMapping = readonly [
+  DocumentSnapshot,
+  readonly DocumentSnapshot[]
+]
 export type DocumentDiff = {
   src: DocumentValue
   dest: DocumentValue
 }
 
+type PathPair = readonly [string, string]
+
 export function findDiffs(
-  docs: DocumentCorrespondence[],
-  srcPath: string,
-  destPath: string
+  docs: readonly DocumentMapping[],
+  ...paths: PathPair[]
 ) {
   const diffs: DocumentDiff[] = []
+  const srcPaths = paths.map((p) => p[0])
+  const destPaths = paths.map((p) => p[1])
   for (const [srcDoc, destDocs] of docs) {
-    const srcVal = srcDoc.get(srcPath)
+    const srcVals = srcPaths.map((p) => srcDoc.get(p))
     for (const destDoc of destDocs) {
-      const destVal = destDoc.get(destPath)
-      if (destVal !== srcVal) {
+      const destVals = destPaths.map((p) => destDoc.get(p))
+      if (!isEqual(srcVals, destVals)) {
         diffs.push({
-          src: { doc: srcDoc, field: srcPath, val: srcVal },
-          dest: { doc: destDoc, field: destPath, val: destVal },
+          src: { doc: srcDoc, fields: srcPaths, vals: srcVals },
+          dest: { doc: destDoc, fields: destPaths, vals: destVals },
         })
       }
     }
@@ -37,12 +45,19 @@ export function findDiffs(
 
 export function describeDiff(diff: DocumentDiff) {
   function describeDocVal(x: DocumentValue): string {
-    return `${x.doc.ref.path}.${x.field}: ${x.val}`
+    return `${x.doc.ref.path}.[${x.fields.join('|')}]: [${x.vals.join('|')}]`
   }
   return `${describeDocVal(diff.src)} -> ${describeDocVal(diff.dest)}`
 }
 
+export function getDiffUpdate(diff: DocumentDiff) {
+  return {
+    doc: diff.dest.doc.ref,
+    fields: Object.fromEntries(zip(diff.dest.fields, diff.src.vals)),
+  } as UpdateSpec
+}
+
 export function applyDiff(transaction: Transaction, diff: DocumentDiff) {
-  const { src, dest } = diff
-  transaction.update(dest.doc.ref, dest.field, src.val)
+  const update = getDiffUpdate(diff)
+  transaction.update(update.doc, update.fields)
 }
