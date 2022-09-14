@@ -1,11 +1,16 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { Contract } from '../../common/contract'
+import { Contract, CPMMContract } from '../../common/contract'
 import { User } from '../../common/user'
 import { removeUndefinedProps } from '../../common/util/object'
 import { getNewLiquidityProvision } from '../../common/add-liquidity'
 import { APIError, newEndpoint, validate } from './api'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from '../../common/antes'
+import { isProd } from './utils'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -47,7 +52,7 @@ export const addliquidity = newEndpoint({}, async (req, auth) => {
 
     const { newLiquidityProvision, newPool, newP, newTotalLiquidity } =
       getNewLiquidityProvision(
-        user,
+        user.id,
         amount,
         contract,
         newLiquidityProvisionDoc.id
@@ -88,3 +93,41 @@ export const addliquidity = newEndpoint({}, async (req, auth) => {
 })
 
 const firestore = admin.firestore()
+
+export const addHouseLiquidity = (contract: CPMMContract, amount: number) => {
+  return firestore.runTransaction(async (transaction) => {
+    const newLiquidityProvisionDoc = firestore
+      .collection(`contracts/${contract.id}/liquidity`)
+      .doc()
+
+    const providerId = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
+    const { newLiquidityProvision, newPool, newP, newTotalLiquidity } =
+      getNewLiquidityProvision(
+        providerId,
+        amount,
+        contract,
+        newLiquidityProvisionDoc.id
+      )
+
+    if (newP !== undefined && !isFinite(newP)) {
+      throw new APIError(
+        500,
+        'Liquidity injection rejected due to overflow error.'
+      )
+    }
+
+    transaction.update(
+      firestore.doc(`contracts/${contract.id}`),
+      removeUndefinedProps({
+        pool: newPool,
+        p: newP,
+        totalLiquidity: newTotalLiquidity,
+      })
+    )
+
+    transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
+  })
+}
