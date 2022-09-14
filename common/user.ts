@@ -68,6 +68,11 @@ export type PrivateUser = {
   /** @deprecated - use notificationSubscriptionTypes */
   notificationPreferences?: notification_subscribe_types
   notificationSubscriptionTypes: notification_subscription_types
+  twitchInfo?: {
+    twitchName: string
+    controlToken: string
+    botEnabled?: boolean
+  }
 }
 
 export type notification_destination_types = 'email' | 'browser'
