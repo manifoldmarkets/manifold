@@ -23,5 +23,5 @@ export function MarketIntroPanel() {
 
       <BetSignUpPrompt />
     </Col>
-  
+  )
 }
