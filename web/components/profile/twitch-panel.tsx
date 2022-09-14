@@ -6,27 +6,91 @@ import { LinkIcon } from '@heroicons/react/solid'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
+import {
+  linkTwitchAccountRedirect,
+  updateBotEnabledForUser,
+} from 'web/lib/twitch/link-twitch-account'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { Button, ColorType } from './../button'
 import { Row } from './../layout/row'
 import { LoadingIndicator } from './../loading-indicator'
+import { PrivateUser } from 'common/user'
 
 function BouncyButton(props: {
   children: ReactNode
   onClick?: MouseEventHandler<any>
   color?: ColorType
+  className?: string
 }) {
-  const { children, onClick, color } = props
+  const { children, onClick, color, className } = props
   return (
     <Button
       color={color}
       size="lg"
       onClick={onClick}
-      className="btn h-[inherit] flex-shrink-[inherit] border-none font-normal normal-case"
+      className={clsx(
+        'btn h-[inherit] flex-shrink-[inherit] border-none font-normal normal-case',
+        className
+      )}
     >
       {children}
     </Button>
+  )
+}
+
+function BotConnectButton(props: {
+  privateUser: PrivateUser | null | undefined
+}) {
+  const { privateUser } = props
+  const [loading, setLoading] = useState(false)
+
+  const updateBotConnected = (connected: boolean) => async () => {
+    if (!privateUser) return
+    const twitchInfo = privateUser.twitchInfo
+    if (!twitchInfo) return
+
+    const error = connected
+      ? 'Failed to add bot to your channel'
+      : 'Failed to remove bot from your channel'
+    const success = connected
+      ? 'Added bot to your channel'
+      : 'Removed bot from your channel'
+
+    setLoading(true)
+    toast.promise(
+      updateBotEnabledForUser(privateUser, connected).then(() =>
+        updatePrivateUser(privateUser.id, {
+          twitchInfo: { ...twitchInfo, botEnabled: connected },
+        })
+      ),
+      { loading: 'Updating bot settings...', error, success }
+    )
+    try {
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      {privateUser?.twitchInfo?.botEnabled ? (
+        <BouncyButton
+          color="red"
+          onClick={updateBotConnected(false)}
+          className={clsx(loading && 'btn-disabled')}
+        >
+          Remove bot from your channel
+        </BouncyButton>
+      ) : (
+        <BouncyButton
+          color="green"
+          onClick={updateBotConnected(true)}
+          className={clsx(loading && 'btn-disabled')}
+        >
+          Add bot to your channel
+        </BouncyButton>
+      )}
+    </>
   )
 }
 
@@ -35,9 +99,8 @@ export function TwitchPanel() {
   const privateUser = usePrivateUser()
 
   const twitchInfo = privateUser?.twitchInfo
-  const twitchName = privateUser?.twitchInfo?.twitchName
-  const twitchToken = privateUser?.twitchInfo?.controlToken
-  const twitchBotConnected = privateUser?.twitchInfo?.botEnabled
+  const twitchName = twitchInfo?.twitchName
+  const twitchToken = twitchInfo?.controlToken
 
   const linkIcon = <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
 
@@ -53,13 +116,6 @@ export function TwitchPanel() {
     toast.success('Dock link copied!', {
       icon: linkIcon,
     })
-  }
-
-  const updateBotConnected = (connected: boolean) => async () => {
-    if (user && twitchInfo) {
-      twitchInfo.botEnabled = connected
-      await updatePrivateUser(user.id, { twitchInfo })
-    }
   }
 
   const [twitchLoading, setTwitchLoading] = useState(false)
@@ -115,16 +171,11 @@ export function TwitchPanel() {
               <BouncyButton color="indigo" onClick={copyDockLink}>
                 Copy dock link
               </BouncyButton>
-              {twitchBotConnected ? (
-                <BouncyButton color="red" onClick={updateBotConnected(false)}>
-                  Remove bot from your channel
-                </BouncyButton>
-              ) : (
-                <BouncyButton color="green" onClick={updateBotConnected(true)}>
-                  Add bot to your channel
-                </BouncyButton>
-              )}
             </div>
+          </div>
+          <div className="mt-4" />
+          <div className="flex w-full">
+            <BotConnectButton privateUser={privateUser} />
           </div>
         </div>
       )}
