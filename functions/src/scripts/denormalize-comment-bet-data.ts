@@ -3,12 +3,7 @@
 import * as admin from 'firebase-admin'
 import { zip } from 'lodash'
 import { initAdmin } from './script-init'
-import {
-  DocumentCorrespondence,
-  findDiffs,
-  describeDiff,
-  applyDiff,
-} from './denormalize'
+import { findDiffs, describeDiff, applyDiff } from './denormalize'
 import { log } from '../utils'
 import { Transaction } from 'firebase-admin/firestore'
 
@@ -41,17 +36,20 @@ async function denormalize() {
         )
       )
       log(`Found ${bets.length} bets associated with comments.`)
-      const mapping = zip(bets, betComments)
-        .map(([bet, comment]): DocumentCorrespondence => {
-          return [bet!, [comment!]] // eslint-disable-line
-        })
-        .filter(([bet, _]) => bet.exists) // dev DB has some invalid bet IDs
 
-      const amountDiffs = findDiffs(mapping, 'amount', 'betAmount')
-      const outcomeDiffs = findDiffs(mapping, 'outcome', 'betOutcome')
-      log(`Found ${amountDiffs.length} comments with mismatched amounts.`)
-      log(`Found ${outcomeDiffs.length} comments with mismatched outcomes.`)
-      const diffs = amountDiffs.concat(outcomeDiffs)
+      // dev DB has some invalid bet IDs
+      const mapping = zip(bets, betComments)
+        .filter(([bet, _]) => bet!.exists) // eslint-disable-line
+        .map(([bet, comment]) => {
+          return [bet!, [comment!]] as const // eslint-disable-line
+        })
+
+      const diffs = findDiffs(
+        mapping,
+        ['amount', 'betAmount'],
+        ['outcome', 'betOutcome']
+      )
+      log(`Found ${diffs.length} comments with mismatched data.`)
       diffs.slice(0, 500).forEach((d) => {
         log(describeDiff(d))
         applyDiff(trans, d)

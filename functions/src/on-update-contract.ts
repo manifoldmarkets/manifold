@@ -13,32 +13,7 @@ export const onUpdateContract = functions.firestore
     if (!contractUpdater) throw new Error('Could not find contract updater')
 
     const previousValue = change.before.data() as Contract
-    if (previousValue.isResolved !== contract.isResolved) {
-      let resolutionText = contract.resolution ?? contract.question
-      if (contract.outcomeType === 'FREE_RESPONSE') {
-        const answerText = contract.answers.find(
-          (answer) => answer.id === contract.resolution
-        )?.text
-        if (answerText) resolutionText = answerText
-      } else if (contract.outcomeType === 'BINARY') {
-        if (resolutionText === 'MKT' && contract.resolutionProbability)
-          resolutionText = `${contract.resolutionProbability}%`
-        else if (resolutionText === 'MKT') resolutionText = 'PROB'
-      } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-        if (resolutionText === 'MKT' && contract.resolutionValue)
-          resolutionText = `${contract.resolutionValue}`
-      }
-
-      await createCommentOrAnswerOrUpdatedContractNotification(
-        contract.id,
-        'contract',
-        'resolved',
-        contractUpdater,
-        eventId,
-        resolutionText,
-        contract
-      )
-    } else if (
+    if (
       previousValue.closeTime !== contract.closeTime ||
       previousValue.question !== contract.question
     ) {

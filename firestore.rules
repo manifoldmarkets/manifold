@@ -77,7 +77,7 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['apiKey', 'unsubscribedFromResolutionEmails', 'unsubscribedFromCommentEmails', 'unsubscribedFromAnswerEmails', 'notificationPreferences', 'unsubscribedFromWeeklyTrendingEmails' ]);
+                         .hasOnly(['apiKey', 'unsubscribedFromResolutionEmails', 'unsubscribedFromCommentEmails', 'unsubscribedFromAnswerEmails', 'unsubscribedFromWeeklyTrendingEmails', 'notificationPreferences', 'twitchInfo']);
     }
 
     match /private-users/{userId}/views/{viewId} {
@@ -170,7 +170,7 @@ service cloud.firestore {
       allow read;
     }
 
-	   match /groups/{groupId} {
+	    match /groups/{groupId} {
           allow read;
           allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                            && request.resource.data.diff(resource.data)
@@ -184,7 +184,7 @@ service cloud.firestore {
 
           match /groupMembers/{memberId}{
              allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin);
-             allow delete: if request.auth.uid == resource.data.userId;
+              allow delete: if request.auth.uid == resource.data.userId;
             }
 
           function isGroupMember() {

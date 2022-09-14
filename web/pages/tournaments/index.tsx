@@ -155,7 +155,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
     <Page>
       <SEO
         title="Tournaments"
-        description="Win money by betting in forecasting touraments on current events, sports, science, and more"
+        description="Win money by predicting in forecasting tournaments on current events, sports, science, and more"
       />
       <Col className="m-4 gap-10 sm:mx-10 sm:gap-24 xl:w-[125%]">
         {sections.map(

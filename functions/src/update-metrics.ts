@@ -4,9 +4,11 @@ import { groupBy, isEmpty, keyBy, last, sortBy } from 'lodash'
 import { getValues, log, logMemory, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract, CPMM } from '../../common/contract'
+
 import { PortfolioMetrics, User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { getLoanUpdates } from '../../common/loans'
+import { scoreTraders, scoreCreators } from '../../common/scoring'
 import {
   calculateCreatorVolume,
   calculateNewPortfolioMetrics,
@@ -15,6 +17,7 @@ import {
   computeVolume,
 } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
+import { Group } from 'common/group'
 
 const firestore = admin.firestore()
 
@@ -24,16 +27,29 @@ export const updateMetrics = functions
   .onRun(updateMetricsCore)
 
 export async function updateMetricsCore() {
-  const [users, contracts, bets, allPortfolioHistories] = await Promise.all([
-    getValues<User>(firestore.collection('users')),
-    getValues<Contract>(firestore.collection('contracts')),
-    getValues<Bet>(firestore.collectionGroup('bets')),
-    getValues<PortfolioMetrics>(
-      firestore
-        .collectionGroup('portfolioHistory')
-        .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
-    ),
-  ])
+  const [users, contracts, bets, allPortfolioHistories, groups] =
+    await Promise.all([
+      getValues<User>(firestore.collection('users')),
+      getValues<Contract>(firestore.collection('contracts')),
+      getValues<Bet>(firestore.collectionGroup('bets')),
+      getValues<PortfolioMetrics>(
+        firestore
+          .collectionGroup('portfolioHistory')
+          .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
+      ),
+      getValues<Group>(firestore.collection('groups')),
+    ])
+
+  const contractsByGroup = await Promise.all(
+    groups.map((group) => {
+      return getValues(
+        firestore
+          .collection('groups')
+          .doc(group.id)
+          .collection('groupContracts')
+      )
+    })
+  )
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
   )
@@ -41,6 +57,7 @@ export async function updateMetricsCore() {
 
   const now = Date.now()
   const betsByContract = groupBy(bets, (bet) => bet.contractId)
+
   const contractUpdates = contracts
     .filter((contract) => contract.id)
     .map((contract) => {
@@ -162,4 +179,48 @@ export async function updateMetricsCore() {
     'set'
   )
   log(`Updated metrics for ${users.length} users.`)
+
+  try {
+    const groupUpdates = groups.map((group, index) => {
+      const groupContractIds = contractsByGroup[index] as GroupContractDoc[]
+      const groupContracts = groupContractIds
+        .map((e) => contractsById[e.contractId])
+        .filter((e) => e !== undefined) as Contract[]
+      const bets = groupContracts.map((e) => {
+        if (e != null && e.id in betsByContract) {
+          return betsByContract[e.id] ?? []
+        } else {
+          return []
+        }
+      })
+
+      const creatorScores = scoreCreators(groupContracts)
+      const traderScores = scoreTraders(groupContracts, bets)
+
+      const topTraderScores = topUserScores(traderScores)
+      const topCreatorScores = topUserScores(creatorScores)
+
+      return {
+        doc: firestore.collection('groups').doc(group.id),
+        fields: {
+          cachedLeaderboard: {
+            topTraders: topTraderScores,
+            topCreators: topCreatorScores,
+          },
+        },
+      }
+    })
+    await writeAsync(firestore, groupUpdates)
+  } catch (e) {
+    console.log('Error While Updating Group Leaderboards', e)
+  }
 }
+
+const topUserScores = (scores: { [userId: string]: number }) => {
+  const top50 = Object.entries(scores)
+    .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
+    .slice(0, 50)
+  return top50.map(([userId, score]) => ({ userId, score }))
+}
+
+type GroupContractDoc = { contractId: string; createdTime: number }

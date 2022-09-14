@@ -9,13 +9,17 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React from 'react'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/user-link'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 
 export function FeedLiquidity(props: {
   className?: string
   liquidity: LiquidityProvision
 }) {
   const { liquidity } = props
-  const { userId, createdTime } = liquidity
+  const { userId, createdTime, isAnte } = liquidity
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -24,8 +28,15 @@ export function FeedLiquidity(props: {
   const user = useUser()
   const isSelf = user?.id === userId
 
+  if (
+    isAnte ||
+    userId === HOUSE_LIQUIDITY_PROVIDER_ID ||
+    userId === DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+  )
+    return <></>
+
   return (
-    <Row className="flex w-full gap-2 pt-3">
+    <Row className="items-center gap-2 pt-3">
       {isSelf ? (
         <Avatar avatarUrl={user.avatarUrl} username={user.username} />
       ) : bettor ? (

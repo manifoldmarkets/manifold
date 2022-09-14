@@ -25,7 +25,6 @@ import { Contract } from 'common/contract'
 import { getContractFromId, updateContract } from 'web/lib/firebase/contracts'
 import { db } from 'web/lib/firebase/init'
 import { filterDefined } from 'common/util/array'
-import { getUser } from 'web/lib/firebase/users'
 
 export const groups = coll<Group>('groups')
 export const groupMembers = (groupId: string) =>
@@ -254,9 +253,9 @@ export function getGroupLinkToDisplay(contract: Contract) {
   return groupToDisplay
 }
 
-export async function listMembers(group: Group) {
+export async function listMemberIds(group: Group) {
   const members = await getValues<GroupMemberDoc>(groupMembers(group.id))
-  return await Promise.all(members.map((m) => m.userId).map(getUser))
+  return members.map((m) => m.userId)
 }
 
 export const topFollowedGroupsQuery = query(

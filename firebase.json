@@ -2,10 +2,30 @@
   "functions": {
     "predeploy": "cd functions && yarn build",
     "runtime": "nodejs16",
-    "source": "functions/dist"
+    "source": "functions/dist",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log"
+    ]
   },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "pubsub": {
+      "port": 8085
+    },
+    "ui": {
+      "enabled": true
+    }
   }
 }

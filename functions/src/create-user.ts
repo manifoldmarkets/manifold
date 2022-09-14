@@ -1,7 +1,11 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import { PrivateUser, User } from '../../common/user'
+import {
+  getDefaultNotificationSettings,
+  PrivateUser,
+  User,
+} from '../../common/user'
 import { getUser, getUserByUsername, getValues } from './utils'
 import { randomString } from '../../common/util/random'
 import {
@@ -79,6 +83,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     email,
     initialIpAddress: req.ip,
     initialDeviceToken: deviceToken,
+    notificationPreferences: getDefaultNotificationSettings(auth.uid),
   }
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)
