@@ -298,7 +298,7 @@ function IncomeNotificationGroupItem(props: {
           ...notificationsForSourceTitle[0],
           sourceText: sum.toString(),
           sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-          data: JSON.stringify(uniqueUsers),
+          data: { uniqueUsers },
         }
         newNotifications.push(newNotification)
       }
@@ -415,7 +415,7 @@ function IncomeNotificationItem(props: {
   const isTip = sourceType === 'tip' || sourceType === 'tip_and_like'
   const isUniqueBettorBonus = sourceType === 'bonus'
   const userLinks: MultiUserLinkInfo[] =
-    isTip || isUniqueBettorBonus ? JSON.parse(data ?? '{}') : []
+    isTip || isUniqueBettorBonus ? data?.uniqueUsers ?? [] : []
 
   useEffect(() => {
     setNotificationsAsSeen([notification])
@@ -443,10 +443,11 @@ function IncomeNotificationItem(props: {
       reasonText = !simple ? `liked` : `in likes on`
     }
 
-    const streakInDays =
-      Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
-        ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
-        : user?.currentBettingStreak ?? 0
+    const streakInDays = notification.data?.streak
+      ? notification.data?.streak
+      : Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
+      ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
+      : user?.currentBettingStreak ?? 0
     const bettingStreakText =
       sourceType === 'betting_streak_bonus' &&
       (sourceText

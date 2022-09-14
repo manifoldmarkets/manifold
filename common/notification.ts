@@ -18,7 +18,7 @@ export type Notification = {
   sourceUserUsername?: string
   sourceUserAvatarUrl?: string
   sourceText?: string
-  data?: string
+  data?: { [key: string]: any }
 
   sourceContractTitle?: string
   sourceContractCreatorUsername?: string
@@ -156,4 +156,9 @@ export const getDestinationsForUser = async (
     sendToBrowser: destinations.includes('browser'),
     urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
   }
+}
+
+export type BettingStreakData = {
+  streak: number
+  bonusAmount: number
 }

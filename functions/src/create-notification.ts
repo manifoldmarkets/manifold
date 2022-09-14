@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 import {
+  BettingStreakData,
   getDestinationsForUser,
   Notification,
   notification_reason_types,
@@ -686,6 +687,7 @@ export const createBettingStreakBonusNotification = async (
   bet: Bet,
   contract: Contract,
   amount: number,
+  streak: number,
   idempotencyKey: string
 ) => {
   const privateUser = await getPrivateUser(user.id)
@@ -719,6 +721,10 @@ export const createBettingStreakBonusNotification = async (
     sourceContractId: contract.id,
     sourceContractTitle: contract.question,
     sourceContractCreatorUsername: contract.creatorUsername,
+    data: {
+      streak: streak,
+      bonusAmount: amount,
+    } as BettingStreakData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }
