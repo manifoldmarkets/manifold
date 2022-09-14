@@ -1,4 +1,4 @@
-import { maxBy, sortBy, sum, sumBy } from 'lodash'
+import { maxBy, partition, sortBy, sum, sumBy } from 'lodash'
 import { Bet, LimitBet } from './bet'
 import {
   calculateCpmmSale,
@@ -254,4 +254,44 @@ export function getTopAnswer(
     ({ prob }) => prob
   )
   return top?.answer
+}
+
+export function getLargestPosition(contract: Contract, userBets: Bet[]) {
+  let yesFloorShares = 0,
+    yesShares = 0,
+    noShares = 0,
+    noFloorShares = 0
+
+  if (userBets.length === 0) {
+    return null
+  }
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    const answerCounts: { [outcome: string]: number } = {}
+    for (const bet of userBets) {
+      if (bet.outcome) {
+        if (!answerCounts[bet.outcome]) {
+          answerCounts[bet.outcome] = bet.amount
+        } else {
+          answerCounts[bet.outcome] += bet.amount
+        }
+      }
+    }
+    const majorityAnswer =
+      maxBy(Object.keys(answerCounts), (outcome) => answerCounts[outcome]) ?? ''
+    return {
+      prob: undefined,
+      shares: answerCounts[majorityAnswer] || 0,
+      outcome: majorityAnswer,
+    }
+  }
+
+  const [yesBets, noBets] = partition(userBets, (bet) => bet.outcome === 'YES')
+  yesShares = sumBy(yesBets, (bet) => bet.shares)
+  noShares = sumBy(noBets, (bet) => bet.shares)
+  yesFloorShares = Math.floor(yesShares)
+  noFloorShares = Math.floor(noShares)
+
+  const shares = yesFloorShares || noFloorShares
+  const outcome = yesFloorShares > noFloorShares ? 'YES' : 'NO'
+  return { shares, outcome }
 }
