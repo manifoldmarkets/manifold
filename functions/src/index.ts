@@ -71,6 +71,7 @@ import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
+import { savetwitchcredentials } from './save-twitch-credentials'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -96,6 +97,7 @@ const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
 const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
+const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
 
 export {
   healthFunction as health,
@@ -119,4 +121,5 @@ export {
   getCurrentUserFunction as getcurrentuser,
   acceptChallenge as acceptchallenge,
   createPostFunction as createpost,
+  saveTwitchCredentials as savetwitchcredentials
 }

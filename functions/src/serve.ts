@@ -27,6 +27,7 @@ import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
 import { createpost } from './create-post'
+import { savetwitchcredentials } from './save-twitch-credentials'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -65,6 +66,7 @@ addJsonEndpointRoute('/resolvemarket', resolvemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)
 addJsonEndpointRoute('/createcheckoutsession', createcheckoutsession)
 addJsonEndpointRoute('/getcurrentuser', getcurrentuser)
+addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
 
