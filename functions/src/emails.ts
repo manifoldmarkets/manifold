@@ -214,7 +214,7 @@ export const sendOneWeekBonusEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.onboarding_flow.includes('email')
+    !privateUser.notificationPreferences.onboarding_flow.includes('email')
   )
     return
 
@@ -247,7 +247,7 @@ export const sendCreatorGuideEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.onboarding_flow.includes('email')
+    !privateUser.notificationPreferences.onboarding_flow.includes('email')
   )
     return
 
@@ -279,7 +279,7 @@ export const sendThankYouEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.thank_you_for_purchases.includes(
+    !privateUser.notificationPreferences.thank_you_for_purchases.includes(
       'email'
     )
   )
@@ -460,9 +460,7 @@ export const sendInterestingMarketsEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.trending_markets.includes(
-      'email'
-    )
+    !privateUser.notificationPreferences.trending_markets.includes('email')
   )
     return
 

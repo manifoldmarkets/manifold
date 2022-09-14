@@ -17,7 +17,7 @@ async function main() {
         .collection('private-users')
         .doc(privateUser.id)
         .update({
-          notificationSubscriptionTypes: getDefaultNotificationSettings(
+          notificationPreferences: getDefaultNotificationSettings(
             privateUser.id,
             privateUser,
             disableEmails
