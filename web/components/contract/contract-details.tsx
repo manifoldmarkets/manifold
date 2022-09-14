@@ -122,139 +122,171 @@ export function ContractDetails(props: {
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
   const user = useUser()
   const isCreator = user?.id === creatorId
-  const [open, setOpen] = useState(false)
   const { width } = useWindowSize()
   const isMobile = (width ?? 0) < 600
+
+  return (
+    <Col>
+      <Row>
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={creatorAvatarUrl}
+          noLink={disabled}
+          size={9}
+          className="mr-1.5"
+        />
+        {!disabled && (
+          <div className="absolute mt-2 ml-[11px]">
+            <MiniUserFollowButton userId={creatorId} />
+          </div>
+        )}
+        <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
+          <Row className="w-full justify-between ">
+            {disabled ? (
+              creatorName
+            ) : (
+              <UserLink
+                className="my-auto whitespace-nowrap"
+                name={creatorName}
+                username={creatorUsername}
+                short={isMobile}
+              />
+            )}
+          </Row>
+          <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
+            {(!!closeTime || !!resolvedDate) && (
+              <Row className="items-center gap-1">
+                {resolvedDate && resolutionTime ? (
+                  <>
+                    <DateTimeTooltip
+                      text="Market resolved:"
+                      time={resolutionTime}
+                    >
+                      <Row>
+                        <div>resolved&nbsp;</div>
+                        <b>{resolvedDate}</b>
+                      </Row>
+                    </DateTimeTooltip>
+                  </>
+                ) : null}
+
+                {!resolvedDate && closeTime && user && (
+                  <Row>
+                    <div>Closes&nbsp;</div>
+                    <EditableCloseDate
+                      closeTime={closeTime}
+                      contract={contract}
+                      isCreator={isCreator ?? false}
+                    />
+                  </Row>
+                )}
+              </Row>
+            )}
+            {!isMobile && (
+              <MarketGroups
+                contract={contract}
+                isMobile={isMobile}
+                disabled={disabled}
+              />
+            )}
+          </Row>
+        </Col>
+        <div className="mt-0">
+          <ExtraContractActionsRow contract={contract} />
+        </div>
+      </Row>
+      {/* GROUPS */}
+      {isMobile && (
+        <div className="mt-2">
+          <MarketGroups
+            contract={contract}
+            isMobile={isMobile}
+            disabled={disabled}
+          />
+        </div>
+      )}
+      {/* {user && (
+        <>
+          <Row className="hidden items-center gap-1 md:inline-flex">
+            <DatabaseIcon className="h-5 w-5" />
+            <div className="whitespace-nowrap">{volumeLabel}</div>
+          </Row>
+        </>
+      )} */}
+    </Col>
+  )
+}
+
+export function MarketGroups(props: {
+  contract: Contract
+  isMobile: boolean | undefined
+  disabled: boolean | undefined
+}) {
+  const [open, setOpen] = useState(false)
+  const user = useUser()
+  const { contract, isMobile, disabled } = props
   const groupToDisplay = getGroupLinkToDisplay(contract)
   const groupInfo = groupToDisplay ? (
     <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
       <a
         className={clsx(
-          linkClass,
-          'flex flex-row items-center truncate pr-0 sm:pr-2',
+          'flex flex-row items-center truncate pr-1',
           isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
         )}
       >
-        {/* <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" /> */}
-        <div className="bg-greyscale-6 items-center truncate rounded-full px-2 text-white">
+        <div className="bg-greyscale-6 hover:bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
           {groupToDisplay.name}
         </div>
       </a>
     </Link>
   ) : (
-    <Button
-      size={'xs'}
-      className={'max-w-[200px] pr-2'}
-      color={'gray-white'}
-      onClick={() => !groupToDisplay && setOpen(true)}
-    >
-      <Row>
-        {/* <UserGroupIcon className="mx-1 inline h-5 w-5 shrink-0" /> */}
-        <div className="bg-greyscale-6 items-center truncate rounded-full px-2 text-white">
-          No Group
-        </div>
-      </Row>
-    </Button>
-  )
-
-  return (
-    <Row>
-      <Avatar
-        username={creatorUsername}
-        avatarUrl={creatorAvatarUrl}
-        noLink={disabled}
-        size={9}
-      />
-      {!disabled && (
-        <div className="absolute mt-4">
-          <MiniUserFollowButton userId={creatorId} />
-        </div>
+    <Row
+      className={clsx(
+        'cursor-default select-none items-center truncate pr-1',
+        isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
       )}
-      <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-        <Row className="w-full justify-between ">
-          {disabled ? (
-            creatorName
-          ) : (
-            <UserLink
-              className="my-auto whitespace-nowrap"
-              name={creatorName}
-              username={creatorUsername}
-              short={isMobile}
-            />
-          )}
-        </Row>
-        <Row className="text-2xs text-greyscale-4 sm:text-xs">
-          {(!!closeTime || !!resolvedDate) && (
-            <Row className="items-center gap-1">
-              {resolvedDate && resolutionTime ? (
-                <>
-                  <DateTimeTooltip
-                    text="Market resolved:"
-                    time={resolutionTime}
-                  >
-                    <Row>
-                      <div>resolved&nbsp;</div>
-                      <b>{resolvedDate}</b>
-                    </Row>
-                  </DateTimeTooltip>
-                </>
-              ) : null}
-
-              {!resolvedDate && closeTime && user && (
-                <Row>
-                  <div>Closes&nbsp;</div>
-                  <EditableCloseDate
-                    closeTime={closeTime}
-                    contract={contract}
-                    isCreator={isCreator ?? false}
-                  />
-                </Row>
-              )}
-            </Row>
-          )}
-          {/* <Row>
-            {disabled ? (
-              groupInfo
-            ) : !groupToDisplay && !user ? (
-              <div />
-            ) : (
-              <Row>
-                {groupInfo}
-                {user && groupToDisplay && (
-                  <Button
-                    size={'xs'}
-                    color={'gray-white'}
-                    onClick={() => setOpen(!open)}
-                  >
-                    <PlusCircleIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
-                  </Button>
-                )}
-              </Row>
-            )}
-          </Row>
-          <Modal open={open} setOpen={setOpen} size={'md'}>
-            <Col
-              className={
-                'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
-              }
-            >
-              <ContractGroupsList contract={contract} user={user} />
-            </Col>
-          </Modal> */}
-          {/* {user && (
-            <>
-              <Row className="hidden items-center gap-1 md:inline-flex">
-                <DatabaseIcon className="h-5 w-5" />
-                <div className="whitespace-nowrap">{volumeLabel}</div>
-              </Row>
-            </>
-          )} */}
-        </Row>
-      </Col>
-      <div className="mt-0">
-        <ExtraContractActionsRow contract={contract} />
+    >
+      <div
+        className={clsx(
+          'bg-greyscale-6 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
+        )}
+      >
+        No Group
       </div>
     </Row>
+  )
+  return (
+    <>
+      <Row className="align-middle">
+        {disabled ? (
+          { groupInfo }
+        ) : (
+          // !user ? (
+          //   <div />
+          // ) :
+          <Row>
+            {groupInfo}
+            {user && (
+              <button
+                className="text-greyscale-6 hover:text-greyscale-4"
+                onClick={() => setOpen(!open)}
+              >
+                <PlusCircleIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
+              </button>
+            )}
+          </Row>
+        )}
+      </Row>
+      <Modal open={open} setOpen={setOpen} size={'md'}>
+        <Col
+          className={
+            'max-h-[70vh] min-h-[20rem] overflow-auto rounded bg-white p-6'
+          }
+        >
+          <ContractGroupsList contract={contract} user={user} />
+        </Col>
+      </Modal>
+    </>
   )
 }
 

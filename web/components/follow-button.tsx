@@ -129,6 +129,7 @@ export function MiniUserFollowButton(props: { userId: string }) {
           className={clsx('h-[24px] w-5 sm:mr-2')}
           aria-hidden="true"
         />
+        <circle className="absolute h-5 w-5 text-white" />
       </Button>
     </>
   )
