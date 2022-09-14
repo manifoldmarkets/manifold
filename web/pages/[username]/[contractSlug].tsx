@@ -45,6 +45,7 @@ import {
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -116,13 +117,16 @@ export function ContractPageSidebar(props: {
 }) {
   const { contract, user } = props
   const { creatorId, isResolved, outcomeType } = contract
-
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
-  const allowResolve = !isResolved && isCreator && !!user
+  // INGA HERE IT'S HERE THIS IS THE SOLUTION
+  // const allowResolve = !isResolved && isCreator && !!user
+  const isAdmin = useAdmin()
+  const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
+
   const hasSidePanel =
     (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
 
@@ -154,10 +158,8 @@ export function ContractPageContent(
   }
 ) {
   const { backToHome, comments, user } = props
-
   const contract = useContractWithPreload(props.contract) ?? props.contract
   usePrefetch(user?.id)
-
   useTracking(
     'view market',
     {
