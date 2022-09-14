@@ -241,14 +241,12 @@ export function NotificationSettings(props: {
     const { label, subscriptionTypes } = data
     const expand =
       navigateToSection &&
-      Object.keys(subscriptionTypes).includes(navigateToSection)
+      subscriptionTypes.includes(navigateToSection as notification_preference)
 
     // Not sure how to prevent re-render (and collapse of an open section)
     // due to a private user settings change. Just going to persist expanded state here
     const [expanded, setExpanded] = usePersistentState(expand ?? false, {
-      key:
-        'NotificationsSettingsSection-' +
-        Object.keys(subscriptionTypes).join('-'),
+      key: 'NotificationsSettingsSection-' + subscriptionTypes.join('-'),
       store: storageStore(safeLocalStorage()),
     })
 
