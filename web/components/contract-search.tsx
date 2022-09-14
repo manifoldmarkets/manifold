@@ -66,14 +66,13 @@ type AdditionalFilter = {
   tag?: string
   excludeContractIds?: string[]
   groupSlug?: string
-  yourBets?: boolean
-  followed?: boolean
 }
 
 export function ContractSearch(props: {
   user?: User | null
   defaultSort?: Sort
   defaultFilter?: filter
+  defaultPill?: string
   additionalFilter?: AdditionalFilter
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
@@ -97,6 +96,7 @@ export function ContractSearch(props: {
     user,
     defaultSort,
     defaultFilter,
+    defaultPill,
     additionalFilter,
     onContractClick,
     hideOrderSelector,
@@ -203,6 +203,7 @@ export function ContractSearch(props: {
         className={headerClassName}
         defaultSort={defaultSort}
         defaultFilter={defaultFilter}
+        defaultPill={defaultPill}
         additionalFilter={additionalFilter}
         hideOrderSelector={hideOrderSelector}
         useQueryUrlParam={useQueryUrlParam}
@@ -230,6 +231,7 @@ function ContractSearchControls(props: {
   className?: string
   defaultSort?: Sort
   defaultFilter?: filter
+  defaultPill?: string
   additionalFilter?: AdditionalFilter
   hideOrderSelector?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
@@ -241,6 +243,7 @@ function ContractSearchControls(props: {
     className,
     defaultSort,
     defaultFilter,
+    defaultPill,
     additionalFilter,
     hideOrderSelector,
     onSearchParametersChanged,
@@ -279,7 +282,7 @@ function ContractSearchControls(props: {
         }
   )
   const [pill, setPill] = usePersistentState(
-    '',
+    defaultPill ?? '',
     !useQueryUrlParam
       ? undefined
       : {
@@ -326,11 +329,6 @@ function ContractSearchControls(props: {
     additionalFilter?.groupSlug
       ? `groupLinks.slug:${additionalFilter.groupSlug}`
       : '',
-    additionalFilter?.yourBets && user
-      ? // Show contracts bet on by the user
-        `uniqueBettorIds:${user.id}`
-      : '',
-    ...(additionalFilter?.followed ? personalFilters : []),
   ]
   const facetFilters = query
     ? additionalFilters

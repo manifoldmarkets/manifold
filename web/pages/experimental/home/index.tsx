@@ -65,7 +65,7 @@ export default function Home() {
                 key={id}
                 label={sort.value === 'newest' ? 'New for you' : sort.label}
                 sort={sort.value}
-                followed={sort.value === 'newest'}
+                pill={sort.value === 'newest' ? 'personal' : undefined}
                 user={user}
               />
             )
@@ -94,24 +94,20 @@ function SearchSection(props: {
   label: string
   user: User | null | undefined | undefined
   sort: Sort
-  yourBets?: boolean
-  followed?: boolean
+  pill?: string
 }) {
-  const { label, user, sort, yourBets, followed } = props
+  const { label, user, sort, pill } = props
 
   return (
     <Col>
-      <SectionHeader label={label} href={`/home?s=${sort}`} />
+      <SectionHeader
+        label={label}
+        href={`/home?s=${sort}${pill ? `&p=${pill}` : ''}`}
+      />
       <ContractSearch
         user={user}
         defaultSort={sort}
-        additionalFilter={
-          yourBets
-            ? { yourBets: true }
-            : followed
-            ? { followed: true }
-            : undefined
-        }
+        defaultPill={pill}
         noControls
         maxResults={6}
         persistPrefix={`experimental-home-${sort}`}
