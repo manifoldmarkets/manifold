@@ -23,6 +23,12 @@ import * as Twitch from "./twitch-api";
 import TwitchBot from "./twitch-bot";
 import User from "./user";
 
+type APIResponse = {
+    success: boolean;
+    message: string;
+    error: string;
+};
+
 export default class App {
     private readonly app: Express;
     io: Server;
@@ -159,18 +165,18 @@ export default class App {
             }
         });
 
-        this.app.get("/unregisterchannel", (request, response) => {
-            const params = getParamsFromURL(request.url);
-            const channelName = params["c"];
-            if (!channelName) {
+        this.app.post("/unregisterchanneltwitch", async (request, response) => {
+            const apiKey = request.body["apiKey"];
+            if (!apiKey) {
                 response.status(400).json({ msg: "Bad request: missing channel name parameter c." });
                 return;
             }
             try {
-                this.bot.leaveChannel(channelName);
-                response.json({ msg: `Bot successfully removed from channel ${channelName}.` });
+                const user = await this.firestore.getUserForManifoldAPIKey(apiKey);
+                await this.bot.leaveChannel(user.data.twitchLogin);
+                response.json(<APIResponse>{ success: true, message: `Bot successfully removed from channel ${user.data.twitchLogin}.` }); //!!! Proper response (API type class)
             } catch (e) {
-                response.status(400).json({ msg: `Failed to remove bot: ${e.message}` });
+                response.status(400).json(<APIResponse>{ success: false, error: e.message, message: `Failed to remove bot: ${e.message}` });
             }
         });
 
@@ -181,12 +187,11 @@ export default class App {
             log.info(`Got a Twitch link request: ${apiKey}`);
             try {
                 const user = await this.firestore.getUserForManifoldAPIKey(apiKey);
-                log.info(`Authorized Twitch user ${user.twitchDisplayName}`);
-                this.bot.joinChannel(user.data.twitchLogin);
-                response.send("<html><head><script>close();</script></head><html>"); //!!! Proper response (API type class)
+                await this.bot.joinChannel(user.data.twitchLogin);
+                response.json(<APIResponse>{ success: true, message: "Registered bot." });
             } catch (e) {
                 log.trace(e);
-                response.status(400).json({ error: e.message, message: "Failed to register bot." });
+                response.status(400).json(<APIResponse>{ success: false, error: e.message, message: "Failed to register bot." });
             }
         });
 

@@ -34,7 +34,10 @@ const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; pro
     return message;
 };
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
-const MSG_MARKET_CREATED = (username: string, question: string, defaultGroup: string) => `${username}'s market '${question}' has been created${defaultGroup ? ` in group '${defaultGroup}'` : ""}!${!defaultGroup ? " No default group was selected. Use /setdefaultgroup to set one." : ""}`;
+const MSG_MARKET_CREATED = (username: string, question: string, defaultGroup: string) =>
+    `${username}'s market '${question}' has been created${defaultGroup ? ` in group '${defaultGroup}'` : ""}!${
+        !defaultGroup ? " No default group was selected. Use /setdefaultgroup to set one." : ""
+    }`;
 const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
 const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
 
@@ -98,7 +101,7 @@ export default class TwitchBot {
                 }
             }
         };
-        
+
         const userCommands: { [k: string]: (user: User, tags: ChatUserstate, args: string[], channel: string, market: Market) => Promise<void> } = {
             buy: betCommandHandler,
             bet: betCommandHandler,
@@ -281,53 +284,46 @@ export default class TwitchBot {
     public temporarilyMute() {
         if (this.isMuted) {
             this.rejoinChannelTimer.refresh();
-            return;  
+            return;
         }
 
-        this.client.getChannels().forEach(c => {
+        this.client.getChannels().forEach((c) => {
             this.client.say(c, "A dev bot is temporarily taking over my job. See you later!");
         });
         this.isMuted = true;
 
         clearTimeout(this.rejoinChannelTimer);
-        
+
         this.rejoinChannelTimer = setTimeout(() => {
-            this.client.getChannels().forEach(c => {
+            this.client.getChannels().forEach((c) => {
                 this.client.say(c, "I'm baaaack");
             });
             this.isMuted = false;
         }, 10000);
     }
 
-    public joinChannel(channelName: string) {
-        if (this.isInChannel(channelName)) {
-            throw new Error(`Bot already added to channel '${channelName}'`);
-        }
-        this.client
+    public async joinChannel(channelName: string) {
+        if (this.isInChannel(channelName)) return;
+
+        return this.client
             .join("#" + channelName)
-            .then(() => {
-                this.client.say(channelName, "/color BlueViolet");
+            .then(async () => {
+                await this.client.say(channelName, "/color BlueViolet");
 
                 let message = "Hey there! I am the Manifold Markets chat bot.";
                 if (!this.client.isMod(channelName, TWITCH_BOT_USERNAME)) {
                     message += " Please /mod me so I can do my job.";
                 }
-                this.client.say(channelName, message);
-
-                this.app.firestore.registerTwitchChannel(channelName);
+                await this.client.say(channelName, message);
             })
+            .then(() => this.app.firestore.registerTwitchChannel(channelName))
             .catch((e) => log.trace(e));
     }
 
-    public leaveChannel(channelName: string) {
-        if (this.isInChannel(channelName)) {
-            this.client.say(channelName, "Goodbye cruel world.");
-            this.client.part(channelName).then(() => {
-                this.app.firestore.unregisterTwitchChannel(channelName);
-            });
-        } else {
-            throw new Error(`Bot not in channel '${channelName}'`);
-        }
+    public async leaveChannel(channelName: string) {
+        if (!this.isInChannel(channelName)) return;
+        await this.client.say(channelName, "Goodbye cruel world.");
+        return this.client.part(channelName).then(() => this.app.firestore.unregisterTwitchChannel(channelName));
     }
 }
 
