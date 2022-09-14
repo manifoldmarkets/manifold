@@ -183,8 +183,8 @@ export function NotificationSettings(props: {
       toast
         .promise(
           updatePrivateUser(privateUser.id, {
-            notificationSubscriptionTypes: {
-              ...privateUser.notificationSubscriptionTypes,
+            notificationPreferences: {
+              ...privateUser.notificationPreferences,
               [subscriptionTypeKey]: destinations.includes(setting)
                 ? destinations.filter((d) => d !== setting)
                 : uniq([...destinations, setting]),
@@ -240,7 +240,7 @@ export function NotificationSettings(props: {
   const getUsersSavedPreference = (
     key: keyof notification_subscription_types
   ) => {
-    return privateUser.notificationSubscriptionTypes[key] ?? []
+    return privateUser.notificationPreferences[key] ?? []
   }
 
   const Section = memo(function Section(props: {

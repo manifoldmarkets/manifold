@@ -138,7 +138,7 @@ export const getDestinationsForUser = async (
   privateUser: PrivateUser,
   reason: notification_reason_types | keyof notification_subscription_types
 ) => {
-  const notificationSettings = privateUser.notificationSubscriptionTypes
+  const notificationSettings = privateUser.notificationPreferences
   let destinations
   let subscriptionType: keyof notification_subscription_types | undefined
   if (Object.keys(notificationSettings).includes(reason)) {
@@ -151,9 +151,11 @@ export const getDestinationsForUser = async (
       ? notificationSettings[subscriptionType]
       : []
   }
+  // const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
   return {
     sendToEmail: destinations.includes('email'),
     sendToBrowser: destinations.includes('browser'),
+    // unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${subscriptionType}`,
     urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
   }
 }

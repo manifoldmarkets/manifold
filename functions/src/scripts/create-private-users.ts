@@ -21,7 +21,7 @@ async function main() {
       id: user.id,
       email,
       username,
-      notificationSubscriptionTypes: getDefaultNotificationSettings(user.id),
+      notificationPreferences: getDefaultNotificationSettings(user.id),
     }
 
     if (user.totalDeposits === undefined) {

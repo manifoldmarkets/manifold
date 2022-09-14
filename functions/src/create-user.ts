@@ -83,7 +83,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     email,
     initialIpAddress: req.ip,
     initialDeviceToken: deviceToken,
-    notificationSubscriptionTypes: getDefaultNotificationSettings(auth.uid),
+    notificationPreferences: getDefaultNotificationSettings(auth.uid),
   }
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)

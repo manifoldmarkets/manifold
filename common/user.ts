@@ -65,9 +65,7 @@ export type PrivateUser = {
   initialDeviceToken?: string
   initialIpAddress?: string
   apiKey?: string
-  /** @deprecated - use notificationSubscriptionTypes */
-  notificationPreferences?: notification_subscribe_types
-  notificationSubscriptionTypes: notification_subscription_types
+  notificationPreferences: notification_subscription_types
   twitchInfo?: {
     twitchName: string
     controlToken: string
@@ -142,9 +140,6 @@ export const getDefaultNotificationSettings = (
   privateUser?: PrivateUser,
   noEmails?: boolean
 ) => {
-  const prevPref = privateUser?.notificationPreferences ?? 'all'
-  const wantsLess = prevPref === 'less'
-  const wantsAll = prevPref === 'all'
   const {
     unsubscribedFromCommentEmails,
     unsubscribedFromAnswerEmails,
@@ -161,111 +156,96 @@ export const getDefaultNotificationSettings = (
   return {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(
-      wantsAll,
+      true,
       !unsubscribedFromCommentEmails
     ),
     all_answers_on_watched_markets: constructPref(
-      wantsAll,
+      true,
       !unsubscribedFromAnswerEmails
     ),
 
     // Comments
-    tips_on_your_comments: constructPref(
-      wantsAll || wantsLess,
-      !unsubscribedFromCommentEmails
-    ),
-    comments_by_followed_users_on_watched_markets: constructPref(
-      wantsAll,
-      false
-    ),
+    tips_on_your_comments: constructPref(true, !unsubscribedFromCommentEmails),
+    comments_by_followed_users_on_watched_markets: constructPref(true, false),
     all_replies_to_my_comments_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromCommentEmails
     ),
     all_replies_to_my_answers_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromCommentEmails
     ),
     all_comments_on_contracts_with_shares_in_on_watched_markets: constructPref(
-      wantsAll,
+      true,
       !unsubscribedFromCommentEmails
     ),
 
     // Answers
     answers_by_followed_users_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromAnswerEmails
     ),
     answers_by_market_creator_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromAnswerEmails
     ),
     all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
-      wantsAll,
+      true,
       !unsubscribedFromAnswerEmails
     ),
 
     // On users' markets
     your_contract_closed: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromResolutionEmails
     ), // High priority
     all_comments_on_my_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromCommentEmails
     ),
     all_answers_on_my_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromAnswerEmails
     ),
-    subsidized_your_market: constructPref(wantsAll || wantsLess, true),
+    subsidized_your_market: constructPref(true, true),
 
     // Market updates
     resolutions_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromResolutionEmails
     ),
-    market_updates_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
-      false
-    ),
+    market_updates_on_watched_markets: constructPref(true, false),
     market_updates_on_watched_markets_with_shares_in: constructPref(
-      wantsAll || wantsLess,
+      true,
       false
     ),
     resolutions_on_watched_markets_with_shares_in: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromResolutionEmails
     ),
 
     //Balance Changes
-    loan_income: constructPref(wantsAll || wantsLess, false),
-    betting_streaks: constructPref(wantsAll || wantsLess, false),
-    referral_bonuses: constructPref(wantsAll || wantsLess, true),
-    unique_bettors_on_your_contract: constructPref(
-      wantsAll || wantsLess,
-      false
-    ),
+    loan_income: constructPref(true, false),
+    betting_streaks: constructPref(true, false),
+    referral_bonuses: constructPref(true, true),
+    unique_bettors_on_your_contract: constructPref(true, false),
     tipped_comments_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
+      true,
       !unsubscribedFromCommentEmails
     ),
-    tips_on_your_markets: constructPref(wantsAll || wantsLess, true),
-    limit_order_fills: constructPref(wantsAll || wantsLess, false),
+    tips_on_your_markets: constructPref(true, true),
+    limit_order_fills: constructPref(true, false),
 
     // General
-    tagged_user: constructPref(wantsAll || wantsLess, true),
-    on_new_follow: constructPref(wantsAll || wantsLess, true),
-    contract_from_followed_user: constructPref(wantsAll || wantsLess, true),
+    tagged_user: constructPref(true, true),
+    on_new_follow: constructPref(true, true),
+    contract_from_followed_user: constructPref(true, true),
     trending_markets: constructPref(
       false,
       !unsubscribedFromWeeklyTrendingEmails
     ),
     profit_loss_updates: constructPref(false, true),
-    probability_updates_on_watched_markets: constructPref(
-      wantsAll || wantsLess,
-      false
-    ),
+    probability_updates_on_watched_markets: constructPref(true, false),
     thank_you_for_purchases: constructPref(
       false,
       !unsubscribedFromGenericEmails
