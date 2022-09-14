@@ -1,18 +1,14 @@
 import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
-import { getPrivateUser } from 'functions/src/utils'
-import { filterDefined } from 'common/lib/util/array'
+import { getAllPrivateUsers } from 'functions/src/utils'
 import { FieldValue } from 'firebase-admin/firestore'
 initAdmin()
 
 const firestore = admin.firestore()
 
 async function main() {
-  // const privateUsers = await getAllPrivateUsers()
-  const privateUsers = filterDefined([
-    await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'),
-  ])
+  const privateUsers = await getAllPrivateUsers()
   await Promise.all(
     privateUsers.map((privateUser) => {
       if (!privateUser.id) return Promise.resolve()
