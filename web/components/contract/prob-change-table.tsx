@@ -11,8 +11,9 @@ export function ProbChangeTable(props: {
   changes:
     | { positiveChanges: CPMMContract[]; negativeChanges: CPMMContract[] }
     | undefined
+  full?: boolean
 }) {
-  const { changes } = props
+  const { changes, full } = props
 
   if (!changes) return <LoadingIndicator />
 
@@ -24,7 +25,10 @@ export function ProbChangeTable(props: {
     negativeChanges.findIndex((c) => c.probChanges.day > -threshold) + 1
   )
   const maxRows = Math.min(positiveChanges.length, negativeChanges.length)
-  const rows = Math.min(3, Math.min(maxRows, countOverThreshold))
+  const rows = Math.min(
+    full ? Infinity : 3,
+    Math.min(maxRows, countOverThreshold)
+  )
 
   const filteredPositiveChanges = positiveChanges.slice(0, rows)
   const filteredNegativeChanges = negativeChanges.slice(0, rows)

@@ -61,7 +61,7 @@ export default function Home() {
           </Row>
         </Row>
 
-        <Row className={'w-full items-center gap-8'}>
+        <Row className={'mb-2 w-full items-center gap-8'}>
           <SearchRow />
           <DailyProfitAndBalance className="" user={user} />
         </Row>
@@ -197,7 +197,7 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
 
   return (
     <Col className="gap-2">
-      <SectionHeader label="Daily movers" href="daily-movers" />
+      <SectionHeader label="Daily movers" href="/experimental/daily-movers" />
       <ProbChangeTable changes={changes} />
     </Col>
   )
