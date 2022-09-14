@@ -106,6 +106,11 @@ export function AvatarDetails(props: {
   )
 }
 
+export function getIsMobile() {
+  const { width } = useWindowSize()
+  return (width ?? 0) < 600
+}
+
 export function ContractDetails(props: {
   contract: Contract
   disabled?: boolean
@@ -123,7 +128,7 @@ export function ContractDetails(props: {
   const user = useUser()
   const isCreator = user?.id === creatorId
   const { width } = useWindowSize()
-  const isMobile = (width ?? 0) < 600
+  const isMobile = getIsMobile()
 
   return (
     <Col>
@@ -136,7 +141,7 @@ export function ContractDetails(props: {
           className="mr-1.5"
         />
         {!disabled && (
-          <div className="absolute mt-2 ml-[11px]">
+          <div className="absolute mt-3 ml-[11px]">
             <MiniUserFollowButton userId={creatorId} />
           </div>
         )}
@@ -234,7 +239,7 @@ export function MarketGroups(props: {
           isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
         )}
       >
-        <div className="bg-greyscale-6 hover:bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
+        <div className="bg-greyscale-4 hover:bg-greyscale-3 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
           {groupToDisplay.name}
         </div>
       </a>
@@ -248,7 +253,7 @@ export function MarketGroups(props: {
     >
       <div
         className={clsx(
-          'bg-greyscale-6 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
+          'bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
         )}
       >
         No Group
@@ -268,7 +273,7 @@ export function MarketGroups(props: {
             {groupInfo}
             {user && (
               <button
-                className="text-greyscale-6 hover:text-greyscale-4"
+                className="text-greyscale-4 hover:text-greyscale-3"
                 onClick={() => setOpen(!open)}
               >
                 <PlusCircleIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />

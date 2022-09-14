@@ -1,5 +1,6 @@
-import { PlusCircleIcon } from '@heroicons/react/solid'
+import { CheckCircleIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { useEffect, useState } from 'react'
 import { useFollows } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
@@ -73,35 +74,6 @@ export function UserFollowButton(props: { userId: string; small?: boolean }) {
   )
 }
 
-// export function MiniFollowButton(props: {
-//   isFollowing: boolean | undefined
-//   onFollow: () => void
-//   onUnfollow: () => void
-//   className?: string
-// }) {
-//   const { isFollowing, onFollow, className } = props
-
-//   const user = useUser()
-
-//   if (isFollowing || !user || isFollowing === undefined) {
-//     return <></>
-//   }
-
-//   return (
-//     <Button
-//       size="sm"
-//       color="highlight-blue"
-//       onClick={withTracking(onFollow, 'follow')}
-//       className={className}
-//     >
-//       <PlusCircleIcon
-//         className={clsx('h-[24px] w-5 sm:mr-2')}
-//         aria-hidden="true"
-//       />
-//     </Button>
-//   )
-// }
-
 export function MiniUserFollowButton(props: { userId: string }) {
   const { userId } = props
   const currentUser = useUser()
@@ -117,7 +89,6 @@ export function MiniUserFollowButton(props: { userId: string }) {
     isFollowing === undefined
   )
     return null
-
   return (
     <>
       <Button
@@ -126,10 +97,11 @@ export function MiniUserFollowButton(props: { userId: string }) {
         onClick={withTracking(() => follow(currentUser.id, userId), 'follow')}
       >
         <PlusCircleIcon
-          className={clsx('h-[24px] w-5 sm:mr-2')}
+          className={clsx(
+            'hover:text-hover-blue h-5 w-5 rounded-full bg-white sm:mr-2'
+          )}
           aria-hidden="true"
         />
-        <circle className="absolute h-5 w-5 text-white" />
       </Button>
     </>
   )

@@ -27,6 +27,7 @@ module.exports = {
         'greyscale-6': '#66667C',
         'greyscale-7': '#111140',
         'highlight-blue': '#5BCEFF',
+        'hover-blue': '#90DEFF',
       },
       typography: {
         quoteless: {

@@ -106,7 +106,7 @@ export function ContractCard(props: {
         <>
           {outcomeType === 'BINARY' && (
             <BinaryResolutionOrChance
-              className="items-center self-center"
+              className="items-center self-center pr-5"
               contract={contract}
             />
           )}

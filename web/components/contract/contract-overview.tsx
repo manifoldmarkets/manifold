@@ -73,7 +73,7 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
   const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
+      <Col className="gap-1 px-2">
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />

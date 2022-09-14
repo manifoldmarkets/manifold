@@ -18,20 +18,16 @@ import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
-  const { outcomeType, resolution } = contract
+  // const { outcomeType, resolution } = contract
   const user = useUser()
   const [isShareOpen, setShareOpen] = useState(false)
-  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
-    useState(false)
+  // const [openCreateChallengeModal, setOpenCreateChallengeModal] =
+  //   useState(false)
   // const showChallenge =
   //   user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
 
   return (
     <Row>
-      {/* <FollowMarketButton contract={contract} user={user} />
-      {user?.id !== contract.creatorId && (
-        <LikeMarketButton contract={contract} user={user} />
-      )} */}
       <Button
         size="sm"
         color="gray-white"
@@ -42,7 +38,6 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
       >
         <Row>
           <ShareIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-          {/* <span className="hidden sm:block">Share</span> */}
         </Row>
         <ShareModal
           isOpen={isShareOpen}
@@ -51,29 +46,6 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           user={user}
         />
       </Button>
-
-      {/* {showChallenge && (
-        <Button
-          size="lg"
-          color="gray-white"
-          className="max-w-xs self-center"
-          onClick={withTracking(
-            () => setOpenCreateChallengeModal(true),
-            'click challenge button'
-          )}
-        >
-          <Col className="items-center sm:flex-row">
-            <ChallengeIcon className="mx-auto h-[24px] w-5 text-gray-500 sm:mr-2" />
-            <span>Challenge</span>
-          </Col>
-          <CreateChallengeModal
-            isOpen={openCreateChallengeModal}
-            setOpen={setOpenCreateChallengeModal}
-            user={user}
-            contract={contract}
-          />
-        </Button>
-      )} */}
       <Col className={'justify-center'}>
         <ContractInfoDialog contract={contract} />
       </Col>

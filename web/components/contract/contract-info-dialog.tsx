@@ -19,6 +19,9 @@ import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../copy-contract-button'
 import { Row } from '../layout/row'
 import { Button } from '../button'
+import { FollowMarketButton } from '../follow-market-button'
+import { useUser } from 'web/hooks/use-user'
+import { LikeMarketButton } from './like-market-button'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -27,6 +30,7 @@ export function ContractInfoDialog(props: {
   contract: Contract
   className?: string
 }) {
+  const user = useUser()
   const { contract, className } = props
 
   const [open, setOpen] = useState(false)
@@ -82,7 +86,15 @@ export function ContractInfoDialog(props: {
 
       <Modal open={open} setOpen={setOpen}>
         <Col className="gap-4 rounded bg-white p-6">
-          <Title className="!mt-0 !mb-0" text="Market info" />
+          <Row className="w-full justify-between">
+            <Title className="!mt-0 !mb-0" text="This Market" />
+            <div>
+              <FollowMarketButton contract={contract} user={user} />
+              {user?.id !== contract.creatorId && (
+                <LikeMarketButton contract={contract} user={user} />
+              )}
+            </div>
+          </Row>
 
           <table className="table-compact table-zebra table w-full text-gray-500">
             <tbody>
