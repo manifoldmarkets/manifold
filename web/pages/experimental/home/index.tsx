@@ -39,6 +39,7 @@ import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { GroupCard } from 'web/pages/groups'
 import { chooseRandomSubset } from 'common/util/random'
 import { MenuButton } from 'web/components/nav/menu'
+import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 
 export default function Home() {
   const user = useUser()
@@ -249,7 +250,13 @@ function DailyProfitAndBalance(props: {
       </Col>
       <Col>
         <div className="text-gray-500">Streak</div>
-        <Row className={clsx(className, 'items-center text-lg')}>
+        <Row
+          className={clsx(
+            className,
+            'items-center text-lg',
+            user && !hasCompletedStreakToday(user) && 'grayscale'
+          )}
+        >
           <span>🔥 {user?.currentBettingStreak ?? 0}</span>
         </Row>
       </Col>
