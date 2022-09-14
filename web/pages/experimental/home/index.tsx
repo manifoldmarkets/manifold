@@ -2,9 +2,8 @@ import React, { ReactNode } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
-  PlusSmIcon,
+  PencilAltIcon,
   ArrowSmRightIcon,
-  SearchIcon,
   DotsHorizontalIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -55,8 +54,6 @@ export default function Home() {
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-2 sm:pt-0">
-        <SearchRow />
-
         <Row className={'w-full items-start justify-between gap-8'}>
           <Row className="items-end gap-4">
             <Title className="!mb-1 !mt-0" text="Home" />
@@ -64,6 +61,8 @@ export default function Home() {
           </Row>
           <DailyProfitAndBalance className="" user={user} />
         </Row>
+
+        <SearchRow />
 
         {sections.map((item) => {
           const { id } = item
@@ -91,13 +90,13 @@ export default function Home() {
       </Col>
       <button
         type="button"
-        className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-3 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
+        className="fixed bottom-[70px] right-3 z-20 inline-flex items-center rounded-full border border-transparent bg-indigo-600 p-4 text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 lg:hidden"
         onClick={() => {
           Router.push('/create')
           track('mobile create button')
         }}
       >
-        <PlusSmIcon className="h-8 w-8" aria-hidden="true" />
+        <PencilAltIcon className="h-7 w-7" aria-hidden="true" />
       </button>
     </Page>
   )
@@ -163,7 +162,7 @@ function GroupSection(props: {
           buttonContent={
             <button className="text-gray-500 hover:text-gray-700">
               <DotsHorizontalIcon
-                className={clsx('h-6 w-6 flex-shrink-0')}
+                className={clsx('h-5 w-5 flex-shrink-0')}
                 aria-hidden="true"
               />
             </button>
@@ -183,7 +182,7 @@ function GroupSection(props: {
         defaultSort={'score'}
         additionalFilter={{ groupSlug: group.slug }}
         noControls
-        maxResults={6}
+        maxResults={4}
         persistPrefix={`experimental-home-${group.slug}`}
       />
     </Col>
@@ -217,15 +216,7 @@ function EditButton(props: { className?: string }) {
 function SearchRow() {
   return (
     <SiteLink href="/search" className="hover:no-underline">
-      <Row>
-        <Button size="sm" color="gray-white">
-          <SearchIcon className={clsx('h-[24px] w-5')} aria-hidden="true" />
-        </Button>
-        <input
-          className="input pointer-events-none w-full"
-          placeholder="Search"
-        />
-      </Row>
+      <input className="input input-bordered w-full" placeholder="Search" />
     </SiteLink>
   )
 }
