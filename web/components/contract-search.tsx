@@ -164,6 +164,7 @@ export function ContractSearch(props: {
         numericFilters,
         page: requestedPage,
         hitsPerPage: 20,
+        advancedSyntax: true,
       })
       // if there's a more recent request, forget about this one
       if (id === requestId.current) {
