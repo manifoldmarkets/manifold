@@ -122,8 +122,6 @@ export function ContractPageSidebar(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
-  // INGA HERE IT'S HERE THIS IS THE SOLUTION
-  // const allowResolve = !isResolved && isCreator && !!user
   const isAdmin = useAdmin()
   const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
 
