@@ -79,7 +79,7 @@ export function BetInline(props: {
   return (
     <Col className={clsx('items-center', className)}>
       <Row className="h-12 items-stretch gap-3 rounded bg-indigo-200 py-2 px-3">
-        <div className="text-xl">Bet</div>
+        <div className="text-xl">Predict</div>
         <YesNoSelector
           className="space-x-0"
           btnClassName="rounded-l-none rounded-r-none first:rounded-l-2xl last:rounded-r-2xl"
