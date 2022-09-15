@@ -142,7 +142,7 @@ function createNewArtistMap() {
       samples[key] = value
       newTotal += value.length
       i++
-      if (i >= k + extra * 2) {
+      if (i >= k + extra * extra) {
         break
       }
     }
