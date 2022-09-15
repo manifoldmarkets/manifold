@@ -989,7 +989,7 @@ function ContractResolvedNotification(props: {
   }
 
   const description =
-    userInvestment && userPayout ? (
+    userInvestment && userPayout !== undefined ? (
       <Row className={'gap-1 '}>
         {resolutionDescription()}
         Invested:
@@ -1002,7 +1002,7 @@ function ContractResolvedNotification(props: {
           )}
         >
           {formatMoney(userPayout)}
-          {` (${userPayout > 0 ? '+' : '-'}${Math.round(
+          {` (${userPayout > 0 ? '+' : ''}${Math.round(
             ((userPayout - userInvestment) / userInvestment) * 100
           )}%)`}
         </span>
