@@ -1,10 +1,12 @@
-import { MouseEventHandler, useState } from 'react'
+import { PrivateUser, User } from 'common/user'
+import { useState } from 'react'
 
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
@@ -17,9 +19,42 @@ import { track } from 'web/lib/service/analytics'
 import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
 
 function TwitchPlaysManifoldMarkets(props: {
-  onStartedClick?: MouseEventHandler<any>
+  user?: User | null
+  privateUser?: PrivateUser | null
 }) {
-  const { onStartedClick } = props
+  const { user, privateUser } = props
+
+  const twitchUser = privateUser?.twitchInfo?.twitchName
+
+  const [isLoading, setLoading] = useState(false)
+
+  const callback =
+    user && privateUser
+      ? () => linkTwitchAccountRedirect(user, privateUser)
+      : async () => {
+          const result = await firebaseLogin()
+
+          const userId = result.user.uid
+          const { user, privateUser } = await getUserAndPrivateUser(userId)
+          if (!user || !privateUser) return
+
+          await linkTwitchAccountRedirect(user, privateUser)
+        }
+
+  const getStarted = async () => {
+    try {
+      setLoading(true)
+
+      const promise = callback()
+      track('twitch page button click')
+      await promise
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to sign up. Please try again later.')
+      setLoading(false)
+    }
+  }
+
   return (
     <>
       <Row className="mb-4 items-end">
@@ -46,20 +81,28 @@ function TwitchPlaysManifoldMarkets(props: {
           receive their profit.
         </div>
         Start playing now by logging in with Google and typing commands in chat!
-        <Button
-          size="xl"
-          color="gradient"
-          className="self-center !px-16"
-          onClick={onStartedClick}
-        >
-          Start playing
-        </Button>
+        {twitchUser ? (
+          <Button size="xl" color="green" className="btn-disabled self-center">
+            Account connected: {twitchUser}
+          </Button>
+        ) : isLoading ? (
+          <LoadingIndicator spinnerClassName="!w-11 !h-11" />
+        ) : (
+          <Button
+            size="xl"
+            color="gradient"
+            className="self-center !px-16"
+            onClick={getStarted}
+          >
+            Start playing
+          </Button>
+        )}
         <div>
           Instead of Twitch channel points we use our play money, mana (m$). All
           viewers start with M$1000 and more can be earned for free and then{' '}
-          <p className="inline text-indigo-700 underline">
+          <a href="/charity" className="underline">
             donated to a charity
-          </p>{' '}
+          </a>{' '}
           of their choice at no cost!
         </div>
       </Col>
@@ -122,14 +165,18 @@ function TwitchChatCommands() {
 
 function BotSetupStep(props: {
   stepNum: number
-  buttonName: string
+  buttonName?: string
   text: string
 }) {
   const { stepNum, buttonName, text } = props
   return (
     <Col className="flex-1">
-      <Button color="green">{buttonName}</Button>
-      <Spacer h={4} />
+      {buttonName && (
+        <>
+          <Button color="green">{buttonName}</Button>
+          <Spacer h={4} />
+        </>
+      )}
       <div>
         <p className="inline font-bold">Step {stepNum}. </p>
         {text}
@@ -138,7 +185,9 @@ function BotSetupStep(props: {
   )
 }
 
-function SetUpBot() {
+function SetUpBot(props: { privateUser?: PrivateUser | null }) {
+  const { privateUser } = props
+  const twitchLinked = privateUser?.twitchInfo?.twitchName
   return (
     <>
       <Title
@@ -152,20 +201,30 @@ function SetUpBot() {
         ></img>
         To add the bot to your stream make sure you have logged in then follow
         the steps below.
+        {!twitchLinked && (
+          <Button
+            size="xl"
+            color="gradient"
+            className="self-center !px-16"
+            // onClick={getStarted}
+          >
+            Start playing
+          </Button>
+        )}
         <div className="flex flex-col gap-6 sm:flex-row">
           <BotSetupStep
             stepNum={1}
-            buttonName="Add bot to channel"
+            buttonName={twitchLinked && 'Add bot to channel'}
             text="Use the button above to add the bot to your channel. Then mod it by typing in your Twitch chat: /mod ManifoldBot (or whatever you named the bot) If the bot is modded it will not work properly on the backend."
           />
           <BotSetupStep
             stepNum={2}
-            buttonName="Overlay link"
+            buttonName={twitchLinked && 'Overlay link'}
             text="Create a new browser source in your streaming software such as OBS. Paste in the above link and resize it to your liking. We recommend setting the size to 400x400."
           />
           <BotSetupStep
             stepNum={3}
-            buttonName="Control dock link"
+            buttonName={twitchLinked && 'Control dock link'}
             text="The bot can be controlled entirely through chat. But we made an easy to use control panel. Share the link with your mods or embed it into your OBS as a custom dock."
           />
         </div>
@@ -180,36 +239,6 @@ export default function TwitchLandingPage() {
 
   const user = useUser()
   const privateUser = usePrivateUser()
-  const twitchUser = privateUser?.twitchInfo?.twitchName
-
-  const callback =
-    user && privateUser
-      ? () => linkTwitchAccountRedirect(user, privateUser)
-      : async () => {
-          const result = await firebaseLogin()
-
-          const userId = result.user.uid
-          const { user, privateUser } = await getUserAndPrivateUser(userId)
-          if (!user || !privateUser) return
-
-          await linkTwitchAccountRedirect(user, privateUser)
-        }
-
-  const [isLoading, setLoading] = useState(false)
-
-  const getStarted = async () => {
-    try {
-      setLoading(true)
-
-      const promise = callback()
-      track('twitch page button click')
-      await promise
-    } catch (e) {
-      console.error(e)
-      toast.error('Failed to sign up. Please try again later.')
-      setLoading(false)
-    }
-  }
 
   return (
     <Page>
@@ -274,10 +303,10 @@ export default function TwitchLandingPage() {
         </Col>
       </Col> */}
 
-      <Col className="max-w-3xl rounded bg-white p-10 shadow-md sm:mx-auto">
-        <TwitchPlaysManifoldMarkets onStartedClick={getStarted} />
+      <Col className="max-w-3xl rounded bg-white p-10 text-gray-600 shadow-md sm:mx-auto">
+        <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
         <TwitchChatCommands />
-        <SetUpBot />
+        <SetUpBot privateUser={privateUser} />
       </Col>
     </Page>
   )
