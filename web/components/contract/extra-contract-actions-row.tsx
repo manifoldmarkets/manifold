@@ -11,29 +11,38 @@ import { FollowMarketButton } from 'web/components/follow-market-button'
 import { LikeMarketButton } from 'web/components/contract/like-market-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { Col } from 'web/components/layout/col'
+import { withTracking } from 'web/lib/service/analytics'
+import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
+import { CHALLENGES_ENABLED } from 'common/challenge'
+import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
+  const { outcomeType, resolution } = contract
   const user = useUser()
   const [isShareOpen, setShareOpen] = useState(false)
+  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
+    useState(false)
+  const showChallenge =
+    user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
 
   return (
-    <Row>
-      <FollowMarketButton contract={contract} user={user} />
-      {user?.id !== contract.creatorId && (
-        <LikeMarketButton contract={contract} user={user} />
-      )}
+    <Row className={'mt-0.5 justify-around sm:mt-2 lg:justify-start'}>
       <Button
-        size="sm"
+        size="lg"
         color="gray-white"
         className={'flex'}
         onClick={() => {
           setShareOpen(true)
         }}
       >
-        <Row>
-          <ShareIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-        </Row>
+        <Col className={'items-center sm:flex-row'}>
+          <ShareIcon
+            className={clsx('h-[24px] w-5 sm:mr-2')}
+            aria-hidden="true"
+          />
+          <span>Share</span>
+        </Col>
         <ShareModal
           isOpen={isShareOpen}
           setOpen={setShareOpen}
@@ -41,7 +50,35 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           user={user}
         />
       </Button>
-      <Col className={'justify-center'}>
+
+      {showChallenge && (
+        <Button
+          size="lg"
+          color="gray-white"
+          className="max-w-xs self-center"
+          onClick={withTracking(
+            () => setOpenCreateChallengeModal(true),
+            'click challenge button'
+          )}
+        >
+          <Col className="items-center sm:flex-row">
+            <ChallengeIcon className="mx-auto h-[24px] w-5 text-gray-500 sm:mr-2" />
+            <span>Challenge</span>
+          </Col>
+          <CreateChallengeModal
+            isOpen={openCreateChallengeModal}
+            setOpen={setOpenCreateChallengeModal}
+            user={user}
+            contract={contract}
+          />
+        </Button>
+      )}
+
+      <FollowMarketButton contract={contract} user={user} />
+      {user?.id !== contract.creatorId && (
+        <LikeMarketButton contract={contract} user={user} />
+      )}
+      <Col className={'justify-center md:hidden'}>
         <ContractInfoDialog contract={contract} />
       </Col>
     </Row>
