@@ -4,6 +4,7 @@ total = 0
 cardNames = []
 k = 12
 extra = 3
+num_artists = k + extra * extra
 artDict = {}
 totalCorrect = 0
 totalSeen = 0
@@ -142,7 +143,7 @@ function createNewArtistMap() {
       samples[key] = value
       newTotal += value.length
       i++
-      if (i >= k + extra * extra) {
+      if (i >= num_artists) {
         break
       }
     }
