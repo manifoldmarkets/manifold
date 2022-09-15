@@ -119,6 +119,7 @@ const updateBettingStreak = async (
       token: 'M$',
       category: 'BETTING_STREAK_BONUS',
       description: JSON.stringify(bonusTxnDetails),
+      data: bonusTxnDetails,
     }
     return await runTxn(trans, bonusTxn)
   })
@@ -186,7 +187,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   // Create combined txn for all new unique bettors
   const bonusTxnDetails = {
     contractId: contract.id,
-    uniqueBettorIds: newUniqueBettorIds,
+    uniqueNewBettorId: bettor.id,
   }
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
@@ -204,6 +205,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       token: 'M$',
       category: 'UNIQUE_BETTOR_BONUS',
       description: JSON.stringify(bonusTxnDetails),
+      data: bonusTxnDetails,
     }
     return await runTxn(trans, bonusTxn)
   })
