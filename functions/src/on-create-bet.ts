@@ -127,6 +127,8 @@ const updateBettingStreak = async (
   })
   if (!result.txn) {
     log("betting streak bonus txn couldn't be made")
+    log('status:', result.status)
+    log('message:', result.message)
     return
   }
 
@@ -214,7 +216,8 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   })
 
   if (result.status != 'success' || !result.txn) {
-    log(`No bonus for user: ${contract.creatorId} - reason:`, result.status)
+    log(`No bonus for user: ${contract.creatorId} - status:`, result.status)
+    log('message:', result.message)
   } else {
     log(`Bonus txn for user: ${contract.creatorId} completed:`, result.txn?.id)
     await createUniqueBettorBonusNotification(
