@@ -92,11 +92,6 @@ export type notification_reason_types =
   | 'your_contract_closed'
   | 'subsidized_your_market'
 
-export type BettingStreakData = {
-  streak: number
-  bonusAmount: number
-}
-
 type notification_descriptions = {
   [key in notification_preference]: {
     simple: string
@@ -240,4 +235,16 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: `Only on markets you're invested in`,
     detailed: `Answers on markets that you're watching and that you're invested in`,
   },
+}
+
+export type BettingStreakData = {
+  streak: number
+  bonusAmount: number
+}
+
+export type BetFillData = {
+  betOutcome: string
+  creatorOutcome: string
+  probability: number
+  fillAmount: number
 }

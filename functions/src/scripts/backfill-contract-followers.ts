@@ -4,14 +4,14 @@ import { initAdmin } from './script-init'
 initAdmin()
 
 import { getValues } from '../utils'
-import { Contract } from 'common/lib/contract'
-import { Comment } from 'common/lib/comment'
+import { Contract } from 'common/contract'
+import { Comment } from 'common/comment'
 import { uniq } from 'lodash'
-import { Bet } from 'common/lib/bet'
+import { Bet } from 'common/bet'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/lib/antes'
+} from 'common/antes'
 
 const firestore = admin.firestore()
 
