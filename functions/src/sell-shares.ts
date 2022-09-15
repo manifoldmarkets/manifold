@@ -112,6 +112,9 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     transaction.create(newBetDoc, {
       id: newBetDoc.id,
       userId: user.id,
+      userAvatarUrl: user.avatarUrl,
+      userUsername: user.username,
+      userName: user.name,
       ...newBet,
     })
     transaction.update(

@@ -76,7 +76,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
     if (existingAnswer) {
       setAnswerError(
         existingAnswer
-          ? `"${existingAnswer.text}" already exists as an answer`
+          ? `"${existingAnswer.text}" already exists as an answer. Can't see it? Hit the 'Show More' button right above this box.`
           : ''
       )
       return
@@ -237,7 +237,7 @@ const AnswerError = (props: { text: string; level: answerErrorLevel }) => {
     }[level] ?? ''
   return (
     <div
-      className={`${colorClass} mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide`}
+      className={`${colorClass} mb-2 mr-auto self-center text-xs font-medium tracking-wide`}
     >
       {text}
     </div>

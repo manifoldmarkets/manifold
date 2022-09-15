@@ -1,3 +1,6 @@
+import { notification_preferences } from './user-notification-preferences'
+import { ENV_CONFIG } from 'common/envs/constants'
+
 export type User = {
   id: string
   createdTime: number
@@ -34,7 +37,7 @@ export type User = {
   followerCountCached: number
 
   followedCategories?: string[]
-  homeSections?: { visible: string[]; hidden: string[] }
+  homeSections?: string[]
 
   referredByUserId?: string
   referredByContractId?: string
@@ -63,10 +66,13 @@ export type PrivateUser = {
   initialDeviceToken?: string
   initialIpAddress?: string
   apiKey?: string
-  notificationPreferences?: notification_subscribe_types
+  notificationPreferences: notification_preferences
+  twitchInfo?: {
+    twitchName: string
+    controlToken: string
+    botEnabled?: boolean
+  }
 }
-
-export type notification_subscribe_types = 'all' | 'less' | 'none'
 
 export type PortfolioMetrics = {
   investmentValue: number
@@ -78,3 +84,10 @@ export type PortfolioMetrics = {
 
 export const MANIFOLD_USERNAME = 'ManifoldMarkets'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'
+
+export const BETTOR = ENV_CONFIG.bettor ?? 'bettor' // aka predictor
+export const BETTORS = ENV_CONFIG.bettor + 's' ?? 'bettors'
+export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'bet' // aka predict
+export const PRESENT_BETS = ENV_CONFIG.presentBet + 's' ?? 'bets'
+export const PAST_BET = ENV_CONFIG.pastBet ?? 'bet' // aka prediction
+export const PAST_BETS = ENV_CONFIG.pastBet + 's' ?? 'bets' // aka predictions

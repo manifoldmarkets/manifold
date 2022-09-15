@@ -86,8 +86,9 @@ export function AvatarDetails(props: {
   contract: Contract
   className?: string
   short?: boolean
+  noLink?: boolean
 }) {
-  const { contract, short, className } = props
+  const { contract, short, className, noLink } = props
   const { creatorName, creatorUsername, creatorAvatarUrl } = contract
 
   return (
@@ -98,8 +99,14 @@ export function AvatarDetails(props: {
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
         size={6}
+        noLink={noLink}
       />
-      <UserLink name={creatorName} username={creatorUsername} short={short} />
+      <UserLink
+        name={creatorName}
+        username={creatorUsername}
+        short={short}
+        noLink={noLink}
+      />
     </Row>
   )
 }
@@ -294,7 +301,7 @@ export function ExtraMobileContractDetails(props: {
           <Tooltip
             text={`${formatMoney(
               volume
-            )} bet - ${uniqueBettors} unique traders`}
+            )} bet - ${uniqueBettors} unique predictors`}
           >
             {volumeTranslation}
           </Tooltip>

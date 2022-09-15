@@ -1,10 +1,8 @@
 import { useFirestoreQueryData } from '@react-query-firebase/firestore'
-import { isEqual } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Contract,
   listenForActiveContracts,
-  listenForContract,
   listenForContracts,
   listenForHotContracts,
   listenForInactiveContracts,
@@ -67,39 +65,6 @@ export const useHotContracts = () => {
   useEffect(() => listenForHotContracts(setHotContracts), [])
 
   return hotContracts
-}
-
-export const useUpdatedContracts = (contracts: Contract[] | undefined) => {
-  const [__, triggerUpdate] = useState(0)
-  const contractDict = useRef<{ [id: string]: Contract }>({})
-
-  useEffect(() => {
-    if (contracts === undefined) return
-
-    contractDict.current = Object.fromEntries(contracts.map((c) => [c.id, c]))
-
-    const disposes = contracts.map((contract) => {
-      const { id } = contract
-
-      return listenForContract(id, (contract) => {
-        const curr = contractDict.current[id]
-        if (!isEqual(curr, contract)) {
-          contractDict.current[id] = contract as Contract
-          triggerUpdate((n) => n + 1)
-        }
-      })
-    })
-
-    triggerUpdate((n) => n + 1)
-
-    return () => {
-      disposes.forEach((dispose) => dispose())
-    }
-  }, [!!contracts])
-
-  return contracts && Object.keys(contractDict.current).length > 0
-    ? contracts.map((c) => contractDict.current[c.id])
-    : undefined
 }
 
 export const usePrefetchUserBetContracts = (userId: string) => {

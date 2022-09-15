@@ -1,7 +1,7 @@
 import { Bet } from 'common/bet'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
-import { User } from 'common/user'
+import { PAST_BETS, User } from 'common/user'
 import {
   ContractCommentsActivity,
   ContractBetsActivity,
@@ -18,6 +18,11 @@ import { useLiquidity } from 'web/hooks/use-liquidity'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import BetButton from '../bet-button'
+import { capitalize } from 'lodash'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -36,13 +41,19 @@ export function ContractTabs(props: {
   const visibleBets = bets.filter(
     (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
   )
-  const visibleLps = lps?.filter((l) => !l.isAnte && l.amount > 0)
+  const visibleLps = (lps ?? []).filter(
+    (l) =>
+      !l.isAnte &&
+      l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+      l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
+      l.amount > 0
+  )
 
   // Load comments here, so the badge count will be correct
   const updatedComments = useComments(contract.id)
   const comments = updatedComments ?? props.comments
 
-  const betActivity = visibleLps && (
+  const betActivity = lps != null && (
     <ContractBetsActivity
       contract={contract}
       bets={visibleBets}
@@ -114,13 +125,13 @@ export function ContractTabs(props: {
             badge: `${comments.length}`,
           },
           {
-            title: 'Trades',
+            title: capitalize(PAST_BETS),
             content: betActivity,
-            badge: `${visibleBets.length}`,
+            badge: `${visibleBets.length + visibleLps.length}`,
           },
           ...(!user || !userBets?.length
             ? []
-            : [{ title: 'Your trades', content: yourTrades }]),
+            : [{ title: `Your ${PAST_BETS}`, content: yourTrades }]),
         ]}
       />
       {!user ? (

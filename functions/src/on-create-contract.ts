@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 
 import { getUser } from './utils'
-import { createNotification } from './create-notification'
+import { createNewContractNotification } from './create-notification'
 import { Contract } from '../../common/contract'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { JSONContent } from '@tiptap/core'
@@ -21,13 +21,11 @@ export const onCreateContract = functions
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
 
-    await createNotification(
-      contract.id,
-      'contract',
-      'created',
+    await createNewContractNotification(
       contractCreator,
+      contract,
       eventId,
       richTextToString(desc),
-      { contract, recipients: mentioned }
+      mentioned
     )
   })

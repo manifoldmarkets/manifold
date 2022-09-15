@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { User } from 'common/user'
+import { PRESENT_BET, User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
 import { minBy, maxBy, partition, sumBy, Dictionary } from 'lodash'
@@ -14,9 +14,7 @@ import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { createCommentOnContract } from 'web/lib/firebase/comments'
-import { BetStatusText } from 'web/components/feed/feed-bets'
 import { Col } from 'web/components/layout/col'
-import { getProbability } from 'common/calculate'
 import { track } from 'web/lib/service/analytics'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
@@ -257,7 +255,7 @@ function CommentStatus(props: {
   const { contract, outcome, prob } = props
   return (
     <>
-      {' betting '}
+      {` ${PRESENT_BET}ing `}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
       {prob && ' at ' + Math.round(prob * 100) + '%'}
     </>
@@ -301,74 +299,14 @@ export function ContractCommentInput(props: {
   const { id } = mostRecentCommentableBet || { id: undefined }
 
   return (
-    <Col>
-      <CommentBetArea
-        betsByCurrentUser={props.betsByCurrentUser}
-        contract={props.contract}
-        commentsByCurrentUser={props.commentsByCurrentUser}
-        parentAnswerOutcome={props.parentAnswerOutcome}
-        user={useUser()}
-        className={props.className}
-        mostRecentCommentableBet={mostRecentCommentableBet}
-      />
-      <CommentInput
-        replyToUser={props.replyToUser}
-        parentAnswerOutcome={props.parentAnswerOutcome}
-        parentCommentId={props.parentCommentId}
-        onSubmitComment={onSubmitComment}
-        className={props.className}
-        presetId={id}
-      />
-    </Col>
-  )
-}
-
-function CommentBetArea(props: {
-  betsByCurrentUser: Bet[]
-  contract: Contract
-  commentsByCurrentUser: ContractComment[]
-  parentAnswerOutcome?: string
-  user?: User | null
-  className?: string
-  mostRecentCommentableBet?: Bet
-}) {
-  const { betsByCurrentUser, contract, user, mostRecentCommentableBet } = props
-
-  const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
-    contract,
-    Date.now(),
-    betsByCurrentUser
-  )
-
-  const isNumeric = contract.outcomeType === 'NUMERIC'
-
-  return (
-    <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>
-      <div className="mb-1 text-gray-500">
-        {mostRecentCommentableBet && (
-          <BetStatusText
-            contract={contract}
-            bet={mostRecentCommentableBet}
-            isSelf={true}
-            hideOutcome={isNumeric || contract.outcomeType === 'FREE_RESPONSE'}
-          />
-        )}
-        {!mostRecentCommentableBet && user && userPosition > 0 && !isNumeric && (
-          <>
-            {"You're"}
-            <CommentStatus
-              outcome={outcome}
-              contract={contract}
-              prob={
-                contract.outcomeType === 'BINARY'
-                  ? getProbability(contract)
-                  : undefined
-              }
-            />
-          </>
-        )}
-      </div>
-    </Row>
+    <CommentInput
+      replyToUser={props.replyToUser}
+      parentAnswerOutcome={props.parentAnswerOutcome}
+      parentCommentId={props.parentCommentId}
+      onSubmitComment={onSubmitComment}
+      className={props.className}
+      presetId={id}
+    />
   )
 }
 

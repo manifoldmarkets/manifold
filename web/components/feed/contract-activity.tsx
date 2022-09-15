@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getOutcomeProbability } from 'common/calculate'
+import { Pagination } from 'web/components/pagination'
 import { FeedBet } from './feed-bets'
 import { FeedLiquidity } from './feed-liquidity'
 import { FeedAnswerCommentGroup } from './feed-answer-comment-group'
@@ -19,6 +21,10 @@ export function ContractBetsActivity(props: {
   lps: LiquidityProvision[]
 }) {
   const { contract, bets, lps } = props
+  const [page, setPage] = useState(0)
+  const ITEMS_PER_PAGE = 50
+  const start = page * ITEMS_PER_PAGE
+  const end = start + ITEMS_PER_PAGE
 
   const items = [
     ...bets.map((bet) => ({
@@ -33,24 +39,35 @@ export function ContractBetsActivity(props: {
     })),
   ]
 
-  const sortedItems = sortBy(items, (item) =>
+  const pageItems = sortBy(items, (item) =>
     item.type === 'bet'
       ? -item.bet.createdTime
       : item.type === 'liquidity'
       ? -item.lp.createdTime
       : undefined
-  )
+  ).slice(start, end)
 
   return (
-    <Col className="gap-4">
-      {sortedItems.map((item) =>
-        item.type === 'bet' ? (
-          <FeedBet key={item.id} contract={contract} bet={item.bet} />
-        ) : (
-          <FeedLiquidity key={item.id} liquidity={item.lp} />
-        )
-      )}
-    </Col>
+    <>
+      <Col className="mb-4 gap-4">
+        {pageItems.map((item) =>
+          item.type === 'bet' ? (
+            <FeedBet key={item.id} contract={contract} bet={item.bet} />
+          ) : (
+            <FeedLiquidity key={item.id} liquidity={item.lp} />
+          )
+        )}
+      </Col>
+      <Pagination
+        page={page}
+        itemsPerPage={50}
+        totalItems={items.length}
+        setPage={setPage}
+        scrollToTop
+        nextTitle={'Older'}
+        prevTitle={'Newer'}
+      />
+    </>
   )
 }
 

@@ -3,7 +3,7 @@ import algoliasearch from 'algoliasearch/lite'
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
+import { PAST_BETS, User } from 'common/user'
 import {
   ContractHighlightOptions,
   ContractsGrid,
@@ -41,7 +41,7 @@ const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: 'Most traded', value: 'most-traded' },
+  { label: `Most ${PAST_BETS}`, value: 'most-traded' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: '24h change', value: 'prob-change-day' },
   { label: 'Last updated', value: 'last-updated' },
@@ -80,9 +80,10 @@ export function ContractSearch(props: {
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
-  cardHideOptions?: {
+  cardUIOptions?: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
+    noLinkAvatar?: boolean
   }
   headerClassName?: string
   persistPrefix?: string
@@ -102,7 +103,7 @@ export function ContractSearch(props: {
     additionalFilter,
     onContractClick,
     hideOrderSelector,
-    cardHideOptions,
+    cardUIOptions,
     highlightOptions,
     headerClassName,
     persistPrefix,
@@ -164,6 +165,7 @@ export function ContractSearch(props: {
         numericFilters,
         page: requestedPage,
         hitsPerPage: 20,
+        advancedSyntax: true,
       })
       // if there's a more recent request, forget about this one
       if (id === requestId.current) {
@@ -200,7 +202,7 @@ export function ContractSearch(props: {
   }
 
   return (
-    <Col className="h-full">
+    <Col>
       <ContractSearchControls
         className={headerClassName}
         defaultSort={defaultSort}
@@ -222,7 +224,7 @@ export function ContractSearch(props: {
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightOptions={highlightOptions}
-          cardHideOptions={cardHideOptions}
+          cardUIOptions={cardUIOptions}
         />
       )}
     </Col>
@@ -449,7 +451,7 @@ function ContractSearchControls(props: {
               selected={state.pillFilter === 'your-bets'}
               onSelect={selectPill('your-bets')}
             >
-              Your trades
+              Your {PAST_BETS}
             </PillButton>
           )}
 

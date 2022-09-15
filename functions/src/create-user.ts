@@ -18,6 +18,7 @@ import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
 import { Group } from '../../common/group'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
+import { getDefaultNotificationPreferences } from '../../common/user-notification-preferences'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -79,6 +80,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     email,
     initialIpAddress: req.ip,
     initialDeviceToken: deviceToken,
+    notificationPreferences: getDefaultNotificationPreferences(auth.uid),
   }
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)

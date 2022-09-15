@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React from 'react'
 import Router from 'next/router'
 import {
-  PencilIcon,
+  AdjustmentsIcon,
   PlusSmIcon,
   ArrowSmRightIcon,
 } from '@heroicons/react/solid'
@@ -26,10 +26,12 @@ import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { formatMoney } from 'common/util/format'
+import { useProbChanges } from 'web/hooks/use-prob-changes'
+import { ProfitBadge } from 'web/components/bets-list'
+import { calculatePortfolioProfit } from 'common/calculate-metrics'
 
-const Home = () => {
+export default function Home() {
   const user = useUser()
 
   useTracking('view home')
@@ -38,45 +40,32 @@ const Home = () => {
 
   const groups = useMemberGroups(user?.id) ?? []
 
-  const [homeSections] = useState(
-    user?.homeSections ?? { visible: [], hidden: [] }
-  )
-  const { visibleItems } = getHomeItems(groups, homeSections)
+  const { sections } = getHomeItems(groups, user?.homeSections ?? [])
 
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-12">
-        <Row className={'w-full items-center justify-between'}>
-          <Title className="!mb-0" text="Home" />
-
-          <EditButton />
+        <Row className={'mt-4 w-full items-start justify-between'}>
+          <Row className="items-end gap-4">
+            <Title className="!mb-1 !mt-0" text="Home" />
+            <EditButton />
+          </Row>
+          <DailyProfitAndBalance className="" user={user} />
         </Row>
 
-        <DailyProfitAndBalance userId={user?.id} />
-
-        <div className="text-xl text-gray-800">Daily movers</div>
-        <ProbChangeTable userId={user?.id} />
-
-        {visibleItems.map((item) => {
+        {sections.map((item) => {
           const { id } = item
-          if (id === 'your-bets') {
-            return (
-              <SearchSection
-                key={id}
-                label={'Your trades'}
-                sort={'newest'}
-                user={user}
-                yourBets
-              />
-            )
+          if (id === 'daily-movers') {
+            return <DailyMoversSection key={id} userId={user?.id} />
           }
           const sort = SORTS.find((sort) => sort.value === id)
           if (sort)
             return (
               <SearchSection
                 key={id}
-                label={sort.label}
+                label={sort.value === 'newest' ? 'New for you' : sort.label}
                 sort={sort.value}
+                followed={sort.value === 'newest'}
                 user={user}
               />
             )
@@ -103,26 +92,26 @@ const Home = () => {
 
 function SearchSection(props: {
   label: string
-  user: User | null | undefined
+  user: User | null | undefined | undefined
   sort: Sort
   yourBets?: boolean
+  followed?: boolean
 }) {
-  const { label, user, sort, yourBets } = props
-  const href = `/home?s=${sort}`
+  const { label, user, sort, yourBets, followed } = props
 
   return (
     <Col>
-      <SiteLink className="mb-2 text-xl" href={href}>
-        {label}{' '}
-        <ArrowSmRightIcon
-          className="mb-0.5 inline h-6 w-6 text-gray-500"
-          aria-hidden="true"
-        />
-      </SiteLink>
+      <SectionHeader label={label} href={`/home?s=${sort}`} />
       <ContractSearch
         user={user}
         defaultSort={sort}
-        additionalFilter={yourBets ? { yourBets: true } : { followed: true }}
+        additionalFilter={
+          yourBets
+            ? { yourBets: true }
+            : followed
+            ? { followed: true }
+            : undefined
+        }
         noControls
         maxResults={6}
         persistPrefix={`experimental-home-${sort}`}
@@ -131,18 +120,15 @@ function SearchSection(props: {
   )
 }
 
-function GroupSection(props: { group: Group; user: User | null | undefined }) {
+function GroupSection(props: {
+  group: Group
+  user: User | null | undefined | undefined
+}) {
   const { group, user } = props
 
   return (
     <Col>
-      <SiteLink className="mb-2 text-xl" href={groupPath(group.slug)}>
-        {group.name}{' '}
-        <ArrowSmRightIcon
-          className="mb-0.5 inline h-6 w-6 text-gray-500"
-          aria-hidden="true"
-        />
-      </SiteLink>
+      <SectionHeader label={group.name} href={groupPath(group.slug)} />
       <ContractSearch
         user={user}
         defaultSort={'score'}
@@ -155,50 +141,75 @@ function GroupSection(props: { group: Group; user: User | null | undefined }) {
   )
 }
 
+function DailyMoversSection(props: { userId: string | null | undefined }) {
+  const { userId } = props
+  const changes = useProbChanges(userId ?? '')
+
+  return (
+    <Col className="gap-2">
+      <SectionHeader label="Daily movers" href="daily-movers" />
+      <ProbChangeTable changes={changes} />
+    </Col>
+  )
+}
+
+function SectionHeader(props: { label: string; href: string }) {
+  const { label, href } = props
+
+  return (
+    <Row className="mb-3 items-center justify-between">
+      <SiteLink className="text-xl" href={href}>
+        {label}{' '}
+        <ArrowSmRightIcon
+          className="mb-0.5 inline h-6 w-6 text-gray-500"
+          aria-hidden="true"
+        />
+      </SiteLink>
+    </Row>
+  )
+}
+
 function EditButton(props: { className?: string }) {
   const { className } = props
 
   return (
     <SiteLink href="/experimental/home/edit">
-      <Button size="lg" color="gray-white" className={clsx(className, 'flex')}>
-        <PencilIcon className={clsx('mr-2 h-[24px] w-5')} aria-hidden="true" />{' '}
-        Edit
+      <Button size="sm" color="gray-white" className={clsx(className, 'flex')}>
+        <AdjustmentsIcon className={clsx('h-[24px] w-5')} aria-hidden="true" />
       </Button>
     </SiteLink>
   )
 }
 
 function DailyProfitAndBalance(props: {
-  userId: string | null | undefined
+  user: User | null | undefined
   className?: string
 }) {
-  const { userId, className } = props
-  const metrics = usePortfolioHistory(userId ?? '', 'daily') ?? []
+  const { user, className } = props
+  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
   const [first, last] = [metrics[0], metrics[metrics.length - 1]]
 
   if (first === undefined || last === undefined) return null
 
   const profit =
     calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-
-  const balanceChange = last.balance - first.balance
+  const profitPercent = profit / first.investmentValue
 
   return (
-    <div className={clsx(className, 'text-lg')}>
-      <span className={clsx(profit >= 0 ? 'text-green-500' : 'text-red-500')}>
-        {profit >= 0 ? '+' : '-'}
-        {formatMoney(profit)}
-      </span>{' '}
-      profit and{' '}
-      <span
-        className={clsx(balanceChange >= 0 ? 'text-green-500' : 'text-red-500')}
-      >
-        {balanceChange >= 0 ? '+' : '-'}
-        {formatMoney(balanceChange)}
-      </span>{' '}
-      balance today
-    </div>
+    <Row className={'gap-4'}>
+      <Col>
+        <div className="text-gray-500">Daily profit</div>
+        <Row className={clsx(className, 'items-center text-lg')}>
+          <span>{formatMoney(profit)}</span>{' '}
+          <ProfitBadge profitPercent={profitPercent * 100} />
+        </Row>
+      </Col>
+      <Col>
+        <div className="text-gray-500">Streak</div>
+        <Row className={clsx(className, 'items-center text-lg')}>
+          <span>🔥 {user?.currentBettingStreak ?? 0}</span>
+        </Row>
+      </Col>
+    </Row>
   )
 }
-
-export default Home

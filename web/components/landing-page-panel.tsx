@@ -1,3 +1,4 @@
+import Image from 'next/future/image'
 import { SparklesIcon } from '@heroicons/react/solid'
 
 import { Contract } from 'common/contract'
@@ -18,7 +19,7 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
   return (
     <>
       <Col className="mb-6 rounded-xl sm:m-12 sm:mt-0">
-        <img
+        <Image
           height={250}
           width={250}
           className="self-center"

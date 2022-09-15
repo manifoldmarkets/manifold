@@ -5,6 +5,7 @@ initAdmin()
 
 import { PrivateUser, User } from 'common/user'
 import { STARTING_BALANCE } from 'common/economy'
+import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 
 const firestore = admin.firestore()
 
@@ -21,6 +22,7 @@ async function main() {
       id: user.id,
       email,
       username,
+      notificationPreferences: getDefaultNotificationPreferences(user.id),
     }
 
     if (user.totalDeposits === undefined) {
