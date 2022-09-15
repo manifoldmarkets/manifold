@@ -18,6 +18,7 @@ import { useLiquidity } from 'web/hooks/use-liquidity'
 import { BetSignUpPrompt } from '../sign-up-prompt'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import BetButton from '../bet-button'
+import { capitalize } from 'lodash'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -114,7 +115,7 @@ export function ContractTabs(props: {
             badge: `${comments.length}`,
           },
           {
-            title: PAST_BETS,
+            title: capitalize(PAST_BETS),
             content: betActivity,
             badge: `${visibleBets.length}`,
           },
