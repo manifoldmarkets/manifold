@@ -14,6 +14,7 @@ import { Title } from 'web/components/title'
 import { Tabs } from 'web/components/layout/tabs'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
+import { BETTORS } from 'common/user'
 
 export async function getStaticProps() {
   const props = await fetchProps()
@@ -79,7 +80,7 @@ export default function Leaderboards(_props: {
       <>
         <Col className="mx-4 items-center gap-10 lg:flex-row">
           <Leaderboard
-            title="🏅 Top traders"
+            title={`🏅 Top ${BETTORS}`}
             users={topTraders}
             columns={[
               {
@@ -126,7 +127,7 @@ export default function Leaderboards(_props: {
     <Page>
       <SEO
         title="Leaderboards"
-        description="Manifold's leaderboards show the top traders and market creators."
+        description={`Manifold's leaderboards show the top ${BETTORS} and market creators.`}
         url="/leaderboards"
       />
       <Title text={'Leaderboards'} className={'hidden md:block'} />

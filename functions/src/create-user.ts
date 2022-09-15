@@ -1,11 +1,7 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
-import {
-  getDefaultNotificationSettings,
-  PrivateUser,
-  User,
-} from '../../common/user'
+import { PrivateUser, User } from '../../common/user'
 import { getUser, getUserByUsername, getValues } from './utils'
 import { randomString } from '../../common/util/random'
 import {
@@ -22,6 +18,7 @@ import { track } from './analytics'
 import { APIError, newEndpoint, validate } from './api'
 import { Group } from '../../common/group'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
+import { getDefaultNotificationPreferences } from '../../common/user-notification-preferences'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
@@ -83,7 +80,7 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     email,
     initialIpAddress: req.ip,
     initialDeviceToken: deviceToken,
-    notificationSubscriptionTypes: getDefaultNotificationSettings(auth.uid),
+    notificationPreferences: getDefaultNotificationPreferences(auth.uid),
   }
 
   await firestore.collection('private-users').doc(auth.uid).create(privateUser)

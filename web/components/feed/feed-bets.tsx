@@ -1,8 +1,7 @@
 import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
-import { User } from 'common/user'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import clsx from 'clsx'
@@ -15,32 +14,24 @@ import { SiteLink } from 'web/components/site-link'
 import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/user-link'
+import { BETTOR } from 'common/user'
 
 export function FeedBet(props: { contract: Contract; bet: Bet }) {
   const { contract, bet } = props
-  const { userId, createdTime } = bet
-
-  const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const bettor = isBeforeJune2022 ? undefined : useUserById(userId)
-
-  const user = useUser()
-  const isSelf = user?.id === userId
+  const { userAvatarUrl, userUsername, createdTime } = bet
+  const showUser = dayjs(createdTime).isAfter('2022-06-01')
 
   return (
     <Row className="items-center gap-2 pt-3">
-      {isSelf ? (
-        <Avatar avatarUrl={user.avatarUrl} username={user.username} />
-      ) : bettor ? (
-        <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
+      {showUser ? (
+        <Avatar avatarUrl={userAvatarUrl} username={userUsername} />
       ) : (
         <EmptyAvatar className="mx-1" />
       )}
       <BetStatusText
         bet={bet}
         contract={contract}
-        isSelf={isSelf}
-        bettor={bettor}
+        hideUser={!showUser}
         className="flex-1"
       />
     </Row>
@@ -50,13 +41,13 @@ export function FeedBet(props: { contract: Contract; bet: Bet }) {
 export function BetStatusText(props: {
   contract: Contract
   bet: Bet
-  isSelf: boolean
-  bettor?: User
+  hideUser?: boolean
   hideOutcome?: boolean
   className?: string
 }) {
-  const { bet, contract, bettor, isSelf, hideOutcome, className } = props
+  const { bet, contract, hideUser, hideOutcome, className } = props
   const { outcomeType } = contract
+  const self = useUser()
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const { amount, outcome, createdTime, challengeSlug } = bet
@@ -101,10 +92,10 @@ export function BetStatusText(props: {
 
   return (
     <div className={clsx('text-sm text-gray-500', className)}>
-      {bettor ? (
-        <UserLink name={bettor.name} username={bettor.username} />
+      {!hideUser ? (
+        <UserLink name={bet.userName} username={bet.userUsername} />
       ) : (
-        <span>{isSelf ? 'You' : 'A trader'}</span>
+        <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
       )}{' '}
       {bought} {money}
       {outOfTotalAmount}

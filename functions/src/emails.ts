@@ -2,11 +2,7 @@ import { DOMAIN } from '../../common/envs/constants'
 import { Bet } from '../../common/bet'
 import { getProbability } from '../../common/calculate'
 import { Contract } from '../../common/contract'
-import {
-  notification_subscription_types,
-  PrivateUser,
-  User,
-} from '../../common/user'
+import { PrivateUser, User } from '../../common/user'
 import {
   formatLargeNumber,
   formatMoney,
@@ -18,11 +14,12 @@ import { formatNumericProbability } from '../../common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { getUser } from './utils'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
-import {
-  notification_reason_types,
-  getDestinationsForUser,
-} from '../../common/notification'
+import { notification_reason_types } from '../../common/notification'
 import { Dictionary } from 'lodash'
+import {
+  getNotificationDestinationsForUser,
+  notification_preference,
+} from '../../common/user-notification-preferences'
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
@@ -36,8 +33,10 @@ export const sendMarketResolutionEmail = async (
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number }
 ) => {
-  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
-    await getDestinationsForUser(privateUser, reason)
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
   if (!privateUser || !privateUser.email || !sendToEmail) return
 
   const user = await getUser(privateUser.id)
@@ -154,7 +153,7 @@ export const sendWelcomeEmail = async (
   const firstName = name.split(' ')[0]
 
   const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as keyof notification_subscription_types
+    'onboarding_flow' as notification_preference
   }`
 
   return await sendTemplateEmail(
@@ -214,7 +213,7 @@ export const sendOneWeekBonusEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.onboarding_flow.includes('email')
+    !privateUser.notificationPreferences.onboarding_flow.includes('email')
   )
     return
 
@@ -222,7 +221,7 @@ export const sendOneWeekBonusEmail = async (
   const firstName = name.split(' ')[0]
 
   const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as keyof notification_subscription_types
+    'onboarding_flow' as notification_preference
   }`
   return await sendTemplateEmail(
     privateUser.email,
@@ -247,7 +246,7 @@ export const sendCreatorGuideEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.onboarding_flow.includes('email')
+    !privateUser.notificationPreferences.onboarding_flow.includes('email')
   )
     return
 
@@ -255,7 +254,7 @@ export const sendCreatorGuideEmail = async (
   const firstName = name.split(' ')[0]
 
   const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as keyof notification_subscription_types
+    'onboarding_flow' as notification_preference
   }`
   return await sendTemplateEmail(
     privateUser.email,
@@ -279,7 +278,7 @@ export const sendThankYouEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.thank_you_for_purchases.includes(
+    !privateUser.notificationPreferences.thank_you_for_purchases.includes(
       'email'
     )
   )
@@ -289,7 +288,7 @@ export const sendThankYouEmail = async (
   const firstName = name.split(' ')[0]
 
   const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'thank_you_for_purchases' as keyof notification_subscription_types
+    'thank_you_for_purchases' as notification_preference
   }`
 
   return await sendTemplateEmail(
@@ -312,8 +311,10 @@ export const sendMarketCloseEmail = async (
   privateUser: PrivateUser,
   contract: Contract
 ) => {
-  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
-    await getDestinationsForUser(privateUser, reason)
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
 
   if (!privateUser.email || !sendToEmail) return
 
@@ -350,8 +351,10 @@ export const sendNewCommentEmail = async (
   answerText?: string,
   answerId?: string
 ) => {
-  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
-    await getDestinationsForUser(privateUser, reason)
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
   if (!privateUser || !privateUser.email || !sendToEmail) return
 
   const { question } = contract
@@ -425,8 +428,10 @@ export const sendNewAnswerEmail = async (
   // Don't send the creator's own answers.
   if (privateUser.id === creatorId) return
 
-  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
-    await getDestinationsForUser(privateUser, reason)
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
   if (!privateUser.email || !sendToEmail) return
 
   const { question, creatorUsername, slug } = contract
@@ -460,14 +465,12 @@ export const sendInterestingMarketsEmail = async (
   if (
     !privateUser ||
     !privateUser.email ||
-    !privateUser.notificationSubscriptionTypes.trending_markets.includes(
-      'email'
-    )
+    !privateUser.notificationPreferences.trending_markets.includes('email')
   )
     return
 
   const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'trending_markets' as keyof notification_subscription_types
+    'trending_markets' as notification_preference
   }`
 
   const { name } = user
@@ -518,8 +521,10 @@ export const sendNewFollowedMarketEmail = async (
   privateUser: PrivateUser,
   contract: Contract
 ) => {
-  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
-    await getDestinationsForUser(privateUser, reason)
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
   if (!privateUser.email || !sendToEmail) return
   const user = await getUser(privateUser.id)
   if (!user) return
@@ -555,8 +560,10 @@ export const sendNewUniqueBettorsEmail = async (
   userBets: Dictionary<[Bet, ...Bet[]]>,
   bonusAmount: number
 ) => {
-  const { sendToEmail, urlToManageThisNotification: unsubscribeUrl } =
-    await getDestinationsForUser(privateUser, reason)
+  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
   if (!privateUser.email || !sendToEmail) return
   const user = await getUser(privateUser.id)
   if (!user) return

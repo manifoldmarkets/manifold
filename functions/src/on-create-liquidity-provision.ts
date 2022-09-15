@@ -7,6 +7,7 @@ import { FIXED_ANTE } from '../../common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
+  UNIQUE_BETTOR_LIQUIDITY_AMOUNT,
 } from '../../common/antes'
 
 export const onCreateLiquidityProvision = functions.firestore
@@ -17,9 +18,11 @@ export const onCreateLiquidityProvision = functions.firestore
 
     // Ignore Manifold Markets liquidity for now - users see a notification for free market liquidity provision
     if (
-      (liquidity.userId === HOUSE_LIQUIDITY_PROVIDER_ID ||
+      liquidity.isAnte ||
+      ((liquidity.userId === HOUSE_LIQUIDITY_PROVIDER_ID ||
         liquidity.userId === DEV_HOUSE_LIQUIDITY_PROVIDER_ID) &&
-      liquidity.amount === FIXED_ANTE
+        (liquidity.amount === FIXED_ANTE ||
+          liquidity.amount === UNIQUE_BETTOR_LIQUIDITY_AMOUNT))
     )
       return
 

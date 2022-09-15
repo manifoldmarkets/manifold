@@ -1,6 +1,8 @@
 import * as admin from 'firebase-admin'
 import {
-  getDestinationsForUser,
+  BetFillData,
+  BettingStreakData,
+  ContractResolutionData,
   Notification,
   notification_reason_types,
 } from '../../common/notification'
@@ -26,6 +28,8 @@ import {
   sendNewUniqueBettorsEmail,
 } from './emails'
 import { filterDefined } from '../../common/util/array'
+import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
+import { ContractFollow } from '../../common/follow'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -65,7 +69,7 @@ export const createNotification = async (
       const { reason } = userToReasonTexts[userId]
       const privateUser = await getPrivateUser(userId)
       if (!privateUser) continue
-      const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+      const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
         privateUser,
         reason
       )
@@ -157,7 +161,7 @@ export type replied_users_info = {
 export const createCommentOrAnswerOrUpdatedContractNotification = async (
   sourceId: string,
   sourceType: 'comment' | 'answer' | 'contract',
-  sourceUpdateType: 'created' | 'updated' | 'resolved',
+  sourceUpdateType: 'created' | 'updated',
   sourceUser: User,
   idempotencyKey: string,
   sourceText: string,
@@ -165,17 +169,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   miscData?: {
     repliedUsersInfo: replied_users_info
     taggedUserIds: string[]
-  },
-  resolutionData?: {
-    bets: Bet[]
-    userInvestments: { [userId: string]: number }
-    userPayouts: { [userId: string]: number }
-    creator: User
-    creatorPayout: number
-    contract: Contract
-    outcome: string
-    resolutionProbability?: number
-    resolutions?: { [outcome: string]: number }
   }
 ) => {
   const { repliedUsersInfo, taggedUserIds } = miscData ?? {}
@@ -228,14 +221,10 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     userId: string,
     reason: notification_reason_types
   ) => {
-    if (
-      !stillFollowingContract(sourceContract.creatorId) ||
-      sourceUser.id == userId
-    )
-      return
+    if (!stillFollowingContract(userId) || sourceUser.id == userId) return
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
-    const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       reason
     )
@@ -272,24 +261,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
         sourceText,
         sourceContract,
         sourceUser.avatarUrl
-      )
-      emailRecipientIdsList.push(userId)
-    } else if (
-      sourceType === 'contract' &&
-      sourceUpdateType === 'resolved' &&
-      resolutionData
-    ) {
-      await sendMarketResolutionEmail(
-        reason,
-        privateUser,
-        resolutionData.userInvestments[userId] ?? 0,
-        resolutionData.userPayouts[userId] ?? 0,
-        sourceUser,
-        resolutionData.creatorPayout,
-        sourceContract,
-        resolutionData.outcome,
-        resolutionData.resolutionProbability,
-        resolutionData.resolutions
       )
       emailRecipientIdsList.push(userId)
     }
@@ -445,6 +416,8 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     )
   }
 
+  //TODO: store all possible reasons why the user might be getting the notification and choose the most lenient that they
+  // have enabled so they will unsubscribe from the least important notifications
   await notifyRepliedUser()
   await notifyTaggedUsers()
   await notifyContractCreator()
@@ -467,7 +440,7 @@ export const createTipNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'tip_received'
   )
@@ -512,7 +485,7 @@ export const createBetFillNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'bet_fill'
   )
@@ -541,6 +514,12 @@ export const createBetFillNotification = async (
     sourceContractTitle: contract.question,
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
+    data: {
+      betOutcome: bet.outcome,
+      creatorOutcome: userBet.outcome,
+      fillAmount,
+      probability: userBet.limitProb,
+    } as BetFillData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 
@@ -557,7 +536,7 @@ export const createReferralNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'you_referred_user'
   )
@@ -611,7 +590,7 @@ export const createLoanIncomeNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'loan_income'
   )
@@ -649,7 +628,7 @@ export const createChallengeAcceptedNotification = async (
 ) => {
   const privateUser = await getPrivateUser(challengeCreator.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'challenge_accepted'
   )
@@ -686,11 +665,12 @@ export const createBettingStreakBonusNotification = async (
   bet: Bet,
   contract: Contract,
   amount: number,
+  streak: number,
   idempotencyKey: string
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'betting_streak_incremented'
   )
@@ -719,6 +699,10 @@ export const createBettingStreakBonusNotification = async (
     sourceContractId: contract.id,
     sourceContractTitle: contract.question,
     sourceContractCreatorUsername: contract.creatorUsername,
+    data: {
+      streak: streak,
+      bonusAmount: amount,
+    } as BettingStreakData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 }
@@ -733,7 +717,7 @@ export const createLikeNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = await getDestinationsForUser(
+  const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'liked_and_tipped_your_contract'
   )
@@ -780,7 +764,7 @@ export const createUniqueBettorBonusNotification = async (
 ) => {
   const privateUser = await getPrivateUser(contractCreatorId)
   if (!privateUser) return
-  const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+  const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
     'unique_bettors_on_your_contract'
   )
@@ -870,7 +854,7 @@ export const createNewContractNotification = async (
   ) => {
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
-    const { sendToBrowser, sendToEmail } = await getDestinationsForUser(
+    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       reason
     )
@@ -929,4 +913,131 @@ export const createNewContractNotification = async (
   for (const mentionedUserId of mentionedUserIds) {
     await sendNotificationsIfSettingsAllow(mentionedUserId, 'tagged_user')
   }
+}
+
+export const createContractResolvedNotifications = async (
+  contract: Contract,
+  creator: User,
+  outcome: string,
+  probabilityInt: number | undefined,
+  resolutionValue: number | undefined,
+  resolutionData: {
+    bets: Bet[]
+    userInvestments: { [userId: string]: number }
+    userPayouts: { [userId: string]: number }
+    creator: User
+    creatorPayout: number
+    contract: Contract
+    outcome: string
+    resolutionProbability?: number
+    resolutions?: { [outcome: string]: number }
+  }
+) => {
+  let resolutionText = outcome ?? contract.question
+  if (
+    contract.outcomeType === 'FREE_RESPONSE' ||
+    contract.outcomeType === 'MULTIPLE_CHOICE'
+  ) {
+    const answerText = contract.answers.find(
+      (answer) => answer.id === outcome
+    )?.text
+    if (answerText) resolutionText = answerText
+  } else if (contract.outcomeType === 'BINARY') {
+    if (resolutionText === 'MKT' && probabilityInt)
+      resolutionText = `${probabilityInt}%`
+    else if (resolutionText === 'MKT') resolutionText = 'PROB'
+  } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
+    if (resolutionText === 'MKT' && resolutionValue)
+      resolutionText = `${resolutionValue}`
+  }
+
+  const idempotencyKey = contract.id + '-resolved'
+  const createBrowserNotification = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    const notificationRef = firestore
+      .collection(`/users/${userId}/notifications`)
+      .doc(idempotencyKey)
+    const notification: Notification = {
+      id: idempotencyKey,
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: contract.id,
+      sourceType: 'contract',
+      sourceUpdateType: 'resolved',
+      sourceContractId: contract.id,
+      sourceUserName: creator.name,
+      sourceUserUsername: creator.username,
+      sourceUserAvatarUrl: creator.avatarUrl,
+      sourceText: resolutionText,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceContractTitle: contract.question,
+      sourceContractSlug: contract.slug,
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+      data: {
+        outcome,
+        userInvestment: resolutionData.userInvestments[userId] ?? 0,
+        userPayout: resolutionData.userPayouts[userId] ?? 0,
+      } as ContractResolutionData,
+    }
+    return await notificationRef.set(removeUndefinedProps(notification))
+  }
+
+  const sendNotificationsIfSettingsPermit = async (
+    userId: string,
+    reason: notification_reason_types
+  ) => {
+    if (!stillFollowingContract(userId) || creator.id == userId) return
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
+      privateUser,
+      reason
+    )
+
+    // Browser notifications
+    if (sendToBrowser) {
+      await createBrowserNotification(userId, reason)
+    }
+
+    // Emails notifications
+    if (sendToEmail)
+      await sendMarketResolutionEmail(
+        reason,
+        privateUser,
+        resolutionData.userInvestments[userId] ?? 0,
+        resolutionData.userPayouts[userId] ?? 0,
+        creator,
+        resolutionData.creatorPayout,
+        contract,
+        resolutionData.outcome,
+        resolutionData.resolutionProbability,
+        resolutionData.resolutions
+      )
+  }
+
+  const contractFollowersIds = (
+    await getValues<ContractFollow>(
+      firestore.collection(`contracts/${contract.id}/follows`)
+    )
+  ).map((follow) => follow.id)
+
+  const stillFollowingContract = (userId: string) => {
+    return contractFollowersIds.includes(userId)
+  }
+
+  await Promise.all(
+    contractFollowersIds.map((id) =>
+      sendNotificationsIfSettingsPermit(
+        id,
+        resolutionData.userInvestments[id]
+          ? 'resolution_on_contract_with_users_shares_in'
+          : 'resolution_on_contract_you_follow'
+      )
+    )
+  )
 }
