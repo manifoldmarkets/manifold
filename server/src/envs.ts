@@ -21,7 +21,7 @@ export const IS_DEV = PUBLIC_FACING_URL.indexOf("localhost") > 0;
 const MANIFOLD_URLS = {
     PROD: "https://manifold.markets/",
     DEV: "https://dev.manifold.markets/",
-    PR_DEV: "https://dev-git-twitch-linking-mantic.vercel.app/",
+    PR_DEV: "https://dev-git-twitch-prerelease-mantic.vercel.app/",
     LOCAL: "http://localhost:3000/",
 };
 export const MANIFOLD_DB_LOCATION = getDomainFromURL(TARGET === "PROD" ? MANIFOLD_URLS["PROD"] : MANIFOLD_URLS["DEV"]);
