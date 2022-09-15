@@ -218,6 +218,7 @@ const notificationReasonToSubscriptionType: Partial<
 
 export const getNotificationDestinationsForUser = (
   privateUser: PrivateUser,
+  // TODO: accept reasons array from most to least important and work backwards
   reason: notification_reason_types | notification_preference
 ) => {
   const notificationSettings = privateUser.notificationPreferences
