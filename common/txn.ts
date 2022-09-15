@@ -72,11 +72,10 @@ type UniqueBettorBonus = {
   fromType: 'BANK'
   toType: 'USER'
   category: 'UNIQUE_BETTOR_BONUS'
-  // This data was mistakenly stored as a stringified JSON object in description previously
   data: {
     contractId: string
     uniqueNewBettorId?: string
-    // Previously stored all unique bettor ids in description
+    // Old unique bettor bonus txns stored all unique bettor ids
     uniqueBettorIds?: string[]
   }
 }
@@ -85,7 +84,6 @@ type BettingStreakBonus = {
   fromType: 'BANK'
   toType: 'USER'
   category: 'BETTING_STREAK_BONUS'
-  // This data was mistakenly stored as a stringified JSON object in description previously
   data: {
     currentBettingStreak?: number
   }

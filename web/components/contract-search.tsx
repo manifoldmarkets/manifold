@@ -80,9 +80,10 @@ export function ContractSearch(props: {
   highlightOptions?: ContractHighlightOptions
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
-  cardHideOptions?: {
+  cardUIOptions?: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
+    noLinkAvatar?: boolean
   }
   headerClassName?: string
   persistPrefix?: string
@@ -102,7 +103,7 @@ export function ContractSearch(props: {
     additionalFilter,
     onContractClick,
     hideOrderSelector,
-    cardHideOptions,
+    cardUIOptions,
     highlightOptions,
     headerClassName,
     persistPrefix,
@@ -223,7 +224,7 @@ export function ContractSearch(props: {
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightOptions={highlightOptions}
-          cardHideOptions={cardHideOptions}
+          cardUIOptions={cardUIOptions}
         />
       )}
     </Col>
