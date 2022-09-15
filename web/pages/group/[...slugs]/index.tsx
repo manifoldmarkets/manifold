@@ -49,9 +49,9 @@ import { Spacer } from 'web/components/layout/spacer'
 import { usePost } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from '@amplitude/analytics-browser'
-import GroupSidebar from 'web/components/nav/group-sidebar'
 import { GroupNavBar } from 'web/components/nav/group-nav-bar'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
+import { GroupSidebar } from 'web/components/nav/group-sidebar'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -207,6 +207,7 @@ export default function GroupPage(props: {
         </div>
       </div>
       <ContractSearch
+        headerClassName="md:sticky"
         user={user}
         defaultSort={'newest'}
         defaultFilter={suggestedFilter}
@@ -254,22 +255,7 @@ export default function GroupPage(props: {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full pb-2 md:hidden lg:col-span-12">
-        <div className="flex items-center  border-b border-gray-200 bg-white  px-4">
-          <div className="flex-shrink-0">
-            <Link href="/">
-              <a className="text-indigo-700 hover:text-gray-500 ">
-                <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
-              </a>
-            </Link>
-          </div>
-          <div className="ml-3">
-            <h1 className="text-lg font-medium text-indigo-700">
-              {group.name}
-            </h1>
-          </div>
-        </div>
-      </header>
+      <TopGroupNavBar group={group} />
       <div>
         <div
           className={
@@ -290,7 +276,9 @@ export default function GroupPage(props: {
             description={`Created by ${creator.name}. ${group.about}`}
             url={groupPath(group.slug)}
           />
-          <main className={'px-2 pt-1 xl:col-span-8'}>{pageContent}</main>
+          <main className={'px-2 pt-1 lg:col-span-8 lg:pt-6 xl:col-span-8'}>
+            {pageContent}
+          </main>
         </div>
         <GroupNavBar
           currentPage={sidebarPages[sidebarIndex].key}
@@ -298,6 +286,27 @@ export default function GroupPage(props: {
         />
       </div>
     </>
+  )
+}
+
+export function TopGroupNavBar(props: { group: Group }) {
+  return (
+    <header className="sticky top-0 z-50 w-full pb-2 md:hidden lg:col-span-12">
+      <div className="flex items-center  border-b border-gray-200 bg-white  px-4">
+        <div className="flex-shrink-0">
+          <Link href="/">
+            <a className="text-indigo-700 hover:text-gray-500 ">
+              <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+            </a>
+          </Link>
+        </div>
+        <div className="ml-3">
+          <h1 className="text-lg font-medium text-indigo-700">
+            {props.group.name}
+          </h1>
+        </div>
+      </div>
+    </header>
   )
 }
 
@@ -530,6 +539,7 @@ function AddContractButton(props: { group: Group; user: User }) {
           <div className={'overflow-y-scroll sm:px-8'}>
             <ContractSearch
               user={user}
+              headerClassName="md:sticky"
               hideOrderSelector={true}
               onContractClick={addContractToCurrentGroup}
               cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}

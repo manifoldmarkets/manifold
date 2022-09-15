@@ -90,7 +90,7 @@ export function MarketModal(props: {
                 '!bg-indigo-100 outline outline-2 outline-indigo-300',
             }}
             additionalFilter={{}} /* hide pills */
-            headerClassName="bg-white"
+            headerClassName="bg-white sticky"
           />
         </div>
       </Col>

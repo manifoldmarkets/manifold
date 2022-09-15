@@ -120,6 +120,7 @@ function SearchSection(props: {
         }
         noControls
         maxResults={6}
+        headerClassName="sticky"
         persistPrefix={`experimental-home-${sort}`}
       />
     </Col>
@@ -147,6 +148,7 @@ function GroupSection(props: {
         additionalFilter={{ groupSlug: group.slug }}
         noControls
         maxResults={6}
+        headerClassName="sticky"
         persistPrefix={`experimental-home-${group.slug}`}
       />
     </Col>

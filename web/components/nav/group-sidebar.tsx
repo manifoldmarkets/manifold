@@ -1,4 +1,4 @@
-import { HomeIcon, BookOpenIcon } from '@heroicons/react/outline'
+import { ClipboardIcon, HomeIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from './manifold-logo'
@@ -11,10 +11,12 @@ import NotificationsIcon from '../notifications-icon'
 import { SidebarItem } from './sidebar'
 import { buildArray } from 'common/util/array'
 import { User } from 'common/user'
+import { Row } from '../layout/row'
+import { Col } from '../layout/col'
 
 const groupNavigation = [
-  { name: 'About', key: 'about', icon: BookOpenIcon },
   { name: 'Markets', key: 'markets', icon: HomeIcon },
+  { name: 'About', key: 'about', icon: ClipboardIcon },
   { name: 'Leaderboard', key: 'leaderboards', icon: TrophyIcon },
 ]
 
@@ -28,7 +30,7 @@ const generalNavigation = (user?: User | null) =>
     }
   )
 
-export default function GroupSidebar(props: {
+export function GroupSidebar(props: {
   groupName: string
   className?: string
   onClick: (key: string) => void
@@ -45,6 +47,16 @@ export default function GroupSidebar(props: {
       className={clsx('flex max-h-[100vh] flex-col', className)}
     >
       <ManifoldLogo className="pt-6" twoLine />
+      <Row className="pl-2">
+        <Col className="flex justify-center">
+          <CornerDownRightIcon className=" h-6 w-6 text-indigo-700" />
+        </Col>
+        <Col>
+          <div className={' text-2xl text-indigo-700 sm:mb-1 sm:mt-3'}>
+            {groupName}
+          </div>
+        </Col>
+      </Row>
 
       <div className=" min-h-0 shrink flex-col items-stretch gap-1  pt-6 lg:flex ">
         {user ? (
@@ -54,24 +66,15 @@ export default function GroupSidebar(props: {
         )}
       </div>
 
-      <div className={' text-2xl text-indigo-700 sm:mb-1 sm:mt-3'}>
-        {groupName}
-      </div>
-
       {/* Desktop navigation */}
-      <div className="relative hidden min-h-0 shrink flex-col items-stretch gap-1 pl-6 pb-0 lg:flex">
-        {/* adds a purple CornerDownRightIcon pointing to the sidebaritems */}
-        <CornerDownRightIcon className="absolute left-0 top-0 mt-2 h-6 w-6 text-indigo-700" />
-
-        {groupNavigation.map((item) => (
-          <SidebarItem
-            key={item.key}
-            item={item}
-            currentPage={currentKey}
-            onClick={props.onClick}
-          />
-        ))}
-      </div>
+      {groupNavigation.map((item) => (
+        <SidebarItem
+          key={item.key}
+          item={item}
+          currentPage={currentKey}
+          onClick={props.onClick}
+        />
+      ))}
       {generalNavigation(user).map((item) => (
         <SidebarItem
           key={item.key}
