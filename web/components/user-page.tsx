@@ -242,7 +242,7 @@ export function UserPage(props: { user: User }) {
               <SiteLink href="/referrals">
                 Earn {formatMoney(REFERRAL_AMOUNT)} when you refer a friend!
               </SiteLink>{' '}
-              You've gotten
+              You've gotten{' '}
               <ReferralsButton user={user} currentUser={currentUser} />
             </span>
             <ShareIconButton
