@@ -12,11 +12,13 @@ import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
 
 export function ResolutionPanel(props: {
+  isAdmin: boolean
+  isCreator: boolean
   creator: User
   contract: BinaryContract
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, isAdmin, isCreator } = props
 
   // const earnedFees =
   //   contract.mechanism === 'dpm-2'
@@ -66,7 +68,12 @@ export function ResolutionPanel(props: {
       : 'btn-disabled'
 
   return (
-    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
+    <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
+      {isAdmin && !isCreator && (
+        <span className="absolute right-4 top-4 rounded bg-red-200 p-1 text-xs text-red-600">
+          ADMIN
+        </span>
+      )}
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
 
       <div className="mb-3 text-sm text-gray-500">Outcome</div>
