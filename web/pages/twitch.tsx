@@ -1,4 +1,5 @@
 import { PrivateUser, User } from 'common/user'
+import Link from 'next/link'
 import { useState } from 'react'
 
 import toast from 'react-hot-toast'
@@ -100,9 +101,9 @@ function TwitchPlaysManifoldMarkets(props: {
         <div>
           Instead of Twitch channel points we use our play money, mana (m$). All
           viewers start with M$1000 and more can be earned for free and then{' '}
-          <a href="/charity" className="underline">
+          <Link href="/charity" className="underline">
             donated to a charity
-          </a>{' '}
+          </Link>{' '}
           of their choice at no cost!
         </div>
       </Col>
