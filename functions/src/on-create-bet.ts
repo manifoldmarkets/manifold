@@ -27,6 +27,7 @@ import { User } from '../../common/user'
 import { UNIQUE_BETTOR_LIQUIDITY_AMOUNT } from '../../common/antes'
 import { addHouseLiquidity } from './add-liquidity'
 import { DAY_MS } from '../../common/util/time'
+import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -109,6 +110,7 @@ const updateBettingStreak = async (
   const bonusTxnDetails = {
     currentBettingStreak: newBettingStreak,
   }
+  // TODO: set the id of the txn to the eventId to prevent duplicates
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
       fromId: fromUserId,
@@ -120,7 +122,7 @@ const updateBettingStreak = async (
       category: 'BETTING_STREAK_BONUS',
       description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
-    }
+    } as Omit<BettingStreakBonusTxn, 'id' | 'createdTime'>
     return await runTxn(trans, bonusTxn)
   })
   if (!result.txn) {
@@ -195,6 +197,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
   if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
   const fromUser = fromSnap.data() as User
+  // TODO: set the id of the txn to the eventId to prevent duplicates
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
       fromId: fromUser.id,
@@ -206,7 +209,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       category: 'UNIQUE_BETTOR_BONUS',
       description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
-    }
+    } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
     return await runTxn(trans, bonusTxn)
   })
 
