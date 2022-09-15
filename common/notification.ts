@@ -248,3 +248,9 @@ export type BetFillData = {
   probability: number
   fillAmount: number
 }
+
+export type ContractResolutionData = {
+  outcome: string
+  userPayout: number
+  userInvestment: number
+}
