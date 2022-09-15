@@ -142,17 +142,20 @@ function getCpmmInvested(yourBets: Bet[]) {
     const { outcome, shares, amount } = bet
     if (floatingEqual(shares, 0)) continue
 
+    const spent = totalSpent[outcome] ?? 0
+    const position = totalShares[outcome] ?? 0
+
     if (amount > 0) {
-      totalShares[outcome] = (totalShares[outcome] ?? 0) + shares
-      totalSpent[outcome] = (totalSpent[outcome] ?? 0) + amount
+      totalShares[outcome] = position + shares
+      totalSpent[outcome] = spent + amount
     } else if (amount < 0) {
-      const averagePrice = totalSpent[outcome] / totalShares[outcome]
-      totalShares[outcome] = totalShares[outcome] + shares
-      totalSpent[outcome] = totalSpent[outcome] + averagePrice * shares
+      const averagePrice = position === 0 ? 0 : spent / position
+      totalShares[outcome] = position + shares
+      totalSpent[outcome] = spent + averagePrice * shares
     }
   }
 
-  return sum(Object.values(totalSpent))
+  return sum([0, ...Object.values(totalSpent)])
 }
 
 function getDpmInvested(yourBets: Bet[]) {
