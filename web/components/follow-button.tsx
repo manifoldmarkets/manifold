@@ -58,17 +58,17 @@ export function FollowButton(props: {
 
 export function UserFollowButton(props: { userId: string; small?: boolean }) {
   const { userId, small } = props
-  const currentUser = useUser()
-  const following = useFollows(currentUser?.id)
+  const user = useUser()
+  const following = useFollows(user?.id)
   const isFollowing = following?.includes(userId)
 
-  if (!currentUser || currentUser.id === userId) return null
+  if (!user || user.id === userId) return null
 
   return (
     <FollowButton
       isFollowing={isFollowing}
-      onFollow={() => follow(currentUser.id, userId)}
-      onUnfollow={() => unfollow(currentUser.id, userId)}
+      onFollow={() => follow(user.id, userId)}
+      onUnfollow={() => unfollow(user.id, userId)}
       small={small}
     />
   )

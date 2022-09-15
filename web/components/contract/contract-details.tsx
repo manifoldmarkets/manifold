@@ -106,7 +106,7 @@ export function AvatarDetails(props: {
   )
 }
 
-export function getIsMobile() {
+export function useIsMobile() {
   const { width } = useWindowSize()
   return (width ?? 0) < 600
 }
@@ -116,19 +116,12 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, disabled } = props
-  const {
-    closeTime,
-    creatorName,
-    creatorUsername,
-    creatorId,
-    creatorAvatarUrl,
-    resolutionTime,
-  } = contract
+  const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
   const user = useUser()
   const isCreator = user?.id === creatorId
   const { width } = useWindowSize()
-  const isMobile = getIsMobile()
+  const isMobile = useIsMobile()
 
   return (
     <Col>
@@ -159,34 +152,11 @@ export function ContractDetails(props: {
             )}
           </Row>
           <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
-            {(!!closeTime || !!resolvedDate) && (
-              <Row className="select-none items-center gap-1">
-                {resolvedDate && resolutionTime ? (
-                  <>
-                    <DateTimeTooltip
-                      text="Market resolved:"
-                      time={resolutionTime}
-                    >
-                      <Row>
-                        <div>resolved&nbsp;</div>
-                        {resolvedDate}
-                      </Row>
-                    </DateTimeTooltip>
-                  </>
-                ) : null}
-
-                {!resolvedDate && closeTime && (
-                  <Row>
-                    <div>closes&nbsp;</div>
-                    <EditableCloseDate
-                      closeTime={closeTime}
-                      contract={contract}
-                      isCreator={isCreator ?? false}
-                    />
-                  </Row>
-                )}
-              </Row>
-            )}
+            <CloseOrResolveTime
+              contract={contract}
+              resolvedDate={resolvedDate}
+              isCreator={isCreator}
+            />
             {!isMobile && (
               <MarketGroups
                 contract={contract}
@@ -210,16 +180,46 @@ export function ContractDetails(props: {
           />
         </div>
       )}
-      {/* {user && (
-        <>
-          <Row className="hidden items-center gap-1 md:inline-flex">
-            <DatabaseIcon className="h-5 w-5" />
-            <div className="whitespace-nowrap">{volumeLabel}</div>
-          </Row>
-        </>
-      )} */}
     </Col>
   )
+}
+
+export function CloseOrResolveTime(props: {
+  contract: Contract
+  resolvedDate: any
+  isCreator: boolean
+}) {
+  const { contract, resolvedDate, isCreator } = props
+  const { resolutionTime, closeTime } = contract
+  console.log(closeTime, resolvedDate)
+  if (!!closeTime || !!resolvedDate) {
+    return (
+      <Row className="select-none items-center gap-1">
+        {resolvedDate && resolutionTime ? (
+          <>
+            <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
+              <Row>
+                <div>resolved&nbsp;</div>
+                {resolvedDate}
+              </Row>
+            </DateTimeTooltip>
+          </>
+        ) : null}
+
+        {!resolvedDate && closeTime && (
+          <Row>
+            {dayjs().isBefore(closeTime) && <div>closes&nbsp;</div>}
+            {!dayjs().isBefore(closeTime) && <div>closed&nbsp;</div>}
+            <EditableCloseDate
+              closeTime={closeTime}
+              contract={contract}
+              isCreator={isCreator ?? false}
+            />
+          </Row>
+        )}
+      </Row>
+    )
+  } else return <></>
 }
 
 export function MarketGroups(props: {

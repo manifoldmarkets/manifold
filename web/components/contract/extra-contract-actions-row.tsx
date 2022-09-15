@@ -15,17 +15,12 @@ import { withTracking } from 'web/lib/service/analytics'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
-import { getIsMobile } from './contract-details'
+import { useIsMobile } from './contract-details'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
-  // const { outcomeType, resolution } = contract
   const user = useUser()
   const [isShareOpen, setShareOpen] = useState(false)
-  // const [openCreateChallengeModal, setOpenCreateChallengeModal] =
-  //   useState(false)
-  // const showChallenge =
-  //   user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
 
   return (
     <Row>
