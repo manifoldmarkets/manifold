@@ -93,3 +93,5 @@ export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
 export type ReferralTxn = Txn & Referral
+export type BettingStreakBonusTxn = Txn & BettingStreakBonus
+export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
