@@ -14,6 +14,7 @@ import { Linkify } from 'web/components/linkify'
 import { getStats } from 'web/lib/firebase/stats'
 import { Stats } from 'common/stats'
 import { PAST_BETS } from 'common/user'
+import { capitalize } from 'lodash'
 
 export default function Analytics() {
   const [stats, setStats] = useState<Stats | undefined>(undefined)
@@ -157,7 +158,7 @@ export function CustomAnalytics(props: {
         defaultIndex={0}
         tabs={[
           {
-            title: PAST_BETS,
+            title: capitalize(PAST_BETS),
             content: (
               <DailyCountChart
                 dailyCounts={dailyBetCounts}
