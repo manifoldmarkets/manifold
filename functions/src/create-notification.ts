@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 import {
+  BetFillData,
   BettingStreakData,
   Notification,
   notification_reason_types,
@@ -542,6 +543,12 @@ export const createBetFillNotification = async (
     sourceContractTitle: contract.question,
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
+    data: {
+      betOutcome: bet.outcome,
+      creatorOutcome: userBet.outcome,
+      fillAmount,
+      probability: userBet.limitProb,
+    } as BetFillData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
 
