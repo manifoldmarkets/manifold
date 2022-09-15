@@ -15,6 +15,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
+import { getIsMobile } from './contract-details'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -28,6 +29,10 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
 
   return (
     <Row>
+      <FollowMarketButton contract={contract} user={user} />
+      {user?.id !== contract.creatorId && (
+        <LikeMarketButton contract={contract} user={user} />
+      )}
       <Button
         size="sm"
         color="gray-white"

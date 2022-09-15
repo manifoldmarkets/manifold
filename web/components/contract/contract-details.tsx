@@ -160,7 +160,7 @@ export function ContractDetails(props: {
           </Row>
           <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
             {(!!closeTime || !!resolvedDate) && (
-              <Row className="items-center gap-1">
+              <Row className="select-none items-center gap-1">
                 {resolvedDate && resolutionTime ? (
                   <>
                     <DateTimeTooltip
@@ -169,15 +169,15 @@ export function ContractDetails(props: {
                     >
                       <Row>
                         <div>resolved&nbsp;</div>
-                        <b>{resolvedDate}</b>
+                        {resolvedDate}
                       </Row>
                     </DateTimeTooltip>
                   </>
                 ) : null}
 
-                {!resolvedDate && closeTime && user && (
+                {!resolvedDate && closeTime && (
                   <Row>
-                    <div>Closes&nbsp;</div>
+                    <div>closes&nbsp;</div>
                     <EditableCloseDate
                       closeTime={closeTime}
                       contract={contract}

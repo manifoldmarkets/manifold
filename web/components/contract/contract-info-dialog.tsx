@@ -86,15 +86,7 @@ export function ContractInfoDialog(props: {
 
       <Modal open={open} setOpen={setOpen}>
         <Col className="gap-4 rounded bg-white p-6">
-          <Row className="w-full justify-between">
-            <Title className="!mt-0 !mb-0" text="This Market" />
-            <div>
-              <FollowMarketButton contract={contract} user={user} />
-              {user?.id !== contract.creatorId && (
-                <LikeMarketButton contract={contract} user={user} />
-              )}
-            </div>
-          </Row>
+          <Title className="!mt-0 !mb-0" text="This Market" />
 
           <table className="table-compact table-zebra table w-full text-gray-500">
             <tbody>

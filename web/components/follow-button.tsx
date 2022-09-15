@@ -1,6 +1,6 @@
 import { CheckCircleIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useFollows } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
@@ -76,14 +76,41 @@ export function UserFollowButton(props: { userId: string; small?: boolean }) {
 
 export function MiniUserFollowButton(props: { userId: string }) {
   const { userId } = props
-  const currentUser = useUser()
-  const following = useFollows(currentUser?.id)
-  const isFollowing = following?.includes(userId)
   const user = useUser()
+  const following = useFollows(user?.id)
+  const isFollowing = following?.includes(userId)
+  const isFirstRender = useRef(true)
+  const [justFollowed, setJustFollowed] = useState(false)
+  // const [followFade, setfollowFade] = useState(false)
 
+  useEffect(() => {
+    if (isFirstRender.current) {
+      if (isFollowing != undefined) {
+        isFirstRender.current = false
+      }
+      return
+    }
+    if (isFollowing) {
+      setJustFollowed(true)
+      setTimeout(() => {
+        setJustFollowed(false)
+      }, 1000)
+    }
+  }, [isFollowing])
+
+  if (justFollowed) {
+    return (
+      <CheckCircleIcon
+        className={clsx(
+          'text-highlight-blue ml-3 mt-2 h-5 w-5 rounded-full bg-white sm:mr-2'
+        )}
+        aria-hidden="true"
+      />
+    )
+  }
   if (
-    !currentUser ||
-    currentUser.id === userId ||
+    !user ||
+    user.id === userId ||
     isFollowing ||
     !user ||
     isFollowing === undefined
@@ -91,18 +118,14 @@ export function MiniUserFollowButton(props: { userId: string }) {
     return null
   return (
     <>
-      <Button
-        size="sm"
-        color="highlight-blue"
-        onClick={withTracking(() => follow(currentUser.id, userId), 'follow')}
-      >
+      <button onClick={withTracking(() => follow(user.id, userId), 'follow')}>
         <PlusCircleIcon
           className={clsx(
-            'hover:text-hover-blue h-5 w-5 rounded-full bg-white sm:mr-2'
+            'text-highlight-blue hover:text-hover-blue mt-2 ml-3 h-5 w-5 rounded-full bg-white sm:mr-2'
           )}
           aria-hidden="true"
         />
-      </Button>
+      </button>
     </>
   )
 }
