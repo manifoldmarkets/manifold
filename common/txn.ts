@@ -1,6 +1,13 @@
 // A txn (pronounced "texan") respresents a payment between two ids on Manifold
 // Shortened from "transaction" to distinguish from Firebase transactions (and save chars)
-type AnyTxnType = Donation | Tip | Manalink | Referral | Bonus
+type AnyTxnType =
+  | Donation
+  | Tip
+  | Manalink
+  | Referral
+  | UniqueBettorBonus
+  | BettingStreakBonus
+  | CancelUniqueBettorBonus
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -23,6 +30,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'REFERRAL'
     | 'UNIQUE_BETTOR_BONUS'
     | 'BETTING_STREAK_BONUS'
+    | 'CANCEL_UNIQUE_BETTOR_BONUS'
 
   // Any extra data
   data?: { [key: string]: any }
@@ -60,13 +68,42 @@ type Referral = {
   category: 'REFERRAL'
 }
 
-type Bonus = {
+type UniqueBettorBonus = {
   fromType: 'BANK'
   toType: 'USER'
-  category: 'UNIQUE_BETTOR_BONUS' | 'BETTING_STREAK_BONUS'
+  category: 'UNIQUE_BETTOR_BONUS'
+  // This data was mistakenly stored as a stringified JSON object in description previously
+  data: {
+    contractId: string
+    uniqueNewBettorId?: string
+    // Previously stored all unique bettor ids in description
+    uniqueBettorIds?: string[]
+  }
+}
+
+type BettingStreakBonus = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'BETTING_STREAK_BONUS'
+  // This data was mistakenly stored as a stringified JSON object in description previously
+  data: {
+    currentBettingStreak?: number
+  }
+}
+
+type CancelUniqueBettorBonus = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CANCEL_UNIQUE_BETTOR_BONUS'
+  data: {
+    contractId: string
+  }
 }
 
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
 export type ReferralTxn = Txn & Referral
+export type BettingStreakBonusTxn = Txn & BettingStreakBonus
+export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
+export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus

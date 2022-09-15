@@ -25,13 +25,17 @@ import { UserFollowButton } from './follow-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { ReferralsButton } from 'web/components/referrals-button'
-import { formatMoney } from 'common/util/format'
+import { capitalFirst, formatMoney } from 'common/util/format'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { BettingStreakModal } from 'web/components/profile/betting-streak-modal'
+import {
+  BettingStreakModal,
+  hasCompletedStreakToday,
+} from 'web/components/profile/betting-streak-modal'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { LoansModal } from './profile/loans-modal'
 import { UserLikesButton } from 'web/components/profile/user-likes-button'
+import { PAST_BETS } from 'common/user'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -83,6 +87,7 @@ export function UserPage(props: { user: User }) {
       <BettingStreakModal
         isOpen={showBettingStreakModal}
         setOpen={setShowBettingStreakModal}
+        currentUser={currentUser}
       />
       {showLoansModal && (
         <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
@@ -139,7 +144,12 @@ export function UserPage(props: { user: User }) {
                 <span>profit</span>
               </Col>
               <Col
-                className={'cursor-pointer items-center text-gray-500'}
+                className={clsx(
+                  'cursor-pointer items-center text-gray-500',
+                  isCurrentUser && !hasCompletedStreakToday(user)
+                    ? 'grayscale'
+                    : 'grayscale-0'
+                )}
                 onClick={() => setShowBettingStreakModal(true)}
               >
                 <span>🔥 {user.currentBettingStreak ?? 0}</span>
@@ -260,7 +270,7 @@ export function UserPage(props: { user: User }) {
               ),
             },
             {
-              title: 'Trades',
+              title: capitalFirst(PAST_BETS),
               content: (
                 <>
                   <BetsList user={user} />

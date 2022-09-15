@@ -4,7 +4,7 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { cancelBet } from 'web/lib/firebase/api'
 import { Avatar } from './avatar'
 import { Button } from './button'
@@ -109,16 +109,14 @@ function LimitBet(props: {
     setIsCancelling(true)
   }
 
-  const user = useUserById(bet.userId)
-
   return (
     <tr>
       {!isYou && (
         <td>
           <Avatar
             size={'sm'}
-            avatarUrl={user?.avatarUrl}
-            username={user?.username}
+            avatarUrl={bet.userAvatarUrl}
+            username={bet.userUsername}
           />
         </td>
       )}

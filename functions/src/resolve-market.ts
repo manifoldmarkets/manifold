@@ -9,19 +9,25 @@ import {
   RESOLUTIONS,
 } from '../../common/contract'
 import { Bet } from '../../common/bet'
-import { getUser, isProd, payUser } from './utils'
+import { getUser, getValues, isProd, log, payUser } from './utils'
 import {
   getLoanPayouts,
   getPayouts,
   groupPayoutsByUser,
   Payout,
 } from '../../common/payouts'
-import { isManifoldId } from '../../common/envs/constants'
+import { isAdmin, isManifoldId } from '../../common/envs/constants'
 import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 import { APIError, newEndpoint, validate } from './api'
 import { getContractBetMetrics } from '../../common/calculate'
 import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
+import { CancelUniqueBettorBonusTxn, Txn } from '../../common/txn'
+import { runTxn, TxnData } from './transact'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from '../../common/antes'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -76,13 +82,18 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
   const { creatorId, closeTime } = contract
+  const firebaseUser = await admin.auth().getUser(auth.uid)
 
   const { value, resolutions, probabilityInt, outcome } = getResolutionParams(
     contract,
     req.body
   )
 
-  if (creatorId !== auth.uid && !isManifoldId(auth.uid))
+  if (
+    creatorId !== auth.uid &&
+    !isManifoldId(auth.uid) &&
+    !isAdmin(firebaseUser.email)
+  )
     throw new APIError(403, 'User is not creator of contract')
 
   if (contract.resolution) throw new APIError(400, 'Contract already resolved')
@@ -158,6 +169,7 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   await processPayouts(liquidityPayouts, true)
 
   await processPayouts([...payouts, ...loanPayouts])
+  await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
 
@@ -166,7 +178,10 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     (bets) => getContractBetMetrics(contract, bets).invested
   )
   let resolutionText = outcome ?? contract.question
-  if (contract.outcomeType === 'FREE_RESPONSE') {
+  if (
+    contract.outcomeType === 'FREE_RESPONSE' ||
+    contract.outcomeType === 'MULTIPLE_CHOICE'
+  ) {
     const answerText = contract.answers.find(
       (answer) => answer.id === outcome
     )?.text
@@ -288,6 +303,57 @@ function validateAnswer(
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answer.toString())) {
     throw new APIError(400, `${answer} is not a valid answer ID`)
+  }
+}
+
+async function undoUniqueBettorRewardsIfCancelResolution(
+  contract: Contract,
+  outcome: string
+) {
+  if (outcome === 'CANCEL') {
+    const creatorsBonusTxns = await getValues<Txn>(
+      firestore
+        .collection('txns')
+        .where('category', '==', 'UNIQUE_BETTOR_BONUS')
+        .where('toId', '==', contract.creatorId)
+    )
+
+    const bonusTxnsOnThisContract = creatorsBonusTxns.filter(
+      (txn) => txn.data && txn.data.contractId === contract.id
+    )
+    log('total bonusTxnsOnThisContract', bonusTxnsOnThisContract.length)
+    const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
+    log('totalBonusAmount to be withdrawn', totalBonusAmount)
+    const result = await firestore.runTransaction(async (trans) => {
+      const bonusTxn: TxnData = {
+        fromId: contract.creatorId,
+        fromType: 'USER',
+        toId: isProd()
+          ? HOUSE_LIQUIDITY_PROVIDER_ID
+          : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+        toType: 'BANK',
+        amount: totalBonusAmount,
+        token: 'M$',
+        category: 'CANCEL_UNIQUE_BETTOR_BONUS',
+        data: {
+          contractId: contract.id,
+        },
+      } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
+      return await runTxn(trans, bonusTxn)
+    })
+
+    if (result.status != 'success' || !result.txn) {
+      log(
+        `Couldn't cancel bonus for user: ${contract.creatorId} - status:`,
+        result.status
+      )
+      log('message:', result.message)
+    } else {
+      log(
+        `Cancel Bonus txn for user: ${contract.creatorId} completed:`,
+        result.txn?.id
+      )
+    }
   }
 }
 

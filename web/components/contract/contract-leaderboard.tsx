@@ -6,13 +6,13 @@ import { formatMoney } from 'common/util/format'
 import { groupBy, mapValues, sumBy, sortBy, keyBy } from 'lodash'
 import { useState, useMemo, useEffect } from 'react'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
-import { useUserById } from 'web/hooks/use-user'
 import { listUsers, User } from 'web/lib/firebase/users'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedComment } from '../feed/feed-comments'
 import { Spacer } from '../layout/spacer'
 import { Leaderboard } from '../leaderboard'
 import { Title } from '../title'
+import { BETTORS } from 'common/user'
 
 export function ContractLeaderboard(props: {
   contract: Contract
@@ -49,7 +49,7 @@ export function ContractLeaderboard(props: {
 
   return users && users.length > 0 ? (
     <Leaderboard
-      title="🏅 Top traders"
+      title={`🏅 Top ${BETTORS}`}
       users={users || []}
       columns={[
         {
@@ -88,7 +88,7 @@ export function ContractTopTrades(props: {
 
   // Now find the betId with the highest profit
   const topBetId = sortBy(bets, (b) => -profitById[b.id])[0]?.id
-  const topBettor = useUserById(betsById[topBetId]?.userId)
+  const topBettor = betsById[topBetId]?.userName
 
   // And also the commentId of the comment with the highest profit
   const topCommentId = sortBy(
@@ -121,7 +121,7 @@ export function ContractTopTrades(props: {
             <FeedBet contract={contract} bet={betsById[topBetId]} />
           </div>
           <div className="mt-2 ml-2 text-sm text-gray-500">
-            {topBettor?.name} made {formatMoney(profitById[topBetId] || 0)}!
+            {topBettor} made {formatMoney(profitById[topBetId] || 0)}!
           </div>
         </>
       )}

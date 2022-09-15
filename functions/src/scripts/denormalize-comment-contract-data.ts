@@ -2,12 +2,7 @@
 
 import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
-import {
-  DocumentCorrespondence,
-  findDiffs,
-  describeDiff,
-  applyDiff,
-} from './denormalize'
+import { findDiffs, describeDiff, applyDiff } from './denormalize'
 import { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 
 initAdmin()
@@ -43,16 +38,15 @@ async function denormalize() {
         getContractsById(transaction),
         getCommentsByContractId(transaction),
       ])
-      const mapping = Object.entries(contractsById).map(
-        ([id, doc]): DocumentCorrespondence => {
-          return [doc, commentsByContractId.get(id) || []]
-        }
+      const mapping = Object.entries(contractsById).map(([id, doc]) => {
+        return [doc, commentsByContractId.get(id) || []] as const
+      })
+      const diffs = findDiffs(
+        mapping,
+        ['slug', 'contractSlug'],
+        ['question', 'contractQuestion']
       )
-      const slugDiffs = findDiffs(mapping, 'slug', 'contractSlug')
-      const qDiffs = findDiffs(mapping, 'question', 'contractQuestion')
-      console.log(`Found ${slugDiffs.length} comments with mismatched slugs.`)
-      console.log(`Found ${qDiffs.length} comments with mismatched questions.`)
-      const diffs = slugDiffs.concat(qDiffs)
+      console.log(`Found ${diffs.length} comments with mismatched data.`)
       diffs.slice(0, 500).forEach((d) => {
         console.log(describeDiff(d))
         applyDiff(transaction, d)

@@ -21,7 +21,10 @@ export function isWhitelisted(email?: string) {
 }
 
 // TODO: Before open sourcing, we should turn these into env vars
-export function isAdmin(email: string) {
+export function isAdmin(email?: string) {
+  if (!email) {
+    return false
+  }
   return ENV_CONFIG.adminEmails.includes(email)
 }
 

@@ -112,6 +112,7 @@ export default function Notifications() {
                   content: (
                     <NotificationSettings
                       navigateToSection={navigateToSection}
+                      privateUser={privateUser}
                     />
                   ),
                 },
@@ -297,7 +298,7 @@ function IncomeNotificationGroupItem(props: {
           ...notificationsForSourceTitle[0],
           sourceText: sum.toString(),
           sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-          data: JSON.stringify(uniqueUsers),
+          data: { uniqueUsers },
         }
         newNotifications.push(newNotification)
       }
@@ -414,7 +415,7 @@ function IncomeNotificationItem(props: {
   const isTip = sourceType === 'tip' || sourceType === 'tip_and_like'
   const isUniqueBettorBonus = sourceType === 'bonus'
   const userLinks: MultiUserLinkInfo[] =
-    isTip || isUniqueBettorBonus ? JSON.parse(data ?? '{}') : []
+    isTip || isUniqueBettorBonus ? data?.uniqueUsers ?? [] : []
 
   useEffect(() => {
     setNotificationsAsSeen([notification])
@@ -428,7 +429,7 @@ function IncomeNotificationItem(props: {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } new traders on`
+          } new predictors on`
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
@@ -436,19 +437,22 @@ function IncomeNotificationItem(props: {
       if (sourceText && +sourceText === 50) reasonText = '(max) for your'
       else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
-      reasonText = `of your invested bets returned as a`
+      reasonText = `of your invested predictions returned as a`
       // TODO: support just 'like' notification without a tip
     } else if (sourceType === 'tip_and_like' && sourceText) {
       reasonText = !simple ? `liked` : `in likes on`
     }
 
-    const streakInDays =
-      Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
-        ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
-        : user?.currentBettingStreak ?? 0
+    const streakInDays = notification.data?.streak
+      ? notification.data?.streak
+      : Date.now() - notification.createdTime > 24 * 60 * 60 * 1000
+      ? parseInt(sourceText ?? '0') / BETTING_STREAK_BONUS_AMOUNT
+      : user?.currentBettingStreak ?? 0
     const bettingStreakText =
       sourceType === 'betting_streak_bonus' &&
-      (sourceText ? `🔥 ${streakInDays} day Betting Streak` : 'Betting Streak')
+      (sourceText
+        ? `🔥 ${streakInDays} day Prediction Streak`
+        : 'Prediction Streak')
 
     return (
       <>
@@ -546,7 +550,7 @@ function IncomeNotificationItem(props: {
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
               userInfos={userLinks}
-              modalLabel={isTip ? 'Who tipped you' : 'Unique traders'}
+              modalLabel={isTip ? 'Who tipped you' : 'Unique predictors'}
             />
           )}
           <Row className={'line-clamp-2 flex max-w-xl'}>
@@ -1031,52 +1035,53 @@ function getReasonForShowingNotification(
   const { sourceType, sourceUpdateType, reason, sourceSlug } = notification
   let reasonText: string
   // TODO: we could leave out this switch and just use the reason field now that they have more information
-  switch (sourceType) {
-    case 'comment':
-      if (reason === 'reply_to_users_answer')
-        reasonText = justSummary ? 'replied' : 'replied to you on'
-      else if (reason === 'tagged_user')
-        reasonText = justSummary ? 'tagged you' : 'tagged you on'
-      else if (reason === 'reply_to_users_comment')
-        reasonText = justSummary ? 'replied' : 'replied to you on'
-      else reasonText = justSummary ? `commented` : `commented on`
-      break
-    case 'contract':
-      if (reason === 'contract_from_followed_user')
-        reasonText = justSummary ? 'asked the question' : 'asked'
-      else if (sourceUpdateType === 'resolved')
-        reasonText = justSummary ? `resolved the question` : `resolved`
-      else if (sourceUpdateType === 'closed') reasonText = `Please resolve`
-      else reasonText = justSummary ? 'updated the question' : `updated`
-      break
-    case 'answer':
-      if (reason === 'answer_on_your_contract')
-        reasonText = `answered your question `
-      else reasonText = `answered`
-      break
-    case 'follow':
-      reasonText = 'followed you'
-      break
-    case 'liquidity':
-      reasonText = 'added a subsidy to your question'
-      break
-    case 'group':
-      reasonText = 'added you to the group'
-      break
-    case 'user':
-      if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
-        reasonText = 'joined to bet on your market'
-      else if (sourceSlug) reasonText = 'joined because you shared'
-      else reasonText = 'joined because of you'
-      break
-    case 'bet':
-      reasonText = 'bet against you'
-      break
-    case 'challenge':
-      reasonText = 'accepted your challenge'
-      break
-    default:
-      reasonText = ''
-  }
+  if (reason === 'tagged_user')
+    reasonText = justSummary ? 'tagged you' : 'tagged you on'
+  else
+    switch (sourceType) {
+      case 'comment':
+        if (reason === 'reply_to_users_answer')
+          reasonText = justSummary ? 'replied' : 'replied to you on'
+        else if (reason === 'reply_to_users_comment')
+          reasonText = justSummary ? 'replied' : 'replied to you on'
+        else reasonText = justSummary ? `commented` : `commented on`
+        break
+      case 'contract':
+        if (reason === 'contract_from_followed_user')
+          reasonText = justSummary ? 'asked the question' : 'asked'
+        else if (sourceUpdateType === 'resolved')
+          reasonText = justSummary ? `resolved the question` : `resolved`
+        else if (sourceUpdateType === 'closed') reasonText = `Please resolve`
+        else reasonText = justSummary ? 'updated the question' : `updated`
+        break
+      case 'answer':
+        if (reason === 'answer_on_your_contract')
+          reasonText = `answered your question `
+        else reasonText = `answered`
+        break
+      case 'follow':
+        reasonText = 'followed you'
+        break
+      case 'liquidity':
+        reasonText = 'added a subsidy to your question'
+        break
+      case 'group':
+        reasonText = 'added you to the group'
+        break
+      case 'user':
+        if (sourceSlug && reason === 'user_joined_to_bet_on_your_market')
+          reasonText = 'joined to bet on your market'
+        else if (sourceSlug) reasonText = 'joined because you shared'
+        else reasonText = 'joined because of you'
+        break
+      case 'bet':
+        reasonText = 'bet against you'
+        break
+      case 'challenge':
+        reasonText = 'accepted your challenge'
+        break
+      default:
+        reasonText = ''
+    }
   return reasonText
 }

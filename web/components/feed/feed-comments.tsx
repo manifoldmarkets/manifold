@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { User } from 'common/user'
+import { PRESENT_BET, User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
 import { minBy, maxBy, partition, sumBy, Dictionary } from 'lodash'
@@ -255,7 +255,7 @@ function CommentStatus(props: {
   const { contract, outcome, prob } = props
   return (
     <>
-      {' betting '}
+      {` ${PRESENT_BET}ing `}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
       {prob && ' at ' + Math.round(prob * 100) + '%'}
     </>

@@ -1,12 +1,7 @@
-import { usePrivateUser } from 'web/hooks/use-user'
-import React, { ReactNode, useEffect, useState } from 'react'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import React, { memo, ReactNode, useEffect, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
-import {
-  notification_subscription_types,
-  notification_destination_types,
-} from 'common/user'
+import { PrivateUser } from 'common/user'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
 import {
@@ -23,22 +18,28 @@ import {
   UsersIcon,
 } from '@heroicons/react/outline'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
-import { filterDefined } from 'common/util/array'
 import toast from 'react-hot-toast'
 import { SwitchSetting } from 'web/components/switch-setting'
+import { uniq } from 'lodash'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
+import {
+  notification_destination_types,
+  notification_preference,
+} from 'common/user-notification-preferences'
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
+  privateUser: PrivateUser
 }) {
-  const { navigateToSection } = props
-  const privateUser = usePrivateUser()
+  const { navigateToSection, privateUser } = props
   const [showWatchModal, setShowWatchModal] = useState(false)
 
-  if (!privateUser || !privateUser.notificationSubscriptionTypes) {
-    return <LoadingIndicator spinnerClassName={'border-gray-500 h-4 w-4'} />
-  }
-
-  const emailsEnabled: Array<keyof notification_subscription_types> = [
+  const emailsEnabled: Array<notification_preference> = [
     'all_comments_on_watched_markets',
     'all_replies_to_my_comments_on_watched_markets',
     'all_comments_on_contracts_with_shares_in_on_watched_markets',
@@ -58,135 +59,127 @@ export function NotificationSettings(props: {
     'onboarding_flow',
     'thank_you_for_purchases',
 
+    'tagged_user', // missing tagged on contract description email
+    'contract_from_followed_user',
+    'unique_bettors_on_your_contract',
     // TODO: add these
-    'tagged_user',
-    // 'contract_from_followed_user',
+    // one-click unsubscribe only unsubscribes them from that type only, (well highlighted), then a link to manage the rest of their notifications
+    // 'profit_loss_updates', - changes in markets you have shares in
+    // biggest winner, here are the rest of your markets
+
     // 'referral_bonuses',
-    // 'unique_bettors_on_your_contract',
     // 'on_new_follow',
-    // 'profit_loss_updates',
     // 'tips_on_your_markets',
     // 'tips_on_your_comments',
     // maybe the following?
     // 'probability_updates_on_watched_markets',
     // 'limit_order_fills',
   ]
-  const browserDisabled: Array<keyof notification_subscription_types> = [
+  const browserDisabled: Array<notification_preference> = [
     'trending_markets',
     'profit_loss_updates',
     'onboarding_flow',
     'thank_you_for_purchases',
   ]
 
-  type sectionData = {
+  type SectionData = {
     label: string
-    subscriptionTypeToDescription: {
-      [key in keyof Partial<notification_subscription_types>]: string
-    }
+    subscriptionTypes: Partial<notification_preference>[]
   }
 
-  const comments: sectionData = {
+  const comments: SectionData = {
     label: 'New Comments',
-    subscriptionTypeToDescription: {
-      all_comments_on_watched_markets: 'All new comments',
-      all_comments_on_contracts_with_shares_in_on_watched_markets: `Only on markets you're invested in`,
-      all_replies_to_my_comments_on_watched_markets:
-        'Only replies to your comments',
-      all_replies_to_my_answers_on_watched_markets:
-        'Only replies to your answers',
-      // comments_by_followed_users_on_watched_markets: 'By followed users',
-    },
+    subscriptionTypes: [
+      'all_comments_on_watched_markets',
+      'all_comments_on_contracts_with_shares_in_on_watched_markets',
+      // TODO: combine these two
+      'all_replies_to_my_comments_on_watched_markets',
+      'all_replies_to_my_answers_on_watched_markets',
+    ],
   }
 
-  const answers: sectionData = {
+  const answers: SectionData = {
     label: 'New Answers',
-    subscriptionTypeToDescription: {
-      all_answers_on_watched_markets: 'All new answers',
-      all_answers_on_contracts_with_shares_in_on_watched_markets: `Only on markets you're invested in`,
-      // answers_by_followed_users_on_watched_markets: 'By followed users',
-      // answers_by_market_creator_on_watched_markets: 'By market creator',
-    },
+    subscriptionTypes: [
+      'all_answers_on_watched_markets',
+      'all_answers_on_contracts_with_shares_in_on_watched_markets',
+    ],
   }
-  const updates: sectionData = {
+  const updates: SectionData = {
     label: 'Updates & Resolutions',
-    subscriptionTypeToDescription: {
-      market_updates_on_watched_markets: 'All creator updates',
-      market_updates_on_watched_markets_with_shares_in: `Only creator updates on markets you're invested in`,
-      resolutions_on_watched_markets: 'All market resolutions',
-      resolutions_on_watched_markets_with_shares_in: `Only market resolutions you're invested in`,
-      // probability_updates_on_watched_markets: 'Probability updates',
-    },
+    subscriptionTypes: [
+      'market_updates_on_watched_markets',
+      'market_updates_on_watched_markets_with_shares_in',
+      'resolutions_on_watched_markets',
+      'resolutions_on_watched_markets_with_shares_in',
+    ],
   }
-  const yourMarkets: sectionData = {
+  const yourMarkets: SectionData = {
     label: 'Markets You Created',
-    subscriptionTypeToDescription: {
-      your_contract_closed: 'Your market has closed (and needs resolution)',
-      all_comments_on_my_markets: 'Comments on your markets',
-      all_answers_on_my_markets: 'Answers on your markets',
-      subsidized_your_market: 'Your market was subsidized',
-      tips_on_your_markets: 'Likes on your markets',
-    },
+    subscriptionTypes: [
+      'your_contract_closed',
+      'all_comments_on_my_markets',
+      'all_answers_on_my_markets',
+      'subsidized_your_market',
+      'tips_on_your_markets',
+    ],
   }
-  const bonuses: sectionData = {
+  const bonuses: SectionData = {
     label: 'Bonuses',
-    subscriptionTypeToDescription: {
-      betting_streaks: 'Betting streak bonuses',
-      referral_bonuses: 'Referral bonuses from referring users',
-      unique_bettors_on_your_contract: 'Unique bettor bonuses on your markets',
-    },
+    subscriptionTypes: [
+      'betting_streaks',
+      'referral_bonuses',
+      'unique_bettors_on_your_contract',
+    ],
   }
-  const otherBalances: sectionData = {
+  const otherBalances: SectionData = {
     label: 'Other',
-    subscriptionTypeToDescription: {
-      loan_income: 'Automatic loans from your profitable bets',
-      limit_order_fills: 'Limit order fills',
-      tips_on_your_comments: 'Tips on your comments',
-    },
+    subscriptionTypes: [
+      'loan_income',
+      'limit_order_fills',
+      'tips_on_your_comments',
+    ],
   }
-  const userInteractions: sectionData = {
+  const userInteractions: SectionData = {
     label: 'Users',
-    subscriptionTypeToDescription: {
-      tagged_user: 'A user tagged you',
-      on_new_follow: 'Someone followed you',
-      contract_from_followed_user: 'New markets created by users you follow',
-    },
+    subscriptionTypes: [
+      'tagged_user',
+      'on_new_follow',
+      'contract_from_followed_user',
+    ],
   }
-  const generalOther: sectionData = {
+  const generalOther: SectionData = {
     label: 'Other',
-    subscriptionTypeToDescription: {
-      trending_markets: 'Weekly interesting markets',
-      thank_you_for_purchases: 'Thank you notes for your purchases',
-      onboarding_flow: 'Explanatory emails to help you get started',
-      // profit_loss_updates: 'Weekly profit/loss updates',
-    },
+    subscriptionTypes: [
+      'trending_markets',
+      'thank_you_for_purchases',
+      'onboarding_flow',
+    ],
   }
 
-  const NotificationSettingLine = (
-    description: string,
-    key: keyof notification_subscription_types,
-    value: notification_destination_types[]
-  ) => {
-    const previousInAppValue = value.includes('browser')
-    const previousEmailValue = value.includes('email')
+  function NotificationSettingLine(props: {
+    description: string
+    subscriptionTypeKey: notification_preference
+    destinations: notification_destination_types[]
+  }) {
+    const { description, subscriptionTypeKey, destinations } = props
+    const previousInAppValue = destinations.includes('browser')
+    const previousEmailValue = destinations.includes('email')
     const [inAppEnabled, setInAppEnabled] = useState(previousInAppValue)
     const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
     const loading = 'Changing Notifications Settings'
     const success = 'Changed Notification Settings!'
-    const highlight = navigateToSection === key
+    const highlight = navigateToSection === subscriptionTypeKey
 
-    useEffect(() => {
-      if (
-        inAppEnabled !== previousInAppValue ||
-        emailEnabled !== previousEmailValue
-      ) {
-        toast.promise(
+    const changeSetting = (setting: 'browser' | 'email', newValue: boolean) => {
+      toast
+        .promise(
           updatePrivateUser(privateUser.id, {
-            notificationSubscriptionTypes: {
-              ...privateUser.notificationSubscriptionTypes,
-              [key]: filterDefined([
-                inAppEnabled ? 'browser' : undefined,
-                emailEnabled ? 'email' : undefined,
-              ]),
+            notificationPreferences: {
+              ...privateUser.notificationPreferences,
+              [subscriptionTypeKey]: destinations.includes(setting)
+                ? destinations.filter((d) => d !== setting)
+                : uniq([...destinations, setting]),
             },
           }),
           {
@@ -195,14 +188,14 @@ export function NotificationSettings(props: {
             error: 'Error changing notification settings. Try again?',
           }
         )
-      }
-    }, [
-      inAppEnabled,
-      emailEnabled,
-      previousInAppValue,
-      previousEmailValue,
-      key,
-    ])
+        .then(() => {
+          if (setting === 'browser') {
+            setInAppEnabled(newValue)
+          } else {
+            setEmailEnabled(newValue)
+          }
+        })
+    }
 
     return (
       <Row
@@ -216,17 +209,17 @@ export function NotificationSettings(props: {
             <span>{description}</span>
           </Row>
           <Row className={'gap-4'}>
-            {!browserDisabled.includes(key) && (
+            {!browserDisabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={inAppEnabled}
-                onChange={setInAppEnabled}
+                onChange={(newVal) => changeSetting('browser', newVal)}
                 label={'Web'}
               />
             )}
-            {emailsEnabled.includes(key) && (
+            {emailsEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={emailEnabled}
-                onChange={setEmailEnabled}
+                onChange={(newVal) => changeSetting('email', newVal)}
                 label={'Email'}
               />
             )}
@@ -236,23 +229,31 @@ export function NotificationSettings(props: {
     )
   }
 
-  const getUsersSavedPreference = (
-    key: keyof notification_subscription_types
-  ) => {
-    return privateUser.notificationSubscriptionTypes[key] ?? []
+  const getUsersSavedPreference = (key: notification_preference) => {
+    return privateUser.notificationPreferences[key] ?? []
   }
 
-  const Section = (icon: ReactNode, data: sectionData) => {
-    const { label, subscriptionTypeToDescription } = data
+  const Section = memo(function Section(props: {
+    icon: ReactNode
+    data: SectionData
+  }) {
+    const { icon, data } = props
+    const { label, subscriptionTypes } = data
     const expand =
       navigateToSection &&
-      Object.keys(subscriptionTypeToDescription).includes(navigateToSection)
-    const [expanded, setExpanded] = useState(expand)
+      subscriptionTypes.includes(navigateToSection as notification_preference)
+
+    // Not sure how to prevent re-render (and collapse of an open section)
+    // due to a private user settings change. Just going to persist expanded state here
+    const [expanded, setExpanded] = usePersistentState(expand ?? false, {
+      key: 'NotificationsSettingsSection-' + subscriptionTypes.join('-'),
+      store: storageStore(safeLocalStorage()),
+    })
 
     // Not working as the default value for expanded, so using a useEffect
     useEffect(() => {
       if (expand) setExpanded(true)
-    }, [expand])
+    }, [expand, setExpanded])
 
     return (
       <Col className={clsx('ml-2 gap-2')}>
@@ -274,19 +275,19 @@ export function NotificationSettings(props: {
           )}
         </Row>
         <Col className={clsx(expanded ? 'block' : 'hidden', 'gap-2 p-2')}>
-          {Object.entries(subscriptionTypeToDescription).map(([key, value]) =>
-            NotificationSettingLine(
-              value,
-              key as keyof notification_subscription_types,
-              getUsersSavedPreference(
-                key as keyof notification_subscription_types
-              )
-            )
-          )}
+          {subscriptionTypes.map((subType) => (
+            <NotificationSettingLine
+              subscriptionTypeKey={subType as notification_preference}
+              destinations={getUsersSavedPreference(
+                subType as notification_preference
+              )}
+              description={NOTIFICATION_DESCRIPTIONS[subType].simple}
+            />
+          ))}
         </Col>
       </Col>
     )
-  }
+  })
 
   return (
     <div className={'p-2'}>
@@ -298,20 +299,38 @@ export function NotificationSettings(props: {
             onClick={() => setShowWatchModal(true)}
           />
         </Row>
-        {Section(<ChatIcon className={'h-6 w-6'} />, comments)}
-        {Section(<LightBulbIcon className={'h-6 w-6'} />, answers)}
-        {Section(<TrendingUpIcon className={'h-6 w-6'} />, updates)}
-        {Section(<UserIcon className={'h-6 w-6'} />, yourMarkets)}
+        <Section icon={<ChatIcon className={'h-6 w-6'} />} data={comments} />
+        <Section
+          icon={<TrendingUpIcon className={'h-6 w-6'} />}
+          data={updates}
+        />
+        <Section
+          icon={<LightBulbIcon className={'h-6 w-6'} />}
+          data={answers}
+        />
+        <Section icon={<UserIcon className={'h-6 w-6'} />} data={yourMarkets} />
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>Balance Changes</span>
         </Row>
-        {Section(<CurrencyDollarIcon className={'h-6 w-6'} />, bonuses)}
-        {Section(<CashIcon className={'h-6 w-6'} />, otherBalances)}
+        <Section
+          icon={<CurrencyDollarIcon className={'h-6 w-6'} />}
+          data={bonuses}
+        />
+        <Section
+          icon={<CashIcon className={'h-6 w-6'} />}
+          data={otherBalances}
+        />
         <Row className={'gap-2 text-xl text-gray-700'}>
           <span>General</span>
         </Row>
-        {Section(<UsersIcon className={'h-6 w-6'} />, userInteractions)}
-        {Section(<InboxInIcon className={'h-6 w-6'} />, generalOther)}
+        <Section
+          icon={<UsersIcon className={'h-6 w-6'} />}
+          data={userInteractions}
+        />
+        <Section
+          icon={<InboxInIcon className={'h-6 w-6'} />}
+          data={generalOther}
+        />
         <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </div>

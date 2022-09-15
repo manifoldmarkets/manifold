@@ -19,6 +19,8 @@ import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 
+import { PAST_BETS } from 'common/user'
+
 function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
@@ -38,7 +40,7 @@ const signedOutNavigation = [
 export const userProfileItem = (user: User) => ({
   name: formatMoney(user.balance),
   trackingEventName: 'profile',
-  href: `/${user.username}?tab=trades`,
+  href: `/${user.username}?tab=${PAST_BETS}`,
   icon: () => (
     <Avatar
       className="mx-auto my-1"

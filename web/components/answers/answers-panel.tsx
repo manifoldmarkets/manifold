@@ -24,24 +24,25 @@ import { Linkify } from 'web/components/linkify'
 import { BuyButton } from 'web/components/yes-no-selector'
 import { UserLink } from 'web/components/user-link'
 import { Button } from 'web/components/button'
+import { useAdmin } from 'web/hooks/use-admin'
+import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
 }) {
+  const isAdmin = useAdmin()
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets, outcomeType } =
     contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
 
-  const answers = useAnswers(contract.id) ?? contract.answers
-  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] === 0)
+  const answers = (useAnswers(contract.id) ?? contract.answers).filter(
+    (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
+  )
+  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] < 1)
 
   const [winningAnswers, losingAnswers] = partition(
-    answers.filter((answer) =>
-      (answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE') && showAllAnswers
-        ? true
-        : totalBets[answer.id] > 0
-    ),
+    answers.filter((a) => (showAllAnswers ? true : totalBets[a.id] > 0)),
     (answer) =>
       answer.id === resolution || (resolutions && resolutions[answer.id])
   )
@@ -156,17 +157,20 @@ export function AnswersPanel(props: {
           <CreateAnswerPanel contract={contract} />
         )}
 
-      {user?.id === creatorId && !resolution && (
-        <>
-          <Spacer h={2} />
-          <AnswerResolvePanel
-            contract={contract}
-            resolveOption={resolveOption}
-            setResolveOption={setResolveOption}
-            chosenAnswers={chosenAnswers}
-          />
-        </>
-      )}
+      {(user?.id === creatorId || (isAdmin && needsAdminToResolve(contract))) &&
+        !resolution && (
+          <>
+            <Spacer h={2} />
+            <AnswerResolvePanel
+              isAdmin={isAdmin}
+              isCreator={user?.id === creatorId}
+              contract={contract}
+              resolveOption={resolveOption}
+              setResolveOption={setResolveOption}
+              chosenAnswers={chosenAnswers}
+            />
+          </>
+        )}
     </Col>
   )
 }
