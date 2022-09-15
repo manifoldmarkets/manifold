@@ -42,6 +42,7 @@ export function ContractCard(props: {
   hideQuickBet?: boolean
   hideGroupLink?: boolean
   trackingPostfix?: string
+  noLinkAvatar?: boolean
 }) {
   const {
     showTime,
@@ -51,6 +52,7 @@ export function ContractCard(props: {
     hideQuickBet,
     hideGroupLink,
     trackingPostfix,
+    noLinkAvatar,
   } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
@@ -78,6 +80,7 @@ export function ContractCard(props: {
         <AvatarDetails
           contract={contract}
           className={'hidden md:inline-flex'}
+          noLink={noLinkAvatar}
         />
         <p
           className={clsx(
@@ -142,7 +145,12 @@ export function ContractCard(props: {
           showQuickBet ? 'w-[85%]' : 'w-full'
         )}
       >
-        <AvatarDetails contract={contract} short={true} className="md:hidden" />
+        <AvatarDetails
+          contract={contract}
+          short={true}
+          className="md:hidden"
+          noLink={noLinkAvatar}
+        />
         <MiscDetails
           contract={contract}
           showTime={showTime}
