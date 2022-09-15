@@ -12,11 +12,13 @@ import { BucketInput } from './bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 
 export function NumericResolutionPanel(props: {
+  isAdmin: boolean
+  isCreator: boolean
   creator: User
   contract: NumericContract | PseudoNumericContract
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, isAdmin, isCreator } = props
   const { min, max, outcomeType } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<
@@ -78,10 +80,20 @@ export function NumericResolutionPanel(props: {
       : 'btn-disabled'
 
   return (
-    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
-      <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
+    <Col
+      className={clsx(
+        'relative w-full rounded-md bg-white px-8 py-6',
+        className
+      )}
+    >
+      {isAdmin && !isCreator && (
+        <span className="absolute right-4 top-4 rounded bg-red-200 p-1 text-xs text-red-600">
+          ADMIN
+        </span>
+      )}
+      <div className="whitespace-nowrap text-2xl">Resolve market</div>
 
-      <div className="mb-3 text-sm text-gray-500">Outcome</div>
+      <div className="my-3 text-sm text-gray-500">Outcome</div>
 
       <Spacer h={4} />
 

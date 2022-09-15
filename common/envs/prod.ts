@@ -74,6 +74,7 @@ export const PROD_CONFIG: EnvConfig = {
     'iansphilips@gmail.com', // Ian
     'd4vidchee@gmail.com', // D4vid
     'federicoruizcassarino@gmail.com', // Fede
+    'ingawei@gmail.com', //Inga
   ],
   visibility: 'PUBLIC',
 
