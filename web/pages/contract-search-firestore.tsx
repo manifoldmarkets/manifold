@@ -8,6 +8,7 @@ import {
   usePersistentState,
   urlParamStore,
 } from 'web/hooks/use-persistent-state'
+import { PAST_BETS } from 'common/user'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -101,7 +102,7 @@ export default function ContractSearchFirestore(props: {
         >
           <option value="score">Trending</option>
           <option value="newest">Newest</option>
-          <option value="most-traded">Most traded</option>
+          <option value="most-traded">Most ${PAST_BETS}</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
         </select>

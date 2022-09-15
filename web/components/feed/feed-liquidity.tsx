@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import { User } from 'common/user'
+import { BETTOR, User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
@@ -74,7 +74,7 @@ export function LiquidityStatusText(props: {
       {bettor ? (
         <UserLink name={bettor.name} username={bettor.username} />
       ) : (
-        <span>{isSelf ? 'You' : 'A trader'}</span>
+        <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
       )}{' '}
       {bought} a subsidy of {money}
       <RelativeTimestamp time={createdTime} />

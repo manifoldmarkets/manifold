@@ -12,6 +12,7 @@ import { FeedComment } from '../feed/feed-comments'
 import { Spacer } from '../layout/spacer'
 import { Leaderboard } from '../leaderboard'
 import { Title } from '../title'
+import { BETTORS } from 'common/user'
 
 export function ContractLeaderboard(props: {
   contract: Contract
@@ -48,7 +49,7 @@ export function ContractLeaderboard(props: {
 
   return users && users.length > 0 ? (
     <Leaderboard
-      title="🏅 Top traders"
+      title={`🏅 Top ${BETTORS}`}
       users={users || []}
       columns={[
         {

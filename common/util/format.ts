@@ -16,6 +16,10 @@ export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }
 
+export function capitalFirst(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 export function formatWithCommas(amount: number) {
   return formatter.format(Math.floor(amount)).replace('$', '')
 }

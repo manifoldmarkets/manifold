@@ -50,6 +50,7 @@ import { usePost } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from '@amplitude/analytics-browser'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
+import { BETTORS } from 'common/user'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -155,7 +156,7 @@ export default function GroupPage(props: {
       <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
         <GroupLeaderboard
           topUsers={topTraders}
-          title="🏅 Top traders"
+          title={`🏅 Top ${BETTORS}`}
           header="Profit"
           maxToShow={maxLeaderboardSize}
         />
