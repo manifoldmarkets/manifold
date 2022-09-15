@@ -259,9 +259,6 @@ export function MarketGroups(props: {
         {disabled ? (
           { groupInfo }
         ) : (
-          // !user ? (
-          //   <div />
-          // ) :
           <Row>
             {groupInfo}
             {user && (

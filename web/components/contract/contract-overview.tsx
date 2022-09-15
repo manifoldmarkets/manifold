@@ -85,7 +85,6 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
           <BinaryResolutionOrChance contract={contract} />
-          {/* <ExtraMobileContractDetails contract={contract} /> */}
           {tradingAllowed(contract) && (
             <BetWidget contract={contract as CPMMBinaryContract} />
           )}
@@ -113,10 +112,6 @@ const ChoiceOverview = (props: {
       </Col>
       <Col className={'mb-1 gap-y-2'}>
         <AnswersGraph contract={contract} bets={[...bets].reverse()} />
-        {/* <ExtraMobileContractDetails
-          contract={contract}
-          forceShowVolume={true}
-        /> */}
       </Col>
     </Col>
   )
@@ -140,7 +135,6 @@ const PseudoNumericOverview = (props: {
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
           <PseudoNumericResolutionOrExpectation contract={contract} />
-          {/* <ExtraMobileContractDetails contract={contract} /> */}
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>

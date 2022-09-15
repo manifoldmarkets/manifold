@@ -79,7 +79,6 @@ export function MiniUserFollowButton(props: { userId: string }) {
   const isFollowing = following?.includes(userId)
   const isFirstRender = useRef(true)
   const [justFollowed, setJustFollowed] = useState(false)
-  // const [followFade, setfollowFade] = useState(false)
 
   useEffect(() => {
     if (isFirstRender.current) {
