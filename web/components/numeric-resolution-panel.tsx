@@ -14,11 +14,12 @@ import { Row } from './layout/row'
 
 export function NumericResolutionPanel(props: {
   isAdmin: boolean
+  isCreator: boolean
   creator: User
   contract: NumericContract | PseudoNumericContract
   className?: string
 }) {
-  const { contract, className, isAdmin } = props
+  const { contract, className, isAdmin, isCreator } = props
   const { min, max, outcomeType } = contract
 
   const [outcomeMode, setOutcomeMode] = useState<
@@ -86,7 +87,7 @@ export function NumericResolutionPanel(props: {
         className
       )}
     >
-      {isAdmin && (
+      {isAdmin && !isCreator && (
         <span className="absolute right-4 top-4 rounded bg-red-200 p-1 text-xs text-red-600">
           ADMIN
         </span>

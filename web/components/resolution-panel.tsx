@@ -13,11 +13,12 @@ import { BinaryContract, resolution } from 'common/contract'
 
 export function ResolutionPanel(props: {
   isAdmin: boolean
+  isCreator: boolean
   creator: User
   contract: BinaryContract
   className?: string
 }) {
-  const { contract, className, isAdmin } = props
+  const { contract, className, isAdmin, isCreator } = props
 
   // const earnedFees =
   //   contract.mechanism === 'dpm-2'
@@ -68,7 +69,7 @@ export function ResolutionPanel(props: {
 
   return (
     <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
-      {isAdmin && (
+      {isAdmin && !isCreator && (
         <span className="absolute right-4 top-4 rounded bg-red-200 p-1 text-xs text-red-600">
           ADMIN
         </span>

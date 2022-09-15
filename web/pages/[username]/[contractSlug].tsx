@@ -146,12 +146,14 @@ export function ContractPageSidebar(props: {
           <NumericResolutionPanel
             isAdmin={isAdmin}
             creator={user}
+            isCreator={isCreator}
             contract={contract}
           />
         ) : (
           <ResolutionPanel
             isAdmin={isAdmin}
             creator={user}
+            isCreator={isCreator}
             contract={contract}
           />
         ))}

@@ -24,10 +24,12 @@ import { Linkify } from 'web/components/linkify'
 import { BuyButton } from 'web/components/yes-no-selector'
 import { UserLink } from 'web/components/user-link'
 import { Button } from 'web/components/button'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
 }) {
+  const isAdmin = useAdmin()
   const { contract } = props
   const { creatorId, resolution, resolutions, totalBets, outcomeType } =
     contract
@@ -154,10 +156,12 @@ export function AnswersPanel(props: {
           <CreateAnswerPanel contract={contract} />
         )}
 
-      {user?.id === creatorId && !resolution && (
+      {(user?.id === creatorId || isAdmin) && !resolution && (
         <>
           <Spacer h={2} />
           <AnswerResolvePanel
+            isAdmin={isAdmin}
+            isCreator={user?.id === creatorId}
             contract={contract}
             resolveOption={resolveOption}
             setResolveOption={setResolveOption}
