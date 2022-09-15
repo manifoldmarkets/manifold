@@ -1,7 +1,7 @@
 import { Bet } from 'common/bet'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
-import { User } from 'common/user'
+import { PAST_BETS, User } from 'common/user'
 import {
   ContractCommentsActivity,
   ContractBetsActivity,
@@ -114,13 +114,13 @@ export function ContractTabs(props: {
             badge: `${comments.length}`,
           },
           {
-            title: 'Trades',
+            title: PAST_BETS,
             content: betActivity,
             badge: `${visibleBets.length}`,
           },
           ...(!user || !userBets?.length
             ? []
-            : [{ title: 'Your trades', content: yourTrades }]),
+            : [{ title: `Your ${PAST_BETS}`, content: yourTrades }]),
         ]}
       />
       {!user ? (

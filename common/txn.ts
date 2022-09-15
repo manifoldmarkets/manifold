@@ -7,6 +7,7 @@ type AnyTxnType =
   | Referral
   | UniqueBettorBonus
   | BettingStreakBonus
+  | CancelUniqueBettorBonus
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -29,6 +30,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'REFERRAL'
     | 'UNIQUE_BETTOR_BONUS'
     | 'BETTING_STREAK_BONUS'
+    | 'CANCEL_UNIQUE_BETTOR_BONUS'
 
   // Any extra data
   data?: { [key: string]: any }
@@ -89,9 +91,19 @@ type BettingStreakBonus = {
   }
 }
 
+type CancelUniqueBettorBonus = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CANCEL_UNIQUE_BETTOR_BONUS'
+  data: {
+    contractId: string
+  }
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
 export type ReferralTxn = Txn & Referral
 export type BettingStreakBonusTxn = Txn & BettingStreakBonus
 export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
+export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus

@@ -15,6 +15,9 @@ export type EnvConfig = {
 
   // Branding
   moneyMoniker: string // e.g. 'M$'
+  bettor?: string // e.g. 'bettor' or 'predictor'
+  presentBet?: string // e.g. 'bet' or 'predict'
+  pastBet?: string // e.g. 'bet' or 'prediction'
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
   newQuestionPlaceholders: string[]
@@ -79,6 +82,9 @@ export const PROD_CONFIG: EnvConfig = {
   visibility: 'PUBLIC',
 
   moneyMoniker: 'M$',
+  bettor: 'predictor',
+  pastBet: 'prediction',
+  presentBet: 'predict',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [

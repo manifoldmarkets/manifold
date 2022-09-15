@@ -10,6 +10,7 @@ import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { BucketInput } from './bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
+import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
 
 export function NumericResolutionPanel(props: {
   isAdmin: boolean
@@ -111,9 +112,12 @@ export function NumericResolutionPanel(props: {
 
       <div>
         {outcome === 'CANCEL' ? (
-          <>All trades will be returned with no fees.</>
+          <>
+            All {PAST_BETS} will be returned. Unique {BETTOR} bonuses will be
+            withdrawn from your account
+          </>
         ) : (
-          <>Resolving this market will immediately pay out traders.</>
+          <>Resolving this market will immediately pay out {BETTORS}.</>
         )}
       </div>
 
