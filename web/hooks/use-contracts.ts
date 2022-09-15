@@ -9,9 +9,8 @@ import {
   listenForNewContracts,
   getUserBetContracts,
   getUserBetContractsQuery,
-  listAllContracts,
 } from 'web/lib/firebase/contracts'
-import { QueryClient, useQueryClient } from 'react-query'
+import { useQueryClient } from 'react-query'
 import { MINUTE_MS } from 'common/util/time'
 
 export const useContracts = () => {
@@ -23,12 +22,6 @@ export const useContracts = () => {
 
   return contracts
 }
-
-const q = new QueryClient()
-export const getCachedContracts = async () =>
-  q.fetchQuery(['contracts'], () => listAllContracts(1000), {
-    staleTime: Infinity,
-  })
 
 export const useActiveContracts = () => {
   const [activeContracts, setActiveContracts] = useState<
