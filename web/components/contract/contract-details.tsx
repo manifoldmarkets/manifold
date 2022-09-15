@@ -111,7 +111,7 @@ export function ContractDetails(props: {
 }) {
   const { contract, disabled } = props
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
-  const { volumeLabel, resolvedDate } = contractMetrics(contract)
+  const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()

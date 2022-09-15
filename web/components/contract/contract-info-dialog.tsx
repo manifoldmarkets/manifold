@@ -28,7 +28,6 @@ export function ContractInfoDialog(props: {
   contract: Contract
   className?: string
 }) {
-  const user = useUser()
   const { contract, className } = props
 
   const [open, setOpen] = useState(false)
