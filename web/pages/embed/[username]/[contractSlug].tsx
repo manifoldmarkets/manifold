@@ -116,7 +116,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
             tradingAllowed(contract) &&
             !betPanelOpen && (
               <Button color="gradient" onClick={() => setBetPanelOpen(true)}>
-                Bet
+                Predict
               </Button>
             )}
 
