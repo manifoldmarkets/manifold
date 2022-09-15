@@ -4,8 +4,8 @@ import { searchInAny } from 'common/util/parse'
 import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
 import { getCachedContracts } from 'web/hooks/use-contracts'
-// import { getCachedUsers } from 'web/hooks/use-users'
 import { MentionList } from './contract-mention-list'
+import { PluginKey } from 'prosemirror-state'
 
 type Suggestion = MentionOptions['suggestion']
 
@@ -17,6 +17,7 @@ const beginsWith = (text: string, query: string) =>
 export const contractMentionSuggestion: Suggestion = {
   char: '%',
   allowSpaces: true,
+  pluginKey: new PluginKey('contract-mention'),
   items: async ({ query }) =>
     orderBy(
       (await getCachedContracts()).filter((c) =>

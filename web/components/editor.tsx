@@ -255,7 +255,10 @@ export function RichContent(props: {
       smallImage ? DisplayImage : Image,
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
-      DisplayContractMention,
+      DisplayContractMention.configure({
+        // Needed to set a different PluginKey for Prosemirror
+        suggestion: contractMentionSuggestion,
+      }),
       Iframe,
       TiptapTweet,
     ],
