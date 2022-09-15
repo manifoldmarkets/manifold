@@ -25,7 +25,7 @@ import {
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
-import { ContractDetails, ExtraMobileContractDetails } from './contract-details'
+import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 
 const OverviewQuestion = (props: { text: string }) => (

@@ -5,8 +5,6 @@ import { useFollows } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
-import { Button } from './button'
-import { Col } from './layout/col'
 
 export function FollowButton(props: {
   isFollowing: boolean | undefined

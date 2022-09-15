@@ -11,11 +11,6 @@ import { FollowMarketButton } from 'web/components/follow-market-button'
 import { LikeMarketButton } from 'web/components/contract/like-market-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { Col } from 'web/components/layout/col'
-import { withTracking } from 'web/lib/service/analytics'
-import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
-import { CHALLENGES_ENABLED } from 'common/challenge'
-import ChallengeIcon from 'web/lib/icons/challenge-icon'
-import { useIsMobile } from './contract-details'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props

@@ -1,9 +1,4 @@
-import {
-  ClockIcon,
-  DatabaseIcon,
-  PencilIcon,
-  UserGroupIcon,
-} from '@heroicons/react/outline'
+import { ClockIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
@@ -16,9 +11,8 @@ import { DateTimeTooltip } from '../datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../avatar'
 import { useState } from 'react'
-import { ContractInfoDialog } from './contract-info-dialog'
 import NewContractBadge from '../new-contract-badge'
-import { MiniUserFollowButton, UserFollowButton } from '../follow-button'
+import { MiniUserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { exhibitExts } from 'common/util/parse'
@@ -120,7 +114,6 @@ export function ContractDetails(props: {
   const { volumeLabel, resolvedDate } = contractMetrics(contract)
   const user = useUser()
   const isCreator = user?.id === creatorId
-  const { width } = useWindowSize()
   const isMobile = useIsMobile()
 
   return (
