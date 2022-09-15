@@ -1,7 +1,7 @@
 import { PrivateUser, User } from 'common/user'
 import { generateNewApiKey } from '../api/api-key'
 
-const TWITCH_BOT_PUBLIC_URL = 'http://localhost:9172' //'https://king-prawn-app-5btyw.ondigitalocean.app' // TODO: Add this to env config appropriately
+const TWITCH_BOT_PUBLIC_URL = 'https://king-prawn-app-5btyw.ondigitalocean.app' // TODO: Add this to env config appropriately
 
 function postToBot(url: string, body: any): Promise<Response> {
   return fetch(url, {
