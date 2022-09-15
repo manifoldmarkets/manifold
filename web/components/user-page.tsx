@@ -25,7 +25,7 @@ import { UserFollowButton } from './follow-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { ReferralsButton } from 'web/components/referrals-button'
-import { capitalFirst, formatMoney } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { ShareIconButton } from 'web/components/share-icon-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
@@ -36,6 +36,7 @@ import { REFERRAL_AMOUNT } from 'common/economy'
 import { LoansModal } from './profile/loans-modal'
 import { UserLikesButton } from 'web/components/profile/user-likes-button'
 import { PAST_BETS } from 'common/user'
+import { capitalize } from 'lodash'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -270,7 +271,7 @@ export function UserPage(props: { user: User }) {
               ),
             },
             {
-              title: capitalFirst(PAST_BETS),
+              title: capitalize(PAST_BETS),
               content: (
                 <>
                   <BetsList user={user} />
