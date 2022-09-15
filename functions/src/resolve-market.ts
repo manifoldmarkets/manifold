@@ -76,14 +76,18 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
   const { creatorId, closeTime } = contract
-  const user = await admin.auth().getUser(auth.uid)
+  const firebaseUser = await admin.auth().getUser(auth.uid)
 
   const { value, resolutions, probabilityInt, outcome } = getResolutionParams(
     contract,
     req.body
   )
 
-  if (creatorId !== auth.uid && !isManifoldId(auth.uid) && !isAdmin(user.email))
+  if (
+    creatorId !== auth.uid &&
+    !isManifoldId(auth.uid) &&
+    !isAdmin(firebaseUser.email)
+  )
     throw new APIError(403, 'User is not creator of contract')
 
   if (contract.resolution) throw new APIError(400, 'Contract already resolved')

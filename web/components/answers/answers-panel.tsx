@@ -25,6 +25,7 @@ import { BuyButton } from 'web/components/yes-no-selector'
 import { UserLink } from 'web/components/user-link'
 import { Button } from 'web/components/button'
 import { useAdmin } from 'web/hooks/use-admin'
+import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
@@ -156,19 +157,20 @@ export function AnswersPanel(props: {
           <CreateAnswerPanel contract={contract} />
         )}
 
-      {(user?.id === creatorId || isAdmin) && !resolution && (
-        <>
-          <Spacer h={2} />
-          <AnswerResolvePanel
-            isAdmin={isAdmin}
-            isCreator={user?.id === creatorId}
-            contract={contract}
-            resolveOption={resolveOption}
-            setResolveOption={setResolveOption}
-            chosenAnswers={chosenAnswers}
-          />
-        </>
-      )}
+      {(user?.id === creatorId || (isAdmin && needsAdminToResolve(contract))) &&
+        !resolution && (
+          <>
+            <Spacer h={2} />
+            <AnswerResolvePanel
+              isAdmin={isAdmin}
+              isCreator={user?.id === creatorId}
+              contract={contract}
+              resolveOption={resolveOption}
+              setResolveOption={setResolveOption}
+              chosenAnswers={chosenAnswers}
+            />
+          </>
+        )}
     </Col>
   )
 }

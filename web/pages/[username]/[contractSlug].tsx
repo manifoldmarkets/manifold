@@ -46,6 +46,7 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useAdmin } from 'web/hooks/use-admin'
+import dayjs from 'dayjs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -111,6 +112,11 @@ export default function ContractPage(props: {
   )
 }
 
+// requires an admin to resolve a week after market closes
+export function needsAdminToResolve(contract: Contract) {
+  return !contract.isResolved && dayjs().diff(contract.closeTime, 'day') > 7
+}
+
 export function ContractPageSidebar(props: {
   user: User | null | undefined
   contract: Contract
@@ -123,7 +129,10 @@ export function ContractPageSidebar(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const isAdmin = useAdmin()
-  const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
+  const allowResolve =
+    !isResolved &&
+    (isCreator || (needsAdminToResolve(contract) && isAdmin)) &&
+    !!user
 
   const hasSidePanel =
     (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
