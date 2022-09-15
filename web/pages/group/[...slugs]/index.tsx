@@ -198,7 +198,11 @@ export default function GroupPage(props: {
       {/* align the divs to the right */}
       <div className={' flex justify-end px-2 pb-2 sm:hidden'}>
         <div>
-          <JoinGroupButton group={group} user={user} />
+          <JoinOrAddQuestionsButtons
+            group={group}
+            user={user}
+            isMember={!!isMember}
+          />
         </div>
       </div>
       <ContractSearch
