@@ -10,7 +10,6 @@ import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { BucketInput } from './bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { Row } from './layout/row'
 
 export function NumericResolutionPanel(props: {
   isAdmin: boolean
