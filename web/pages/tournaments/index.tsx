@@ -80,7 +80,7 @@ const tourneys: Tourney[] = [
     title: 'Clearer Thinking Regrant Project',
     blurb: 'Which projects will Clearer Thinking give a grant to?',
     award: '$13,000',
-    endTime: toDate('Sep 22, 2022'),
+    endTime: toDate('Sep 30, 2022'),
     groupId: 'fhksfIgqyWf7OxsV9nkM',
   },
   {
