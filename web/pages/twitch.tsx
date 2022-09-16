@@ -17,9 +17,16 @@ import { Title } from 'web/components/title'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogin, getUserAndPrivateUser } from 'web/lib/firebase/users'
+import {
+  firebaseLogin,
+  getUserAndPrivateUser,
+  updatePrivateUser,
+} from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
+import {
+  linkTwitchAccountRedirect,
+  updateBotEnabledForUser,
+} from 'web/lib/twitch/link-twitch-account'
 import { copyToClipboard } from 'web/lib/util/copy'
 
 function ButtonGetStarted(props: {
@@ -189,21 +196,24 @@ function BotSetupStep(props: {
   stepNum: number
   buttonName?: string
   buttonOnClick?: MouseEventHandler
+  overrideButton?: ReactNode
   children: ReactNode
 }) {
-  const { stepNum, buttonName, buttonOnClick, children } = props
+  const { stepNum, buttonName, buttonOnClick, overrideButton, children } = props
   return (
     <Col className="flex-1">
-      {buttonName && (
+      {(overrideButton || buttonName) && (
         <>
-          <Button
-            size={'md'}
-            color={'green'}
-            className="!border-none"
-            onClick={buttonOnClick}
-          >
-            {buttonName}
-          </Button>
+          {overrideButton ?? (
+            <Button
+              size={'md'}
+              color={'green'}
+              className="!border-none"
+              onClick={buttonOnClick}
+            >
+              {buttonName}
+            </Button>
+          )}
           <Spacer h={4} />
         </>
       )}
@@ -215,6 +225,81 @@ function BotSetupStep(props: {
   )
 }
 
+function BotConnectButton(props: {
+  privateUser: PrivateUser | null | undefined
+}) {
+  const { privateUser } = props
+  const [loading, setLoading] = useState(false)
+
+  const updateBotConnected = (connected: boolean) => async () => {
+    if (!privateUser) return
+    const twitchInfo = privateUser.twitchInfo
+    if (!twitchInfo) return
+
+    const error = connected
+      ? 'Failed to add bot to your channel'
+      : 'Failed to remove bot from your channel'
+    const success = connected
+      ? 'Added bot to your channel'
+      : 'Removed bot from your channel'
+
+    setLoading(true)
+    toast.promise(
+      updateBotEnabledForUser(privateUser, connected)
+        .then(() =>
+          updatePrivateUser(privateUser.id, {
+            twitchInfo: { ...twitchInfo, botEnabled: connected },
+          })
+        )
+        .finally(() => setLoading(false)),
+      { loading: 'Updating bot settings...', error, success },
+      {
+        loading: {
+          className: '!max-w-sm',
+        },
+        success: {
+          className:
+            '!bg-primary !transition-all !duration-500 !text-white !max-w-sm',
+        },
+        error: {
+          className:
+            '!bg-red-400 !transition-all !duration-500 !text-white !max-w-sm',
+        },
+      }
+    )
+  }
+
+  return (
+    <>
+      {privateUser?.twitchInfo?.botEnabled ? (
+        <Button
+          color="red"
+          onClick={updateBotConnected(false)}
+          className={clsx(loading && '!btn-disabled', '')}
+        >
+          {loading ? (
+            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
+          ) : (
+            'Remove bot from channel'
+          )}
+        </Button>
+      ) : (
+        <Button
+          color="green"
+          onClick={updateBotConnected(true)}
+          className={clsx(loading && '!btn-disabled', '')}
+        >
+          {loading ? (
+            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
+          ) : (
+            'Add bot to your channel'
+          )}
+        </Button>
+      )}
+    </>
+  )
+}
+
 function SetUpBot(props: {
   user?: User | null
   privateUser?: PrivateUser | null
@@ -223,18 +308,17 @@ function SetUpBot(props: {
   const twitchLinked = privateUser?.twitchInfo?.twitchName
   const controlToken = privateUser?.twitchInfo?.controlToken
 
-  const linkIcon = <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
+  const toastTheme = {
+    className: '!bg-primary !text-white',
+    icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
+  }
   const copyOverlayLink = async () => {
     copyToClipboard(`http://localhost:1000/overlay?t=${controlToken}`) //!!!TODO: Fix link
-    toast.success('Overlay link copied!', {
-      icon: linkIcon,
-    })
+    toast.success('Overlay link copied!', toastTheme)
   }
   const copyDockLink = async () => {
     copyToClipboard(`http://localhost:1000/dock?t=${controlToken}`) //!!!TODO: Fix link
-    toast.success('Dock link copied!', {
-      icon: linkIcon,
-    })
+    toast.success('Dock link copied!', toastTheme)
   }
 
   return (
@@ -261,7 +345,7 @@ function SetUpBot(props: {
         <div className="flex flex-col gap-6 sm:flex-row">
           <BotSetupStep
             stepNum={1}
-            buttonName={twitchLinked && 'Add bot to channel'}
+            overrideButton={<BotConnectButton privateUser={privateUser} />}
           >
             Use the button above to add the bot to your channel. Then mod it by
             typing in your Twitch chat: <b>/mod ManifoldBot</b>
