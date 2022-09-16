@@ -169,7 +169,11 @@ function SectionHeader(props: {
 
   return (
     <Row className="mb-3 items-center justify-between">
-      <SiteLink className="text-xl" href={href}>
+      <SiteLink
+        className="text-xl"
+        href={href}
+        onClick={() => track('home click section header', { section: href })}
+      >
         {label}{' '}
         <ArrowSmRightIcon
           className="mb-0.5 inline h-6 w-6 text-gray-500"
@@ -349,6 +353,8 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
                   success: `Followed ${g.name}`,
                   error: "Couldn't follow group, try again?",
                 })
+
+                track('home follow group', { group: g.slug })
               }
             }}
           >

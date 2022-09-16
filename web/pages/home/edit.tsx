@@ -11,6 +11,7 @@ import { useMemberGroups } from 'web/hooks/use-group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
 import { getHomeItems } from '.'
 
 export default function Home() {
@@ -52,6 +53,7 @@ function DoneButton(props: { className?: string }) {
         size="lg"
         color="blue"
         className={clsx(className, 'flex whitespace-nowrap')}
+        onClick={() => track('done editing home')}
       >
         Done
       </Button>
