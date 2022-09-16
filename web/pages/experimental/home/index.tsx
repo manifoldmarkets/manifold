@@ -40,6 +40,8 @@ import { GroupCard } from 'web/pages/groups'
 import { chooseRandomSubset } from 'common/util/random'
 import { MenuButton } from 'web/components/nav/menu'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
+import { useContractsQuery } from 'web/hooks/use-contracts'
+import { ContractsGrid } from 'web/components/contract/contracts-grid'
 
 export default function Home() {
   const user = useUser()
@@ -158,6 +160,8 @@ function GroupSection(props: {
 }) {
   const { group, user } = props
 
+  const contracts = useContractsQuery('score', 4, { groupSlug: group.slug })
+
   return (
     <Col>
       <SectionHeader label={group.name} href={groupPath(group.slug)}>
@@ -180,14 +184,7 @@ function GroupSection(props: {
           ]}
         />
       </SectionHeader>
-      <ContractSearch
-        user={user}
-        defaultSort={'score'}
-        additionalFilter={{ groupSlug: group.slug }}
-        noControls
-        maxResults={4}
-        persistPrefix={`experimental-home-${group.slug}`}
-      />
+      <ContractsGrid contracts={contracts} />
     </Col>
   )
 }

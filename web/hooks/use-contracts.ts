@@ -8,10 +8,12 @@ import {
   getUserBetContracts,
   getUserBetContractsQuery,
   trendingContractsQuery,
+  getContractsQuery,
 } from 'web/lib/firebase/contracts'
 import { useQueryClient } from 'react-query'
 import { MINUTE_MS } from 'common/util/time'
 import { query, limit } from 'firebase/firestore'
+import { Sort } from 'web/components/contract-search'
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -27,6 +29,18 @@ export const useTrendingContracts = (maxContracts: number) => {
   const result = useFirestoreQueryData(
     ['trending-contracts', maxContracts],
     query(trendingContractsQuery, limit(maxContracts))
+  )
+  return result.data
+}
+
+export const useContractsQuery = (
+  sort: Sort,
+  maxContracts: number,
+  filters: { groupSlug?: string } = {}
+) => {
+  const result = useFirestoreQueryData(
+    ['contracts-query', sort, maxContracts, filters],
+    getContractsQuery(sort, maxContracts, filters)
   )
   return result.data
 }

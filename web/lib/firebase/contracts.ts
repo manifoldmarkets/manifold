@@ -24,6 +24,7 @@ import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
+import { Sort } from 'web/components/contract-search'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -318,6 +319,50 @@ export const getTopGroupContracts = async (
     limit(count)
   )
   return await getValues<Contract>(creatorContractsQuery)
+}
+
+const sortToField = {
+  newest: 'createdTime',
+  score: 'popularityScore',
+  'most-traded': 'volume',
+  '24-hour-vol': 'volume24Hours',
+  'prob-change-day': 'probChanges.day',
+  'last-updated': 'lastUpdated',
+  liquidity: 'totalLiquidity',
+  'close-date': 'closeTime',
+  'resolve-date': 'resolutionTime',
+  'prob-descending': 'prob',
+  'prob-ascending': 'prob',
+} as const
+
+const sortToDirection = {
+  newest: 'desc',
+  score: 'desc',
+  'most-traded': 'desc',
+  '24-hour-vol': 'desc',
+  'prob-change-day': 'desc',
+  'last-updated': 'desc',
+  liquidity: 'desc',
+  'close-date': 'asc',
+  'resolve-date': 'desc',
+  'prob-ascending': 'asc',
+  'prob-descending': 'desc',
+} as const
+
+export const getContractsQuery = (
+  sort: Sort,
+  maxItems: number,
+  filters: { groupSlug?: string } = {}
+) => {
+  const { groupSlug } = filters
+  return query(
+    contracts,
+    where('isResolved', '==', false),
+    where('visibility', '==', 'public'),
+    ...(groupSlug ? [where('groupSlugs', 'array-contains', groupSlug)] : []),
+    orderBy(sortToField[sort], sortToDirection[sort]),
+    limit(maxItems)
+  )
 }
 
 export const getRecommendedContracts = async (
