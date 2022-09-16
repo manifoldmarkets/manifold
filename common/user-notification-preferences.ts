@@ -60,14 +60,6 @@ export const getDefaultNotificationPreferences = (
   privateUser?: PrivateUser,
   noEmails?: boolean
 ) => {
-  const {
-    unsubscribedFromCommentEmails,
-    unsubscribedFromAnswerEmails,
-    unsubscribedFromResolutionEmails,
-    unsubscribedFromWeeklyTrendingEmails,
-    unsubscribedFromGenericEmails,
-  } = privateUser || {}
-
   const constructPref = (browserIf: boolean, emailIf: boolean) => {
     const browser = browserIf ? 'browser' : undefined
     const email = noEmails ? undefined : emailIf ? 'email' : undefined
@@ -75,84 +67,48 @@ export const getDefaultNotificationPreferences = (
   }
   return {
     // Watched Markets
-    all_comments_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromCommentEmails
-    ),
-    all_answers_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromAnswerEmails
-    ),
+    all_comments_on_watched_markets: constructPref(true, false),
+    all_answers_on_watched_markets: constructPref(true, false),
 
     // Comments
-    tips_on_your_comments: constructPref(true, !unsubscribedFromCommentEmails),
-    comments_by_followed_users_on_watched_markets: constructPref(true, false),
-    all_replies_to_my_comments_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromCommentEmails
-    ),
-    all_replies_to_my_answers_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromCommentEmails
-    ),
+    tips_on_your_comments: constructPref(true, true),
+    comments_by_followed_users_on_watched_markets: constructPref(true, true),
+    all_replies_to_my_comments_on_watched_markets: constructPref(true, true),
+    all_replies_to_my_answers_on_watched_markets: constructPref(true, true),
     all_comments_on_contracts_with_shares_in_on_watched_markets: constructPref(
       true,
-      !unsubscribedFromCommentEmails
+      false
     ),
 
     // Answers
-    answers_by_followed_users_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromAnswerEmails
-    ),
-    answers_by_market_creator_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromAnswerEmails
-    ),
+    answers_by_followed_users_on_watched_markets: constructPref(true, true),
+    answers_by_market_creator_on_watched_markets: constructPref(true, true),
     all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
       true,
-      !unsubscribedFromAnswerEmails
+      true
     ),
 
     // On users' markets
-    your_contract_closed: constructPref(
-      true,
-      !unsubscribedFromResolutionEmails
-    ), // High priority
-    all_comments_on_my_markets: constructPref(
-      true,
-      !unsubscribedFromCommentEmails
-    ),
-    all_answers_on_my_markets: constructPref(
-      true,
-      !unsubscribedFromAnswerEmails
-    ),
+    your_contract_closed: constructPref(true, true), // High priority
+    all_comments_on_my_markets: constructPref(true, true),
+    all_answers_on_my_markets: constructPref(true, true),
     subsidized_your_market: constructPref(true, true),
 
     // Market updates
-    resolutions_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromResolutionEmails
-    ),
+    resolutions_on_watched_markets: constructPref(true, false),
     market_updates_on_watched_markets: constructPref(true, false),
     market_updates_on_watched_markets_with_shares_in: constructPref(
       true,
       false
     ),
-    resolutions_on_watched_markets_with_shares_in: constructPref(
-      true,
-      !unsubscribedFromResolutionEmails
-    ),
+    resolutions_on_watched_markets_with_shares_in: constructPref(true, true),
 
     //Balance Changes
     loan_income: constructPref(true, false),
     betting_streaks: constructPref(true, false),
     referral_bonuses: constructPref(true, true),
     unique_bettors_on_your_contract: constructPref(true, false),
-    tipped_comments_on_watched_markets: constructPref(
-      true,
-      !unsubscribedFromCommentEmails
-    ),
+    tipped_comments_on_watched_markets: constructPref(true, true),
     tips_on_your_markets: constructPref(true, true),
     limit_order_fills: constructPref(true, false),
 
@@ -160,17 +116,11 @@ export const getDefaultNotificationPreferences = (
     tagged_user: constructPref(true, true),
     on_new_follow: constructPref(true, true),
     contract_from_followed_user: constructPref(true, true),
-    trending_markets: constructPref(
-      false,
-      !unsubscribedFromWeeklyTrendingEmails
-    ),
+    trending_markets: constructPref(false, true),
     profit_loss_updates: constructPref(false, true),
     probability_updates_on_watched_markets: constructPref(true, false),
-    thank_you_for_purchases: constructPref(
-      false,
-      !unsubscribedFromGenericEmails
-    ),
-    onboarding_flow: constructPref(false, !unsubscribedFromGenericEmails),
+    thank_you_for_purchases: constructPref(false, false),
+    onboarding_flow: constructPref(false, false),
   } as notification_preferences
 }
 
