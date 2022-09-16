@@ -42,6 +42,12 @@ if (whichGuesser === 'basic') {
     .then((data) => (sets = data))
 }
 
+if (whichGuesser === 'watermark') {
+  fetch('jsons/wm.json')
+    .then((response) => response.json())
+    .then((data) => (sets = data))
+}
+
 let firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
 
@@ -66,6 +72,8 @@ function putIntoMapAndFetch(data) {
     document.getElementById('guess-type').innerText = 'How Basic'
   } else if (whichGuesser === 'commander') {
     document.getElementById('guess-type').innerText = 'General Knowledge'
+  } else if (whichGuesser === 'watermark') {
+    document.getElementById('guess-type').innerText = 'Watermark'
   } else if (whichGuesser === 'artist') {
     document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
   }
@@ -195,6 +203,21 @@ function determineIfSkip(card) {
       ) {
         return true
       }
+    } else if (whichGuesser == 'watermark') {
+      if (
+        card.promo ||
+        card.name === 'Set' ||
+        card.name === 'Planeswalker' ||
+        card.name === 'Flavor' ||
+        card.name === 'Conspiracy' ||
+        card.name === 'Foretell' ||
+        card.name === 'Tarkir' ||
+        card.set === 'h17' ||
+        card.set === 'ptg' ||
+        card.set === 'htr18'
+      ) {
+        return true
+      }
     } else {
       if (
         card.reprint === true ||
@@ -229,6 +252,9 @@ function putIntoMap(data) {
         sets[name][1] +
         '" /> ' +
         sets[name][0]
+    }
+    if (whichGuesser === 'watermark' && sets.hasOwnProperty(name)) {
+      name = sets[name]
     }
     let normalImg = ''
     if (card.image_uris.normal) {

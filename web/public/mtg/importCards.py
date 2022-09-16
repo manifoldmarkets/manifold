@@ -6,7 +6,7 @@ import math
 # queued categories: 'terror', 'wrath', 'zombie', 'artifact']
 # add category name here
 allCategories = ['counterspell', 'beast', 'burn', 'commander']
-specialCategories = ['set', 'basic']
+specialCategories = ['set', 'basic', 'watermark']
 artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
 artist_allowlist = {'David Martin', 'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay', 'DiTerlizzi',
                     'Anthony Francisco', 'Wylie Beckert', 'Rovina Cai', 'Dominik Mayer', 'Omar Rayyan', 'Thomas M. Baxa'}
@@ -50,6 +50,8 @@ def generate_initial_special_query(category):
         return 'https://api.scryfall.com/sets'
     elif category == 'basic':
         string_query += 't%3Abasic&order=released&dir=asc&unique=prints&page='
+    elif category == 'watermark':
+        string_query += 'has%3Awatermark+-t%3Atoken+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
     # add category string query here
     print(string_query)
     return string_query
@@ -175,7 +177,7 @@ def fetch_special(query):
 
 
 def write_art(art_names, id, index, card):
-    if card['digital'] or card['set_type'] == 'promo' or card['lang'] != 'en':
+    if card['digital'] or card['set_type'] == 'promo' or card['promo'] or card['lang'] != 'en':
         art_names[id] = index
     else:
         art_names[id] = -1
@@ -216,6 +218,8 @@ def to_compact_write_form_special(smallJson, art_names, response, category, arti
                      'set_type', 'digital', 'security_stamp']
     fieldsInArtist = ['image_uris', 'digital',
                       'set_type', 'artist_ids', 'security_stamp']
+    fieldsInWatermark = ['image_uris', 'watermark',
+                         'set_type', 'digital', 'security_stamp', 'promo', 'set']
     data = smallJson['data']
     # write all fields needed in card
     for card in response['data']:
@@ -244,8 +248,38 @@ def to_compact_write_form_special(smallJson, art_names, response, category, arti
                 continue
             write_card = dict()
             for field in fieldsInArtist:
-                if field == 'artist_ids' and category == 'artist':
+                if field == 'artist_ids':
                     write_card['name'] = artists[card['artist_ids'][0]][0]
+                elif field == 'image_uris':
+                    if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
+                        write_card['image_uris'] = write_image_uris(
+                            card['card_faces'][0]['image_uris'])
+                    else:
+                        write_card['image_uris'] = write_image_uris(
+                            card['image_uris'])
+                elif field in card:
+                    write_card[field] = card[field]
+            if digital_holder != -1:
+                data[digital_holder] = write_card
+            else:
+                data.append(write_card)
+        elif category == 'watermark':
+            # do not repeat art
+            digital_holder = filter_card(card, art_names, data)
+            if digital_holder == False:
+                continue
+            if 'card_faces' in card and 'watermark' in card['card_faces'][0] and 'watermark' in card['card_faces'][1] and card['card_faces'][1]['watermark'] != card['card_faces'][0]['watermark']:
+                # print(card['name'])
+                continue
+            write_card = dict()
+            for field in fieldsInWatermark:
+                if field == 'watermark':
+                    # print(card['name'])
+                    if 'card_faces' in card:
+                        write_card['name'] = card['card_faces'][0]['watermark'].capitalize(
+                        )
+                    else:
+                        write_card['name'] = card['watermark'].capitalize()
                 elif field == 'image_uris':
                     if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
                         write_card['image_uris'] = write_image_uris(
@@ -326,13 +360,13 @@ def write_image_uris(card_image_uris):
 
 
 if __name__ == "__main__":
-    for category in allCategories:
-        print(category)
-        fetch_and_write_all(category, generate_initial_query(category))
+    # for category in allCategories:
+    #     print(category)
+    #     fetch_and_write_all(category, generate_initial_query(category))
     for category in specialCategories:
         print(category)
         fetch_and_write_all_special(
             category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
     # fetch_and_write_initial_artist_query()
-    fetch_and_write_all_artist()
+    # fetch_and_write_all_artist()
