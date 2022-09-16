@@ -10,7 +10,7 @@ import { User } from '../../common/user'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
-import { groupBy, uniq } from 'lodash'
+import { groupBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from '../../common/bet'
 import { Answer } from '../../common/answer'
 import { getContractBetMetrics } from '../../common/calculate'
@@ -480,7 +480,7 @@ export const createBetFillNotification = async (
   fromUser: User,
   toUser: User,
   bet: Bet,
-  userBet: LimitBet,
+  limitBet: LimitBet,
   contract: Contract,
   idempotencyKey: string
 ) => {
@@ -492,8 +492,10 @@ export const createBetFillNotification = async (
   )
   if (!sendToBrowser) return
 
-  const fill = userBet.fills.find((fill) => fill.matchedBetId === bet.id)
+  const fill = limitBet.fills.find((fill) => fill.matchedBetId === bet.id)
   const fillAmount = fill?.amount ?? 0
+  const remainingAmount =
+    limitBet.orderAmount - sum(limitBet.fills.map((f) => f.amount))
 
   const notificationRef = firestore
     .collection(`/users/${toUser.id}/notifications`)
@@ -504,7 +506,7 @@ export const createBetFillNotification = async (
     reason: 'bet_fill',
     createdTime: Date.now(),
     isSeen: false,
-    sourceId: userBet.id,
+    sourceId: limitBet.id,
     sourceType: 'bet',
     sourceUpdateType: 'updated',
     sourceUserName: fromUser.name,
@@ -517,9 +519,11 @@ export const createBetFillNotification = async (
     sourceContractId: contract.id,
     data: {
       betOutcome: bet.outcome,
-      creatorOutcome: userBet.outcome,
+      creatorOutcome: limitBet.outcome,
       fillAmount,
-      probability: userBet.limitProb,
+      probability: limitBet.limitProb,
+      limitOrderTotal: limitBet.orderAmount,
+      limitOrderRemaining: remainingAmount,
     } as BetFillData,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
