@@ -31,6 +31,7 @@ const ContractMentionComponent = (props: any) => {
  *  https://tiptap.dev/guide/node-views/react#render-a-react-component
  */
 export const DisplayContractMention = Mention.extend({
+  name: 'contract-mention',
   parseHTML: () => [{ tag: name }],
   renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
   addNodeView: () =>
