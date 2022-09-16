@@ -2,6 +2,7 @@ import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
+import { capitalize } from 'lodash'
 
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
@@ -20,7 +21,6 @@ import { DuplicateContractButton } from '../copy-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS } from 'common/user'
 import { Button } from '../button'
-import { capitalize } from 'lodash'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -40,10 +40,16 @@ export function ContractInfoDialog(props: {
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
-  const { createdTime, closeTime, resolutionTime, mechanism, outcomeType, id } =
-    contract
+  const {
+    createdTime,
+    closeTime,
+    resolutionTime,
+    uniqueBettorCount,
+    mechanism,
+    outcomeType,
+    id,
+  } = contract
 
-  const bettorsCount = contract.uniqueBettorCount ?? 'Unknown'
   const typeDisplay =
     outcomeType === 'BINARY'
       ? 'YES / NO'
@@ -134,14 +140,9 @@ export function ContractInfoDialog(props: {
                 <td>{formatMoney(contract.volume)}</td>
               </tr>
 
-              {/* <tr>
-                <td>Creator earnings</td>
-                <td>{formatMoney(contract.collectedFees.creatorFee)}</td>
-              </tr> */}
-
               <tr>
                 <td>{capitalize(BETTORS)}</td>
-                <td>{bettorsCount}</td>
+                <td>{uniqueBettorCount ?? '0'}</td>
               </tr>
 
               <tr>
