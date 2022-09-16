@@ -84,7 +84,6 @@ export const useMemberGroups = (userId: string | null | undefined) => {
   return result.data
 }
 
-// Note: We cache member group ids in localstorage to speed up the initial load
 export const useMemberGroupIds = (user: User | null | undefined) => {
   const [memberGroupIds, setMemberGroupIds] = useState<string[] | undefined>(
     undefined

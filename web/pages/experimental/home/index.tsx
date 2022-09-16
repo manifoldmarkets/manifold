@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useEffect, useState } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
@@ -29,7 +29,12 @@ import { getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import {
+  getGroup,
+  groupPath,
+  joinGroup,
+  leaveGroup,
+} from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
@@ -41,6 +46,7 @@ import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-m
 import { useContractsQuery } from 'web/hooks/use-contracts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
+import { filterDefined } from 'common/util/array'
 
 export default function Home() {
   const user = useUser()
@@ -49,7 +55,17 @@ export default function Home() {
 
   useSaveReferral()
 
-  const groups = useMemberGroups(user?.id) ?? []
+  const cachedGroups = useMemberGroups(user?.id) ?? []
+  const groupIds = useMemberGroupIds(user)
+  const [groups, setGroups] = useState(cachedGroups)
+
+  useEffect(() => {
+    if (groupIds) {
+      Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
+        setGroups(filterDefined(groups))
+      )
+    }
+  }, [groupIds])
 
   const { sections } = getHomeItems(groups, user?.homeSections ?? [])
 
