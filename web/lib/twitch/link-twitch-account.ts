@@ -3,14 +3,18 @@ import { generateNewApiKey } from '../api/api-key'
 
 const TWITCH_BOT_PUBLIC_URL = 'https://king-prawn-app-5btyw.ondigitalocean.app' // TODO: Add this to env config appropriately
 
-function postToBot(url: string, body: any): Promise<Response> {
-  return fetch(url, {
+async function postToBot(url: string, body: unknown) {
+  const result = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
+  const json = await result.json()
+  if (!result.ok) {
+    throw new Error(json.message)
+  } else {
+    return json
+  }
 }
 
 export async function initLinkTwitchAccount(
@@ -22,14 +26,10 @@ export async function initLinkTwitchAccount(
     apiKey: manifoldUserAPIKey,
     redirectURL: window.location.href,
   })
-  const responseData = await response.json()
-  if (!response.ok) {
-    throw new Error(responseData.message)
-  }
   const responseFetch = fetch(
     `${TWITCH_BOT_PUBLIC_URL}/api/linkResult?userID=${manifoldUserID}`
   )
-  return [responseData.twitchAuthURL, responseFetch.then((r) => r.json())]
+  return [response.twitchAuthURL, responseFetch.then((r) => r.json())]
 }
 
 export async function linkTwitchAccountRedirect(
@@ -51,18 +51,14 @@ export async function updateBotEnabledForUser(
   if (botEnabled) {
     return postToBot(`${TWITCH_BOT_PUBLIC_URL}/registerchanneltwitch`, {
       apiKey: privateUser.apiKey,
+    }).then((r) => {
+      if (!r.success) throw new Error(r.message)
     })
-      .then((r) => r.json())
-      .then((r) => {
-        if (!r.success) throw new Error(r.message)
-      })
   } else {
     return postToBot(`${TWITCH_BOT_PUBLIC_URL}/unregisterchanneltwitch`, {
       apiKey: privateUser.apiKey,
+    }).then((r) => {
+      if (!r.success) throw new Error(r.message)
     })
-      .then((r) => r.json())
-      .then((r) => {
-        if (!r.success) throw new Error(r.message)
-      })
   }
 }
