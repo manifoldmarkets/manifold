@@ -40,6 +40,9 @@ function ButtonGetStarted(props: {
   const { user, privateUser, buttonClass, spinnerClass } = props
 
   const [isLoading, setLoading] = useState(false)
+  const needsRelink =
+    privateUser?.twitchInfo?.twitchName &&
+    privateUser?.twitchInfo?.needsRelinking
 
   const callback =
     user && privateUser
@@ -77,11 +80,11 @@ function ButtonGetStarted(props: {
   ) : (
     <Button
       size="xl"
-      color="gradient"
+      color={needsRelink ? 'red' : 'gradient'}
       className={clsx('my-4 self-center !px-16', buttonClass)}
       onClick={getStarted}
     >
-      Start playing
+      {needsRelink ? 'API key updated: relink Twitch' : 'Start playing'}
     </Button>
   )
 }
@@ -92,7 +95,8 @@ function TwitchPlaysManifoldMarkets(props: {
 }) {
   const { user, privateUser } = props
 
-  const twitchUser = privateUser?.twitchInfo?.twitchName
+  const twitchInfo = privateUser?.twitchInfo
+  const twitchUser = twitchInfo?.twitchName
 
   return (
     <div>
@@ -120,7 +124,7 @@ function TwitchPlaysManifoldMarkets(props: {
           receive their profit.
         </div>
         Start playing now by logging in with Google and typing commands in chat!
-        {twitchUser ? (
+        {twitchUser && !twitchInfo.needsRelinking ? (
           <Button
             size="xl"
             color="green"
@@ -280,7 +284,7 @@ function BotConnectButton(props: {
         <Button
           color="red"
           onClick={updateBotConnected(false)}
-          className={clsx(loading && '!btn-disabled', '')}
+          className={clsx(loading && '!btn-disabled', 'border-none')}
         >
           {loading ? (
             <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
@@ -292,7 +296,7 @@ function BotConnectButton(props: {
         <Button
           color="green"
           onClick={updateBotConnected(true)}
-          className={clsx(loading && '!btn-disabled', '')}
+          className={clsx(loading && '!btn-disabled', 'border-none')}
         >
           {loading ? (
             <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
@@ -310,7 +314,11 @@ function SetUpBot(props: {
   privateUser?: PrivateUser | null
 }) {
   const { user, privateUser } = props
-  const twitchLinked = privateUser?.twitchInfo?.twitchName
+  const twitchLinked =
+    privateUser?.twitchInfo?.twitchName &&
+    !privateUser?.twitchInfo?.needsRelinking
+      ? true
+      : undefined
   const toastTheme = {
     className: '!bg-primary !text-white',
     icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,

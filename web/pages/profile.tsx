@@ -2,9 +2,11 @@ import { RefreshIcon } from '@heroicons/react/outline'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { formatMoney } from 'common/util/format'
+import Link from 'next/link'
 import React, { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 import { AddFundsButton } from 'web/components/add-funds-button'
+import { ConfirmationButton } from 'web/components/confirmation-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
@@ -16,7 +18,11 @@ import { generateNewApiKey } from 'web/lib/api/api-key'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
-import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
+import {
+  getUserAndPrivateUser,
+  updatePrivateUser,
+  updateUser,
+} from 'web/lib/firebase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -91,10 +97,15 @@ export default function ProfilePage(props: {
     }
   }
 
-  const updateApiKey = async (e: React.MouseEvent) => {
+  const updateApiKey = async (e?: React.MouseEvent) => {
     const newApiKey = await generateNewApiKey(user.id)
     setApiKey(newApiKey ?? '')
-    e.preventDefault()
+    e?.preventDefault()
+
+    if (!privateUser.twitchInfo) return
+    await updatePrivateUser(privateUser.id, {
+      twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
+    })
   }
 
   const fileHandler = async (event: any) => {
@@ -227,12 +238,36 @@ export default function ProfilePage(props: {
                 value={apiKey}
                 readOnly
               />
-              <button
-                className="btn btn-primary btn-square p-2"
-                onClick={updateApiKey}
+              <ConfirmationButton
+                openModalBtn={{
+                  className: 'btn btn-primary btn-square p-2',
+                  label: '',
+                  icon: <RefreshIcon />,
+                }}
+                submitBtn={{
+                  label: 'Update key',
+                  className: 'btn-primary',
+                }}
+                onSubmitWithSuccess={async () => {
+                  updateApiKey()
+                  return true
+                }}
               >
-                <RefreshIcon />
-              </button>
+                <Col>
+                  <Title text={'Are you sure?'} />
+                  <div>
+                    Updating your API key will break any existing applications
+                    connected to your account, <b>including the Twitch bot</b>.
+                    You will need to go to the{' '}
+                    <Link href="/twitch">
+                      <a className="underline focus:outline-none">
+                        Twitch page
+                      </a>
+                    </Link>{' '}
+                    to relink your account.
+                  </div>
+                </Col>
+              </ConfirmationButton>
             </div>
           </div>
         </Col>

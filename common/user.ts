@@ -71,6 +71,7 @@ export type PrivateUser = {
     twitchName: string
     controlToken: string
     botEnabled?: boolean
+    needsRelinking?: boolean
   }
 }
 
