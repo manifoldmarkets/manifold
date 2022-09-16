@@ -35,6 +35,7 @@ const logout = async () => {
 function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Search', href: '/search', icon: SearchIcon },
     {
       name: 'Notifications',
       href: `/notifications`,
@@ -100,7 +101,7 @@ function getMoreNavigation(user?: User | null) {
 
 const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/home', icon: SearchIcon },
+  { name: 'Explore', href: '/search', icon: SearchIcon },
   {
     name: 'Help & About',
     href: 'https://help.manifold.markets/',
@@ -120,6 +121,7 @@ const signedOutMobileNavigation = [
 ]
 
 const signedInMobileNavigation = [
+  { name: 'Search', href: '/search', icon: SearchIcon },
   { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
   ...(IS_PRIVATE_MANIFOLD
     ? []
