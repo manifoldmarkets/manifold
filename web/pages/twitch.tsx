@@ -1,28 +1,33 @@
+import { PrivateUser, User } from 'common/user'
+import Link from 'next/link'
 import { useState } from 'react'
 
-import { Page } from 'web/components/page'
+import toast from 'react-hot-toast'
+import { Button } from 'web/components/button'
 import { Col } from 'web/components/layout/col'
-import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { SEO } from 'web/components/SEO'
+import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { LoadingIndicator } from 'web/components/loading-indicator'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
+import { Title } from 'web/components/title'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTracking } from 'web/hooks/use-tracking'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin, getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/button'
-import { useTracking } from 'web/hooks/use-tracking'
 import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import toast from 'react-hot-toast'
 
-export default function TwitchLandingPage() {
-  useSaveReferral()
-  useTracking('view twitch landing page')
+function TwitchPlaysManifoldMarkets(props: {
+  user?: User | null
+  privateUser?: PrivateUser | null
+}) {
+  const { user, privateUser } = props
 
-  const user = useUser()
-  const privateUser = usePrivateUser()
   const twitchUser = privateUser?.twitchInfo?.twitchName
+
+  const [isLoading, setLoading] = useState(false)
 
   const callback =
     user && privateUser
@@ -36,8 +41,6 @@ export default function TwitchLandingPage() {
 
           await linkTwitchAccountRedirect(user, privateUser)
         }
-
-  const [isLoading, setLoading] = useState(false)
 
   const getStarted = async () => {
     try {
@@ -54,6 +57,191 @@ export default function TwitchLandingPage() {
   }
 
   return (
+    <div>
+      <Row className="mb-4">
+        <img
+          src="/twitch-glitch.svg"
+          className="mb-[0.4rem] mr-4 inline h-10 w-10"
+        ></img>
+        <Title
+          text={'Twitch plays Manifold Markets'}
+          className={'!-my-0 md:block'}
+        />
+      </Row>
+      <Col className="gap-4">
+        <div>
+          Similar to Twitch channel point predictions, Manifold Markets allows
+          you to create and feature on stream any question you like with users
+          predicting to earn play money.
+        </div>
+        <div>
+          The key difference is that Manifold's questions function more like a
+          stock market and viewers can buy and sell shares over the course of
+          the event and not just at the start. The market will eventually
+          resolve to yes or no at which point the winning shareholders will
+          receive their profit.
+        </div>
+        Start playing now by logging in with Google and typing commands in chat!
+        {twitchUser ? (
+          <Button size="xl" color="green" className="btn-disabled self-center">
+            Account connected: {twitchUser}
+          </Button>
+        ) : isLoading ? (
+          <LoadingIndicator spinnerClassName="!w-11 !h-11" />
+        ) : (
+          <Button
+            size="xl"
+            color="gradient"
+            className="my-4 self-center !px-16"
+            onClick={getStarted}
+          >
+            Start playing
+          </Button>
+        )}
+        <div>
+          Instead of Twitch channel points we use our play money, mana (m$). All
+          viewers start with M$1000 and more can be earned for free and then{' '}
+          <Link href="/charity" className="underline">
+            donated to a charity
+          </Link>{' '}
+          of their choice at no cost!
+        </div>
+      </Col>
+    </div>
+  )
+}
+
+function Subtitle(props: { text: string }) {
+  const { text } = props
+  return <div className="text-2xl">{text}</div>
+}
+
+function Command(props: { command: string; desc: string }) {
+  const { command, desc } = props
+  return (
+    <div>
+      <p className="inline font-bold">{'!' + command}</p>
+      {' - '}
+      <p className="inline">{desc}</p>
+    </div>
+  )
+}
+
+function TwitchChatCommands() {
+  return (
+    <div>
+      <Title text="Twitch Chat Commands" className="md:block" />
+      <Col className="gap-4">
+        <Subtitle text="For Chat" />
+        <Command command="bet yes#" desc="Bets a # of Mana on yes." />
+        <Command command="bet no#" desc="Bets a # of Mana on no." />
+        <Command
+          command="sell"
+          desc="Sells all shares you own. Using this command causes you to
+          cash out early before the market resolves. This could be profitable
+          (if the probability has moved towards the direction you bet) or cause
+          a loss, although at least you keep some Mana. For maximum profit (but
+          also risk) it is better to not sell and wait for a favourable
+          resolution."
+        />
+        <Command command="balance" desc="Shows how much Mana you own." />
+        <Command command="allin yes" desc="Bets your entire balance on yes." />
+        <Command command="allin no" desc="Bets your entire balance on no." />
+
+        <Subtitle text="For Mods/Streamer" />
+        <Command
+          command="create <question>"
+          desc="Creates and features the question. Be careful... this will override any question that is currently featured."
+        />
+        <Command command="resolve yes" desc="Resolves the market as 'Yes'." />
+        <Command command="resolve no" desc="Resolves the market as 'No'." />
+        <Command
+          command="resolve n/a"
+          desc="Resolves the market as 'N/A' and refunds everyone their Mana."
+        />
+      </Col>
+    </div>
+  )
+}
+
+function BotSetupStep(props: {
+  stepNum: number
+  buttonName?: string
+  text: string
+}) {
+  const { stepNum, buttonName, text } = props
+  return (
+    <Col className="flex-1">
+      {buttonName && (
+        <>
+          <Button color="green">{buttonName}</Button>
+          <Spacer h={4} />
+        </>
+      )}
+      <div>
+        <p className="inline font-bold">Step {stepNum}. </p>
+        {text}
+      </div>
+    </Col>
+  )
+}
+
+function SetUpBot(props: { privateUser?: PrivateUser | null }) {
+  const { privateUser } = props
+  const twitchLinked = privateUser?.twitchInfo?.twitchName
+  return (
+    <>
+      <Title
+        text={'Set up the bot for your own stream'}
+        className={'!mb-4 md:block'}
+      />
+      <Col className="gap-4">
+        <img
+          src="https://raw.githubusercontent.com/PhilBladen/ManifoldTwitchIntegration/master/docs/OBS.png"
+          className="!-my-2"
+        ></img>
+        To add the bot to your stream make sure you have logged in then follow
+        the steps below.
+        {!twitchLinked && (
+          <Button
+            size="xl"
+            color="gradient"
+            className="my-4 self-center !px-16"
+            // onClick={getStarted}
+          >
+            Start playing
+          </Button>
+        )}
+        <div className="flex flex-col gap-6 sm:flex-row">
+          <BotSetupStep
+            stepNum={1}
+            buttonName={twitchLinked && 'Add bot to channel'}
+            text="Use the button above to add the bot to your channel. Then mod it by typing in your Twitch chat: /mod ManifoldBot (or whatever you named the bot) If the bot is modded it will not work properly on the backend."
+          />
+          <BotSetupStep
+            stepNum={2}
+            buttonName={twitchLinked && 'Overlay link'}
+            text="Create a new browser source in your streaming software such as OBS. Paste in the above link and resize it to your liking. We recommend setting the size to 400x400."
+          />
+          <BotSetupStep
+            stepNum={3}
+            buttonName={twitchLinked && 'Control dock link'}
+            text="The bot can be controlled entirely through chat. But we made an easy to use control panel. Share the link with your mods or embed it into your OBS as a custom dock."
+          />
+        </div>
+      </Col>
+    </>
+  )
+}
+
+export default function TwitchLandingPage() {
+  useSaveReferral()
+  useTracking('view twitch landing page')
+
+  const user = useUser()
+  const privateUser = usePrivateUser()
+
+  return (
     <Page>
       <SEO
         title="Manifold Markets on Twitch"
@@ -62,7 +250,7 @@ export default function TwitchLandingPage() {
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
       </div>
-      <Col className="items-center">
+      {/* <Col className="items-center">
         <Col className="max-w-3xl">
           <Col className="mb-6 rounded-xl sm:m-12 sm:mt-0">
             <Row className="self-center">
@@ -114,6 +302,12 @@ export default function TwitchLandingPage() {
             )}
           </Col>
         </Col>
+      </Col> */}
+
+      <Col className="max-w-3xl gap-8 rounded bg-white p-10 text-gray-600 shadow-md sm:mx-auto">
+        <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
+        <TwitchChatCommands />
+        <SetUpBot privateUser={privateUser} />
       </Col>
     </Page>
   )

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
-
+import { useRouter } from 'next/router'
 import { AddFundsButton } from 'web/components/add-funds-button'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
@@ -64,6 +64,7 @@ function EditUserField(props: {
 export default function ProfilePage(props: {
   auth: { user: User; privateUser: PrivateUser }
 }) {
+  const router = useRouter()
   const { user, privateUser } = props.auth
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -237,8 +238,7 @@ export default function ProfilePage(props: {
               </button>
             </div>
           </div>
-
-          <TwitchPanel />
+          {router.query.twitch && <TwitchPanel />}
         </Col>
       </Col>
     </Page>
