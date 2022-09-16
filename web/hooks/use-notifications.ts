@@ -98,7 +98,7 @@ export function groupNotifications(notifications: Notification[]) {
         const notificationGroup: NotificationGroup = {
           notifications: notificationsForContractId,
           groupedById: contractId,
-          isSeen: notificationsForContractId[0].isSeen,
+          isSeen: notificationsForContractId.some((n) => !n.isSeen),
           timePeriod: day,
           type: 'normal',
         }
