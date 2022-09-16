@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/solid'
 import { XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { toast, Toaster } from 'react-hot-toast'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -71,11 +72,12 @@ export default function Home() {
 
   return (
     <Page>
+      <Toaster />
+
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
         <Row className={'w-full items-start justify-between gap-8'}>
           <Row className="items-end gap-4">
             <Title className="!mb-1 !mt-0" text="Home" />
-            <EditButton />
           </Row>
         </Row>
 
@@ -106,6 +108,7 @@ export default function Home() {
 
           return null
         })}
+
         <TrendingGroupsSection user={user} />
       </Col>
       <button
@@ -186,12 +189,16 @@ function GroupSection(props: {
           color="gray-white"
           onClick={() => {
             if (user) {
-              leaveGroup(group, user?.id)
-
               const homeSections = (user.homeSections ?? []).filter(
                 (id) => id !== group.id
               )
               updateUser(user.id, { homeSections })
+
+              toast.promise(leaveGroup(group, user.id), {
+                loading: 'Unfollowing group...',
+                success: `Unfollowed ${group.name}`,
+                error: "Couldn't unfollow group, try again?",
+              })
             }
           }}
         >
@@ -292,14 +299,17 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
   const groups = useTrendingGroups().filter(
     (g) => !memberGroupIds.includes(g.id)
   )
-  const chosenGroups = chooseRandomSubset(groups.slice(0, 50), 20)
+  const count = 25
+  const chosenGroups = chooseRandomSubset(groups.slice(0, count), count)
 
   return (
     <Col>
       <SectionHeader
         label="Trending groups"
         href="/experimental/explore-groups"
-      />
+      >
+        <CustomizeButton />
+      </SectionHeader>
       <Row className="flex-wrap gap-2">
         {chosenGroups.map((g) => (
           <PillButton
@@ -309,11 +319,16 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
               if (!user) return
               if (memberGroupIds.includes(g.id)) leaveGroup(g, user?.id)
               else {
-                joinGroup(g, user.id)
                 const homeSections = (user.homeSections ?? [])
                   .filter((id) => id !== g.id)
                   .concat(g.id)
                 updateUser(user.id, { homeSections })
+
+                toast.promise(joinGroup(g, user.id), {
+                  loading: 'Following group...',
+                  success: `Followed ${g.name}`,
+                  error: "Couldn't follow group, try again?",
+                })
               }
             }}
           >
@@ -322,5 +337,22 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
         ))}
       </Row>
     </Col>
+  )
+}
+
+function CustomizeButton() {
+  return (
+    <SiteLink
+      className="mb-2 flex flex-row items-center text-xl hover:no-underline"
+      href="/experimental/home/edit"
+    >
+      <Button size="lg" color="gray" className={clsx('flex gap-2')}>
+        <AdjustmentsIcon
+          className={clsx('h-[24px] w-5 text-gray-500')}
+          aria-hidden="true"
+        />
+        Customize
+      </Button>
+    </SiteLink>
   )
 }
