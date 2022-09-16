@@ -28,6 +28,10 @@ import { UNIQUE_BETTOR_LIQUIDITY_AMOUNT } from '../../common/antes'
 import { addHouseLiquidity } from './add-liquidity'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
+import {
+  StreakerBadge,
+  streakerBadgeRarityThresholds,
+} from '../../common/badge'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -141,6 +145,7 @@ const updateBettingStreak = async (
     newBettingStreak,
     eventId
   )
+  await handleBettingStreakBadgeAward(user, newBettingStreak)
 }
 
 const updateUniqueBettorsAndGiveCreatorBonus = async (
@@ -275,4 +280,39 @@ const notifyFills = async (
 
 const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
+}
+
+async function handleBettingStreakBadgeAward(
+  user: User,
+  newBettingStreak: number
+) {
+  const alreadyHasBadgeForFirstStreak =
+    user.achievements?.streaker?.badges.some(
+      (badge) => badge.data.totalBettingStreak === 1
+    )
+
+  if (newBettingStreak === 1 && alreadyHasBadgeForFirstStreak) return
+
+  if (newBettingStreak in streakerBadgeRarityThresholds) {
+    const badge = {
+      type: 'STREAKER',
+      data: {
+        totalBettingStreak: newBettingStreak,
+      },
+      createdTime: Date.now(),
+    } as StreakerBadge
+    // update user
+    await firestore
+      .collection('users')
+      .doc(user.id)
+      .update({
+        achievements: {
+          ...user.achievements,
+          streaker: {
+            totalBadges: (user.achievements?.streaker?.totalBadges ?? 0) + 1,
+            badges: [...(user.achievements?.streaker?.badges ?? []), badge],
+          },
+        },
+      })
+  }
 }

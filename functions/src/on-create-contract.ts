@@ -1,11 +1,17 @@
 import * as functions from 'firebase-functions'
 
-import { getUser } from './utils'
+import { getUser, getValues } from './utils'
 import { createNewContractNotification } from './create-notification'
 import { Contract } from '../../common/contract'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { JSONContent } from '@tiptap/core'
 import { addUserToContractFollowers } from './follow-market'
+import { User } from '../../common/user'
+import * as admin from 'firebase-admin'
+import {
+  MarketCreatorBadge,
+  marketMakerBadgeRarityThresholds,
+} from '../../common/badge'
 
 export const onCreateContract = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
@@ -28,4 +34,43 @@ export const onCreateContract = functions
       richTextToString(desc),
       mentioned
     )
+    await handleMarketCreatorBadgeAward(contractCreator)
   })
+
+const firestore = admin.firestore()
+
+async function handleMarketCreatorBadgeAward(contractCreator: User) {
+  // get all contracts by user and calculate size of array
+  const contracts = await getValues<Contract>(
+    firestore
+      .collection(`contracts`)
+      .where('creatorId', '==', contractCreator.id)
+  )
+  if (contracts.length in marketMakerBadgeRarityThresholds) {
+    const badge = {
+      type: 'MARKET_CREATOR',
+      data: {
+        totalContractsCreated: contracts.length,
+      },
+      createdTime: Date.now(),
+    } as MarketCreatorBadge
+    // update user
+    await firestore
+      .collection('users')
+      .doc(contractCreator.id)
+      .update({
+        achievements: {
+          ...contractCreator.achievements,
+          marketCreator: {
+            totalBadges:
+              (contractCreator.achievements?.marketCreator?.totalBadges ?? 0) +
+              1,
+            badges: [
+              ...(contractCreator.achievements?.marketCreator?.badges ?? []),
+              badge,
+            ],
+          },
+        },
+      })
+  }
+}

@@ -13,7 +13,7 @@ import clsx from 'clsx'
 export function BettingStreakModal(props: {
   isOpen: boolean
   setOpen: (open: boolean) => void
-  currentUser?: User | null
+  currentUser: User | null | undefined
 }) {
   const { isOpen, setOpen, currentUser } = props
   const missingStreak = currentUser && !hasCompletedStreakToday(currentUser)

@@ -1,7 +1,12 @@
 import * as functions from 'firebase-functions'
-import { getUser } from './utils'
+import { getUser, getValues } from './utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
 import { Contract } from '../../common/contract'
+import { Bet } from '../../common/bet'
+import * as admin from 'firebase-admin'
+import { ContractComment } from '../../common/comment'
+import { scoreCommentorsAndBettors } from '../../common/scoring'
+import { ProvenCorrectBadge } from '../../common/badge'
 
 export const onUpdateContract = functions.firestore
   .document('contracts/{contractId}')
@@ -14,8 +19,9 @@ export const onUpdateContract = functions.firestore
 
     const previousValue = change.before.data() as Contract
 
-    // Resolution is handled in resolve-market.ts
-    if (!previousValue.isResolved && contract.isResolved) return
+    // Notifications for market resolution are also handled in resolve-market.ts
+    if (!previousValue.isResolved && contract.isResolved)
+      return await handleResolvedContract(contract)
 
     if (
       previousValue.closeTime !== contract.closeTime ||
@@ -42,3 +48,55 @@ export const onUpdateContract = functions.firestore
       )
     }
   })
+const firestore = admin.firestore()
+
+async function handleResolvedContract(contract: Contract) {
+  // get all bets on this contract
+  const bets = await getValues<Bet>(
+    firestore.collection(`contracts/${contract.id}/bets`)
+  )
+
+  // get comments on this contract
+  const comments = await getValues<ContractComment>(
+    firestore.collection(`contracts/${contract.id}/comments`)
+  )
+
+  const { topCommentId, profitById, commentsById, betsById } =
+    scoreCommentorsAndBettors(contract, bets, comments)
+  if (topCommentId && profitById[topCommentId] > 0) {
+    // award proven correct badge to user
+    const comment = commentsById[topCommentId]
+    const bet = betsById[topCommentId]
+
+    const user = await getUser(comment.userId)
+    if (!user) return
+    const newProvenCorrectBadge = {
+      createdTime: Date.now(),
+      type: 'PROVEN_CORRECT',
+      data: {
+        contractSlug: contract.slug,
+        contractCreatorUsername: contract.creatorUsername,
+        commentId: comment.id,
+        betAmount: bet.amount,
+        contractTitle: contract.question,
+      },
+    } as ProvenCorrectBadge
+    // update user
+    await firestore
+      .collection('users')
+      .doc(user.id)
+      .update({
+        achievements: {
+          ...user.achievements,
+          provenCorrect: {
+            totalBadges:
+              (user.achievements?.provenCorrect?.totalBadges ?? 0) + 1,
+            badges: [
+              ...(user.achievements?.provenCorrect?.badges ?? []),
+              newProvenCorrectBadge,
+            ],
+          },
+        },
+      })
+  }
+}

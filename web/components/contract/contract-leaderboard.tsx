@@ -3,7 +3,7 @@ import { ContractComment } from 'common/comment'
 import { resolvedPayout } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
-import { groupBy, mapValues, sumBy, sortBy, keyBy } from 'lodash'
+import { groupBy, mapValues, sumBy, sortBy } from 'lodash'
 import { useState, useMemo, useEffect } from 'react'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { listUsers, User } from 'web/lib/firebase/users'
@@ -13,6 +13,7 @@ import { Spacer } from '../layout/spacer'
 import { Leaderboard } from '../leaderboard'
 import { Title } from '../title'
 import { BETTORS } from 'common/user'
+import { scoreCommentorsAndBettors } from 'common/scoring'
 
 export function ContractLeaderboard(props: {
   contract: Contract
@@ -69,33 +70,14 @@ export function ContractTopTrades(props: {
   tips: CommentTipMap
 }) {
   const { contract, bets, comments, tips } = props
-  const commentsById = keyBy(comments, 'id')
-  const betsById = keyBy(bets, 'id')
-
-  // If 'id2' is the sale of 'id1', both are logged with (id2 - id1) of profit
-  // Otherwise, we record the profit at resolution time
-  const profitById: Record<string, number> = {}
-  for (const bet of bets) {
-    if (bet.sale) {
-      const originalBet = betsById[bet.sale.betId]
-      const profit = bet.sale.amount - originalBet.amount
-      profitById[bet.id] = profit
-      profitById[originalBet.id] = profit
-    } else {
-      profitById[bet.id] = resolvedPayout(contract, bet) - bet.amount
-    }
-  }
-
-  // Now find the betId with the highest profit
-  const topBetId = sortBy(bets, (b) => -profitById[b.id])[0]?.id
-  const topBettor = betsById[topBetId]?.userName
-
-  // And also the commentId of the comment with the highest profit
-  const topCommentId = sortBy(
-    comments,
-    (c) => c.betId && -profitById[c.betId]
-  )[0]?.id
-
+  const {
+    topCommentId,
+    topBetId,
+    topBettor,
+    profitById,
+    commentsById,
+    betsById,
+  } = scoreCommentorsAndBettors(contract, bets, comments)
   return (
     <div className="mt-12 max-w-sm">
       {topCommentId && profitById[topCommentId] > 0 && (

@@ -37,6 +37,8 @@ import { LoansModal } from './profile/loans-modal'
 import { UserLikesButton } from 'web/components/profile/user-likes-button'
 import { PAST_BETS } from 'common/user'
 import { capitalize } from 'lodash'
+import { BadgesModal } from 'web/components/profile/badges-modal'
+import { calculateTotalUsersBadges } from 'common/badge'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -46,6 +48,7 @@ export function UserPage(props: { user: User }) {
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
+  const [showBadgesModal, setShowBadgesModal] = useState(false)
   const [showLoansModal, setShowLoansModal] = useState(false)
 
   useEffect(() => {
@@ -90,9 +93,12 @@ export function UserPage(props: { user: User }) {
         setOpen={setShowBettingStreakModal}
         currentUser={currentUser}
       />
-      {showLoansModal && (
-        <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
-      )}
+      <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
+      <BadgesModal
+        isOpen={showBadgesModal}
+        setOpen={setShowBadgesModal}
+        user={user}
+      />
       {/* Banner image up top, with an circle avatar overlaid */}
       <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
@@ -166,6 +172,13 @@ export function UserPage(props: { user: User }) {
                   🏦 {formatMoney(user.nextLoanCached ?? 0)}
                 </span>
                 <span>next loan</span>
+              </Col>
+              <Col
+                className={clsx('cursor-pointer items-center text-gray-500')}
+                onClick={() => setShowBadgesModal(true)}
+              >
+                <span>🏅 {calculateTotalUsersBadges(user)}</span>
+                <span>badges</span>
               </Col>
             </Row>
           </Col>

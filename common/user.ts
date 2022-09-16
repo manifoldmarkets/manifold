@@ -1,5 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from './envs/constants'
+import { Achievement } from './badge'
 
 export type User = {
   id: string
@@ -49,6 +50,12 @@ export type User = {
   hasSeenContractFollowModal?: boolean
   freeMarketsCreated?: number
   isBannedFromPosting?: boolean
+
+  achievements?: {
+    provenCorrect?: Achievement
+    marketCreator?: Achievement
+    streaker?: Achievement
+  }
 }
 
 export type PrivateUser = {
