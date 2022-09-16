@@ -7,7 +7,7 @@ import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { useUser } from 'web/hooks/use-user'
 import NotificationsIcon from '../notifications-icon'
 import router from 'next/router'
-import { userProfileItem } from './nav-bar'
+import { userProfileItem } from './bottom-nav-bar'
 
 const mobileGroupNavigation = [
   { name: 'Markets', key: 'markets', icon: HomeIcon },
