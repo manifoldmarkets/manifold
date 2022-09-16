@@ -1,5 +1,5 @@
 import { sortBy } from 'lodash'
-import React from 'react'
+import React, { useRef } from 'react'
 
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/title'
@@ -9,6 +9,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/button'
+import { Group } from 'common/group'
 
 export default function GroupSelectorDialog(props: {
   open: boolean
@@ -19,11 +20,18 @@ export default function GroupSelectorDialog(props: {
   const groups = useGroups()
   const user = useUser()
   const memberGroupIds = useMemberGroupIds(user) || []
+  const cachedGroups = useRef<Group[]>()
 
-  const displayedGroups = sortBy(groups, [
+  if (groups && !cachedGroups.current) {
+    cachedGroups.current = groups
+  }
+
+  const displayedGroups = sortBy(cachedGroups.current ?? [], [
     (group) => -1 * group.totalMembers,
     (group) => -1 * group.totalContracts,
-  ]).slice(0, 100)
+  ])
+    .filter((group) => group.anyoneCanJoin)
+    .slice(0, 100)
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -36,22 +44,19 @@ export default function GroupSelectorDialog(props: {
 
         <div className="scrollbar-hide items-start gap-2 overflow-x-auto">
           {user &&
-            displayedGroups.map(
-              (group) =>
-                group.anyoneCanJoin && (
-                  <PillButton
-                    selected={memberGroupIds.includes(group.id)}
-                    onSelect={() =>
-                      memberGroupIds.includes(group.id)
-                        ? leaveGroup(group, user.id)
-                        : joinGroup(group, user.id)
-                    }
-                    className="mr-1 mb-2 max-w-[12rem] truncate"
-                  >
-                    {group.name}
-                  </PillButton>
-                )
-            )}
+            displayedGroups.map((group) => (
+              <PillButton
+                selected={memberGroupIds.includes(group.id)}
+                onSelect={() =>
+                  memberGroupIds.includes(group.id)
+                    ? leaveGroup(group, user.id)
+                    : joinGroup(group, user.id)
+                }
+                className="mr-1 mb-2 max-w-[12rem] truncate"
+              >
+                {group.name}
+              </PillButton>
+            ))}
         </div>
       </Col>
       <Col>
