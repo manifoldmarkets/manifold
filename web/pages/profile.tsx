@@ -1,24 +1,22 @@
-import React, { useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
-import { useRouter } from 'next/router'
-import { AddFundsButton } from 'web/components/add-funds-button'
-import { Page } from 'web/components/page'
-import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
-import { formatMoney } from 'common/util/format'
+import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { changeUserInfo } from 'web/lib/firebase/api'
-import { uploadImage } from 'web/lib/firebase/storage'
+import { formatMoney } from 'common/util/format'
+import React, { useState } from 'react'
+import Textarea from 'react-expanding-textarea'
+import { AddFundsButton } from 'web/components/add-funds-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { User, PrivateUser } from 'common/user'
-import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
-import { defaultBannerUrl } from 'web/components/user-page'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
 import { SiteLink } from 'web/components/site-link'
-import Textarea from 'react-expanding-textarea'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { Title } from 'web/components/title'
+import { defaultBannerUrl } from 'web/components/user-page'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { TwitchPanel } from 'web/components/profile/twitch-panel'
+import { changeUserInfo } from 'web/lib/firebase/api'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { uploadImage } from 'web/lib/firebase/storage'
+import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -64,7 +62,6 @@ function EditUserField(props: {
 export default function ProfilePage(props: {
   auth: { user: User; privateUser: PrivateUser }
 }) {
-  const router = useRouter()
   const { user, privateUser } = props.auth
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -238,7 +235,6 @@ export default function ProfilePage(props: {
               </button>
             </div>
           </div>
-          {router.query.twitch && <TwitchPanel />}
         </Col>
       </Col>
     </Page>
