@@ -8,8 +8,8 @@ import math
 allCategories = ['counterspell', 'beast', 'burn', 'commander']
 specialCategories = ['set', 'basic']
 artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
-artist_allowlist = {'David Martin',
-                    'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay', 'DiTerlizzi'}
+artist_allowlist = {'David Martin', 'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay', 'DiTerlizzi',
+                    'Anthony Francisco', 'Wylie Beckert', 'Rovina Cai', 'Dominik Mayer', 'Omar Rayyan', 'Carly Mazur'}
 
 
 def generate_initial_query(category):
@@ -57,7 +57,7 @@ def generate_initial_special_query(category):
 
 def generate_initial_artist_query():
     string_query = 'https://api.scryfall.com/cards/search?q=' + artist_denylist + \
-        '-atag%3Auniverses-beyond+-art%3Aartist-signature+artists%3D1+-set%3Adbl+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
+        '-atag%3Auniverses-beyond+-art%3Aartist-signature+artists%3D1+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
     print("artistList")
     print(string_query)
     return string_query
@@ -334,5 +334,5 @@ if __name__ == "__main__":
     #     fetch_and_write_all_special(
     #         category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
-    fetch_and_write_initial_artist_query()
-    # fetch_and_write_all_artist()
+    # fetch_and_write_initial_artist_query()
+    fetch_and_write_all_artist()
