@@ -13,7 +13,7 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton from '../bet-button'
+import BetButton, { BinaryMobileBetting } from '../bet-button'
 import { AnswersGraph } from '../answers/answers-graph'
 import {
   Contract,
@@ -78,19 +78,18 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
           <BinaryResolutionOrChance
-            className="hidden items-end xl:flex"
+            className="flex items-end"
             contract={contract}
             large
           />
         </Row>
-        <Row className="items-center justify-between gap-4 xl:hidden">
-          <BinaryResolutionOrChance contract={contract} />
-          {tradingAllowed(contract) && (
-            <BetWidget contract={contract as CPMMBinaryContract} />
-          )}
-        </Row>
       </Col>
       <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
+      <Row className="items-center justify-between gap-4 xl:hidden">
+        {tradingAllowed(contract) && (
+          <BinaryMobileBetting className={'my-2'} contract={contract} />
+        )}
+      </Row>
     </Col>
   )
 }

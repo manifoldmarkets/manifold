@@ -11,6 +11,12 @@ import { Col } from './layout/col'
 import { Button } from 'web/components/button'
 import { BetSignUpPrompt } from './sign-up-prompt'
 import { PRESENT_BET } from 'common/user'
+import { Contract } from 'web/lib/firebase/contracts'
+import { contractDetailsButtonClassName } from './contract/contract-info-dialog'
+import { User } from 'web/lib/firebase/users'
+import { SellRow } from './sell-row'
+import { PlayMoneyDisclaimer } from './play-money-disclaimer'
+import { Row } from './layout/row'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -70,6 +76,73 @@ export default function BetButton(props: {
           hasShares={hasYesShares || hasNoShares}
         />
       </Modal>
+    </>
+  )
+}
+
+export function BinaryMobileBetting(props: {
+  contract: CPMMBinaryContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const user = useUser()
+  if (user) {
+    return (
+      <>
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      </>
+    )
+  } else {
+    return (
+      <>
+        <BetSignUpPrompt className="w-full" />
+      </>
+    )
+  }
+}
+
+export function SignedInBinaryMobileBetting(props: {
+  contract: CPMMBinaryContract
+  user: User
+}) {
+  enum betChoiceState {
+    YES = 'yes',
+    NO = 'no',
+    NEITHER = 'neither',
+  }
+  const { contract, user } = props
+  const [betChoice, setBetChoice] = useState<betChoiceState>(
+    betChoiceState.NEITHER
+  )
+  return (
+    <>
+      {/* GET BACK TO THIS BUT GAH DAMN IT'S UGLY */}
+      {/* <SellRow
+        contract={contract}
+        user={user}
+        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+  /> */}
+      <Row className="w-full">
+        <button
+          className={clsx(
+            'w-1/2 rounded-full py-2',
+            betChoice == betChoiceState.YES
+              ? 'bg-emerald-500 text-white'
+              : betChoice == betChoiceState.NO
+              ? 'border-greyscale-4 text-greyscale-4 bg-white'
+              : 'border-2 border-emerald-500 bg-white text-emerald-500'
+          )}
+          onClick={() => {
+            if (betChoice == betChoiceState.YES) {
+              setBetChoice(betChoiceState.NEITHER)
+            } else {
+              setBetChoice(betChoiceState.YES)
+            }
+          }}
+        >
+          YES
+        </button>
+      </Row>
     </>
   )
 }
