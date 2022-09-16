@@ -121,7 +121,6 @@ const signedOutMobileNavigation = [
 ]
 
 const signedInMobileNavigation = [
-  { name: 'Search', href: '/search', icon: SearchIcon },
   { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
   ...(IS_PRIVATE_MANIFOLD
     ? []

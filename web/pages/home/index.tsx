@@ -47,6 +47,7 @@ import { filterDefined } from 'common/util/array'
 import { updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
+import { Title } from 'web/components/title'
 
 export default function Home() {
   const user = useUser()
@@ -75,8 +76,8 @@ export default function Home() {
       <Toaster />
 
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-        <Row className={'mb-2 w-full items-center gap-8'}>
-          <SearchRow />
+        <Row className={'mb-2 w-full items-center justify-between gap-8'}>
+          <Title className="!mt-0" text="Home" />
           <DailyStats user={user} />
         </Row>
 
