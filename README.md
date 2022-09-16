@@ -10,11 +10,20 @@ It is worth noting that since this is a public demo with no associated Manifold 
 
 ## Environmental variables
 This Twitch bot requires the following environmental variables to be defined:
- - PUBLIC_FACING_URL: The public URL of the host server, without trailing slash, e.g. https://manifold.markets
- - TWITCH_BOT_USERNAME: The username for the Twitch bot account.
- - TWITCH_BOT_OAUTH_TOKEN: A valid OAuth token for the Twitch bot account obtained via [this](https://twitchapps.com/tmi) tool.
- - TWTICH_APP_CLIENT_ID: The client ID of the Twitch app used to authorize new users. This app can be created in the [Twitch Developer Console](https://dev.twitch.tv/console/app).
- - TWITCH_APP_CLIENT_SECRET: The client secret of the Twitch app used to authorize new users.
+ - **PUBLIC_FACING_URL**: The public URL of the host server, without trailing slash, e.g. https://manifold.markets
+ - **TWITCH_BOT_USERNAME**: The username for the Twitch bot account.
+ - **TWITCH_BOT_OAUTH_TOKEN**: A valid OAuth token for the Twitch bot account obtained via [this](https://twitchapps.com/tmi) tool.
+ - **TWTICH_APP_CLIENT_ID**: The client ID of the Twitch app used to authorize new users. This app can be created in the [Twitch Developer Console](https://dev.twitch.tv/console/app).
+ - **TWITCH_APP_CLIENT_SECRET**: The client secret of the Twitch app used to authorize new users.
+ - **FIREBASE_API_KEY**: The API key for the relevant Firebase Firestore. This is currently hardcoded - please ask the author of this repo for the key, or modify the code to point to a new Firestore appropriately.
+
+The following environmental variables are available but optional:
+ - **PORT**: The port on which the webpages and API are hosted. Default: 9172
+ - **TARGET**: Represents which Manifold site to target and takes one of the following values (default: LOCAL):
+   - PROD (https://manifold.markets/)
+   - DEV (https://dev.manifold.markets/)
+   - PR_DEV (https://dev-git-twitch-prerelease-mantic.vercel.app/)
+   - LOCAL (http://localhost:3000/)
 
 These can either be defined as global environmental variables on the system, or as a `.env` file in the root of the repository.
 
