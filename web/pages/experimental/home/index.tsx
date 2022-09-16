@@ -18,7 +18,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { SiteLink } from 'web/components/site-link'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   useMemberGroupIds,
   useMemberGroups,
@@ -65,7 +65,7 @@ export default function Home() {
 
         <Row className={'mb-2 w-full items-center gap-8'}>
           <SearchRow />
-          <DailyProfitAndBalance className="" user={user} />
+          <DailyStats className="" user={user} />
         </Row>
 
         {sections.map((item) => {
@@ -221,13 +221,18 @@ function SearchRow() {
   )
 }
 
-function DailyProfitAndBalance(props: {
+function DailyStats(props: {
   user: User | null | undefined
   className?: string
 }) {
   const { user, className } = props
+
   const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
   const [first, last] = [metrics[0], metrics[metrics.length - 1]]
+
+  const privateUser = usePrivateUser()
+  const streaksHidden =
+    privateUser?.notificationPreferences.betting_streaks.length === 0
 
   let profit = 0
   let profitPercent = 0
@@ -245,18 +250,20 @@ function DailyProfitAndBalance(props: {
           <ProfitBadge profitPercent={profitPercent * 100} />
         </Row>
       </Col>
-      <Col>
-        <div className="text-gray-500">Streak</div>
-        <Row
-          className={clsx(
-            className,
-            'items-center text-lg',
-            user && !hasCompletedStreakToday(user) && 'grayscale'
-          )}
-        >
-          <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-        </Row>
-      </Col>
+      {!streaksHidden && (
+        <Col>
+          <div className="text-gray-500">Streak</div>
+          <Row
+            className={clsx(
+              className,
+              'items-center text-lg',
+              user && !hasCompletedStreakToday(user) && 'grayscale'
+            )}
+          >
+            <span>🔥 {user?.currentBettingStreak ?? 0}</span>
+          </Row>
+        </Col>
+      )}
     </Row>
   )
 }
