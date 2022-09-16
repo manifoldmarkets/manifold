@@ -9,7 +9,7 @@ allCategories = ['counterspell', 'beast', 'burn', 'commander']
 specialCategories = ['set', 'basic']
 artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
 artist_allowlist = {'David Martin', 'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay', 'DiTerlizzi',
-                    'Anthony Francisco', 'Wylie Beckert', 'Rovina Cai', 'Dominik Mayer', 'Omar Rayyan', 'Carly Mazur'}
+                    'Anthony Francisco', 'Wylie Beckert', 'Rovina Cai', 'Dominik Mayer', 'Omar Rayyan', 'Thomas M. Baxa'}
 
 
 def generate_initial_query(category):
