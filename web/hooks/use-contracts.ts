@@ -43,11 +43,12 @@ export const useTrendingContracts = (maxContracts: number) => {
 export const useContractsQuery = (
   sort: Sort,
   maxContracts: number,
-  filters: { groupSlug?: string } = {}
+  filters: { groupSlug?: string } = {},
+  visibility?: 'public'
 ) => {
   const result = useFirestoreQueryData(
     ['contracts-query', sort, maxContracts, filters],
-    getContractsQuery(sort, maxContracts, filters)
+    getContractsQuery(sort, maxContracts, filters, visibility)
   )
   return result.data
 }

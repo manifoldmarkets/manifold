@@ -352,13 +352,14 @@ const sortToDirection = {
 export const getContractsQuery = (
   sort: Sort,
   maxItems: number,
-  filters: { groupSlug?: string } = {}
+  filters: { groupSlug?: string } = {},
+  visibility?: 'public'
 ) => {
   const { groupSlug } = filters
   return query(
     contracts,
     where('isResolved', '==', false),
-    where('visibility', '==', 'public'),
+    ...(visibility ? [where('visibility', '==', visibility)] : []),
     ...(groupSlug ? [where('groupSlugs', 'array-contains', groupSlug)] : []),
     orderBy(sortToField[sort], sortToDirection[sort]),
     limit(maxItems)
