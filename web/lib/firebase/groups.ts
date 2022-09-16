@@ -260,5 +260,6 @@ export async function listMemberIds(group: Group) {
 
 export const topFollowedGroupsQuery = query(
   groups,
+  where('anyoneCanJoin', '==', true),
   orderBy('totalMembers', 'desc')
 )

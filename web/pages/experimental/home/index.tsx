@@ -4,8 +4,8 @@ import {
   AdjustmentsIcon,
   PencilAltIcon,
   ArrowSmRightIcon,
-  DotsHorizontalIcon,
 } from '@heroicons/react/solid'
+import { XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 
 import { Page } from 'web/components/page'
@@ -41,12 +41,12 @@ import { useProbChanges } from 'web/hooks/use-prob-changes'
 import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { chooseRandomSubset } from 'common/util/random'
-import { MenuButton } from 'web/components/nav/menu'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { useContractsQuery } from 'web/hooks/use-contracts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
+import { updateUser } from 'web/lib/firebase/users'
 
 export default function Home() {
   const user = useUser()
@@ -181,24 +181,25 @@ function GroupSection(props: {
   return (
     <Col>
       <SectionHeader label={group.name} href={groupPath(group.slug)}>
-        <MenuButton
-          buttonContent={
-            <button className="text-gray-500 hover:text-gray-700">
-              <DotsHorizontalIcon
-                className={clsx('h-5 w-5 flex-shrink-0')}
-                aria-hidden="true"
-              />
-            </button>
-          }
-          menuItems={[
-            {
-              name: 'Unfollow',
-              onClick: () => {
-                user && leaveGroup(group, user?.id)
-              },
-            },
-          ]}
-        />
+        <Button
+          className=""
+          color="gray-white"
+          onClick={() => {
+            if (user) {
+              leaveGroup(group, user?.id)
+
+              const homeSections = (user.homeSections ?? []).filter(
+                (id) => id !== group.id
+              )
+              updateUser(user.id, { homeSections })
+            }
+          }}
+        >
+          <XCircleIcon
+            className={clsx('h-5 w-5 flex-shrink-0')}
+            aria-hidden="true"
+          />
+        </Button>
       </SectionHeader>
       <ContractsGrid contracts={contracts} />
     </Col>
@@ -307,7 +308,13 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
             onSelect={() => {
               if (!user) return
               if (memberGroupIds.includes(g.id)) leaveGroup(g, user?.id)
-              else joinGroup(g, user.id)
+              else {
+                joinGroup(g, user.id)
+                const homeSections = (user.homeSections ?? [])
+                  .filter((id) => id !== g.id)
+                  .concat(g.id)
+                updateUser(user.id, { homeSections })
+              }
             }}
           >
             {g.name}
