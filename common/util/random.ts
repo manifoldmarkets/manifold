@@ -46,3 +46,10 @@ export const shuffle = (array: unknown[], rand: () => number) => {
     ;[array[i], array[swapIndex]] = [array[swapIndex], array[i]]
   }
 }
+
+export function chooseRandomSubset<T>(items: T[], count: number) {
+  const fiveMinutes = 5 * 60 * 1000
+  const seed = Math.round(Date.now() / fiveMinutes).toString()
+  shuffle(items, createRNG(seed))
+  return items.slice(0, count)
+}

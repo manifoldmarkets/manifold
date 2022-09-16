@@ -5,21 +5,15 @@ import { MenuIcon } from '@heroicons/react/solid'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Subtitle } from 'web/components/subtitle'
-import { useMemberGroups } from 'web/hooks/use-group'
-import { filterDefined } from 'common/util/array'
-import { isArray, keyBy } from 'lodash'
-import { User } from 'common/user'
-import { Group } from 'common/group'
+import { keyBy } from 'lodash'
 
 export function ArrangeHome(props: {
-  user: User | null | undefined
-  homeSections: string[]
-  setHomeSections: (sections: string[]) => void
+  sections: { label: string; id: string }[]
+  setSectionIds: (sections: string[]) => void
 }) {
-  const { user, homeSections, setHomeSections } = props
+  const { sections, setSectionIds } = props
 
-  const groups = useMemberGroups(user?.id) ?? []
-  const { itemsById, sections } = getHomeItems(groups, homeSections)
+  const sectionsById = keyBy(sections, 'id')
 
   return (
     <DragDropContext
@@ -27,14 +21,14 @@ export function ArrangeHome(props: {
         const { destination, source, draggableId } = e
         if (!destination) return
 
-        const item = itemsById[draggableId]
+        const section = sectionsById[draggableId]
 
-        const newHomeSections = sections.map((section) => section.id)
+        const newSectionIds = sections.map((section) => section.id)
 
-        newHomeSections.splice(source.index, 1)
-        newHomeSections.splice(destination.index, 0, item.id)
+        newSectionIds.splice(source.index, 1)
+        newSectionIds.splice(destination.index, 0, section.id)
 
-        setHomeSections(newHomeSections)
+        setSectionIds(newSectionIds)
       }}
     >
       <Row className="relative max-w-md gap-4">
@@ -104,30 +98,4 @@ const SectionItem = (props: {
       {item.label}
     </div>
   )
-}
-
-export const getHomeItems = (groups: Group[], sections: string[]) => {
-  // Accommodate old home sections.
-  if (!isArray(sections)) sections = []
-
-  const items = [
-    { label: 'Trending', id: 'score' },
-    { label: 'New for you', id: 'newest' },
-    { label: 'Daily movers', id: 'daily-movers' },
-    ...groups.map((g) => ({
-      label: g.name,
-      id: g.id,
-    })),
-  ]
-  const itemsById = keyBy(items, 'id')
-
-  const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
-
-  // Add unmentioned items to the end.
-  sectionItems.push(...items.filter((item) => !sectionItems.includes(item)))
-
-  return {
-    sections: sectionItems,
-    itemsById,
-  }
 }
