@@ -19,6 +19,7 @@ import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../copy-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS } from 'common/user'
+import { Button } from '../button'
 import { capitalize } from 'lodash'
 
 export const contractDetailsButtonClassName =
@@ -69,19 +70,21 @@ export function ContractInfoDialog(props: {
 
   return (
     <>
-      <button
+      <Button
+        size="sm"
+        color="gray-white"
         className={clsx(contractDetailsButtonClassName, className)}
         onClick={() => setOpen(true)}
       >
         <DotsHorizontalIcon
-          className={clsx('h-6 w-6 flex-shrink-0')}
+          className={clsx('h-5 w-5 flex-shrink-0')}
           aria-hidden="true"
         />
-      </button>
+      </Button>
 
       <Modal open={open} setOpen={setOpen}>
         <Col className="gap-4 rounded bg-white p-6">
-          <Title className="!mt-0 !mb-0" text="Market info" />
+          <Title className="!mt-0 !mb-0" text="This Market" />
 
           <table className="table-compact table-zebra table w-full text-gray-500">
             <tbody>
