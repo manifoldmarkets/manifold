@@ -224,17 +224,6 @@ export default class App {
             }
         });
 
-        this.app.get("/api/botJoinURL", async (request, response) => {
-            const params = {
-                client_id: TWTICH_APP_CLIENT_ID,
-                response_type: "code",
-                redirect_uri: `${PUBLIC_FACING_URL}/registerchanneltwitch`,
-                scope: "user:read:email",
-            };
-            const botURL = buildURL("https://id.twitch.tv/oauth2/authorize", params);
-            response.json({ url: botURL });
-        });
-
         this.app.get("/linkAccount", async (request, response) => {
             const params = getParamsFromURL(request.url);
             const sessionToken = params["state"];
