@@ -26,7 +26,6 @@ import {
   useTrendingGroups,
 } from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
-import { getHomeItems } from '../../../components/arrange-home'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import {
@@ -47,6 +46,7 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
 import { updateUser } from 'web/lib/firebase/users'
+import { isArray, keyBy } from 'lodash'
 
 export default function Home() {
   const user = useUser()
@@ -116,6 +116,32 @@ export default function Home() {
       </button>
     </Page>
   )
+}
+
+export const getHomeItems = (groups: Group[], sections: string[]) => {
+  // Accommodate old home sections.
+  if (!isArray(sections)) sections = []
+
+  const items = [
+    { label: 'Trending', id: 'score' },
+    { label: 'New for you', id: 'newest' },
+    { label: 'Daily movers', id: 'daily-movers' },
+    ...groups.map((g) => ({
+      label: g.name,
+      id: g.id,
+    })),
+  ]
+  const itemsById = keyBy(items, 'id')
+
+  const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
+
+  // Add unmentioned items to the end.
+  sectionItems.push(...items.filter((item) => !sectionItems.includes(item)))
+
+  return {
+    sections: sectionItems,
+    itemsById,
+  }
 }
 
 function SectionHeader(props: {
