@@ -119,7 +119,7 @@ def fetch_and_write_all_artist():
         queried_artists_pre = artist_ids[i*37:min((i+1)*37, len(artist_ids))]
         queried_artists = []
         for j in range(len(queried_artists_pre)):
-            if artists[queried_artists_pre[j]][1] >= 100 or artists[queried_artists_pre[j]][0] in artist_allowlist:
+            if artists[queried_artists_pre[j]][1] >= 50 or artists[queried_artists_pre[j]][0] in artist_allowlist:
                 queried_artists.append(queried_artists_pre[j])
         print(queried_artists)
         print(i)
@@ -297,7 +297,7 @@ def write_to_artist_list(response, artists, prev_artist):
         artist_id = card['artist_ids'][0]
         artist = card['artist']
         if artist_id not in artists:
-            if artists[prev_artist][1] < 20:
+            if artists[prev_artist][1] < 15:
                 del artists[prev_artist]
             prev_artist = artist_id
             print(artist)
