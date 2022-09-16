@@ -57,11 +57,11 @@ function TwitchPlaysManifoldMarkets(props: {
   }
 
   return (
-    <>
-      <Row className="mb-4 items-end">
+    <div>
+      <Row className="mb-4">
         <img
           src="/twitch-glitch.svg"
-          className="mb-[0.4rem] mr-2 inline h-10 w-10"
+          className="mb-[0.4rem] mr-4 inline h-10 w-10"
         ></img>
         <Title
           text={'Twitch plays Manifold Markets'}
@@ -92,7 +92,7 @@ function TwitchPlaysManifoldMarkets(props: {
           <Button
             size="xl"
             color="gradient"
-            className="self-center !px-16"
+            className="my-4 self-center !px-16"
             onClick={getStarted}
           >
             Start playing
@@ -107,7 +107,7 @@ function TwitchPlaysManifoldMarkets(props: {
           of their choice at no cost!
         </div>
       </Col>
-    </>
+    </div>
   )
 }
 
@@ -129,8 +129,8 @@ function Command(props: { command: string; desc: string }) {
 
 function TwitchChatCommands() {
   return (
-    <>
-      <Title text={'Twitch Chat Commands'} className={'md:block'} />
+    <div>
+      <Title text="Twitch Chat Commands" className="md:block" />
       <Col className="gap-4">
         <Subtitle text="For Chat" />
         <Command command="bet yes#" desc="Bets a # of Mana on yes." />
@@ -160,7 +160,7 @@ function TwitchChatCommands() {
           desc="Resolves the market as 'N/A' and refunds everyone their Mana."
         />
       </Col>
-    </>
+    </div>
   )
 }
 
@@ -206,7 +206,7 @@ function SetUpBot(props: { privateUser?: PrivateUser | null }) {
           <Button
             size="xl"
             color="gradient"
-            className="self-center !px-16"
+            className="my-4 self-center !px-16"
             // onClick={getStarted}
           >
             Start playing
@@ -304,7 +304,7 @@ export default function TwitchLandingPage() {
         </Col>
       </Col> */}
 
-      <Col className="max-w-3xl rounded bg-white p-10 text-gray-600 shadow-md sm:mx-auto">
+      <Col className="max-w-3xl gap-8 rounded bg-white p-10 text-gray-600 shadow-md sm:mx-auto">
         <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
         <TwitchChatCommands />
         <SetUpBot privateUser={privateUser} />
