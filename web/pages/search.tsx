@@ -4,17 +4,12 @@ import { ContractSearch } from 'web/components/contract-search'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { usePrefetch } from 'web/hooks/use-prefetch'
-import { useRouter } from 'next/router'
 
 export default function Search() {
   const user = useUser()
   usePrefetch(user?.id)
 
   useTracking('view search')
-
-  const { query } = useRouter()
-  const { q, s, p } = query
-  const autoFocus = !(q || !s || !p)
 
   return (
     <Page>
@@ -23,7 +18,7 @@ export default function Search() {
           user={user}
           persistPrefix="search"
           useQueryUrlParam={true}
-          autoFocus={autoFocus}
+          autoFocus
         />
       </Col>
     </Page>
