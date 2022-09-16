@@ -1,40 +1,30 @@
+import { LiteUser } from "common/manifold-defs";
+import { ResolutionOutcome } from "common/outcome";
+import * as Packet from "common/packet-ids";
+import { UNFEATURE_MARKET } from "common/packet-ids";
+import { PacketSelectMarket } from "common/packets";
 import cors from "cors";
-import crypto from "crypto";
 import express, { Express } from "express";
 import moment from "moment";
 import { AddressInfo } from "net";
 import path from "path";
 import { Server } from "socket.io";
-
-import { buildURL, getParamsFromURL } from "./utils";
-
-import { LiteUser } from "common/manifold-defs";
-import { ResolutionOutcome } from "common/outcome";
-import { UNFEATURE_MARKET } from "common/packet-ids";
+import registerAPIEndpoints from "./api";
 import DockClient from "./clients/dock";
 import OverlayClient from "./clients/overlay";
-import { IS_DEV, PORT, PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
+import { IS_DEV, PORT } from "./envs";
 import AppFirestore from "./firestore";
 import log from "./logger";
 import * as Manifold from "./manifold-api";
 import { Market } from "./market";
-import * as Twitch from "./twitch-api";
 import TwitchBot from "./twitch-bot";
 import User from "./user";
-
-type APIResponse = {
-    success: boolean;
-    message: string;
-    error: string;
-};
 
 export default class App {
     private readonly app: Express;
     io: Server;
     readonly bot: TwitchBot;
     readonly firestore: AppFirestore;
-
-    private linksInProgress: { [sessionToken: string]: { manifoldID: string; apiKey: string; redirectURL: string } } = {};
 
     selectedMarketMap: { [twitchChannel: string]: Market } = {};
 
@@ -86,7 +76,13 @@ export default class App {
         return null;
     }
 
-    public async selectMarket(channel: string, id: string): Promise<Market> {
+    public async selectMarket(channel: string, id: string, sourceDock?: DockClient): Promise<Market> {
+        if (sourceDock) {
+            sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+        } else {
+            this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+        }
+
         if (this.autoUnfeatureTimer) {
             clearTimeout(this.autoUnfeatureTimer);
             this.autoUnfeatureTimer = null;
@@ -104,6 +100,11 @@ export default class App {
             const market = new Market(this, marketData, channel);
             this.selectedMarketMap[channel] = market;
             log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
+            if (sourceDock) {
+                sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET, market.data as PacketSelectMarket);
+            } else {
+                this.io.to(channel).emit(Packet.SELECT_MARKET, market.data as PacketSelectMarket);
+            }
             return market;
         }
     }
@@ -164,107 +165,7 @@ export default class App {
             }
         });
 
-        this.app.post("/unregisterchanneltwitch", async (request, response) => {
-            const apiKey = request.body["apiKey"];
-            if (!apiKey) {
-                response.status(400).json({ msg: "Bad request: missing channel name parameter c." });
-                return;
-            }
-            try {
-                const user = await this.firestore.getUserForManifoldAPIKey(apiKey);
-                await this.bot.leaveChannel(user.data.twitchLogin);
-                response.json(<APIResponse>{ success: true, message: `Bot successfully removed from channel ${user.data.twitchLogin}.` }); //!!! Proper response (API type class)
-            } catch (e) {
-                response.status(400).json(<APIResponse>{ success: false, error: e.message, message: `Failed to remove bot: ${e.message}` });
-            }
-        });
-
-        this.app.post("/registerchanneltwitch", async (request, response) => {
-            const apiKey = request.body["apiKey"];
-            log.info(`Got a Twitch link request: ${apiKey}`);
-            try {
-                const user = await this.firestore.getUserForManifoldAPIKey(apiKey);
-                await this.bot.joinChannel(user.data.twitchLogin);
-                response.json(<APIResponse>{ success: true, message: "Registered bot." });
-            } catch (e) {
-                log.trace(e);
-                response.status(400).json(<APIResponse>{ success: false, error: e.message, message: "Failed to register bot." });
-            }
-        });
-
-        this.app.post("/api/linkInit", async (request, response) => {
-            try {
-                const body = request.body;
-                const manifoldID = body.manifoldID;
-                const apiKey = body.apiKey;
-                const redirectURL = body.redirectURL;
-                if (!manifoldID || !apiKey || !redirectURL) throw new Error("manifoldID, apiKey and redirectURL parameters are required.");
-                if (!(await Manifold.verifyAPIKey(apiKey))) throw new Error("API key invalid.");
-
-                const sessionToken = crypto.randomBytes(24).toString("hex");
-                this.linksInProgress[sessionToken] = {
-                    manifoldID,
-                    apiKey,
-                    redirectURL,
-                };
-
-                const params = {
-                    client_id: TWTICH_APP_CLIENT_ID,
-                    response_type: "code",
-                    redirect_uri: `${PUBLIC_FACING_URL}/linkAccount`,
-                    scope: "user:read:email",
-                    state: sessionToken,
-                };
-                const twitchAuthURL = buildURL("https://id.twitch.tv/oauth2/authorize", params);
-                log.info(`Sent Twitch auth URL: ${twitchAuthURL}`);
-
-                response.json({ message: "Success.", twitchAuthURL: twitchAuthURL });
-            } catch (e) {
-                response.status(400).json({ error: "Bad request", message: e.message });
-            }
-        });
-
-        this.app.get("/linkAccount", async (request, response) => {
-            const params = getParamsFromURL(request.url);
-            const sessionToken = params["state"];
-            const sessionData = this.linksInProgress[sessionToken];
-            if (!sessionToken || !sessionData) {
-                response.status(400).json({ error: "Bad request", message: "Invalid session token." });
-                return;
-            }
-
-            delete this.linksInProgress[sessionToken];
-
-            const code = params["code"];
-            log.info("Got a Twitch link request: " + code);
-            try {
-                const twitchUser = await Twitch.getTwitchDetailsFromLinkCode(code);
-                const twitchLogin = twitchUser.login;
-                log.info(`Authorized Twitch user ${twitchLogin}`);
-
-                let user: User;
-                try {
-                    user = await this.firestore.getUserForManifoldID(sessionData.manifoldID);
-                    user.data.APIKey = sessionData.apiKey;
-                    log.info("Updated user API key: " + sessionData.apiKey);
-                } catch (e) {
-                    user = new User({ twitchLogin: twitchLogin, manifoldID: sessionData.manifoldID, APIKey: sessionData.apiKey, controlToken: crypto.randomUUID() });
-                }
-
-                this.firestore.addNewUser(user);
-                try {
-                    await Manifold.saveTwitchDetails(sessionData.apiKey, twitchUser.display_name, user.data.controlToken);
-                } catch (e) {
-                    log.trace(e);
-                    throw new Error("Failed to save Twitch details to Manifold");
-                }
-
-                response.send(`<html><head><script>window.location.href="${sessionData.redirectURL}"</script></head><html>`);
-            } catch (e) {
-                log.trace(e);
-                response.status(400).json({ error: e.message, message: "Failed to link accounts." });
-            }
-        });
+        registerAPIEndpoints(this, this.app);
 
         this.app.use(express.static(path.resolve("static"), { index: false, extensions: ["html"] }));
         //!!! this.app.get("*", (req, res) => res.sendFile(path.resolve("static/404.html")));
