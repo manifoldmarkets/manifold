@@ -416,8 +416,9 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     )
   }
 
-  //TODO: store all possible reasons why the user might be getting the notification and choose the most lenient that they
-  // have enabled so they will unsubscribe from the least important notifications
+  //TODO: store all possible reasons why the user might be getting the notification
+  // and choose the most lenient that they have enabled so they will unsubscribe
+  // from the least important notifications
   await notifyRepliedUser()
   await notifyTaggedUsers()
   await notifyContractCreator()
