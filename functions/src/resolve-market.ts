@@ -21,7 +21,7 @@ import { removeUndefinedProps } from '../../common/util/object'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 import { APIError, newEndpoint, validate } from './api'
 import { getContractBetMetrics } from '../../common/calculate'
-import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
+import { createContractResolvedNotifications } from './create-notification'
 import { CancelUniqueBettorBonusTxn, Txn } from '../../common/txn'
 import { runTxn, TxnData } from './transact'
 import {
@@ -177,33 +177,13 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     groupBy(bets, (bet) => bet.userId),
     (bets) => getContractBetMetrics(contract, bets).invested
   )
-  let resolutionText = outcome ?? contract.question
-  if (
-    contract.outcomeType === 'FREE_RESPONSE' ||
-    contract.outcomeType === 'MULTIPLE_CHOICE'
-  ) {
-    const answerText = contract.answers.find(
-      (answer) => answer.id === outcome
-    )?.text
-    if (answerText) resolutionText = answerText
-  } else if (contract.outcomeType === 'BINARY') {
-    if (resolutionText === 'MKT' && probabilityInt)
-      resolutionText = `${probabilityInt}%`
-    else if (resolutionText === 'MKT') resolutionText = 'PROB'
-  } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    if (resolutionText === 'MKT' && value) resolutionText = `${value}`
-  }
 
-  // TODO: this actually may be too slow to complete with a ton of users to notify?
-  await createCommentOrAnswerOrUpdatedContractNotification(
-    contract.id,
-    'contract',
-    'resolved',
-    creator,
-    contract.id + '-resolution',
-    resolutionText,
+  await createContractResolvedNotifications(
     contract,
-    undefined,
+    creator,
+    outcome,
+    probabilityInt,
+    value,
     {
       bets,
       userInvestments,
