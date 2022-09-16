@@ -6,13 +6,12 @@ import { ProfileSummary } from './profile-menu'
 import React from 'react'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { SignInButton } from '../sign-in-button'
-import CornerDownRightIcon from 'web/lib/icons/corner-down-right-icon'
 import NotificationsIcon from '../notifications-icon'
 import { SidebarItem } from './sidebar'
 import { buildArray } from 'common/util/array'
 import { User } from 'common/user'
 import { Row } from '../layout/row'
-import { Col } from '../layout/col'
+import { Spacer } from '../layout/spacer'
 
 const groupNavigation = [
   { name: 'Markets', key: 'markets', icon: HomeIcon },
@@ -47,16 +46,7 @@ export function GroupSidebar(props: {
       className={clsx('flex max-h-[100vh] flex-col', className)}
     >
       <ManifoldLogo className="pt-6" twoLine />
-      <Row className="pl-2">
-        <Col className="flex justify-center">
-          <CornerDownRightIcon className=" h-6 w-6 text-indigo-700" />
-        </Col>
-        <Col>
-          <div className={' text-2xl text-indigo-700 sm:mb-1 sm:mt-3'}>
-            {groupName}
-          </div>
-        </Col>
-      </Row>
+      <Row className="pl-2 text-xl text-indigo-700 sm:mt-3">{groupName}</Row>
 
       <div className=" min-h-0 shrink flex-col items-stretch gap-1  pt-6 lg:flex ">
         {user ? (
@@ -83,6 +73,8 @@ export function GroupSidebar(props: {
           onClick={props.onClick}
         />
       ))}
+
+      <Spacer h={2} />
 
       {props.joinOrAddQuestionsButton}
     </nav>

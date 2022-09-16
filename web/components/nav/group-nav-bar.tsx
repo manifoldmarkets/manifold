@@ -10,9 +10,9 @@ import router from 'next/router'
 import { userProfileItem } from './nav-bar'
 
 const mobileGroupNavigation = [
-  { name: 'About', key: 'about', icon: ClipboardIcon },
   { name: 'Markets', key: 'markets', icon: HomeIcon },
   { name: 'Leaderboard', key: 'leaderboards', icon: TrophyIcon },
+  { name: 'About', key: 'about', icon: ClipboardIcon },
 ]
 
 const mobileGeneralNavigation = [
