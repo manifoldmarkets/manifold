@@ -23,6 +23,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -33,6 +34,7 @@ export function ContractTabs(props: {
 }) {
   const { contract, user, bets, tips } = props
   const { outcomeType } = contract
+  const isMobile = useIsMobile()
 
   const lps = useLiquidity(contract.id)
 
@@ -131,7 +133,12 @@ export function ContractTabs(props: {
           },
           ...(!user || !userBets?.length
             ? []
-            : [{ title: `Your ${PAST_BETS}`, content: yourTrades }]),
+            : [
+                {
+                  title: isMobile ? `You` : `Your ${PAST_BETS}`,
+                  content: yourTrades,
+                },
+              ]),
         ]}
       />
       {!user ? (

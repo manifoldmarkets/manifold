@@ -27,11 +27,11 @@ import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -107,11 +107,6 @@ export function AvatarDetails(props: {
       />
     </Row>
   )
-}
-
-export function useIsMobile() {
-  const { width } = useWindowSize()
-  return (width ?? 0) < 600
 }
 
 export function ContractDetails(props: {
