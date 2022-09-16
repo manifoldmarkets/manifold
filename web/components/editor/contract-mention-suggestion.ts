@@ -61,10 +61,16 @@ export const contractMentionSuggestion: Suggestion = {
         })
       },
       onKeyDown(props) {
-        if (props.event.key === 'Escape') {
-          popup?.[0].hide()
-          return true
-        }
+        if (props.event.key)
+          if (
+            props.event.key === 'Escape' ||
+            // Also break out of the mention if the tooltip isn't visible
+            (props.event.key === 'Enter' && !popup?.[0].state.isShown)
+          ) {
+            popup?.[0].destroy()
+            component?.destroy()
+            return false
+          }
         return (component?.ref as any)?.onKeyDown(props)
       },
       onExit() {
