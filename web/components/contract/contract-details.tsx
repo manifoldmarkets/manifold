@@ -30,6 +30,7 @@ import { Tooltip } from 'web/components/tooltip'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { PlusCircleIcon } from '@heroicons/react/solid'
+import { GroupLink } from 'common/group'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -117,55 +118,12 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, disabled } = props
-  const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
-  const { resolvedDate } = contractMetrics(contract)
-  const user = useUser()
-  const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
 
   return (
     <Col>
-      <Row>
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          noLink={disabled}
-          size={9}
-          className="mr-1.5"
-        />
-        {!disabled && (
-          <div className="absolute mt-3 ml-[11px]">
-            <MiniUserFollowButton userId={creatorId} />
-          </div>
-        )}
-        <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-          <Row className="w-full justify-between ">
-            {disabled ? (
-              creatorName
-            ) : (
-              <UserLink
-                className="my-auto whitespace-nowrap"
-                name={creatorName}
-                username={creatorUsername}
-                short={isMobile}
-              />
-            )}
-          </Row>
-          <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
-            <CloseOrResolveTime
-              contract={contract}
-              resolvedDate={resolvedDate}
-              isCreator={isCreator}
-            />
-            {!isMobile && (
-              <MarketGroups
-                contract={contract}
-                isMobile={isMobile}
-                disabled={disabled}
-              />
-            )}
-          </Row>
-        </Col>
+      <Row className="justify-between">
+        <MarketSubheader contract={contract} disabled={disabled} />
         <div className="mt-0">
           <ExtraContractActionsRow contract={contract} />
         </div>
@@ -181,6 +139,62 @@ export function ContractDetails(props: {
         </div>
       )}
     </Col>
+  )
+}
+
+export function MarketSubheader(props: {
+  contract: Contract
+  disabled?: boolean
+}) {
+  const { contract, disabled } = props
+  const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
+  const { resolvedDate } = contractMetrics(contract)
+  const user = useUser()
+  const isCreator = user?.id === creatorId
+  const isMobile = useIsMobile()
+  return (
+    <Row>
+      <Avatar
+        username={creatorUsername}
+        avatarUrl={creatorAvatarUrl}
+        noLink={disabled}
+        size={9}
+        className="mr-1.5"
+      />
+      {!disabled && (
+        <div className="absolute mt-3 ml-[11px]">
+          <MiniUserFollowButton userId={creatorId} />
+        </div>
+      )}
+      <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
+        <Row className="w-full justify-between ">
+          {disabled ? (
+            creatorName
+          ) : (
+            <UserLink
+              className="my-auto whitespace-nowrap"
+              name={creatorName}
+              username={creatorUsername}
+              short={isMobile}
+            />
+          )}
+        </Row>
+        <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
+          <CloseOrResolveTime
+            contract={contract}
+            resolvedDate={resolvedDate}
+            isCreator={isCreator}
+          />
+          {!isMobile && (
+            <MarketGroups
+              contract={contract}
+              isMobile={isMobile}
+              disabled={disabled}
+            />
+          )}
+        </Row>
+      </Col>
+    </Row>
   )
 }
 
@@ -231,43 +245,13 @@ export function MarketGroups(props: {
   const user = useUser()
   const { contract, isMobile, disabled } = props
   const groupToDisplay = getGroupLinkToDisplay(contract)
-  const groupInfo = groupToDisplay ? (
-    <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-      <a
-        className={clsx(
-          'flex flex-row items-center truncate pr-1',
-          isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-        )}
-      >
-        <div className="bg-greyscale-4 hover:bg-greyscale-3 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
-          {groupToDisplay.name}
-        </div>
-      </a>
-    </Link>
-  ) : (
-    <Row
-      className={clsx(
-        'cursor-default select-none items-center truncate pr-1',
-        isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-      )}
-    >
-      <div
-        className={clsx(
-          'bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
-        )}
-      >
-        No Group
-      </div>
-    </Row>
-  )
+
   return (
     <>
       <Row className="align-middle">
-        {disabled ? (
-          { groupInfo }
-        ) : (
+        <GroupDisplay groupToDisplay={groupToDisplay} isMobile={isMobile} />
+        {!disabled && (
           <Row>
-            {groupInfo}
             {user && (
               <button
                 className="text-greyscale-4 hover:text-greyscale-3"
@@ -352,6 +336,45 @@ export function ExtraMobileContractDetails(props: {
       )}
     </Row>
   )
+}
+
+export function GroupDisplay(props: {
+  groupToDisplay: GroupLink
+  isMobile: boolean
+}) {
+  const { groupToDisplay, isMobile } = props
+  if (groupToDisplay) {
+    return (
+      <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+        <a
+          className={clsx(
+            'flex flex-row items-center truncate pr-1',
+            isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
+          )}
+        >
+          <div className="bg-greyscale-4 hover:bg-greyscale-3 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
+            {groupToDisplay.name}
+          </div>
+        </a>
+      </Link>
+    )
+  } else
+    return (
+      <Row
+        className={clsx(
+          'cursor-default select-none items-center truncate pr-1',
+          isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
+        )}
+      >
+        <div
+          className={clsx(
+            'bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
+          )}
+        >
+          No Group
+        </div>
+      </Row>
+    )
 }
 
 function EditableCloseDate(props: {
