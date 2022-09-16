@@ -25,11 +25,11 @@ import {
   NumericContract,
   PseudoNumericContract,
 } from 'common/contract'
-import { ContractDetails, ExtraMobileContractDetails } from './contract-details'
+import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
 
 const OverviewQuestion = (props: { text: string }) => (
-  <Linkify className="text-2xl text-indigo-700 md:text-3xl" text={props.text} />
+  <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
 )
 
 const BetWidget = (props: { contract: CPMMContract }) => {
@@ -73,7 +73,7 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
   const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
-      <Col className="gap-3 px-2 sm:gap-4">
+      <Col className="gap-1 px-2">
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
@@ -85,7 +85,6 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
           <BinaryResolutionOrChance contract={contract} />
-          <ExtraMobileContractDetails contract={contract} />
           {tradingAllowed(contract) && (
             <BetWidget contract={contract as CPMMBinaryContract} />
           )}
@@ -113,10 +112,6 @@ const ChoiceOverview = (props: {
       </Col>
       <Col className={'mb-1 gap-y-2'}>
         <AnswersGraph contract={contract} bets={[...bets].reverse()} />
-        <ExtraMobileContractDetails
-          contract={contract}
-          forceShowVolume={true}
-        />
       </Col>
     </Col>
   )
@@ -140,7 +135,6 @@ const PseudoNumericOverview = (props: {
         </Row>
         <Row className="items-center justify-between gap-4 xl:hidden">
           <PseudoNumericResolutionOrExpectation contract={contract} />
-          <ExtraMobileContractDetails contract={contract} />
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>

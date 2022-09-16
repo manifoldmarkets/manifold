@@ -81,18 +81,22 @@ export function SelectMarketsModal(props: {
           </div>
         )}
 
-        <div className="overflow-y-auto sm:px-8">
+        <div className="overflow-y-auto px-2 sm:px-8">
           <ContractSearch
             hideOrderSelector
             onContractClick={addContract}
-            cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
+            cardUIOptions={{
+              hideGroupLink: true,
+              hideQuickBet: true,
+              noLinkAvatar: true,
+            }}
             highlightOptions={{
               contractIds: contracts.map((c) => c.id),
               highlightClassName:
                 '!bg-indigo-100 outline outline-2 outline-indigo-300',
             }}
             additionalFilter={{}} /* hide pills */
-            headerClassName="bg-white"
+            headerClassName="bg-white sticky"
             {...contractSearchOptions}
           />
         </div>

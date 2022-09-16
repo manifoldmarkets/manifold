@@ -21,9 +21,10 @@ export function ContractsGrid(props: {
   loadMore?: () => void
   showTime?: ShowTime
   onContractClick?: (contract: Contract) => void
-  cardHideOptions?: {
+  cardUIOptions?: {
     hideQuickBet?: boolean
     hideGroupLink?: boolean
+    noLinkAvatar?: boolean
   }
   highlightOptions?: ContractHighlightOptions
   trackingPostfix?: string
@@ -34,11 +35,11 @@ export function ContractsGrid(props: {
     showTime,
     loadMore,
     onContractClick,
-    cardHideOptions,
+    cardUIOptions,
     highlightOptions,
     trackingPostfix,
   } = props
-  const { hideQuickBet, hideGroupLink } = cardHideOptions || {}
+  const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
   const { contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
     (visible) => {
@@ -80,6 +81,7 @@ export function ContractsGrid(props: {
             onClick={
               onContractClick ? () => onContractClick(contract) : undefined
             }
+            noLinkAvatar={noLinkAvatar}
             hideQuickBet={hideQuickBet}
             hideGroupLink={hideGroupLink}
             trackingPostfix={trackingPostfix}
@@ -108,6 +110,7 @@ export function CreatorContractsList(props: {
 
   return (
     <ContractSearch
+      headerClassName="sticky"
       user={user}
       defaultSort="newest"
       defaultFilter="all"

@@ -148,6 +148,7 @@ function SearchSection(props: {
         defaultPill={pill}
         noControls
         maxResults={6}
+        headerClassName="sticky"
         persistPrefix={`experimental-home-${sort}`}
       />
     </Col>

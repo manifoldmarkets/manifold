@@ -1,8 +1,8 @@
 import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
-import { getDefaultNotificationSettings } from 'common/user'
 import { getAllPrivateUsers, isProd } from 'functions/src/utils'
+import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 initAdmin()
 
 const firestore = admin.firestore()
@@ -17,7 +17,7 @@ async function main() {
         .collection('private-users')
         .doc(privateUser.id)
         .update({
-          notificationPreferences: getDefaultNotificationSettings(
+          notificationPreferences: getDefaultNotificationPreferences(
             privateUser.id,
             privateUser,
             disableEmails

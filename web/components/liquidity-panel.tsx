@@ -13,6 +13,7 @@ import { NoLabel, YesLabel } from './outcome-label'
 import { Col } from './layout/col'
 import { track } from 'web/lib/service/analytics'
 import { InfoTooltip } from './info-tooltip'
+import { BETTORS, PRESENT_BET } from 'common/user'
 
 export function LiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
@@ -104,7 +105,9 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
     <>
       <div className="mb-4 text-gray-500">
         Contribute your M$ to make this market more accurate.{' '}
-        <InfoTooltip text="More liquidity stabilizes the market, encouraging traders to bet. You can withdraw your subsidy at any time." />
+        <InfoTooltip
+          text={`More liquidity stabilizes the market, encouraging ${BETTORS} to ${PRESENT_BET}. You can withdraw your subsidy at any time.`}
+        />
       </div>
 
       <Row>

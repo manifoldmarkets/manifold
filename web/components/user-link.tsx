@@ -20,13 +20,18 @@ export function UserLink(props: {
   username: string
   className?: string
   short?: boolean
+  noLink?: boolean
 }) {
-  const { name, username, className, short } = props
+  const { name, username, className, short, noLink } = props
   const shortName = short ? shortenName(name) : name
   return (
     <SiteLink
       href={`/${username}`}
-      className={clsx('z-10 truncate', className)}
+      className={clsx(
+        'z-10 truncate',
+        className,
+        noLink ? 'pointer-events-none' : ''
+      )}
     >
       {shortName}
     </SiteLink>

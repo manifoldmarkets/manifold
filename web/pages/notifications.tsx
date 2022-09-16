@@ -1,7 +1,12 @@
 import { ControlledTabs } from 'web/components/layout/tabs'
 import React, { useEffect, useMemo, useState } from 'react'
 import Router, { useRouter } from 'next/router'
-import { Notification, notification_source_types } from 'common/notification'
+import {
+  BetFillData,
+  ContractResolutionData,
+  Notification,
+  notification_source_types,
+} from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
@@ -141,6 +146,7 @@ function RenderNotificationGroups(props: {
           <NotificationItem
             notification={notification.notifications[0]}
             key={notification.notifications[0].id}
+            justSummary={false}
           />
         ) : (
           <NotificationGroupItem
@@ -697,20 +703,11 @@ function NotificationGroupItem(props: {
 
 function NotificationItem(props: {
   notification: Notification
-  justSummary?: boolean
+  justSummary: boolean
   isChildOfGroup?: boolean
 }) {
   const { notification, justSummary, isChildOfGroup } = props
-  const {
-    sourceType,
-    sourceUserName,
-    sourceUserAvatarUrl,
-    sourceUpdateType,
-    reasonText,
-    reason,
-    sourceUserUsername,
-    sourceText,
-  } = notification
+  const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted] = useState(!notification.isSeen)
 
@@ -718,39 +715,113 @@ function NotificationItem(props: {
     setNotificationsAsSeen([notification])
   }, [notification])
 
-  const questionNeedsResolution = sourceUpdateType == 'closed'
+  // TODO Any new notification should be its own component
+  if (reason === 'bet_fill') {
+    return (
+      <BetFillNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        justSummary={justSummary}
+      />
+    )
+  } else if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
+    return (
+      <ContractResolvedNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        justSummary={justSummary}
+      />
+    )
+  }
+  // TODO Add new notification components here
 
   if (justSummary) {
     return (
-      <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
-        <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
-          <div className={'flex pl-1 sm:pl-0'}>
-            <UserLink
-              name={sourceUserName || ''}
-              username={sourceUserUsername || ''}
-              className={'mr-0 flex-shrink-0'}
-              short={true}
-            />
-            <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
-              <span className={'flex-shrink-0'}>
-                {sourceType &&
-                  reason &&
-                  getReasonForShowingNotification(notification, true)}
-              </span>
-              <div className={'ml-1 text-black'}>
-                <NotificationTextLabel
-                  className={'line-clamp-1'}
-                  notification={notification}
-                  justSummary={true}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Row>
+      <NotificationSummaryFrame
+        notification={notification}
+        subtitle={
+          (sourceType &&
+            reason &&
+            getReasonForShowingNotification(notification, true)) ??
+          ''
+        }
+      >
+        <NotificationTextLabel
+          className={'line-clamp-1'}
+          notification={notification}
+          justSummary={true}
+        />
+      </NotificationSummaryFrame>
     )
   }
 
+  return (
+    <NotificationFrame
+      notification={notification}
+      subtitle={getReasonForShowingNotification(
+        notification,
+        isChildOfGroup ?? false
+      )}
+      highlighted={highlighted}
+    >
+      <div className={'mt-1 ml-1 md:text-base'}>
+        <NotificationTextLabel notification={notification} />
+      </div>
+    </NotificationFrame>
+  )
+}
+
+function NotificationSummaryFrame(props: {
+  notification: Notification
+  subtitle: string
+  children: React.ReactNode
+}) {
+  const { notification, subtitle, children } = props
+  const { sourceUserName, sourceUserUsername } = notification
+  return (
+    <Row className={'items-center text-sm text-gray-500 sm:justify-start'}>
+      <div className={'line-clamp-1 flex-1 overflow-hidden sm:flex'}>
+        <div className={'flex pl-1 sm:pl-0'}>
+          <UserLink
+            name={sourceUserName || ''}
+            username={sourceUserUsername || ''}
+            className={'mr-0 flex-shrink-0'}
+            short={true}
+          />
+          <div className={'inline-flex overflow-hidden text-ellipsis pl-1'}>
+            <span className={'flex-shrink-0'}>{subtitle}</span>
+            <div className={'line-clamp-1 ml-1 text-black'}>{children}</div>
+          </div>
+        </div>
+      </div>
+    </Row>
+  )
+}
+
+function NotificationFrame(props: {
+  notification: Notification
+  highlighted: boolean
+  subtitle: string
+  children: React.ReactNode
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, subtitle, children } =
+    props
+  const {
+    sourceType,
+    sourceUserName,
+    sourceUserAvatarUrl,
+    sourceUpdateType,
+    reason,
+    reasonText,
+    sourceUserUsername,
+    sourceText,
+  } = notification
+  const questionNeedsResolution = sourceUpdateType == 'closed'
+  const { width } = useWindowSize()
+  const isMobile = (width ?? 0) < 600
   return (
     <div
       className={clsx(
@@ -796,18 +867,13 @@ function NotificationItem(props: {
               }
             >
               <div>
-                {!questionNeedsResolution && (
-                  <UserLink
-                    name={sourceUserName || ''}
-                    username={sourceUserUsername || ''}
-                    className={'relative mr-1 flex-shrink-0'}
-                    short={true}
-                  />
-                )}
-                {getReasonForShowingNotification(
-                  notification,
-                  isChildOfGroup ?? false
-                )}
+                <UserLink
+                  name={sourceUserName || ''}
+                  username={sourceUserUsername || ''}
+                  className={'relative mr-1 flex-shrink-0'}
+                  short={isMobile}
+                />
+                {subtitle}
                 {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
                 ) : (
@@ -822,13 +888,153 @@ function NotificationItem(props: {
             )}
           </div>
         </Row>
-        <div className={'mt-1 ml-1 md:text-base'}>
-          <NotificationTextLabel notification={notification} />
-        </div>
+        <div className={'mt-1 ml-1 md:text-base'}>{children}</div>
 
         <div className={'mt-6 border-b border-gray-300'} />
       </div>
     </div>
+  )
+}
+
+function BetFillNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  justSummary: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  const { sourceText, data } = notification
+  const { creatorOutcome, probability, limitOrderTotal, limitOrderRemaining } =
+    (data as BetFillData) ?? {}
+  const subtitle = 'bet against you'
+  const amount = formatMoney(parseInt(sourceText ?? '0'))
+  const description =
+    creatorOutcome && probability ? (
+      <span>
+        of your {limitOrderTotal ? formatMoney(limitOrderTotal) : ''}
+        <span
+          className={clsx(
+            'mx-1',
+            creatorOutcome === 'YES'
+              ? 'text-primary'
+              : creatorOutcome === 'NO'
+              ? 'text-red-500'
+              : 'text-blue-500'
+          )}
+        >
+          {creatorOutcome}
+        </span>
+        limit order at {Math.round(probability * 100)}% was filled{' '}
+        {limitOrderRemaining
+          ? `(${formatMoney(limitOrderRemaining)} remaining)`
+          : ''}
+      </span>
+    ) : (
+      <span>of your limit order was filled</span>
+    )
+
+  if (justSummary) {
+    return (
+      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
+        <Row className={'line-clamp-1'}>
+          <span className={'text-primary mr-1'}>{amount}</span>
+          <span>{description}</span>
+        </Row>
+      </NotificationSummaryFrame>
+    )
+  }
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      subtitle={subtitle}
+    >
+      <Row>
+        <span>
+          <span className="text-primary mr-1">{amount}</span>
+          {description}
+        </span>
+      </Row>
+    </NotificationFrame>
+  )
+}
+
+function ContractResolvedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  justSummary: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  const { sourceText, data } = notification
+  const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
+  const subtitle = 'resolved the market'
+  const resolutionDescription = () => {
+    if (!sourceText) return <div />
+    if (sourceText === 'YES' || sourceText == 'NO') {
+      return <BinaryOutcomeLabel outcome={sourceText as any} />
+    }
+    if (sourceText.includes('%'))
+      return <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
+    if (sourceText === 'CANCEL') return <CancelLabel />
+    if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
+
+    // Numeric market
+    if (parseFloat(sourceText))
+      return <NumericValueLabel value={parseFloat(sourceText)} />
+
+    // Free response market
+    return (
+      <div className={'line-clamp-1 text-blue-400'}>
+        <Linkify text={sourceText} />
+      </div>
+    )
+  }
+
+  const description =
+    userInvestment && userPayout !== undefined ? (
+      <Row className={'gap-1 '}>
+        {resolutionDescription()}
+        Invested:
+        <span className={'text-primary'}>{formatMoney(userInvestment)} </span>
+        Payout:
+        <span
+          className={clsx(
+            userPayout > 0 ? 'text-primary' : 'text-red-500',
+            'truncate'
+          )}
+        >
+          {formatMoney(userPayout)}
+          {` (${userPayout > 0 ? '+' : ''}${Math.round(
+            ((userPayout - userInvestment) / userInvestment) * 100
+          )}%)`}
+        </span>
+      </Row>
+    ) : (
+      <span>{resolutionDescription()}</span>
+    )
+
+  if (justSummary) {
+    return (
+      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
+        <Row className={'line-clamp-1'}>{description}</Row>
+      </NotificationSummaryFrame>
+    )
+  }
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      subtitle={subtitle}
+    >
+      <Row>
+        <span>{description}</span>
+      </Row>
+    </NotificationFrame>
   )
 }
 
@@ -951,30 +1157,7 @@ function NotificationTextLabel(props: {
   if (sourceType === 'contract') {
     if (justSummary || !sourceText) return <div />
     // Resolved contracts
-    if (sourceType === 'contract' && sourceUpdateType === 'resolved') {
-      {
-        if (sourceText === 'YES' || sourceText == 'NO') {
-          return <BinaryOutcomeLabel outcome={sourceText as any} />
-        }
-        if (sourceText.includes('%'))
-          return (
-            <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
-          )
-        if (sourceText === 'CANCEL') return <CancelLabel />
-        if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
 
-        // Numeric market
-        if (parseFloat(sourceText))
-          return <NumericValueLabel value={parseFloat(sourceText)} />
-
-        // Free response market
-        return (
-          <div className={className ? className : 'line-clamp-1 text-blue-400'}>
-            <Linkify text={sourceText} />
-          </div>
-        )
-      }
-    }
     // Close date will be a number - it looks better without it
     if (sourceUpdateType === 'closed') {
       return <div />
@@ -1001,15 +1184,6 @@ function NotificationTextLabel(props: {
   } else if (sourceType === 'liquidity' && sourceText) {
     return (
       <span className="text-blue-400">{formatMoney(parseInt(sourceText))}</span>
-    )
-  } else if (sourceType === 'bet' && sourceText) {
-    return (
-      <>
-        <span className="text-primary">
-          {formatMoney(parseInt(sourceText))}
-        </span>{' '}
-        <span>of your limit order was filled</span>
-      </>
     )
   } else if (sourceType === 'challenge' && sourceText) {
     return (
@@ -1073,9 +1247,6 @@ function getReasonForShowingNotification(
           reasonText = 'joined to bet on your market'
         else if (sourceSlug) reasonText = 'joined because you shared'
         else reasonText = 'joined because of you'
-        break
-      case 'bet':
-        reasonText = 'bet against you'
         break
       case 'challenge':
         reasonText = 'accepted your challenge'

@@ -11,7 +11,7 @@ import {
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
-import { ContractDetails } from 'web/components/contract/contract-details'
+import { MarketSubheader } from 'web/components/contract/contract-details'
 import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
 import { NumericGraph } from 'web/components/contract/numeric-graph'
 import { Col } from 'web/components/layout/col'
@@ -102,50 +102,40 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   return (
     <Col className="h-[100vh] w-full bg-white">
-      <div className="relative flex flex-col pt-2">
-        <div className="px-3 text-xl text-indigo-700 md:text-2xl">
+      <Row className="justify-between gap-4 px-2">
+        <div className="text-xl text-indigo-700 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
         </div>
+        {isBinary && (
+          <BinaryResolutionOrChance contract={contract} probAfter={probAfter} />
+        )}
 
-        <Spacer h={3} />
+        {isPseudoNumeric && (
+          <PseudoNumericResolutionOrExpectation contract={contract} />
+        )}
 
-        <Row className="items-center justify-between gap-4 px-2">
-          <ContractDetails contract={contract} disabled />
+        {outcomeType === 'FREE_RESPONSE' && (
+          <FreeResponseResolutionOrChance contract={contract} truncate="long" />
+        )}
 
-          {(isBinary || isPseudoNumeric) &&
-            tradingAllowed(contract) &&
-            !betPanelOpen && (
-              <Button color="gradient" onClick={() => setBetPanelOpen(true)}>
-                Bet
-              </Button>
-            )}
+        {outcomeType === 'NUMERIC' && (
+          <NumericResolutionOrExpectation contract={contract} />
+        )}
+      </Row>
+      <Spacer h={3} />
+      <Row className="items-center justify-between gap-4 px-2">
+        <MarketSubheader contract={contract} disabled />
 
-          {isBinary && (
-            <BinaryResolutionOrChance
-              contract={contract}
-              probAfter={probAfter}
-              className="items-center"
-            />
+        {(isBinary || isPseudoNumeric) &&
+          tradingAllowed(contract) &&
+          !betPanelOpen && (
+            <Button color="gradient" onClick={() => setBetPanelOpen(true)}>
+              Predict
+            </Button>
           )}
+      </Row>
 
-          {isPseudoNumeric && (
-            <PseudoNumericResolutionOrExpectation contract={contract} />
-          )}
-
-          {outcomeType === 'FREE_RESPONSE' && (
-            <FreeResponseResolutionOrChance
-              contract={contract}
-              truncate="long"
-            />
-          )}
-
-          {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation contract={contract} />
-          )}
-        </Row>
-
-        <Spacer h={2} />
-      </div>
+      <Spacer h={2} />
 
       {(isBinary || isPseudoNumeric) && betPanelOpen && (
         <BetInline

@@ -35,6 +35,8 @@ import {
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { LoansModal } from './profile/loans-modal'
 import { UserLikesButton } from 'web/components/profile/user-likes-button'
+import { PAST_BETS } from 'common/user'
+import { capitalize } from 'lodash'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -240,7 +242,8 @@ export function UserPage(props: { user: User }) {
               <SiteLink href="/referrals">
                 Earn {formatMoney(REFERRAL_AMOUNT)} when you refer a friend!
               </SiteLink>{' '}
-              You have <ReferralsButton user={user} currentUser={currentUser} />
+              You've gotten{' '}
+              <ReferralsButton user={user} currentUser={currentUser} />
             </span>
             <ShareIconButton
               copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
@@ -269,7 +272,7 @@ export function UserPage(props: { user: User }) {
               ),
             },
             {
-              title: 'Trades',
+              title: capitalize(PAST_BETS),
               content: (
                 <>
                   <BetsList user={user} />
