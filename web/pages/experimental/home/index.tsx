@@ -79,28 +79,7 @@ export default function Home() {
           <DailyStats className="" user={user} />
         </Row>
 
-        {sections.map((item) => {
-          const { id } = item
-          if (id === 'daily-movers') {
-            return <DailyMoversSection key={id} userId={user?.id} />
-          }
-          const sort = SORTS.find((sort) => sort.value === id)
-          if (sort)
-            return (
-              <SearchSection
-                key={id}
-                label={sort.value === 'newest' ? 'New for you' : sort.label}
-                sort={sort.value}
-                pill={sort.value === 'newest' ? 'personal' : undefined}
-                user={user}
-              />
-            )
-
-          const group = groups.find((g) => g.id === id)
-          if (group) return <GroupSection key={id} group={group} user={user} />
-
-          return null
-        })}
+        {sections.map((section) => renderSection(section, user, groups))}
 
         <TrendingGroupsSection user={user} />
       </Col>
@@ -118,14 +97,19 @@ export default function Home() {
   )
 }
 
+const HOME_SECTIONS = [
+  { label: 'Daily movers', id: 'daily-movers' },
+  { label: 'Trending', id: 'score' },
+  { label: 'New', id: 'newest' },
+  { label: 'New for you', id: 'new-for-you' },
+]
+
 export const getHomeItems = (groups: Group[], sections: string[]) => {
   // Accommodate old home sections.
   if (!isArray(sections)) sections = []
 
   const items = [
-    { label: 'Trending', id: 'score' },
-    { label: 'New for you', id: 'newest' },
-    { label: 'Daily movers', id: 'daily-movers' },
+    ...HOME_SECTIONS,
     ...groups.map((g) => ({
       label: g.name,
       id: g.id,
@@ -142,6 +126,37 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
     sections: sectionItems,
     itemsById,
   }
+}
+
+function renderSection(
+  section: { id: string; label: string },
+  user: User | null | undefined,
+  groups: Group[]
+) {
+  const { id, label } = section
+  if (id === 'daily-movers') {
+    return <DailyMoversSection key={id} userId={user?.id} />
+  }
+  if (id === 'new-for-you')
+    return (
+      <SearchSection
+        key={id}
+        label={label}
+        sort={'newest'}
+        pill="personal"
+        user={user}
+      />
+    )
+  const sort = SORTS.find((sort) => sort.value === id)
+  if (sort)
+    return (
+      <SearchSection key={id} label={label} sort={sort.value} user={user} />
+    )
+
+  const group = groups.find((g) => g.id === id)
+  if (group) return <GroupSection key={id} group={group} user={user} />
+
+  return null
 }
 
 function SectionHeader(props: {
