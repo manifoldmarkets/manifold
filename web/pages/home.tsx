@@ -26,6 +26,7 @@ const Home = () => {
             user={user}
             persistPrefix="home-search"
             useQueryUrlParam={true}
+            headerClassName="sticky"
           />
         </Col>
         <button

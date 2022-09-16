@@ -17,6 +17,8 @@ import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
+import { User } from 'common/user'
+
 import { PAST_BETS } from 'common/user'
 
 function getNavigation() {
@@ -34,6 +36,21 @@ const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Explore', href: '/home', icon: SearchIcon },
 ]
+
+export const userProfileItem = (user: User) => ({
+  name: formatMoney(user.balance),
+  trackingEventName: 'profile',
+  href: `/${user.username}?tab=${PAST_BETS}`,
+  icon: () => (
+    <Avatar
+      className="mx-auto my-1"
+      size="xs"
+      username={user.username}
+      avatarUrl={user.avatarUrl}
+      noLink
+    />
+  ),
+})
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar() {
@@ -62,20 +79,7 @@ export function BottomNavBar() {
         <NavBarItem
           key={'profile'}
           currentPage={currentPage}
-          item={{
-            name: formatMoney(user.balance),
-            trackingEventName: 'profile',
-            href: `/${user.username}?tab=${PAST_BETS}`,
-            icon: () => (
-              <Avatar
-                className="mx-auto my-1"
-                size="xs"
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-                noLink
-              />
-            ),
-          }}
+          item={userProfileItem(user)}
         />
       )}
       <div
@@ -99,7 +103,7 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
 
   return (
-    <Link href={item.href}>
+    <Link href={item.href ?? '#'}>
       <a
         className={clsx(
           'block w-full py-1 px-3 text-center hover:bg-indigo-200 hover:text-indigo-700',

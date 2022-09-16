@@ -110,6 +110,7 @@ export function CreatorContractsList(props: {
 
   return (
     <ContractSearch
+      headerClassName="sticky"
       user={user}
       defaultSort="newest"
       defaultFilter="all"
