@@ -42,6 +42,7 @@ export async function linkTwitchAccountRedirect(
   const [twitchAuthURL] = await initLinkTwitchAccount(user.id, apiKey)
 
   window.location.href = twitchAuthURL
+  await new Promise((r) => setTimeout(r, 1e10)) // Wait "forever" for the page to change location
 }
 
 export async function updateBotEnabledForUser(

@@ -51,6 +51,8 @@ function ButtonGetStarted(props: {
           const { user, privateUser } = await getUserAndPrivateUser(userId)
           if (!user || !privateUser) return
 
+          if (privateUser.twitchInfo?.twitchName) return // If we've already linked Twitch, no need to do so again
+
           await linkTwitchAccountRedirect(user, privateUser)
         }
 
@@ -64,6 +66,7 @@ function ButtonGetStarted(props: {
     } catch (e) {
       console.error(e)
       toast.error('Failed to sign up. Please try again later.')
+    } finally {
       setLoading(false)
     }
   }
@@ -347,7 +350,9 @@ function SetUpBot(props: {
         <div className="flex flex-col gap-6 sm:flex-row">
           <BotSetupStep
             stepNum={1}
-            overrideButton={<BotConnectButton privateUser={privateUser} />}
+            overrideButton={
+              twitchLinked && <BotConnectButton privateUser={privateUser} />
+            }
           >
             Use the button above to add the bot to your channel. Then mod it by
             typing in your Twitch chat: <b>/mod ManifoldBot</b>
@@ -399,7 +404,7 @@ export default function TwitchLandingPage() {
       <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
         <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
         <TwitchChatCommands />
-        <SetUpBot privateUser={privateUser} />
+        <SetUpBot user={user} privateUser={privateUser} />
       </Col>
     </Page>
   )
