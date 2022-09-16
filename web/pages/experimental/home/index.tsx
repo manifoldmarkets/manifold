@@ -47,6 +47,7 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
 import { updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
+import { usePrefetch } from 'web/hooks/use-prefetch'
 
 export default function Home() {
   const user = useUser()
@@ -54,6 +55,7 @@ export default function Home() {
   useTracking('view home')
 
   useSaveReferral()
+  usePrefetch(user?.id)
 
   const cachedGroups = useMemberGroups(user?.id) ?? []
   const groupIds = useMemberGroupIds(user)
