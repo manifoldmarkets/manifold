@@ -175,7 +175,7 @@ def fetch_special(query):
 
 
 def write_art(art_names, id, index, card):
-    if card['digital'] or card['set_type'] == 'promo':
+    if card['digital'] or card['set_type'] == 'promo' or card['lang'] != 'en':
         art_names[id] = index
     else:
         art_names[id] = -1
