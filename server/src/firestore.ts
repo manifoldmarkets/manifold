@@ -76,6 +76,10 @@ export default class AppFirestore {
         await setDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), user.data);
     }
 
+    async updateUser(user: User, props: Partial<UserData>) {
+        await updateDoc(doc(this.db, this.userCollection.path, user.data.manifoldID), props);
+    }
+
     async getRegisteredTwitchChannels(): Promise<string[]> {
         const docs = await getDocs(query(this.userCollection, where("botEnabled", "==", true)));
         const channelNames = [];

@@ -155,7 +155,7 @@ export default class TwitchBot {
                 if (args.length < 1) return;
                 const resolutionString = args[0].toLocaleUpperCase();
                 let outcome: ResolutionOutcome = ResolutionOutcome[resolutionString];
-                if (resolutionString == "NA") {
+                if (resolutionString === "NA" || resolutionString === "N/A") {
                     outcome = ResolutionOutcome.CANCEL;
                 }
                 if (!outcome || outcome == ResolutionOutcome.PROB) {

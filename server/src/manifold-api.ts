@@ -172,7 +172,7 @@ export async function getGroupBySlug(groupSlug: string): Promise<ManifoldAPI.Gro
 
 export async function saveTwitchDetails(APIKey: string, twitchName: string, controlToken: string): Promise<void> {
     const requestData = {
-        twitchInfo: {
+        twitchInfo: { // These names match the variables in Manifold User.ts. DO NOT CHANGE
             twitchName,
             controlToken
         }

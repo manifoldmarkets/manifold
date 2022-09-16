@@ -1,6 +1,6 @@
 import cors from "cors";
 import crypto from "crypto";
-import express, { Express, Response } from "express";
+import express, { Express } from "express";
 import moment from "moment";
 import { AddressInfo } from "net";
 import path from "path";
@@ -11,7 +11,6 @@ import { buildURL, getParamsFromURL } from "./utils";
 import { LiteUser } from "common/manifold-defs";
 import { ResolutionOutcome } from "common/outcome";
 import { UNFEATURE_MARKET } from "common/packet-ids";
-import { PacketTwitchLinkComplete } from "common/packets";
 import DockClient from "./clients/dock";
 import OverlayClient from "./clients/overlay";
 import { IS_DEV, PORT, PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
@@ -180,8 +179,6 @@ export default class App {
             }
         });
 
-        const registerTwitchReturnPromises: { [k: string]: Response } = {};
-
         this.app.post("/registerchanneltwitch", async (request, response) => {
             const apiKey = request.body["apiKey"];
             log.info(`Got a Twitch link request: ${apiKey}`);
@@ -227,10 +224,6 @@ export default class App {
             }
         });
 
-        this.app.get("/api/linkResult", async (request, response) => {
-            registerTwitchReturnPromises[<string>request.query.userID] = response;
-        });
-
         this.app.get("/api/botJoinURL", async (request, response) => {
             const params = {
                 client_id: TWTICH_APP_CLIENT_ID,
@@ -263,17 +256,10 @@ export default class App {
                 let user: User;
                 try {
                     user = await this.firestore.getUserForManifoldID(sessionData.manifoldID);
+                    user.data.APIKey = sessionData.apiKey;
+                    log.info("Updated user API key: " + sessionData.apiKey);
                 } catch (e) {
                     user = new User({ twitchLogin: twitchLogin, manifoldID: sessionData.manifoldID, APIKey: sessionData.apiKey, controlToken: crypto.randomUUID() });
-                }
-
-                const waitingResponse = registerTwitchReturnPromises[sessionData.manifoldID];
-                if (waitingResponse) {
-                    log.info("Waiting response serviced");
-                    const waitingResponseData: PacketTwitchLinkComplete = { twitchName: twitchLogin, controlToken: user.data.controlToken };
-                    waitingResponse.json(waitingResponseData);
-                } else {
-                    log.info("No waiting response");
                 }
 
                 this.firestore.addNewUser(user);
