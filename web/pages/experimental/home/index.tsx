@@ -27,7 +27,6 @@ import {
 } from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
 import { getHomeItems } from '../../../components/arrange-home'
-import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import {
@@ -75,12 +74,6 @@ export default function Home() {
       <Toaster />
 
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-        <Row className={'w-full items-start justify-between gap-8'}>
-          <Row className="items-end gap-4">
-            <Title className="!mb-1 !mt-0" text="Home" />
-          </Row>
-        </Row>
-
         <Row className={'mb-2 w-full items-center gap-8'}>
           <SearchRow />
           <DailyStats className="" user={user} />
@@ -222,18 +215,6 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
       <SectionHeader label="Daily movers" href="/experimental/daily-movers" />
       <ProbChangeTable changes={changes} />
     </Col>
-  )
-}
-
-function EditButton(props: { className?: string }) {
-  const { className } = props
-
-  return (
-    <SiteLink href="/experimental/home/edit">
-      <Button size="sm" color="gray-white" className={clsx(className, 'flex')}>
-        <AdjustmentsIcon className={clsx('h-[24px] w-5')} aria-hidden="true" />
-      </Button>
-    </SiteLink>
   )
 }
 
