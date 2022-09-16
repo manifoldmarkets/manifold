@@ -24,6 +24,7 @@ import { PAST_BETS } from 'common/user'
 function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Search', href: '/search', icon: SearchIcon },
     {
       name: 'Notifications',
       href: `/notifications`,
@@ -34,7 +35,7 @@ function getNavigation() {
 
 const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/home', icon: SearchIcon },
+  { name: 'Explore', href: '/search', icon: SearchIcon },
 ]
 
 export const userProfileItem = (user: User) => ({
