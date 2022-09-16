@@ -85,8 +85,10 @@ export const useMemberGroups = (userId: string | null | undefined) => {
 }
 
 export const useMemberGroupIds = (user: User | null | undefined) => {
+  const cachedGroups = useMemberGroups(user?.id)
+
   const [memberGroupIds, setMemberGroupIds] = useState<string[] | undefined>(
-    undefined
+    cachedGroups?.map((g) => g.id)
   )
 
   useEffect(() => {

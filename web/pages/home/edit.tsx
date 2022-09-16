@@ -47,7 +47,7 @@ function DoneButton(props: { className?: string }) {
   const { className } = props
 
   return (
-    <SiteLink href="/experimental/home">
+    <SiteLink href="/home">
       <Button
         size="lg"
         color="blue"

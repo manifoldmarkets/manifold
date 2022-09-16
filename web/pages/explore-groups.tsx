@@ -5,7 +5,7 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useMemberGroupIds, useTrendingGroups } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'
-import { GroupCard } from '../groups'
+import { GroupCard } from './groups'
 
 export default function Explore() {
   const user = useUser()

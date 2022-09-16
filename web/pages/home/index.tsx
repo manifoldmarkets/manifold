@@ -203,7 +203,7 @@ function SearchSection(props: {
         noControls
         maxResults={6}
         headerClassName="sticky"
-        persistPrefix={`experimental-home-${sort}`}
+        persistPrefix={`home-${sort}`}
       />
     </Col>
   )
@@ -255,7 +255,7 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
 
   return (
     <Col className="gap-2">
-      <SectionHeader label="Daily movers" href="/experimental/daily-movers" />
+      <SectionHeader label="Daily movers" href="/daily-movers" />
       <ProbChangeTable changes={changes} />
     </Col>
   )
@@ -324,14 +324,11 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
     (g) => !memberGroupIds.includes(g.id)
   )
   const count = 25
-  const chosenGroups = chooseRandomSubset(groups.slice(0, count), count)
+  const chosenGroups = groups.slice(0, count)
 
   return (
     <Col>
-      <SectionHeader
-        label="Trending groups"
-        href="/experimental/explore-groups"
-      >
+      <SectionHeader label="Trending groups" href="/explore-groups">
         <CustomizeButton />
       </SectionHeader>
       <Row className="flex-wrap gap-2">
@@ -368,7 +365,7 @@ function CustomizeButton() {
   return (
     <SiteLink
       className="mb-2 flex flex-row items-center text-xl hover:no-underline"
-      href="/experimental/home/edit"
+      href="/home/edit"
     >
       <Button size="lg" color="gray" className={clsx('flex gap-2')}>
         <AdjustmentsIcon
