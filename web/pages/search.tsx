@@ -13,7 +13,8 @@ export default function Search() {
   useTracking('view search')
 
   const { query } = useRouter()
-  const autoFocus = !(query['q'] || query['s'] || query['p'])
+  const { q, s, p } = query
+  const autoFocus = !(q || !s || !p)
 
   return (
     <Page>

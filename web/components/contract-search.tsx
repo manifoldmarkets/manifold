@@ -27,6 +27,7 @@ import { debounce, isEqual, sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
 import clsx from 'clsx'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 const searchClient = algoliasearch(
   'GJQPAYENIF',
@@ -209,6 +210,7 @@ export function ContractSearch(props: {
         defaultFilter={defaultFilter}
         defaultPill={defaultPill}
         additionalFilter={additionalFilter}
+        persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
         useQueryUrlParam={useQueryUrlParam}
         user={user}
@@ -238,6 +240,7 @@ function ContractSearchControls(props: {
   defaultFilter?: filter
   defaultPill?: string
   additionalFilter?: AdditionalFilter
+  persistPrefix?: string
   hideOrderSelector?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
@@ -251,6 +254,7 @@ function ContractSearchControls(props: {
     defaultFilter,
     defaultPill,
     additionalFilter,
+    persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
     useQueryUrlParam,
@@ -270,8 +274,11 @@ function ContractSearchControls(props: {
         }
   )
 
+  const sortKey = `${persistPrefix}-search-sort`
+  const savedSort = safeLocalStorage()?.getItem(sortKey)
+
   const [sort, setSort] = usePersistentState(
-    defaultSort ?? 'score',
+    savedSort ?? defaultSort ?? 'score',
     !useQueryUrlParam
       ? undefined
       : {
@@ -297,6 +304,12 @@ function ContractSearchControls(props: {
           store: urlParamStore(router),
         }
   )
+
+  useEffect(() => {
+    if (persistPrefix && sort) {
+      safeLocalStorage()?.setItem(sortKey, sort as string)
+    }
+  }, [persistPrefix, query, sort, sortKey])
 
   const follows = useFollows(user?.id)
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
