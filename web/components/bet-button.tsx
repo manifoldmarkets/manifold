@@ -125,12 +125,12 @@ export function SignedInBinaryMobileBetting(props: {
       <Row className="w-full">
         <button
           className={clsx(
-            'w-1/2 rounded-full py-2',
+            'w-1/2 rounded-full border-2 border-emerald-500 py-2',
             betChoice == betChoiceState.YES
               ? 'bg-emerald-500 text-white'
               : betChoice == betChoiceState.NO
               ? 'border-greyscale-4 text-greyscale-4 bg-white'
-              : 'border-2 border-emerald-500 bg-white text-emerald-500'
+              : 'bg-white text-emerald-500'
           )}
           onClick={() => {
             if (betChoice == betChoiceState.YES) {
