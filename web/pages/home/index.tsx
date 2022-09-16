@@ -102,8 +102,8 @@ export default function Home() {
 const HOME_SECTIONS = [
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
-  { label: 'New', id: 'newest' },
   { label: 'New for you', id: 'new-for-you' },
+  { label: 'Recently updated', id: 'recently-updated-for-you' },
 ]
 
 export const getHomeItems = (groups: Group[], sections: string[]) => {
@@ -145,6 +145,16 @@ function renderSection(
         key={id}
         label={label}
         sort={'newest'}
+        pill="personal"
+        user={user}
+      />
+    )
+  if (id === 'recently-updated-for-you')
+    return (
+      <SearchSection
+        key={id}
+        label={label}
+        sort={'last-updated'}
         pill="personal"
         user={user}
       />
@@ -262,14 +272,6 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
       <SectionHeader label="Daily movers" href="/daily-movers" />
       <ProbChangeTable changes={changes} />
     </Col>
-  )
-}
-
-function SearchRow() {
-  return (
-    <SiteLink href="/search" className="flex-1 hover:no-underline">
-      <input className="input input-bordered w-full" placeholder="Search" />
-    </SiteLink>
   )
 }
 
