@@ -7,7 +7,6 @@ import {
   DotsHorizontalIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import Masonry from 'react-masonry-css'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -30,18 +29,18 @@ import { getHomeItems } from '../../../components/arrange-home'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import { groupPath, leaveGroup } from 'web/lib/firebase/groups'
+import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
 import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
-import { GroupCard } from 'web/pages/groups'
 import { chooseRandomSubset } from 'common/util/random'
 import { MenuButton } from 'web/components/nav/menu'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { useContractsQuery } from 'web/hooks/use-contracts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
+import { PillButton } from 'web/components/buttons/pill-button'
 
 export default function Home() {
   const user = useUser()
@@ -269,7 +268,7 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
   const groups = useTrendingGroups().filter(
     (g) => !memberGroupIds.includes(g.id)
   )
-  const chosenGroups = chooseRandomSubset(groups.slice(0, 25), 9)
+  const chosenGroups = chooseRandomSubset(groups.slice(0, 50), 20)
 
   return (
     <Col>
@@ -277,22 +276,21 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
         label="Trending groups"
         href="/experimental/explore-groups"
       />
-      <Masonry
-        breakpointCols={{ default: 3, 768: 2, 480: 1 }}
-        className="-ml-4 flex w-auto self-center"
-        columnClassName="pl-4 bg-clip-padding"
-      >
+      <Row className="flex-wrap gap-2">
         {chosenGroups.map((g) => (
-          <GroupCard
+          <PillButton
             key={g.id}
-            className="mb-4 !min-w-[250px]"
-            group={g}
-            creator={null}
-            user={user}
-            isMember={memberGroupIds.includes(g.id)}
-          />
+            selected={memberGroupIds.includes(g.id)}
+            onSelect={() => {
+              if (!user) return
+              if (memberGroupIds.includes(g.id)) leaveGroup(g, user?.id)
+              else joinGroup(g, user.id)
+            }}
+          >
+            {g.name}
+          </PillButton>
         ))}
-      </Masonry>
+      </Row>
     </Col>
   )
 }
