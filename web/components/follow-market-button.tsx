@@ -25,7 +25,7 @@ export const FollowMarketButton = (props: {
 
   return (
     <Button
-      size={'lg'}
+      size={'sm'}
       color={'gray-white'}
       onClick={async () => {
         if (!user) return firebaseLogin()
@@ -56,13 +56,19 @@ export const FollowMarketButton = (props: {
     >
       {followers?.includes(user?.id ?? 'nope') ? (
         <Col className={'items-center gap-x-2 sm:flex-row'}>
-          <EyeOffIcon className={clsx('h-6 w-6')} aria-hidden="true" />
-          Unwatch
+          <EyeOffIcon
+            className={clsx('h-5 w-5 sm:h-6 sm:w-6')}
+            aria-hidden="true"
+          />
+          {/* Unwatch */}
         </Col>
       ) : (
         <Col className={'items-center gap-x-2 sm:flex-row'}>
-          <EyeIcon className={clsx('h-6 w-6')} aria-hidden="true" />
-          Watch
+          <EyeIcon
+            className={clsx('h-5 w-5 sm:h-6 sm:w-6')}
+            aria-hidden="true"
+          />
+          {/* Watch */}
         </Col>
       )}
       <WatchMarketModal
