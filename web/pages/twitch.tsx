@@ -1,6 +1,8 @@
+import { LinkIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { PrivateUser, User } from 'common/user'
 import Link from 'next/link'
-import { useState } from 'react'
+import { MouseEventHandler, ReactNode, useState } from 'react'
 
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/button'
@@ -15,19 +17,32 @@ import { Title } from 'web/components/title'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogin, getUserAndPrivateUser } from 'web/lib/firebase/users'
+import {
+  firebaseLogin,
+  getUserAndPrivateUser,
+  updatePrivateUser,
+} from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
+import {
+  getDockURLForUser,
+  getOverlayURLForUser,
+  linkTwitchAccountRedirect,
+  updateBotEnabledForUser,
+} from 'web/lib/twitch/link-twitch-account'
+import { copyToClipboard } from 'web/lib/util/copy'
 
-function TwitchPlaysManifoldMarkets(props: {
+function ButtonGetStarted(props: {
   user?: User | null
   privateUser?: PrivateUser | null
+  buttonClass?: string
+  spinnerClass?: string
 }) {
-  const { user, privateUser } = props
-
-  const twitchUser = privateUser?.twitchInfo?.twitchName
+  const { user, privateUser, buttonClass, spinnerClass } = props
 
   const [isLoading, setLoading] = useState(false)
+  const needsRelink =
+    privateUser?.twitchInfo?.twitchName &&
+    privateUser?.twitchInfo?.needsRelinking
 
   const callback =
     user && privateUser
@@ -38,6 +53,8 @@ function TwitchPlaysManifoldMarkets(props: {
           const userId = result.user.uid
           const { user, privateUser } = await getUserAndPrivateUser(userId)
           if (!user || !privateUser) return
+
+          if (privateUser.twitchInfo?.twitchName) return // If we've already linked Twitch, no need to do so again
 
           await linkTwitchAccountRedirect(user, privateUser)
         }
@@ -52,9 +69,34 @@ function TwitchPlaysManifoldMarkets(props: {
     } catch (e) {
       console.error(e)
       toast.error('Failed to sign up. Please try again later.')
+    } finally {
       setLoading(false)
     }
   }
+  return isLoading ? (
+    <LoadingIndicator
+      spinnerClassName={clsx('!w-11 !h-11 my-4', spinnerClass)}
+    />
+  ) : (
+    <Button
+      size="xl"
+      color={needsRelink ? 'red' : 'gradient'}
+      className={clsx('my-4 self-center !px-16', buttonClass)}
+      onClick={getStarted}
+    >
+      {needsRelink ? 'API key updated: relink Twitch' : 'Start playing'}
+    </Button>
+  )
+}
+
+function TwitchPlaysManifoldMarkets(props: {
+  user?: User | null
+  privateUser?: PrivateUser | null
+}) {
+  const { user, privateUser } = props
+
+  const twitchInfo = privateUser?.twitchInfo
+  const twitchUser = twitchInfo?.twitchName
 
   return (
     <div>
@@ -82,27 +124,22 @@ function TwitchPlaysManifoldMarkets(props: {
           receive their profit.
         </div>
         Start playing now by logging in with Google and typing commands in chat!
-        {twitchUser ? (
-          <Button size="xl" color="green" className="btn-disabled self-center">
-            Account connected: {twitchUser}
-          </Button>
-        ) : isLoading ? (
-          <LoadingIndicator spinnerClassName="!w-11 !h-11" />
-        ) : (
+        {twitchUser && !twitchInfo.needsRelinking ? (
           <Button
             size="xl"
-            color="gradient"
-            className="my-4 self-center !px-16"
-            onClick={getStarted}
+            color="green"
+            className="btn-disabled my-4 self-center !border-none"
           >
-            Start playing
+            Account connected: {twitchUser}
           </Button>
+        ) : (
+          <ButtonGetStarted user={user} privateUser={privateUser} />
         )}
         <div>
-          Instead of Twitch channel points we use our play money, mana (m$). All
+          Instead of Twitch channel points we use our play money, Mana (M$). All
           viewers start with M$1000 and more can be earned for free and then{' '}
-          <Link href="/charity" className="underline">
-            donated to a charity
+          <Link href="/charity">
+            <a className="underline">donated to a charity</a>
           </Link>{' '}
           of their choice at no cost!
         </div>
@@ -167,28 +204,136 @@ function TwitchChatCommands() {
 function BotSetupStep(props: {
   stepNum: number
   buttonName?: string
-  text: string
+  buttonOnClick?: MouseEventHandler
+  overrideButton?: ReactNode
+  children: ReactNode
 }) {
-  const { stepNum, buttonName, text } = props
+  const { stepNum, buttonName, buttonOnClick, overrideButton, children } = props
   return (
     <Col className="flex-1">
-      {buttonName && (
+      {(overrideButton || buttonName) && (
         <>
-          <Button color="green">{buttonName}</Button>
+          {overrideButton ?? (
+            <Button
+              size={'md'}
+              color={'green'}
+              className="!border-none"
+              onClick={buttonOnClick}
+            >
+              {buttonName}
+            </Button>
+          )}
           <Spacer h={4} />
         </>
       )}
       <div>
         <p className="inline font-bold">Step {stepNum}. </p>
-        {text}
+        {children}
       </div>
     </Col>
   )
 }
 
-function SetUpBot(props: { privateUser?: PrivateUser | null }) {
+function BotConnectButton(props: {
+  privateUser: PrivateUser | null | undefined
+}) {
   const { privateUser } = props
-  const twitchLinked = privateUser?.twitchInfo?.twitchName
+  const [loading, setLoading] = useState(false)
+
+  const updateBotConnected = (connected: boolean) => async () => {
+    if (!privateUser) return
+    const twitchInfo = privateUser.twitchInfo
+    if (!twitchInfo) return
+
+    const error = connected
+      ? 'Failed to add bot to your channel'
+      : 'Failed to remove bot from your channel'
+    const success = connected
+      ? 'Added bot to your channel'
+      : 'Removed bot from your channel'
+
+    setLoading(true)
+    toast.promise(
+      updateBotEnabledForUser(privateUser, connected)
+        .then(() =>
+          updatePrivateUser(privateUser.id, {
+            twitchInfo: { ...twitchInfo, botEnabled: connected },
+          })
+        )
+        .finally(() => setLoading(false)),
+      { loading: 'Updating bot settings...', error, success },
+      {
+        loading: {
+          className: '!max-w-sm',
+        },
+        success: {
+          className:
+            '!bg-primary !transition-all !duration-500 !text-white !max-w-sm',
+        },
+        error: {
+          className:
+            '!bg-red-400 !transition-all !duration-500 !text-white !max-w-sm',
+        },
+      }
+    )
+  }
+
+  return (
+    <>
+      {privateUser?.twitchInfo?.botEnabled ? (
+        <Button
+          color="red"
+          onClick={updateBotConnected(false)}
+          className={clsx(loading && '!btn-disabled', 'border-none')}
+        >
+          {loading ? (
+            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
+          ) : (
+            'Remove bot from channel'
+          )}
+        </Button>
+      ) : (
+        <Button
+          color="green"
+          onClick={updateBotConnected(true)}
+          className={clsx(loading && '!btn-disabled', 'border-none')}
+        >
+          {loading ? (
+            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
+          ) : (
+            'Add bot to your channel'
+          )}
+        </Button>
+      )}
+    </>
+  )
+}
+
+function SetUpBot(props: {
+  user?: User | null
+  privateUser?: PrivateUser | null
+}) {
+  const { user, privateUser } = props
+  const twitchLinked =
+    privateUser?.twitchInfo?.twitchName &&
+    !privateUser?.twitchInfo?.needsRelinking
+      ? true
+      : undefined
+  const toastTheme = {
+    className: '!bg-primary !text-white',
+    icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
+  }
+  const copyOverlayLink = async () => {
+    if (!privateUser) return
+    copyToClipboard(getOverlayURLForUser(privateUser))
+    toast.success('Overlay link copied!', toastTheme)
+  }
+  const copyDockLink = async () => {
+    if (!privateUser) return
+    copyToClipboard(getDockURLForUser(privateUser))
+    toast.success('Dock link copied!', toastTheme)
+  }
+
   return (
     <>
       <Title
@@ -197,37 +342,50 @@ function SetUpBot(props: { privateUser?: PrivateUser | null }) {
       />
       <Col className="gap-4">
         <img
-          src="https://raw.githubusercontent.com/PhilBladen/ManifoldTwitchIntegration/master/docs/OBS.png"
+          src="https://raw.githubusercontent.com/PhilBladen/ManifoldTwitchIntegration/master/docs/OBS.png" // TODO: Copy this into the Manifold codebase public folder
           className="!-my-2"
         ></img>
         To add the bot to your stream make sure you have logged in then follow
         the steps below.
         {!twitchLinked && (
-          <Button
-            size="xl"
-            color="gradient"
-            className="my-4 self-center !px-16"
-            // onClick={getStarted}
-          >
-            Start playing
-          </Button>
+          <ButtonGetStarted
+            user={user}
+            privateUser={privateUser}
+            buttonClass={'!my-0'}
+            spinnerClass={'!my-0'}
+          />
         )}
         <div className="flex flex-col gap-6 sm:flex-row">
           <BotSetupStep
             stepNum={1}
-            buttonName={twitchLinked && 'Add bot to channel'}
-            text="Use the button above to add the bot to your channel. Then mod it by typing in your Twitch chat: /mod ManifoldBot (or whatever you named the bot) If the bot is modded it will not work properly on the backend."
-          />
+            overrideButton={
+              twitchLinked && <BotConnectButton privateUser={privateUser} />
+            }
+          >
+            Use the button above to add the bot to your channel. Then mod it by
+            typing in your Twitch chat: <b>/mod ManifoldBot</b>
+            <br />
+            If the bot is not modded it will not be able to respond to commands
+            properly.
+          </BotSetupStep>
           <BotSetupStep
             stepNum={2}
             buttonName={twitchLinked && 'Overlay link'}
-            text="Create a new browser source in your streaming software such as OBS. Paste in the above link and resize it to your liking. We recommend setting the size to 400x400."
-          />
+            buttonOnClick={copyOverlayLink}
+          >
+            Create a new browser source in your streaming software such as OBS.
+            Paste in the above link and resize it to your liking. We recommend
+            setting the size to 400x400.
+          </BotSetupStep>
           <BotSetupStep
             stepNum={3}
             buttonName={twitchLinked && 'Control dock link'}
-            text="The bot can be controlled entirely through chat. But we made an easy to use control panel. Share the link with your mods or embed it into your OBS as a custom dock."
-          />
+            buttonOnClick={copyDockLink}
+          >
+            The bot can be controlled entirely through chat. But we made an easy
+            to use control panel. Share the link with your mods or embed it into
+            your OBS as a custom dock.
+          </BotSetupStep>
         </div>
       </Col>
     </>
@@ -250,64 +408,11 @@ export default function TwitchLandingPage() {
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
       </div>
-      {/* <Col className="items-center">
-        <Col className="max-w-3xl">
-          <Col className="mb-6 rounded-xl sm:m-12 sm:mt-0">
-            <Row className="self-center">
-              <img height={200} width={200} src="/twitch-logo.png" />
-              <img height={200} width={200} src="/flappy-logo.gif" />
-            </Row>
-            <div className="m-4 max-w-[550px] self-center">
-              <h1 className="text-3xl sm:text-6xl xl:text-6xl">
-                <div className="font-semibold sm:mb-2">
-                  <span className="bg-gradient-to-r from-indigo-500 to-blue-500 bg-clip-text font-bold text-transparent">
-                    Bet
-                  </span>{' '}
-                  on your favorite streams
-                </div>
-              </h1>
-              <Spacer h={6} />
-              <div className="mb-4 px-2 ">
-                Get more out of Twitch with play-money betting markets.{' '}
-                {!twitchUser &&
-                  'Click the button below to link your Twitch account.'}
-                <br />
-              </div>
-            </div>
 
-            <Spacer h={6} />
-
-            {twitchUser ? (
-              <div className="mt-3 self-center rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4 ">
-                <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                  <div className="truncate text-sm font-medium text-gray-500">
-                    Twitch account linked
-                  </div>
-                  <div className="mt-1 text-2xl font-semibold text-gray-900">
-                    {twitchUser}
-                  </div>
-                </div>
-              </div>
-            ) : isLoading ? (
-              <LoadingIndicator spinnerClassName="!w-16 !h-16" />
-            ) : (
-              <Button
-                size="2xl"
-                color="gradient"
-                className="self-center"
-                onClick={getStarted}
-              >
-                Get started
-              </Button>
-            )}
-          </Col>
-        </Col>
-      </Col> */}
-
-      <Col className="max-w-3xl gap-8 rounded bg-white p-10 text-gray-600 shadow-md sm:mx-auto">
+      <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
         <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
         <TwitchChatCommands />
-        <SetUpBot privateUser={privateUser} />
+        <SetUpBot user={user} privateUser={privateUser} />
       </Col>
     </Page>
   )

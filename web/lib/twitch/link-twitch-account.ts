@@ -42,6 +42,7 @@ export async function linkTwitchAccountRedirect(
   const [twitchAuthURL] = await initLinkTwitchAccount(user.id, apiKey)
 
   window.location.href = twitchAuthURL
+  await new Promise((r) => setTimeout(r, 1e10)) // Wait "forever" for the page to change location
 }
 
 export async function updateBotEnabledForUser(
@@ -61,4 +62,14 @@ export async function updateBotEnabledForUser(
       if (!r.success) throw new Error(r.message)
     })
   }
+}
+
+export function getOverlayURLForUser(privateUser: PrivateUser) {
+  const controlToken = privateUser?.twitchInfo?.controlToken
+  return `${TWITCH_BOT_PUBLIC_URL}/overlay?t=${controlToken}`
+}
+
+export function getDockURLForUser(privateUser: PrivateUser) {
+  const controlToken = privateUser?.twitchInfo?.controlToken
+  return `${TWITCH_BOT_PUBLIC_URL}/dock?t=${controlToken}`
 }
