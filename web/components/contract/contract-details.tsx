@@ -339,8 +339,8 @@ export function ExtraMobileContractDetails(props: {
 }
 
 export function GroupDisplay(props: {
-  groupToDisplay: GroupLink
-  isMobile: boolean
+  groupToDisplay?: GroupLink | null
+  isMobile?: boolean
 }) {
   const { groupToDisplay, isMobile } = props
   if (groupToDisplay) {
