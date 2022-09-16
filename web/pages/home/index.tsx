@@ -77,7 +77,7 @@ export default function Home() {
 
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
         <Row className={'mb-2 w-full items-center justify-between gap-8'}>
-          <Title className="!mt-0" text="Home" />
+          <Title className="!mt-0 !mb-0" text="Home" />
           <DailyStats user={user} />
         </Row>
 
