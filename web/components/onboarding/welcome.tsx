@@ -35,7 +35,7 @@ export default function Welcome() {
 
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
 
-  if (!user || !user.shouldShowWelcome) return <></>
+  if (!user || (!user.shouldShowWelcome && !groupSelectorOpen)) return <></>
 
   const toggleOpen = (isOpen: boolean) => {
     setUserHasSeenWelcome()
