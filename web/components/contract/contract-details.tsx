@@ -205,7 +205,6 @@ export function CloseOrResolveTime(props: {
 }) {
   const { contract, resolvedDate, isCreator } = props
   const { resolutionTime, closeTime } = contract
-  console.log(closeTime, resolvedDate)
   if (!!closeTime || !!resolvedDate) {
     return (
       <Row className="select-none items-center gap-1">
