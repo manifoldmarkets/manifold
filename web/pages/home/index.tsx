@@ -77,7 +77,7 @@ export default function Home() {
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
         <Row className={'mb-2 w-full items-center gap-8'}>
           <SearchRow />
-          <DailyStats className="" user={user} />
+          <DailyStats user={user} />
         </Row>
 
         {sections.map((section) => renderSection(section, user, groups))}
