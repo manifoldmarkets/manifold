@@ -62,3 +62,13 @@ export async function updateBotEnabledForUser(
     })
   }
 }
+
+export function getOverlayURLForUser(privateUser: PrivateUser) {
+  const controlToken = privateUser?.twitchInfo?.controlToken
+  return `${TWITCH_BOT_PUBLIC_URL}/overlay?t=${controlToken}`
+}
+
+export function getDockURLForUser(privateUser: PrivateUser) {
+  const controlToken = privateUser?.twitchInfo?.controlToken
+  return `${TWITCH_BOT_PUBLIC_URL}/dock?t=${controlToken}`
+}

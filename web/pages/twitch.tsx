@@ -24,6 +24,8 @@ import {
 } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import {
+  getDockURLForUser,
+  getOverlayURLForUser,
   linkTwitchAccountRedirect,
   updateBotEnabledForUser,
 } from 'web/lib/twitch/link-twitch-account'
@@ -306,18 +308,18 @@ function SetUpBot(props: {
 }) {
   const { user, privateUser } = props
   const twitchLinked = privateUser?.twitchInfo?.twitchName
-  const controlToken = privateUser?.twitchInfo?.controlToken
-
   const toastTheme = {
     className: '!bg-primary !text-white',
     icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
   }
   const copyOverlayLink = async () => {
-    copyToClipboard(`http://localhost:1000/overlay?t=${controlToken}`) //!!!TODO: Fix link
+    if (!privateUser) return
+    copyToClipboard(getOverlayURLForUser(privateUser))
     toast.success('Overlay link copied!', toastTheme)
   }
   const copyDockLink = async () => {
-    copyToClipboard(`http://localhost:1000/dock?t=${controlToken}`) //!!!TODO: Fix link
+    if (!privateUser) return
+    copyToClipboard(getDockURLForUser(privateUser))
     toast.success('Dock link copied!', toastTheme)
   }
 
