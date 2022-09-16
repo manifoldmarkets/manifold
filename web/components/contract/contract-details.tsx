@@ -127,11 +127,7 @@ export function ContractDetails(props: {
       {/* GROUPS */}
       {isMobile && (
         <div className="mt-2">
-          <MarketGroups
-            contract={contract}
-            isMobile={isMobile}
-            disabled={disabled}
-          />
+          <MarketGroups contract={contract} disabled={disabled} />
         </div>
       )}
     </Col>
@@ -182,11 +178,7 @@ export function MarketSubheader(props: {
             isCreator={isCreator}
           />
           {!isMobile && (
-            <MarketGroups
-              contract={contract}
-              isMobile={isMobile}
-              disabled={disabled}
-            />
+            <MarketGroups contract={contract} disabled={disabled} />
           )}
         </Row>
       </Col>
@@ -233,29 +225,24 @@ export function CloseOrResolveTime(props: {
 
 export function MarketGroups(props: {
   contract: Contract
-  isMobile: boolean | undefined
-  disabled: boolean | undefined
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const { contract, isMobile, disabled } = props
+  const { contract, disabled } = props
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <>
-      <Row className="align-middle">
-        <GroupDisplay groupToDisplay={groupToDisplay} isMobile={isMobile} />
-        {!disabled && (
-          <Row>
-            {user && (
-              <button
-                className="text-greyscale-4 hover:text-greyscale-3"
-                onClick={() => setOpen(!open)}
-              >
-                <PlusCircleIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
-              </button>
-            )}
-          </Row>
+      <Row className="items-center gap-1">
+        <GroupDisplay groupToDisplay={groupToDisplay} />
+        {!disabled && user && (
+          <button
+            className="text-greyscale-4 hover:text-greyscale-3"
+            onClick={() => setOpen(true)}
+          >
+            <PlusCircleIcon className="h-[18px]" />
+          </button>
         )}
       </Row>
       <Modal open={open} setOpen={setOpen} size={'md'}>
@@ -333,42 +320,21 @@ export function ExtraMobileContractDetails(props: {
   )
 }
 
-export function GroupDisplay(props: {
-  groupToDisplay?: GroupLink | null
-  isMobile?: boolean
-}) {
-  const { groupToDisplay, isMobile } = props
+export function GroupDisplay(props: { groupToDisplay?: GroupLink | null }) {
+  const { groupToDisplay } = props
   if (groupToDisplay) {
     return (
       <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a
-          className={clsx(
-            'flex flex-row items-center truncate pr-1',
-            isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-          )}
-        >
-          <div className="bg-greyscale-4 hover:bg-greyscale-3 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
-            {groupToDisplay.name}
-          </div>
+        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate rounded-full px-2 text-xs text-white sm:max-w-[250px]">
+          {groupToDisplay.name}
         </a>
       </Link>
     )
   } else
     return (
-      <Row
-        className={clsx(
-          'cursor-default select-none items-center truncate pr-1',
-          isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-        )}
-      >
-        <div
-          className={clsx(
-            'bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
-          )}
-        >
-          No Group
-        </div>
-      </Row>
+      <div className="bg-greyscale-4 truncate rounded-full px-2 text-xs text-white">
+        No Group
+      </div>
     )
 }
 
