@@ -5,6 +5,7 @@ import { orderBy } from 'lodash'
 import tippy from 'tippy.js'
 import { getCachedUsers } from 'web/hooks/use-users'
 import { MentionList } from './mention-list'
+type Render = Suggestion['render']
 
 type Suggestion = MentionOptions['suggestion']
 
@@ -24,12 +25,16 @@ export const mentionSuggestion: Suggestion = {
       ],
       ['desc', 'desc']
     ).slice(0, 5),
-  render: () => {
+  render: makeMentionRender(MentionList),
+}
+
+export function makeMentionRender(mentionList: any): Render {
+  return () => {
     let component: ReactRenderer
     let popup: ReturnType<typeof tippy>
     return {
       onStart: (props) => {
-        component = new ReactRenderer(MentionList, {
+        component = new ReactRenderer(mentionList, {
           props,
           editor: props.editor,
         })
@@ -59,10 +64,16 @@ export const mentionSuggestion: Suggestion = {
         })
       },
       onKeyDown(props) {
-        if (props.event.key === 'Escape') {
-          popup?.[0].hide()
-          return true
-        }
+        if (props.event.key)
+          if (
+            props.event.key === 'Escape' ||
+            // Also break out of the mention if the tooltip isn't visible
+            (props.event.key === 'Enter' && !popup?.[0].state.isShown)
+          ) {
+            popup?.[0].destroy()
+            component?.destroy()
+            return false
+          }
         return (component?.ref as any)?.onKeyDown(props)
       },
       onExit() {
@@ -70,5 +81,5 @@ export const mentionSuggestion: Suggestion = {
         component?.destroy()
       },
     }
-  },
+  }
 }

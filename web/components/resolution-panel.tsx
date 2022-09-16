@@ -10,13 +10,16 @@ import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
+import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
 
 export function ResolutionPanel(props: {
+  isAdmin: boolean
+  isCreator: boolean
   creator: User
   contract: BinaryContract
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, isAdmin, isCreator } = props
 
   // const earnedFees =
   //   contract.mechanism === 'dpm-2'
@@ -66,7 +69,12 @@ export function ResolutionPanel(props: {
       : 'btn-disabled'
 
   return (
-    <Col className={clsx('rounded-md bg-white px-8 py-6', className)}>
+    <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
+      {isAdmin && !isCreator && (
+        <span className="absolute right-4 top-4 rounded bg-red-200 p-1 text-xs text-red-600">
+          ADMIN
+        </span>
+      )}
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
 
       <div className="mb-3 text-sm text-gray-500">Outcome</div>
@@ -83,23 +91,28 @@ export function ResolutionPanel(props: {
       <div>
         {outcome === 'YES' ? (
           <>
-            Winnings will be paid out to traders who bought YES.
+            Winnings will be paid out to {BETTORS} who bought YES.
             {/* <br />
             <br />
             You will earn {earnedFees}. */}
           </>
         ) : outcome === 'NO' ? (
           <>
-            Winnings will be paid out to traders who bought NO.
+            Winnings will be paid out to {BETTORS} who bought NO.
             {/* <br />
             <br />
             You will earn {earnedFees}. */}
           </>
         ) : outcome === 'CANCEL' ? (
-          <>All trades will be returned with no fees.</>
+          <>
+            All {PAST_BETS} will be returned. Unique {BETTOR} bonuses will be
+            withdrawn from your account
+          </>
         ) : outcome === 'MKT' ? (
           <Col className="gap-6">
-            <div>Traders will be paid out at the probability you specify:</div>
+            <div>
+              {PAST_BETS} will be paid out at the probability you specify:
+            </div>
             <ProbabilitySelector
               probabilityInt={Math.round(prob)}
               setProbabilityInt={setProb}
@@ -107,7 +120,7 @@ export function ResolutionPanel(props: {
             {/* You will earn {earnedFees}. */}
           </Col>
         ) : (
-          <>Resolving this market will immediately pay out traders.</>
+          <>Resolving this market will immediately pay out {BETTORS}.</>
         )}
       </div>
 

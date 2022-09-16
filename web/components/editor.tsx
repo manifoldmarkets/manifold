@@ -21,6 +21,8 @@ import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
+import { contractMentionSuggestion } from './editor/contract-mention-suggestion'
+import { DisplayContractMention } from './editor/contract-mention'
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
 import { EmbedModal } from './editor/embed-modal'
@@ -97,7 +99,12 @@ export function useTextEditor(props: {
       CharacterCount.configure({ limit: max }),
       simple ? DisplayImage : Image,
       DisplayLink,
-      DisplayMention.configure({ suggestion: mentionSuggestion }),
+      DisplayMention.configure({
+        suggestion: mentionSuggestion,
+      }),
+      DisplayContractMention.configure({
+        suggestion: contractMentionSuggestion,
+      }),
       Iframe,
       TiptapTweet,
     ],
@@ -316,13 +323,21 @@ export function RichContent(props: {
       smallImage ? DisplayImage : Image,
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
+      DisplayContractMention.configure({
+        // Needed to set a different PluginKey for Prosemirror
+        suggestion: contractMentionSuggestion,
+      }),
       Iframe,
       TiptapTweet,
     ],
     content,
     editable: false,
   })
-  useEffect(() => void editor?.commands?.setContent(content), [editor, content])
+  useEffect(
+    // Check isDestroyed here so hot reload works, see https://github.com/ueberdosis/tiptap/issues/1451#issuecomment-941988769
+    () => void !editor?.isDestroyed && editor?.commands?.setContent(content),
+    [editor, content]
+  )
 
   return <EditorContent className={className} editor={editor} />
 }

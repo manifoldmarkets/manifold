@@ -37,7 +37,6 @@ import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
 import { getOpenGraphProps } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
-import { ExtraContractActionsRow } from 'web/components/contract/extra-contract-actions-row'
 import {
   ContractLeaderboard,
   ContractTopTrades,
@@ -45,6 +44,8 @@ import {
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
+import { useAdmin } from 'web/hooks/use-admin'
+import dayjs from 'dayjs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -110,19 +111,28 @@ export default function ContractPage(props: {
   )
 }
 
+// requires an admin to resolve a week after market closes
+export function needsAdminToResolve(contract: Contract) {
+  return !contract.isResolved && dayjs().diff(contract.closeTime, 'day') > 7
+}
+
 export function ContractPageSidebar(props: {
   user: User | null | undefined
   contract: Contract
 }) {
   const { contract, user } = props
   const { creatorId, isResolved, outcomeType } = contract
-
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
-  const allowResolve = !isResolved && isCreator && !!user
+  const isAdmin = useAdmin()
+  const allowResolve =
+    !isResolved &&
+    (isCreator || (needsAdminToResolve(contract) && isAdmin)) &&
+    !!user
+
   const hasSidePanel =
     (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
 
@@ -139,9 +149,19 @@ export function ContractPageSidebar(props: {
         ))}
       {allowResolve &&
         (isNumeric || isPseudoNumeric ? (
-          <NumericResolutionPanel creator={user} contract={contract} />
+          <NumericResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            isCreator={isCreator}
+            contract={contract}
+          />
         ) : (
-          <ResolutionPanel creator={user} contract={contract} />
+          <ResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            isCreator={isCreator}
+            contract={contract}
+          />
         ))}
     </Col>
   ) : null
@@ -154,10 +174,8 @@ export function ContractPageContent(
   }
 ) {
   const { backToHome, comments, user } = props
-
   const contract = useContractWithPreload(props.contract) ?? props.contract
   usePrefetch(user?.id)
-
   useTracking(
     'view market',
     {
@@ -238,7 +256,6 @@ export function ContractPageContent(
         )}
 
         <ContractOverview contract={contract} bets={nonChallengeBets} />
-        <ExtraContractActionsRow contract={contract} />
         <ContractDescription className="mb-6 px-2" contract={contract} />
 
         {outcomeType === 'NUMERIC' && (

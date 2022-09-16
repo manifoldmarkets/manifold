@@ -85,7 +85,11 @@ export function SelectMarketsModal(props: {
           <ContractSearch
             hideOrderSelector
             onContractClick={addContract}
-            cardHideOptions={{ hideGroupLink: true, hideQuickBet: true }}
+            cardUIOptions={{
+              hideGroupLink: true,
+              hideQuickBet: true,
+              noLinkAvatar: true,
+            }}
             highlightOptions={{
               contractIds: contracts.map((c) => c.id),
               highlightClassName:

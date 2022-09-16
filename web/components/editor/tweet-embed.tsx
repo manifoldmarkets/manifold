@@ -12,7 +12,7 @@ export default function WrappedTwitterTweetEmbed(props: {
   const tweetId = props.node.attrs.tweetId.slice(1)
 
   return (
-    <NodeViewWrapper className="tiptap-tweet">
+    <NodeViewWrapper className="tiptap-tweet [&_.twitter-tweet]:mx-auto">
       <TwitterTweetEmbed tweetId={tweetId} />
     </NodeViewWrapper>
   )

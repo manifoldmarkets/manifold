@@ -62,6 +62,7 @@ function EditUserField(props: {
 export default function ProfilePage(props: {
   auth: { user: User; privateUser: PrivateUser }
 }) {
+  const router = useRouter()
   const { user, privateUser } = props.auth
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)

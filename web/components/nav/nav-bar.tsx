@@ -17,6 +17,7 @@ import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
+import { PAST_BETS } from 'common/user'
 
 function getNavigation() {
   return [
@@ -64,7 +65,7 @@ export function BottomNavBar() {
           item={{
             name: formatMoney(user.balance),
             trackingEventName: 'profile',
-            href: `/${user.username}?tab=trades`,
+            href: `/${user.username}?tab=${PAST_BETS}`,
             icon: () => (
               <Avatar
                 className="mx-auto my-1"

@@ -11,6 +11,8 @@ import { ResolveConfirmationButton } from '../confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 
 export function AnswerResolvePanel(props: {
+  isAdmin: boolean
+  isCreator: boolean
   contract: FreeResponseContract | MultipleChoiceContract
   resolveOption: 'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   setResolveOption: (
@@ -18,7 +20,14 @@ export function AnswerResolvePanel(props: {
   ) => void
   chosenAnswers: { [answerId: string]: number }
 }) {
-  const { contract, resolveOption, setResolveOption, chosenAnswers } = props
+  const {
+    contract,
+    resolveOption,
+    setResolveOption,
+    chosenAnswers,
+    isAdmin,
+    isCreator,
+  } = props
   const answers = Object.keys(chosenAnswers)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -76,7 +85,14 @@ export function AnswerResolvePanel(props: {
 
   return (
     <Col className="gap-4 rounded">
-      <div>Resolve your market</div>
+      <Row className="justify-between">
+        <div>Resolve your market</div>
+        {isAdmin && !isCreator && (
+          <span className="rounded bg-red-200 p-1 text-xs text-red-600">
+            ADMIN
+          </span>
+        )}
+      </Row>
       <Col className="gap-4 sm:flex-row sm:items-center">
         <ChooseCancelSelector
           className="sm:!flex-row sm:items-center"

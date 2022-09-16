@@ -26,6 +26,8 @@ import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 import { UNIQUE_BETTOR_LIQUIDITY_AMOUNT } from '../../common/antes'
 import { addHouseLiquidity } from './add-liquidity'
+import { DAY_MS } from '../../common/util/time'
+import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -80,12 +82,16 @@ const updateBettingStreak = async (
   contract: Contract,
   eventId: string
 ) => {
-  const betStreakResetTime = getTodaysBettingStreakResetTime()
+  const now = Date.now()
+  const currentDateResetTime = currentDateBettingStreakResetTime()
+  // if now is before reset time, use yesterday's reset time
+  const lastDateResetTime = currentDateResetTime - DAY_MS
+  const betStreakResetTime =
+    now < currentDateResetTime ? lastDateResetTime : currentDateResetTime
   const lastBetTime = user?.lastBetTime ?? 0
 
-  // If they've already bet after the reset time, or if we haven't hit the reset time yet
-  if (lastBetTime > betStreakResetTime || bet.createdTime < betStreakResetTime)
-    return
+  // If they've already bet after the reset time
+  if (lastBetTime > betStreakResetTime) return
 
   const newBettingStreak = (user?.currentBettingStreak ?? 0) + 1
   // Otherwise, add 1 to their betting streak
@@ -104,6 +110,7 @@ const updateBettingStreak = async (
   const bonusTxnDetails = {
     currentBettingStreak: newBettingStreak,
   }
+  // TODO: set the id of the txn to the eventId to prevent duplicates
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
       fromId: fromUserId,
@@ -114,11 +121,14 @@ const updateBettingStreak = async (
       token: 'M$',
       category: 'BETTING_STREAK_BONUS',
       description: JSON.stringify(bonusTxnDetails),
-    }
+      data: bonusTxnDetails,
+    } as Omit<BettingStreakBonusTxn, 'id' | 'createdTime'>
     return await runTxn(trans, bonusTxn)
   })
   if (!result.txn) {
     log("betting streak bonus txn couldn't be made")
+    log('status:', result.status)
+    log('message:', result.message)
     return
   }
 
@@ -128,6 +138,7 @@ const updateBettingStreak = async (
     bet,
     contract,
     bonusAmount,
+    newBettingStreak,
     eventId
   )
 }
@@ -170,17 +181,17 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     })
   }
 
-  if (contract.mechanism === 'cpmm-1' && isNewUniqueBettor) {
-    await addHouseLiquidity(contract, UNIQUE_BETTOR_LIQUIDITY_AMOUNT)
-  }
-
   // No need to give a bonus for the creator's bet
   if (!isNewUniqueBettor || bettor.id == contract.creatorId) return
+
+  if (contract.mechanism === 'cpmm-1') {
+    await addHouseLiquidity(contract, UNIQUE_BETTOR_LIQUIDITY_AMOUNT)
+  }
 
   // Create combined txn for all new unique bettors
   const bonusTxnDetails = {
     contractId: contract.id,
-    uniqueBettorIds: newUniqueBettorIds,
+    uniqueNewBettorId: bettor.id,
   }
   const fromUserId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
@@ -188,6 +199,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
   if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
   const fromUser = fromSnap.data() as User
+  // TODO: set the id of the txn to the eventId to prevent duplicates
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
       fromId: fromUser.id,
@@ -198,12 +210,14 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       token: 'M$',
       category: 'UNIQUE_BETTOR_BONUS',
       description: JSON.stringify(bonusTxnDetails),
-    }
+      data: bonusTxnDetails,
+    } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
     return await runTxn(trans, bonusTxn)
   })
 
   if (result.status != 'success' || !result.txn) {
-    log(`No bonus for user: ${contract.creatorId} - reason:`, result.status)
+    log(`No bonus for user: ${contract.creatorId} - status:`, result.status)
+    log('message:', result.message)
   } else {
     log(`Bonus txn for user: ${contract.creatorId} completed:`, result.txn?.id)
     await createUniqueBettorBonusNotification(
@@ -259,6 +273,6 @@ const notifyFills = async (
   )
 }
 
-const getTodaysBettingStreakResetTime = () => {
+const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
 }

@@ -14,6 +14,7 @@ import { SiteLink } from 'web/components/site-link'
 import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/user-link'
+import { BETTOR } from 'common/user'
 
 export function FeedBet(props: { contract: Contract; bet: Bet }) {
   const { contract, bet } = props
@@ -94,7 +95,7 @@ export function BetStatusText(props: {
       {!hideUser ? (
         <UserLink name={bet.userName} username={bet.userUsername} />
       ) : (
-        <span>{self?.id === bet.userId ? 'You' : 'A trader'}</span>
+        <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
       )}{' '}
       {bought} {money}
       {outOfTotalAmount}
