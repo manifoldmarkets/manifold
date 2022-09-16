@@ -40,7 +40,7 @@ const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: `Most ${PAST_BETS}`, value: 'most-traded' },
+  { label: `Most traded`, value: 'most-traded' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: '24h change', value: 'prob-change-day' },
   { label: 'Last updated', value: 'last-updated' },
