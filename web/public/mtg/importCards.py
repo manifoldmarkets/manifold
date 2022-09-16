@@ -57,7 +57,7 @@ def generate_initial_special_query(category):
 
 def generate_initial_artist_query():
     string_query = 'https://api.scryfall.com/cards/search?q=' + artist_denylist + \
-        '-art%3Aartist-signature+artists%3D1+-set%3Adbl+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
+        '-atag%3Auniverses-beyond+-art%3Aartist-signature+artists%3D1+-set%3Adbl+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
     print("artistList")
     print(string_query)
     return string_query
@@ -183,7 +183,7 @@ def write_art(art_names, id, index, card):
 
 def to_compact_write_form(smallJson, art_names, response):
     fieldsInCard = ['name', 'image_uris', 'flavor_name',
-                    'reprint', 'frame_effects', 'digital', 'set_type']
+                    'reprint', 'frame_effects', 'digital', 'set_type', 'security_stamp']
     data = smallJson['data']
     # write all fields needed in card
     for card in response['data']:
@@ -212,8 +212,10 @@ def to_compact_write_form(smallJson, art_names, response):
 
 
 def to_compact_write_form_special(smallJson, art_names, response, category, artists):
-    fieldsInBasic = ['image_uris', 'set', 'set_type', 'digital']
-    fieldsInArtist = ['image_uris', 'digital', 'set_type', 'artist_ids']
+    fieldsInBasic = ['image_uris', 'set',
+                     'set_type', 'digital', 'security_stamp']
+    fieldsInArtist = ['image_uris', 'digital',
+                      'set_type', 'artist_ids', 'security_stamp']
     data = smallJson['data']
     # write all fields needed in card
     for card in response['data']:
@@ -297,7 +299,7 @@ def write_to_artist_list(response, artists, prev_artist):
         artist_id = card['artist_ids'][0]
         artist = card['artist']
         if artist_id not in artists:
-            if artists[prev_artist][1] < 15:
+            if artists[prev_artist][1] < 14:
                 del artists[prev_artist]
             prev_artist = artist_id
             print(artist)
@@ -332,5 +334,5 @@ if __name__ == "__main__":
     #     fetch_and_write_all_special(
     #         category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
-    # fetch_and_write_initial_artist_query()
-    fetch_and_write_all_artist()
+    fetch_and_write_initial_artist_query()
+    # fetch_and_write_all_artist()

@@ -13,6 +13,7 @@ imagesLeft = k
 maxRounds = 20
 whichGuesser = 'counterspell'
 un = false
+ub = false
 online = false
 firstPrint = false
 flag = true
@@ -30,6 +31,8 @@ document.location.search.split('&').forEach((pair) => {
     online = v[1]
   } else if (v[0] === 'original') {
     firstPrint = v[1]
+  } else if (v[0] === 'ub') {
+    ub = v[1]
   }
 })
 
@@ -160,6 +163,11 @@ function fetchToResponse(fetch) {
 function determineIfSkip(card) {
   if (!un) {
     if (card.set_type === 'funny') {
+      return true
+    }
+  }
+  if (!ub) {
+    if (card.security_stamp === 'triangle') {
       return true
     }
   }
