@@ -31,7 +31,6 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
-import { Title } from '../title'
 import { Subtitle } from '../subtitle'
 
 export type ShowTime = 'resolve-date' | 'close-date'
