@@ -55,12 +55,12 @@ export default class Chart {
     render() {
         const ctx = this.ctx;
 
-        const fontSize_px = window.innerWidth * 0.045 * 0.7; // To match HTML/CSS sizing of text
+        const fontSize_px = Math.min(window.innerWidth * 0.045 * 0.7, 30); // To match HTML/CSS sizing of text
         ctx.font = fontSize_px + "px Readex Pro";
 
         const padding_px = 10;
-        const xAxisHeight_px = 15;
-        const yAxisWidth_px = ctx.measureText("100%").width;
+        const xAxisHeight_px = (ctx.measureText("I").fontBoundingBoxAscent + ctx.measureText("I").fontBoundingBoxDescent) >> 0;
+        const yAxisWidth_px = ctx.measureText("100%").width >> 0;
         const numXAxisLines = 6;
         const numYAxisLines = 3;
         const chartXTime_min = 10;
@@ -117,14 +117,15 @@ export default class Chart {
                 if (i == numXAxisLines - 1) {
                     labelText = "now";
                     const m = ctx.measureText(labelText);
-                    ctx.fillText(labelText, x - m.width, 21);
+                    ctx.fillText(labelText, x - m.width, xAxisHeight_px);
                 }
                 else {
                     const m = ctx.measureText(labelText);
-                    ctx.fillText(labelText, x - m.width * 0.5, 21);
+                    ctx.fillText(labelText, x - m.width * 0.5, xAxisHeight_px);
                 }
 
                 ctx.fillRect(x - 1.5, 0.5, 3, 5);
+                console.log(x)
             }
             ctx.translate(0, -graphHeight_px);
 
