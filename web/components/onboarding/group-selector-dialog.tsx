@@ -26,12 +26,34 @@ export default function GroupSelectorDialog(props: {
     cachedGroups.current = groups
   }
 
+  const excludedGroups = [
+    'features',
+    'personal',
+    'private',
+    'nomic',
+    'proofnik',
+    'free money',
+    'motivation',
+    'sf events',
+    'please resolve',
+    'short-term',
+    'washifold',
+  ]
+
   const displayedGroups = sortBy(cachedGroups.current ?? [], [
     (group) => -1 * group.totalMembers,
     (group) => -1 * group.totalContracts,
   ])
     .filter((group) => group.anyoneCanJoin)
-    .slice(0, 100)
+    .filter((group) =>
+      excludedGroups.every((name) => !group.name.toLowerCase().includes(name))
+    )
+    .filter(
+      (group) =>
+        (group.mostRecentContractAddedTime ?? 0) >
+        Date.now() - 1000 * 60 * 60 * 24 * 7
+    )
+    .slice(0, 30)
 
   return (
     <Modal open={open} setOpen={setOpen}>
