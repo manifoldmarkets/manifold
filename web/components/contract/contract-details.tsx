@@ -31,6 +31,7 @@ import { useWindowSize } from 'web/hooks/use-window-size'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
+import { Subtitle } from '../subtitle'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -427,47 +428,59 @@ function EditableCloseDate(props: {
 
   return (
     <>
-      {isEditingCloseTime ? (
-        <Row className="z-10 mr-2 w-full shrink-0 items-center gap-1">
-          <input
-            type="date"
-            className="input input-bordered shrink-0"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseDate(e.target.value)}
-            min={Date.now()}
-            value={closeDate}
-          />
-          <input
-            type="time"
-            className="input input-bordered shrink-0"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseHoursMinutes(e.target.value)}
-            min="00:00"
-            value={closeHoursMinutes}
-          />
-          <Button size={'xs'} color={'blue'} onClick={onSave}>
+      <Modal
+        size="sm"
+        open={isEditingCloseTime}
+        setOpen={setIsEditingCloseTime}
+        position="top"
+      >
+        <Col className="rounded bg-white px-8 pb-8">
+          <Subtitle text="Edit Close Date" />
+          <Row className="z-10 mr-2 w-full shrink-0 flex-wrap items-center gap-2">
+            <input
+              type="date"
+              className="input input-bordered w-full shrink-0 sm:w-fit"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setCloseDate(e.target.value)}
+              min={Date.now()}
+              value={closeDate}
+            />
+            <input
+              type="time"
+              className="input input-bordered w-full shrink-0 sm:w-max"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setCloseHoursMinutes(e.target.value)}
+              min="00:00"
+              value={closeHoursMinutes}
+            />
+          </Row>
+          <Button
+            className="mt-2"
+            size={'xs'}
+            color={'indigo'}
+            onClick={onSave}
+          >
             Done
           </Button>
-        </Row>
-      ) : (
-        <DateTimeTooltip
-          text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-          time={closeTime}
+        </Col>
+      </Modal>
+      <DateTimeTooltip
+        text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
+        time={closeTime}
+      >
+        <span
+          className={isCreator ? 'cursor-pointer' : ''}
+          onClick={() => isCreator && setIsEditingCloseTime(true)}
         >
-          <span
-            className={isCreator ? 'cursor-pointer' : ''}
-            onClick={() => isCreator && setIsEditingCloseTime(true)}
-          >
-            {isSameDay ? (
-              <span className={'capitalize'}> {fromNow(closeTime)}</span>
-            ) : isSameYear ? (
-              dayJsCloseTime.format('MMM D')
-            ) : (
-              dayJsCloseTime.format('MMM D, YYYY')
-            )}
-          </span>
-        </DateTimeTooltip>
-      )}
+          {isSameDay ? (
+            <span className={'capitalize'}> {fromNow(closeTime)}</span>
+          ) : isSameYear ? (
+            dayJsCloseTime.format('MMM D')
+          ) : (
+            dayJsCloseTime.format('MMM D, YYYY')
+          )}
+        </span>
+      </DateTimeTooltip>
     </>
   )
 }
