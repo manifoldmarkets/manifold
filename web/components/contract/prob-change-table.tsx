@@ -6,6 +6,7 @@ import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
+import { ProfitBadge } from '../bets-list'
 
 export function ProbChangeTable(props: {
   changes:
@@ -54,14 +55,14 @@ export function ProbChangeTable(props: {
 function ProbChangeRow(props: { contract: CPMMContract }) {
   const { contract } = props
   return (
-    <Row className="items-center hover:bg-gray-100">
-      <ProbChange className="p-4 text-right text-xl" contract={contract} />
+    <Row className="items-center gap-4 hover:bg-gray-100">
       <SiteLink
-        className="p-4 pl-2 font-semibold text-indigo-700"
+        className="p-4 pr-0 font-semibold text-indigo-700"
         href={contractPath(contract)}
       >
         <span className="line-clamp-2">{contract.question}</span>
       </SiteLink>
+      <ProbChange className="py-2 pr-4 text-xl" contract={contract} />
     </Row>
   )
 }
@@ -72,19 +73,15 @@ export function ProbChange(props: {
 }) {
   const { contract, className } = props
   const {
+    prob,
     probChanges: { day: change },
   } = contract
-
-  const color =
-    change > 0
-      ? 'text-green-500'
-      : change < 0
-      ? 'text-red-500'
-      : 'text-gray-600'
-
-  const str =
-    change === 0
-      ? '+0%'
-      : `${change > 0 ? '+' : '-'}${formatPercent(Math.abs(change))}`
-  return <div className={clsx(className, color)}>{str}</div>
+  return (
+    <Col className={clsx('flex flex-col items-end', className)}>
+      <span className="mr-1.5 mb-0.5 text-2xl">
+        {formatPercent(Math.round(100 * prob) / 100)}
+      </span>
+      <ProfitBadge className="ml-0" profitPercent={100 * change} />
+    </Col>
+  )
 }
