@@ -77,6 +77,13 @@ const Salem = {
 
 const tourneys: Tourney[] = [
   {
+    title: 'Clearer Thinking Regrant Project',
+    blurb: 'Which projects will Clearer Thinking give a grant to?',
+    award: '$13,000',
+    endTime: toDate('Sep 30, 2022'),
+    groupId: 'fhksfIgqyWf7OxsV9nkM',
+  },
+  {
     title: 'Manifold F2P Tournament',
     blurb:
       'Who can amass the most mana starting from a free-to-play (F2P) account?',
@@ -99,13 +106,6 @@ const tourneys: Tourney[] = [
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
   },
-  // {
-  //   title: 'Clearer Thinking Regrant Project',
-  //   blurb: 'Something amazing',
-  //   award: '$10,000',
-  //   endTime: toDate('Sep 22, 2022'),
-  //   groupId: '2VsVVFGhKtIdJnQRAXVb',
-  // },
 
   // Tournaments without awards get featured belows
   {

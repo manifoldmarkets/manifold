@@ -11,6 +11,7 @@ export type ColorType =
   | 'gray'
   | 'gradient'
   | 'gray-white'
+  | 'highlight-blue'
 
 export function Button(props: {
   className?: string
@@ -56,7 +57,9 @@ export function Button(props: {
         color === 'gradient' &&
           'border-none bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
         color === 'gray-white' &&
-          'border-none bg-white text-gray-500 shadow-none hover:bg-gray-200',
+          'text-greyscale-6 hover:bg-greyscale-2 border-none shadow-none',
+        color === 'highlight-blue' &&
+          'text-highlight-blue border-none shadow-none',
         className
       )}
       disabled={disabled}

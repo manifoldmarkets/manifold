@@ -904,25 +904,30 @@ function BetFillNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, justSummary } = props
   const { sourceText, data } = notification
-  const { creatorOutcome, probability } = (data as BetFillData) ?? {}
+  const { creatorOutcome, probability, limitOrderTotal, limitOrderRemaining } =
+    (data as BetFillData) ?? {}
   const subtitle = 'bet against you'
   const amount = formatMoney(parseInt(sourceText ?? '0'))
   const description =
     creatorOutcome && probability ? (
       <span>
-        of your{' '}
+        of your {limitOrderTotal ? formatMoney(limitOrderTotal) : ''}
         <span
-          className={
+          className={clsx(
+            'mx-1',
             creatorOutcome === 'YES'
               ? 'text-primary'
               : creatorOutcome === 'NO'
               ? 'text-red-500'
               : 'text-blue-500'
-          }
+          )}
         >
-          {creatorOutcome}{' '}
+          {creatorOutcome}
         </span>
-        limit order at {Math.round(probability * 100)}% was filled
+        limit order at {Math.round(probability * 100)}% was filled{' '}
+        {limitOrderRemaining
+          ? `(${formatMoney(limitOrderRemaining)} remaining)`
+          : ''}
       </span>
     ) : (
       <span>of your limit order was filled</span>

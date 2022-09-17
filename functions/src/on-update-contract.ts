@@ -13,6 +13,10 @@ export const onUpdateContract = functions.firestore
     if (!contractUpdater) throw new Error('Could not find contract updater')
 
     const previousValue = change.before.data() as Contract
+
+    // Resolution is handled in resolve-market.ts
+    if (!previousValue.isResolved && contract.isResolved) return
+
     if (
       previousValue.closeTime !== contract.closeTime ||
       previousValue.question !== contract.question

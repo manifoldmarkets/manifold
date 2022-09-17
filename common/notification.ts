@@ -247,6 +247,8 @@ export type BetFillData = {
   creatorOutcome: string
   probability: number
   fillAmount: number
+  limitOrderTotal?: number
+  limitOrderRemaining?: number
 }
 
 export type ContractResolutionData = {

@@ -17,13 +17,14 @@ import { partition, sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { BinaryContract, Contract, CPMMContract } from 'common/contract'
-import { createRNG, shuffle } from 'common/util/random'
+import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
 import { Bet } from 'common/bet'
 import { Comment } from 'common/comment'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getBinaryProb } from 'common/contract-details'
+import { Sort } from 'web/components/contract-search'
 
 export const contracts = coll<Contract>('contracts')
 
@@ -176,23 +177,6 @@ export function getUserBetContractsQuery(userId: string) {
   ) as Query<Contract>
 }
 
-const activeContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('visibility', '==', 'public'),
-  where('volume7Days', '>', 0)
-)
-
-export function getActiveContracts() {
-  return getValues<Contract>(activeContractsQuery)
-}
-
-export function listenForActiveContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(activeContractsQuery, setContracts)
-}
-
 const inactiveContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
@@ -255,13 +239,6 @@ export async function unFollowContract(contractId: string, userId: string) {
   await deleteDoc(followDoc)
 }
 
-function chooseRandomSubset(contracts: Contract[], count: number) {
-  const fiveMinutes = 5 * 60 * 1000
-  const seed = Math.round(Date.now() / fiveMinutes).toString()
-  shuffle(contracts, createRNG(seed))
-  return contracts.slice(0, count)
-}
-
 const hotContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
@@ -282,16 +259,17 @@ export function listenForHotContracts(
   })
 }
 
-const trendingContractsQuery = query(
+export const trendingContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
-  orderBy('popularityScore', 'desc'),
-  limit(10)
+  orderBy('popularityScore', 'desc')
 )
 
-export async function getTrendingContracts() {
-  return await getValues<Contract>(trendingContractsQuery)
+export async function getTrendingContracts(maxContracts = 10) {
+  return await getValues<Contract>(
+    query(trendingContractsQuery, limit(maxContracts))
+  )
 }
 
 export async function getContractsBySlugs(slugs: string[]) {
@@ -341,6 +319,51 @@ export const getTopGroupContracts = async (
     limit(count)
   )
   return await getValues<Contract>(creatorContractsQuery)
+}
+
+const sortToField = {
+  newest: 'createdTime',
+  score: 'popularityScore',
+  'most-traded': 'volume',
+  '24-hour-vol': 'volume24Hours',
+  'prob-change-day': 'probChanges.day',
+  'last-updated': 'lastUpdated',
+  liquidity: 'totalLiquidity',
+  'close-date': 'closeTime',
+  'resolve-date': 'resolutionTime',
+  'prob-descending': 'prob',
+  'prob-ascending': 'prob',
+} as const
+
+const sortToDirection = {
+  newest: 'desc',
+  score: 'desc',
+  'most-traded': 'desc',
+  '24-hour-vol': 'desc',
+  'prob-change-day': 'desc',
+  'last-updated': 'desc',
+  liquidity: 'desc',
+  'close-date': 'asc',
+  'resolve-date': 'desc',
+  'prob-ascending': 'asc',
+  'prob-descending': 'desc',
+} as const
+
+export const getContractsQuery = (
+  sort: Sort,
+  maxItems: number,
+  filters: { groupSlug?: string } = {},
+  visibility?: 'public'
+) => {
+  const { groupSlug } = filters
+  return query(
+    contracts,
+    where('isResolved', '==', false),
+    ...(visibility ? [where('visibility', '==', visibility)] : []),
+    ...(groupSlug ? [where('groupSlugs', 'array-contains', groupSlug)] : []),
+    orderBy(sortToField[sort], sortToDirection[sort]),
+    limit(maxItems)
+  )
 }
 
 export const getRecommendedContracts = async (

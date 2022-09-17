@@ -13,7 +13,7 @@ import Router, { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout, User } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
-import { MenuButton } from './menu'
+import { MenuButton, MenuItem } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
 import React from 'react'
@@ -35,6 +35,7 @@ const logout = async () => {
 function getNavigation() {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
+    { name: 'Search', href: '/search', icon: SearchIcon },
     {
       name: 'Notifications',
       href: `/notifications`,
@@ -100,7 +101,7 @@ function getMoreNavigation(user?: User | null) {
 
 const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/home', icon: SearchIcon },
+  { name: 'Explore', href: '/search', icon: SearchIcon },
   {
     name: 'Help & About',
     href: 'https://help.manifold.markets/',
@@ -139,7 +140,7 @@ function getMoreMobileNav() {
   }
   if (IS_PRIVATE_MANIFOLD) return [signOut]
 
-  return buildArray<Item>(
+  return buildArray<MenuItem>(
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
       { name: 'Groups', href: '/groups' },
@@ -156,39 +157,59 @@ function getMoreMobileNav() {
 export type Item = {
   name: string
   trackingEventName?: string
-  href: string
+  href?: string
+  key?: string
   icon?: React.ComponentType<{ className?: string }>
 }
 
-function SidebarItem(props: { item: Item; currentPage: string }) {
-  const { item, currentPage } = props
-  return (
-    <Link href={item.href} key={item.name}>
-      <a
-        onClick={trackCallback('sidebar: ' + item.name)}
-        className={clsx(
-          item.href == currentPage
-            ? 'bg-gray-200 text-gray-900'
-            : 'text-gray-600 hover:bg-gray-100',
-          'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
-        )}
-        aria-current={item.href == currentPage ? 'page' : undefined}
-      >
-        {item.icon && (
-          <item.icon
-            className={clsx(
-              item.href == currentPage
-                ? 'text-gray-500'
-                : 'text-gray-400 group-hover:text-gray-500',
-              '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
-            )}
-            aria-hidden="true"
-          />
-        )}
-        <span className="truncate">{item.name}</span>
-      </a>
-    </Link>
+export function SidebarItem(props: {
+  item: Item
+  currentPage: string
+  onClick?: (key: string) => void
+}) {
+  const { item, currentPage, onClick } = props
+  const isCurrentPage =
+    item.href != null ? item.href === currentPage : item.key === currentPage
+
+  const sidebarItem = (
+    <a
+      onClick={trackCallback('sidebar: ' + item.name)}
+      className={clsx(
+        isCurrentPage
+          ? 'bg-gray-200 text-gray-900'
+          : 'text-gray-600 hover:bg-gray-100',
+        'group flex items-center rounded-md px-3 py-2 text-sm font-medium'
+      )}
+      aria-current={item.href == currentPage ? 'page' : undefined}
+    >
+      {item.icon && (
+        <item.icon
+          className={clsx(
+            isCurrentPage
+              ? 'text-gray-500'
+              : 'text-gray-400 group-hover:text-gray-500',
+            '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
+          )}
+          aria-hidden="true"
+        />
+      )}
+      <span className="truncate">{item.name}</span>
+    </a>
   )
+
+  if (item.href) {
+    return (
+      <Link href={item.href} key={item.name}>
+        {sidebarItem}
+      </Link>
+    )
+  } else {
+    return onClick ? (
+      <button onClick={() => onClick(item.key ?? '#')}>{sidebarItem}</button>
+    ) : (
+      <> </>
+    )
+  }
 }
 
 function SidebarButton(props: {

@@ -6,6 +6,7 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
   query,
   setDoc,
   updateDoc,
@@ -256,3 +257,9 @@ export async function listMemberIds(group: Group) {
   const members = await getValues<GroupMemberDoc>(groupMembers(group.id))
   return members.map((m) => m.userId)
 }
+
+export const topFollowedGroupsQuery = query(
+  groups,
+  where('anyoneCanJoin', '==', true),
+  orderBy('totalMembers', 'desc')
+)

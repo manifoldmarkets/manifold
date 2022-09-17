@@ -7,6 +7,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../title'
+import GroupSelectorDialog from './group-selector-dialog'
 
 export default function Welcome() {
   const user = useUser()
@@ -32,17 +33,26 @@ export default function Welcome() {
     }
   }
 
-  if (!user || !user.shouldShowWelcome) {
-    return <></>
-  } else
-    return (
-      <Modal
-        open={open}
-        setOpen={(newOpen) => {
-          setUserHasSeenWelcome()
-          setOpen(newOpen)
-        }}
-      >
+  const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
+
+  if (!user || (!user.shouldShowWelcome && !groupSelectorOpen)) return <></>
+
+  const toggleOpen = (isOpen: boolean) => {
+    setUserHasSeenWelcome()
+    setOpen(isOpen)
+
+    if (!isOpen) {
+      setGroupSelectorOpen(true)
+    }
+  }
+  return (
+    <>
+      <GroupSelectorDialog
+        open={groupSelectorOpen}
+        setOpen={() => setGroupSelectorOpen(false)}
+      />
+
+      <Modal open={open} setOpen={toggleOpen}>
         <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
           {page === 0 && <Page0 />}
           {page === 1 && <Page1 />}
@@ -68,17 +78,15 @@ export default function Welcome() {
             </Row>
             <u
               className="self-center text-xs text-gray-500"
-              onClick={() => {
-                setOpen(false)
-                setUserHasSeenWelcome()
-              }}
+              onClick={() => toggleOpen(false)}
             >
               I got the gist, exit welcome
             </u>
           </Col>
         </Col>
       </Modal>
-    )
+    </>
+  )
 }
 
 function PageIndicator(props: { page: number; totalpages: number }) {

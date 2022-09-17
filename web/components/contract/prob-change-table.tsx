@@ -11,8 +11,9 @@ export function ProbChangeTable(props: {
   changes:
     | { positiveChanges: CPMMContract[]; negativeChanges: CPMMContract[] }
     | undefined
+  full?: boolean
 }) {
-  const { changes } = props
+  const { changes, full } = props
 
   if (!changes) return <LoadingIndicator />
 
@@ -24,7 +25,10 @@ export function ProbChangeTable(props: {
     negativeChanges.findIndex((c) => c.probChanges.day > -threshold) + 1
   )
   const maxRows = Math.min(positiveChanges.length, negativeChanges.length)
-  const rows = Math.min(3, Math.min(maxRows, countOverThreshold))
+  const rows = Math.min(
+    full ? Infinity : 3,
+    Math.min(maxRows, countOverThreshold)
+  )
 
   const filteredPositiveChanges = positiveChanges.slice(0, rows)
   const filteredNegativeChanges = negativeChanges.slice(0, rows)
@@ -35,37 +39,30 @@ export function ProbChangeTable(props: {
     <Col className="mb-4 w-full divide-x-2 divide-y rounded-lg bg-white shadow-md md:flex-row md:divide-y-0">
       <Col className="flex-1 divide-y">
         {filteredPositiveChanges.map((contract) => (
-          <Row className="items-center hover:bg-gray-100">
-            <ProbChange
-              className="p-4 text-right text-xl"
-              contract={contract}
-            />
-            <SiteLink
-              className="p-4 pl-2 font-semibold text-indigo-700"
-              href={contractPath(contract)}
-            >
-              <span className="line-clamp-2">{contract.question}</span>
-            </SiteLink>
-          </Row>
+          <ProbChangeRow key={contract.id} contract={contract} />
         ))}
       </Col>
       <Col className="flex-1 divide-y">
         {filteredNegativeChanges.map((contract) => (
-          <Row className="items-center hover:bg-gray-100">
-            <ProbChange
-              className="p-4 text-right text-xl"
-              contract={contract}
-            />
-            <SiteLink
-              className="p-4 pl-2 font-semibold text-indigo-700"
-              href={contractPath(contract)}
-            >
-              <span className="line-clamp-2">{contract.question}</span>
-            </SiteLink>
-          </Row>
+          <ProbChangeRow key={contract.id} contract={contract} />
         ))}
       </Col>
     </Col>
+  )
+}
+
+function ProbChangeRow(props: { contract: CPMMContract }) {
+  const { contract } = props
+  return (
+    <Row className="items-center hover:bg-gray-100">
+      <ProbChange className="p-4 text-right text-xl" contract={contract} />
+      <SiteLink
+        className="p-4 pl-2 font-semibold text-indigo-700"
+        href={contractPath(contract)}
+      >
+        <span className="line-clamp-2">{contract.question}</span>
+      </SiteLink>
+    </Row>
   )
 }
 
