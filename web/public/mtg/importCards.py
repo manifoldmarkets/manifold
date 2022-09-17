@@ -51,7 +51,7 @@ def generate_initial_special_query(category):
     elif category == 'basic':
         string_query += 't%3Abasic&order=released&dir=asc&unique=prints&page='
     elif category == 'watermark':
-        string_query += 'has%3Awatermark+-t%3Atoken+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
+        string_query += 'has%3Awatermark+not%3Apromo+-t%3Atoken+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
     # add category string query here
     print(string_query)
     return string_query
@@ -121,7 +121,7 @@ def fetch_and_write_all_artist():
         queried_artists_pre = artist_ids[i*37:min((i+1)*37, len(artist_ids))]
         queried_artists = []
         for j in range(len(queried_artists_pre)):
-            if artists[queried_artists_pre[j]][1] >= 50 or artists[queried_artists_pre[j]][0] in artist_allowlist:
+            if artists[queried_artists_pre[j]][1] >= 60 or artists[queried_artists_pre[j]][0] in artist_allowlist:
                 queried_artists.append(queried_artists_pre[j])
         print(queried_artists)
         print(i)
@@ -219,7 +219,7 @@ def to_compact_write_form_special(smallJson, art_names, response, category, arti
     fieldsInArtist = ['image_uris', 'digital',
                       'set_type', 'artist_ids', 'security_stamp']
     fieldsInWatermark = ['image_uris', 'watermark',
-                         'set_type', 'digital', 'security_stamp', 'promo', 'set']
+                         'set_type', 'digital', 'security_stamp', 'set']
     data = smallJson['data']
     # write all fields needed in card
     for card in response['data']:
@@ -360,13 +360,13 @@ def write_image_uris(card_image_uris):
 
 
 if __name__ == "__main__":
-    # for category in allCategories:
-    #     print(category)
-    #     fetch_and_write_all(category, generate_initial_query(category))
-    # for category in specialCategories:
-    #     print(category)
-    #     fetch_and_write_all_special(
-    #         category, generate_initial_special_query(category))
+    for category in allCategories:
+        print(category)
+        fetch_and_write_all(category, generate_initial_query(category))
+    for category in specialCategories:
+        print(category)
+        fetch_and_write_all_special(
+            category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
     # fetch_and_write_initial_artist_query()
     fetch_and_write_all_artist()

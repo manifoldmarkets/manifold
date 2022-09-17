@@ -73,7 +73,7 @@ function putIntoMapAndFetch(data) {
   } else if (whichGuesser === 'commander') {
     document.getElementById('guess-type').innerText = 'General Knowledge'
   } else if (whichGuesser === 'watermark') {
-    document.getElementById('guess-type').innerText = 'Watermark'
+    document.getElementById('guess-type').innerText = 'Watermark It'
   } else if (whichGuesser === 'artist') {
     document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
   }
