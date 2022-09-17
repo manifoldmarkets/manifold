@@ -82,9 +82,9 @@ export const PROD_CONFIG: EnvConfig = {
   visibility: 'PUBLIC',
 
   moneyMoniker: 'M$',
-  bettor: 'predictor',
-  pastBet: 'prediction',
-  presentBet: 'predict',
+  bettor: 'trader',
+  pastBet: 'trade',
+  presentBet: 'trade',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [
