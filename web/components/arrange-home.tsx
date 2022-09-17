@@ -113,6 +113,7 @@ const SectionItem = (props: {
 
       {group && (
         <Button
+          className="pt-1 pb-1"
           color="gray-white"
           onClick={() => {
             if (user) {
