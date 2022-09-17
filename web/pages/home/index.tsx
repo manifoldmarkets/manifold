@@ -102,7 +102,7 @@ export default function Home() {
 const HOME_SECTIONS = [
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
-  { label: 'New for you', id: 'new-for-you' },
+  { label: 'New', id: 'newest' },
   { label: 'Recently updated', id: 'recently-updated-for-you' },
 ]
 
@@ -139,16 +139,6 @@ function renderSection(
   if (id === 'daily-movers') {
     return <DailyMoversSection key={id} userId={user?.id} />
   }
-  if (id === 'new-for-you')
-    return (
-      <SearchSection
-        key={id}
-        label={label}
-        sort={'newest'}
-        pill="personal"
-        user={user}
-      />
-    )
   if (id === 'recently-updated-for-you')
     return (
       <SearchSection
