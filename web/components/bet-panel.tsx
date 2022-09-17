@@ -162,15 +162,24 @@ export function SimpleBetPanel(props: {
   )
 }
 
-function BuyPanel(props: {
+export function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
   unfilledBets: Bet[]
   hidden: boolean
   selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
+  mobileView?: boolean
 }) {
-  const { contract, user, unfilledBets, hidden, selected, onBuySuccess } = props
+  const {
+    contract,
+    user,
+    unfilledBets,
+    hidden,
+    selected,
+    onBuySuccess,
+    mobileView,
+  } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -185,6 +194,19 @@ function BuyPanel(props: {
 
   function onBetChoice(choice: 'YES' | 'NO') {
     setOutcome(choice)
+    setWasSubmitted(false)
+
+    if (!isIOS() && !isAndroid()) {
+      focusAmountInput()
+    }
+  }
+
+  function mobileOnBetChoice(choice: 'YES' | 'NO' | undefined) {
+    if (outcome === choice) {
+      setOutcome(undefined)
+    } else {
+      setOutcome(choice)
+    }
     setWasSubmitted(false)
 
     if (!isIOS() && !isAndroid()) {
@@ -281,92 +303,119 @@ function BuyPanel(props: {
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
-      <div className="my-3 text-left text-sm text-gray-500">
-        {isPseudoNumeric ? 'Direction' : 'Outcome'}
-      </div>
-      <YesNoSelector
-        className="mb-4"
-        btnClassName="flex-1"
-        selected={outcome}
-        onSelect={(choice) => onBetChoice(choice)}
-        isPseudoNumeric={isPseudoNumeric}
-      />
-
-      <Row className="my-3 justify-between text-left text-sm text-gray-500">
-        Amount
-        <span className={'xl:hidden'}>
-          Balance: {formatMoney(user?.balance ?? 0)}
-        </span>
-      </Row>
-
-      <BuyAmountInput
-        inputClassName="w-full max-w-none"
-        amount={betAmount}
-        onChange={onBetChange}
-        error={error}
-        setError={setError}
-        disabled={isSubmitting}
-        inputRef={inputRef}
-        showSliderOnMobile
-      />
-
-      <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between text-sm">
-          <div className="text-gray-500">
-            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+      {!mobileView && (
+        <>
+          <div className="my-3 text-left text-sm text-gray-500">
+            {isPseudoNumeric ? 'Direction' : 'Outcome'}
           </div>
-          {probStayedSame ? (
-            <div>{format(initialProb)}</div>
-          ) : (
-            <div>
-              {format(initialProb)}
-              <span className="mx-2">→</span>
-              {format(resultProb)}
-            </div>
-          )}
-        </Row>
-
-        <Row className="items-center justify-between gap-2 text-sm">
-          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-            <div>
-              {isPseudoNumeric ? (
-                'Max payout'
-              ) : (
-                <>
-                  Payout if <BinaryOutcomeLabel outcome={outcome ?? 'YES'} />
-                </>
-              )}
-            </div>
-          </Row>
-          <div>
-            <span className="mr-2 whitespace-nowrap">
-              {formatMoney(currentPayout)}
-            </span>
-            (+{currentReturnPercent})
-          </div>
-        </Row>
-      </Col>
-
-      <Spacer h={8} />
-
-      {user && (
-        <WarningConfirmationButton
-          warning={warning}
-          onSubmit={submitBet}
-          isSubmitting={isSubmitting}
-          disabled={!!betDisabled}
-          openModalButtonClass={clsx(
-            'btn mb-2 flex-1',
-            betDisabled
-              ? 'btn-disabled'
-              : outcome === 'YES'
-              ? 'btn-primary'
-              : 'border-none bg-red-400 hover:bg-red-500'
-          )}
-        />
+          <YesNoSelector
+            className="mb-4"
+            btnClassName="flex-1"
+            selected={outcome}
+            onSelect={(choice) => onBetChoice(choice)}
+            isPseudoNumeric={isPseudoNumeric}
+          />
+        </>
+      )}
+      {mobileView && (
+        <>
+          <YesNoSelector
+            className="mb-4"
+            btnClassName="flex-1"
+            selected={outcome}
+            onSelect={(choice) => mobileOnBetChoice(choice)}
+            isPseudoNumeric={isPseudoNumeric}
+          />
+        </>
       )}
 
-      {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
+      <Col
+        className={clsx(
+          mobileView
+            ? outcome === 'NO'
+              ? 'bg-red-50'
+              : outcome === 'YES'
+              ? 'bg-teal-50'
+              : 'hidden'
+            : 'bg-white'
+        )}
+      >
+        <Row className="my-3 justify-between text-left text-sm text-gray-500">
+          Amount
+          {/* <span className={'xl:hidden'}>
+          Balance: {formatMoney(user?.balance ?? 0)}
+        </span> */}
+        </Row>
+
+        <BuyAmountInput
+          inputClassName="w-full max-w-none"
+          amount={betAmount}
+          onChange={onBetChange}
+          error={error}
+          setError={setError}
+          disabled={isSubmitting}
+          inputRef={inputRef}
+          showSliderOnMobile
+        />
+
+        <Col className="mt-3 w-full gap-3">
+          <Row className="items-center justify-between text-sm">
+            <div className="text-gray-500">
+              {isPseudoNumeric ? 'Estimated value' : 'Probability'}
+            </div>
+            {probStayedSame ? (
+              <div>{format(initialProb)}</div>
+            ) : (
+              <div>
+                {format(initialProb)}
+                <span className="mx-2">→</span>
+                {format(resultProb)}
+              </div>
+            )}
+          </Row>
+
+          <Row className="items-center justify-between gap-2 text-sm">
+            <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
+              <div>
+                {isPseudoNumeric ? (
+                  'Max payout'
+                ) : (
+                  <>
+                    Payout if <BinaryOutcomeLabel outcome={outcome ?? 'YES'} />
+                  </>
+                )}
+              </div>
+            </Row>
+            <div>
+              <span className="mr-2 whitespace-nowrap">
+                {formatMoney(currentPayout)}
+              </span>
+              (+{currentReturnPercent})
+            </div>
+          </Row>
+        </Col>
+
+        <Spacer h={8} />
+
+        {user && (
+          <WarningConfirmationButton
+            warning={warning}
+            onSubmit={submitBet}
+            isSubmitting={isSubmitting}
+            disabled={!!betDisabled}
+            openModalButtonClass={clsx(
+              'btn mb-2 flex-1',
+              betDisabled
+                ? 'btn-disabled'
+                : outcome === 'YES'
+                ? 'btn-primary'
+                : 'border-none bg-red-400 hover:bg-red-500'
+            )}
+          />
+        )}
+
+        {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
+      </Col>
     </Col>
   )
 }

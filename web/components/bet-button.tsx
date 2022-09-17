@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 
-import { SimpleBetPanel } from './bet-panel'
+import { BetPanel, BuyPanel, SimpleBetPanel } from './bet-panel'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { Modal } from './layout/modal'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -17,6 +18,13 @@ import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
 import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 import { Row } from './layout/row'
+import { useUnfilledBets } from 'web/hooks/use-bets'
+import { Bet } from 'common/bet'
+import { getProbability } from 'common/calculate'
+import { useFocus } from 'web/hooks/use-focus'
+import { isAndroid, isIOS } from 'web/lib/util/device'
+import { APIError, placeBet } from 'web/lib/firebase/api'
+import { track } from '@amplitude/analytics-browser'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -105,44 +113,72 @@ export function SignedInBinaryMobileBetting(props: {
   contract: CPMMBinaryContract
   user: User
 }) {
-  enum betChoiceState {
-    YES = 'yes',
-    NO = 'no',
-    NEITHER = 'neither',
-  }
   const { contract, user } = props
-  const [betChoice, setBetChoice] = useState<betChoiceState>(
-    betChoiceState.NEITHER
+  const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
+    undefined
   )
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+
   return (
     <>
-      {/* GET BACK TO THIS BUT GAH DAMN IT'S UGLY */}
-      {/* <SellRow
-        contract={contract}
-        user={user}
-        className={'rounded-t-md bg-gray-100 px-4 py-5'}
-  /> */}
-      <Row className="w-full">
-        <button
-          className={clsx(
-            'w-1/2 rounded-full border-2 border-emerald-500 py-2',
-            betChoice == betChoiceState.YES
-              ? 'bg-emerald-500 text-white'
-              : betChoice == betChoiceState.NO
-              ? 'border-greyscale-4 text-greyscale-4 bg-white'
-              : 'bg-white text-emerald-500'
-          )}
-          onClick={() => {
-            if (betChoice == betChoiceState.YES) {
-              setBetChoice(betChoiceState.NEITHER)
-            } else {
-              setBetChoice(betChoiceState.YES)
-            }
-          }}
-        >
-          YES
-        </button>
-      </Row>
+      <Col className="w-full gap-2 px-1">
+        {/* <SellRow
+          contract={contract}
+          user={user}
+          className={'rounded-t-md bg-gray-100 px-4 py-5'}
+        /> */}
+        {/* <Row className="w-full justify-between gap-4">
+          <button
+            className={clsx(
+              'w-1/2 rounded-full border-2 py-2',
+              betChoice === 'YES'
+                ? 'border-teal-500 bg-teal-500 text-white'
+                : betChoice === 'NO'
+                ? 'border-greyscale-3 text-greyscale-3 bg-white'
+                : 'border-teal-500 bg-white text-teal-500'
+            )}
+            onClick={() => {
+              if (betChoice === 'YES') {
+                setBetChoice(undefined)
+              } else {
+                setBetChoice('YES')
+              }
+            }}
+          >
+            YES
+          </button>
+          <button
+            className={clsx(
+              'w-1/2 rounded-full border-2 py-2',
+              betChoice === 'NO'
+                ? 'border-red-500 bg-red-500 text-white'
+                : betChoice === 'YES'
+                ? 'border-greyscale-3 text-greyscale-3 bg-white'
+                : 'border-red-500 bg-white text-red-500'
+            )}
+            onClick={() => {
+              if (betChoice === 'NO') {
+                setBetChoice(undefined)
+              } else {
+                setBetChoice('NO')
+              }
+            }}
+          >
+            NO
+          </button>
+        </Row> */}
+        <Col>
+          <BuyPanel
+            hidden={false}
+            contract={contract}
+            user={user}
+            unfilledBets={unfilledBets}
+            selected={betChoice}
+            mobileView={true}
+            // onBuySuccess={onBetSuccess}>
+          />
+        </Col>
+      </Col>
     </>
   )
 }
