@@ -77,10 +77,10 @@ export function ProbChange(props: {
   } = contract
   return (
     <Col className={clsx('flex flex-col items-end', className)}>
-      <span className="mr-1.5 mb-0.5 text-2xl">
+      <span className="mb-0.5 mr-0.5 text-2xl">
         {formatPercent(Math.round(100 * prob) / 100)}
       </span>
-      <ProfitBadge className="ml-0" profitPercent={100 * change} />
+      <ProfitBadge className="ml-0" profitPercent={100 * change} round />
     </Col>
   )
 }
