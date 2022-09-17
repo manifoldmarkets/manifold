@@ -1,12 +1,12 @@
 import { UserNotRegisteredException } from "common/exceptions";
 import { FirebaseApp, initializeApp } from "firebase/app";
 import { collection, CollectionReference, deleteField, doc, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from "firebase/firestore";
-import { FIREBASE_API_KEY, MANIFOLD_DB_LOCATION } from "./envs";
+import { TWITCH_BOT_FIREBASE_KEY, MANIFOLD_DB_LOCATION } from "./envs";
 import log from "./logger";
 import User, { UserData } from "./user";
 
 const firebaseConfig = {
-    apiKey: FIREBASE_API_KEY,
+    apiKey: TWITCH_BOT_FIREBASE_KEY,
     authDomain: "manifoldtwitchbot.firebaseapp.com",
     projectId: "manifoldtwitchbot",
     storageBucket: "manifoldtwitchbot.appspot.com",
