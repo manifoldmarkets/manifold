@@ -26,10 +26,9 @@ export function ProbChangeTable(props: {
     negativeChanges.findIndex((c) => c.probChanges.day > -threshold) + 1
   )
   const maxRows = Math.min(positiveChanges.length, negativeChanges.length)
-  const rows = Math.min(
-    full ? Infinity : 3,
-    Math.min(maxRows, countOverThreshold)
-  )
+  const rows = full
+    ? maxRows
+    : Math.min(3, Math.min(maxRows, countOverThreshold))
 
   const filteredPositiveChanges = positiveChanges.slice(0, rows)
   const filteredNegativeChanges = negativeChanges.slice(0, rows)
@@ -55,7 +54,7 @@ export function ProbChangeTable(props: {
 function ProbChangeRow(props: { contract: CPMMContract }) {
   const { contract } = props
   return (
-    <Row className="items-center gap-4 hover:bg-gray-100">
+    <Row className="items-center justify-between gap-4 hover:bg-gray-100">
       <SiteLink
         className="p-4 pr-0 font-semibold text-indigo-700"
         href={contractPath(contract)}
