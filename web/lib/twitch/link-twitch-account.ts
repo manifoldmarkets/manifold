@@ -1,7 +1,10 @@
 import { PrivateUser, User } from 'common/user'
 import { generateNewApiKey } from '../api/api-key'
 
-const TWITCH_BOT_PUBLIC_URL = 'https://king-prawn-app-5btyw.ondigitalocean.app' // TODO: Add this to env config appropriately
+// TODO: Add this to env config appropriately
+const TWITCH_BOT_PUBLIC_URL = 'https://twitch-bot-nggbo3neva-uc.a.run.app'
+// Ours: https://twitch-bot-nggbo3neva-uc.a.run.app
+// Phil's: https://king-prawn-app-5btyw.ondigitalocean.app
 
 async function postToBot(url: string, body: unknown) {
   const result = await fetch(url, {
