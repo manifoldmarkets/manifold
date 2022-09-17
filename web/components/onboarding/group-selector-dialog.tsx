@@ -10,6 +10,8 @@ import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/button'
 import { Group } from 'common/group'
+import { LoadingIndicator } from '../loading-indicator'
+import { withTracking } from 'web/lib/service/analytics'
 
 export default function GroupSelectorDialog(props: {
   open: boolean
@@ -65,20 +67,26 @@ export default function GroupSelectorDialog(props: {
         </p>
 
         <div className="scrollbar-hide items-start gap-2 overflow-x-auto">
-          {user &&
+          {!user || displayedGroups.length === 0 ? (
+            <LoadingIndicator spinnerClassName="h-12 w-12" />
+          ) : (
             displayedGroups.map((group) => (
               <PillButton
                 selected={memberGroupIds.includes(group.id)}
-                onSelect={() =>
-                  memberGroupIds.includes(group.id)
-                    ? leaveGroup(group, user.id)
-                    : joinGroup(group, user.id)
-                }
+                onSelect={withTracking(
+                  () =>
+                    memberGroupIds.includes(group.id)
+                      ? leaveGroup(group, user.id)
+                      : joinGroup(group, user.id),
+                  'toggle group pill',
+                  { group: group.slug }
+                )}
                 className="mr-1 mb-2 max-w-[12rem] truncate"
               >
                 {group.name}
               </PillButton>
-            ))}
+            ))
+          )}
         </div>
       </Col>
       <Col>
