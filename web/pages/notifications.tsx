@@ -971,13 +971,20 @@ function ContractResolvedNotification(props: {
   const { sourceText, data } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const subtitle = 'resolved the market'
+
   const resolutionDescription = () => {
     if (!sourceText) return <div />
+
     if (sourceText === 'YES' || sourceText == 'NO') {
       return <BinaryOutcomeLabel outcome={sourceText as any} />
     }
+
     if (sourceText.includes('%'))
-      return <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
+      return (
+        <ProbPercentLabel
+          prob={parseFloat(sourceText.replace('%', '')) / 100}
+        />
+      )
     if (sourceText === 'CANCEL') return <CancelLabel />
     if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
 
@@ -996,7 +1003,7 @@ function ContractResolvedNotification(props: {
   const description =
     userInvestment && userPayout !== undefined ? (
       <Row className={'gap-1 '}>
-        {resolutionDescription()}
+        Resolved: {resolutionDescription()}
         Invested:
         <span className={'text-primary'}>{formatMoney(userInvestment)} </span>
         Payout:
@@ -1013,7 +1020,7 @@ function ContractResolvedNotification(props: {
         </span>
       </Row>
     ) : (
-      <span>{resolutionDescription()}</span>
+      <span>Resolved {resolutionDescription()}</span>
     )
 
   if (justSummary) {
