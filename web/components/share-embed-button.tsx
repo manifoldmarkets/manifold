@@ -40,14 +40,7 @@ export function ShareEmbedButton(props: { contract: Contract }) {
         track('copy embed code')
       }}
     >
-      <Menu.Button
-        className="btn btn-xs normal-case"
-        style={{
-          backgroundColor: 'white',
-          border: '2px solid #9ca3af',
-          color: '#9ca3af', // text-gray-400
-        }}
-      >
+      <Menu.Button className="btn btn-xs border-2 !border-gray-500 !bg-white normal-case text-gray-500">
         {codeIcon}
         Embed
       </Menu.Button>
