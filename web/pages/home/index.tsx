@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from 'react'
+import React, { ReactNode } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
@@ -22,18 +22,13 @@ import { SiteLink } from 'web/components/site-link'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   useMemberGroupIds,
-  useMemberGroups,
+  useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import {
-  getGroup,
-  groupPath,
-  joinGroup,
-  leaveGroup,
-} from 'web/lib/firebase/groups'
+import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
@@ -57,17 +52,7 @@ export default function Home() {
   useSaveReferral()
   usePrefetch(user?.id)
 
-  const cachedGroups = useMemberGroups(user?.id) ?? []
-  const groupIds = useMemberGroupIds(user)
-  const [groups, setGroups] = useState(cachedGroups)
-
-  useEffect(() => {
-    if (groupIds) {
-      Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
-        setGroups(filterDefined(groups))
-      )
-    }
-  }, [groupIds])
+  const groups = useMemberGroupsSubscription(user)
 
   const { sections } = getHomeItems(groups, user?.homeSections ?? [])
 
@@ -77,7 +62,10 @@ export default function Home() {
 
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
         <Row className={'mb-2 w-full items-center justify-between gap-8'}>
-          <Title className="!mt-0 !mb-0" text="Home" />
+          <Row className="items-center gap-2">
+            <Title className="!mt-0 !mb-0" text="Home" />
+            <CustomizeButton justIcon />
+          </Row>
           <DailyStats user={user} />
         </Row>
 
@@ -110,11 +98,12 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
   // Accommodate old home sections.
   if (!isArray(sections)) sections = []
 
-  const items = [
+  const items: { id: string; label: string; group?: Group }[] = [
     ...HOME_SECTIONS,
     ...groups.map((g) => ({
       label: g.name,
       id: g.id,
+      group: g,
     })),
   ]
   const itemsById = keyBy(items, 'id')
@@ -225,7 +214,6 @@ function GroupSection(props: {
     <Col>
       <SectionHeader label={group.name} href={groupPath(group.slug)}>
         <Button
-          className=""
           color="gray-white"
           onClick={() => {
             if (user) {
@@ -312,20 +300,24 @@ function DailyStats(props: {
   )
 }
 
-function TrendingGroupsSection(props: { user: User | null | undefined }) {
-  const { user } = props
+export function TrendingGroupsSection(props: {
+  user: User | null | undefined
+  full?: boolean
+  className?: string
+}) {
+  const { user, full, className } = props
   const memberGroupIds = useMemberGroupIds(user) || []
 
   const groups = useTrendingGroups().filter(
     (g) => !memberGroupIds.includes(g.id)
   )
-  const count = 25
+  const count = full ? 100 : 25
   const chosenGroups = groups.slice(0, count)
 
   return (
-    <Col>
+    <Col className={className}>
       <SectionHeader label="Trending groups" href="/explore-groups">
-        <CustomizeButton />
+        {!full && <CustomizeButton className="mb-1" />}
       </SectionHeader>
       <Row className="flex-wrap gap-2">
         {chosenGroups.map((g) => (
@@ -359,10 +351,14 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
   )
 }
 
-function CustomizeButton() {
+function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
+  const { justIcon, className } = props
   return (
     <SiteLink
-      className="mb-2 flex flex-row items-center text-xl hover:no-underline"
+      className={clsx(
+        className,
+        'flex flex-row items-center text-xl hover:no-underline'
+      )}
       href="/home/edit"
     >
       <Button size="lg" color="gray" className={clsx('flex gap-2')}>
@@ -370,7 +366,7 @@ function CustomizeButton() {
           className={clsx('h-[24px] w-5 text-gray-500')}
           aria-hidden="true"
         />
-        Customize
+        {!justIcon && 'Customize'}
       </Button>
     </SiteLink>
   )

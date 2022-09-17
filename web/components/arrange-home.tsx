@@ -1,14 +1,22 @@
 import clsx from 'clsx'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { MenuIcon } from '@heroicons/react/solid'
+import { toast } from 'react-hot-toast'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Subtitle } from 'web/components/subtitle'
 import { keyBy } from 'lodash'
+import { XCircleIcon } from '@heroicons/react/outline'
+import { Button } from './button'
+import { updateUser } from 'web/lib/firebase/users'
+import { leaveGroup } from 'web/lib/firebase/groups'
+import { User } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
+import { Group } from 'common/group'
 
 export function ArrangeHome(props: {
-  sections: { label: string; id: string }[]
+  sections: { label: string; id: string; group?: Group }[]
   setSectionIds: (sections: string[]) => void
 }) {
   const { sections, setSectionIds } = props
@@ -40,8 +48,9 @@ export function ArrangeHome(props: {
 
 function DraggableList(props: {
   title: string
-  items: { id: string; label: string }[]
+  items: { id: string; label: string; group?: Group }[]
 }) {
+  const user = useUser()
   const { title, items } = props
   return (
     <Droppable droppableId={title.toLowerCase()}>
@@ -66,6 +75,7 @@ function DraggableList(props: {
                       snapshot.isDragging && 'z-[9000] bg-gray-200'
                     )}
                     item={item}
+                    user={user}
                   />
                 </div>
               )}
@@ -79,23 +89,52 @@ function DraggableList(props: {
 }
 
 const SectionItem = (props: {
-  item: { id: string; label: string }
+  item: { id: string; label: string; group?: Group }
+  user: User | null | undefined
   className?: string
 }) => {
-  const { item, className } = props
+  const { item, user, className } = props
+  const { group } = item
 
   return (
-    <div
+    <Row
       className={clsx(
         className,
-        'flex flex-row items-center gap-4 rounded bg-gray-50 p-2'
+        'items-center justify-between gap-4 rounded bg-gray-50 p-2'
       )}
     >
-      <MenuIcon
-        className="h-5 w-5 flex-shrink-0 text-gray-500"
-        aria-hidden="true"
-      />{' '}
-      {item.label}
-    </div>
+      <Row className="items-center gap-4">
+        <MenuIcon
+          className="h-5 w-5 flex-shrink-0 text-gray-500"
+          aria-hidden="true"
+        />{' '}
+        {item.label}
+      </Row>
+
+      {group && (
+        <Button
+          color="gray-white"
+          onClick={() => {
+            if (user) {
+              const homeSections = (user.homeSections ?? []).filter(
+                (id) => id !== group.id
+              )
+              updateUser(user.id, { homeSections })
+
+              toast.promise(leaveGroup(group, user.id), {
+                loading: 'Unfollowing group...',
+                success: `Unfollowed ${group.name}`,
+                error: "Couldn't unfollow group, try again?",
+              })
+            }
+          }}
+        >
+          <XCircleIcon
+            className={clsx('h-5 w-5 flex-shrink-0')}
+            aria-hidden="true"
+          />
+        </Button>
+      )}
+    </Row>
   )
 }
