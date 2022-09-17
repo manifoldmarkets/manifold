@@ -140,7 +140,10 @@ export default function GroupPage(props: {
   const user = useUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
-  const [sidebarIndex, setSidebarIndex] = useState(0)
+  // Note: Keep in sync with sidebarPages
+  const [sidebarIndex, setSidebarIndex] = useState(
+    ['markets', 'leaderboards', 'about'].indexOf(page ?? 'markets')
+  )
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -241,6 +244,12 @@ export default function GroupPage(props: {
   const onSidebarClick = (key: string) => {
     const index = sidebarPages.findIndex((t) => t.key === key)
     setSidebarIndex(index)
+    // Append the page to the URL, e.g. /group/mexifold/markets
+    router.replace(
+      { query: { ...router.query, slugs: [group.slug, key] } },
+      undefined,
+      { shallow: true }
+    )
   }
 
   const joinOrAddQuestionsButton = (
