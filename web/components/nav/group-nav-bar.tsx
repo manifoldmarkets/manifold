@@ -1,5 +1,5 @@
 import { ClipboardIcon, HomeIcon } from '@heroicons/react/outline'
-import { Item } from './sidebar'
+import { Item } from './sidebar-item'
 
 import clsx from 'clsx'
 import { trackCallback } from 'web/lib/service/analytics'
