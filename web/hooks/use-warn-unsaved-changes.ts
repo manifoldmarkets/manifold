@@ -25,7 +25,7 @@ export const useWarnUnsavedChanges = (hasUnsavedChanges: boolean) => {
     }
 
     window.addEventListener('beforeunload', warnUnsavedChanges)
-    Router.events.on('routeChangeStart', (href) => beforeRouteHandler(href))
+    Router.events.on('routeChangeStart', beforeRouteHandler)
 
     return () => {
       window.removeEventListener('beforeunload', warnUnsavedChanges)
