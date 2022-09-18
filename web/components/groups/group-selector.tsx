@@ -131,7 +131,7 @@ export function GroupSelector(props: {
                         )}
                         <span
                           className={clsx(
-                            'ml-3 mt-1 block flex flex-row justify-between',
+                            'ml-3 mt-1 flex flex-row justify-between',
                             selected && 'font-semibold'
                           )}
                         >
@@ -166,7 +166,7 @@ export function GroupSelector(props: {
                     'w-full justify-start rounded-none border-0 bg-white pl-2 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white'
                   }
                   label={'Create a new Group'}
-                  goToGroupOnSubmit={false}
+                  addGroupIdParamOnSubmit
                   icon={
                     <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
                   }
