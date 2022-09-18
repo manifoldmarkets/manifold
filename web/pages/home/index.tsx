@@ -31,7 +31,7 @@ import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
-import { useProbChanges } from 'web/hooks/use-prob-changes'
+import { useProbChangesAlgolia } from 'web/hooks/use-prob-changes'
 import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
@@ -243,7 +243,7 @@ function GroupSection(props: {
 
 function DailyMoversSection(props: { userId: string | null | undefined }) {
   const { userId } = props
-  const changes = useProbChanges(userId ?? '')
+  const changes = useProbChangesAlgolia(userId ?? '')
 
   return (
     <Col className="gap-2">
