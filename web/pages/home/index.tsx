@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useEffect } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
@@ -55,6 +55,18 @@ export default function Home() {
   const groups = useMemberGroupsSubscription(user)
 
   const { sections } = getHomeItems(groups, user?.homeSections ?? [])
+
+  useEffect(() => {
+    if (
+      user &&
+      !user.homeSections &&
+      sections.length > 0 &&
+      groups.length > 0
+    ) {
+      // Save initial home sections.
+      updateUser(user.id, { homeSections: sections.map((s) => s.id) })
+    }
+  }, [user, sections, groups])
 
   return (
     <Page>
