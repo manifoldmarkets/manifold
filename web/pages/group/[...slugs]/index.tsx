@@ -211,7 +211,7 @@ export default function GroupPage(props: {
       <ContractSearch
         headerClassName="md:sticky"
         user={user}
-        defaultSort={'newest'}
+        defaultSort={'score'}
         defaultFilter={suggestedFilter}
         additionalFilter={{ groupSlug: group.slug }}
         persistPrefix={`group-${group.slug}`}
