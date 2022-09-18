@@ -24,8 +24,6 @@ import {
 } from '../../common/antes'
 import { APIError } from '../../common/api'
 import { User } from '../../common/user'
-import { UNIQUE_BETTOR_LIQUIDITY_AMOUNT } from '../../common/antes'
-import { addHouseLiquidity } from './add-liquidity'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
 
@@ -183,10 +181,6 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
 
   // No need to give a bonus for the creator's bet
   if (!isNewUniqueBettor || bettor.id == contract.creatorId) return
-
-  if (contract.mechanism === 'cpmm-1') {
-    await addHouseLiquidity(contract, UNIQUE_BETTOR_LIQUIDITY_AMOUNT)
-  }
 
   // Create combined txn for all new unique bettors
   const bonusTxnDetails = {
