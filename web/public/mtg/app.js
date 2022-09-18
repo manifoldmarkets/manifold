@@ -186,11 +186,7 @@ function determineIfSkip(card) {
   }
   if (firstPrint) {
     if (whichGuesser == 'basic') {
-      if (
-        card.set_type !== 'expansion' &&
-        card.set_type !== 'funny' &&
-        card.set_type !== 'draft_innovation'
-      ) {
+      if (card.set_type !== 'expansion' && card.set_type !== 'funny') {
         return true
       }
     } else if (whichGuesser == 'artist') {
@@ -344,6 +340,8 @@ function checkAnswers() {
       incorrect = ans !== guess
       // decide if their guess was correct
       // window.console.log(ans, guess, incorrect)
+      correctAns = String.fromCodePoint(0x2705) + ' ' + ansWithSymbol
+      incorrectAns = String.fromCodePoint(0x274c) + ' ' + guessWithSymbol
       if (incorrect) {
         window.console.log(
           document.getElementById(currCard.dataset.name),
@@ -351,7 +349,13 @@ function checkAnswers() {
           ans
         )
         document.getElementById(currCard.dataset.name).innerHTML =
-          '<strike>' + guessWithSymbol + '</strike><br/>' + ansWithSymbol
+          incorrectAns +
+          '<br/><span style="opacity:0;">' +
+          String.fromCodePoint(0x274c) +
+          '</span>&nbsp;' +
+          ansWithSymbol
+      } else {
+        document.getElementById(currCard.dataset.name).innerHTML = correctAns
       }
     }
     if (incorrect) {
