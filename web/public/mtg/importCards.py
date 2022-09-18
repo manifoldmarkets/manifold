@@ -121,7 +121,7 @@ def fetch_and_write_all_artist():
         queried_artists_pre = artist_ids[i*37:min((i+1)*37, len(artist_ids))]
         queried_artists = []
         for j in range(len(queried_artists_pre)):
-            if artists[queried_artists_pre[j]][1] >= 60 or artists[queried_artists_pre[j]][0] in artist_allowlist:
+            if artists[queried_artists_pre[j]][1] >= 50 or artists[queried_artists_pre[j]][0] in artist_allowlist:
                 queried_artists.append(queried_artists_pre[j])
         print(queried_artists)
         print(i)
@@ -205,7 +205,7 @@ def to_compact_write_form(smallJson, art_names, response):
                 else:
                     write_card['image_uris'] = write_image_uris(
                         card['image_uris'])
-            elif field in card:
+            elif field in card and card[field]:
                 write_card[field] = card[field]
         if digital_holder != -1:
             data[digital_holder] = write_card
@@ -235,7 +235,7 @@ def to_compact_write_form_special(smallJson, art_names, response, category, arti
                         card['image_uris'])
                 elif field == 'set':
                     write_card['name'] = card['set']
-                elif field in card:
+                elif field in card and card[field]:
                     write_card[field] = card[field]
             if digital_holder != -1:
                 data[digital_holder] = write_card
@@ -257,7 +257,7 @@ def to_compact_write_form_special(smallJson, art_names, response, category, arti
                     else:
                         write_card['image_uris'] = write_image_uris(
                             card['image_uris'])
-                elif field in card:
+                elif field in card and card[field]:
                     write_card[field] = card[field]
             if digital_holder != -1:
                 data[digital_holder] = write_card
@@ -287,7 +287,7 @@ def to_compact_write_form_special(smallJson, art_names, response, category, arti
                     else:
                         write_card['image_uris'] = write_image_uris(
                             card['image_uris'])
-                elif field in card:
+                elif field in card and card[field]:
                     write_card[field] = card[field]
             if digital_holder != -1:
                 data[digital_holder] = write_card
@@ -360,13 +360,13 @@ def write_image_uris(card_image_uris):
 
 
 if __name__ == "__main__":
-    for category in allCategories:
-        print(category)
-        fetch_and_write_all(category, generate_initial_query(category))
-    for category in specialCategories:
-        print(category)
-        fetch_and_write_all_special(
-            category, generate_initial_special_query(category))
+    # for category in allCategories:
+    #     print(category)
+    #     fetch_and_write_all(category, generate_initial_query(category))
+    # for category in specialCategories:
+    #     print(category)
+    #     fetch_and_write_all_special(
+    #         category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
     # fetch_and_write_initial_artist_query()
     fetch_and_write_all_artist()

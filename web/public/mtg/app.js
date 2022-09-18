@@ -205,7 +205,6 @@ function determineIfSkip(card) {
       }
     } else if (whichGuesser == 'watermark') {
       if (
-        card.promo ||
         card.name === 'Set' ||
         card.name === 'Planeswalker' ||
         card.name === 'Flavor' ||
@@ -220,7 +219,7 @@ function determineIfSkip(card) {
       }
     } else {
       if (
-        card.reprint === true ||
+        card.reprint ||
         (card.frame_effects && card.frame_effects.includes('showcase'))
       ) {
         return true
