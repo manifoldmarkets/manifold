@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import algoliasearch from 'algoliasearch/lite'
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
@@ -11,7 +10,7 @@ import {
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
 import { useEffect, useLayoutEffect, useRef, useMemo, ReactNode } from 'react'
-import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
   historyStore,
@@ -28,14 +27,11 @@ import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { safeLocalStorage } from 'web/lib/util/local'
-
-const searchClient = algoliasearch(
-  'GJQPAYENIF',
-  '75c28fc084a80e1129d427d470cf41a3'
-)
-
-const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
-const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
+import {
+  getIndexName,
+  searchClient,
+  searchIndexName,
+} from 'web/lib/service/algolia'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
@@ -154,7 +150,7 @@ export function ContractSearch(props: {
     if (freshQuery || requestedPage < state.numPages) {
       const index = query
         ? searchIndex
-        : searchClient.initIndex(`${indexPrefix}contracts-${sort}`)
+        : searchClient.initIndex(getIndexName(sort))
       const numericFilters = query
         ? []
         : [
