@@ -145,6 +145,7 @@ function getMoreDesktopNavigation(user?: User | null) {
 
   // Signed in "More"
   return buildArray(
+    { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Groups', href: '/groups' },
     CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
     [
