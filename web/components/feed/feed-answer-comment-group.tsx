@@ -27,7 +27,7 @@ export function FeedAnswerCommentGroup(props: {
   answer: Answer
   answerComments: ContractComment[]
   tips: CommentTipMap
-  betsByUserId: Dictionary<Bet[]>
+  betsByCurrentUser: Bet[]
   commentsByUserId: Dictionary<ContractComment[]>
 }) {
   const {
@@ -35,7 +35,7 @@ export function FeedAnswerCommentGroup(props: {
     contract,
     answerComments,
     tips,
-    betsByUserId,
+    betsByCurrentUser,
     commentsByUserId,
     user,
   } = props
@@ -48,7 +48,6 @@ export function FeedAnswerCommentGroup(props: {
   const router = useRouter()
 
   const answerElementId = `answer-${answer.id}`
-  const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
   const mostRecentCommentableBet = getMostRecentCommentableBet(
@@ -166,7 +165,6 @@ export function FeedAnswerCommentGroup(props: {
             contract={contract}
             comment={comment}
             tips={tips[comment.id]}
-            betsBySameUser={betsByUserId[comment.userId] ?? []}
             onReplyClick={scrollAndOpenReplyInput}
           />
         ))}

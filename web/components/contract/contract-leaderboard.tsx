@@ -106,7 +106,6 @@ export function ContractTopTrades(props: {
               contract={contract}
               comment={commentsById[topCommentId]}
               tips={tips[topCommentId]}
-              betsBySameUser={[betsById[topCommentId]]}
             />
           </div>
           <Spacer h={16} />
