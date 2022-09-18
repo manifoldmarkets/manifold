@@ -5,7 +5,7 @@ import {
   PencilAltIcon,
   ArrowSmRightIcon,
 } from '@heroicons/react/solid'
-import { XCircleIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast, Toaster } from 'react-hot-toast'
 
@@ -230,10 +230,7 @@ function GroupSection(props: {
             }
           }}
         >
-          <XCircleIcon
-            className={clsx('h-5 w-5 flex-shrink-0')}
-            aria-hidden="true"
-          />
+          <XCircleIcon className={'h-5 w-5 flex-shrink-0'} aria-hidden="true" />
         </Button>
       </SectionHeader>
       <ContractsGrid contracts={contracts} />
@@ -322,6 +319,7 @@ export function TrendingGroupsSection(props: {
       <Row className="flex-wrap gap-2">
         {chosenGroups.map((g) => (
           <PillButton
+            className="flex flex-row items-center gap-1"
             key={g.id}
             selected={memberGroupIds.includes(g.id)}
             onSelect={() => {
@@ -343,6 +341,11 @@ export function TrendingGroupsSection(props: {
               }
             }}
           >
+            <PlusCircleIcon
+              className={'h-5 w-5 flex-shrink-0 text-gray-500'}
+              aria-hidden="true"
+            />
+
             {g.name}
           </PillButton>
         ))}
