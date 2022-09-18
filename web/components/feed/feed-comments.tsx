@@ -255,7 +255,7 @@ function CommentStatus(props: {
   const { contract, outcome, prob } = props
   return (
     <>
-      {` ${PRESENT_BET}ing `}
+      {` predicting `}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
       {prob && ' at ' + Math.round(prob * 100) + '%'}
     </>
