@@ -281,8 +281,8 @@ function DailyStats(props: {
   const [first, last] = [metrics[0], metrics[metrics.length - 1]]
 
   const privateUser = usePrivateUser()
-  const streaksHidden =
-    privateUser?.notificationPreferences.betting_streaks.length === 0
+  const streaks = privateUser?.notificationPreferences?.betting_streaks ?? []
+  const streaksHidden = streaks.length === 0
 
   let profit = 0
   let profitPercent = 0
