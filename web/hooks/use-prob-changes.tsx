@@ -30,8 +30,12 @@ export const useProbChangesAlgolia = (userId: string) => {
   }
 
   return {
-    positiveChanges: positiveData.hits,
-    negativeChanges: negativeData.hits,
+    positiveChanges: positiveData.hits.filter(
+      (c) => c && c.probChanges.day > 0
+    ),
+    negativeChanges: negativeData.hits.filter(
+      (c) => c && c.probChanges.day < 0
+    ),
   }
 }
 
