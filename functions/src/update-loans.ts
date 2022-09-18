@@ -7,7 +7,7 @@ import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { getLoanUpdates } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
-import { filterDefined } from 'common/util/array'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
 
