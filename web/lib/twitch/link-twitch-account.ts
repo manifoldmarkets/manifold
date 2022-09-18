@@ -1,7 +1,6 @@
 import { PrivateUser, User } from 'common/user'
 import { generateNewApiKey } from '../api/api-key'
-
-const TWITCH_BOT_PUBLIC_URL = 'https://king-prawn-app-5btyw.ondigitalocean.app' // TODO: Add this to env config appropriately
+import { ENV_CONFIG } from 'common/envs/constants'
 
 async function postToBot(url: string, body: unknown) {
   const result = await fetch(url, {
@@ -21,13 +20,16 @@ export async function initLinkTwitchAccount(
   manifoldUserID: string,
   manifoldUserAPIKey: string
 ): Promise<[string, Promise<{ twitchName: string; controlToken: string }>]> {
-  const response = await postToBot(`${TWITCH_BOT_PUBLIC_URL}/api/linkInit`, {
-    manifoldID: manifoldUserID,
-    apiKey: manifoldUserAPIKey,
-    redirectURL: window.location.href,
-  })
+  const response = await postToBot(
+    `${ENV_CONFIG.twitchBotEndpoint}/api/linkInit`,
+    {
+      manifoldID: manifoldUserID,
+      apiKey: manifoldUserAPIKey,
+      redirectURL: window.location.href,
+    }
+  )
   const responseFetch = fetch(
-    `${TWITCH_BOT_PUBLIC_URL}/api/linkResult?userID=${manifoldUserID}`
+    `${ENV_CONFIG.twitchBotEndpoint}/api/linkResult?userID=${manifoldUserID}`
   )
   return [response.twitchAuthURL, responseFetch.then((r) => r.json())]
 }
@@ -50,15 +52,18 @@ export async function updateBotEnabledForUser(
   botEnabled: boolean
 ) {
   if (botEnabled) {
-    return postToBot(`${TWITCH_BOT_PUBLIC_URL}/registerchanneltwitch`, {
+    return postToBot(`${ENV_CONFIG.twitchBotEndpoint}/registerchanneltwitch`, {
       apiKey: privateUser.apiKey,
     }).then((r) => {
       if (!r.success) throw new Error(r.message)
     })
   } else {
-    return postToBot(`${TWITCH_BOT_PUBLIC_URL}/unregisterchanneltwitch`, {
-      apiKey: privateUser.apiKey,
-    }).then((r) => {
+    return postToBot(
+      `${ENV_CONFIG.twitchBotEndpoint}/unregisterchanneltwitch`,
+      {
+        apiKey: privateUser.apiKey,
+      }
+    ).then((r) => {
       if (!r.success) throw new Error(r.message)
     })
   }
@@ -66,10 +71,10 @@ export async function updateBotEnabledForUser(
 
 export function getOverlayURLForUser(privateUser: PrivateUser) {
   const controlToken = privateUser?.twitchInfo?.controlToken
-  return `${TWITCH_BOT_PUBLIC_URL}/overlay?t=${controlToken}`
+  return `${ENV_CONFIG.twitchBotEndpoint}/overlay?t=${controlToken}`
 }
 
 export function getDockURLForUser(privateUser: PrivateUser) {
   const controlToken = privateUser?.twitchInfo?.controlToken
-  return `${TWITCH_BOT_PUBLIC_URL}/dock?t=${controlToken}`
+  return `${ENV_CONFIG.twitchBotEndpoint}/dock?t=${controlToken}`
 }
