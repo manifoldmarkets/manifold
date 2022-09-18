@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { PRESENT_BET, User } from 'common/user'
+import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
 import { minBy, maxBy, partition, sumBy, Dictionary } from 'lodash'
