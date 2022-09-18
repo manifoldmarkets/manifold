@@ -276,6 +276,7 @@ export function NotificationSettings(props: {
         <Col className={clsx(expanded ? 'block' : 'hidden', 'gap-2 p-2')}>
           {subscriptionTypes.map((subType) => (
             <NotificationSettingLine
+              key={subType}
               subscriptionTypeKey={subType as notification_preference}
               destinations={getUsersSavedPreference(
                 subType as notification_preference
