@@ -16,10 +16,18 @@ export function CreateGroupButton(props: {
   label?: string
   onOpenStateChange?: (isOpen: boolean) => void
   goToGroupOnSubmit?: boolean
+  addGroupIdParamOnSubmit?: boolean
   icon?: JSX.Element
 }) {
-  const { user, className, label, onOpenStateChange, goToGroupOnSubmit, icon } =
-    props
+  const {
+    user,
+    className,
+    label,
+    onOpenStateChange,
+    goToGroupOnSubmit,
+    addGroupIdParamOnSubmit,
+    icon,
+  } = props
 
   const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,6 +61,12 @@ export function CreateGroupButton(props: {
           console.log(e)
           setErrorText(e.message)
         })
+      else if (addGroupIdParamOnSubmit) {
+        router.replace({
+          pathname: router.pathname,
+          query: { ...router.query, groupId: result.group.id },
+        })
+      }
       setIsSubmitting(false)
       return true
     } else {
