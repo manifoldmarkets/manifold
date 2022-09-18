@@ -20,18 +20,21 @@ export function ProbChangeTable(props: {
 
   const { positiveChanges, negativeChanges } = changes
 
-  const threshold = 0.075
-  const countOverThreshold = Math.max(
-    positiveChanges.findIndex((c) => c.probChanges.day < threshold) + 1,
-    negativeChanges.findIndex((c) => c.probChanges.day > -threshold) + 1
+  const threshold = 0.01
+  const positiveAboveThreshold = positiveChanges.filter(
+    (c) => c.probChanges.day > threshold
   )
-  const maxRows = Math.min(positiveChanges.length, negativeChanges.length)
-  const rows = full
-    ? maxRows
-    : Math.min(3, Math.min(maxRows, countOverThreshold))
+  const negativeAboveThreshold = negativeChanges.filter(
+    (c) => c.probChanges.day < threshold
+  )
+  const maxRows = Math.min(
+    positiveAboveThreshold.length,
+    negativeAboveThreshold.length
+  )
+  const rows = full ? maxRows : Math.min(3, maxRows)
 
-  const filteredPositiveChanges = positiveChanges.slice(0, rows)
-  const filteredNegativeChanges = negativeChanges.slice(0, rows)
+  const filteredPositiveChanges = positiveAboveThreshold.slice(0, rows)
+  const filteredNegativeChanges = negativeAboveThreshold.slice(0, rows)
 
   if (rows === 0) return <div className="px-4 text-gray-500">None</div>
 
