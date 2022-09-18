@@ -73,13 +73,12 @@ export function ContractBetsActivity(props: {
 
 export function ContractCommentsActivity(props: {
   contract: Contract
-  bets: Bet[]
+  betsByCurrentUser: Bet[]
   comments: ContractComment[]
   tips: CommentTipMap
   user: User | null | undefined
 }) {
-  const { bets, contract, comments, user, tips } = props
-  const betsByUserId = groupBy(bets, (bet) => bet.userId)
+  const { betsByCurrentUser, contract, comments, user, tips } = props
   const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const topLevelComments = sortBy(
@@ -92,7 +91,7 @@ export function ContractCommentsActivity(props: {
       <ContractCommentInput
         className="mb-5"
         contract={contract}
-        betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
+        betsByCurrentUser={betsByCurrentUser}
         commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
       />
       {topLevelComments.map((parent) => (
@@ -106,8 +105,7 @@ export function ContractCommentsActivity(props: {
             (c) => c.createdTime
           )}
           tips={tips}
-          bets={bets}
-          betsByUserId={betsByUserId}
+          betsByCurrentUser={betsByCurrentUser}
           commentsByUserId={commentsByUserId}
         />
       ))}
@@ -136,7 +134,9 @@ export function FreeResponseContractCommentsActivity(props: {
     })
     .filter((answer) => answer != null)
 
-  const betsByUserId = groupBy(bets, (bet) => bet.userId)
+  const betsByCurrentUser = user
+    ? bets.filter((bet) => bet.userId === user.id)
+    : []
   const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByOutcome = groupBy(comments, (c) => c.answerOutcome ?? '_')
 
@@ -157,7 +157,7 @@ export function FreeResponseContractCommentsActivity(props: {
               (c) => c.createdTime
             )}
             tips={tips}
-            betsByUserId={betsByUserId}
+            betsByCurrentUser={betsByCurrentUser}
             commentsByUserId={commentsByUserId}
           />
         </div>
