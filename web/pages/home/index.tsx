@@ -242,6 +242,15 @@ function DailyMoversSection(props: { userId: string | null | undefined }) {
   const { userId } = props
   const changes = useProbChangesAlgolia(userId ?? '')
 
+  if (changes) {
+    const { positiveChanges, negativeChanges } = changes
+    if (
+      !positiveChanges.find((c) => c.probChanges.day >= 0.01) ||
+      !negativeChanges.find((c) => c.probChanges.day <= -0.01)
+    )
+      return null
+  }
+
   return (
     <Col className="gap-2">
       <SectionHeader label="Daily movers" href="/daily-movers" />
