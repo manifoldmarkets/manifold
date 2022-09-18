@@ -86,6 +86,8 @@ export type PortfolioMetrics = {
 export const MANIFOLD_USERNAME = 'ManifoldMarkets'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'
 
+// TODO: remove. Hardcoding the strings would be better.
+// Different views require different language.
 export const BETTOR = ENV_CONFIG.bettor ?? 'bettor' // aka predictor
 export const BETTORS = ENV_CONFIG.bettor + 's' ?? 'bettors'
 export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'bet' // aka predict
