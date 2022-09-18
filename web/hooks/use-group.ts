@@ -105,16 +105,19 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
 
 export function useMemberGroupsSubscription(user: User | null | undefined) {
   const cachedGroups = useMemberGroups(user?.id) ?? []
-  const groupIds = useMemberGroupIds(user)
   const [groups, setGroups] = useState(cachedGroups)
 
+  const userId = user?.id
   useEffect(() => {
-    if (groupIds) {
-      Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
-        setGroups(filterDefined(groups))
-      )
+    if (userId) {
+      return listenForMemberGroupIds(userId, (groupIds) => {
+        Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
+          setGroups(filterDefined(groups))
+        )
+      })
     }
-  }, [groupIds])
+  }, [userId])
+
   return groups
 }
 
