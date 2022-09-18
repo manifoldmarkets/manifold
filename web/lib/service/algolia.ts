@@ -7,7 +7,8 @@ export const searchClient = algoliasearch(
 )
 
 const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
-export const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
+export const searchIndexName =
+  ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
 
 export const getIndexName = (sort: string) => {
   return `${indexPrefix}contracts-${sort}`
