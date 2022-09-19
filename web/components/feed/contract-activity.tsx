@@ -126,7 +126,10 @@ export function FreeResponseContractCommentsActivity(props: {
     (answer) => -getOutcomeProbability(contract, answer.number.toString())
   )
   const commentsByUserId = groupBy(comments, (c) => c.userId)
-  const commentsByOutcome = groupBy(comments, (c) => c.answerOutcome ?? '_')
+  const commentsByOutcome = groupBy(
+    comments,
+    (c) => c.answerOutcome ?? c.betOutcome ?? '_'
+  )
 
   return (
     <>
