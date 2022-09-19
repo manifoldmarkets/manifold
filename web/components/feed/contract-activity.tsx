@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Contract, FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
-import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getOutcomeProbability } from 'common/calculate'
 import { Pagination } from 'web/components/pagination'
@@ -12,7 +11,7 @@ import { FeedCommentThread, ContractCommentInput } from './feed-comments'
 import { User } from 'common/user'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { groupBy, sortBy, uniq } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import { Col } from 'web/components/layout/col'
 
 export function ContractBetsActivity(props: {
@@ -115,34 +114,23 @@ export function ContractCommentsActivity(props: {
 
 export function FreeResponseContractCommentsActivity(props: {
   contract: FreeResponseContract
-  bets: Bet[]
+  betsByCurrentUser: Bet[]
   comments: ContractComment[]
   tips: CommentTipMap
   user: User | null | undefined
 }) {
-  const { bets, contract, comments, user, tips } = props
+  const { betsByCurrentUser, contract, comments, user, tips } = props
 
-  let outcomes = uniq(bets.map((bet) => bet.outcome))
-  outcomes = sortBy(
-    outcomes,
-    (outcome) => -getOutcomeProbability(contract, outcome)
+  const sortedAnswers = sortBy(
+    contract.answers,
+    (answer) => -getOutcomeProbability(contract, answer.number.toString())
   )
-
-  const answers = outcomes
-    .map((outcome) => {
-      return contract.answers.find((answer) => answer.id === outcome) as Answer
-    })
-    .filter((answer) => answer != null)
-
-  const betsByCurrentUser = user
-    ? bets.filter((bet) => bet.userId === user.id)
-    : []
   const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByOutcome = groupBy(comments, (c) => c.answerOutcome ?? '_')
 
   return (
     <>
-      {answers.map((answer) => (
+      {sortedAnswers.map((answer) => (
         <div key={answer.id} className={'relative pb-4'}>
           <span
             className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
