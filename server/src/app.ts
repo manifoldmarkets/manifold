@@ -28,7 +28,7 @@ export default class App {
 
     selectedMarketMap: { [twitchChannel: string]: Market } = {};
 
-    autoUnfeatureTimer: NodeJS.Timeout = null;
+    autoUnfeatureTimers : { [twitchChannel: string]: NodeJS.Timeout } = {};
 
     constructor() {
         this.app = express();
@@ -101,6 +101,11 @@ export default class App {
     }
 
     public async unfeatureCurrentMarket(channel: string, sourceDock?: DockClient) {
+        if (this.autoUnfeatureTimers[channel]) {
+            clearTimeout(this.autoUnfeatureTimers[channel]);
+            delete this.autoUnfeatureTimers[channel];
+        }
+
         const existingMarket = this.getMarketForTwitchChannel(channel);
         if (existingMarket) {
             existingMarket.continuePolling = false;
@@ -119,7 +124,7 @@ export default class App {
     }
 
     public marketResolved(channel: string, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
-        this.autoUnfeatureTimer = setTimeout(() => {
+        this.autoUnfeatureTimers[channel] = setTimeout(() => {
             this.selectMarket(channel, null);
             this.io.to(channel).emit(UNFEATURE_MARKET);
         }, 24000);
