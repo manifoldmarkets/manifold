@@ -1,7 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { compact } from 'lodash'
-import { getContract, getUser, getValues } from './utils'
+import {
+  getContract,
+  getContractPath,
+  getUser,
+  getValues,
+  revalidateStaticProps,
+} from './utils'
 import { ContractComment } from '../../common/comment'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
@@ -33,6 +39,8 @@ export const onCreateCommentOnContract = functions
       contractSlug: contract.slug,
       contractQuestion: contract.question,
     })
+
+    await revalidateStaticProps(getContractPath(contract))
 
     const comment = change.data() as ContractComment
     const lastCommentTime = comment.createdTime
