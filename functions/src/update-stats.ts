@@ -199,8 +199,7 @@ export const updateStatsCore = async () => {
     const retainedCount = sumBy(Array.from(newTwoWeeksAgo), (userId) =>
       activeLastWeek.has(userId) ? 1 : 0
     )
-    const retainedFrac = retainedCount / newTwoWeeksAgo.size
-    return Math.round(retainedFrac * 100 * 100) / 100
+    return retainedCount / newTwoWeeksAgo.size
   })
 
   const weekOnWeekRetention = dailyUserIds.map((_userId, i) => {
@@ -222,8 +221,7 @@ export const updateStatsCore = async () => {
     const retainedCount = sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
       activeLastWeek.has(userId) ? 1 : 0
     )
-    const retainedFrac = retainedCount / activeTwoWeeksAgo.size
-    return Math.round(retainedFrac * 100 * 100) / 100
+    return retainedCount / activeTwoWeeksAgo.size
   })
 
   const monthlyRetention = dailyUserIds.map((_userId, i) => {
@@ -245,8 +243,7 @@ export const updateStatsCore = async () => {
     const retainedCount = sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
       activeLastMonth.has(userId) ? 1 : 0
     )
-    const retainedFrac = retainedCount / activeTwoMonthsAgo.size
-    return Math.round(retainedFrac * 100 * 100) / 100
+    return retainedCount / activeTwoMonthsAgo.size
   })
 
   const firstBetDict: { [userId: string]: number } = {}
@@ -272,8 +269,7 @@ export const updateStatsCore = async () => {
         }
       }
     }
-    const frac = activatedCount / (newUsers || 1)
-    return Math.round(frac * 100 * 100) / 100
+    return activatedCount / (newUsers || 1)
   })
   const dailySignups = dailyNewUsers.map((users) => users.length)
 
