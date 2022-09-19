@@ -1,7 +1,7 @@
 # -- Stage 1 -- #
 FROM node:16 as builder
 WORKDIR /manifold
-COPY package.json yarn.lock .
+COPY package.json yarn.lock ./
 COPY web/package.json web/package.json
 COPY server/package.json server/package.json
 COPY common/package.json common/package.json
