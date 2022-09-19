@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import fetch from 'node-fetch'
 
 import { chunk } from 'lodash'
 import { Contract } from '../../common/contract'
@@ -24,7 +25,7 @@ export const revalidateStaticProps = async (
   if (isProd()) {
     const apiSecret = process.env.API_SECRET as string
     const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
-    await fetch('https://manifold.markets' + queryStr)
+    await fetch('https://manifold.markets/api/v0/revalidate' + queryStr)
     console.log('Revalidated', pathToRevalidate)
   }
 }
