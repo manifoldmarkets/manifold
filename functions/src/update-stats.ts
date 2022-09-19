@@ -142,40 +142,77 @@ export const updateStatsCore = async () => {
 
   const weeklyActiveUsers = dailyUserIds.map((_, i) => {
     const start = Math.max(0, i - 6)
-    const end = i
-    const uniques = new Set<string>()
-    for (let j = start; j <= end; j++)
-      dailyUserIds[j].forEach((userId) => uniques.add(userId))
+    const end = i + 1
+    const uniques = new Set<string>(dailyUserIds.slice(start, end).flat())
     return uniques.size
   })
 
   const monthlyActiveUsers = dailyUserIds.map((_, i) => {
     const start = Math.max(0, i - 29)
-    const end = i
-    const uniques = new Set<string>()
-    for (let j = start; j <= end; j++)
-      dailyUserIds[j].forEach((userId) => uniques.add(userId))
+    const end = i + 1
+    const uniques = new Set<string>(dailyUserIds.slice(start, end).flat())
     return uniques.size
+  })
+
+  const d1 = dailyUserIds.map((userIds, i) => {
+    if (i === 0) return 0
+
+    const uniques = new Set(userIds)
+    const yesterday = dailyUserIds[i - 1]
+
+    const retainedCount = sumBy(yesterday, (userId) =>
+      uniques.has(userId) ? 1 : 0
+    )
+    return retainedCount / uniques.size
+  })
+
+  const d1Weekly = d1.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(d1.slice(start, end))
+  })
+
+  const dailyNewUserIds = dailyNewUsers.map((users) => users.map((u) => u.id))
+  const w1NewUsers = dailyNewUserIds.map((_userIds, i) => {
+    if (i < 13) return 0
+
+    const twoWeeksAgo = {
+      start: Math.max(0, i - 13),
+      end: Math.max(0, i - 6),
+    }
+    const lastWeek = {
+      start: Math.max(0, i - 6),
+      end: i + 1,
+    }
+    const newTwoWeeksAgo = new Set<string>(
+      dailyNewUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
+    )
+    const activeLastWeek = new Set<string>(
+      dailyUserIds.slice(lastWeek.start, lastWeek.end).flat()
+    )
+    const retainedCount = sumBy(Array.from(newTwoWeeksAgo), (userId) =>
+      activeLastWeek.has(userId) ? 1 : 0
+    )
+    const retainedFrac = retainedCount / newTwoWeeksAgo.size
+    return Math.round(retainedFrac * 100 * 100) / 100
   })
 
   const weekOnWeekRetention = dailyUserIds.map((_userId, i) => {
     const twoWeeksAgo = {
       start: Math.max(0, i - 13),
-      end: Math.max(0, i - 7),
+      end: Math.max(0, i - 6),
     }
     const lastWeek = {
       start: Math.max(0, i - 6),
-      end: i,
+      end: i + 1,
     }
 
-    const activeTwoWeeksAgo = new Set<string>()
-    for (let j = twoWeeksAgo.start; j <= twoWeeksAgo.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeTwoWeeksAgo.add(userId))
-    }
-    const activeLastWeek = new Set<string>()
-    for (let j = lastWeek.start; j <= lastWeek.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeLastWeek.add(userId))
-    }
+    const activeTwoWeeksAgo = new Set<string>(
+      dailyUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
+    )
+    const activeLastWeek = new Set<string>(
+      dailyUserIds.slice(lastWeek.start, lastWeek.end).flat()
+    )
     const retainedCount = sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
       activeLastWeek.has(userId) ? 1 : 0
     )
@@ -185,22 +222,20 @@ export const updateStatsCore = async () => {
 
   const monthlyRetention = dailyUserIds.map((_userId, i) => {
     const twoMonthsAgo = {
-      start: Math.max(0, i - 60),
-      end: Math.max(0, i - 30),
+      start: Math.max(0, i - 59),
+      end: Math.max(0, i - 29),
     }
     const lastMonth = {
-      start: Math.max(0, i - 30),
-      end: i,
+      start: Math.max(0, i - 29),
+      end: i + 1,
     }
 
-    const activeTwoMonthsAgo = new Set<string>()
-    for (let j = twoMonthsAgo.start; j <= twoMonthsAgo.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeTwoMonthsAgo.add(userId))
-    }
-    const activeLastMonth = new Set<string>()
-    for (let j = lastMonth.start; j <= lastMonth.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeLastMonth.add(userId))
-    }
+    const activeTwoMonthsAgo = new Set<string>(
+      dailyUserIds.slice(twoMonthsAgo.start, twoMonthsAgo.end).flat()
+    )
+    const activeLastMonth = new Set<string>(
+      dailyUserIds.slice(lastMonth.start, lastMonth.end).flat()
+    )
     const retainedCount = sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
       activeLastMonth.has(userId) ? 1 : 0
     )
@@ -254,12 +289,12 @@ export const updateStatsCore = async () => {
   })
   const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
     const start = Math.max(0, i - 6)
-    const end = i
+    const end = i + 1
     return average(dailyTopTenthActions.slice(start, end))
   })
   const monthlyTopTenthActions = dailyTopTenthActions.map((_, i) => {
     const start = Math.max(0, i - 29)
-    const end = i
+    const end = i + 1
     return average(dailyTopTenthActions.slice(start, end))
   })
 
@@ -269,16 +304,16 @@ export const updateStatsCore = async () => {
   })
   const weeklyManaBet = dailyManaBet.map((_, i) => {
     const start = Math.max(0, i - 6)
-    const end = i
+    const end = i + 1
     const total = sum(dailyManaBet.slice(start, end))
     if (end - start < 7) return (total * 7) / (end - start)
     return total
   })
   const monthlyManaBet = dailyManaBet.map((_, i) => {
     const start = Math.max(0, i - 29)
-    const end = i
+    const end = i + 1
     const total = sum(dailyManaBet.slice(start, end))
-    const range = end - start + 1
+    const range = end - start
     if (range < 30) return (total * 30) / range
     return total
   })
@@ -288,6 +323,9 @@ export const updateStatsCore = async () => {
     dailyActiveUsers,
     weeklyActiveUsers,
     monthlyActiveUsers,
+    d1,
+    d1Weekly,
+    w1NewUsers,
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,

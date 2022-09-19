@@ -47,30 +47,11 @@ export default function Analytics() {
   )
 }
 
-export function CustomAnalytics(props: {
-  startDate: number
-  dailyActiveUsers: number[]
-  weeklyActiveUsers: number[]
-  monthlyActiveUsers: number[]
-  dailyBetCounts: number[]
-  dailyContractCounts: number[]
-  dailyCommentCounts: number[]
-  dailySignups: number[]
-  weekOnWeekRetention: number[]
-  monthlyRetention: number[]
-  weeklyActivationRate: number[]
-  topTenthActions: {
-    daily: number[]
-    weekly: number[]
-    monthly: number[]
-  }
-  manaBet: {
-    daily: number[]
-    weekly: number[]
-    monthly: number[]
-  }
-}) {
+export function CustomAnalytics(props: Stats) {
   const {
+    d1,
+    d1Weekly,
+    w1NewUsers,
     dailyActiveUsers,
     dailyBetCounts,
     dailyContractCounts,
@@ -144,6 +125,60 @@ export function CustomAnalytics(props: {
             content: (
               <DailyCountChart
                 dailyCounts={monthlyActiveUsers}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
+      />
+      <Spacer h={8} />
+
+      <Title text="D1" />
+      <p className="text-gray-500">
+        The fraction of users that took an action yesterday that took an action
+        today.
+      </p>
+      <Spacer h={4} />
+
+      <Tabs
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'D1',
+            content: (
+              <DailyCountChart dailyCounts={d1} startDate={startDate} small />
+            ),
+          },
+          {
+            title: 'D1 weekly average',
+            content: (
+              <DailyCountChart
+                dailyCounts={d1Weekly}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+        ]}
+      />
+      <Spacer h={8} />
+
+      <Title text="W1 New users" />
+      <p className="text-gray-500">
+        The fraction of new users two weeks ago that took an action in the past
+        week.
+      </p>
+      <Spacer h={4} />
+
+      <Tabs
+        defaultIndex={0}
+        tabs={[
+          {
+            title: 'W1',
+            content: (
+              <DailyCountChart
+                dailyCounts={w1NewUsers}
                 startDate={startDate}
                 small
               />
