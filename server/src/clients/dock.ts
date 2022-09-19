@@ -48,7 +48,7 @@ export default class DockClient {
 
         this.socket.on(Packet.UNFEATURE_MARKET, async () => {
             log.debug(`Market unfeatured for channel '${connectedTwitchStream}'`);
-            await this.app.selectMarket(connectedTwitchStream, null);
+            await this.app.selectMarket(connectedTwitchStream, null, this);
             this.socket.broadcast.to(connectedTwitchStream).emit(Packet.UNFEATURE_MARKET);
         });
 

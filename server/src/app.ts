@@ -77,12 +77,6 @@ export default class App {
     }
 
     public async selectMarket(channel: string, id: string, sourceDock?: DockClient): Promise<Market> {
-        if (sourceDock) {
-            sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-        } else {
-            this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-        }
-
         if (this.autoUnfeatureTimer) {
             clearTimeout(this.autoUnfeatureTimer);
             this.autoUnfeatureTimer = null;
@@ -95,6 +89,12 @@ export default class App {
         }
 
         if (id) {
+            if (sourceDock) {
+                sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+            } else {
+                this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+            }
+            
             const marketData = await Manifold.getFullMarketByID(id);
             if (!marketData || marketData.isResolved) throw new Error("Attempted to feature invalid market");
             const market = new Market(this, marketData, channel);
