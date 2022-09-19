@@ -126,22 +126,24 @@ function ProvenCorrectBadgeItem(props: {
     <SiteLink
       href={contractPathWithoutContract(contractCreatorUsername, contractSlug)}
     >
-      <Medal rarity={rarity} />
-      <Tooltip
-        text={`Make a comment attached to a winning bet worth ${betAmount}`}
-      >
-        <span
-          className={
-            rarity === 'gold'
-              ? goldClassName
-              : rarity === 'silver'
-              ? silverClassName
-              : bronzeClassName
-          }
+      <Col className={'text-center'}>
+        <Medal rarity={rarity} />
+        <Tooltip
+          text={`Make a comment attached to a winning bet worth ${betAmount}`}
         >
-          Proven Correct
-        </span>
-      </Tooltip>
+          <span
+            className={
+              rarity === 'gold'
+                ? goldClassName
+                : rarity === 'silver'
+                ? silverClassName
+                : bronzeClassName
+            }
+          >
+            Proven Correct
+          </span>
+        </Tooltip>
+      </Col>
     </SiteLink>
   )
 }

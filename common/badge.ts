@@ -48,7 +48,7 @@ const calculateProvenCorrectBadgeRarity = (badge: ProvenCorrectBadge) => {
   const thresholdArray = provenCorrectRarityThresholds
   let i = thresholdArray.length - 1
   while (i >= 0) {
-    if (betAmount == thresholdArray[i]) {
+    if (betAmount >= thresholdArray[i]) {
       return i + 1
     }
     i--
@@ -56,7 +56,7 @@ const calculateProvenCorrectBadgeRarity = (badge: ProvenCorrectBadge) => {
   return 1
 }
 
-export const streakerBadgeRarityThresholds = [1, 25, 100]
+export const streakerBadgeRarityThresholds = [1, 50, 125]
 const calculateStreakerBadgeRarity = (badge: StreakerBadge) => {
   const { totalBettingStreak } = badge.data
   const thresholdArray = streakerBadgeRarityThresholds
@@ -70,7 +70,7 @@ const calculateStreakerBadgeRarity = (badge: StreakerBadge) => {
   return 1
 }
 
-export const marketMakerBadgeRarityThresholds = [1, 25, 150]
+export const marketMakerBadgeRarityThresholds = [1, 50, 200]
 const calculateMarketMakerBadgeRarity = (badge: MarketCreatorBadge) => {
   const { totalContractsCreated } = badge.data
   const thresholdArray = marketMakerBadgeRarityThresholds
