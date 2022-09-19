@@ -85,6 +85,7 @@ export default () => {
                 });
                 setTimeout(() => reject(new Error("Timeout")), 20000);
             });
+            localStorage.setItem("PREV_QUESTION", question);
             return true;
         } catch (e) {
             console.trace(e);
@@ -173,6 +174,11 @@ export default () => {
         }
         if (firstLoad.current) {
             localStorage.setItem("SELECTED_GROUP", selectedGroup && JSON.stringify({ groupID: selectedGroup.id, groupName: selectedGroup.name } as SelectedGroup));
+        } else {
+            const previousQuestion = localStorage.getItem("PREV_QUESTION");
+            if (previousQuestion) {
+                setQuestion(previousQuestion);
+            }
         }
         firstLoad.current = true;
     }, [selectedGroup]);
