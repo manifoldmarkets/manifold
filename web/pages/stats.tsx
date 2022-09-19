@@ -145,14 +145,18 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'D1',
             content: (
-              <DailyCountChart dailyCounts={d1} startDate={startDate} small />
+              <DailyPercentChart
+                dailyPercent={d1}
+                startDate={startDate}
+                small
+              />
             ),
           },
           {
             title: 'D1 weekly average',
             content: (
-              <DailyCountChart
-                dailyCounts={d1Weekly}
+              <DailyPercentChart
+                dailyPercent={d1Weekly}
                 startDate={startDate}
                 small
               />
@@ -175,8 +179,8 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'W1',
             content: (
-              <DailyCountChart
-                dailyCounts={w1NewUsers}
+              <DailyPercentChart
+                dailyPercent={w1NewUsers}
                 startDate={startDate}
                 small
               />
