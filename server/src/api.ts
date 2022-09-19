@@ -2,7 +2,7 @@ import { Express } from "express";
 import App from "./app";
 import * as Manifold from "./manifold-api";
 import log from "./logger";
-import { PUBLIC_FACING_URL, TWTICH_APP_CLIENT_ID } from "./envs";
+import { PUBLIC_FACING_URL, TWITCH_BOT_CLIENT_ID } from "./envs";
 import crypto from "crypto"
 import { buildURL, getParamsFromURL } from "./utils";
 import User from "./user";
@@ -62,7 +62,7 @@ export default function registerAPIEndpoints(app: App, express: Express) {
             };
 
             const params = {
-                client_id: TWTICH_APP_CLIENT_ID,
+                client_id: TWITCH_BOT_CLIENT_ID,
                 response_type: "code",
                 redirect_uri: `${PUBLIC_FACING_URL}/linkAccount`,
                 scope: "user:read:email",
