@@ -17,6 +17,18 @@ export const logMemory = () => {
   }
 }
 
+export const revalidateStaticProps = async (
+  // Path after domain: e.g. "/JamesGrugett/will-pete-buttigieg-ever-be-us-pres"
+  pathToRevalidate: string
+) => {
+  if (isProd()) {
+    const apiSecret = process.env.API_SECRET as string
+    const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
+    await fetch('https://manifold.markets' + queryStr)
+    console.log('Revalidated', pathToRevalidate)
+  }
+}
+
 export type UpdateSpec = {
   doc: admin.firestore.DocumentReference
   fields: { [k: string]: unknown }
@@ -152,4 +164,8 @@ export const chargeUser = (
     throw new Error('User charge is not positive: ' + charge)
 
   return updateUserBalance(userId, -charge, isAnte)
+}
+
+export const getContractPath = (contract: Contract) => {
+  return `/${contract.creatorUsername}/${contract.slug}`
 }
