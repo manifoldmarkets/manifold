@@ -1,5 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
 import { concat, countBy, sortBy, range, zip, uniq, sum, sumBy } from 'lodash'
 import { getValues, log, logMemory } from './utils'
 import { Bet } from '../../common/bet'
@@ -103,7 +109,7 @@ export async function getDailyNewUsers(
 }
 
 export const updateStatsCore = async () => {
-  const today = Date.now()
+  const today = dayjs().tz('America/Pacific').startOf('day').valueOf()
   const startDate = today - numberOfDays * DAY_MS
 
   log('Fetching data for stats update...')

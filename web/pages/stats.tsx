@@ -1,4 +1,3 @@
-import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import {
   DailyCountChart,
@@ -49,6 +48,7 @@ export default function Analytics() {
 
 export function CustomAnalytics(props: Stats) {
   const {
+    startDate,
     d1,
     d1Weekly,
     w1NewUsers,
@@ -65,8 +65,6 @@ export function CustomAnalytics(props: Stats) {
     topTenthActions,
     manaBet,
   } = props
-
-  const startDate = dayjs(props.startDate).add(12, 'hours').valueOf()
 
   const dailyDividedByWeekly = dailyActiveUsers
     .map((dailyActive, i) =>
