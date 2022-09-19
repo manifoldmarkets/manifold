@@ -78,12 +78,17 @@ export function ProbChange(props: {
     prob,
     probChanges: { day: change },
   } = contract
+
+  const color = change >= 0 ? 'text-green-500' : 'text-red-500'
+
   return (
     <Col className={clsx('flex flex-col items-end', className)}>
-      <span className="mb-0.5 mr-0.5 text-2xl">
+      <div className="mb-0.5 mr-0.5 text-2xl">
         {formatPercent(Math.round(100 * prob) / 100)}
-      </span>
-      <ProfitBadge className="ml-0" profitPercent={100 * change} round />
+      </div>
+      <div className={clsx('text-base', color)}>
+        {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
+      </div>
     </Col>
   )
 }
