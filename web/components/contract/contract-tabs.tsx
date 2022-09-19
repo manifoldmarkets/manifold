@@ -75,7 +75,9 @@ export function ContractTabs(props: {
       <>
         <FreeResponseContractCommentsActivity
           contract={contract}
-          bets={visibleBets}
+          betsByCurrentUser={
+            user ? visibleBets.filter((b) => b.userId === user.id) : []
+          }
           comments={comments}
           tips={tips}
           user={user}
