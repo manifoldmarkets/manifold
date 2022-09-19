@@ -262,7 +262,11 @@ export default function GroupPage(props: {
 
   return (
     <>
-      <TopGroupNavBar group={group} />
+      <TopGroupNavBar
+        group={group}
+        currentPage={sidebarPages[sidebarIndex].key}
+        onClick={onSidebarClick}
+      />
       <div>
         <div
           className={
@@ -287,19 +291,19 @@ export default function GroupPage(props: {
             {pageContent}
           </main>
         </div>
-        <GroupNavBar
-          currentPage={sidebarPages[sidebarIndex].key}
-          onClick={onSidebarClick}
-        />
       </div>
     </>
   )
 }
 
-export function TopGroupNavBar(props: { group: Group }) {
+export function TopGroupNavBar(props: {
+  group: Group
+  currentPage: string
+  onClick: (key: string) => void
+}) {
   return (
-    <header className="sticky top-0 z-50 w-full pb-2 md:hidden lg:col-span-12">
-      <div className="flex items-center  border-b border-gray-200 bg-white  px-4">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
+      <div className="flex items-center   bg-white  px-4">
         <div className="flex-shrink-0">
           <Link href="/">
             <a className="text-indigo-700 hover:text-gray-500 ">
@@ -313,6 +317,7 @@ export function TopGroupNavBar(props: { group: Group }) {
           </h1>
         </div>
       </div>
+      <GroupNavBar currentPage={props.currentPage} onClick={props.onClick} />
     </header>
   )
 }
