@@ -6,7 +6,6 @@ import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
-import { ProfitBadge } from '../bets-list'
 
 export function ProbChangeTable(props: {
   changes:
