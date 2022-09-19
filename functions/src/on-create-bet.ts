@@ -3,7 +3,14 @@ import * as admin from 'firebase-admin'
 import { keyBy, uniq } from 'lodash'
 
 import { Bet, LimitBet } from '../../common/bet'
-import { getUser, getValues, isProd, log } from './utils'
+import {
+  getContractPath,
+  getUser,
+  getValues,
+  isProd,
+  log,
+  revalidateStaticProps,
+} from './utils'
 import {
   createBetFillNotification,
   createBettingStreakBonusNotification,
@@ -72,6 +79,8 @@ export const onCreateBet = functions
     await updateBettingStreak(bettor, bet, contract, eventId)
 
     await firestore.collection('users').doc(bettor.id).update({ lastBetTime })
+
+    await revalidateStaticProps(getContractPath(contract))
   })
 
 const updateBettingStreak = async (
