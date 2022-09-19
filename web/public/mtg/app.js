@@ -316,6 +316,7 @@ function setUpNewGame() {
     currName.innerHTML = namesList[nameIndex - 1]
     nameBank.appendChild(currName)
   }
+  document.querySelectorAll('.temporary-name-holder').forEach((x) => x.remove())
 }
 
 function removeSymbol(name) {
@@ -341,7 +342,6 @@ function checkAnswers() {
       // decide if their guess was correct
       // window.console.log(ans, guess, incorrect)
       correctAns = String.fromCodePoint(0x2705) + ' ' + ansWithSymbol
-      incorrectAns = String.fromCodePoint(0x274c) + ' ' + guessWithSymbol
       if (incorrect) {
         window.console.log(
           document.getElementById(currCard.dataset.name),
@@ -349,14 +349,28 @@ function checkAnswers() {
           ans
         )
         document.getElementById(currCard.dataset.name).innerHTML =
-          incorrectAns +
-          '<br/><span style="opacity:0;">' +
+          String.fromCodePoint(0x274c) +
+          '&nbsp;<i style="opacity:.6"><strike>' +
+          guessWithSymbol +
+          '</strike></i><br/><span style="opacity:0;">' +
           String.fromCodePoint(0x274c) +
           '</span>&nbsp;' +
           ansWithSymbol
       } else {
         document.getElementById(currCard.dataset.name).innerHTML = correctAns
       }
+    } else {
+      answerCorrectionHolder = document.createElement('div')
+      answerCorrectionHolder.classList.add('name')
+      answerCorrectionHolder.classList.add('temporary-name-holder')
+
+      answerCorrectionHolder.innerHTML =
+        String.fromCodePoint(0x274c) +
+        '&nbsp;<i style="opacity:.6">&lt;No Answer&gt;&nbsp;</i><br/><span style="opacity:0;">' +
+        String.fromCodePoint(0x274c) +
+        '</span>&nbsp;' +
+        artDict[currCard.dataset.url][0]
+      currCard.appendChild(answerCorrectionHolder)
     }
     if (incorrect) {
       currCard.classList.add('incorrect')

@@ -360,13 +360,13 @@ def write_image_uris(card_image_uris):
 
 
 if __name__ == "__main__":
-    # for category in allCategories:
-    #     print(category)
-    #     fetch_and_write_all(category, generate_initial_query(category))
-    # for category in specialCategories:
-    #     print(category)
-    #     fetch_and_write_all_special(
-    #         category, generate_initial_special_query(category))
+    for category in allCategories:
+        print(category)
+        fetch_and_write_all(category, generate_initial_query(category))
+    for category in specialCategories:
+        print(category)
+        fetch_and_write_all_special(
+            category, generate_initial_special_query(category))
     # uncomment this once in a while, but it's expensive to run
-    # fetch_and_write_initial_artist_query()
+    fetch_and_write_initial_artist_query()
     fetch_and_write_all_artist()

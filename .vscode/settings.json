@@ -9,8 +9,5 @@
   },
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.python"
-  }
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
