@@ -77,16 +77,7 @@ export default class App {
     }
 
     public async selectMarket(channel: string, id: string, sourceDock?: DockClient): Promise<Market> {
-        if (this.autoUnfeatureTimer) {
-            clearTimeout(this.autoUnfeatureTimer);
-            this.autoUnfeatureTimer = null;
-        }
-
-        const existingMarket = this.getMarketForTwitchChannel(channel);
-        if (existingMarket) {
-            existingMarket.continuePolling = false;
-            delete this.selectedMarketMap[channel];
-        }
+        this.unfeatureCurrentMarket(channel, sourceDock);
 
         if (id) {
             if (sourceDock) {
@@ -94,7 +85,7 @@ export default class App {
             } else {
                 this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
             }
-            
+
             const marketData = await Manifold.getFullMarketByID(id);
             if (!marketData || marketData.isResolved) throw new Error("Attempted to feature invalid market");
             const market = new Market(this, marketData, channel);
@@ -106,6 +97,20 @@ export default class App {
                 this.io.to(channel).emit(Packet.SELECT_MARKET, market.data as PacketSelectMarket);
             }
             return market;
+        }
+    }
+
+    public async unfeatureCurrentMarket(channel: string, sourceDock?: DockClient) {
+        const existingMarket = this.getMarketForTwitchChannel(channel);
+        if (existingMarket) {
+            existingMarket.continuePolling = false;
+            delete this.selectedMarketMap[channel];
+        }
+
+        if (sourceDock) {
+            sourceDock.socket.broadcast.to(channel).emit(Packet.UNFEATURE_MARKET);
+        } else {
+            this.io.to(channel).emit(UNFEATURE_MARKET);
         }
     }
 

@@ -13,20 +13,15 @@ import { getOutcomeForString } from "common/outcome";
 
 export class Market {
     private readonly app: App;
-    readonly bets: FullBet[] = [];
+    private readonly twitchChannel: string;
     private latestLoadedBetId: string = null;
-
-    data: FullMarket;
-    pendingBets: Bet[] = [];
-    pendingFetches = {};
-    userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
-
-    continuePolling = false;
-    readonly pollTask: () => void;
-
-    resolveData: PacketResolved = null;
-
-    readonly twitchChannel: string;
+    private userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
+    private readonly pollTask: () => void;
+    
+    public readonly bets: FullBet[] = [];
+    public data: FullMarket;
+    public resolveData: PacketResolved = null;
+    public continuePolling = false;
 
     constructor(app: App, data: FullMarket, twitchChannel: string) {
         this.app = app;
@@ -251,34 +246,6 @@ export class Market {
         return (this.userIdToNameMap[userID] = name);
     }
 
-    private async loadUser(userId: string) {
-        if (this.pendingFetches[userId]) return;
-
-        this.pendingFetches[userId] = userId;
-        try {
-            const user = await Manifold.getUserByID(userId);
-            log.info(`Loaded user ${user.name}.`);
-            delete this.pendingFetches[userId];
-            this.userIdToNameMap[user.id] = user.name;
-
-            const betsToRemove = [];
-            while (this.pendingBets.length) {
-                const bet = this.pendingBets[0];
-                if (user.id == bet.userId) {
-                    const fullBet: FullBet = {
-                        ...bet,
-                        username: user.name,
-                    };
-                    this.addBet(fullBet);
-                    betsToRemove.push(bet);
-                }
-                this.pendingBets.splice(0, 1);
-            }
-        } catch (e) {
-            log.trace(e);
-        }
-    }
-
     async pollBets(numBetsToLoad = 10) {
         try {
             const bets = await Manifold.getLatestMarketBets(this.getSlug(), numBetsToLoad);
@@ -301,19 +268,12 @@ export class Market {
             }
             newBets.reverse();
             for (const bet of newBets) {
-                const username = this.userIdToNameMap[bet.userId];
-                if (!bet.isRedemption) {
-                    if (!username) {
-                        this.loadUser(bet.userId);
-                        this.pendingBets.push(bet);
-                    } else {
-                        const fullBet: FullBet = {
-                            ...bet,
-                            username: username,
-                        };
-                        this.addBet(fullBet);
-                    }
-                }
+                const username = await this.getDisplayNameForUserID(bet.userId);
+                const fullBet: FullBet = {
+                    ...bet,
+                    username,
+                };
+                this.addBet(fullBet);
             }
             if (!foundPreviouslyLoadedBet) {
                 log.info("Failed to find previously loaded bet. Expanding search...");

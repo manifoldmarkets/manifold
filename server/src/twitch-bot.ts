@@ -38,6 +38,7 @@ const MSG_MARKET_CREATED = (username: string, question: string, defaultGroup: st
     `${username}'s market '${question}' has been created${defaultGroup ? ` in group '${defaultGroup}'` : ""}!${
         !defaultGroup ? " No default group was selected. Use /setdefaultgroup to set one." : ""
     }`;
+const MSG_MARKET_UNFEATURED = () => `Market unfeatured.`;
 const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
 const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
 
@@ -170,7 +171,11 @@ export default class TwitchBot {
             },
             feature: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
                 if (args.length < 1) return;
-                this.app.selectMarket(channel, (await Manifold.getMarketBySlug(args[0])).id);
+                await this.app.selectMarket(channel, (await Manifold.getMarketBySlug(args[0])).id);
+            },
+            unfeature: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
+                await this.app.selectMarket(channel, null);
+                this.client.say(channel, MSG_MARKET_UNFEATURED());
             },
             setdefaultgroup: async (user: User, tags: ChatUserstate, args: string[], channel: string) => {
                 if (args.length < 1) return;
