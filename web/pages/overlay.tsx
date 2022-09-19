@@ -373,7 +373,7 @@ export default () => {
                             >
                                 <Col className="absolute text-white bg-[#212121] leading-[normal] inset-0 p-4 font-bold">
                                     <Row className="justify-between">
-                                        <Row className="items-center text-4xl">
+                                        <Row className="items-center text-3xl">
                                             <div>Resolved</div>
                                             &nbsp;
                                             {resolvedData.outcome == "YES" ? (
@@ -384,7 +384,7 @@ export default () => {
                                                 <div className={clsx("", styles.blue, styles.color)}>N/A</div>
                                             )}
                                         </Row>
-                                        <Col className="items-center text-1xl">
+                                        <Col className="items-center text-1xl text-center">
                                             <div>{resolvedData.uniqueTraders} unique</div>
                                             <div>trader{resolvedData.uniqueTraders === 1 ? "" : "s"}!</div>
                                         </Col>
