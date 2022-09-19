@@ -64,18 +64,21 @@ export function DailyPercentChart(props: {
   startDate: number
   dailyPercent: number[]
   small?: boolean
+  excludeFirstDays?: number
 }) {
-  const { dailyPercent, startDate, small } = props
+  const { dailyPercent, startDate, small, excludeFirstDays } = props
   const { width } = useWindowSize()
 
   const dates = dailyPercent.map((_, i) =>
     dayjs(startDate).add(i, 'day').toDate()
   )
 
-  const points = zip(dates, dailyPercent).map(([date, percent]) => ({
-    x: date,
-    y: percent,
-  }))
+  const points = zip(dates, dailyPercent)
+    .map(([date, percent]) => ({
+      x: date,
+      y: percent,
+    }))
+    .slice(excludeFirstDays ?? 0)
   const data = [{ id: 'Percent', data: points, color: '#11b981' }]
 
   const bottomAxisTicks = width && width < 600 ? 6 : undefined
@@ -128,7 +131,7 @@ function Tooltip(props: { point: Point; isPercent?: boolean }) {
         }}
       >
         <strong>{point.serieId}</strong>{' '}
-        {isPercent ? formatPercent(+point.data.y) : point.data.yFormatted}
+        {isPercent ? formatPercent(+point.data.y) : Math.round(+point.data.y)}
       </div>
       <div>{dayjs(point.data.x).format('MMM DD')}</div>
     </Col>

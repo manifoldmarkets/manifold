@@ -49,16 +49,19 @@ export default function Analytics() {
 export function CustomAnalytics(props: Stats) {
   const {
     startDate,
-    d1,
-    d1Weekly,
-    w1NewUsers,
     dailyActiveUsers,
+    dailyActiveUsersWeeklyAvg,
+    weeklyActiveUsers,
+    monthlyActiveUsers,
+    d1,
+    d1WeeklyAvg,
+    nd1,
+    nd1WeeklyAvg,
+    nw1,
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,
     dailySignups,
-    weeklyActiveUsers,
-    monthlyActiveUsers,
     weekOnWeekRetention,
     monthlyRetention,
     weeklyActivationRate,
@@ -109,6 +112,16 @@ export function CustomAnalytics(props: Stats) {
             ),
           },
           {
+            title: 'Daily (7d avg)',
+            content: (
+              <DailyCountChart
+                dailyCounts={dailyActiveUsersWeeklyAvg}
+                startDate={startDate}
+                small
+              />
+            ),
+          },
+          {
             title: 'Weekly',
             content: (
               <DailyCountChart
@@ -132,13 +145,11 @@ export function CustomAnalytics(props: Stats) {
       />
       <Spacer h={8} />
 
-      <Title text="D1" />
+      <Title text="Retention" />
       <p className="text-gray-500">
-        The fraction of users that took an action yesterday that took an action
-        today.
+        What fraction of active users are still active after the given time
+        period?
       </p>
-      <Spacer h={4} />
-
       <Tabs
         defaultIndex={1}
         tabs={[
@@ -149,39 +160,85 @@ export function CustomAnalytics(props: Stats) {
                 dailyPercent={d1}
                 startDate={startDate}
                 small
+                excludeFirstDays={1}
               />
             ),
           },
           {
-            title: 'D1 weekly average',
+            title: 'D1 (7d avg)',
             content: (
               <DailyPercentChart
-                dailyPercent={d1Weekly}
+                dailyPercent={d1WeeklyAvg}
                 startDate={startDate}
                 small
+                excludeFirstDays={7}
+              />
+            ),
+          },
+          {
+            title: 'W1',
+            content: (
+              <DailyPercentChart
+                dailyPercent={weekOnWeekRetention}
+                startDate={oneWeekLaterDate}
+                small
+                excludeFirstDays={14}
+              />
+            ),
+          },
+          {
+            title: 'M1',
+            content: (
+              <DailyPercentChart
+                dailyPercent={monthlyRetention}
+                startDate={oneWeekLaterDate}
+                small
+                excludeFirstDays={60}
               />
             ),
           },
         ]}
       />
-      <Spacer h={8} />
 
-      <Title text="W1 New users" />
+      <Spacer h={8} />
+      <Title text="New user retention" />
       <p className="text-gray-500">
-        The fraction of new users two weeks ago that took an action in the past
-        week.
+        What fraction of new users are still active after the given time period?
       </p>
       <Spacer h={4} />
 
       <Tabs
-        defaultIndex={0}
+        defaultIndex={2}
         tabs={[
           {
-            title: 'W1',
+            title: 'ND1',
             content: (
               <DailyPercentChart
-                dailyPercent={w1NewUsers}
+                dailyPercent={nd1}
                 startDate={startDate}
+                excludeFirstDays={1}
+                small
+              />
+            ),
+          },
+          {
+            title: 'ND1 (7d avg)',
+            content: (
+              <DailyPercentChart
+                dailyPercent={nd1WeeklyAvg}
+                startDate={startDate}
+                excludeFirstDays={7}
+                small
+              />
+            ),
+          },
+          {
+            title: 'NW1',
+            content: (
+              <DailyPercentChart
+                dailyPercent={nw1}
+                startDate={startDate}
+                excludeFirstDays={14}
                 small
               />
             ),
@@ -239,38 +296,6 @@ export function CustomAnalytics(props: Stats) {
 
       <Spacer h={8} />
 
-      <Title text="Retention" />
-      <p className="text-gray-500">
-        What fraction of active users are still active after the given time
-        period?
-      </p>
-      <Tabs
-        defaultIndex={0}
-        tabs={[
-          {
-            title: 'Weekly',
-            content: (
-              <DailyPercentChart
-                dailyPercent={weekOnWeekRetention.slice(7)}
-                startDate={oneWeekLaterDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Monthly',
-            content: (
-              <DailyPercentChart
-                dailyPercent={monthlyRetention.slice(7)}
-                startDate={oneWeekLaterDate}
-                small
-              />
-            ),
-          },
-        ]}
-      />
-      <Spacer h={8} />
-
       <Title text="Weekly activation rate" />
       <p className="text-gray-500">
         Out of all new users this week, how many placed at least one bet?
@@ -293,6 +318,7 @@ export function CustomAnalytics(props: Stats) {
                 dailyPercent={dailyDividedByWeekly}
                 startDate={oneWeekLaterDate}
                 small
+                excludeFirstDays={7}
               />
             ),
           },
@@ -303,6 +329,7 @@ export function CustomAnalytics(props: Stats) {
                 dailyPercent={dailyDividedByMonthly}
                 startDate={oneWeekLaterDate}
                 small
+                excludeFirstDays={30}
               />
             ),
           },
@@ -313,6 +340,7 @@ export function CustomAnalytics(props: Stats) {
                 dailyPercent={weeklyDividedByMonthly}
                 startDate={oneWeekLaterDate}
                 small
+                excludeFirstDays={30}
               />
             ),
           },

@@ -1,11 +1,14 @@
 export type Stats = {
   startDate: number
   dailyActiveUsers: number[]
+  dailyActiveUsersWeeklyAvg: number[]
   weeklyActiveUsers: number[]
   monthlyActiveUsers: number[]
   d1: number[]
-  d1Weekly: number[]
-  w1NewUsers: number[]
+  d1WeeklyAvg: number[]
+  nd1: number[]
+  nd1WeeklyAvg: number[]
+  nw1: number[]
   dailyBetCounts: number[]
   dailyContractCounts: number[]
   dailyCommentCounts: number[]

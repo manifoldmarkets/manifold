@@ -12,6 +12,7 @@ import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
+import { Stats } from '../../common/stats'
 import { DAY_MS } from '../../common/util/time'
 import { average } from '../../common/util/math'
 
@@ -109,7 +110,7 @@ export async function getDailyNewUsers(
 }
 
 export const updateStatsCore = async () => {
-  const today = dayjs().tz('America/Pacific').startOf('day').valueOf()
+  const today = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
   const startDate = today - numberOfDays * DAY_MS
 
   log('Fetching data for stats update...')
@@ -145,6 +146,11 @@ export const updateStatsCore = async () => {
   )
 
   const dailyActiveUsers = dailyUserIds.map((userIds) => userIds.length)
+  const dailyActiveUsersWeeklyAvg = dailyUserIds.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(dailyActiveUsers.slice(start, end))
+  })
 
   const weeklyActiveUsers = dailyUserIds.map((_, i) => {
     const start = Math.max(0, i - 6)
@@ -172,14 +178,31 @@ export const updateStatsCore = async () => {
     return retainedCount / uniques.size
   })
 
-  const d1Weekly = d1.map((_, i) => {
+  const d1WeeklyAvg = d1.map((_, i) => {
     const start = Math.max(0, i - 6)
     const end = i + 1
     return average(d1.slice(start, end))
   })
 
   const dailyNewUserIds = dailyNewUsers.map((users) => users.map((u) => u.id))
-  const w1NewUsers = dailyNewUserIds.map((_userIds, i) => {
+  const nd1 = dailyUserIds.map((userIds, i) => {
+    if (i === 0) return 0
+
+    const uniques = new Set(userIds)
+    const yesterday = dailyNewUserIds[i - 1]
+
+    const retainedCount = sumBy(yesterday, (userId) =>
+      uniques.has(userId) ? 1 : 0
+    )
+    return retainedCount / uniques.size
+  })
+
+  const nd1WeeklyAvg = nd1.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(nd1.slice(start, end))
+  })
+  const nw1 = dailyNewUserIds.map((_userIds, i) => {
     if (i < 13) return 0
 
     const twoWeeksAgo = {
@@ -243,6 +266,7 @@ export const updateStatsCore = async () => {
     const retainedCount = sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
       activeLastMonth.has(userId) ? 1 : 0
     )
+    if (activeTwoMonthsAgo.size === 0) return 0
     return retainedCount / activeTwoMonthsAgo.size
   })
 
@@ -320,14 +344,17 @@ export const updateStatsCore = async () => {
     return total
   })
 
-  const statsData = {
+  const statsData: Stats = {
     startDate: startDate.valueOf(),
     dailyActiveUsers,
+    dailyActiveUsersWeeklyAvg,
     weeklyActiveUsers,
     monthlyActiveUsers,
     d1,
-    d1Weekly,
-    w1NewUsers,
+    d1WeeklyAvg,
+    nd1,
+    nd1WeeklyAvg,
+    nw1,
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,
