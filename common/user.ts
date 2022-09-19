@@ -88,9 +88,9 @@ export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'
 
 // TODO: remove. Hardcoding the strings would be better.
 // Different views require different language.
-export const BETTOR = ENV_CONFIG.bettor ?? 'bettor' // aka predictor
-export const BETTORS = ENV_CONFIG.bettor + 's' ?? 'bettors'
-export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'bet' // aka predict
-export const PRESENT_BETS = ENV_CONFIG.presentBet + 's' ?? 'bets'
-export const PAST_BET = ENV_CONFIG.pastBet ?? 'bet' // aka prediction
-export const PAST_BETS = ENV_CONFIG.pastBet + 's' ?? 'bets' // aka predictions
+export const BETTOR = ENV_CONFIG.bettor ?? 'trader'
+export const BETTORS = ENV_CONFIG.bettor + 's' ?? 'traders'
+export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'trade'
+export const PRESENT_BETS = ENV_CONFIG.presentBet + 's' ?? 'trades'
+export const PAST_BET = ENV_CONFIG.pastBet ?? 'trade'
+export const PAST_BETS = ENV_CONFIG.pastBet + 's' ?? 'trades'
