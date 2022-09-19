@@ -140,7 +140,7 @@ export default class TwitchBot {
                 log.info(`Create command issued with question '${question}'`);
 
                 try {
-                    const market = await user.createBinaryMarket(question, null, 50, this.defaultGroupID ? this.defaultGroupID : undefined);
+                    const market = await user.createBinaryMarket(question, null, 50, {groupID: this.defaultGroupID ? this.defaultGroupID : undefined, visibility: 'unlisted'});
                     log.info("Created market ID: " + market.id);
                     this.app.selectMarket(channel, market.id);
                     this.client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question, this.defaultGroupID));

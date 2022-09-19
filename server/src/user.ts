@@ -10,7 +10,7 @@ export type UserData = {
     controlToken: string;
     botEnabled?: boolean;
     devBotLastActive?: number;
-}
+};
 
 export default class User {
     readonly data: UserData; // Saved in Firestore
@@ -32,8 +32,13 @@ export default class User {
         return Manifold.sellShares(marketID, this.data.APIKey);
     }
 
-    public async createBinaryMarket(question: string, description: string, initialProb_percent: number, groupID?: string): Promise<ManifoldAPI.LiteMarket> {
-        return Manifold.createBinaryMarket(this.data.APIKey, question, description, initialProb_percent, groupID);
+    public async createBinaryMarket(
+        question: string,
+        description: string,
+        initialProb_percent: number,
+        options?: { visibility?: "public" | "unlisted"; groupID?: string }
+    ): Promise<ManifoldAPI.LiteMarket> {
+        return Manifold.createBinaryMarket(this.data.APIKey, question, description, initialProb_percent, options);
     }
 
     public async resolveBinaryMarket(marketID: string, outcome: ResolutionOutcome) {

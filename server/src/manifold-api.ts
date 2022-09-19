@@ -19,10 +19,10 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
     });
     if (r.status !== 200) {
         type ResponseMessage = {
-            message?: string,
-            details?: string,
-        }
-        let error: ResponseMessage = {message: ""};
+            message?: string;
+            details?: string;
+        };
+        let error: ResponseMessage = { message: "" };
         try {
             error = <ResponseMessage>await r.json();
         } catch (e) {
@@ -95,7 +95,15 @@ export async function sellShares(marketID: string, APIKey: string, outcome?: "YE
     return post(`${MANIFOLD_API_BASE_URL}market/${marketID}/sell`, APIKey, parameters);
 }
 
-export async function createBinaryMarket(APIKey: string, question: string, description: string, initialProb_percent: number, groupID?: string): Promise<ManifoldAPI.LiteMarket> {
+export async function createBinaryMarket(
+    APIKey: string,
+    question: string,
+    description: string,
+    initialProb_percent: number,
+    options?: { visibility?: "public" | "unlisted"; groupID?: string }
+): Promise<ManifoldAPI.LiteMarket> {
+    const { visibility = "public", groupID } = options;
+
     const outcomeType: "BINARY" | "FREE_RESPONSE" | "NUMERIC" = "BINARY";
     const descriptionObject = {
         type: "doc",
@@ -116,12 +124,13 @@ export async function createBinaryMarket(APIKey: string, question: string, descr
         ],
     };
     const requestData = {
-        outcomeType: outcomeType,
-        question: question,
+        outcomeType,
+        question,
         description: descriptionObject,
         closeTime: Date.now() + 1e12, // Arbitrarily long time in the future
         initialProb: initialProb_percent,
         ...(groupID && { groupId: groupID }),
+        visibility,
     };
     return <Promise<ManifoldAPI.LiteMarket>>(await post(`${MANIFOLD_API_BASE_URL}market`, APIKey, requestData)).json();
 }
@@ -172,10 +181,11 @@ export async function getGroupBySlug(groupSlug: string): Promise<ManifoldAPI.Gro
 
 export async function saveTwitchDetails(APIKey: string, twitchName: string, controlToken: string): Promise<void> {
     const requestData = {
-        twitchInfo: { // These names match the variables in Manifold User.ts. DO NOT CHANGE
+        twitchInfo: {
+            // These names match the variables in Manifold User.ts. DO NOT CHANGE
             twitchName,
-            controlToken
-        }
+            controlToken,
+        },
     };
     await post(`${MANIFOLD_API_BASE_URL}twitch/save`, APIKey, requestData);
 }
