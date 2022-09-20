@@ -16,17 +16,11 @@ export function CommentInput(props: {
   parentAnswerOutcome?: string
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment?: (editor: Editor, betId: string | undefined) => void
+  onSubmitComment?: (editor: Editor) => void
   className?: string
-  presetId?: string
 }) {
-  const {
-    parentAnswerOutcome,
-    parentCommentId,
-    replyToUser,
-    onSubmitComment,
-    presetId,
-  } = props
+  const { parentAnswerOutcome, parentCommentId, replyToUser, onSubmitComment } =
+    props
   const user = useUser()
 
   const { editor, upload } = useTextEditor({
@@ -40,10 +34,10 @@ export function CommentInput(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function submitComment(betId: string | undefined) {
+  async function submitComment() {
     if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
-    onSubmitComment?.(editor, betId)
+    onSubmitComment?.(editor)
     setIsSubmitting(false)
   }
 
@@ -65,7 +59,6 @@ export function CommentInput(props: {
           user={user}
           submitComment={submitComment}
           isSubmitting={isSubmitting}
-          presetId={presetId}
         />
       </div>
     </Row>
@@ -77,25 +70,17 @@ export function CommentInputTextArea(props: {
   replyToUser?: { id: string; username: string }
   editor: Editor | null
   upload: Parameters<typeof TextEditor>[0]['upload']
-  submitComment: (id?: string) => void
+  submitComment: () => void
   isSubmitting: boolean
-  presetId?: string
 }) {
-  const {
-    user,
-    editor,
-    upload,
-    submitComment,
-    presetId,
-    isSubmitting,
-    replyToUser,
-  } = props
+  const { user, editor, upload, submitComment, isSubmitting, replyToUser } =
+    props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
 
   const submit = () => {
-    submitComment(presetId)
+    submitComment()
     editor?.commands?.clearContent()
   }
 
@@ -151,14 +136,14 @@ export function CommentInputTextArea(props: {
         )}
 
         {isSubmitting && (
-          <LoadingIndicator spinnerClassName={'border-gray-500'} />
+          <LoadingIndicator spinnerClassName="border-gray-500" />
         )}
       </TextEditor>
       <Row>
         {!user && (
           <button
-            className={'btn btn-outline btn-sm mt-2 normal-case'}
-            onClick={() => submitComment(presetId)}
+            className="btn btn-outline btn-sm mt-2 normal-case"
+            onClick={submitComment}
           >
             Add my comment
           </button>

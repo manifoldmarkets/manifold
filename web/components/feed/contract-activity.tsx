@@ -8,7 +8,6 @@ import { FeedBet } from './feed-bets'
 import { FeedLiquidity } from './feed-liquidity'
 import { FeedAnswerCommentGroup } from './feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from './feed-comments'
-import { User } from 'common/user'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { groupBy, sortBy } from 'lodash'
@@ -72,13 +71,10 @@ export function ContractBetsActivity(props: {
 
 export function ContractCommentsActivity(props: {
   contract: Contract
-  betsByCurrentUser: Bet[]
   comments: ContractComment[]
   tips: CommentTipMap
-  user: User | null | undefined
 }) {
-  const { betsByCurrentUser, contract, comments, user, tips } = props
-  const commentsByUserId = groupBy(comments, (c) => c.userId)
+  const { contract, comments, tips } = props
   const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const topLevelComments = sortBy(
     commentsByParentId['_'] ?? [],
@@ -87,16 +83,10 @@ export function ContractCommentsActivity(props: {
 
   return (
     <>
-      <ContractCommentInput
-        className="mb-5"
-        contract={contract}
-        betsByCurrentUser={betsByCurrentUser}
-        commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
-      />
+      <ContractCommentInput className="mb-5" contract={contract} />
       {topLevelComments.map((parent) => (
         <FeedCommentThread
           key={parent.id}
-          user={user}
           contract={contract}
           parentComment={parent}
           threadComments={sortBy(
@@ -104,8 +94,6 @@ export function ContractCommentsActivity(props: {
             (c) => c.createdTime
           )}
           tips={tips}
-          betsByCurrentUser={betsByCurrentUser}
-          commentsByUserId={commentsByUserId}
         />
       ))}
     </>
@@ -114,18 +102,15 @@ export function ContractCommentsActivity(props: {
 
 export function FreeResponseContractCommentsActivity(props: {
   contract: FreeResponseContract
-  betsByCurrentUser: Bet[]
   comments: ContractComment[]
   tips: CommentTipMap
-  user: User | null | undefined
 }) {
-  const { betsByCurrentUser, contract, comments, user, tips } = props
+  const { contract, comments, tips } = props
 
   const sortedAnswers = sortBy(
     contract.answers,
     (answer) => -getOutcomeProbability(contract, answer.number.toString())
   )
-  const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByOutcome = groupBy(
     comments,
     (c) => c.answerOutcome ?? c.betOutcome ?? '_'
@@ -134,22 +119,19 @@ export function FreeResponseContractCommentsActivity(props: {
   return (
     <>
       {sortedAnswers.map((answer) => (
-        <div key={answer.id} className={'relative pb-4'}>
+        <div key={answer.id} className="relative pb-4">
           <span
             className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
             aria-hidden="true"
           />
           <FeedAnswerCommentGroup
             contract={contract}
-            user={user}
             answer={answer}
             answerComments={sortBy(
               commentsByOutcome[answer.number.toString()] ?? [],
               (c) => c.createdTime
             )}
             tips={tips}
-            betsByCurrentUser={betsByCurrentUser}
-            commentsByUserId={commentsByUserId}
           />
         </div>
       ))}
