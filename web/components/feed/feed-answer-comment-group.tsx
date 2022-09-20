@@ -50,27 +50,6 @@ export function FeedAnswerCommentGroup(props: {
   const answerElementId = `answer-${answer.id}`
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
   const isFreeResponseContractPage = !!commentsByCurrentUser
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    betsByCurrentUser,
-    commentsByCurrentUser,
-    user,
-    answer.number.toString()
-  )
-  const [usersMostRecentBetTimeAtLoad, setUsersMostRecentBetTimeAtLoad] =
-    useState<number | undefined>(
-      !user ? undefined : mostRecentCommentableBet?.createdTime ?? 0
-    )
-
-  useEffect(() => {
-    if (user && usersMostRecentBetTimeAtLoad === undefined)
-      setUsersMostRecentBetTimeAtLoad(
-        mostRecentCommentableBet?.createdTime ?? 0
-      )
-  }, [
-    mostRecentCommentableBet?.createdTime,
-    user,
-    usersMostRecentBetTimeAtLoad,
-  ])
 
   const scrollAndOpenReplyInput = useEvent(
     (comment?: ContractComment, answer?: Answer) => {
