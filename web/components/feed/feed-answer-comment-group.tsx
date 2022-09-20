@@ -11,7 +11,6 @@ import clsx from 'clsx'
 import {
   ContractCommentInput,
   FeedComment,
-  getMostRecentCommentableBet,
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
@@ -63,19 +62,6 @@ export function FeedAnswerCommentGroup(props: {
       setShowReply(true)
     }
   )
-
-  useEffect(() => {
-    // Only show one comment input for a bet at a time
-    if (
-      betsByCurrentUser.length > 1 &&
-      // inputRef?.textContent?.length === 0 && //TODO: editor.isEmpty
-      betsByCurrentUser.sort((a, b) => b.createdTime - a.createdTime)[0]
-        ?.outcome !== answer.number.toString()
-    )
-      setShowReply(false)
-    // Even if we pass memoized bets this still runs on every render, which we don't want
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [betsByCurrentUser.length, user, answer.number])
 
   useEffect(() => {
     if (router.asPath.endsWith(`#${answerElementId}`)) {
