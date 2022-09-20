@@ -31,7 +31,6 @@ import { useBets } from 'web/hooks/use-bets'
 import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
 import { ContractComment } from 'common/comment'
@@ -196,8 +195,6 @@ export function ContractPageContent(
     [bets]
   )
 
-  const tips = useTipTxns({ contractId: contract.id })
-
   const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
@@ -278,7 +275,6 @@ export function ContractPageContent(
                 contract={contract}
                 bets={bets}
                 comments={comments}
-                tips={tips}
               />
             </div>
             <Spacer h={12} />
@@ -289,7 +285,6 @@ export function ContractPageContent(
           contract={contract}
           user={user}
           bets={bets}
-          tips={tips}
           comments={comments}
         />
         {!user ? (
