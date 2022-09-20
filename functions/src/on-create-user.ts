@@ -26,18 +26,12 @@ export const onCreateUser = functions
     const followupSendTime = dayjs().add(48, 'hours').toString()
     await sendPersonalFollowupEmail(user, privateUser, followupSendTime)
 
-    const day = dayjs().utc().day()
-
-    const skipInterestingMarkets =
-      // skip email if weekly email is about to go out
-      day === 0 || (day === 1 && dayjs().utc().hour() <= 19)
-
-    const guideSendTime = dayjs()
-      .add(skipInterestingMarkets ? 24 : 96, 'hours')
-      .toString()
+    const guideSendTime = dayjs().add(96, 'hours').toString()
     await sendCreatorGuideEmail(user, privateUser, guideSendTime)
 
-    if (skipInterestingMarkets) return
+    // skip email if weekly email is about to go out
+    const day = dayjs().utc().day()
+    if (day === 0 || (day === 1 && dayjs().utc().hour() <= 19)) return
 
     const contracts = await getTrendingContracts()
     const marketsSendTime = dayjs().add(24, 'hours').toString()
