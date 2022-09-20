@@ -257,11 +257,6 @@ export function getTopAnswer(
 }
 
 export function getLargestPosition(contract: Contract, userBets: Bet[]) {
-  let yesFloorShares = 0,
-    yesShares = 0,
-    noShares = 0,
-    noFloorShares = 0
-
   if (userBets.length === 0) {
     return null
   }
@@ -286,12 +281,10 @@ export function getLargestPosition(contract: Contract, userBets: Bet[]) {
   }
 
   const [yesBets, noBets] = partition(userBets, (bet) => bet.outcome === 'YES')
-  yesShares = sumBy(yesBets, (bet) => bet.shares)
-  noShares = sumBy(noBets, (bet) => bet.shares)
-  yesFloorShares = Math.floor(yesShares)
-  noFloorShares = Math.floor(noShares)
-
-  const shares = yesFloorShares || noFloorShares
-  const outcome = yesFloorShares > noFloorShares ? 'YES' : 'NO'
-  return { shares, outcome }
+  const yesShares = sumBy(yesBets, (bet) => bet.shares)
+  const noShares = sumBy(noBets, (bet) => bet.shares)
+  return {
+    shares: Math.abs(yesShares - noShares),
+    outcome: yesShares > noShares ? 'YES' : 'NO',
+  }
 }

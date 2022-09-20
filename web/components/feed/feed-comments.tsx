@@ -134,7 +134,7 @@ export function FeedComment(props: {
             commenterPositionProb != null &&
             commenterPositionOutcome != null &&
             commenterPositionShares != null &&
-            commenterPositionShares > 0 &&
+            Math.floor(commenterPositionShares) > 0 &&
             contract.outcomeType !== 'NUMERIC' && (
               <>
                 {'is '}
