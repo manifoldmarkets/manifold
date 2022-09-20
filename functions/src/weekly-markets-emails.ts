@@ -16,7 +16,7 @@ import { DAY_MS } from '../../common/util/time'
 import { filterDefined } from '../../common/util/array'
 
 export const weeklyMarketsEmails = functions
-  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
   // every minute on Monday for an hour at 12pm PT (UTC -07:00)
   .pubsub.schedule('* 19 * * 1')
   .timeZone('Etc/UTC')
