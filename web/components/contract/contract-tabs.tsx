@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
@@ -27,11 +28,10 @@ export function ContractTabs(props: {
   bets: Bet[]
   comments: ContractComment[]
 }) {
-  const { contract, user, bets } = props
-  const { outcomeType } = contract
+  const { contract, user, bets, comments } = props
+
   const isMobile = useIsMobile()
 
-  const tips = useTipTxns({ contractId: contract.id })
   const lps = useLiquidity(contract.id)
 
   const userBets =
@@ -47,8 +47,6 @@ export function ContractTabs(props: {
       l.amount > 0
   )
 
-  const comments = useComments(contract.id) ?? props.comments
-
   const betActivity = lps != null && (
     <ContractBetsActivity
       contract={contract}
@@ -56,38 +54,6 @@ export function ContractTabs(props: {
       lps={visibleLps}
     />
   )
-
-  const generalComments = comments.filter(
-    (comment) =>
-      comment.answerOutcome === undefined &&
-      (outcomeType === 'FREE_RESPONSE' ? comment.betId === undefined : true)
-  )
-
-  const commentActivity =
-    outcomeType === 'FREE_RESPONSE' ? (
-      <>
-        <FreeResponseContractCommentsActivity
-          contract={contract}
-          comments={comments}
-          tips={tips}
-        />
-        <Col className="mt-8 flex w-full">
-          <div className="text-md mt-8 mb-2 text-left">General Comments</div>
-          <div className="mb-4 w-full border-b border-gray-200" />
-          <ContractCommentsActivity
-            contract={contract}
-            comments={generalComments}
-            tips={tips}
-          />
-        </Col>
-      </>
-    ) : (
-      <ContractCommentsActivity
-        contract={contract}
-        comments={comments}
-        tips={tips}
-      />
-    )
 
   const yourTrades = (
     <div>
@@ -107,7 +73,12 @@ export function ContractTabs(props: {
     <Tabs
       currentPageForAnalytics={'contract'}
       tabs={[
-        { title: 'Comments', content: commentActivity },
+        {
+          title: 'Comments',
+          content: (
+            <CommentsTabContent contract={contract} comments={comments} />
+          ),
+        },
         { title: capitalize(PAST_BETS), content: betActivity },
         ...(!user || !userBets?.length
           ? []
@@ -121,3 +92,44 @@ export function ContractTabs(props: {
     />
   )
 }
+
+const CommentsTabContent = memo(function CommentsTabContent(props: {
+  contract: Contract
+  comments: ContractComment[]
+}) {
+  const { contract, comments } = props
+  const tips = useTipTxns({ contractId: contract.id })
+  const updatedComments = useComments(contract.id) ?? comments
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    return (
+      <>
+        <FreeResponseContractCommentsActivity
+          contract={contract}
+          comments={updatedComments}
+          tips={tips}
+        />
+        <Col className="mt-8 flex w-full">
+          <div className="text-md mt-8 mb-2 text-left">General Comments</div>
+          <div className="mb-4 w-full border-b border-gray-200" />
+          <ContractCommentsActivity
+            contract={contract}
+            comments={updatedComments.filter(
+              (comment) =>
+                comment.answerOutcome === undefined &&
+                comment.betId === undefined
+            )}
+            tips={tips}
+          />
+        </Col>
+      </>
+    )
+  } else {
+    return (
+      <ContractCommentsActivity
+        contract={contract}
+        comments={comments}
+        tips={tips}
+      />
+    )
+  }
+})
