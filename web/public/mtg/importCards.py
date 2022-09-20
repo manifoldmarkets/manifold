@@ -51,7 +51,7 @@ def generate_initial_special_query(category):
     elif category == 'basic':
         string_query += 't%3Abasic&order=released&dir=asc&unique=prints&page='
     elif category == 'watermark':
-        string_query += 'has%3Awatermark+not%3Apromo+-t%3Atoken+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
+        string_query += 'has%3Awatermark+-t%3Atoken+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
     # add category string query here
     print(string_query)
     return string_query
@@ -363,7 +363,7 @@ def write_image_uris(card_image_uris):
 
 if __name__ == "__main__":
     # uncomment this once in a while, but it's expensive to run
-    fetch_and_write_initial_artist_query()
+    # fetch_and_write_initial_artist_query()
 
     for category in allCategories:
         print(category)
