@@ -59,7 +59,6 @@ export function ContractTabs(props: {
     />
   )
 
-  const generalBets = outcomeType === 'FREE_RESPONSE' ? [] : visibleBets
   const generalComments = comments.filter(
     (comment) =>
       comment.answerOutcome === undefined &&
@@ -71,36 +70,24 @@ export function ContractTabs(props: {
       <>
         <FreeResponseContractCommentsActivity
           contract={contract}
-          betsByCurrentUser={
-            user ? visibleBets.filter((b) => b.userId === user.id) : []
-          }
           comments={comments}
           tips={tips}
-          user={user}
         />
-        <Col className={'mt-8 flex w-full '}>
-          <div className={'text-md mt-8 mb-2 text-left'}>General Comments</div>
-          <div className={'mb-4 w-full border-b border-gray-200'} />
+        <Col className="mt-8 flex w-full">
+          <div className="text-md mt-8 mb-2 text-left">General Comments</div>
+          <div className="mb-4 w-full border-b border-gray-200" />
           <ContractCommentsActivity
             contract={contract}
-            betsByCurrentUser={
-              user ? generalBets.filter((b) => b.userId === user.id) : []
-            }
             comments={generalComments}
             tips={tips}
-            user={user}
           />
         </Col>
       </>
     ) : (
       <ContractCommentsActivity
         contract={contract}
-        betsByCurrentUser={
-          user ? visibleBets.filter((b) => b.userId === user.id) : []
-        }
         comments={comments}
         tips={tips}
-        user={user}
       />
     )
 
@@ -120,7 +107,7 @@ export function ContractTabs(props: {
 
   return (
     <Tabs
-      currentPageForAnalytics={'contract'}
+      currentPageForAnalytics="contract"
       tabs={[
         {
           title: 'Comments',
