@@ -22,6 +22,60 @@ import { addUserToContractFollowers } from './follow-market'
 
 const firestore = admin.firestore()
 
+function getMostRecentCommentableBet(
+  before: number,
+  betsByCurrentUser: Bet[],
+  commentsByCurrentUser: ContractComment[],
+  answerOutcome?: string
+) {
+  let sortedBetsByCurrentUser = betsByCurrentUser.sort(
+    (a, b) => b.createdTime - a.createdTime
+  )
+  if (answerOutcome) {
+    sortedBetsByCurrentUser = sortedBetsByCurrentUser.slice(0, 1)
+  }
+  return sortedBetsByCurrentUser
+    .filter((bet) => {
+      const { createdTime, isRedemption } = bet
+      // You can comment on bets posted in the last hour
+      const commentable = !isRedemption && before - createdTime < 60 * 60 * 1000
+      const alreadyCommented = commentsByCurrentUser.some(
+        (comment) => comment.createdTime > bet.createdTime
+      )
+      if (commentable && !alreadyCommented) {
+        if (!answerOutcome) return true
+        return answerOutcome === bet.outcome
+      }
+      return false
+    })
+    .pop()
+}
+
+async function getPriorUserComments(
+  contractId: string,
+  userId: string,
+  before: number
+) {
+  const priorCommentsQuery = await firestore
+    .collection('contracts')
+    .doc(contractId)
+    .collection('comments')
+    .where('createdTime', '<', before)
+    .where('userId', '==', userId)
+    .get()
+  return priorCommentsQuery.docs.map((d) => d.data() as ContractComment)
+}
+
+async function getPriorContractBets(contractId: string, before: number) {
+  const priorBetsQuery = await firestore
+    .collection('contracts')
+    .doc(contractId)
+    .collection('bets')
+    .where('createdTime', '<', before)
+    .get()
+  return priorBetsQuery.docs.map((d) => d.data() as Bet)
+}
+
 export const onCreateCommentOnContract = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
   .firestore.document('contracts/{contractId}/comments/{commentId}')
@@ -55,17 +109,33 @@ export const onCreateCommentOnContract = functions
       .doc(contract.id)
       .update({ lastCommentTime, lastUpdatedTime: Date.now() })
 
-    const previousBetsQuery = await firestore
-      .collection('contracts')
-      .doc(contractId)
-      .collection('bets')
-      .where('createdTime', '<', comment.createdTime)
-      .get()
-    const previousBets = previousBetsQuery.docs.map((d) => d.data() as Bet)
-    const position = getLargestPosition(
-      contract,
-      previousBets.filter((b) => b.userId === comment.userId && !b.isAnte)
+    const priorBets = await getPriorContractBets(
+      contractId,
+      comment.createdTime
     )
+    const priorUserBets = priorBets.filter(
+      (b) => b.userId === comment.userId && !b.isAnte
+    )
+    const priorUserComments = await getPriorUserComments(
+      contractId,
+      comment.userId,
+      comment.createdTime
+    )
+    const bet = getMostRecentCommentableBet(
+      comment.createdTime,
+      priorUserBets,
+      priorUserComments,
+      comment.answerOutcome
+    )
+    if (bet) {
+      await change.ref.update({
+        betId: bet.id,
+        betOutcome: bet.outcome,
+        betAmount: bet.amount,
+      })
+    }
+
+    const position = getLargestPosition(contract, priorUserBets)
     if (position) {
       const fields: { [k: string]: unknown } = {
         commenterPositionShares: position.shares,
@@ -73,7 +143,7 @@ export const onCreateCommentOnContract = functions
       }
       const previousProb =
         contract.outcomeType === 'BINARY'
-          ? maxBy(previousBets, (bet) => bet.createdTime)?.probAfter
+          ? maxBy(priorBets, (bet) => bet.createdTime)?.probAfter
           : undefined
       if (previousProb != null) {
         fields.commenterPositionProb = previousProb
@@ -81,7 +151,6 @@ export const onCreateCommentOnContract = functions
       await change.ref.update(fields)
     }
 
-    let bet: Bet | undefined
     let answer: Answer | undefined
     if (comment.answerOutcome) {
       answer =
@@ -90,23 +159,6 @@ export const onCreateCommentOnContract = functions
               (answer) => answer.id === comment.answerOutcome
             )
           : undefined
-    } else if (comment.betId) {
-      const betSnapshot = await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .collection('bets')
-        .doc(comment.betId)
-        .get()
-      bet = betSnapshot.data() as Bet
-      answer =
-        contract.outcomeType === 'FREE_RESPONSE' && contract.answers
-          ? contract.answers.find((answer) => answer.id === bet?.outcome)
-          : undefined
-
-      await change.ref.update({
-        betOutcome: bet.outcome,
-        betAmount: bet.amount,
-      })
     }
 
     const comments = await getValues<ContractComment>(

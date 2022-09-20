@@ -35,17 +35,13 @@ export async function createCommentOnContract(
   contractId: string,
   content: JSONContent,
   user: User,
-  betId?: string,
   answerOutcome?: string,
   replyToCommentId?: string
 ) {
-  const ref = betId
-    ? doc(getCommentsCollection(contractId), betId)
-    : doc(getCommentsCollection(contractId))
+  const ref = doc(getCommentsCollection(contractId))
   const onContract = {
     commentType: 'contract',
     contractId,
-    betId,
     answerOutcome,
   } as OnContract
   return await createComment(
