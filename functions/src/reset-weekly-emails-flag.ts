@@ -2,7 +2,12 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { getAllPrivateUsers } from './utils'
 
-export const resetWeeklyEmailsFlag = functions.pubsub // every Monday at 12 am PT (UTC -07:00) ( 12 hours before the emails will be sent)
+export const resetWeeklyEmailsFlag = functions
+  .runWith({
+    timeoutSeconds: 300,
+    memory: '4GB',
+  })
+  .pubsub // every Monday at 12 am PT (UTC -07:00) ( 12 hours before the emails will be sent)
   .schedule('0 7 * * 1')
   .timeZone('Etc/UTC')
   .onRun(async () => {
