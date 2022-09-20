@@ -14,6 +14,8 @@ import { Col } from './layout/col'
 import { track } from 'web/lib/service/analytics'
 import { InfoTooltip } from './info-tooltip'
 import { BETTORS, PRESENT_BET } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export function LiquidityPanel(props: { contract: CPMMContract }) {
   const { contract } = props
@@ -28,31 +30,32 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
       setShowWithdrawal(true)
   }, [showWithdrawal, lpShares])
 
+  const isCreator = user?.id === contract.creatorId
+  const isAdmin = useAdmin()
+
+  if (!showWithdrawal && !isAdmin && !isCreator) return <></>
+
   return (
     <Tabs
-      tabs={[
-        {
-          title: 'Subsidize',
+      tabs={buildArray(
+        (isCreator || isAdmin) && {
+          title: (isAdmin ? '[Admin] ' : '') + 'Subsidize',
           content: <AddLiquidityPanel contract={contract} />,
         },
-        ...(showWithdrawal
-          ? [
-              {
-                title: 'Withdraw',
-                content: (
-                  <WithdrawLiquidityPanel
-                    contract={contract}
-                    lpShares={lpShares as { YES: number; NO: number }}
-                  />
-                ),
-              },
-            ]
-          : []),
+        showWithdrawal && {
+          title: 'Withdraw',
+          content: (
+            <WithdrawLiquidityPanel
+              contract={contract}
+              lpShares={lpShares as { YES: number; NO: number }}
+            />
+          ),
+        },
         {
           title: 'Pool',
           content: <ViewLiquidityPanel contract={contract} />,
-        },
-      ]}
+        }
+      )}
     />
   )
 }
