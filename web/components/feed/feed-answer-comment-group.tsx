@@ -48,7 +48,6 @@ export function FeedAnswerCommentGroup(props: {
 
   const answerElementId = `answer-${answer.id}`
   const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
-  const isFreeResponseContractPage = !!commentsByCurrentUser
 
   const scrollAndOpenReplyInput = useEvent(
     (comment?: ContractComment, answer?: Answer) => {
@@ -95,20 +94,7 @@ export function FeedAnswerCommentGroup(props: {
             <span className="whitespace-pre-line text-lg">
               <Linkify text={text} />
             </span>
-
-            {isFreeResponseContractPage && (
-              <div className="sm:hidden">
-                <button
-                  className="text-xs font-bold text-gray-500 hover:underline"
-                  onClick={() => scrollAndOpenReplyInput(undefined, answer)}
-                >
-                  Reply
-                </button>
-              </div>
-            )}
-          </Col>
-          {isFreeResponseContractPage && (
-            <div className="justify-initial hidden sm:block">
+            <div className="sm:hidden">
               <button
                 className="text-xs font-bold text-gray-500 hover:underline"
                 onClick={() => scrollAndOpenReplyInput(undefined, answer)}
@@ -116,7 +102,15 @@ export function FeedAnswerCommentGroup(props: {
                 Reply
               </button>
             </div>
-          )}
+          </Col>
+          <div className="justify-initial hidden sm:block">
+            <button
+              className="text-xs font-bold text-gray-500 hover:underline"
+              onClick={() => scrollAndOpenReplyInput(undefined, answer)}
+            >
+              Reply
+            </button>
+          </div>
         </Col>
       </Row>
       <Col className="gap-3 pl-1">
