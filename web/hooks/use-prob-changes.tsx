@@ -13,7 +13,9 @@ export const useProbChangesAlgolia = (userId: string) => {
   const { data: positiveData } = useQuery(['prob-change-day', userId], () =>
     searchClient
       .initIndex(getIndexName('prob-change-day'))
-      .search<CPMMContract>('', { facetFilters: ['uniqueBettorIds:' + userId] })
+      .search<CPMMContract>('', {
+        facetFilters: ['uniqueBettorIds:' + userId, 'isResolved:false'],
+      })
   )
   const { data: negativeData } = useQuery(
     ['prob-change-day-ascending', userId],
@@ -21,7 +23,7 @@ export const useProbChangesAlgolia = (userId: string) => {
       searchClient
         .initIndex(getIndexName('prob-change-day-ascending'))
         .search<CPMMContract>('', {
-          facetFilters: ['uniqueBettorIds:' + userId],
+          facetFilters: ['uniqueBettorIds:' + userId, 'isResolved:false'],
         })
   )
 
