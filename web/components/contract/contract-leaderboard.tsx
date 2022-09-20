@@ -5,7 +5,6 @@ import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { groupBy, mapValues, sumBy, sortBy, keyBy } from 'lodash'
 import { useState, useMemo, useEffect } from 'react'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { listUsers, User } from 'web/lib/firebase/users'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedComment } from '../feed/feed-comments'
@@ -66,9 +65,8 @@ export function ContractTopTrades(props: {
   contract: Contract
   bets: Bet[]
   comments: ContractComment[]
-  tips: CommentTipMap
 }) {
-  const { contract, bets, comments, tips } = props
+  const { contract, bets, comments } = props
   const commentsById = keyBy(comments, 'id')
   const betsById = keyBy(bets, 'id')
 
@@ -105,7 +103,6 @@ export function ContractTopTrades(props: {
             <FeedComment
               contract={contract}
               comment={commentsById[topCommentId]}
-              tips={tips[topCommentId]}
             />
           </div>
           <Spacer h={16} />

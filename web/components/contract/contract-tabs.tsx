@@ -11,9 +11,9 @@ import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
+import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -26,12 +26,12 @@ export function ContractTabs(props: {
   user: User | null | undefined
   bets: Bet[]
   comments: ContractComment[]
-  tips: CommentTipMap
 }) {
-  const { contract, user, bets, tips } = props
+  const { contract, user, bets } = props
   const { outcomeType } = contract
   const isMobile = useIsMobile()
 
+  const tips = useTipTxns({ contractId: contract.id })
   const lps = useLiquidity(contract.id)
 
   const userBets =

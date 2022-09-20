@@ -47,7 +47,7 @@ export function FeedCommentThread(props: {
           indent={commentIdx != 0}
           contract={contract}
           comment={comment}
-          tips={tips[comment.id]}
+          tips={tips[comment.id] ?? {}}
           onReplyClick={scrollAndOpenReplyInput}
         />
       ))}
@@ -74,7 +74,7 @@ export function FeedCommentThread(props: {
 export function FeedComment(props: {
   contract: Contract
   comment: ContractComment
-  tips: CommentTips
+  tips?: CommentTips
   indent?: boolean
   onReplyClick?: (comment: ContractComment) => void
 }) {
@@ -170,7 +170,7 @@ export function FeedComment(props: {
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          <Tipper comment={comment} tips={tips ?? {}} />
+          {tips && <Tipper comment={comment} tips={tips} />}
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
