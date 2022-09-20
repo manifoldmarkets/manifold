@@ -1,11 +1,10 @@
 mode = 'PLAY'
 allData = {}
 total = 0
-unseenTotal = 0
-probList = []
-nameList = []
+cardNames = []
 k = 12
 extra = 3
+num_artists = k + extra * 2
 artDict = {}
 totalCorrect = 0
 totalSeen = 0
@@ -14,6 +13,7 @@ imagesLeft = k
 maxRounds = 20
 whichGuesser = 'counterspell'
 un = false
+ub = false
 online = false
 firstPrint = false
 flag = true
@@ -31,6 +31,8 @@ document.location.search.split('&').forEach((pair) => {
     online = v[1]
   } else if (v[0] === 'original') {
     firstPrint = v[1]
+  } else if (v[0] === 'ub') {
+    ub = v[1]
   }
 })
 
@@ -40,22 +42,26 @@ if (whichGuesser === 'basic') {
     .then((data) => (sets = data))
 }
 
+if (whichGuesser === 'watermark') {
+  fetch('jsons/wm.json')
+    .then((response) => response.json())
+    .then((data) => (sets = data))
+}
+
 let firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
 
 function putIntoMapAndFetch(data) {
   putIntoMap(data.data)
-  for (const [key, value] of Object.entries(allData)) {
-    nameList.push(key)
-    probList.push(
-      value.length + (probList.length === 0 ? 0 : probList[probList.length - 1])
-    )
-    unseenTotal = total
+  if (whichGuesser == 'artist') {
+    newArtistData = createNewArtistMap()
+    allData = newArtistData[0]
+    total = newArtistData[1]
   }
+  cardNames = Array.from(Object.keys(allData))
   window.console.log(allData)
+  window.console.log(cardNames)
   window.console.log(total)
-  window.console.log(probList)
-  window.console.log(nameList)
   if (whichGuesser === 'counterspell') {
     document.getElementById('guess-type').innerText = 'Counterspell Guesser'
   } else if (whichGuesser === 'burn') {
@@ -66,32 +72,36 @@ function putIntoMapAndFetch(data) {
     document.getElementById('guess-type').innerText = 'How Basic'
   } else if (whichGuesser === 'commander') {
     document.getElementById('guess-type').innerText = 'General Knowledge'
+  } else if (whichGuesser === 'watermark') {
+    document.getElementById('guess-type').innerText = 'Watermark It'
+  } else if (whichGuesser === 'artist') {
+    document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
   }
+  window.console.log(whichGuesser)
   setUpNewGame()
 }
 
 function getKSamples() {
   let usedCounters = new Set()
-  let currentTotal = unseenTotal
   let samples = {}
   let i = 0
-  while (i < k) {
-    let rand = Math.floor(Math.random() * currentTotal)
-    let count = 0
-    for (const [key, value] of Object.entries(allData)) {
-      if (usedCounters.has(key)) {
-        continue
-      } else if (count >= rand) {
-        usedCounters.add(key)
-        currentTotal -= value.length
-        unseenTotal--
-        let randIndex = Math.floor(Math.random() * value.length)
-        let arts = allData[key].splice(randIndex, 1)
-        samples[arts[0].artImg] = [key, arts[0].normalImg]
-        i++
+  let allCards = Array.from(Object.keys(allData))
+  shuffleArray(allCards)
+  window.console.log(allCards)
+  for (let j = 0; j < allCards.length; j++) {
+    key = allCards[j]
+    value = allData[key]
+    if (usedCounters.has(key)) {
+      continue
+    } else {
+      window.console.log(key)
+      usedCounters.add(key)
+      let randIndex = Math.floor(Math.random() * value.length)
+      let arts = allData[key].splice(randIndex, 1)
+      samples[arts[0].artImg] = [key, arts[0].normalImg]
+      i++
+      if (i >= k) {
         break
-      } else {
-        count += value.length
       }
     }
   }
@@ -101,33 +111,71 @@ function getKSamples() {
     }
   }
   let count = 0
-  while (count < extra) {
-    let rand = Math.floor(Math.random() * total)
-    for (let j = 0; j < nameList.length; j++) {
-      if (j >= rand) {
-        if (usedCounters.has(nameList[j])) {
-          break
-        }
-        usedCounters.add(nameList[j])
-        count += 1
+  shuffleArray(cardNames)
+  for (let j = 0; j < cardNames.length; j++) {
+    key = cardNames[j]
+    value = cardNames[key]
+    if (usedCounters.has(key)) {
+      continue
+    } else {
+      window.console.log(key)
+      usedCounters.add(key)
+      count++
+      if (count >= extra) {
         break
       }
     }
   }
+
   return [samples, usedCounters]
+}
+
+function createNewArtistMap() {
+  let usedCounters = new Set()
+  let samples = {}
+  let i = 0
+  let newTotal = 0
+  let allCards = []
+  for (const [key, value] of Object.entries(allData)) {
+    for (let j = 0; j < value.length; j++) {
+      allCards.push(key)
+    }
+  }
+  shuffleArray(allCards)
+  window.console.log(allCards)
+  for (let j = 0; j < allCards.length; j++) {
+    key = allCards[j]
+    value = allData[key]
+    if (usedCounters.has(key)) {
+      continue
+    } else {
+      window.console.log(key)
+      usedCounters.add(key)
+      samples[key] = value
+      newTotal += value.length
+      i++
+      if (i >= num_artists) {
+        break
+      }
+    }
+  }
+  return [samples, newTotal]
 }
 
 function fetchToResponse(fetch) {
   return fetch
     .then((response) => response.json())
-    .then((json) => {
-      putIntoMapAndFetch(json)
-    })
+    .then((json) => putIntoMapAndFetch(json))
 }
 
 function determineIfSkip(card) {
   if (!un) {
     if (card.set_type === 'funny') {
+      return true
+    }
+  }
+  if (!ub) {
+    if (card.security_stamp === 'triangle') {
       return true
     }
   }
@@ -138,16 +186,36 @@ function determineIfSkip(card) {
   }
   if (firstPrint) {
     if (whichGuesser == 'basic') {
+      if (card.set_type !== 'expansion' && card.set_type !== 'funny') {
+        return true
+      }
+    } else if (whichGuesser == 'artist') {
       if (
-        card.set_type !== 'expansion' &&
-        card.set_type !== 'funny' &&
-        card.set_type !== 'draft_innovation'
+        card.set_type === 'token' ||
+        card.set_type === 'vanguard' ||
+        card.set_type === 'planechase' ||
+        card.set_type === 'archenemy' ||
+        card.set_type === 'memorabilia'
+      ) {
+        return true
+      }
+    } else if (whichGuesser == 'watermark') {
+      if (
+        card.name === 'Set' ||
+        card.name === 'Planeswalker' ||
+        card.name === 'Flavor' ||
+        card.name === 'Conspiracy' ||
+        card.name === 'Foretell' ||
+        card.name === 'Tarkir' ||
+        card.set === 'h17' ||
+        card.set === 'ptg' ||
+        card.set === 'htr18'
       ) {
         return true
       }
     } else {
       if (
-        card.reprint === true ||
+        card.reprint ||
         (card.frame_effects && card.frame_effects.includes('showcase'))
       ) {
         return true
@@ -179,6 +247,9 @@ function putIntoMap(data) {
         sets[name][1] +
         '" /> ' +
         sets[name][0]
+    }
+    if (whichGuesser === 'watermark' && sets.hasOwnProperty(name)) {
+      name = sets[name]
     }
     let normalImg = ''
     if (card.image_uris.normal) {
@@ -245,6 +316,7 @@ function setUpNewGame() {
     currName.innerHTML = namesList[nameIndex - 1]
     nameBank.appendChild(currName)
   }
+  document.querySelectorAll('.temporary-name-holder').forEach((x) => x.remove())
 }
 
 function removeSymbol(name) {
@@ -260,17 +332,53 @@ function checkAnswers() {
     let incorrect = true
     if (currCard.dataset.name) {
       // remove image text
-      let guess = removeSymbol(
-        document.getElementById(currCard.dataset.name).innerText
-      )
-      let ans = removeSymbol(artDict[currCard.dataset.url][0])
-      window.console.log(ans, guess)
+      let guessWithSymbol = document.getElementById(
+        currCard.dataset.name
+      ).innerHTML
+      let ansWithSymbol = artDict[currCard.dataset.url][0]
+      let guess = removeSymbol(guessWithSymbol)
+      let ans = removeSymbol(ansWithSymbol)
       incorrect = ans !== guess
       // decide if their guess was correct
+      // window.console.log(ans, guess, incorrect)
+      correctAns = String.fromCodePoint(0x2705) + ' ' + ansWithSymbol
+      if (incorrect) {
+        window.console.log(
+          document.getElementById(currCard.dataset.name),
+          guess,
+          ans
+        )
+        document.getElementById(currCard.dataset.name).innerHTML =
+          String.fromCodePoint(0x274c) +
+          '&nbsp;<i style="opacity:.6"><strike>' +
+          guessWithSymbol +
+          '</strike></i><br/><span style="opacity:0;">' +
+          String.fromCodePoint(0x274c) +
+          '</span>&nbsp;' +
+          ansWithSymbol
+      } else {
+        document.getElementById(currCard.dataset.name).innerHTML = correctAns
+      }
+    } else {
+      answerCorrectionHolder = document.createElement('div')
+      answerCorrectionHolder.classList.add('name')
+      answerCorrectionHolder.classList.add('temporary-name-holder')
+
+      answerCorrectionHolder.innerHTML =
+        String.fromCodePoint(0x274c) +
+        '&nbsp;<i style="opacity:.6">&lt;No Answer&gt;&nbsp;</i><br/><span style="opacity:0;">' +
+        String.fromCodePoint(0x274c) +
+        '</span>&nbsp;' +
+        artDict[currCard.dataset.url][0]
+      currCard.appendChild(answerCorrectionHolder)
     }
-    if (incorrect) currCard.classList.add('incorrect')
-    // tally some kind of score
-    if (incorrect) score--
+    if (incorrect) {
+      currCard.classList.add('incorrect')
+      // tally some kind of score
+      score--
+      // show the correct answer
+    }
+
     // show the correct card
     currCard.style.backgroundImage =
       "url('" + artDict[currCard.dataset.url][1] + "')"
