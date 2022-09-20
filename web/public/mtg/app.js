@@ -222,10 +222,6 @@ function determineIfSkip(card) {
       }
     }
   }
-  // reskinned card names show in art crop
-  if (card.flavor_name) {
-    return true
-  }
 
   return false
 }

@@ -184,7 +184,7 @@ def write_art(art_names, id, index, card):
 
 
 def to_compact_write_form(smallJson, art_names, response, category):
-    fieldsInCard = ['name', 'image_uris', 'flavor_name',
+    fieldsInCard = ['name', 'image_uris',
                     'reprint', 'frame_effects', 'digital', 'set_type', 'security_stamp']
     data = smallJson['data']
     # write all fields needed in card
@@ -305,6 +305,9 @@ def to_compact_write_form_special(smallJson, art_names, response, category, arti
 def filter_card(card, art_names, data):
     # do not include racist cards
     if 'content_warning' in card and card['content_warning'] == True:
+        return False
+    # reskinned card names show in art crop
+    if 'flavor_name' in card:
         return False
     # do not repeat art
     digital_holder = -1
