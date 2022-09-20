@@ -2,7 +2,7 @@ import { LinkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { PrivateUser, User } from 'common/user'
 import Link from 'next/link'
-import { MouseEventHandler, ReactNode, useState } from 'react'
+import { MouseEventHandler, ReactNode, useEffect, useState } from 'react'
 
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/button'
@@ -17,11 +17,7 @@ import { Title } from 'web/components/title'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import {
-  firebaseLogin,
-  getUserAndPrivateUser,
-  updatePrivateUser,
-} from 'web/lib/firebase/users'
+import { firebaseLogin, updatePrivateUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import {
   getDockURLForUser,
@@ -40,23 +36,32 @@ function ButtonGetStarted(props: {
   const { user, privateUser, buttonClass, spinnerClass } = props
 
   const [isLoading, setLoading] = useState(false)
+
   const needsRelink =
     privateUser?.twitchInfo?.twitchName &&
     privateUser?.twitchInfo?.needsRelinking
+
+  const [waitingForUser, setWaitingForUser] = useState(false)
+  useEffect(() => {
+    if (waitingForUser && user && privateUser) {
+      setWaitingForUser(false)
+
+      if (privateUser.twitchInfo?.twitchName) return // If we've already linked Twitch, no need to do so again
+
+      setLoading(true)
+
+      linkTwitchAccountRedirect(user, privateUser).then(() => {
+        setLoading(false)
+      })
+    }
+  }, [user, privateUser, waitingForUser])
 
   const callback =
     user && privateUser
       ? () => linkTwitchAccountRedirect(user, privateUser)
       : async () => {
-          const result = await firebaseLogin()
-
-          const userId = result.user.uid
-          const { user, privateUser } = await getUserAndPrivateUser(userId)
-          if (!user || !privateUser) return
-
-          if (privateUser.twitchInfo?.twitchName) return // If we've already linked Twitch, no need to do so again
-
-          await linkTwitchAccountRedirect(user, privateUser)
+          await firebaseLogin()
+          setWaitingForUser(true)
         }
 
   const getStarted = async () => {
