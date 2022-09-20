@@ -13,10 +13,25 @@ import { User } from 'common/user'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 
-const groupNavigation = [
-  { name: 'Markets', key: 'markets', icon: HomeIcon },
-  { name: 'About', key: 'about', icon: ClipboardIcon },
-  { name: 'Leaderboard', key: 'leaderboards', icon: TrophyIcon },
+const groupNavigation = (slug: string) => [
+  {
+    name: 'Markets',
+    key: 'markets',
+    icon: HomeIcon,
+    href: `/group/${slug}/markets`,
+  },
+  {
+    name: 'About',
+    key: 'about',
+    icon: ClipboardIcon,
+    href: `/group/${slug}/about`,
+  },
+  {
+    name: 'Leaderboard',
+    key: 'leaderboards',
+    icon: TrophyIcon,
+    href: `/group/${slug}/leaderboards`,
+  },
 ]
 
 const generalNavigation = (user?: User | null) =>
@@ -31,12 +46,12 @@ const generalNavigation = (user?: User | null) =>
 
 export function GroupSidebar(props: {
   groupName: string
+  groupSlug: string
   className?: string
-  onClick: (key: string) => void
   joinOrAddQuestionsButton: React.ReactNode
   currentKey: string
 }) {
-  const { className, groupName, currentKey } = props
+  const { className, groupName, currentKey, groupSlug } = props
 
   const user = useUser()
 
@@ -57,21 +72,11 @@ export function GroupSidebar(props: {
       </div>
 
       {/* Desktop navigation */}
-      {groupNavigation.map((item) => (
-        <SidebarItem
-          key={item.key}
-          item={item}
-          currentPage={currentKey}
-          onClick={props.onClick}
-        />
+      {groupNavigation(groupSlug).map((item) => (
+        <SidebarItem key={item.key} item={item} currentPage={currentKey} />
       ))}
       {generalNavigation(user).map((item) => (
-        <SidebarItem
-          key={item.key}
-          item={item}
-          currentPage={currentKey}
-          onClick={props.onClick}
-        />
+        <SidebarItem key={item.key} item={item} currentPage={currentKey} />
       ))}
 
       <Spacer h={2} />

@@ -7,23 +7,21 @@ import { trackCallback } from 'web/lib/service/analytics'
 export type Item = {
   name: string
   trackingEventName?: string
-  href?: string
+  href: string
   key?: string
   icon?: React.ComponentType<{ className?: string }>
 }
 
-export function SidebarItem(props: {
-  item: Item
-  currentPage: string
-  onClick?: (key: string) => void
-}) {
-  const { item, currentPage, onClick } = props
+export function SidebarItem(props: { item: Item; currentPage: string }) {
+  const { item, currentPage } = props
   const isCurrentPage =
     item.href != null ? item.href === currentPage : item.key === currentPage
 
   const sidebarItem = (
     <a
-      onClick={trackCallback('sidebar: ' + item.name)}
+      onClick={() => {
+        trackCallback('sidebar: ' + item.name)
+      }}
       className={clsx(
         isCurrentPage
           ? 'bg-gray-200 text-gray-900'
@@ -47,17 +45,5 @@ export function SidebarItem(props: {
     </a>
   )
 
-  if (item.href) {
-    return (
-      <Link href={item.href} key={item.name}>
-        {sidebarItem}
-      </Link>
-    )
-  } else {
-    return onClick ? (
-      <button onClick={() => onClick(item.key ?? '#')}>{sidebarItem}</button>
-    ) : (
-      <> </>
-    )
-  }
+  return <Link href={item.href}>{sidebarItem}</Link>
 }

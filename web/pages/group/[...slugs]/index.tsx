@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { toast, Toaster } from 'react-hot-toast'
@@ -140,10 +140,16 @@ export default function GroupPage(props: {
   const user = useUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
+
   // Note: Keep in sync with sidebarPages
   const [sidebarIndex, setSidebarIndex] = useState(
     ['markets', 'leaderboards', 'about'].indexOf(page ?? 'markets')
   )
+  useEffect(() => {
+    setSidebarIndex(
+      ['markets', 'leaderboards', 'about'].indexOf(page ?? 'markets')
+    )
+  }, [page])
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -241,16 +247,6 @@ export default function GroupPage(props: {
   ]
 
   const pageContent = sidebarPages[sidebarIndex].content
-  const onSidebarClick = (key: string) => {
-    const index = sidebarPages.findIndex((t) => t.key === key)
-    setSidebarIndex(index)
-    // Append the page to the URL, e.g. /group/mexifold/markets
-    router.replace(
-      { query: { ...router.query, slugs: [group.slug, key] } },
-      undefined,
-      { shallow: true }
-    )
-  }
 
   const joinOrAddQuestionsButton = (
     <JoinOrAddQuestionsButtons
@@ -265,7 +261,6 @@ export default function GroupPage(props: {
       <TopGroupNavBar
         group={group}
         currentPage={sidebarPages[sidebarIndex].key}
-        onClick={onSidebarClick}
       />
       <div>
         <div
@@ -276,8 +271,8 @@ export default function GroupPage(props: {
           <Toaster />
           <GroupSidebar
             groupName={group.name}
+            groupSlug={group.slug}
             className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex"
-            onClick={onSidebarClick}
             joinOrAddQuestionsButton={joinOrAddQuestionsButton}
             currentKey={sidebarPages[sidebarIndex].key}
           />
@@ -296,11 +291,7 @@ export default function GroupPage(props: {
   )
 }
 
-export function TopGroupNavBar(props: {
-  group: Group
-  currentPage: string
-  onClick: (key: string) => void
-}) {
+export function TopGroupNavBar(props: { group: Group; currentPage: string }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
       <div className="flex items-center   bg-white  px-4">
@@ -317,7 +308,10 @@ export function TopGroupNavBar(props: {
           </h1>
         </div>
       </div>
-      <GroupNavBar currentPage={props.currentPage} onClick={props.onClick} />
+      <GroupNavBar
+        groupSlug={props.group.slug}
+        currentPage={props.currentPage}
+      />
     </header>
   )
 }
