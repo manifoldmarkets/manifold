@@ -205,18 +205,6 @@ export function ContractPageContent(
     setShowConfetti(shouldSeeConfetti)
   }, [contract, user])
 
-  const [recommendedContracts, setRecommendedContracts] = useState<Contract[]>(
-    []
-  )
-  useEffect(() => {
-    if (contract && user) {
-      getRecommendedContracts(contract, user.id, 6).then(
-        setRecommendedContracts
-      )
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contract.id, user?.id])
-
   const { isResolved, question, outcomeType } = contract
 
   const allowTrade = tradingAllowed(contract)
@@ -301,16 +289,31 @@ export function ContractPageContent(
           comments={comments}
         />
       </Col>
-
-      {recommendedContracts.length > 0 && (
-        <Col className="mt-2 gap-2 px-2 sm:px-0">
-          <Title className="text-gray-700" text="Recommended" />
-          <ContractsGrid
-            contracts={recommendedContracts}
-            trackingPostfix=" recommended"
-          />
-        </Col>
-      )}
+      <RecommendedContractsWidget contract={contract} />
     </Page>
+  )
+}
+
+function RecommendedContractsWidget(props: { contract: Contract }) {
+  const { contract } = props
+  const user = useUser()
+  const [recommendations, setRecommendations] = useState<Contract[]>([])
+  useEffect(() => {
+    if (user) {
+      getRecommendedContracts(contract, user.id, 6).then(setRecommendations)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract.id, user?.id])
+  if (recommendations.length === 0) {
+    return null
+  }
+  return (
+    <Col className="mt-2 gap-2 px-2 sm:px-0">
+      <Title className="text-gray-700" text="Recommended" />
+      <ContractsGrid
+        contracts={recommendations}
+        trackingPostfix=" recommended"
+      />
+    </Col>
   )
 }
