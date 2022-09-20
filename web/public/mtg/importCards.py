@@ -84,7 +84,7 @@ def fetch_and_write_all(category, query):
         response = fetch(query, count)
         will_repeat = response['has_more']
         count += 1
-        to_compact_write_form(all_cards, art_names, response)
+        to_compact_write_form(all_cards, art_names, response, category)
 
     with open('jsons/' + category + '.json', 'w') as f:
         json.dump(all_cards, f)
@@ -183,7 +183,7 @@ def write_art(art_names, id, index, card):
         art_names[id] = -1
 
 
-def to_compact_write_form(smallJson, art_names, response):
+def to_compact_write_form(smallJson, art_names, response, category):
     fieldsInCard = ['name', 'image_uris', 'flavor_name',
                     'reprint', 'frame_effects', 'digital', 'set_type', 'security_stamp']
     data = smallJson['data']
@@ -205,6 +205,8 @@ def to_compact_write_form(smallJson, art_names, response):
                 else:
                     write_card['image_uris'] = write_image_uris(
                         card['image_uris'])
+            elif category == 'commander' and field == 'set_type' and card[field] == 'funny' and (card['legalities']['commander'] == 'legal' or card['legalities']['brawl'] == 'legal'):
+                continue
             elif field in card and card[field]:
                 write_card[field] = card[field]
         if digital_holder != -1:

@@ -22,17 +22,17 @@ sets = {}
 
 window.console.log(sets)
 document.location.search.split('&').forEach((pair) => {
-  let v = pair.split('=')
-  if (v[0] === '?whichguesser') {
-    whichGuesser = v[1]
-  } else if (v[0] === 'un') {
-    un = v[1]
-  } else if (v[0] === 'digital') {
-    online = v[1]
-  } else if (v[0] === 'original') {
-    firstPrint = v[1]
-  } else if (v[0] === 'ub') {
-    ub = v[1]
+  const setting = pair.split('=')
+  if (setting[0] === '?whichguesser') {
+    whichGuesser = setting[1]
+  } else if (setting[0] === 'un') {
+    un = setting[1]
+  } else if (setting[0] === 'digital') {
+    online = setting[1]
+  } else if (setting[0] === 'original') {
+    firstPrint = setting[1]
+  } else if (setting[0] === 'ub') {
+    ub = setting[1]
   }
 })
 
@@ -48,7 +48,7 @@ if (whichGuesser === 'watermark') {
     .then((data) => (sets = data))
 }
 
-let firstFetch = fetch('jsons/' + whichGuesser + '.json')
+const firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
 
 function putIntoMapAndFetch(data) {
@@ -96,8 +96,8 @@ function getKSamples() {
     } else {
       window.console.log(key)
       usedCounters.add(key)
-      let randIndex = Math.floor(Math.random() * value.length)
-      let arts = allData[key].splice(randIndex, 1)
+      const randIndex = Math.floor(Math.random() * value.length)
+      const arts = allData[key].splice(randIndex, 1)
       samples[arts[0].artImg] = [key, arts[0].normalImg]
       i++
       if (i >= k) {
@@ -232,7 +232,7 @@ function determineIfSkip(card) {
 
 function putIntoMap(data) {
   for (let i = 0; i < data.length; i++) {
-    let card = data[i]
+    const card = data[i]
     if (determineIfSkip(card)) {
       continue
     }
@@ -274,8 +274,8 @@ function putIntoMap(data) {
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1))
-    let temp = array[i]
+    const j = Math.floor(Math.random() * (i + 1))
+    const temp = array[i]
     array[i] = array[j]
     array[j] = temp
   }
@@ -284,7 +284,7 @@ function shuffleArray(array) {
 function setUpNewGame() {
   wordsLeft = k + extra
   imagesLeft = k
-  let currentRound = totalSeen / k
+  const currentRound = totalSeen / k
   if (currentRound + 1 === maxRounds) {
     document.getElementById('round-number').innerText = 'Final Round'
   } else {
@@ -294,11 +294,11 @@ function setUpNewGame() {
 
   setWordsLeft()
   // select new cards
-  let sampledData = getKSamples()
+  const sampledData = getKSamples()
   artDict = sampledData[0]
-  let randomImages = Object.keys(artDict)
+  const randomImages = Object.keys(artDict)
   shuffleArray(randomImages)
-  let namesList = Array.from(sampledData[1]).sort((a, b) =>
+  const namesList = Array.from(sampledData[1]).sort((a, b) =>
     removeSymbol(a).localeCompare(removeSymbol(b))
   )
   // fill in the new cards and names
@@ -320,7 +320,7 @@ function setUpNewGame() {
 }
 
 function removeSymbol(name) {
-  let arr = name.split('>')
+  const arr = name.split('>')
   return arr[arr.length - 1]
 }
 
@@ -332,12 +332,12 @@ function checkAnswers() {
     let incorrect = true
     if (currCard.dataset.name) {
       // remove image text
-      let guessWithSymbol = document.getElementById(
+      const guessWithSymbol = document.getElementById(
         currCard.dataset.name
       ).innerHTML
-      let ansWithSymbol = artDict[currCard.dataset.url][0]
-      let guess = removeSymbol(guessWithSymbol)
-      let ans = removeSymbol(ansWithSymbol)
+      const ansWithSymbol = artDict[currCard.dataset.url][0]
+      const guess = removeSymbol(guessWithSymbol)
+      const ans = removeSymbol(ansWithSymbol)
       incorrect = ans !== guess
       // decide if their guess was correct
       // window.console.log(ans, guess, incorrect)
@@ -360,7 +360,7 @@ function checkAnswers() {
         document.getElementById(currCard.dataset.name).innerHTML = correctAns
       }
     } else {
-      answerCorrectionHolder = document.createElement('div')
+      let answerCorrectionHolder = document.createElement('div')
       answerCorrectionHolder.classList.add('name')
       answerCorrectionHolder.classList.add('temporary-name-holder')
 
@@ -475,7 +475,7 @@ function dropOnCard(id, data) {
     returnToNameBank(target.dataset.name)
   }
   // remove name data from a previous card if there is one
-  let prevContainer = document.querySelector('[data-name=' + data + ']')
+  const prevContainer = document.querySelector('[data-name=' + data + ']')
   if (prevContainer) {
     prevContainer.dataset.name = ''
   } else {
