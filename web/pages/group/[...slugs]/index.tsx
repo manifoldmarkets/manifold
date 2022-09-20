@@ -16,7 +16,7 @@ import {
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import {
   useGroup,
   useGroupContractIds,
@@ -42,10 +42,10 @@ import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/user-link'
 import { GroupAboutPost } from 'web/components/groups/group-about-post'
-import { getPost } from 'web/lib/firebase/posts'
+import { getPost, listPosts, postPath } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
-import { usePost } from 'web/hooks/use-post'
+import { usePost, usePosts } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from '@amplitude/analytics-browser'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
@@ -53,6 +53,10 @@ import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
 import { Page } from 'web/components/page'
 import { Tabs } from 'web/components/layout/tabs'
+import { Avatar } from 'web/components/avatar'
+import { Title } from 'web/components/title'
+import { fromNow } from 'web/lib/util/time'
+import CreatePost from 'web/components/create-post'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -70,7 +74,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       ? 'all'
       : 'open'
   const aboutPost =
-    group && group.aboutPostId != null && (await getPost(group.aboutPostId))
+    group && group.aboutPostId != null ? await getPost(group.aboutPostId) : null
+
   const messages = group && (await listAllCommentsOnGroup(group.id))
 
   const cachedTopTraderIds =
@@ -83,6 +88,9 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const creator = await creatorPromise
 
+  const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
+    (p) => p != null
+  ) as Post[]
   return {
     props: {
       group,
@@ -93,6 +101,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       messages,
       aboutPost,
       suggestedFilter,
+      posts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -107,6 +116,7 @@ const groupSubpages = [
   'markets',
   'leaderboards',
   'about',
+  'posts',
 ] as const
 
 export default function GroupPage(props: {
@@ -116,8 +126,9 @@ export default function GroupPage(props: {
   topTraders: { user: User; score: number }[]
   topCreators: { user: User; score: number }[]
   messages: GroupComment[]
-  aboutPost: Post
+  aboutPost: Post | null
   suggestedFilter: 'open' | 'all'
+  posts: Post[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -127,8 +138,9 @@ export default function GroupPage(props: {
     topCreators: [],
     messages: [],
     suggestedFilter: 'open',
+    posts: [],
   }
-  const { creator, topTraders, topCreators, suggestedFilter } = props
+  const { creator, topTraders, topCreators, suggestedFilter, posts } = props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -136,6 +148,12 @@ export default function GroupPage(props: {
 
   const group = useGroup(props.group?.id) ?? props.group
   const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
+
+  let groupPosts = usePosts(group?.postIds ?? []) ?? posts
+
+  if (aboutPost != null) {
+    groupPosts = [aboutPost, ...groupPosts]
+  }
 
   const user = useUser()
   const isAdmin = useAdmin()
@@ -170,6 +188,16 @@ export default function GroupPage(props: {
         />
       </div>
     </Col>
+  )
+
+  const postsPage = (
+    <>
+      <Col>
+        <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
+          {posts && <GroupPosts posts={groupPosts} group={group} />}
+        </div>
+      </Col>
+    </>
   )
 
   const aboutTab = (
@@ -233,6 +261,10 @@ export default function GroupPage(props: {
     {
       title: 'About',
       content: aboutTab,
+    },
+    {
+      title: 'Posts',
+      content: postsPage,
     },
   ]
 
@@ -410,6 +442,81 @@ function GroupLeaderboard(props: {
       ]}
       maxToShow={maxToShow}
     />
+  )
+}
+
+function GroupPosts(props: { posts: Post[]; group: Group }) {
+  const { posts, group } = props
+  const [showCreatePost, setShowCreatePost] = useState(false)
+
+  const createPost = <CreatePost group={group} />
+
+  const postList = (
+    <div className=" align-start w-full items-start">
+      <Row className="flex justify-between">
+        <Col>
+          <Title text={'Posts'} className="!mt-0" />
+        </Col>
+        <Col>
+          <Button
+            className="btn-md"
+            onClick={() => setShowCreatePost(!showCreatePost)}
+          >
+            Add a Post
+          </Button>
+        </Col>
+      </Row>
+
+      <div className="mt-2">
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+        {posts.length === 0 && (
+          <div className="text-center text-gray-500">No posts yet</div>
+        )}
+      </div>
+    </div>
+  )
+
+  return showCreatePost ? createPost : postList
+}
+
+function PostCard(props: { post: Post }) {
+  const { post } = props
+  const creatorId = post.creatorId
+
+  const user = useUserById(creatorId)
+
+  if (!user) return <> </>
+
+  return (
+    <div className="py-1">
+      <Link href={postPath(post.slug)}>
+        <Row
+          className={
+            'relative gap-3 rounded-lg bg-white p-2 shadow-md hover:cursor-pointer hover:bg-gray-100'
+          }
+        >
+          <div className="flex-shrink-0">
+            <Avatar className="h-12 w-12" username={user?.username} />
+          </div>
+          <div className="">
+            <div className="text-sm text-gray-500">
+              <UserLink
+                className="text-neutral"
+                name={user?.name}
+                username={user?.username}
+              />
+              <span className="mx-1">•</span>
+              <span className="text-gray-500">{fromNow(post.createdTime)}</span>
+            </div>
+            <div className="text-lg font-medium text-gray-900">
+              {post.title}
+            </div>
+          </div>
+        </Row>
+      </Link>
+    </div>
   )
 }
 
