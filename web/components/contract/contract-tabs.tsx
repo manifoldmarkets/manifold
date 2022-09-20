@@ -11,9 +11,9 @@ import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
+import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -26,12 +26,12 @@ export function ContractTabs(props: {
   user: User | null | undefined
   bets: Bet[]
   comments: ContractComment[]
-  tips: CommentTipMap
 }) {
-  const { contract, user, bets, tips } = props
+  const { contract, user, bets } = props
   const { outcomeType } = contract
   const isMobile = useIsMobile()
 
+  const tips = useTipTxns({ contractId: contract.id })
   const lps = useLiquidity(contract.id)
 
   const userBets =
@@ -47,9 +47,7 @@ export function ContractTabs(props: {
       l.amount > 0
   )
 
-  // Load comments here, so the badge count will be correct
-  const updatedComments = useComments(contract.id)
-  const comments = updatedComments ?? props.comments
+  const comments = useComments(contract.id) ?? props.comments
 
   const betActivity = lps != null && (
     <ContractBetsActivity
@@ -107,18 +105,10 @@ export function ContractTabs(props: {
 
   return (
     <Tabs
-      currentPageForAnalytics="contract"
+      currentPageForAnalytics={'contract'}
       tabs={[
-        {
-          title: 'Comments',
-          content: commentActivity,
-          badge: `${comments.length}`,
-        },
-        {
-          title: capitalize(PAST_BETS),
-          content: betActivity,
-          badge: `${visibleBets.length + visibleLps.length}`,
-        },
+        { title: 'Comments', content: commentActivity },
+        { title: capitalize(PAST_BETS), content: betActivity },
         ...(!user || !userBets?.length
           ? []
           : [
