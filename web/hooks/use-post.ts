@@ -11,3 +11,19 @@ export const usePost = (postId: string | undefined) => {
 
   return post
 }
+
+export const usePosts = (postIds: string[]) => {
+  const [posts, setPosts] = useState<Post[]>([])
+
+  useEffect(() => {
+    if (postIds.length === 0) return
+
+    postIds.map((postId) =>
+      listenForPost(postId, (post) => {
+        if (post) setPosts((posts) => [...posts, post])
+      })
+    )
+  }, [postIds])
+
+  return posts
+}

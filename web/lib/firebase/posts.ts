@@ -39,3 +39,8 @@ export function listenForPost(
 ) {
   return listenForValue(doc(posts, postId), setPost)
 }
+
+export async function listPosts(postIds?: string[]) {
+  if (postIds === undefined) return []
+  return Promise.all(postIds.map(getPost))
+}

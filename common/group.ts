@@ -10,6 +10,7 @@ export type Group = {
   totalContracts: number
   totalMembers: number
   aboutPostId?: string
+  postIds: string[]
   chatDisabled?: boolean
   mostRecentContractAddedTime?: number
   cachedLeaderboard?: {

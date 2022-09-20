@@ -1,4 +1,4 @@
-import { ClipboardIcon, HomeIcon } from '@heroicons/react/outline'
+import { ChatAlt2Icon, ClipboardIcon, HomeIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from './manifold-logo'
@@ -17,6 +17,7 @@ const groupNavigation = [
   { name: 'Markets', key: 'markets', icon: HomeIcon },
   { name: 'About', key: 'about', icon: ClipboardIcon },
   { name: 'Leaderboard', key: 'leaderboards', icon: TrophyIcon },
+  { name: 'Posts', key: 'posts', icon: ChatAlt2Icon },
 ]
 
 const generalNavigation = (user?: User | null) =>

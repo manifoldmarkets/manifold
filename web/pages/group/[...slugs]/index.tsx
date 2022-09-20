@@ -16,7 +16,7 @@ import {
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import {
   useGroup,
   useGroupContractIds,
@@ -42,10 +42,10 @@ import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/user-link'
 import { GroupAboutPost } from 'web/components/groups/group-about-post'
-import { getPost } from 'web/lib/firebase/posts'
+import { getPost, listPosts, postPath } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
-import { usePost } from 'web/hooks/use-post'
+import { usePost, usePosts } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from '@amplitude/analytics-browser'
 import { GroupNavBar } from 'web/components/nav/group-nav-bar'
@@ -53,6 +53,9 @@ import { ArrowLeftIcon } from '@heroicons/react/solid'
 import { GroupSidebar } from 'web/components/nav/group-sidebar'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
+import { Avatar } from 'web/components/avatar'
+import { Title } from 'web/components/title'
+import { fromNow } from 'web/lib/util/time'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -70,7 +73,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       ? 'all'
       : 'open'
   const aboutPost =
-    group && group.aboutPostId != null && (await getPost(group.aboutPostId))
+    group && group.aboutPostId != null ? await getPost(group.aboutPostId) : null
+
   const messages = group && (await listAllCommentsOnGroup(group.id))
 
   const cachedTopTraderIds =
@@ -83,6 +87,9 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const creator = await creatorPromise
 
+  const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
+    (p) => p != null
+  ) as Post[]
   return {
     props: {
       group,
@@ -93,6 +100,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       messages,
       aboutPost,
       suggestedFilter,
+      posts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -107,6 +115,7 @@ const groupSubpages = [
   'markets',
   'leaderboards',
   'about',
+  'posts',
 ] as const
 
 export default function GroupPage(props: {
@@ -118,6 +127,7 @@ export default function GroupPage(props: {
   messages: GroupComment[]
   aboutPost: Post
   suggestedFilter: 'open' | 'all'
+  posts: Post[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -127,8 +137,9 @@ export default function GroupPage(props: {
     topCreators: [],
     messages: [],
     suggestedFilter: 'open',
+    posts: [],
   }
-  const { creator, topTraders, topCreators, suggestedFilter } = props
+  const { creator, topTraders, topCreators, suggestedFilter, posts } = props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -136,13 +147,14 @@ export default function GroupPage(props: {
 
   const group = useGroup(props.group?.id) ?? props.group
   const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
+  const groupPosts = [...(usePosts(group?.postIds ?? []) ?? posts), aboutPost]
 
   const user = useUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
   // Note: Keep in sync with sidebarPages
   const [sidebarIndex, setSidebarIndex] = useState(
-    ['markets', 'leaderboards', 'about'].indexOf(page ?? 'markets')
+    ['markets', 'leaderboards', 'about', 'posts'].indexOf(page ?? 'markets')
   )
 
   useSaveReferral(user, {
@@ -172,6 +184,14 @@ export default function GroupPage(props: {
           header="Market volume"
           maxToShow={maxLeaderboardSize}
         />
+      </div>
+    </Col>
+  )
+
+  const postsPage = (
+    <Col>
+      <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
+        {posts && <GroupPosts posts={groupPosts} />}
       </div>
     </Col>
   )
@@ -237,6 +257,12 @@ export default function GroupPage(props: {
       content: aboutPage,
       href: groupPath(group.slug, 'about'),
       key: 'about',
+    },
+    {
+      title: 'Posts',
+      content: postsPage,
+      href: groupPath(group.slug, 'posts'),
+      key: 'posts',
     },
   ]
 
@@ -458,6 +484,57 @@ function GroupLeaderboard(props: {
       ]}
       maxToShow={maxToShow}
     />
+  )
+}
+
+function GroupPosts(props: { posts: Post[] }) {
+  const { posts } = props
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      <Title text={'Posts'} className="!mt-0" />
+      <div className="mt-2">
+        {posts.map((post) => (
+          <PostCard post={post} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PostCard(props: { post: Post }) {
+  const { post } = props
+  const creatorId = post.creatorId
+  const user = useUserById(creatorId)
+  if (!user) return <> </>
+
+  return (
+    <div>
+      <Link href={postPath(post.slug)}>
+        <Row
+          className={
+            'relative gap-3 rounded-lg bg-white p-2 shadow-md hover:cursor-pointer hover:bg-gray-100'
+          }
+        >
+          <div className="flex-shrink-0">
+            <Avatar className="h-12 w-12" username={user?.username} />
+          </div>
+          <div className="">
+            <div className="text-sm text-gray-500">
+              <UserLink
+                className="text-neutral"
+                name={user?.name}
+                username={user?.username}
+              />
+              <span className="mx-1">•</span>
+              <span className="text-gray-500">{fromNow(post.createdTime)}</span>
+            </div>
+            <div className="text-lg font-medium text-gray-900">
+              {post.title}
+            </div>
+          </div>
+        </Row>
+      </Link>
+    </div>
   )
 }
 
