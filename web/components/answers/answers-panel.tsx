@@ -1,4 +1,4 @@
-import { sortBy, partition, sum, uniq } from 'lodash'
+import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
@@ -11,7 +11,6 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
-import { User } from 'common/user'
 import { getOutcomeProbability } from 'common/calculate'
 import { Answer } from 'common/answer'
 import clsx from 'clsx'
@@ -56,6 +55,11 @@ export function AnswersPanel(props: {
     ),
   ]
 
+  const answerItems = sortBy(
+    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
+    (answer) => -getOutcomeProbability(contract, answer.number.toString())
+  )
+
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
@@ -66,12 +70,6 @@ export function AnswersPanel(props: {
   }>({})
 
   const chosenTotal = sum(Object.values(chosenAnswers))
-
-  const answerItems = getAnswerItems(
-    contract,
-    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
-    user
-  )
 
   const onChoose = (answerId: string, prob: number) => {
     if (resolveOption === 'CHOOSE') {
@@ -130,7 +128,7 @@ export function AnswersPanel(props: {
           )}
         >
           {answerItems.map((item) => (
-            <OpenAnswer key={item.id} {...item} />
+            <OpenAnswer key={item.id} answer={item} contract={contract} />
           ))}
           {hasZeroBetAnswers && !showAllAnswers && (
             <Button
@@ -173,35 +171,9 @@ export function AnswersPanel(props: {
   )
 }
 
-function getAnswerItems(
-  contract: FreeResponseContract | MultipleChoiceContract,
-  answers: Answer[],
-  user: User | undefined | null
-) {
-  let outcomes = uniq(answers.map((answer) => answer.number.toString()))
-  outcomes = sortBy(outcomes, (outcome) =>
-    getOutcomeProbability(contract, outcome)
-  ).reverse()
-
-  return outcomes
-    .map((outcome) => {
-      const answer = answers.find((answer) => answer.id === outcome) as Answer
-      //unnecessary
-      return {
-        id: outcome,
-        type: 'answer' as const,
-        contract,
-        answer,
-        user,
-      }
-    })
-    .filter((group) => group.answer)
-}
-
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
-  type: string
 }) {
   const { answer, contract } = props
   const { username, avatarUrl, name, text } = answer
