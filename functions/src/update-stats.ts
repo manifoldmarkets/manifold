@@ -6,7 +6,7 @@ import * as timezone from 'dayjs/plugin/timezone'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-import { concat, countBy, sortBy, range, zip, uniq, sum, sumBy } from 'lodash'
+import { range, zip, uniq, sum, sumBy } from 'lodash'
 import { getValues, log, logMemory } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
@@ -278,51 +278,20 @@ export const updateStatsCore = async () => {
       firstBetDict[bet.userId] = i
     }
   }
-  const weeklyActivationRate = dailyNewUsers.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i
-    let activatedCount = 0
-    let newUsers = 0
-    for (let j = start; j <= end; j++) {
-      const userIds = dailyNewUsers[j].map((user) => user.id)
-      newUsers += userIds.length
-      for (const userId of userIds) {
-        const dayIndex = firstBetDict[userId]
-        if (dayIndex !== undefined && dayIndex <= end) {
-          activatedCount++
-        }
-      }
-    }
-    return activatedCount / (newUsers || 1)
+  const dailyActivationRate = dailyNewUsers.map((newUsers, i) => {
+    const activedCount = sumBy(newUsers, (user) => {
+      const firstBet = firstBetDict[user.id]
+      return firstBet === i ? 1 : 0
+    })
+    return activedCount / newUsers.length
   })
-  const dailySignups = dailyNewUsers.map((users) => users.length)
+  const dailyActivationRateWeeklyAvg = dailyActivationRate.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(dailyActivationRate.slice(start, end))
+  })
 
-  const dailyTopTenthActions = zip(
-    dailyContracts,
-    dailyBets,
-    dailyComments
-  ).map(([contracts, bets, comments]) => {
-    const userIds = concat(
-      contracts?.map((c) => c.creatorId) ?? [],
-      bets?.map((b) => b.userId) ?? [],
-      comments?.map((c) => c.userId) ?? []
-    )
-    const counts = Object.values(countBy(userIds))
-    const sortedCounts = sortBy(counts, (count) => count).reverse()
-    if (sortedCounts.length === 0) return 0
-    const tenthPercentile = sortedCounts[Math.floor(sortedCounts.length * 0.1)]
-    return tenthPercentile
-  })
-  const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i + 1
-    return average(dailyTopTenthActions.slice(start, end))
-  })
-  const monthlyTopTenthActions = dailyTopTenthActions.map((_, i) => {
-    const start = Math.max(0, i - 29)
-    const end = i + 1
-    return average(dailyTopTenthActions.slice(start, end))
-  })
+  const dailySignups = dailyNewUsers.map((users) => users.length)
 
   // Total mana divided by 100.
   const dailyManaBet = dailyBets.map((bets) => {
@@ -360,13 +329,9 @@ export const updateStatsCore = async () => {
     dailyCommentCounts,
     dailySignups,
     weekOnWeekRetention,
-    weeklyActivationRate,
+    dailyActivationRate,
+    dailyActivationRateWeeklyAvg,
     monthlyRetention,
-    topTenthActions: {
-      daily: dailyTopTenthActions,
-      weekly: weeklyTopTenthActions,
-      monthly: monthlyTopTenthActions,
-    },
     manaBet: {
       daily: dailyManaBet,
       weekly: weeklyManaBet,
