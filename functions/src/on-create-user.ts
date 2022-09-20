@@ -5,10 +5,7 @@ dayjs.extend(utc)
 
 import { getPrivateUser } from './utils'
 import { User } from '../../common/user'
-import {
-  sendPersonalFollowupEmail,
-  sendWelcomeEmail,
-} from './emails'
+import { sendPersonalFollowupEmail, sendWelcomeEmail } from './emails'
 
 export const onCreateUser = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
@@ -22,5 +19,4 @@ export const onCreateUser = functions
 
     const followupSendTime = dayjs().add(48, 'hours').toString()
     await sendPersonalFollowupEmail(user, privateUser, followupSendTime)
-
   })
