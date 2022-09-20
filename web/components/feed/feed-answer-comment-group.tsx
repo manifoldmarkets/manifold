@@ -70,10 +70,7 @@ export function FeedAnswerCommentGroup(props: {
   }, [answerElementId, router.asPath])
 
   return (
-    <Col
-      className={'relative flex-1 items-stretch gap-3'}
-      key={answer.id + 'comment'}
-    >
+    <Col className="relative flex-1 items-stretch gap-3">
       <Row
         className={clsx(
           'gap-3 space-x-3 pt-4 transition-all duration-1000',
@@ -100,9 +97,9 @@ export function FeedAnswerCommentGroup(props: {
             </span>
 
             {isFreeResponseContractPage && (
-              <div className={'sm:hidden'}>
+              <div className="sm:hidden">
                 <button
-                  className={'text-xs font-bold text-gray-500 hover:underline'}
+                  className="text-xs font-bold text-gray-500 hover:underline"
                   onClick={() => scrollAndOpenReplyInput(undefined, answer)}
                 >
                   Reply
@@ -111,9 +108,9 @@ export function FeedAnswerCommentGroup(props: {
             )}
           </Col>
           {isFreeResponseContractPage && (
-            <div className={'justify-initial hidden sm:block'}>
+            <div className="justify-initial hidden sm:block">
               <button
-                className={'text-xs font-bold text-gray-500 hover:underline'}
+                className="text-xs font-bold text-gray-500 hover:underline"
                 onClick={() => scrollAndOpenReplyInput(undefined, answer)}
               >
                 Reply
@@ -135,7 +132,7 @@ export function FeedAnswerCommentGroup(props: {
         ))}
       </Col>
       {showReply && (
-        <div className={'relative ml-7'}>
+        <div className="relative ml-7">
           <span
             className="absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
