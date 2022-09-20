@@ -6,7 +6,6 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
-import { LiquidityProvision } from 'common/liquidity-provision'
 import { groupBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract, FreeResponseContract } from 'common/contract'
@@ -36,27 +35,10 @@ export function ContractTabs(props: {
 
   const isMobile = useIsMobile()
 
-  const lps = useLiquidity(contract.id)
-
   const userBets =
     user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
   const visibleBets = bets.filter(
     (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
-  )
-  const visibleLps = (lps ?? []).filter(
-    (l) =>
-      !l.isAnte &&
-      l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.amount > 0
-  )
-
-  const betActivity = lps != null && (
-    <ContractBetsActivity
-      contract={contract}
-      bets={visibleBets}
-      lps={visibleLps}
-    />
   )
 
   const yourTrades = (
@@ -83,7 +65,12 @@ export function ContractTabs(props: {
             <CommentsTabContent contract={contract} comments={comments} />
           ),
         },
-        { title: capitalize(PAST_BETS), content: betActivity },
+        {
+          title: capitalize(PAST_BETS),
+          content: (
+            <ContractBetsActivity contract={contract} bets={visibleBets} />
+          ),
+        },
         ...(!user || !userBets?.length
           ? []
           : [
@@ -138,16 +125,21 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   }
 })
 
-function ContractBetsActivity(props: {
-  contract: Contract
-  bets: Bet[]
-  lps: LiquidityProvision[]
-}) {
-  const { contract, bets, lps } = props
+function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
+
+  const lps = useLiquidity(contract.id) ?? []
+  const visibleLps = lps.filter(
+    (l) =>
+      !l.isAnte &&
+      l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+      l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
+      l.amount > 0
+  )
 
   const items = [
     ...bets.map((bet) => ({
@@ -155,7 +147,7 @@ function ContractBetsActivity(props: {
       id: bet.id + '-' + bet.isSold,
       bet,
     })),
-    ...lps.map((lp) => ({
+    ...visibleLps.map((lp) => ({
       type: 'liquidity' as const,
       id: lp.id,
       lp,
