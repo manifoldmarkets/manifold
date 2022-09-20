@@ -106,7 +106,7 @@ export function FeedAnswerCommentGroup(props: {
             indent={true}
             contract={contract}
             comment={comment}
-            tips={tips[comment.id]}
+            tips={tips[comment.id] ?? {}}
             onReplyClick={scrollAndOpenReplyInput}
           />
         ))}
