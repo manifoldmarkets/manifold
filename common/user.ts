@@ -56,11 +56,6 @@ export type PrivateUser = {
   username: string // denormalized from User
 
   email?: string
-  unsubscribedFromResolutionEmails?: boolean
-  unsubscribedFromCommentEmails?: boolean
-  unsubscribedFromAnswerEmails?: boolean
-  unsubscribedFromGenericEmails?: boolean
-  unsubscribedFromWeeklyTrendingEmails?: boolean
   weeklyTrendingEmailSent?: boolean
   manaBonusEmailSent?: boolean
   initialDeviceToken?: string

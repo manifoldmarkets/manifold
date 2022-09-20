@@ -78,7 +78,7 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['apiKey', 'unsubscribedFromResolutionEmails', 'unsubscribedFromCommentEmails', 'unsubscribedFromAnswerEmails', 'unsubscribedFromWeeklyTrendingEmails', 'notificationPreferences', 'twitchInfo']);
+                         .hasOnly(['apiKey', 'notificationPreferences', 'twitchInfo']);
     }
 
     match /private-users/{userId}/views/{viewId} {
