@@ -1,11 +1,11 @@
-import React, { ReactNode, useEffect, useState } from 'react'
+import React, { ReactNode, useEffect } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
   PencilAltIcon,
   ArrowSmRightIcon,
 } from '@heroicons/react/solid'
-import { XCircleIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast, Toaster } from 'react-hot-toast'
 
@@ -22,21 +22,16 @@ import { SiteLink } from 'web/components/site-link'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   useMemberGroupIds,
-  useMemberGroups,
+  useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
 import { Row } from 'web/components/layout/row'
 import { ProbChangeTable } from 'web/components/contract/prob-change-table'
-import {
-  getGroup,
-  groupPath,
-  joinGroup,
-  leaveGroup,
-} from 'web/lib/firebase/groups'
+import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
-import { useProbChanges } from 'web/hooks/use-prob-changes'
+import { useProbChangesAlgolia } from 'web/hooks/use-prob-changes'
 import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
@@ -57,19 +52,21 @@ export default function Home() {
   useSaveReferral()
   usePrefetch(user?.id)
 
-  const cachedGroups = useMemberGroups(user?.id) ?? []
-  const groupIds = useMemberGroupIds(user)
-  const [groups, setGroups] = useState(cachedGroups)
-
-  useEffect(() => {
-    if (groupIds) {
-      Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
-        setGroups(filterDefined(groups))
-      )
-    }
-  }, [groupIds])
+  const groups = useMemberGroupsSubscription(user)
 
   const { sections } = getHomeItems(groups, user?.homeSections ?? [])
+
+  useEffect(() => {
+    if (
+      user &&
+      !user.homeSections &&
+      sections.length > 0 &&
+      groups.length > 0
+    ) {
+      // Save initial home sections.
+      updateUser(user.id, { homeSections: sections.map((s) => s.id) })
+    }
+  }, [user, sections, groups])
 
   return (
     <Page>
@@ -77,7 +74,10 @@ export default function Home() {
 
       <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
         <Row className={'mb-2 w-full items-center justify-between gap-8'}>
-          <Title className="!mt-0 !mb-0" text="Home" />
+          <Row className="items-center gap-2">
+            <Title className="!mt-0 !mb-0" text="Home" />
+            <CustomizeButton justIcon />
+          </Row>
           <DailyStats user={user} />
         </Row>
 
@@ -102,7 +102,7 @@ export default function Home() {
 const HOME_SECTIONS = [
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
-  { label: 'New for you', id: 'new-for-you' },
+  { label: 'New', id: 'newest' },
   { label: 'Recently updated', id: 'recently-updated-for-you' },
 ]
 
@@ -110,11 +110,12 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
   // Accommodate old home sections.
   if (!isArray(sections)) sections = []
 
-  const items = [
+  const items: { id: string; label: string; group?: Group }[] = [
     ...HOME_SECTIONS,
     ...groups.map((g) => ({
       label: g.name,
       id: g.id,
+      group: g,
     })),
   ]
   const itemsById = keyBy(items, 'id')
@@ -139,16 +140,6 @@ function renderSection(
   if (id === 'daily-movers') {
     return <DailyMoversSection key={id} userId={user?.id} />
   }
-  if (id === 'new-for-you')
-    return (
-      <SearchSection
-        key={id}
-        label={label}
-        sort={'newest'}
-        pill="personal"
-        user={user}
-      />
-    )
   if (id === 'recently-updated-for-you')
     return (
       <SearchSection
@@ -235,7 +226,6 @@ function GroupSection(props: {
     <Col>
       <SectionHeader label={group.name} href={groupPath(group.slug)}>
         <Button
-          className=""
           color="gray-white"
           onClick={() => {
             if (user) {
@@ -252,10 +242,7 @@ function GroupSection(props: {
             }
           }}
         >
-          <XCircleIcon
-            className={clsx('h-5 w-5 flex-shrink-0')}
-            aria-hidden="true"
-          />
+          <XCircleIcon className={'h-5 w-5 flex-shrink-0'} aria-hidden="true" />
         </Button>
       </SectionHeader>
       <ContractsGrid contracts={contracts} />
@@ -265,7 +252,16 @@ function GroupSection(props: {
 
 function DailyMoversSection(props: { userId: string | null | undefined }) {
   const { userId } = props
-  const changes = useProbChanges(userId ?? '')
+  const changes = useProbChangesAlgolia(userId ?? '')
+
+  if (changes) {
+    const { positiveChanges, negativeChanges } = changes
+    if (
+      !positiveChanges.find((c) => c.probChanges.day >= 0.01) ||
+      !negativeChanges.find((c) => c.probChanges.day <= -0.01)
+    )
+      return null
+  }
 
   return (
     <Col className="gap-2">
@@ -285,8 +281,8 @@ function DailyStats(props: {
   const [first, last] = [metrics[0], metrics[metrics.length - 1]]
 
   const privateUser = usePrivateUser()
-  const streaksHidden =
-    privateUser?.notificationPreferences.betting_streaks.length === 0
+  const streaks = privateUser?.notificationPreferences?.betting_streaks ?? []
+  const streaksHidden = streaks.length === 0
 
   let profit = 0
   let profitPercent = 0
@@ -322,24 +318,29 @@ function DailyStats(props: {
   )
 }
 
-function TrendingGroupsSection(props: { user: User | null | undefined }) {
-  const { user } = props
+export function TrendingGroupsSection(props: {
+  user: User | null | undefined
+  full?: boolean
+  className?: string
+}) {
+  const { user, full, className } = props
   const memberGroupIds = useMemberGroupIds(user) || []
 
   const groups = useTrendingGroups().filter(
     (g) => !memberGroupIds.includes(g.id)
   )
-  const count = 25
+  const count = full ? 100 : 25
   const chosenGroups = groups.slice(0, count)
 
   return (
-    <Col>
+    <Col className={className}>
       <SectionHeader label="Trending groups" href="/explore-groups">
-        <CustomizeButton />
+        {!full && <CustomizeButton className="mb-1" />}
       </SectionHeader>
       <Row className="flex-wrap gap-2">
         {chosenGroups.map((g) => (
           <PillButton
+            className="flex flex-row items-center gap-1"
             key={g.id}
             selected={memberGroupIds.includes(g.id)}
             onSelect={() => {
@@ -361,6 +362,11 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
               }
             }}
           >
+            <PlusCircleIcon
+              className={'h-5 w-5 flex-shrink-0 text-gray-500'}
+              aria-hidden="true"
+            />
+
             {g.name}
           </PillButton>
         ))}
@@ -369,10 +375,14 @@ function TrendingGroupsSection(props: { user: User | null | undefined }) {
   )
 }
 
-function CustomizeButton() {
+function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
+  const { justIcon, className } = props
   return (
     <SiteLink
-      className="mb-2 flex flex-row items-center text-xl hover:no-underline"
+      className={clsx(
+        className,
+        'flex flex-row items-center text-xl hover:no-underline'
+      )}
       href="/home/edit"
     >
       <Button size="lg" color="gray" className={clsx('flex gap-2')}>
@@ -380,7 +390,7 @@ function CustomizeButton() {
           className={clsx('h-[24px] w-5 text-gray-500')}
           aria-hidden="true"
         />
-        Customize
+        {!justIcon && 'Customize'}
       </Button>
     </SiteLink>
   )

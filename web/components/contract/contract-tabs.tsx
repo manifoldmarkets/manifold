@@ -75,7 +75,9 @@ export function ContractTabs(props: {
       <>
         <FreeResponseContractCommentsActivity
           contract={contract}
-          bets={visibleBets}
+          betsByCurrentUser={
+            user ? visibleBets.filter((b) => b.userId === user.id) : []
+          }
           comments={comments}
           tips={tips}
           user={user}
@@ -85,7 +87,9 @@ export function ContractTabs(props: {
           <div className={'mb-4 w-full border-b border-gray-200'} />
           <ContractCommentsActivity
             contract={contract}
-            bets={generalBets}
+            betsByCurrentUser={
+              user ? generalBets.filter((b) => b.userId === user.id) : []
+            }
             comments={generalComments}
             tips={tips}
             user={user}
@@ -95,7 +99,9 @@ export function ContractTabs(props: {
     ) : (
       <ContractCommentsActivity
         contract={contract}
-        bets={visibleBets}
+        betsByCurrentUser={
+          user ? visibleBets.filter((b) => b.userId === user.id) : []
+        }
         comments={comments}
         tips={tips}
         user={user}

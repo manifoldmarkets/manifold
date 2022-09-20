@@ -1,5 +1,5 @@
 import { ClipboardIcon, HomeIcon } from '@heroicons/react/outline'
-import { Item } from './sidebar'
+import { Item } from './sidebar-item'
 
 import clsx from 'clsx'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -32,7 +32,7 @@ export function GroupNavBar(props: {
   const user = useUser()
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
+    <nav className="z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       {mobileGroupNavigation.map((item) => (
         <NavBarItem
           key={item.name}

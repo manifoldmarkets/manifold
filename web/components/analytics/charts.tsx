@@ -1,5 +1,6 @@
 import { Point, ResponsiveLine } from '@nivo/line'
 import clsx from 'clsx'
+import { formatPercent } from 'common/util/format'
 import dayjs from 'dayjs'
 import { zip } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -63,18 +64,21 @@ export function DailyPercentChart(props: {
   startDate: number
   dailyPercent: number[]
   small?: boolean
+  excludeFirstDays?: number
 }) {
-  const { dailyPercent, startDate, small } = props
+  const { dailyPercent, startDate, small, excludeFirstDays } = props
   const { width } = useWindowSize()
 
   const dates = dailyPercent.map((_, i) =>
     dayjs(startDate).add(i, 'day').toDate()
   )
 
-  const points = zip(dates, dailyPercent).map(([date, betCount]) => ({
-    x: date,
-    y: betCount,
-  }))
+  const points = zip(dates, dailyPercent)
+    .map(([date, percent]) => ({
+      x: date,
+      y: percent,
+    }))
+    .slice(excludeFirstDays ?? 0)
   const data = [{ id: 'Percent', data: points, color: '#11b981' }]
 
   const bottomAxisTicks = width && width < 600 ? 6 : undefined
@@ -93,7 +97,7 @@ export function DailyPercentChart(props: {
           type: 'time',
         }}
         axisLeft={{
-          format: (value) => `${value}%`,
+          format: formatPercent,
         }}
         axisBottom={{
           tickValues: bottomAxisTicks,
@@ -109,15 +113,15 @@ export function DailyPercentChart(props: {
         margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
         sliceTooltip={({ slice }) => {
           const point = slice.points[0]
-          return <Tooltip point={point} />
+          return <Tooltip point={point} isPercent />
         }}
       />
     </div>
   )
 }
 
-function Tooltip(props: { point: Point }) {
-  const { point } = props
+function Tooltip(props: { point: Point; isPercent?: boolean }) {
+  const { point, isPercent } = props
   return (
     <Col className="border border-gray-300 bg-white py-2 px-3">
       <div
@@ -126,7 +130,8 @@ function Tooltip(props: { point: Point }) {
           color: point.serieColor,
         }}
       >
-        <strong>{point.serieId}</strong> {point.data.yFormatted}
+        <strong>{point.serieId}</strong>{' '}
+        {isPercent ? formatPercent(+point.data.y) : Math.round(+point.data.y)}
       </div>
       <div>{dayjs(point.data.x).format('MMM DD')}</div>
     </Col>

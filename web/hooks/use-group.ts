@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
+  getGroup,
   getMemberGroups,
   GroupMemberDoc,
   groupMembers,
@@ -100,6 +101,24 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
   }, [user])
 
   return memberGroupIds
+}
+
+export function useMemberGroupsSubscription(user: User | null | undefined) {
+  const cachedGroups = useMemberGroups(user?.id) ?? []
+  const [groups, setGroups] = useState(cachedGroups)
+
+  const userId = user?.id
+  useEffect(() => {
+    if (userId) {
+      return listenForMemberGroupIds(userId, (groupIds) => {
+        Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
+          setGroups(filterDefined(groups))
+        )
+      })
+    }
+  }, [userId])
+
+  return groups
 }
 
 export function useMembers(groupId: string | undefined) {

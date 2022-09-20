@@ -1,10 +1,18 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { compact } from 'lodash'
-import { getContract, getUser, getValues } from './utils'
+import {
+  getContract,
+  getContractPath,
+  getUser,
+  getValues,
+  revalidateStaticProps,
+} from './utils'
 import { ContractComment } from '../../common/comment'
 import { Bet } from '../../common/bet'
 import { Answer } from '../../common/answer'
+import { getLargestPosition } from '../../common/calculate'
+import { maxBy } from 'lodash'
 import {
   createCommentOrAnswerOrUpdatedContractNotification,
   replied_users_info,
@@ -32,6 +40,8 @@ export const onCreateCommentOnContract = functions
       contractQuestion: contract.question,
     })
 
+    await revalidateStaticProps(getContractPath(contract))
+
     const comment = change.data() as ContractComment
     const lastCommentTime = comment.createdTime
 
@@ -44,6 +54,32 @@ export const onCreateCommentOnContract = functions
       .collection('contracts')
       .doc(contract.id)
       .update({ lastCommentTime, lastUpdatedTime: Date.now() })
+
+    const previousBetsQuery = await firestore
+      .collection('contracts')
+      .doc(contractId)
+      .collection('bets')
+      .where('createdTime', '<', comment.createdTime)
+      .get()
+    const previousBets = previousBetsQuery.docs.map((d) => d.data() as Bet)
+    const position = getLargestPosition(
+      contract,
+      previousBets.filter((b) => b.userId === comment.userId && !b.isAnte)
+    )
+    if (position) {
+      const fields: { [k: string]: unknown } = {
+        commenterPositionShares: position.shares,
+        commenterPositionOutcome: position.outcome,
+      }
+      const previousProb =
+        contract.outcomeType === 'BINARY'
+          ? maxBy(previousBets, (bet) => bet.createdTime)?.probAfter
+          : undefined
+      if (previousProb != null) {
+        fields.commenterPositionProb = previousProb
+      }
+      await change.ref.update(fields)
+    }
 
     let bet: Bet | undefined
     let answer: Answer | undefined

@@ -10,7 +10,6 @@ import { useSaveBinaryShares } from './use-save-binary-shares'
 import { Col } from './layout/col'
 import { Button } from 'web/components/button'
 import { BetSignUpPrompt } from './sign-up-prompt'
-import { PRESENT_BET } from 'common/user'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -42,7 +41,7 @@ export default function BetButton(props: {
             )}
             onClick={() => setOpen(true)}
           >
-            {PRESENT_BET}
+            Predict
           </Button>
         ) : (
           <BetSignUpPrompt />

@@ -9,7 +9,6 @@ import { Row } from '../layout/row'
 import { ShareEmbedButton } from '../share-embed-button'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
-import { DuplicateContractButton } from '../copy-contract-button'
 import { Button } from '../button'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track, withTracking } from 'web/lib/service/analytics'
@@ -21,6 +20,7 @@ import { REFERRAL_AMOUNT } from 'common/economy'
 import { CreateChallengeModal } from 'web/components/challenges/create-challenge-modal'
 import { useState } from 'react'
 import { CHALLENGES_ENABLED } from 'common/challenge'
+import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 export function ShareModal(props: {
   contract: Contract
@@ -56,8 +56,8 @@ export function ShareModal(props: {
         </p>
         <Button
           size="2xl"
-          color="gradient"
-          className={'flex max-w-xs self-center'}
+          color="indigo"
+          className={'mb-2 flex max-w-xs self-center'}
           onClick={() => {
             copyToClipboard(shareUrl)
             toast.success('Link copied!', {
@@ -68,38 +68,39 @@ export function ShareModal(props: {
         >
           {linkIcon} Copy link
         </Button>
-        <Row className={'justify-center'}>or</Row>
-        {showChallenge && (
-          <Button
-            size="2xl"
-            color="gradient"
-            className={'mb-2 flex max-w-xs self-center'}
-            onClick={withTracking(
-              () => setOpenCreateChallengeModal(true),
-              'click challenge button'
-            )}
-          >
-            <span>⚔️ Challenge</span>
-            <CreateChallengeModal
-              isOpen={openCreateChallengeModal}
-              setOpen={(open) => {
-                if (!open) {
-                  setOpenCreateChallengeModal(false)
-                  setOpen(false)
-                } else setOpenCreateChallengeModal(open)
-              }}
-              user={user}
-              contract={contract}
-            />
-          </Button>
-        )}
+
         <Row className="z-0 flex-wrap justify-center gap-4 self-center">
           <TweetButton
             className="self-start"
             tweetText={getTweetText(contract, shareUrl)}
           />
+
           <ShareEmbedButton contract={contract} />
-          <DuplicateContractButton contract={contract} />
+
+          {showChallenge && (
+            <button
+              className={
+                'btn btn-xs flex-nowrap border-2 !border-indigo-500 !bg-white normal-case text-indigo-500'
+              }
+              onClick={withTracking(
+                () => setOpenCreateChallengeModal(true),
+                'click challenge button'
+              )}
+            >
+              ️<ChallengeIcon className="mr-1 h-4 w-4" /> Challenge
+              <CreateChallengeModal
+                isOpen={openCreateChallengeModal}
+                setOpen={(open) => {
+                  if (!open) {
+                    setOpenCreateChallengeModal(false)
+                    setOpen(false)
+                  } else setOpenCreateChallengeModal(open)
+                }}
+                user={user}
+                contract={contract}
+              />
+            </button>
+          )}
         </Row>
       </Col>
     </Modal>

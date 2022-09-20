@@ -13,7 +13,11 @@ export const useWarnUnsavedChanges = (hasUnsavedChanges: boolean) => {
       return confirmationMessage
     }
 
-    const beforeRouteHandler = () => {
+    const beforeRouteHandler = (href: string) => {
+      const pathname = href.split('?')[0]
+      // Don't warn if the user is navigating to the same page.
+      if (pathname === location.pathname) return
+
       if (!confirm(confirmationMessage)) {
         Router.events.emit('routeChangeError')
         throw 'Abort route change. Please ignore this error.'

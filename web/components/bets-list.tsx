@@ -756,9 +756,10 @@ function SellButton(props: {
 
 export function ProfitBadge(props: {
   profitPercent: number
+  round?: boolean
   className?: string
 }) {
-  const { profitPercent, className } = props
+  const { profitPercent, round, className } = props
   if (!profitPercent) return null
   const colors =
     profitPercent > 0
@@ -773,7 +774,9 @@ export function ProfitBadge(props: {
         className
       )}
     >
-      {(profitPercent > 0 ? '+' : '') + profitPercent.toFixed(1) + '%'}
+      {(profitPercent > 0 ? '+' : '') +
+        profitPercent.toFixed(round ? 0 : 1) +
+        '%'}
     </span>
   )
 }

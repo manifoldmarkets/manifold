@@ -1,6 +1,6 @@
 const API_DOCS_URL = 'https://docs.manifold.markets/api'
 
-const ABOUT_PAGE_URL = 'https://docs.manifold.markets/$how-to'
+const ABOUT_PAGE_URL = 'https://help.manifold.markets/'
 
 /** @type {import('next').NextConfig} */
 module.exports = {
