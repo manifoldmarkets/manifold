@@ -45,6 +45,10 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useAdmin } from 'web/hooks/use-admin'
+import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
+import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
+import BetButton from 'web/components/bet-button'
+
 import dayjs from 'dayjs'
 
 export const getStaticProps = fromPropz(getStaticPropz)
@@ -300,6 +304,20 @@ export function ContractPageContent(
           tips={tips}
           comments={comments}
         />
+        {!user ? (
+          <Col className="mt-4 max-w-sm items-center xl:hidden">
+            <BetSignUpPrompt />
+            <PlayMoneyDisclaimer />
+          </Col>
+        ) : (
+          outcomeType === 'BINARY' &&
+          allowTrade && (
+            <BetButton
+              contract={contract as CPMMBinaryContract}
+              className="mb-2 !mt-0 xl:hidden"
+            />
+          )
+        )}
       </Col>
 
       {recommendedContracts.length > 0 && (
