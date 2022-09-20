@@ -1,5 +1,5 @@
 import { Bet } from 'common/bet'
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { PAST_BETS, User } from 'common/user'
 import {
@@ -11,13 +11,9 @@ import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
-import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { BetSignUpPrompt } from '../sign-up-prompt'
-import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
-import BetButton from '../bet-button'
 import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -123,44 +119,28 @@ export function ContractTabs(props: {
   )
 
   return (
-    <>
-      <Tabs
-        currentPageForAnalytics={'contract'}
-        tabs={[
-          {
-            title: 'Comments',
-            content: commentActivity,
-            badge: `${comments.length}`,
-          },
-          {
-            title: capitalize(PAST_BETS),
-            content: betActivity,
-            badge: `${visibleBets.length + visibleLps.length}`,
-          },
-          ...(!user || !userBets?.length
-            ? []
-            : [
-                {
-                  title: isMobile ? `You` : `Your ${PAST_BETS}`,
-                  content: yourTrades,
-                },
-              ]),
-        ]}
-      />
-      {!user ? (
-        <Col className="mt-4 max-w-sm items-center xl:hidden">
-          <BetSignUpPrompt />
-          <PlayMoneyDisclaimer />
-        </Col>
-      ) : (
-        outcomeType === 'BINARY' &&
-        tradingAllowed(contract) && (
-          <BetButton
-            contract={contract as CPMMBinaryContract}
-            className="mb-2 !mt-0 xl:hidden"
-          />
-        )
-      )}
-    </>
+    <Tabs
+      currentPageForAnalytics={'contract'}
+      tabs={[
+        {
+          title: 'Comments',
+          content: commentActivity,
+          badge: `${comments.length}`,
+        },
+        {
+          title: capitalize(PAST_BETS),
+          content: betActivity,
+          badge: `${visibleBets.length + visibleLps.length}`,
+        },
+        ...(!user || !userBets?.length
+          ? []
+          : [
+              {
+                title: isMobile ? `You` : `Your ${PAST_BETS}`,
+                content: yourTrades,
+              },
+            ]),
+      ]}
+    />
   )
 }
