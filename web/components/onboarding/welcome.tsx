@@ -1,6 +1,8 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useState } from 'react'
+import { User } from 'common/lib/user'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
@@ -27,15 +29,11 @@ export default function Welcome() {
     }
   }
 
-  async function setUserHasSeenWelcome() {
-    if (user) {
-      await updateUser(user.id, { ['shouldShowWelcome']: false })
-    }
+  const setUserHasSeenWelcome = async () => {
+    if (user) await updateUser(user.id, { ['shouldShowWelcome']: false })
   }
 
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
-
-  if (!user || (!user.shouldShowWelcome && !groupSelectorOpen)) return <></>
 
   const toggleOpen = (isOpen: boolean) => {
     setUserHasSeenWelcome()
@@ -45,6 +43,12 @@ export default function Welcome() {
       setGroupSelectorOpen(true)
     }
   }
+
+  const isTwitch = useIsTwitch(user)
+
+  if (isTwitch || !user || (!user.shouldShowWelcome && !groupSelectorOpen))
+    return <></>
+
   return (
     <>
       <GroupSelectorDialog
@@ -87,6 +91,21 @@ export default function Welcome() {
       </Modal>
     </>
   )
+}
+
+const useIsTwitch = (user: User | null | undefined) => {
+  const router = useRouter()
+  const isTwitch = router.pathname === '/twitch'
+
+  useEffect(() => {
+    console.log('twich?', isTwitch)
+
+    if (isTwitch && user?.shouldShowWelcome) {
+      updateUser(user.id, { ['shouldShowWelcome']: false })
+    }
+  }, [isTwitch, user])
+
+  return isTwitch
 }
 
 function PageIndicator(props: { page: number; totalpages: number }) {
