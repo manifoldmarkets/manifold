@@ -1,5 +1,4 @@
 import { Answer } from 'common/answer'
-import { Bet } from 'common/bet'
 import { FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import React, { useEffect, useState } from 'react'
@@ -14,7 +13,6 @@ import {
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
-import { Dictionary } from 'lodash'
 import { User } from 'common/user'
 import { useEvent } from 'web/hooks/use-event'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
@@ -22,22 +20,11 @@ import { UserLink } from 'web/components/user-link'
 
 export function FeedAnswerCommentGroup(props: {
   contract: FreeResponseContract
-  user: User | undefined | null
   answer: Answer
   answerComments: ContractComment[]
   tips: CommentTipMap
-  betsByCurrentUser: Bet[]
-  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const {
-    answer,
-    contract,
-    answerComments,
-    tips,
-    betsByCurrentUser,
-    commentsByUserId,
-    user,
-  } = props
+  const { answer, contract, answerComments, tips } = props
   const { username, avatarUrl, name, text } = answer
 
   const [replyToUser, setReplyToUser] =
@@ -47,7 +34,6 @@ export function FeedAnswerCommentGroup(props: {
   const router = useRouter()
 
   const answerElementId = `answer-${answer.id}`
-  const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
 
   const scrollAndOpenReplyInput = useEvent(
     (comment?: ContractComment, answer?: Answer) => {
@@ -133,8 +119,6 @@ export function FeedAnswerCommentGroup(props: {
           />
           <ContractCommentInput
             contract={contract}
-            betsByCurrentUser={betsByCurrentUser}
-            commentsByCurrentUser={commentsByCurrentUser}
             parentAnswerOutcome={answer.number.toString()}
             replyToUser={replyToUser}
             onSubmitComment={() => setShowReply(false)}

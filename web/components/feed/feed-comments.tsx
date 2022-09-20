@@ -1,9 +1,6 @@
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
-import { Dictionary } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -24,23 +21,12 @@ import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 
 export function FeedCommentThread(props: {
-  user: User | null | undefined
   contract: Contract
   threadComments: ContractComment[]
   tips: CommentTipMap
   parentComment: ContractComment
-  betsByCurrentUser: Bet[]
-  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const {
-    user,
-    contract,
-    threadComments,
-    commentsByUserId,
-    betsByCurrentUser,
-    tips,
-    parentComment,
-  } = props
+  const { contract, threadComments, tips, parentComment } = props
   const [showReply, setShowReply] = useState(false)
   const [replyTo, setReplyTo] = useState<{ id: string; username: string }>()
 
@@ -73,11 +59,8 @@ export function FeedCommentThread(props: {
           />
           <ContractCommentInput
             contract={contract}
-            betsByCurrentUser={(user && betsByCurrentUser) ?? []}
-            commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
             parentCommentId={parentComment.id}
             replyToUser={replyTo}
-            parentAnswerOutcome={parentComment.answerOutcome}
             onSubmitComment={() => {
               setShowReply(false)
             }}
@@ -202,34 +185,6 @@ export function FeedComment(props: {
   )
 }
 
-export function getMostRecentCommentableBet(
-  betsByCurrentUser: Bet[],
-  commentsByCurrentUser: ContractComment[],
-  user?: User | null,
-  answerOutcome?: string
-) {
-  let sortedBetsByCurrentUser = betsByCurrentUser.sort(
-    (a, b) => b.createdTime - a.createdTime
-  )
-  if (answerOutcome) {
-    sortedBetsByCurrentUser = sortedBetsByCurrentUser.slice(0, 1)
-  }
-  return sortedBetsByCurrentUser
-    .filter((bet) => {
-      if (
-        canCommentOnBet(bet, user) &&
-        !commentsByCurrentUser.some(
-          (comment) => comment.createdTime > bet.createdTime
-        )
-      ) {
-        if (!answerOutcome) return true
-        return answerOutcome === bet.outcome
-      }
-      return false
-    })
-    .pop()
-}
-
 function CommentStatus(props: {
   contract: Contract
   outcome: string
@@ -247,8 +202,6 @@ function CommentStatus(props: {
 
 export function ContractCommentInput(props: {
   contract: Contract
-  betsByCurrentUser: Bet[]
-  commentsByCurrentUser: ContractComment[]
   className?: string
   parentAnswerOutcome?: string | undefined
   replyToUser?: { id: string; username: string }
@@ -256,7 +209,7 @@ export function ContractCommentInput(props: {
   onSubmitComment?: () => void
 }) {
   const user = useUser()
-  async function onSubmitComment(editor: Editor, betId: string | undefined) {
+  async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
@@ -265,21 +218,11 @@ export function ContractCommentInput(props: {
       props.contract.id,
       editor.getJSON(),
       user,
-      betId,
       props.parentAnswerOutcome,
       props.parentCommentId
     )
     props.onSubmitComment?.()
   }
-
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    props.betsByCurrentUser,
-    props.commentsByCurrentUser,
-    user,
-    props.parentAnswerOutcome
-  )
-
-  const { id } = mostRecentCommentableBet || { id: undefined }
 
   return (
     <CommentInput
@@ -288,14 +231,6 @@ export function ContractCommentInput(props: {
       parentCommentId={props.parentCommentId}
       onSubmitComment={onSubmitComment}
       className={props.className}
-      presetId={id}
     />
   )
-}
-
-function canCommentOnBet(bet: Bet, user?: User | null) {
-  const { userId, createdTime, isRedemption } = bet
-  const isSelf = user?.id === userId
-  // You can comment if your bet was posted in the last hour
-  return !isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
 }
