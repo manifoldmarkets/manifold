@@ -64,30 +64,20 @@ export function CustomAnalytics(props: Stats) {
     dailySignups,
     weekOnWeekRetention,
     monthlyRetention,
-    weeklyActivationRate,
-    topTenthActions,
+    dailyActivationRate,
+    dailyActivationRateWeeklyAvg,
     manaBet,
   } = props
 
-  const dailyDividedByWeekly = dailyActiveUsers
-    .map((dailyActive, i) =>
-      Math.round((100 * dailyActive) / weeklyActiveUsers[i])
-    )
-    .slice(7)
-
-  const dailyDividedByMonthly = dailyActiveUsers
-    .map((dailyActive, i) =>
-      Math.round((100 * dailyActive) / monthlyActiveUsers[i])
-    )
-    .slice(7)
-
-  const weeklyDividedByMonthly = weeklyActiveUsers
-    .map((weeklyActive, i) =>
-      Math.round((100 * weeklyActive) / monthlyActiveUsers[i])
-    )
-    .slice(7)
-
-  const oneWeekLaterDate = startDate + 7 * 24 * 60 * 60 * 1000
+  const dailyDividedByWeekly = dailyActiveUsers.map(
+    (dailyActive, i) => dailyActive / weeklyActiveUsers[i]
+  )
+  const dailyDividedByMonthly = dailyActiveUsers.map(
+    (dailyActive, i) => dailyActive / monthlyActiveUsers[i]
+  )
+  const weeklyDividedByMonthly = weeklyActiveUsers.map(
+    (weeklyActive, i) => weeklyActive / monthlyActiveUsers[i]
+  )
 
   return (
     <Col className="px-2 sm:px-0">
@@ -180,7 +170,7 @@ export function CustomAnalytics(props: Stats) {
             content: (
               <DailyPercentChart
                 dailyPercent={weekOnWeekRetention}
-                startDate={oneWeekLaterDate}
+                startDate={startDate}
                 small
                 excludeFirstDays={14}
               />
@@ -191,7 +181,7 @@ export function CustomAnalytics(props: Stats) {
             content: (
               <DailyPercentChart
                 dailyPercent={monthlyRetention}
-                startDate={oneWeekLaterDate}
+                startDate={startDate}
                 small
                 excludeFirstDays={60}
               />
@@ -296,14 +286,38 @@ export function CustomAnalytics(props: Stats) {
 
       <Spacer h={8} />
 
-      <Title text="Weekly activation rate" />
+      <Title text="Activation rate" />
       <p className="text-gray-500">
-        Out of all new users this week, how many placed at least one bet?
+        Out of all new users, how many placed at least one bet?
       </p>
-      <DailyPercentChart
-        dailyPercent={weeklyActivationRate.slice(7)}
-        startDate={oneWeekLaterDate}
-        small
+      <Spacer h={4} />
+
+      <Tabs
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: (
+              <DailyPercentChart
+                dailyPercent={dailyActivationRate}
+                startDate={startDate}
+                excludeFirstDays={1}
+                small
+              />
+            ),
+          },
+          {
+            title: 'Daily (7d avg)',
+            content: (
+              <DailyPercentChart
+                dailyPercent={dailyActivationRateWeeklyAvg}
+                startDate={startDate}
+                excludeFirstDays={7}
+                small
+              />
+            ),
+          },
+        ]}
       />
       <Spacer h={8} />
 
@@ -316,7 +330,7 @@ export function CustomAnalytics(props: Stats) {
             content: (
               <DailyPercentChart
                 dailyPercent={dailyDividedByWeekly}
-                startDate={oneWeekLaterDate}
+                startDate={startDate}
                 small
                 excludeFirstDays={7}
               />
@@ -327,7 +341,7 @@ export function CustomAnalytics(props: Stats) {
             content: (
               <DailyPercentChart
                 dailyPercent={dailyDividedByMonthly}
-                startDate={oneWeekLaterDate}
+                startDate={startDate}
                 small
                 excludeFirstDays={30}
               />
@@ -338,7 +352,7 @@ export function CustomAnalytics(props: Stats) {
             content: (
               <DailyPercentChart
                 dailyPercent={weeklyDividedByMonthly}
-                startDate={oneWeekLaterDate}
+                startDate={startDate}
                 small
                 excludeFirstDays={30}
               />
@@ -347,47 +361,6 @@ export function CustomAnalytics(props: Stats) {
         ]}
       />
       <Spacer h={8} />
-
-      <Title text="Action count of top tenth" />
-      <p className="text-gray-500">
-        Number of actions (bets, comments, markets created) taken by the tenth
-        percentile of top users.
-      </p>
-      <Tabs
-        defaultIndex={1}
-        tabs={[
-          {
-            title: 'Daily',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.daily}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Weekly',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.weekly}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Monthly',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.monthly}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-        ]}
-      />
 
       <Title text="Total mana bet" />
       <p className="text-gray-500">
@@ -428,6 +401,7 @@ export function CustomAnalytics(props: Stats) {
           },
         ]}
       />
+      <Spacer h={8} />
     </Col>
   )
 }
