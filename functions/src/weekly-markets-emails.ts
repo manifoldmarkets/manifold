@@ -48,7 +48,7 @@ async function sendTrendingMarketsEmailsToAllUsers() {
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
     return (
-      !user.unsubscribedFromWeeklyTrendingEmails &&
+      user.notificationPreferences.trending_markets.includes('email') &&
       !user.weeklyTrendingEmailSent
     )
   })
