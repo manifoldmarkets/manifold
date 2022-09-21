@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -96,9 +96,17 @@ export function FeedComment(props: {
 
   const router = useRouter()
   const highlighted = router.asPath.endsWith(`#${comment.id}`)
+  const commentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (highlighted && commentRef.current != null) {
+      commentRef.current.scrollIntoView(true)
+    }
+  }, [highlighted])
 
   return (
     <Row
+      ref={commentRef}
       id={comment.id}
       className={clsx(
         'relative',

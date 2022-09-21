@@ -1,7 +1,7 @@
 import { Answer } from 'common/answer'
 import { FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
@@ -30,6 +30,13 @@ export function FeedAnswerCommentGroup(props: {
   const router = useRouter()
   const answerElementId = `answer-${answer.id}`
   const highlighted = router.asPath.endsWith(`#${answerElementId}`)
+  const answerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (highlighted && answerRef.current != null) {
+      answerRef.current.scrollIntoView(true)
+    }
+  }, [highlighted])
 
   return (
     <Col className="relative flex-1 items-stretch gap-3">
@@ -38,6 +45,7 @@ export function FeedAnswerCommentGroup(props: {
           'gap-3 space-x-3 pt-4 transition-all duration-1000',
           highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
+        ref={answerRef}
         id={answerElementId}
       >
         <Avatar username={username} avatarUrl={avatarUrl} />
