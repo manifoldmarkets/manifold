@@ -1,10 +1,10 @@
 import { Bet } from 'common/bet'
-import { ContractComment } from 'common/comment'
 import { resolvedPayout } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { groupBy, mapValues, sumBy, sortBy, keyBy } from 'lodash'
 import { useState, useMemo, useEffect } from 'react'
+import { useComments } from 'web/hooks/use-comments'
 import { listUsers, User } from 'web/lib/firebase/users'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedComment } from '../feed/feed-comments'
@@ -61,12 +61,10 @@ export function ContractLeaderboard(props: {
   ) : null
 }
 
-export function ContractTopTrades(props: {
-  contract: Contract
-  bets: Bet[]
-  comments: ContractComment[]
-}) {
-  const { contract, bets, comments } = props
+export function ContractTopTrades(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
+  // todo: this stuff should be calced in DB at resolve time
+  const comments = useComments(contract.id)
   const commentsById = keyBy(comments, 'id')
   const betsById = keyBy(bets, 'id')
 

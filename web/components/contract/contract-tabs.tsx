@@ -5,19 +5,19 @@ import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
-import { Contract, FreeResponseContract } from 'common/contract'
-import { ContractComment } from 'common/comment'
-import { PAST_BETS, User } from 'common/user'
+import { Contract } from 'common/contract'
+import { PAST_BETS } from 'common/user'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
+import { useUser } from 'web/hooks/use-user'
 import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -25,21 +25,13 @@ import {
 } from 'common/antes'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
-export function ContractTabs(props: {
-  contract: Contract
-  user: User | null | undefined
-  bets: Bet[]
-  comments: ContractComment[]
-}) {
-  const { contract, user, bets, comments } = props
+export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
 
   const isMobile = useIsMobile()
-
+  const user = useUser()
   const userBets =
     user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
-  const visibleBets = bets.filter(
-    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
-  )
 
   const yourTrades = (
     <div>
@@ -61,15 +53,11 @@ export function ContractTabs(props: {
       tabs={[
         {
           title: 'Comments',
-          content: (
-            <CommentsTabContent contract={contract} comments={comments} />
-          ),
+          content: <CommentsTabContent contract={contract} />,
         },
         {
           title: capitalize(PAST_BETS),
-          content: (
-            <ContractBetsActivity contract={contract} bets={visibleBets} />
-          ),
+          content: <BetsTabContent contract={contract} bets={bets} />,
         },
         ...(!user || !userBets?.length
           ? []
@@ -86,46 +74,87 @@ export function ContractTabs(props: {
 
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
-  comments: ContractComment[]
 }) {
-  const { contract, comments } = props
+  const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
-  const updatedComments = useComments(contract.id) ?? comments
+  const comments = useComments(contract.id)
+  if (comments == null) {
+    return <LoadingIndicator />
+  }
   if (contract.outcomeType === 'FREE_RESPONSE') {
+    const generalComments = comments.filter(
+      (c) => c.answerOutcome === undefined && c.betId === undefined
+    )
+    const sortedAnswers = sortBy(
+      contract.answers,
+      (a) => -getOutcomeProbability(contract, a.id)
+    )
+    const commentsByOutcome = groupBy(
+      comments,
+      (c) => c.answerOutcome ?? c.betOutcome ?? '_'
+    )
     return (
       <>
-        <FreeResponseContractCommentsActivity
-          contract={contract}
-          comments={updatedComments}
-          tips={tips}
-        />
+        {sortedAnswers.map((answer) => (
+          <div key={answer.id} className="relative pb-4">
+            <span
+              className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+            <FeedAnswerCommentGroup
+              contract={contract}
+              answer={answer}
+              answerComments={sortBy(
+                commentsByOutcome[answer.number.toString()] ?? [],
+                (c) => c.createdTime
+              )}
+              tips={tips}
+            />
+          </div>
+        ))}
         <Col className="mt-8 flex w-full">
           <div className="text-md mt-8 mb-2 text-left">General Comments</div>
           <div className="mb-4 w-full border-b border-gray-200" />
-          <ContractCommentsActivity
-            contract={contract}
-            comments={updatedComments.filter(
-              (comment) =>
-                comment.answerOutcome === undefined &&
-                comment.betId === undefined
-            )}
-            tips={tips}
-          />
+          <ContractCommentInput className="mb-5" contract={contract} />
+          {generalComments.map((comment) => (
+            <FeedCommentThread
+              key={comment.id}
+              contract={contract}
+              parentComment={comment}
+              threadComments={[]}
+              tips={tips}
+            />
+          ))}
         </Col>
       </>
     )
   } else {
+    const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
+    const topLevelComments = commentsByParent['_'] ?? []
     return (
-      <ContractCommentsActivity
-        contract={contract}
-        comments={comments}
-        tips={tips}
-      />
+      <>
+        <ContractCommentInput className="mb-5" contract={contract} />
+        {sortBy(topLevelComments, (c) => -c.createdTime).map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            contract={contract}
+            parentComment={parent}
+            threadComments={sortBy(
+              commentsByParent[parent.id] ?? [],
+              (c) => c.createdTime
+            )}
+            tips={tips}
+          />
+        ))}
+      </>
     )
   }
 })
 
-function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
+const BetsTabContent = memo(function BetsTabContent(props: {
+  contract: Contract
+  bets: Bet[]
+}) {
   const { contract, bets } = props
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -133,6 +162,9 @@ function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
   const end = start + ITEMS_PER_PAGE
 
   const lps = useLiquidity(contract.id) ?? []
+  const visibleBets = bets.filter(
+    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
+  )
   const visibleLps = lps.filter(
     (l) =>
       !l.isAnte &&
@@ -142,7 +174,7 @@ function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
   )
 
   const items = [
-    ...bets.map((bet) => ({
+    ...visibleBets.map((bet) => ({
       type: 'bet' as const,
       id: bet.id + '-' + bet.isSold,
       bet,
@@ -184,74 +216,4 @@ function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
       />
     </>
   )
-}
-
-function ContractCommentsActivity(props: {
-  contract: Contract
-  comments: ContractComment[]
-  tips: CommentTipMap
-}) {
-  const { contract, comments, tips } = props
-  const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
-  const topLevelComments = sortBy(
-    commentsByParentId['_'] ?? [],
-    (c) => -c.createdTime
-  )
-
-  return (
-    <>
-      <ContractCommentInput className="mb-5" contract={contract} />
-      {topLevelComments.map((parent) => (
-        <FeedCommentThread
-          key={parent.id}
-          contract={contract}
-          parentComment={parent}
-          threadComments={sortBy(
-            commentsByParentId[parent.id] ?? [],
-            (c) => c.createdTime
-          )}
-          tips={tips}
-        />
-      ))}
-    </>
-  )
-}
-
-function FreeResponseContractCommentsActivity(props: {
-  contract: FreeResponseContract
-  comments: ContractComment[]
-  tips: CommentTipMap
-}) {
-  const { contract, comments, tips } = props
-
-  const sortedAnswers = sortBy(
-    contract.answers,
-    (answer) => -getOutcomeProbability(contract, answer.number.toString())
-  )
-  const commentsByOutcome = groupBy(
-    comments,
-    (c) => c.answerOutcome ?? c.betOutcome ?? '_'
-  )
-
-  return (
-    <>
-      {sortedAnswers.map((answer) => (
-        <div key={answer.id} className="relative pb-4">
-          <span
-            className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-            aria-hidden="true"
-          />
-          <FeedAnswerCommentGroup
-            contract={contract}
-            answer={answer}
-            answerComments={sortBy(
-              commentsByOutcome[answer.number.toString()] ?? [],
-              (c) => c.createdTime
-            )}
-            tips={tips}
-          />
-        </div>
-      ))}
-    </>
-  )
-}
+})
