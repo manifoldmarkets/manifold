@@ -26,14 +26,9 @@ import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { SignInButton } from '../sign-in-button'
 import { SidebarItem } from './sidebar-item'
 import { MoreButton } from './more-button'
-import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 
-export default function Sidebar(props: {
-  className?: string
-  logoSubheading?: string
-}) {
-  const { className, logoSubheading } = props
+export default function Sidebar(props: { className?: string }) {
+  const { className } = props
   const router = useRouter()
   const currentPage = router.pathname
 
@@ -56,13 +51,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex max-h-[100vh] flex-col', className)}
     >
-      <ManifoldLogo className="pt-6" twoLine />
-      {logoSubheading && (
-        <Row className="pl-2 text-2xl text-indigo-700 sm:mt-3">
-          {logoSubheading}
-        </Row>
-      )}
-      <Spacer h={6} />
+      <ManifoldLogo className="py-6" twoLine />
 
       {!user && <SignInButton className="mb-4" />}
 
