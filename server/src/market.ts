@@ -17,7 +17,7 @@ export class Market {
     private latestLoadedBetId: string = null;
     private userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
     private readonly pollTask: () => void;
-    
+
     public readonly bets: FullBet[] = [];
     public data: FullMarket;
     public resolveData: PacketResolved = null;
@@ -42,7 +42,8 @@ export class Market {
 
                     const channel = this.app.getChannelForMarketID(this.data.id);
 
-                    this.app.marketResolved(channel, getOutcomeForString(this.data.resolution), winners);
+                    const winnersHighestToLowestProfit = winners.sort((a, b) => b.profit - a.profit); // Sort for highest profit first
+                    this.app.marketResolved(channel, getOutcomeForString(this.data.resolution), winnersHighestToLowestProfit); //TODO: Probably don't need to double sort. Could use topWinners and topLosers
 
                     const uniqueTraderCount = _(this.data.bets).groupBy("userId").size();
 
