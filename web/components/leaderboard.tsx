@@ -5,7 +5,6 @@ import { SiteLink } from './site-link'
 import { Title } from './title'
 
 interface LeaderboardEntry {
-  id: string
   username: string
   name: string
   avatarUrl?: string
@@ -44,7 +43,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
             </thead>
             <tbody>
               {entries.map((entry, index) => (
-                <tr key={entry.id}>
+                <tr key={index}>
                   <td>{index + 1}</td>
                   <td className="max-w-[190px]">
                     <SiteLink className="relative" href={`/${entry.username}`}>

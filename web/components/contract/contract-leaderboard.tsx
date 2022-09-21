@@ -3,9 +3,8 @@ import { resolvedPayout } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { groupBy, mapValues, sumBy, sortBy, keyBy } from 'lodash'
-import { useState, useMemo, useEffect } from 'react'
+import { memo } from 'react'
 import { useComments } from 'web/hooks/use-comments'
-import { listUsers, User } from 'web/lib/firebase/users'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedComment } from '../feed/feed-comments'
 import { Spacer } from '../layout/spacer'
@@ -13,53 +12,43 @@ import { Leaderboard } from '../leaderboard'
 import { Title } from '../title'
 import { BETTORS } from 'common/user'
 
-export function ContractLeaderboard(props: {
+export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   contract: Contract
   bets: Bet[]
 }) {
   const { contract, bets } = props
-  const [users, setUsers] = useState<User[]>()
 
-  const { userProfits, top5Ids } = useMemo(() => {
-    // Create a map of userIds to total profits (including sales)
-    const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
-    const betsByUser = groupBy(openBets, 'userId')
-
-    const userProfits = mapValues(betsByUser, (bets) =>
-      sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount)
-    )
-    // Find the 5 users with the most profits
-    const top5Ids = Object.entries(userProfits)
-      .sort(([_i1, p1], [_i2, p2]) => p2 - p1)
-      .filter(([, p]) => p > 0)
-      .slice(0, 5)
-      .map(([id]) => id)
-    return { userProfits, top5Ids }
-  }, [contract, bets])
-
-  useEffect(() => {
-    if (top5Ids.length > 0) {
-      listUsers(top5Ids).then((users) => {
-        const sortedUsers = sortBy(users, (user) => -userProfits[user.id])
-        setUsers(sortedUsers)
-      })
+  // Create a map of userIds to total profits (including sales)
+  const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
+  const betsByUser = groupBy(openBets, 'userId')
+  const userProfits = mapValues(betsByUser, (bets) => {
+    return {
+      name: bets[0].userName,
+      username: bets[0].userUsername,
+      avatarUrl: bets[0].userAvatarUrl,
+      total: sumBy(bets, (bet) => resolvedPayout(contract, bet) - bet.amount),
     }
-  }, [userProfits, top5Ids])
+  })
+  // Find the 5 users with the most profits
+  const top5 = Object.values(userProfits)
+    .sort((p1, p2) => p2.total - p1.total)
+    .filter((p) => p.total > 0)
+    .slice(0, 5)
 
-  return users && users.length > 0 ? (
+  return top5 && top5.length > 0 ? (
     <Leaderboard
       title={`🏅 Top ${BETTORS}`}
-      entries={users || []}
+      entries={top5 || []}
       columns={[
         {
           header: 'Total profit',
-          renderCell: (user) => formatMoney(userProfits[user.id] || 0),
+          renderCell: (entry) => formatMoney(entry.total),
         },
       ]}
       className="mt-12 max-w-sm"
     />
   ) : null
-}
+})
 
 export function ContractTopTrades(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
