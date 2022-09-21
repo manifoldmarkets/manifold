@@ -16,7 +16,6 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   const router = useRouter()
 
   const [name, setName] = useState(group.name)
-  const [about, setAbout] = useState(group.about ?? '')
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [addMemberUsers, setAddMemberUsers] = useState<User[]>([])
@@ -26,8 +25,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
     setOpen(newOpen)
   }
 
-  const saveDisabled =
-    name === group.name && about === group.about && addMemberUsers.length === 0
+  const saveDisabled = name === group.name && addMemberUsers.length === 0
 
   const onSubmit = async () => {
     setIsSubmitting(true)
@@ -61,23 +59,6 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
               disabled={isSubmitting}
               value={name}
               onChange={(e) => setName(e.target.value || '')}
-            />
-          </div>
-
-          <Spacer h={4} />
-
-          <div className="form-control w-full">
-            <label className="label">
-              <span className="mb-1">About</span>
-            </label>
-
-            <input
-              placeholder="Short description (140 characters max)"
-              className="input input-bordered resize-none"
-              disabled={isSubmitting}
-              value={about}
-              maxLength={140}
-              onChange={(e) => setAbout(e.target.value || '')}
             />
           </div>
 

@@ -6,9 +6,10 @@ export function PillButton(props: {
   onSelect: () => void
   color?: string
   xs?: boolean
+  className?: string
   children: ReactNode
 }) {
-  const { children, selected, onSelect, color, xs } = props
+  const { children, selected, onSelect, color, xs, className } = props
 
   return (
     <button
@@ -17,7 +18,8 @@ export function PillButton(props: {
         xs ? 'text-xs' : '',
         selected
           ? ['text-white', color ?? 'bg-greyscale-6']
-          : 'bg-greyscale-2 hover:bg-greyscale-3'
+          : 'bg-greyscale-2 hover:bg-greyscale-3',
+        className
       )}
       onClick={onSelect}
     >

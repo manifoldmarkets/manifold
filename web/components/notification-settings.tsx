@@ -63,7 +63,6 @@ export function NotificationSettings(props: {
     'contract_from_followed_user',
     'unique_bettors_on_your_contract',
     // TODO: add these
-    // one-click unsubscribe only unsubscribes them from that type only, (well highlighted), then a link to manage the rest of their notifications
     // 'profit_loss_updates', - changes in markets you have shares in
     // biggest winner, here are the rest of your markets
 
@@ -277,6 +276,7 @@ export function NotificationSettings(props: {
         <Col className={clsx(expanded ? 'block' : 'hidden', 'gap-2 p-2')}>
           {subscriptionTypes.map((subType) => (
             <NotificationSettingLine
+              key={subType}
               subscriptionTypeKey={subType as notification_preference}
               destinations={getUsersSavedPreference(
                 subType as notification_preference

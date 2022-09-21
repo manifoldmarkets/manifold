@@ -148,7 +148,7 @@ export const OUTCOME_TYPES = [
   'NUMERIC',
 ] as const
 
-export const MAX_QUESTION_LENGTH = 480
+export const MAX_QUESTION_LENGTH = 240
 export const MAX_DESCRIPTION_LENGTH = 16000
 export const MAX_TAG_LENGTH = 60
 

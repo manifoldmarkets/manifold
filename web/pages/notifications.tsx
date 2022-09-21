@@ -435,7 +435,7 @@ function IncomeNotificationItem(props: {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } new predictors on`
+          } new traders on`
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
@@ -556,7 +556,7 @@ function IncomeNotificationItem(props: {
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
               userInfos={userLinks}
-              modalLabel={isTip ? 'Who tipped you' : 'Unique predictors'}
+              modalLabel={isTip ? 'Who tipped you' : 'Unique traders'}
             />
           )}
           <Row className={'line-clamp-2 flex max-w-xl'}>
@@ -904,25 +904,30 @@ function BetFillNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, justSummary } = props
   const { sourceText, data } = notification
-  const { creatorOutcome, probability } = (data as BetFillData) ?? {}
+  const { creatorOutcome, probability, limitOrderTotal, limitOrderRemaining } =
+    (data as BetFillData) ?? {}
   const subtitle = 'bet against you'
   const amount = formatMoney(parseInt(sourceText ?? '0'))
   const description =
     creatorOutcome && probability ? (
       <span>
-        of your{' '}
+        of your {limitOrderTotal ? formatMoney(limitOrderTotal) : ''}
         <span
-          className={
+          className={clsx(
+            'mx-1',
             creatorOutcome === 'YES'
               ? 'text-primary'
               : creatorOutcome === 'NO'
               ? 'text-red-500'
               : 'text-blue-500'
-          }
+          )}
         >
-          {creatorOutcome}{' '}
+          {creatorOutcome}
         </span>
-        limit order at {Math.round(probability * 100)}% was filled
+        limit order at {Math.round(probability * 100)}% was filled{' '}
+        {limitOrderRemaining
+          ? `(${formatMoney(limitOrderRemaining)} remaining)`
+          : ''}
       </span>
     ) : (
       <span>of your limit order was filled</span>
@@ -966,13 +971,20 @@ function ContractResolvedNotification(props: {
   const { sourceText, data } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const subtitle = 'resolved the market'
+
   const resolutionDescription = () => {
     if (!sourceText) return <div />
+
     if (sourceText === 'YES' || sourceText == 'NO') {
       return <BinaryOutcomeLabel outcome={sourceText as any} />
     }
+
     if (sourceText.includes('%'))
-      return <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
+      return (
+        <ProbPercentLabel
+          prob={parseFloat(sourceText.replace('%', '')) / 100}
+        />
+      )
     if (sourceText === 'CANCEL') return <CancelLabel />
     if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
 
@@ -991,7 +1003,7 @@ function ContractResolvedNotification(props: {
   const description =
     userInvestment && userPayout !== undefined ? (
       <Row className={'gap-1 '}>
-        {resolutionDescription()}
+        Resolved: {resolutionDescription()}
         Invested:
         <span className={'text-primary'}>{formatMoney(userInvestment)} </span>
         Payout:
@@ -1008,7 +1020,7 @@ function ContractResolvedNotification(props: {
         </span>
       </Row>
     ) : (
-      <span>{resolutionDescription()}</span>
+      <span>Resolved {resolutionDescription()}</span>
     )
 
   if (justSummary) {

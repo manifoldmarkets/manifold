@@ -7,9 +7,12 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
 import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
+import { useMemberGroupsSubscription } from 'web/hooks/use-group'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
+import { getHomeItems, TrendingGroupsSection } from '.'
 
 export default function Home() {
   const user = useUser()
@@ -24,6 +27,9 @@ export default function Home() {
     setHomeSections(newHomeSections)
   }
 
+  const groups = useMemberGroupsSubscription(user)
+  const { sections } = getHomeItems(groups, homeSections)
+
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-6 pt-2">
@@ -32,11 +38,15 @@ export default function Home() {
           <DoneButton />
         </Row>
 
-        <ArrangeHome
-          user={user}
-          homeSections={homeSections}
-          setHomeSections={updateHomeSections}
-        />
+        <Col className="gap-8 md:flex-row">
+          <Col className="flex-1">
+            <ArrangeHome
+              sections={sections}
+              setSectionIds={updateHomeSections}
+            />
+          </Col>
+          <TrendingGroupsSection className="flex-1" user={user} full />
+        </Col>
       </Col>
     </Page>
   )
@@ -46,11 +56,12 @@ function DoneButton(props: { className?: string }) {
   const { className } = props
 
   return (
-    <SiteLink href="/experimental/home">
+    <SiteLink href="/home">
       <Button
         size="lg"
         color="blue"
         className={clsx(className, 'flex whitespace-nowrap')}
+        onClick={() => track('done editing home')}
       >
         Done
       </Button>

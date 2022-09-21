@@ -1,12 +1,16 @@
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
+
+import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../title'
+import GroupSelectorDialog from './group-selector-dialog'
 
 export default function Welcome() {
   const user = useUser()
@@ -26,23 +30,34 @@ export default function Welcome() {
     }
   }
 
-  async function setUserHasSeenWelcome() {
-    if (user) {
-      await updateUser(user.id, { ['shouldShowWelcome']: false })
+  const setUserHasSeenWelcome = async () => {
+    if (user) await updateUser(user.id, { ['shouldShowWelcome']: false })
+  }
+
+  const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
+
+  const toggleOpen = (isOpen: boolean) => {
+    setUserHasSeenWelcome()
+    setOpen(isOpen)
+
+    if (!isOpen) {
+      setGroupSelectorOpen(true)
     }
   }
 
-  if (!user || !user.shouldShowWelcome) {
+  const isTwitch = useIsTwitch(user)
+
+  if (isTwitch || !user || (!user.shouldShowWelcome && !groupSelectorOpen))
     return <></>
-  } else
-    return (
-      <Modal
-        open={open}
-        setOpen={(newOpen) => {
-          setUserHasSeenWelcome()
-          setOpen(newOpen)
-        }}
-      >
+
+  return (
+    <>
+      <GroupSelectorDialog
+        open={groupSelectorOpen}
+        setOpen={() => setGroupSelectorOpen(false)}
+      />
+
+      <Modal open={open} setOpen={toggleOpen}>
         <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
           {page === 0 && <Page0 />}
           {page === 1 && <Page1 />}
@@ -68,17 +83,30 @@ export default function Welcome() {
             </Row>
             <u
               className="self-center text-xs text-gray-500"
-              onClick={() => {
-                setOpen(false)
-                setUserHasSeenWelcome()
-              }}
+              onClick={() => toggleOpen(false)}
             >
               I got the gist, exit welcome
             </u>
           </Col>
         </Col>
       </Modal>
-    )
+    </>
+  )
+}
+
+const useIsTwitch = (user: User | null | undefined) => {
+  const router = useRouter()
+  const isTwitch = router.pathname === '/twitch'
+
+  useEffect(() => {
+    console.log('twich?', isTwitch)
+
+    if (isTwitch && user?.shouldShowWelcome) {
+      updateUser(user.id, { ['shouldShowWelcome']: false })
+    }
+  }, [isTwitch, user])
+
+  return isTwitch
 }
 
 function PageIndicator(props: { page: number; totalpages: number }) {

@@ -23,11 +23,11 @@ export const onCreateUser = functions
 
     await sendWelcomeEmail(user, privateUser)
 
-    const guideSendTime = dayjs().add(28, 'hours').toString()
-    await sendCreatorGuideEmail(user, privateUser, guideSendTime)
-
     const followupSendTime = dayjs().add(48, 'hours').toString()
     await sendPersonalFollowupEmail(user, privateUser, followupSendTime)
+
+    const guideSendTime = dayjs().add(96, 'hours').toString()
+    await sendCreatorGuideEmail(user, privateUser, guideSendTime)
 
     // skip email if weekly email is about to go out
     const day = dayjs().utc().day()

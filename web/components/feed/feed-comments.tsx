@@ -1,9 +1,6 @@
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { PRESENT_BET, User } from 'common/user'
 import { Contract } from 'common/contract'
 import React, { useEffect, useState } from 'react'
-import { minBy, maxBy, partition, sumBy, Dictionary } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -24,25 +21,12 @@ import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 
 export function FeedCommentThread(props: {
-  user: User | null | undefined
   contract: Contract
   threadComments: ContractComment[]
   tips: CommentTipMap
   parentComment: ContractComment
-  bets: Bet[]
-  betsByUserId: Dictionary<Bet[]>
-  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const {
-    user,
-    contract,
-    threadComments,
-    commentsByUserId,
-    bets,
-    betsByUserId,
-    tips,
-    parentComment,
-  } = props
+  const { contract, threadComments, tips, parentComment } = props
   const [showReply, setShowReply] = useState(false)
   const [replyTo, setReplyTo] = useState<{ id: string; username: string }>()
 
@@ -63,18 +47,8 @@ export function FeedCommentThread(props: {
           indent={commentIdx != 0}
           contract={contract}
           comment={comment}
-          tips={tips[comment.id]}
-          betsBySameUser={betsByUserId[comment.userId] ?? []}
+          tips={tips[comment.id] ?? {}}
           onReplyClick={scrollAndOpenReplyInput}
-          probAtCreatedTime={
-            contract.outcomeType === 'BINARY'
-              ? minBy(bets, (bet) => {
-                  return bet.createdTime < comment.createdTime
-                    ? comment.createdTime - bet.createdTime
-                    : comment.createdTime
-                })?.probAfter
-              : undefined
-          }
         />
       ))}
       {showReply && (
@@ -85,11 +59,8 @@ export function FeedCommentThread(props: {
           />
           <ContractCommentInput
             contract={contract}
-            betsByCurrentUser={(user && betsByUserId[user.id]) ?? []}
-            commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
             parentCommentId={parentComment.id}
             replyToUser={replyTo}
-            parentAnswerOutcome={parentComment.answerOutcome}
             onSubmitComment={() => {
               setShowReply(false)
             }}
@@ -103,23 +74,22 @@ export function FeedCommentThread(props: {
 export function FeedComment(props: {
   contract: Contract
   comment: ContractComment
-  tips: CommentTips
-  betsBySameUser: Bet[]
+  tips?: CommentTips
   indent?: boolean
-  probAtCreatedTime?: number
   onReplyClick?: (comment: ContractComment) => void
 }) {
+  const { contract, comment, tips, indent, onReplyClick } = props
   const {
-    contract,
-    comment,
-    tips,
-    betsBySameUser,
-    indent,
-    probAtCreatedTime,
-    onReplyClick,
-  } = props
-  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
-    comment
+    text,
+    content,
+    userUsername,
+    userName,
+    userAvatarUrl,
+    commenterPositionProb,
+    commenterPositionShares,
+    commenterPositionOutcome,
+    createdTime,
+  } = comment
   const betOutcome = comment.betOutcome
   let bought: string | undefined
   let money: string | undefined
@@ -135,13 +105,6 @@ export function FeedComment(props: {
       setHighlighted(true)
     }
   }, [comment.id, router.asPath])
-
-  // Only calculated if they don't have a matching bet
-  const { userPosition, outcome } = getBettorsLargestPositionBeforeTime(
-    contract,
-    comment.createdTime,
-    comment.betId ? [] : betsBySameUser
-  )
 
   return (
     <Row
@@ -167,14 +130,17 @@ export function FeedComment(props: {
             username={userUsername}
             name={userName}
           />{' '}
-          {!comment.betId != null &&
-            userPosition > 0 &&
+          {comment.betId == null &&
+            commenterPositionProb != null &&
+            commenterPositionOutcome != null &&
+            commenterPositionShares != null &&
+            commenterPositionShares > 0 &&
             contract.outcomeType !== 'NUMERIC' && (
               <>
                 {'is '}
                 <CommentStatus
-                  prob={probAtCreatedTime}
-                  outcome={outcome}
+                  prob={commenterPositionProb}
+                  outcome={commenterPositionOutcome}
                   contract={contract}
                 />
               </>
@@ -204,7 +170,7 @@ export function FeedComment(props: {
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          <Tipper comment={comment} tips={tips ?? {}} />
+          {tips && <Tipper comment={comment} tips={tips} />}
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
@@ -219,34 +185,6 @@ export function FeedComment(props: {
   )
 }
 
-export function getMostRecentCommentableBet(
-  betsByCurrentUser: Bet[],
-  commentsByCurrentUser: ContractComment[],
-  user?: User | null,
-  answerOutcome?: string
-) {
-  let sortedBetsByCurrentUser = betsByCurrentUser.sort(
-    (a, b) => b.createdTime - a.createdTime
-  )
-  if (answerOutcome) {
-    sortedBetsByCurrentUser = sortedBetsByCurrentUser.slice(0, 1)
-  }
-  return sortedBetsByCurrentUser
-    .filter((bet) => {
-      if (
-        canCommentOnBet(bet, user) &&
-        !commentsByCurrentUser.some(
-          (comment) => comment.createdTime > bet.createdTime
-        )
-      ) {
-        if (!answerOutcome) return true
-        return answerOutcome === bet.outcome
-      }
-      return false
-    })
-    .pop()
-}
-
 function CommentStatus(props: {
   contract: Contract
   outcome: string
@@ -255,7 +193,7 @@ function CommentStatus(props: {
   const { contract, outcome, prob } = props
   return (
     <>
-      {` ${PRESENT_BET}ing `}
+      {` predicting `}
       <OutcomeLabel outcome={outcome} contract={contract} truncate="short" />
       {prob && ' at ' + Math.round(prob * 100) + '%'}
     </>
@@ -264,8 +202,6 @@ function CommentStatus(props: {
 
 export function ContractCommentInput(props: {
   contract: Contract
-  betsByCurrentUser: Bet[]
-  commentsByCurrentUser: ContractComment[]
   className?: string
   parentAnswerOutcome?: string | undefined
   replyToUser?: { id: string; username: string }
@@ -273,7 +209,7 @@ export function ContractCommentInput(props: {
   onSubmitComment?: () => void
 }) {
   const user = useUser()
-  async function onSubmitComment(editor: Editor, betId: string | undefined) {
+  async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
@@ -282,21 +218,11 @@ export function ContractCommentInput(props: {
       props.contract.id,
       editor.getJSON(),
       user,
-      betId,
       props.parentAnswerOutcome,
       props.parentCommentId
     )
     props.onSubmitComment?.()
   }
-
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    props.betsByCurrentUser,
-    props.commentsByCurrentUser,
-    user,
-    props.parentAnswerOutcome
-  )
-
-  const { id } = mostRecentCommentableBet || { id: undefined }
 
   return (
     <CommentInput
@@ -305,64 +231,6 @@ export function ContractCommentInput(props: {
       parentCommentId={props.parentCommentId}
       onSubmitComment={onSubmitComment}
       className={props.className}
-      presetId={id}
     />
   )
-}
-
-function getBettorsLargestPositionBeforeTime(
-  contract: Contract,
-  createdTime: number,
-  bets: Bet[]
-) {
-  let yesFloorShares = 0,
-    yesShares = 0,
-    noShares = 0,
-    noFloorShares = 0
-
-  const previousBets = bets.filter(
-    (prevBet) => prevBet.createdTime < createdTime && !prevBet.isAnte
-  )
-
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    const answerCounts: { [outcome: string]: number } = {}
-    for (const bet of previousBets) {
-      if (bet.outcome) {
-        if (!answerCounts[bet.outcome]) {
-          answerCounts[bet.outcome] = bet.amount
-        } else {
-          answerCounts[bet.outcome] += bet.amount
-        }
-      }
-    }
-    const majorityAnswer =
-      maxBy(Object.keys(answerCounts), (outcome) => answerCounts[outcome]) ?? ''
-    return {
-      userPosition: answerCounts[majorityAnswer] || 0,
-      outcome: majorityAnswer,
-    }
-  }
-  if (bets.length === 0) {
-    return { userPosition: 0, outcome: '' }
-  }
-
-  const [yesBets, noBets] = partition(
-    previousBets ?? [],
-    (bet) => bet.outcome === 'YES'
-  )
-  yesShares = sumBy(yesBets, (bet) => bet.shares)
-  noShares = sumBy(noBets, (bet) => bet.shares)
-  yesFloorShares = Math.floor(yesShares)
-  noFloorShares = Math.floor(noShares)
-
-  const userPosition = yesFloorShares || noFloorShares
-  const outcome = yesFloorShares > noFloorShares ? 'YES' : 'NO'
-  return { userPosition, outcome }
-}
-
-function canCommentOnBet(bet: Bet, user?: User | null) {
-  const { userId, createdTime, isRedemption } = bet
-  const isSelf = user?.id === userId
-  // You can comment if your bet was posted in the last hour
-  return !isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
 }

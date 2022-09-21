@@ -27,10 +27,11 @@ import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
+import { Subtitle } from '../subtitle'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -108,11 +109,6 @@ export function AvatarDetails(props: {
   )
 }
 
-export function useIsMobile() {
-  const { width } = useWindowSize()
-  return (width ?? 0) < 600
-}
-
 export function ContractDetails(props: {
   contract: Contract
   disabled?: boolean
@@ -131,11 +127,7 @@ export function ContractDetails(props: {
       {/* GROUPS */}
       {isMobile && (
         <div className="mt-2">
-          <MarketGroups
-            contract={contract}
-            isMobile={isMobile}
-            disabled={disabled}
-          />
+          <MarketGroups contract={contract} disabled={disabled} />
         </div>
       )}
     </Col>
@@ -186,11 +178,7 @@ export function MarketSubheader(props: {
             isCreator={isCreator}
           />
           {!isMobile && (
-            <MarketGroups
-              contract={contract}
-              isMobile={isMobile}
-              disabled={disabled}
-            />
+            <MarketGroups contract={contract} disabled={disabled} />
           )}
         </Row>
       </Col>
@@ -237,29 +225,24 @@ export function CloseOrResolveTime(props: {
 
 export function MarketGroups(props: {
   contract: Contract
-  isMobile: boolean | undefined
-  disabled: boolean | undefined
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const { contract, isMobile, disabled } = props
+  const { contract, disabled } = props
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <>
-      <Row className="align-middle">
-        <GroupDisplay groupToDisplay={groupToDisplay} isMobile={isMobile} />
-        {!disabled && (
-          <Row>
-            {user && (
-              <button
-                className="text-greyscale-4 hover:text-greyscale-3"
-                onClick={() => setOpen(!open)}
-              >
-                <PlusCircleIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
-              </button>
-            )}
-          </Row>
+      <Row className="items-center gap-1">
+        <GroupDisplay groupToDisplay={groupToDisplay} />
+        {!disabled && user && (
+          <button
+            className="text-greyscale-4 hover:text-greyscale-3"
+            onClick={() => setOpen(true)}
+          >
+            <PlusCircleIcon className="h-[18px]" />
+          </button>
         )}
       </Row>
       <Modal open={open} setOpen={setOpen} size={'md'}>
@@ -326,7 +309,7 @@ export function ExtraMobileContractDetails(props: {
           <Tooltip
             text={`${formatMoney(
               volume
-            )} bet - ${uniqueBettors} unique predictors`}
+            )} bet - ${uniqueBettors} unique traders`}
           >
             {volumeTranslation}
           </Tooltip>
@@ -337,42 +320,21 @@ export function ExtraMobileContractDetails(props: {
   )
 }
 
-export function GroupDisplay(props: {
-  groupToDisplay?: GroupLink | null
-  isMobile?: boolean
-}) {
-  const { groupToDisplay, isMobile } = props
+export function GroupDisplay(props: { groupToDisplay?: GroupLink | null }) {
+  const { groupToDisplay } = props
   if (groupToDisplay) {
     return (
       <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a
-          className={clsx(
-            'flex flex-row items-center truncate pr-1',
-            isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-          )}
-        >
-          <div className="bg-greyscale-4 hover:bg-greyscale-3 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
-            {groupToDisplay.name}
-          </div>
+        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate rounded-full px-2 text-xs text-white sm:max-w-[250px]">
+          {groupToDisplay.name}
         </a>
       </Link>
     )
   } else
     return (
-      <Row
-        className={clsx(
-          'cursor-default select-none items-center truncate pr-1',
-          isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-        )}
-      >
-        <div
-          className={clsx(
-            'bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
-          )}
-        >
-          No Group
-        </div>
-      </Row>
+      <div className="bg-greyscale-4 truncate rounded-full px-2 text-xs text-white">
+        No Group
+      </div>
     )
 }
 
@@ -427,47 +389,59 @@ function EditableCloseDate(props: {
 
   return (
     <>
-      {isEditingCloseTime ? (
-        <Row className="z-10 mr-2 w-full shrink-0 items-center gap-1">
-          <input
-            type="date"
-            className="input input-bordered shrink-0"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseDate(e.target.value)}
-            min={Date.now()}
-            value={closeDate}
-          />
-          <input
-            type="time"
-            className="input input-bordered shrink-0"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseHoursMinutes(e.target.value)}
-            min="00:00"
-            value={closeHoursMinutes}
-          />
-          <Button size={'xs'} color={'blue'} onClick={onSave}>
+      <Modal
+        size="sm"
+        open={isEditingCloseTime}
+        setOpen={setIsEditingCloseTime}
+        position="top"
+      >
+        <Col className="rounded bg-white px-8 pb-8">
+          <Subtitle text="Edit Close Date" />
+          <Row className="z-10 mr-2 w-full shrink-0 flex-wrap items-center gap-2">
+            <input
+              type="date"
+              className="input input-bordered w-full shrink-0 sm:w-fit"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setCloseDate(e.target.value)}
+              min={Date.now()}
+              value={closeDate}
+            />
+            <input
+              type="time"
+              className="input input-bordered w-full shrink-0 sm:w-max"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setCloseHoursMinutes(e.target.value)}
+              min="00:00"
+              value={closeHoursMinutes}
+            />
+          </Row>
+          <Button
+            className="mt-2"
+            size={'xs'}
+            color={'indigo'}
+            onClick={onSave}
+          >
             Done
           </Button>
-        </Row>
-      ) : (
-        <DateTimeTooltip
-          text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
-          time={closeTime}
+        </Col>
+      </Modal>
+      <DateTimeTooltip
+        text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
+        time={closeTime}
+      >
+        <span
+          className={isCreator ? 'cursor-pointer' : ''}
+          onClick={() => isCreator && setIsEditingCloseTime(true)}
         >
-          <span
-            className={isCreator ? 'cursor-pointer' : ''}
-            onClick={() => isCreator && setIsEditingCloseTime(true)}
-          >
-            {isSameDay ? (
-              <span className={'capitalize'}> {fromNow(closeTime)}</span>
-            ) : isSameYear ? (
-              dayJsCloseTime.format('MMM D')
-            ) : (
-              dayJsCloseTime.format('MMM D, YYYY')
-            )}
-          </span>
-        </DateTimeTooltip>
-      )}
+          {isSameDay ? (
+            <span className={'capitalize'}> {fromNow(closeTime)}</span>
+          ) : isSameYear ? (
+            dayJsCloseTime.format('MMM D')
+          ) : (
+            dayJsCloseTime.format('MMM D, YYYY')
+          )}
+        </span>
+      </DateTimeTooltip>
     </>
   )
 }

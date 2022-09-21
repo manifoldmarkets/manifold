@@ -1,43 +1,67 @@
-import { useState } from 'react'
+import { LinkIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { PrivateUser, User } from 'common/user'
+import { MouseEventHandler, ReactNode, useEffect, useState } from 'react'
 
-import { Page } from 'web/components/page'
-import { Col } from 'web/components/layout/col'
-import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { SEO } from 'web/components/SEO'
-import { Spacer } from 'web/components/layout/spacer'
-import { firebaseLogin, getUserAndPrivateUser } from 'web/lib/firebase/users'
-import { track } from 'web/lib/service/analytics'
-import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/button'
-import { useTracking } from 'web/hooks/use-tracking'
-import { linkTwitchAccountRedirect } from 'web/lib/twitch/link-twitch-account'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { LoadingIndicator } from 'web/components/loading-indicator'
 import toast from 'react-hot-toast'
+import { Button } from 'web/components/button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { LoadingIndicator } from 'web/components/loading-indicator'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
+import { Title } from 'web/components/title'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTracking } from 'web/hooks/use-tracking'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { firebaseLogin, updatePrivateUser } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
+import {
+  getDockURLForUser,
+  getOverlayURLForUser,
+  linkTwitchAccountRedirect,
+  updateBotEnabledForUser,
+} from 'web/lib/twitch/link-twitch-account'
+import { copyToClipboard } from 'web/lib/util/copy'
 
-export default function TwitchLandingPage() {
-  useSaveReferral()
-  useTracking('view twitch landing page')
+function ButtonGetStarted(props: {
+  user?: User | null
+  privateUser?: PrivateUser | null
+  buttonClass?: string
+  spinnerClass?: string
+}) {
+  const { user, privateUser, buttonClass, spinnerClass } = props
 
-  const user = useUser()
-  const privateUser = usePrivateUser()
-  const twitchUser = privateUser?.twitchInfo?.twitchName
+  const [isLoading, setLoading] = useState(false)
+
+  const needsRelink =
+    privateUser?.twitchInfo?.twitchName &&
+    privateUser?.twitchInfo?.needsRelinking
+
+  const [waitingForUser, setWaitingForUser] = useState(false)
+  useEffect(() => {
+    if (waitingForUser && user && privateUser) {
+      setWaitingForUser(false)
+
+      if (privateUser.twitchInfo?.twitchName) return // If we've already linked Twitch, no need to do so again
+
+      setLoading(true)
+
+      linkTwitchAccountRedirect(user, privateUser).then(() => {
+        setLoading(false)
+      })
+    }
+  }, [user, privateUser, waitingForUser])
 
   const callback =
     user && privateUser
       ? () => linkTwitchAccountRedirect(user, privateUser)
       : async () => {
-          const result = await firebaseLogin()
-
-          const userId = result.user.uid
-          const { user, privateUser } = await getUserAndPrivateUser(userId)
-          if (!user || !privateUser) return
-
-          await linkTwitchAccountRedirect(user, privateUser)
+          await firebaseLogin()
+          setWaitingForUser(true)
         }
-
-  const [isLoading, setLoading] = useState(false)
 
   const getStarted = async () => {
     try {
@@ -49,9 +73,341 @@ export default function TwitchLandingPage() {
     } catch (e) {
       console.error(e)
       toast.error('Failed to sign up. Please try again later.')
+    } finally {
       setLoading(false)
     }
   }
+  return isLoading ? (
+    <LoadingIndicator
+      spinnerClassName={clsx('!w-11 !h-11 my-4', spinnerClass)}
+    />
+  ) : (
+    <Button
+      size="xl"
+      color={needsRelink ? 'red' : 'gradient'}
+      className={clsx('my-4 self-center !px-16', buttonClass)}
+      onClick={getStarted}
+    >
+      {needsRelink ? 'API key updated: relink Twitch' : 'Start playing'}
+    </Button>
+  )
+}
+
+function TwitchPlaysManifoldMarkets(props: {
+  user?: User | null
+  privateUser?: PrivateUser | null
+}) {
+  const { user, privateUser } = props
+
+  const twitchInfo = privateUser?.twitchInfo
+  const twitchUser = twitchInfo?.twitchName
+
+  return (
+    <div>
+      <Row className="mb-4">
+        <img
+          src="/twitch-glitch.svg"
+          className="mb-[0.4rem] mr-4 inline h-10 w-10"
+        ></img>
+        <Title
+          text={'Twitch plays Manifold Markets'}
+          className={'!-my-0 md:block'}
+        />
+      </Row>
+      <Col className="mb-4 gap-4">
+        Start betting on Twitch now by linking your account and typing commands
+        in chat!
+        {twitchUser && !twitchInfo.needsRelinking ? (
+          <Button
+            size="xl"
+            color="green"
+            className="btn-disabled my-4 self-center !border-none"
+          >
+            Account connected: {twitchUser}
+          </Button>
+        ) : (
+          <ButtonGetStarted user={user} privateUser={privateUser} />
+        )}
+      </Col>
+      <Col className="gap-4">
+        <Subtitle text="How it works" />
+        <div>
+          Similar to Twitch channel point predictions, Manifold Markets allows
+          you to create a play-money betting market on any question you like and
+          feature it in your stream.
+        </div>
+        <div>
+          The key difference is that Manifold's questions function more like a
+          stock market and viewers can buy and sell shares over the course of
+          the event and not just at the start. The market will eventually
+          resolve to yes or no at which point the winning shareholders will
+          receive their profit.
+        </div>
+        <div>
+          Instead of Twitch channel points we use our own play money, mana (M$).
+          All viewers start with M$1,000 and can earn more for free by betting
+          well.
+        </div>
+      </Col>
+    </div>
+  )
+}
+
+function Subtitle(props: { text: string }) {
+  const { text } = props
+  return <div className="text-2xl">{text}</div>
+}
+
+function Command(props: { command: string; desc: string }) {
+  const { command, desc } = props
+  return (
+    <div>
+      <p className="inline font-bold">{'!' + command}</p>
+      {' - '}
+      <p className="inline">{desc}</p>
+    </div>
+  )
+}
+
+function TwitchChatCommands() {
+  return (
+    <div>
+      <Title text="Twitch Chat Commands" className="md:block" />
+      <Col className="gap-4">
+        <Subtitle text="For Chat" />
+        <Command
+          command="bet yes #"
+          desc="Bets an amount of M$ on yes, for example !bet yes 20"
+        />
+        <Command command="bet no #" desc="Bets an amount of M$ on no." />
+        <Command
+          command="sell"
+          desc="Sells all shares you own. Using this command causes you to
+          cash out early before the market resolves. This could be profitable
+          (if the probability has moved towards the direction you bet) or cause
+          a loss, although at least you keep some mana. For maximum profit (but
+          also risk) it is better to not sell and wait for a favourable
+          resolution."
+        />
+        <Command command="balance" desc="Shows how much M$ you have." />
+        <Command command="allin yes" desc="Bets your entire balance on yes." />
+        <Command command="allin no" desc="Bets your entire balance on no." />
+
+        <div className="mb-4" />
+
+        <Subtitle text="For Mods/Streamer" />
+        <Command
+          command="create <question>"
+          desc="Creates and features the question. Be careful... this will override any question that is currently featured."
+        />
+        <Command command="resolve yes" desc="Resolves the market as 'Yes'." />
+        <Command command="resolve no" desc="Resolves the market as 'No'." />
+        <Command
+          command="resolve n/a"
+          desc="Resolves the market as 'N/A' and refunds everyone their mana."
+        />
+      </Col>
+    </div>
+  )
+}
+
+function BotSetupStep(props: {
+  stepNum: number
+  buttonName?: string
+  buttonOnClick?: MouseEventHandler
+  overrideButton?: ReactNode
+  children: ReactNode
+}) {
+  const { stepNum, buttonName, buttonOnClick, overrideButton, children } = props
+  return (
+    <Col className="flex-1">
+      {(overrideButton || buttonName) && (
+        <>
+          {overrideButton ?? (
+            <Button
+              size={'md'}
+              color={'green'}
+              className="!border-none"
+              onClick={buttonOnClick}
+            >
+              {buttonName}
+            </Button>
+          )}
+          <Spacer h={4} />
+        </>
+      )}
+      <div>
+        <p className="inline font-bold">Step {stepNum}. </p>
+        {children}
+      </div>
+    </Col>
+  )
+}
+
+function BotConnectButton(props: {
+  privateUser: PrivateUser | null | undefined
+}) {
+  const { privateUser } = props
+  const [loading, setLoading] = useState(false)
+
+  const updateBotConnected = (connected: boolean) => async () => {
+    if (!privateUser) return
+    const twitchInfo = privateUser.twitchInfo
+    if (!twitchInfo) return
+
+    const error = connected
+      ? 'Failed to add bot to your channel'
+      : 'Failed to remove bot from your channel'
+    const success = connected
+      ? 'Added bot to your channel'
+      : 'Removed bot from your channel'
+
+    setLoading(true)
+    toast.promise(
+      updateBotEnabledForUser(privateUser, connected)
+        .then(() =>
+          updatePrivateUser(privateUser.id, {
+            twitchInfo: { ...twitchInfo, botEnabled: connected },
+          })
+        )
+        .finally(() => setLoading(false)),
+      { loading: 'Updating bot settings...', error, success },
+      {
+        loading: {
+          className: '!max-w-sm',
+        },
+        success: {
+          className:
+            '!bg-primary !transition-all !duration-500 !text-white !max-w-sm',
+        },
+        error: {
+          className:
+            '!bg-red-400 !transition-all !duration-500 !text-white !max-w-sm',
+        },
+      }
+    )
+  }
+
+  return (
+    <>
+      {privateUser?.twitchInfo?.botEnabled ? (
+        <Button
+          color="red"
+          onClick={updateBotConnected(false)}
+          className={clsx(loading && '!btn-disabled', 'border-none')}
+        >
+          {loading ? (
+            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
+          ) : (
+            'Remove bot from channel'
+          )}
+        </Button>
+      ) : (
+        <Button
+          color="green"
+          onClick={updateBotConnected(true)}
+          className={clsx(loading && '!btn-disabled', 'border-none')}
+        >
+          {loading ? (
+            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
+          ) : (
+            'Add bot to your channel'
+          )}
+        </Button>
+      )}
+    </>
+  )
+}
+
+function SetUpBot(props: {
+  user?: User | null
+  privateUser?: PrivateUser | null
+}) {
+  const { user, privateUser } = props
+  const twitchLinked =
+    privateUser?.twitchInfo?.twitchName &&
+    !privateUser?.twitchInfo?.needsRelinking
+      ? true
+      : undefined
+  const toastTheme = {
+    className: '!bg-primary !text-white',
+    icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
+  }
+  const copyOverlayLink = async () => {
+    if (!privateUser) return
+    copyToClipboard(getOverlayURLForUser(privateUser))
+    toast.success('Overlay link copied!', toastTheme)
+  }
+  const copyDockLink = async () => {
+    if (!privateUser) return
+    copyToClipboard(getDockURLForUser(privateUser))
+    toast.success('Dock link copied!', toastTheme)
+  }
+
+  return (
+    <>
+      <Title
+        text={'Set up the bot for your own stream'}
+        className={'!mb-4 md:block'}
+      />
+      <Col className="gap-4">
+        <img
+          src="https://raw.githubusercontent.com/PhilBladen/ManifoldTwitchIntegration/master/docs/OBS.png" // TODO: Copy this into the Manifold codebase public folder
+          className="!-my-2"
+        ></img>
+        To add the bot to your stream make sure you have logged in then follow
+        the steps below.
+        {!twitchLinked && (
+          <ButtonGetStarted
+            user={user}
+            privateUser={privateUser}
+            buttonClass={'!my-0'}
+            spinnerClass={'!my-0'}
+          />
+        )}
+        <div className="flex flex-col gap-6 sm:flex-row">
+          <BotSetupStep
+            stepNum={1}
+            overrideButton={
+              twitchLinked && <BotConnectButton privateUser={privateUser} />
+            }
+          >
+            Use the button above to add the bot to your channel. Then mod it by
+            typing in your Twitch chat: <b>/mod ManifoldBot</b>
+            <br />
+            If the bot is not modded it will not be able to respond to commands
+            properly.
+          </BotSetupStep>
+          <BotSetupStep
+            stepNum={2}
+            buttonName={twitchLinked && 'Overlay link'}
+            buttonOnClick={copyOverlayLink}
+          >
+            Create a new browser source in your streaming software such as OBS.
+            Paste in the above link and resize it to your liking. We recommend
+            setting the size to 400x400.
+          </BotSetupStep>
+          <BotSetupStep
+            stepNum={3}
+            buttonName={twitchLinked && 'Control dock link'}
+            buttonOnClick={copyDockLink}
+          >
+            The bot can be controlled entirely through chat. But we made an easy
+            to use control panel. Share the link with your mods or embed it into
+            your OBS as a custom dock.
+          </BotSetupStep>
+        </div>
+      </Col>
+    </>
+  )
+}
+
+export default function TwitchLandingPage() {
+  useSaveReferral()
+  useTracking('view twitch landing page')
+
+  const user = useUser()
+  const privateUser = usePrivateUser()
 
   return (
     <Page>
@@ -62,58 +418,11 @@ export default function TwitchLandingPage() {
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
       </div>
-      <Col className="items-center">
-        <Col className="max-w-3xl">
-          <Col className="mb-6 rounded-xl sm:m-12 sm:mt-0">
-            <Row className="self-center">
-              <img height={200} width={200} src="/twitch-logo.png" />
-              <img height={200} width={200} src="/flappy-logo.gif" />
-            </Row>
-            <div className="m-4 max-w-[550px] self-center">
-              <h1 className="text-3xl sm:text-6xl xl:text-6xl">
-                <div className="font-semibold sm:mb-2">
-                  <span className="bg-gradient-to-r from-indigo-500 to-blue-500 bg-clip-text font-bold text-transparent">
-                    Bet
-                  </span>{' '}
-                  on your favorite streams
-                </div>
-              </h1>
-              <Spacer h={6} />
-              <div className="mb-4 px-2 ">
-                Get more out of Twitch with play-money betting markets.{' '}
-                {!twitchUser &&
-                  'Click the button below to link your Twitch account.'}
-                <br />
-              </div>
-            </div>
 
-            <Spacer h={6} />
-
-            {twitchUser ? (
-              <div className="mt-3 self-center rounded-lg bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4 ">
-                <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-                  <div className="truncate text-sm font-medium text-gray-500">
-                    Twitch account linked
-                  </div>
-                  <div className="mt-1 text-2xl font-semibold text-gray-900">
-                    {twitchUser}
-                  </div>
-                </div>
-              </div>
-            ) : isLoading ? (
-              <LoadingIndicator spinnerClassName="!w-16 !h-16" />
-            ) : (
-              <Button
-                size="2xl"
-                color="gradient"
-                className="self-center"
-                onClick={getStarted}
-              >
-                Get started
-              </Button>
-            )}
-          </Col>
-        </Col>
+      <Col className="max-w-3xl gap-8 rounded bg-white p-4 text-gray-600 shadow-md sm:mx-auto sm:p-10">
+        <TwitchPlaysManifoldMarkets user={user} privateUser={privateUser} />
+        <TwitchChatCommands />
+        <SetUpBot user={user} privateUser={privateUser} />
       </Col>
     </Page>
   )

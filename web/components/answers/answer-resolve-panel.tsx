@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { sum } from 'lodash'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -9,6 +9,7 @@ import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
+import { BETTOR, PAST_BETS } from 'common/user'
 
 export function AnswerResolvePanel(props: {
   isAdmin: boolean
@@ -32,6 +33,18 @@ export function AnswerResolvePanel(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
+  const [warning, setWarning] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (resolveOption === 'CANCEL') {
+      setWarning(
+        `All ${PAST_BETS} will be returned. Unique ${BETTOR} bonuses will be
+            withdrawn from your account.`
+      )
+    } else {
+      setWarning(undefined)
+    }
+  }, [resolveOption])
 
   const onResolve = async () => {
     if (resolveOption === 'CHOOSE' && answers.length !== 1) return
@@ -126,6 +139,7 @@ export function AnswerResolvePanel(props: {
       </Col>
 
       {!!error && <div className="text-red-500">{error}</div>}
+      {!!warning && <div className="text-warning">{warning}</div>}
     </Col>
   )
 }

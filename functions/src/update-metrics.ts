@@ -22,7 +22,7 @@ import { Group } from 'common/group'
 const firestore = admin.firestore()
 
 export const updateMetrics = functions
-  .runWith({ memory: '2GB', timeoutSeconds: 540 })
+  .runWith({ memory: '8GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 15 minutes')
   .onRun(updateMetricsCore)
 
