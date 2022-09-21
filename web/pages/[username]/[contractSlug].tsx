@@ -20,7 +20,6 @@ import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import { Comment, listAllComments } from 'web/lib/firebase/comments'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { Leaderboard } from 'web/components/leaderboard'
 import { resolvedPayout } from 'common/calculate'
 import { formatMoney } from 'common/util/format'
@@ -45,8 +44,7 @@ import { FeedComment } from 'web/components/feed/feed-comments'
 import { Title } from 'web/components/title'
 import { FeedBet } from 'web/components/feed/feed-bets'
 
-export const getStaticProps = fromPropz(getStaticPropz)
-export async function getStaticPropz(props: {
+export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { username, contractSlug } = props.params
@@ -84,14 +82,6 @@ export default function ContractPage(props: {
   slug: string
   backToHome?: () => void
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    contract: null,
-    username: '',
-    comments: [],
-    bets: [],
-    slug: '',
-  }
-
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
