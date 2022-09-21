@@ -65,7 +65,6 @@ export function ContractTopTrades(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   // todo: this stuff should be calced in DB at resolve time
   const comments = useComments(contract.id)
-  const commentsById = keyBy(comments, 'id')
   const betsById = keyBy(bets, 'id')
 
   // If 'id2' is the sale of 'id1', both are logged with (id2 - id1) of profit
@@ -86,29 +85,23 @@ export function ContractTopTrades(props: { contract: Contract; bets: Bet[] }) {
   const topBetId = sortBy(bets, (b) => -profitById[b.id])[0]?.id
   const topBettor = betsById[topBetId]?.userName
 
-  // And also the commentId of the comment with the highest profit
-  const topCommentId = sortBy(
-    comments,
-    (c) => c.betId && -profitById[c.betId]
-  )[0]?.id
+  // And also the comment with the highest profit
+  const topComment = sortBy(comments, (c) => c.betId && -profitById[c.betId])[0]
 
   return (
     <div className="mt-12 max-w-sm">
-      {topCommentId && profitById[topCommentId] > 0 && (
+      {topComment && profitById[topComment.id] > 0 && (
         <>
           <Title text="💬 Proven correct" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedComment
-              contract={contract}
-              comment={commentsById[topCommentId]}
-            />
+            <FeedComment contract={contract} comment={topComment} />
           </div>
           <Spacer h={16} />
         </>
       )}
 
       {/* If they're the same, only show the comment; otherwise show both */}
-      {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
+      {topBettor && topBetId !== topComment?.betId && profitById[topBetId] > 0 && (
         <>
           <Title text="💸 Best bet" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
