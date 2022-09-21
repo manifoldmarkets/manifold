@@ -1,7 +1,6 @@
 import { LinkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { PrivateUser, User } from 'common/user'
-import Link from 'next/link'
 import { MouseEventHandler, ReactNode, useEffect, useState } from 'react'
 
 import toast from 'react-hot-toast'
