@@ -37,14 +37,8 @@ export class Market {
 
           this.continuePolling = false;
 
-          let winners = await this.calculateWinners();
-          winners = winners.filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
-
-          const channel = this.app.getChannelForMarketID(this.data.id);
-
-          const winnersHighestToLowestProfit = winners.sort((a, b) => b.profit - a.profit); // Sort for highest profit first
-          this.app.marketResolved(channel, getOutcomeForString(this.data.resolution), winnersHighestToLowestProfit); //TODO: Probably don't need to double sort. Could use topWinners and topLosers
-
+          const resolutionOutcome = getOutcomeForString(this.data.resolution);
+          const winners = (await this.calculateWinners()).filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
           const uniqueTraderCount = _(this.data.bets).groupBy('userId').size();
 
           type Result = { displayName: string; profit: number };
@@ -62,12 +56,13 @@ export class Market {
           topLosers.sort(sortFunction);
 
           this.resolveData = {
-            outcome: getOutcomeForString(this.data.resolution),
+            outcome: resolutionOutcome,
             uniqueTraders: uniqueTraderCount,
             topWinners: topWinners,
             topLosers: topLosers,
           };
 
+          this.app.marketResolved(this);
           app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData);
           app.io.to(this.twitchChannel).emit(Packet.RESOLVED);
         }

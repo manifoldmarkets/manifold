@@ -78,21 +78,8 @@ export default class Chart {
     grd.addColorStop(0, 'rgba(73, 201, 159, 0.8)');
     grd.addColorStop(1, 'rgba(73, 201, 159, 0.0)');
 
-    // let minX = Number.MAX_VALUE;
-    // let maxX = -Number.MAX_VALUE;
-    // for (let dataIndex = 0; dataIndex < numDataPoints; dataIndex++) {
-    //     const dataPoint = this.data[dataIndex];
-    //     // if (dataPoint.x < minX) {
-    //     //     minX = dataPoint.x;
-    //     // }
-    //     if (dataPoint.x > maxX) {
-    //         maxX = dataPoint.x;
-    //     }
-    // }
     const maxX = Date.now();
     const minX = maxX - chartXTime_min * 60 * 1000;
-
-    // console.log(`Graph limits: [${minX/1000}, ${maxX/1000}]`)
 
     ctx.translate(padding_px + 0.5, padding_px + 0.5);
     {
@@ -103,8 +90,6 @@ export default class Chart {
         const labelText = `${(i * (100 / (numYAxisLines - 1))).toFixed(0)}%`;
         const m = ctx.measureText(labelText);
         ctx.fillText(labelText, yAxisWidth_px - m.width - 5, y + (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * 0.5);
-
-        // ctx.fillRect(yAxisWidth - 5.5, y - 1.5, 5, 3);
       }
 
       ctx.translate(yAxisWidth_px, 0);
@@ -122,9 +107,7 @@ export default class Chart {
           const m = ctx.measureText(labelText);
           ctx.fillText(labelText, x - m.width * 0.5, xAxisHeight_px);
         }
-
         ctx.fillRect(x - 1.5, 0.5, 3, 5);
-        console.log(x);
       }
       ctx.translate(0, -graphHeight_px);
 

@@ -6,20 +6,20 @@ import styles from '../styles/overlay.module.scss';
 
 import Chart, { Point } from '../components/chart';
 
+import { Transition } from '@headlessui/react';
+import clsx from 'clsx';
+import Head from 'next/head';
+import { Fragment, useEffect, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { Col } from 'web/components/layout/col';
-import { Fragment, useEffect, useState } from 'react';
-import Head from 'next/head';
 import { Row } from 'web/components/layout/row';
-import clsx from 'clsx';
-import { Transition } from '@headlessui/react';
 
 import * as Manifold from 'common/manifold-defs';
 import * as Packet from 'common/packet-ids';
-import { FullBet } from 'common/transaction';
 import { PacketResolved, PacketSelectMarket } from 'common/packets';
-import { ConnectionState } from 'web/lib/connection-state';
+import { FullBet } from 'common/transaction';
 import { LoadingOverlay } from 'web/components/loading-overlay';
+import { ConnectionState } from 'web/lib/connection-state';
 
 class BetElement {
   bet: FullBet;
@@ -109,7 +109,6 @@ class Application {
   }
 
   loadMarket(market: Manifold.FullMarket) {
-    console.log(market);
     this.currentMarket = market;
 
     const questionLength = this.currentMarket.question.length;

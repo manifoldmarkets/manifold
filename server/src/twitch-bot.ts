@@ -1,7 +1,6 @@
 import { ChatUserstate, Client } from 'tmi.js';
 
 import { InsufficientBalanceException, ResourceNotFoundException, UserNotRegisteredException } from 'common/exceptions';
-import { LiteUser } from 'common/manifold-defs';
 
 import { ResolutionOutcome } from 'common/outcome';
 import App from './app';
@@ -18,18 +17,13 @@ const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) =>
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${MANIFOLD_SIGNUP_URL}!`;
 const MSG_HELP = () => `Check out the full list of commands and how to play here: ${MANIFOLD_SIGNUP_URL}`;
-const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) => {
+const MSG_RESOLVED = (market: Market) => {
   const maxWinners = 10;
-  let message = `The market has resolved to ${outcome === ResolutionOutcome.CANCEL ? 'N/A' : outcome}!`;
-  if (winners.length > 0) {
-    message += ` The top ${maxWinners} bettors are`;
-    for (let index = 0; index < Math.min(winners.length, maxWinners); index++) {
-      const winner = winners[index];
-      message += ` ${winner.user.name} (${winner.profit > 0 ? '+' : ''}${winner.profit.toFixed(0)}),`; //!!! Use Twitch usernames
-    }
-    if (message.endsWith(',')) {
-      message = message.substring(0, message.length - 1);
-    }
+  const outcome = market.resolveData.outcome;
+  const topWinners = market.resolveData.topWinners;
+  let message = `The market has resolved to ${outcome === 'NA' ? 'N/A' : outcome}!`; //TODO: Types
+  if (topWinners.length > 0) {
+    message += ` The top ${maxWinners} bettors are ` + topWinners.map((w) => `${w.displayName} (${w.profit > 0 ? '+' : ''}${w.profit.toFixed(0)}`).join(', ');
   }
   return message;
 };
@@ -264,9 +258,9 @@ export default class TwitchBot {
     }
   }
 
-  public resolveMarket(channel: string, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
+  public resolveMarket(channel: string, market: Market) {
     if (this.isMuted) return;
-    this.client.say(channel, MSG_RESOLVED(outcome, winners));
+    this.client.say(channel, MSG_RESOLVED(market));
   }
 
   public async connect() {

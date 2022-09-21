@@ -11,6 +11,7 @@ import { Row } from './layout/row';
 export default function ContractCard(props: { controlUserID: string; contract: LiteMarket; onFeature: () => void }) {
   const { controlUserID, contract, onFeature } = props;
   const isClosed = contract.closeTime < Date.now();
+  const isResolved = contract.isResolved;
   const isFeatureable = !isClosed && contract.outcomeType === 'BINARY';
   const canResolveMarket = controlUserID === contract.creatorId;
   return (
@@ -46,7 +47,11 @@ export default function ContractCard(props: { controlUserID: string; contract: L
             <ProbBar previewProb={contract.probability} />
           </Col>
           <Row className="items-center mt-2">
-            {contract.outcomeType !== 'BINARY' ? (
+            {isResolved ? (
+              <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={'This market has been resolved'}>
+                <InformationCircleIcon className="h-5 w-5 text-gray-500" />
+              </div>
+            ) : contract.outcomeType !== 'BINARY' ? (
               <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={'This type of market is not currently supported'}>
                 <InformationCircleIcon className="h-5 w-5 text-gray-500" />
               </div>

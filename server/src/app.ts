@@ -1,5 +1,3 @@
-import { LiteUser } from 'common/manifold-defs';
-import { ResolutionOutcome } from 'common/outcome';
 import * as Packet from 'common/packet-ids';
 import { UNFEATURE_MARKET } from 'common/packet-ids';
 import { PacketSelectMarket } from 'common/packets';
@@ -59,13 +57,7 @@ export default class App {
   }
 
   public getMarketForTwitchChannel(channel: string) {
-    const market = this.selectedMarketMap[channel];
-    if (market) {
-      log.debug(`Found market '${market.data.question}' for channel '${channel}'`);
-    } else {
-      log.debug(`Found no market for channel '${channel}'`);
-    }
-    return market;
+    return this.selectedMarketMap[channel];
   }
 
   public getChannelForMarketID(marketID: string) {
@@ -123,12 +115,13 @@ export default class App {
     return this.firestore.getUserForTwitchUsername(twitchUsername);
   }
 
-  public marketResolved(channel: string, outcome: ResolutionOutcome, winners: { user: LiteUser; profit: number }[]) {
+  public marketResolved(market: Market) {
+    const channel = this.getChannelForMarketID(market.data.id);
     this.autoUnfeatureTimers[channel] = setTimeout(() => {
       this.selectMarket(channel, null);
       this.io.to(channel).emit(UNFEATURE_MARKET);
     }, 24000);
-    this.bot.resolveMarket(channel, outcome, winners);
+    this.bot.resolveMarket(channel, market);
   }
 
   async launch() {
