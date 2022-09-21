@@ -120,8 +120,6 @@ export function SimpleBetPanel(props: {
 
   const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  console.log('limit order', isLimitOrder)
-
   return (
     <Col className={className}>
       <SellRow
