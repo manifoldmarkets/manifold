@@ -1,7 +1,7 @@
 import { Answer } from 'common/answer'
 import { FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
@@ -27,15 +27,9 @@ export function FeedAnswerCommentGroup(props: {
   const { username, avatarUrl, name, text } = answer
 
   const [replyTo, setReplyTo] = useState<ReplyTo>()
-  const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   const answerElementId = `answer-${answer.id}`
-
-  useEffect(() => {
-    if (router.asPath.endsWith(`#${answerElementId}`)) {
-      setHighlighted(true)
-    }
-  }, [answerElementId, router.asPath])
+  const highlighted = router.asPath.endsWith(`#${answerElementId}`)
 
   return (
     <Col className="relative flex-1 items-stretch gap-3">

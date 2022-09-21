@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -94,13 +94,8 @@ export function FeedComment(props: {
     money = formatMoney(Math.abs(comment.betAmount))
   }
 
-  const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
-  useEffect(() => {
-    if (router.asPath.endsWith(`#${comment.id}`)) {
-      setHighlighted(true)
-    }
-  }, [comment.id, router.asPath])
+  const highlighted = router.asPath.endsWith(`#${comment.id}`)
 
   return (
     <Row
