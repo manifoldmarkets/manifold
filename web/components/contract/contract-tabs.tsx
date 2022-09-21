@@ -57,7 +57,7 @@ export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
         },
         {
           title: capitalize(PAST_BETS),
-          content: <ContractBetsActivity contract={contract} bets={bets} />,
+          content: <BetsTabContent contract={contract} bets={bets} />,
         },
         ...(!user || !userBets?.length
           ? []
@@ -151,7 +151,10 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   }
 })
 
-function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
+const BetsTabContent = memo(function BetsTabContent(props: {
+  contract: Contract
+  bets: Bet[]
+}) {
   const { contract, bets } = props
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -213,4 +216,4 @@ function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
       />
     </>
   )
-}
+})
