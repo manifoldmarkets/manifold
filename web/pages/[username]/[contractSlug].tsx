@@ -17,7 +17,6 @@ import {
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/page'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
-import { listAllComments } from 'web/lib/firebase/comments'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -33,7 +32,6 @@ import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { User } from 'common/user'
-import { ContractComment } from 'common/comment'
 import { getOpenGraphProps } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
@@ -57,20 +55,11 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-
-  const [bets, comments] = await Promise.all([
-    contractId ? listAllBets(contractId) : [],
-    contractId ? listAllComments(contractId) : [],
-  ])
+  const bets = contractId ? await listAllBets(contractId) : []
 
   return {
-    props: {
-      contract,
-      // Limit the data sent to the client. Client will still load all bets and comments directly.
-      bets: bets.slice(0, 5000),
-      comments: comments.slice(0, 1000),
-    },
-
+    // Limit the data sent to the client. Client will still load all bets directly.
+    props: { contract, bets: bets.slice(0, 5000) },
     revalidate: 5, // regenerate after five seconds
   }
 }
@@ -82,12 +71,10 @@ export async function getStaticPaths() {
 export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
-  comments: ContractComment[]
   backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    comments: [],
     bets: [],
   }
 
@@ -170,7 +157,7 @@ export function ContractPageContent(
     user?: User | null
   }
 ) {
-  const { backToHome, comments, user } = props
+  const { backToHome, user } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   usePrefetch(user?.id)
   useTracking(
@@ -265,22 +252,13 @@ export function ContractPageContent(
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
-              <ContractTopTrades
-                contract={contract}
-                bets={bets}
-                comments={comments}
-              />
+              <ContractTopTrades contract={contract} bets={bets} />
             </div>
             <Spacer h={12} />
           </>
         )}
 
-        <ContractTabs
-          contract={contract}
-          user={user}
-          bets={bets}
-          comments={comments}
-        />
+        <ContractTabs contract={contract} user={user} bets={bets} />
         {!user ? (
           <Col className="mt-4 max-w-sm items-center xl:hidden">
             <BetSignUpPrompt />

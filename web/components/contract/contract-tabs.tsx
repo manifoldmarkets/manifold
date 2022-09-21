@@ -8,12 +8,12 @@ import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { ContractComment } from 'common/comment'
 import { PAST_BETS, User } from 'common/user'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
@@ -28,9 +28,8 @@ export function ContractTabs(props: {
   contract: Contract
   user: User | null | undefined
   bets: Bet[]
-  comments: ContractComment[]
 }) {
-  const { contract, user, bets, comments } = props
+  const { contract, user, bets } = props
 
   const isMobile = useIsMobile()
 
@@ -57,9 +56,7 @@ export function ContractTabs(props: {
       tabs={[
         {
           title: 'Comments',
-          content: (
-            <CommentsTabContent contract={contract} comments={comments} />
-          ),
+          content: <CommentsTabContent contract={contract} />,
         },
         {
           title: capitalize(PAST_BETS),
@@ -80,13 +77,15 @@ export function ContractTabs(props: {
 
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
-  comments: ContractComment[]
 }) {
-  const { contract, comments } = props
+  const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
-  const updatedComments = useComments(contract.id) ?? comments
+  const comments = useComments(contract.id)
+  if (comments == null) {
+    return <LoadingIndicator />
+  }
   if (contract.outcomeType === 'FREE_RESPONSE') {
-    const generalComments = updatedComments.filter(
+    const generalComments = comments.filter(
       (c) => c.answerOutcome === undefined && c.betId === undefined
     )
     const sortedAnswers = sortBy(
