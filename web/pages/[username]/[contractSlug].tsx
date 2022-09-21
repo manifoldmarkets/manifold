@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { memo, useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
@@ -269,26 +269,28 @@ export function ContractPageContent(
   )
 }
 
-function RecommendedContractsWidget(props: { contract: Contract }) {
-  const { contract } = props
-  const user = useUser()
-  const [recommendations, setRecommendations] = useState<Contract[]>([])
-  useEffect(() => {
-    if (user) {
-      getRecommendedContracts(contract, user.id, 6).then(setRecommendations)
+const RecommendedContractsWidget = memo(
+  function RecommendedContractsWidget(props: { contract: Contract }) {
+    const { contract } = props
+    const user = useUser()
+    const [recommendations, setRecommendations] = useState<Contract[]>([])
+    useEffect(() => {
+      if (user) {
+        getRecommendedContracts(contract, user.id, 6).then(setRecommendations)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contract.id, user?.id])
+    if (recommendations.length === 0) {
+      return null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contract.id, user?.id])
-  if (recommendations.length === 0) {
-    return null
+    return (
+      <Col className="mt-2 gap-2 px-2 sm:px-0">
+        <Title className="text-gray-700" text="Recommended" />
+        <ContractsGrid
+          contracts={recommendations}
+          trackingPostfix=" recommended"
+        />
+      </Col>
+    )
   }
-  return (
-    <Col className="mt-2 gap-2 px-2 sm:px-0">
-      <Title className="text-gray-700" text="Recommended" />
-      <ContractsGrid
-        contracts={recommendations}
-        trackingPostfix=" recommended"
-      />
-    </Col>
-  )
-}
+)
