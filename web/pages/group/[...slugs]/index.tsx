@@ -302,12 +302,13 @@ export function TopGroupNavBar(props: {
   onClick: (key: string) => void
 }) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 lg:hidden lg:col-span-12">
       <div className="flex items-center   bg-white  px-4">
         <div className="flex-shrink-0">
           <Link href="/">
             <a className="text-indigo-700 hover:text-gray-500 ">
-              <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+              <ArrowLeftIcon className="h-5 w-5" aria-hidden />
+              <span className='sr-only'>Home</span>
             </a>
           </Link>
         </div>
