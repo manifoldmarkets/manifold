@@ -38,7 +38,7 @@ export function YesNoSelector(props: {
             selected == 'YES'
               ? 'border-teal-500 bg-teal-500 text-white'
               : selected == 'NO'
-              ? 'border-greyscale-3 text-greyscale-3 bg-white'
+              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-teal-500 hover:text-teal-500'
               : 'border-teal-500 bg-white text-teal-500 hover:bg-teal-50',
             btnClassName
           )}
@@ -54,10 +54,10 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'NO'
-              ? 'border-red-500 bg-red-500 text-white'
+              ? 'border-red-400 bg-red-400 text-white'
               : selected == 'YES'
-              ? 'border-greyscale-3 text-greyscale-3 bg-white'
-              : 'border-red-500 bg-white text-red-500 hover:bg-red-50',
+              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-red-400 hover:text-red-400'
+              : 'border-red-400 bg-white text-red-400 hover:bg-red-50',
             btnClassName
           )}
           onClick={() => onSelect('NO')}

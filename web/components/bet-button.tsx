@@ -25,6 +25,8 @@ import { useFocus } from 'web/hooks/use-focus'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { track } from '@amplitude/analytics-browser'
+import toast from 'react-hot-toast'
+import { CheckIcon } from '@heroicons/react/solid'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -89,7 +91,7 @@ export default function BetButton(props: {
 }
 
 export function BinaryMobileBetting(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | Contract
   className?: string
 }) {
   const { contract, className } = props
@@ -110,7 +112,7 @@ export function BinaryMobileBetting(props: {
 }
 
 export function SignedInBinaryMobileBetting(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | Contract
   user: User
 }) {
   const { contract, user } = props
@@ -122,51 +124,6 @@ export function SignedInBinaryMobileBetting(props: {
   return (
     <>
       <Col className="w-full gap-2 px-1">
-        {/* <SellRow
-          contract={contract}
-          user={user}
-          className={'rounded-t-md bg-gray-100 px-4 py-5'}
-        /> */}
-        {/* <Row className="w-full justify-between gap-4">
-          <button
-            className={clsx(
-              'w-1/2 rounded-full border-2 py-2',
-              betChoice === 'YES'
-                ? 'border-teal-500 bg-teal-500 text-white'
-                : betChoice === 'NO'
-                ? 'border-greyscale-3 text-greyscale-3 bg-white'
-                : 'border-teal-500 bg-white text-teal-500'
-            )}
-            onClick={() => {
-              if (betChoice === 'YES') {
-                setBetChoice(undefined)
-              } else {
-                setBetChoice('YES')
-              }
-            }}
-          >
-            YES
-          </button>
-          <button
-            className={clsx(
-              'w-1/2 rounded-full border-2 py-2',
-              betChoice === 'NO'
-                ? 'border-red-500 bg-red-500 text-white'
-                : betChoice === 'YES'
-                ? 'border-greyscale-3 text-greyscale-3 bg-white'
-                : 'border-red-500 bg-white text-red-500'
-            )}
-            onClick={() => {
-              if (betChoice === 'NO') {
-                setBetChoice(undefined)
-              } else {
-                setBetChoice('NO')
-              }
-            }}
-          >
-            NO
-          </button>
-        </Row> */}
         <Col>
           <BuyPanel
             hidden={false}
@@ -175,9 +132,15 @@ export function SignedInBinaryMobileBetting(props: {
             unfilledBets={unfilledBets}
             selected={betChoice}
             mobileView={true}
-            // onBuySuccess={onBetSuccess}>
           />
         </Col>
+        <SellRow
+          contract={contract}
+          user={user}
+          className={
+            'border-greyscale-3 bg-greyscale-1 rounded-md border-2 px-4 py-2'
+          }
+        />
       </Col>
     </>
   )
