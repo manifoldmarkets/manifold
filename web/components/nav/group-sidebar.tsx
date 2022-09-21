@@ -1,4 +1,4 @@
-import { ClipboardIcon, HomeIcon } from '@heroicons/react/outline'
+import { ClipboardIcon, PresentationChartLineIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from './manifold-logo'
@@ -14,7 +14,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 
 const groupNavigation = [
-  { name: 'Markets', key: 'markets', icon: HomeIcon },
+  { name: 'Markets', key: 'markets', icon: PresentationChartLineIcon },
   { name: 'About', key: 'about', icon: ClipboardIcon },
   { name: 'Leaderboard', key: 'leaderboards', icon: TrophyIcon },
 ]

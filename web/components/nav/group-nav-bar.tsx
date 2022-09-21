@@ -1,4 +1,7 @@
-import { ClipboardIcon, HomeIcon } from '@heroicons/react/outline'
+import {
+  ClipboardIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/outline'
 import { Item } from './sidebar-item'
 
 import clsx from 'clsx'
@@ -10,7 +13,7 @@ import router from 'next/router'
 import { userProfileItem } from './bottom-nav-bar'
 
 const mobileGroupNavigation = [
-  { name: 'Markets', key: 'markets', icon: HomeIcon },
+  { name: 'Markets', key: 'markets', icon: PresentationChartLineIcon },
   { name: 'Leaderboard', key: 'leaderboards', icon: TrophyIcon },
   { name: 'About', key: 'about', icon: ClipboardIcon },
 ]
