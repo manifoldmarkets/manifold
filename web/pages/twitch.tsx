@@ -115,20 +115,9 @@ function TwitchPlaysManifoldMarkets(props: {
           className={'!-my-0 md:block'}
         />
       </Row>
-      <Col className="gap-4">
-        <div>
-          Similar to Twitch channel point predictions, Manifold Markets allows
-          you to create and feature on stream any question you like with users
-          predicting to earn play money.
-        </div>
-        <div>
-          The key difference is that Manifold's questions function more like a
-          stock market and viewers can buy and sell shares over the course of
-          the event and not just at the start. The market will eventually
-          resolve to yes or no at which point the winning shareholders will
-          receive their profit.
-        </div>
-        Start playing now by logging in with Google and typing commands in chat!
+      <Col className="mb-4 gap-4">
+        Start betting on Twitch now by linking your account and typing commands
+        in chat!
         {twitchUser && !twitchInfo.needsRelinking ? (
           <Button
             size="xl"
@@ -140,13 +129,25 @@ function TwitchPlaysManifoldMarkets(props: {
         ) : (
           <ButtonGetStarted user={user} privateUser={privateUser} />
         )}
+      </Col>
+      <Col className="gap-4">
+        <Subtitle text="How it works" />
         <div>
-          Instead of Twitch channel points we use our play money, Mana (M$). All
-          viewers start with M$1000 and more can be earned for free and then{' '}
-          <Link href="/charity">
-            <a className="underline">donated to a charity</a>
-          </Link>{' '}
-          of their choice at no cost!
+          Similar to Twitch channel point predictions, Manifold Markets allows
+          you to create a play-money betting market on any question you like and
+          feature it in your stream.
+        </div>
+        <div>
+          The key difference is that Manifold's questions function more like a
+          stock market and viewers can buy and sell shares over the course of
+          the event and not just at the start. The market will eventually
+          resolve to yes or no at which point the winning shareholders will
+          receive their profit.
+        </div>
+        <div>
+          Instead of Twitch channel points we use our own play money, mana (M$).
+          All viewers start with M$1,000 and can earn more for free by betting
+          well.
         </div>
       </Col>
     </div>
@@ -175,20 +176,25 @@ function TwitchChatCommands() {
       <Title text="Twitch Chat Commands" className="md:block" />
       <Col className="gap-4">
         <Subtitle text="For Chat" />
-        <Command command="bet yes#" desc="Bets a # of Mana on yes." />
-        <Command command="bet no#" desc="Bets a # of Mana on no." />
+        <Command
+          command="bet yes #"
+          desc="Bets an amount of M$ on yes, for example !bet yes 20"
+        />
+        <Command command="bet no #" desc="Bets an amount of M$ on no." />
         <Command
           command="sell"
           desc="Sells all shares you own. Using this command causes you to
           cash out early before the market resolves. This could be profitable
           (if the probability has moved towards the direction you bet) or cause
-          a loss, although at least you keep some Mana. For maximum profit (but
+          a loss, although at least you keep some mana. For maximum profit (but
           also risk) it is better to not sell and wait for a favourable
           resolution."
         />
-        <Command command="balance" desc="Shows how much Mana you own." />
+        <Command command="balance" desc="Shows how much M$ you have." />
         <Command command="allin yes" desc="Bets your entire balance on yes." />
         <Command command="allin no" desc="Bets your entire balance on no." />
+
+        <div className="mb-4" />
 
         <Subtitle text="For Mods/Streamer" />
         <Command
@@ -199,7 +205,7 @@ function TwitchChatCommands() {
         <Command command="resolve no" desc="Resolves the market as 'No'." />
         <Command
           command="resolve n/a"
-          desc="Resolves the market as 'N/A' and refunds everyone their Mana."
+          desc="Resolves the market as 'N/A' and refunds everyone their mana."
         />
       </Col>
     </div>
