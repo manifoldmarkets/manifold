@@ -5,10 +5,9 @@ import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
-import { Contract, FreeResponseContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { PAST_BETS, User } from 'common/user'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
@@ -92,35 +91,71 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const tips = useTipTxns({ contractId: contract.id })
   const updatedComments = useComments(contract.id) ?? comments
   if (contract.outcomeType === 'FREE_RESPONSE') {
+    const generalComments = updatedComments.filter(
+      (c) => c.answerOutcome === undefined && c.betId === undefined
+    )
+    const sortedAnswers = sortBy(
+      contract.answers,
+      (a) => -getOutcomeProbability(contract, a.id)
+    )
+    const commentsByOutcome = groupBy(
+      comments,
+      (c) => c.answerOutcome ?? c.betOutcome ?? '_'
+    )
     return (
       <>
-        <FreeResponseContractCommentsActivity
-          contract={contract}
-          comments={updatedComments}
-          tips={tips}
-        />
+        {sortedAnswers.map((answer) => (
+          <div key={answer.id} className="relative pb-4">
+            <span
+              className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+            <FeedAnswerCommentGroup
+              contract={contract}
+              answer={answer}
+              answerComments={sortBy(
+                commentsByOutcome[answer.number.toString()] ?? [],
+                (c) => c.createdTime
+              )}
+              tips={tips}
+            />
+          </div>
+        ))}
         <Col className="mt-8 flex w-full">
           <div className="text-md mt-8 mb-2 text-left">General Comments</div>
           <div className="mb-4 w-full border-b border-gray-200" />
-          <ContractCommentsActivity
-            contract={contract}
-            comments={updatedComments.filter(
-              (comment) =>
-                comment.answerOutcome === undefined &&
-                comment.betId === undefined
-            )}
-            tips={tips}
-          />
+          <ContractCommentInput className="mb-5" contract={contract} />
+          {generalComments.map((comment) => (
+            <FeedCommentThread
+              key={comment.id}
+              contract={contract}
+              parentComment={comment}
+              threadComments={[]}
+              tips={tips}
+            />
+          ))}
         </Col>
       </>
     )
   } else {
+    const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
+    const topLevelComments = commentsByParent['_'] ?? []
     return (
-      <ContractCommentsActivity
-        contract={contract}
-        comments={comments}
-        tips={tips}
-      />
+      <>
+        <ContractCommentInput className="mb-5" contract={contract} />
+        {sortBy(topLevelComments, (c) => -c.createdTime).map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            contract={contract}
+            parentComment={parent}
+            threadComments={sortBy(
+              commentsByParent[parent.id] ?? [],
+              (c) => c.createdTime
+            )}
+            tips={tips}
+          />
+        ))}
+      </>
     )
   }
 })
@@ -182,76 +217,6 @@ function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
         nextTitle={'Older'}
         prevTitle={'Newer'}
       />
-    </>
-  )
-}
-
-function ContractCommentsActivity(props: {
-  contract: Contract
-  comments: ContractComment[]
-  tips: CommentTipMap
-}) {
-  const { contract, comments, tips } = props
-  const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
-  const topLevelComments = sortBy(
-    commentsByParentId['_'] ?? [],
-    (c) => -c.createdTime
-  )
-
-  return (
-    <>
-      <ContractCommentInput className="mb-5" contract={contract} />
-      {topLevelComments.map((parent) => (
-        <FeedCommentThread
-          key={parent.id}
-          contract={contract}
-          parentComment={parent}
-          threadComments={sortBy(
-            commentsByParentId[parent.id] ?? [],
-            (c) => c.createdTime
-          )}
-          tips={tips}
-        />
-      ))}
-    </>
-  )
-}
-
-function FreeResponseContractCommentsActivity(props: {
-  contract: FreeResponseContract
-  comments: ContractComment[]
-  tips: CommentTipMap
-}) {
-  const { contract, comments, tips } = props
-
-  const sortedAnswers = sortBy(
-    contract.answers,
-    (answer) => -getOutcomeProbability(contract, answer.number.toString())
-  )
-  const commentsByOutcome = groupBy(
-    comments,
-    (c) => c.answerOutcome ?? c.betOutcome ?? '_'
-  )
-
-  return (
-    <>
-      {sortedAnswers.map((answer) => (
-        <div key={answer.id} className="relative pb-4">
-          <span
-            className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-            aria-hidden="true"
-          />
-          <FeedAnswerCommentGroup
-            contract={contract}
-            answer={answer}
-            answerComments={sortBy(
-              commentsByOutcome[answer.number.toString()] ?? [],
-              (c) => c.createdTime
-            )}
-            tips={tips}
-          />
-        </div>
-      ))}
     </>
   )
 }
