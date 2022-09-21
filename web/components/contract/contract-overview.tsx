@@ -19,7 +19,6 @@ import {
   Contract,
   BinaryContract,
   CPMMContract,
-  CPMMBinaryContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,

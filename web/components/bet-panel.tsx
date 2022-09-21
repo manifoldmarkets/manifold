@@ -395,9 +395,15 @@ export function BuyPanel(props: {
                     // outcome === 'YES' ? 'text-teal-500' : 'text-red-400'
                   )}
                 >
-                  {' '}
-                  {outcome != 'NO' && '+'}
-                  {format(resultProb - initialProb)}
+                  {isPseudoNumeric ? (
+                    <></>
+                  ) : (
+                    <>
+                      {' '}
+                      {outcome != 'NO' && '+'}
+                      {format(resultProb - initialProb)}
+                    </>
+                  )}
                 </span>
               </div>
             )}
