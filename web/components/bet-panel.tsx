@@ -369,12 +369,7 @@ export function BuyPanel(props: {
             ) : (
               <div className="text-xl">
                 {format(resultProb)}
-                <span
-                  className={clsx(
-                    'text-greyscale-4 text-xs'
-                    // outcome === 'YES' ? 'text-teal-500' : 'text-red-400'
-                  )}
-                >
+                <span className={clsx('text-greyscale-4 text-xs')}>
                   {isPseudoNumeric ? (
                     <></>
                   ) : (
@@ -391,9 +386,6 @@ export function BuyPanel(props: {
         </Row>
         <Row className="text-greyscale-4 mt-4 mb-1 justify-between text-left text-xs">
           Amount
-          {/* <span className={'xl:hidden'}>
-          Balance: {formatMoney(user?.balance ?? 0)}
-        </span> */}
         </Row>
 
         <BuyAmountInput
@@ -415,7 +407,6 @@ export function BuyPanel(props: {
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
-            // disabled={!!betDisabled}
             openModalButtonClass={clsx(
               'btn mb-2 flex-1',
               betDisabled

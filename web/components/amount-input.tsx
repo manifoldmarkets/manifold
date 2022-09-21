@@ -42,7 +42,6 @@ export function AmountInput(props: {
     <>
       <Col className={className}>
         <label>
-          {/* <span className="bg-gray-200 text-sm">{label}</span> */}
           <span
             className={clsx(
               'text-greyscale-4 absolute ml-2 mt-[9px]',
