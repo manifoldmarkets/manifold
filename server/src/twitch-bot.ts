@@ -34,10 +34,7 @@ const MSG_RESOLVED = (outcome: ResolutionOutcome, winners: { user: LiteUser; pro
     return message;
 };
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
-const MSG_MARKET_CREATED = (username: string, question: string, defaultGroup: string) =>
-    `${username}'s market '${question}' has been created${defaultGroup ? ` in group '${defaultGroup}'` : ""}!${
-        !defaultGroup ? " No default group was selected. Use /setdefaultgroup to set one." : ""
-    }`;
+const MSG_MARKET_CREATED = (username: string, question: string, defaultGroup: string) => `${username}'s market '${question}' has been created${defaultGroup ? ` in group '${defaultGroup}'` : ""}!`;
 const MSG_MARKET_UNFEATURED = () => `Market unfeatured.`;
 const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
 const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
@@ -140,7 +137,7 @@ export default class TwitchBot {
                 log.info(`Create command issued with question '${question}'`);
 
                 try {
-                    const market = await user.createBinaryMarket(question, null, 50, {groupID: this.defaultGroupID ? this.defaultGroupID : undefined, visibility: 'unlisted'});
+                    const market = await user.createBinaryMarket(question, null, 50, { groupID: this.defaultGroupID ? this.defaultGroupID : undefined, visibility: "unlisted" }); //!!! Should create question through broadcaster account
                     log.info("Created market ID: " + market.id);
                     this.app.selectMarket(channel, market.id);
                     this.client.say(channel, MSG_MARKET_CREATED(user.twitchDisplayName, question, this.defaultGroupID));
