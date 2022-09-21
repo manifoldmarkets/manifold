@@ -16,6 +16,8 @@ import { track } from 'web/lib/service/analytics'
 import { Row } from './layout/row'
 import { Tooltip } from './tooltip'
 
+const TIP_SIZE = 10
+
 export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const { comment, tips } = prop
 
@@ -82,9 +84,12 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const canUp = me && me.id !== comment.userId && me.balance >= localTip + 5
   return (
     <Row className="items-center gap-0.5">
-      <DownTip onClick={canDown ? () => addTip(-5) : undefined} />
+      <DownTip onClick={canDown ? () => addTip(-TIP_SIZE) : undefined} />
       <span className="font-bold">{Math.floor(total)}</span>
-      <UpTip onClick={canUp ? () => addTip(+5) : undefined} value={localTip} />
+      <UpTip
+        onClick={canUp ? () => addTip(+TIP_SIZE) : undefined}
+        value={localTip}
+      />
       {localTip === 0 ? (
         ''
       ) : (
@@ -107,7 +112,7 @@ function DownTip(props: { onClick?: () => void }) {
     <Tooltip
       className="h-6 w-6"
       placement="bottom"
-      text={onClick && `-${formatMoney(5)}`}
+      text={onClick && `-${formatMoney(TIP_SIZE)}`}
       noTap
     >
       <button
@@ -128,7 +133,7 @@ function UpTip(props: { onClick?: () => void; value: number }) {
     <Tooltip
       className="h-6 w-6"
       placement="bottom"
-      text={onClick && `Tip ${formatMoney(5)}`}
+      text={onClick && `Tip ${formatMoney(TIP_SIZE)}`}
       noTap
     >
       <button
