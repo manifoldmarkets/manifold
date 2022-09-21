@@ -366,7 +366,7 @@ def write_image_uris(card_image_uris):
 
 if __name__ == "__main__":
     # uncomment this once in a while, but it's expensive to run
-    # fetch_and_write_initial_artist_query()
+    fetch_and_write_initial_artist_query()
 
     for category in allCategories:
         print(category)
