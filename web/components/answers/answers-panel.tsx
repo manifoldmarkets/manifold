@@ -57,7 +57,7 @@ export function AnswersPanel(props: {
 
   const answerItems = sortBy(
     losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
-    (answer) => -getOutcomeProbability(contract, answer.number.toString())
+    (answer) => -getOutcomeProbability(contract, answer.id)
   )
 
   const user = useUser()
