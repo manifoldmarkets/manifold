@@ -36,9 +36,6 @@ export function ContractTabs(props: {
 
   const userBets =
     user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
-  const visibleBets = bets.filter(
-    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
-  )
 
   const yourTrades = (
     <div>
@@ -66,9 +63,7 @@ export function ContractTabs(props: {
         },
         {
           title: capitalize(PAST_BETS),
-          content: (
-            <ContractBetsActivity contract={contract} bets={visibleBets} />
-          ),
+          content: <ContractBetsActivity contract={contract} bets={bets} />,
         },
         ...(!user || !userBets?.length
           ? []
@@ -168,6 +163,9 @@ function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
   const end = start + ITEMS_PER_PAGE
 
   const lps = useLiquidity(contract.id) ?? []
+  const visibleBets = bets.filter(
+    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
+  )
   const visibleLps = lps.filter(
     (l) =>
       !l.isAnte &&
@@ -177,7 +175,7 @@ function ContractBetsActivity(props: { contract: Contract; bets: Bet[] }) {
   )
 
   const items = [
-    ...bets.map((bet) => ({
+    ...visibleBets.map((bet) => ({
       type: 'bet' as const,
       id: bet.id + '-' + bet.isSold,
       bet,
