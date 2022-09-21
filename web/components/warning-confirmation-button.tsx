@@ -8,6 +8,7 @@ import { formatMoney } from 'common/util/format'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
+  outcome?: 'YES' | 'NO' | undefined
   warning?: string
   onSubmit: () => void
   disabled?: boolean
@@ -23,6 +24,7 @@ export function WarningConfirmationButton(props: {
     isSubmitting,
     openModalButtonClass,
     submitButtonClassName,
+    outcome,
   } = props
 
   if (!warning) {
@@ -31,7 +33,7 @@ export function WarningConfirmationButton(props: {
         className={clsx(
           openModalButtonClass,
           isSubmitting ? 'loading' : '',
-          disabled && 'btn-disabled'
+          (disabled || !outcome) && 'btn-disabled bg-greyscale-2'
         )}
         onClick={onSubmit}
       >

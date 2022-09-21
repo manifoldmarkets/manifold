@@ -404,6 +404,7 @@ export function BuyPanel(props: {
         {user && (
           <WarningConfirmationButton
             amount={betAmount}
+            outcome={outcome}
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
