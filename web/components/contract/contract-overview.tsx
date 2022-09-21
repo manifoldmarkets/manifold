@@ -23,6 +23,7 @@ import {
   MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
+  CPMMBinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
@@ -68,7 +69,10 @@ const NumericOverview = (props: { contract: NumericContract }) => {
   )
 }
 
-const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
+const BinaryOverview = (props: {
+  contract: CPMMBinaryContract
+  bets: Bet[]
+}) => {
   const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
@@ -86,7 +90,7 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
       <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
       <Row className="items-center justify-between gap-4 xl:hidden">
         {tradingAllowed(contract) && (
-          <BinaryMobileBetting className={'my-2'} contract={contract} />
+          <BinaryMobileBetting contract={contract} />
         )}
       </Row>
     </Col>

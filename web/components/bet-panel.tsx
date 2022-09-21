@@ -3,7 +3,11 @@ import React, { useState } from 'react'
 import { clamp, partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  Contract,
+  CPMMBinaryContract,
+  PseudoNumericContract,
+} from 'common/contract'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
@@ -146,7 +150,6 @@ export function SimpleBetPanel(props: {
           contract={contract}
           user={user}
           unfilledBets={unfilledBets}
-          selected={selected}
           onBuySuccess={onBetSuccess}
         />
         <LimitOrderPanel
@@ -481,7 +484,6 @@ function LimitOrderPanel(props: {
   const betChoice = 'YES'
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const rangeError =
     lowLimitProb !== undefined &&
@@ -529,7 +531,6 @@ function LimitOrderPanel(props: {
   const noAmount = shares * (1 - (noLimitProb ?? 0))
 
   function onBetChange(newAmount: number | undefined) {
-    setWasSubmitted(false)
     setBetAmount(newAmount)
   }
 
@@ -574,7 +575,6 @@ function LimitOrderPanel(props: {
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
-        setWasSubmitted(true)
         setBetAmount(undefined)
         setLowLimitProb(undefined)
         setHighLimitProb(undefined)
@@ -810,8 +810,6 @@ function LimitOrderPanel(props: {
             : `Submit order${hasTwoBets ? 's' : ''}`}
         </button>
       )}
-
-      {wasSubmitted && <div className="mt-4">Order submitted!</div>}
     </Col>
   )
 }
