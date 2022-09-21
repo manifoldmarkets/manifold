@@ -451,7 +451,7 @@ function GroupLeaderboard(props: {
   return (
     <Leaderboard
       className="max-w-xl"
-      users={topUsers.map((t) => t.user)}
+      entries={topUsers.map((t) => t.user)}
       title={title}
       columns={[
         { header, renderCell: (user) => formatMoney(scoresByUser[user.id]) },
