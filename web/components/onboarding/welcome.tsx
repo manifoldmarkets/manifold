@@ -1,8 +1,9 @@
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { User } from 'common/lib/user'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
+
+import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
