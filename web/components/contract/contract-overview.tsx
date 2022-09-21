@@ -17,7 +17,6 @@ import BetButton, { BinaryMobileBetting } from '../bet-button'
 import { AnswersGraph } from '../answers/answers-graph'
 import {
   Contract,
-  BinaryContract,
   CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,

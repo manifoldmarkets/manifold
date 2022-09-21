@@ -2,11 +2,7 @@ import { useState } from 'react'
 import clsx from 'clsx'
 
 import { BuyPanel, SimpleBetPanel } from './bet-panel'
-import {
-  BinaryContract,
-  CPMMBinaryContract,
-  PseudoNumericContract,
-} from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Modal } from './layout/modal'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -15,7 +11,6 @@ import { Col } from './layout/col'
 import { Button } from 'web/components/button'
 import { BetSignUpPrompt } from './sign-up-prompt'
 import { PRESENT_BET } from 'common/user'
-import { Contract } from 'web/lib/firebase/contracts'
 import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
 import { useUnfilledBets } from 'web/hooks/use-bets'
