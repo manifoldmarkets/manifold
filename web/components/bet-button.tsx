@@ -2,7 +2,11 @@ import { useState } from 'react'
 import clsx from 'clsx'
 
 import { BuyPanel, SimpleBetPanel } from './bet-panel'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMBinaryContract,
+  PseudoNumericContract,
+} from 'common/contract'
 import { Modal } from './layout/modal'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -68,7 +72,6 @@ export default function BetButton(props: {
         <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}
-          selected="YES"
           onBetSuccess={() => setOpen(false)}
           hasShares={hasYesShares || hasNoShares}
         />
@@ -77,7 +80,7 @@ export default function BetButton(props: {
   )
 }
 
-export function BinaryMobileBetting(props: { contract: CPMMBinaryContract }) {
+export function BinaryMobileBetting(props: { contract: BinaryContract }) {
   const { contract } = props
   const user = useUser()
   if (user) {
@@ -96,7 +99,7 @@ export function BinaryMobileBetting(props: { contract: CPMMBinaryContract }) {
 }
 
 export function SignedInBinaryMobileBetting(props: {
-  contract: CPMMBinaryContract | PseudoNumericContract
+  contract: BinaryContract
   user: User
 }) {
   const { contract, user } = props
@@ -108,7 +111,7 @@ export function SignedInBinaryMobileBetting(props: {
         <Col>
           <BuyPanel
             hidden={false}
-            contract={contract}
+            contract={contract as CPMMBinaryContract}
             user={user}
             unfilledBets={unfilledBets}
             mobileView={true}

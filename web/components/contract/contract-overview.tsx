@@ -22,7 +22,7 @@ import {
   MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
-  CPMMBinaryContract,
+  BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
@@ -68,10 +68,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
   )
 }
 
-const BinaryOverview = (props: {
-  contract: CPMMBinaryContract
-  bets: Bet[]
-}) => {
+const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
   const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
