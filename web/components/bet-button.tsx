@@ -80,9 +80,8 @@ export default function BetButton(props: {
 
 export function BinaryMobileBetting(props: {
   contract: CPMMBinaryContract | Contract
-  className?: string
 }) {
-  const { contract, className } = props
+  const { contract } = props
   const user = useUser()
   if (user) {
     return (
@@ -104,7 +103,7 @@ export function SignedInBinaryMobileBetting(props: {
   user: User
 }) {
   const { contract, user } = props
-  const [betChoice, setBetChoice] = useState<'YES' | 'NO' | undefined>(
+  const [betChoice, _setBetChoice] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
   const unfilledBets = useUnfilledBets(contract.id) ?? []

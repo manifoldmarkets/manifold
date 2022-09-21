@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import React, { useState } from 'react'
-import { clamp, floor, partition, sumBy } from 'lodash'
+import { clamp, partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
@@ -174,21 +174,11 @@ export function BuyPanel(props: {
   user: User | null | undefined
   unfilledBets: Bet[]
   hidden: boolean
-  selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
-  onAdvanced?: () => void
   mobileView?: boolean
 }) {
-  const {
-    contract,
-    user,
-    unfilledBets,
-    hidden,
-    selected,
-    onBuySuccess,
-    onAdvanced,
-    mobileView,
-  } = props
+  const { contract, user, unfilledBets, hidden, onBuySuccess, mobileView } =
+    props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
