@@ -31,7 +31,6 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { User } from 'common/user'
 import { getOpenGraphProps } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
@@ -73,12 +72,8 @@ export default function ContractPage(props: {
   bets: Bet[]
   backToHome?: () => void
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    contract: null,
-    bets: [],
-  }
+  props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
 
-  const user = useUser()
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
@@ -90,9 +85,7 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  return (
-    <ContractPageContent key={contract.id} {...{ ...props, contract, user }} />
-  )
+  return <ContractPageContent key={contract.id} {...{ ...props, contract }} />
 }
 
 // requires an admin to resolve a week after market closes
@@ -100,12 +93,10 @@ export function needsAdminToResolve(contract: Contract) {
   return !contract.isResolved && dayjs().diff(contract.closeTime, 'day') > 7
 }
 
-export function ContractPageSidebar(props: {
-  user: User | null | undefined
-  contract: Contract
-}) {
-  const { contract, user } = props
+export function ContractPageSidebar(props: { contract: Contract }) {
+  const { contract } = props
   const { creatorId, isResolved, outcomeType } = contract
+  const user = useUser()
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -154,11 +145,11 @@ export function ContractPageSidebar(props: {
 export function ContractPageContent(
   props: Parameters<typeof ContractPage>[0] & {
     contract: Contract
-    user?: User | null
   }
 ) {
-  const { backToHome, user } = props
+  const { backToHome } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
+  const user = useUser()
   usePrefetch(user?.id)
   useTracking(
     'view market',
@@ -198,9 +189,8 @@ export function ContractPageContent(
     contractId: contract.id,
   })
 
-  const rightSidebar = <ContractPageSidebar user={user} contract={contract} />
   return (
-    <Page rightSidebar={rightSidebar}>
+    <Page rightSidebar={<ContractPageSidebar contract={contract} />}>
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
@@ -258,7 +248,7 @@ export function ContractPageContent(
           </>
         )}
 
-        <ContractTabs contract={contract} user={user} bets={bets} />
+        <ContractTabs contract={contract} bets={bets} />
         {!user ? (
           <Col className="mt-4 max-w-sm items-center xl:hidden">
             <BetSignUpPrompt />

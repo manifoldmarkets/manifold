@@ -8,7 +8,7 @@ import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { PAST_BETS, User } from 'common/user'
+import { PAST_BETS } from 'common/user'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
@@ -17,6 +17,7 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
+import { useUser } from 'web/hooks/use-user'
 import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -24,15 +25,11 @@ import {
 } from 'common/antes'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
-export function ContractTabs(props: {
-  contract: Contract
-  user: User | null | undefined
-  bets: Bet[]
-}) {
-  const { contract, user, bets } = props
+export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
 
   const isMobile = useIsMobile()
-
+  const user = useUser()
   const userBets =
     user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
 

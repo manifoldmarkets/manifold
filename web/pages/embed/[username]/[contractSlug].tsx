@@ -54,10 +54,7 @@ export default function ContractEmbedPage(props: {
   contract: Contract | null
   bets: Bet[]
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    contract: null,
-    bets: [],
-  }
+  props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
 
   const contract = useContractWithPreload(props.contract)
   const { bets } = props
