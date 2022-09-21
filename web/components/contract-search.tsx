@@ -9,7 +9,14 @@ import {
 } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
-import { useEffect, useLayoutEffect, useRef, useMemo, ReactNode } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  ReactNode,
+  useState,
+} from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
@@ -32,6 +39,11 @@ import {
   searchClient,
   searchIndexName,
 } from 'web/lib/service/algolia'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { AdjustmentsIcon } from '@heroicons/react/solid'
+import { Button } from './button'
+import { Modal } from './layout/modal'
+import { Title } from './title'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
@@ -270,6 +282,8 @@ function ContractSearchControls(props: {
         }
   )
 
+  const isMobile = useIsMobile()
+
   const sortKey = `${persistPrefix}-search-sort`
   const savedSort = safeLocalStorage()?.getItem(sortKey)
 
@@ -415,30 +429,31 @@ function ContractSearchControls(props: {
           className="input input-bordered w-full"
           autoFocus={autoFocus}
         />
-        {!query && (
-          <select
-            className="select select-bordered"
-            value={filter}
-            onChange={(e) => selectFilter(e.target.value as filter)}
-          >
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-            <option value="all">All</option>
-          </select>
+        {!isMobile && (
+          <SearchFilters
+            filter={filter}
+            selectFilter={selectFilter}
+            hideOrderSelector={hideOrderSelector}
+            selectSort={selectSort}
+            sort={sort}
+            className={'flex flex-row gap-2'}
+          />
         )}
-        {!hideOrderSelector && !query && (
-          <select
-            className="select select-bordered"
-            value={sort}
-            onChange={(e) => selectSort(e.target.value as Sort)}
-          >
-            {SORTS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        {isMobile && (
+          <>
+            <MobileSearchBar
+              children={
+                <SearchFilters
+                  filter={filter}
+                  selectFilter={selectFilter}
+                  hideOrderSelector={hideOrderSelector}
+                  selectSort={selectSort}
+                  sort={sort}
+                  className={'flex flex-col gap-4'}
+                />
+              }
+            />
+          </>
         )}
       </Row>
 
@@ -479,5 +494,73 @@ function ContractSearchControls(props: {
         </Row>
       )}
     </Col>
+  )
+}
+
+export function SearchFilters(props: {
+  filter: string
+  selectFilter: (newFilter: filter) => void
+  hideOrderSelector: boolean | undefined
+  selectSort: (newSort: Sort) => void
+  sort: string
+  className?: string
+}) {
+  const {
+    filter,
+    selectFilter,
+    hideOrderSelector,
+    selectSort,
+    sort,
+    className,
+  } = props
+  return (
+    <div className={className}>
+      <select
+        className="select select-bordered"
+        value={filter}
+        onChange={(e) => selectFilter(e.target.value as filter)}
+      >
+        <option value="open">Open</option>
+        <option value="closed">Closed</option>
+        <option value="resolved">Resolved</option>
+        <option value="all">All</option>
+      </select>
+      {!hideOrderSelector && (
+        <select
+          className="select select-bordered"
+          value={sort}
+          onChange={(e) => selectSort(e.target.value as Sort)}
+        >
+          {SORTS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  )
+}
+
+export function MobileSearchBar(props: { children: ReactNode }) {
+  const { children } = props
+  const [openFilters, setOpenFilters] = useState(false)
+  return (
+    <>
+      <Button color="gray-white" onClick={() => setOpenFilters(true)}>
+        <AdjustmentsIcon className="my-auto h-7" />
+      </Button>
+      <Modal
+        open={openFilters}
+        setOpen={setOpenFilters}
+        position="top"
+        className="rounded-lg bg-white px-4 pb-4"
+      >
+        <Col>
+          <Title text="Filter Markets" />
+          {children}
+        </Col>
+      </Modal>
+    </>
   )
 }
