@@ -34,20 +34,14 @@ export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
 }) {
-  const { username, contractSlug } = props.params
+  const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
   const bets = contractId ? await listAllBets(contractId) : []
 
   return {
-    props: {
-      contract,
-      username,
-      slug: contractSlug,
-      bets,
-    },
-
+    props: { contract, bets },
     revalidate: 60, // regenerate after a minute
   }
 }
@@ -58,15 +52,11 @@ export async function getStaticPaths() {
 
 export default function ContractEmbedPage(props: {
   contract: Contract | null
-  username: string
   bets: Bet[]
-  slug: string
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    username: '',
     bets: [],
-    slug: '',
   }
 
   const contract = useContractWithPreload(props.contract)

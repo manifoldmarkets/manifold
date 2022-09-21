@@ -54,7 +54,7 @@ export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
 }) {
-  const { username, contractSlug } = props.params
+  const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
@@ -66,8 +66,6 @@ export async function getStaticPropz(props: {
   return {
     props: {
       contract,
-      username,
-      slug: contractSlug,
       // Limit the data sent to the client. Client will still load all bets and comments directly.
       bets: bets.slice(0, 5000),
       comments: comments.slice(0, 1000),
@@ -83,18 +81,14 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
-  username: string
   bets: Bet[]
   comments: ContractComment[]
-  slug: string
   backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    username: '',
     comments: [],
     bets: [],
-    slug: '',
   }
 
   const user = useUser()
@@ -228,7 +222,7 @@ export function ContractPageContent(
         <SEO
           title={question}
           description={ogCardProps.description}
-          url={`/${props.username}/${props.slug}`}
+          url={`/${contract.creatorUsername}/${contract.slug}`}
           ogCardProps={ogCardProps}
         />
       )}
