@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import fetch from 'node-fetch'
 
 import { chunk } from 'lodash'
 import { Contract } from '../../common/contract'
