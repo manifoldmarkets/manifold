@@ -1,5 +1,5 @@
-import styles from "../styles/Dock.module.scss";
+import styles from '../styles/Dock.module.scss';
 
 export default function Button() {
-    return <div className={styles.button}>asds</div>;
+  return <div className={styles.button}>asds</div>;
 }

@@ -1,4 +1,4 @@
 export type SelectedGroup = {
-    groupID: string;
-    groupName: string;
-}
+  groupID: string;
+  groupName: string;
+};

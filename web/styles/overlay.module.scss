@@ -2,7 +2,7 @@
  * COPYRIGHT 2022 Phil Bladen www.philbladen.co.uk
  */
 
-@use "sass:color";
+@use 'sass:color';
 
 // Theme:
 // $themeBlue: #5682E7;
@@ -17,37 +17,37 @@ $backgroundColor: #212121;
 $borderColor: color.scale($backgroundColor, $lightness: 10%);
 
 .border {
-    border: $borderWidth $borderColor solid;
-    border-radius: $borderWidth;
+  border: $borderWidth $borderColor solid;
+  border-radius: $borderWidth;
 }
 
 .bet {
-    height: 0;
-    overflow: hidden;
-    transition: height 0.5s ease-in-out;
-    font-size: 0.7em;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.5s ease-in-out;
+  font-size: 0.7em;
 
-    & p {
-        white-space: pre-wrap;
-        margin: 0px;
-        display: inline;
-    }
+  & p {
+    white-space: pre-wrap;
+    margin: 0px;
+    display: inline;
+  }
 }
 
 .color {
-    &.red {
-        color: $themeRed;
-    }
-    &.blue {
-        color: $themeBlue;
-    }
-    &.green {
-        color: $themeGreen;
-    }
+  &.red {
+    color: $themeRed;
+  }
+  &.blue {
+    color: $themeBlue;
+  }
+  &.green {
+    color: $themeGreen;
+  }
 }
 
 .logoText {
-    font-family: "Major Mono Display", monospace;
-    font-size: 0.4em;
-    white-space: nowrap;
+  font-family: 'Major Mono Display', monospace;
+  font-size: 0.4em;
+  white-space: nowrap;
 }

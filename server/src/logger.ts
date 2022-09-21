@@ -1,3 +1,3 @@
-import logger from "pino";
+import logger from 'pino';
 
-export default logger({level: "trace"});
+export default logger({ level: 'trace' });

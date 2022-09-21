@@ -1,26 +1,29 @@
 {
-    "version": "0.2",
-    "ignorePaths": [],
-    "dictionaryDefinitions": [],
-    "dictionaries": [],
-    "words": [
-        "allin",
-        "Bladen",
-        "Featureable",
-        "Firestore",
-        "manifoldbot",
-        "TWITCH",
-        "Unfeature",
-        "unfeatured",
-        "Userstate"
-    ],
-    "ignoreWords": [
-        "clsx",
-        "headlessui",
-        "heroicons",
-        "registerchanneltwitch",
-        "tailwindcss",
-        "unregisterchannel"
-    ],
-    "import": []
+  "version": "0.2",
+  "ignorePaths": [],
+  "dictionaryDefinitions": [],
+  "dictionaries": [],
+  "words": [
+    "allin",
+    "Bladen",
+    "cpmm",
+    "Featureable",
+    "Firestore",
+    "linebreak",
+    "manifoldbot",
+    "TWITCH",
+    "Unfeature",
+    "unfeatured",
+    "unregisterchanneltwitch",
+    "Userstate"
+  ],
+  "ignoreWords": [
+    "clsx",
+    "headlessui",
+    "heroicons",
+    "registerchanneltwitch",
+    "tailwindcss",
+    "unregisterchannel"
+  ],
+  "import": []
 }
