@@ -13,3 +13,13 @@ export const searchIndexName =
 export const getIndexName = (sort: string) => {
   return `${indexPrefix}contracts-${sort}`
 }
+
+export const probChangeDescendingIndex = searchClient.initIndex(
+  getIndexName('prob-change-day')
+)
+export const probChangeAscendingIndex = searchClient.initIndex(
+  getIndexName('prob-change-day-ascending')
+)
+export const dailyScoreIndex = searchClient.initIndex(
+  getIndexName('daily-score')
+)
