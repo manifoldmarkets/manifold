@@ -55,7 +55,12 @@ export function ShareModal(props: {
           </SiteLink>{' '}
           if a new user signs up using the link!
         </p>
-        <QRCode url={shareUrl} className="self-center" width={150} height={150} />
+        <QRCode
+          url={shareUrl}
+          className="self-center"
+          width={150}
+          height={150}
+        />
         <Button
           size="2xl"
           color="indigo"
@@ -70,7 +75,6 @@ export function ShareModal(props: {
         >
           {linkIcon} Copy link
         </Button>
-
 
         <Row className="z-0 flex-wrap justify-center gap-4 self-center">
           <TweetButton
