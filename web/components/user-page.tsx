@@ -1,8 +1,13 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import { NextRouter, useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
-import { PencilIcon } from '@heroicons/react/outline'
+import {
+  ChatIcon,
+  FolderIcon,
+  PencilIcon,
+  ScaleIcon,
+} from '@heroicons/react/outline'
 
 import { User } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
@@ -37,6 +42,7 @@ import { LoansModal } from './profile/loans-modal'
 import { UserLikesButton } from 'web/components/profile/user-likes-button'
 import { PAST_BETS } from 'common/user'
 import { capitalize } from 'lodash'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -45,17 +51,18 @@ export function UserPage(props: { user: User }) {
   const isCurrentUser = user.id === currentUser?.id
   const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
-  const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
-  const [showLoansModal, setShowLoansModal] = useState(false)
+  // const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
+  // const [showLoansModal, setShowLoansModal] = useState(false)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
-    const showBettingStreak = router.query['show'] === 'betting-streak'
-    setShowBettingStreakModal(showBettingStreak)
-    setShowConfetti(claimedMana || showBettingStreak)
+    // const showBettingStreak = router.query['show'] === 'betting-streak'
+    // setShowBettingStreakModal(showBettingStreak)
+    // setShowConfetti(claimedMana || showBettingStreak)
 
-    const showLoansModel = router.query['show'] === 'loans'
-    setShowLoansModal(showLoansModel)
+    // const showLoansModel = router.query['show'] === 'loans'
+    // setShowLoansModal(showLoansModel)
 
     const query = { ...router.query }
     if (query.claimedMana || query.show) {
@@ -85,102 +92,57 @@ export function UserPage(props: { user: User }) {
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
-      <BettingStreakModal
-        isOpen={showBettingStreakModal}
-        setOpen={setShowBettingStreakModal}
-        currentUser={currentUser}
-      />
-      {showLoansModal && (
-        <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
-      )}
-      {/* Banner image up top, with an circle avatar overlaid */}
-      {/* <div
-        className="h-32 w-full bg-cover bg-center sm:h-40"
-        style={{
-          backgroundImage: `url(${bannerUrl})`,
-        }}
-      ></div> */}
-      <Col>
-        <Row className="px-4 py-4">
+      <Col className="relative">
+        <Row className="relative px-4 pt-4">
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
             size={24}
-            className="bg-white ring-4 ring-white"
+            className="bg-white shadow-sm shadow-indigo-300"
           />
-          <Col>
-            <span className="break-anywhere text-2xl font-bold">
-              {user.name}
-            </span>
-            <span className="text-gray-500">@{user.username}</span>
+          {isCurrentUser && (
+            <div className="absolute z-50 ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
+              <SiteLink href="/profile">
+                <PencilIcon className="h-5" />{' '}
+              </SiteLink>
+            </div>
+          )}
+
+          <Col className="w-full gap-4 pl-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+              <Col>
+                <span className="break-anywhere text-lg font-bold sm:text-2xl">
+                  {user.name}
+                </span>
+                <span className="sm:text-md text-greyscale-4 text-sm">
+                  @{user.username}
+                </span>
+              </Col>
+              {isCurrentUser && (
+                <ProfilePrivateStats
+                  currentUser={currentUser}
+                  profit={profit}
+                  user={user}
+                  router={router}
+                />
+              )}
+              {!isCurrentUser && <UserFollowButton userId={user.id} />}
+            </div>
+            {!isMobile && (
+              <ProfilePublicStats className="text-md" user={user} />
+            )}
           </Col>
         </Row>
-        {/* Top right buttons (e.g. edit, follow) */}
-        <div className="absolute right-0 top-0 mt-2 mr-4">
-          {!isCurrentUser && <UserFollowButton userId={user.id} />}
-          {isCurrentUser && (
-            <SiteLink className="btn-sm btn" href="/profile">
-              <PencilIcon className="h-5 w-5" />{' '}
-              <div className="ml-2">Edit</div>
-            </SiteLink>
-          )}
-        </div>
-
-        {/* Profile details: name, username, bio, and link to twitter/discord */}
-        <Col className="mx-4 -mt-6">
-          <Row className={'flex-wrap justify-between gap-y-2'}>
-            {/* <Col>
-              <span className="break-anywhere text-2xl font-bold">
-                {user.name}
-              </span>
-              <span className="text-gray-500">@{user.username}</span>
-            </Col> */}
-            <Col className={'justify-center'}>
-              <Row className={'gap-3'}>
-                <Col className={'items-center text-gray-500'}>
-                  <span
-                    className={clsx(
-                      'text-md',
-                      profit >= 0 ? 'text-green-600' : 'text-red-400'
-                    )}
-                  >
-                    {formatMoney(profit)}
-                  </span>
-                  <span>profit</span>
-                </Col>
-                <Col
-                  className={clsx(
-                    'cursor-pointer items-center text-gray-500',
-                    isCurrentUser && !hasCompletedStreakToday(user)
-                      ? 'grayscale'
-                      : 'grayscale-0'
-                  )}
-                  onClick={() => setShowBettingStreakModal(true)}
-                >
-                  <span>🔥 {user.currentBettingStreak ?? 0}</span>
-                  <span>streak</span>
-                </Col>
-                <Col
-                  className={
-                    'flex-shrink-0 cursor-pointer items-center text-gray-500'
-                  }
-                  onClick={() => setShowLoansModal(true)}
-                >
-                  <span className="text-green-600">
-                    🏦 {formatMoney(user.nextLoanCached ?? 0)}
-                  </span>
-                  <span>next loan</span>
-                </Col>
-              </Row>
-            </Col>
-          </Row>
-          <Spacer h={4} />
+        <Col className="mx-4 mt-2">
+          <Spacer h={1} />
+          {isMobile && <ProfilePublicStats className="text-sm" user={user} />}
+          <Spacer h={1} />
           {user.bio && (
             <>
-              <div>
+              <div className="sm:text-md text-greyscale-6 mt-2 text-sm sm:mt-0">
                 <Linkify text={user.bio}></Linkify>
               </div>
-              <Spacer h={4} />
+              <Spacer h={2} />
             </>
           )}
           {(user.website || user.twitterHandle || user.discordHandle) && (
@@ -194,7 +156,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    <span className="text-sm text-gray-500">
+                    <span className="text-greyscale-4 text-sm">
                       {user.website}
                     </span>
                   </Row>
@@ -215,7 +177,7 @@ export function UserPage(props: { user: User }) {
                       className="h-4 w-4"
                       alt="Twitter"
                     />
-                    <span className="text-sm text-gray-500">
+                    <span className="text-greyscale-4 text-sm">
                       {user.twitterHandle}
                     </span>
                   </Row>
@@ -230,7 +192,7 @@ export function UserPage(props: { user: User }) {
                       className="h-4 w-4"
                       alt="Discord"
                     />
-                    <span className="text-sm text-gray-500">
+                    <span className="text-greyscale-4 text-sm">
                       {user.discordHandle}
                     </span>
                   </Row>
@@ -238,7 +200,7 @@ export function UserPage(props: { user: User }) {
               )}
             </Row>
           )}
-          {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
+          {/* {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
             <Row
               className={
                 'mb-5 w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
@@ -258,48 +220,45 @@ export function UserPage(props: { user: User }) {
                 iconClassName={'h-8 w-8 text-indigo-700'}
               />
             </Row>
-          )}
+          )} */}
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
-            labelClassName={'pb-2 pt-1 '}
+            labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
               {
+                title: 'Portfolio',
+                tabIcon: <FolderIcon className="h-5" />,
+                content: (
+                  <>
+                    <PortfolioValueSection userId={user.id} />
+                    <BetsList user={user} />
+                  </>
+                ),
+              },
+              {
                 title: 'Markets',
+                tabIcon: <ScaleIcon className="h-5" />,
                 content: (
                   <CreatorContractsList user={currentUser} creator={user} />
                 ),
               },
               {
                 title: 'Comments',
+                tabIcon: <ChatIcon className="h-5" />,
                 content: (
                   <Col>
                     <UserCommentsList user={user} />
                   </Col>
                 ),
               },
-              {
-                title: capitalize(PAST_BETS),
-                content: (
-                  <>
-                    <BetsList user={user} />
-                  </>
-                ),
-              },
-              {
-                title: 'Stats',
-                content: (
-                  <Col className="mb-8">
-                    <Row className={'mb-8 flex-wrap items-center gap-6'}>
-                      <FollowingButton user={user} />
-                      <FollowersButton user={user} />
-                      <ReferralsButton user={user} />
-                      <GroupsButton user={user} />
-                      <UserLikesButton user={user} />
-                    </Row>
-                    <PortfolioValueSection userId={user.id} />
-                  </Col>
-                ),
-              },
+              // {
+              //   title: 'Stats',
+              //   content: (
+              //     <Col className="mb-8">
+              //       <PortfolioValueSection userId={user.id} />
+              //     </Col>
+              //   ),
+              // },
             ]}
           />
         </Col>
@@ -319,4 +278,88 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
+}
+
+export function ProfilePrivateStats(props: {
+  currentUser: User | null | undefined
+  profit: number
+  user: User
+  router: NextRouter
+}) {
+  const { currentUser, profit, user, router } = props
+  const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
+  const [showLoansModal, setShowLoansModal] = useState(false)
+
+  useEffect(() => {
+    const showBettingStreak = router.query['show'] === 'betting-streak'
+    setShowBettingStreakModal(showBettingStreak)
+
+    const showLoansModel = router.query['show'] === 'loans'
+    setShowLoansModal(showLoansModel)
+  }, [])
+  return (
+    <>
+      <Row className={'justify-between gap-4 sm:justify-end'}>
+        <Col className={'text-greyscale-4 text-md sm:text-lg'}>
+          <span
+            className={clsx(profit >= 0 ? 'text-green-600' : 'text-red-400')}
+          >
+            {formatMoney(profit)}
+          </span>
+          <span className="mx-auto text-xs sm:text-sm">profit</span>
+        </Col>
+        <Col
+          className={clsx('text-,d cursor-pointer sm:text-lg ')}
+          onClick={() => setShowBettingStreakModal(true)}
+        >
+          <span
+            className={clsx(
+              !hasCompletedStreakToday(user)
+                ? 'opacity-50 grayscale'
+                : 'grayscale-0'
+            )}
+          >
+            🔥 {user.currentBettingStreak ?? 0}
+          </span>
+          <span className="text-greyscale-4 mx-auto text-xs sm:text-sm">
+            streak
+          </span>
+        </Col>
+        <Col
+          className={
+            'text-greyscale-4 text-md flex-shrink-0 cursor-pointer sm:text-lg'
+          }
+          onClick={() => setShowLoansModal(true)}
+        >
+          <span className="text-green-600">
+            🏦 {formatMoney(user.nextLoanCached ?? 0)}
+          </span>
+          <span className="mx-auto text-xs sm:text-sm">next loan</span>
+        </Col>
+      </Row>
+      {BettingStreakModal && (
+        <BettingStreakModal
+          isOpen={showBettingStreakModal}
+          setOpen={setShowBettingStreakModal}
+          currentUser={currentUser}
+        />
+      )}
+      {showLoansModal && (
+        <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
+      )}
+    </>
+  )
+}
+
+export function ProfilePublicStats(props: { user: User; className?: string }) {
+  const { user, className } = props
+  return (
+    <Row className={'flex-wrap items-center gap-3'}>
+      <FollowingButton user={user} className={className} />
+      <FollowersButton user={user} className={className} />
+      {/* <ReferralsButton user={user} className={className} /> */}
+      <GroupsButton user={user} className={className} />
+      {/* <UserLikesButton user={user} className={className} /> */}
+    </Row>
+  )
 }

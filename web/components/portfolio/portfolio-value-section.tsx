@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
 import { memo, useRef, useState } from 'react'
@@ -36,7 +37,7 @@ export const PortfolioValueSection = memo(
             <div className="text-sm text-gray-500">Profit</div>
             <div className="text-lg">{formatMoney(totalProfit)}</div>
           </Col>
-          <select
+          {/* <select
             className="select select-bordered self-start"
             value={portfolioPeriod}
             onChange={(e) => {
@@ -47,7 +48,7 @@ export const PortfolioValueSection = memo(
             <option value="monthly">Last Month</option>
             <option value="weekly">Last 7d</option>
             <option value="daily">Last 24h</option>
-          </select>
+          </select> */}
         </Row>
         <PortfolioValueGraph
           portfolioHistory={currPortfolioHistory}
@@ -64,7 +65,51 @@ export const PortfolioValueSection = memo(
           includeTime={portfolioPeriod == 'daily'}
           mode="value"
         />
+        <PortfolioPeriodSelection
+          portfolioPeriod={portfolioPeriod}
+          setPortfolioPeriod={setPortfolioPeriod}
+          className="mt-2 gap-4"
+          selectClassName="text-indigo-600 text-bold underline"
+        />
       </>
     )
   }
 )
+
+export function PortfolioPeriodSelection(props: {
+  setPortfolioPeriod: (string: any) => void
+  portfolioPeriod: string
+  className?: string
+  selectClassName?: string
+}) {
+  const { setPortfolioPeriod, portfolioPeriod, className, selectClassName } =
+    props
+  return (
+    <Row className={className}>
+      <button
+        className={clsx(portfolioPeriod === 'daily' ? selectClassName : '')}
+        onClick={() => setPortfolioPeriod('daily' as Period)}
+      >
+        1D
+      </button>
+      <button
+        className={clsx(portfolioPeriod === 'weekly' ? selectClassName : '')}
+        onClick={() => setPortfolioPeriod('weekly' as Period)}
+      >
+        1W
+      </button>
+      <button
+        className={clsx(portfolioPeriod === 'monthly' ? selectClassName : '')}
+        onClick={() => setPortfolioPeriod('monthly' as Period)}
+      >
+        1M
+      </button>
+      <button
+        className={clsx(portfolioPeriod === 'allTime' ? selectClassName : '')}
+        onClick={() => setPortfolioPeriod('allTime' as Period)}
+      >
+        ALL
+      </button>
+    </Row>
+  )
+}
