@@ -10,11 +10,10 @@ import clsx from 'clsx'
 import {
   ContractCommentInput,
   FeedComment,
+  ReplyTo,
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
-import { User } from 'common/user'
-import { useEvent } from 'web/hooks/use-event'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { UserLink } from 'web/components/user-link'
 
@@ -27,26 +26,10 @@ export function FeedAnswerCommentGroup(props: {
   const { answer, contract, answerComments, tips } = props
   const { username, avatarUrl, name, text } = answer
 
-  const [replyToUser, setReplyToUser] =
-    useState<Pick<User, 'id' | 'username'>>()
-  const [showReply, setShowReply] = useState(false)
+  const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
-
   const answerElementId = `answer-${answer.id}`
-
-  const scrollAndOpenReplyInput = useEvent(
-    (comment?: ContractComment, answer?: Answer) => {
-      setReplyToUser(
-        comment
-          ? { id: comment.userId, username: comment.userUsername }
-          : answer
-          ? { id: answer.userId, username: answer.username }
-          : undefined
-      )
-      setShowReply(true)
-    }
-  )
 
   useEffect(() => {
     if (router.asPath.endsWith(`#${answerElementId}`)) {
@@ -83,7 +66,9 @@ export function FeedAnswerCommentGroup(props: {
             <div className="sm:hidden">
               <button
                 className="text-xs font-bold text-gray-500 hover:underline"
-                onClick={() => scrollAndOpenReplyInput(undefined, answer)}
+                onClick={() =>
+                  setReplyTo({ id: answer.id, username: answer.username })
+                }
               >
                 Reply
               </button>
@@ -92,7 +77,9 @@ export function FeedAnswerCommentGroup(props: {
           <div className="justify-initial hidden sm:block">
             <button
               className="text-xs font-bold text-gray-500 hover:underline"
-              onClick={() => scrollAndOpenReplyInput(undefined, answer)}
+              onClick={() =>
+                setReplyTo({ id: answer.id, username: answer.username })
+              }
             >
               Reply
             </button>
@@ -107,11 +94,13 @@ export function FeedAnswerCommentGroup(props: {
             contract={contract}
             comment={comment}
             tips={tips[comment.id] ?? {}}
-            onReplyClick={scrollAndOpenReplyInput}
+            onReplyClick={() =>
+              setReplyTo({ id: comment.id, username: comment.userUsername })
+            }
           />
         ))}
       </Col>
-      {showReply && (
+      {replyTo && (
         <div className="relative ml-7">
           <span
             className="absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
@@ -120,8 +109,8 @@ export function FeedAnswerCommentGroup(props: {
           <ContractCommentInput
             contract={contract}
             parentAnswerOutcome={answer.number.toString()}
-            replyToUser={replyToUser}
-            onSubmitComment={() => setShowReply(false)}
+            replyTo={replyTo}
+            onSubmitComment={() => setReplyTo(undefined)}
           />
         </div>
       )}
