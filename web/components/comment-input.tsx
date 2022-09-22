@@ -126,7 +126,7 @@ export function CommentInputTextArea(props: {
       <TextEditor editor={editor} upload={upload}>
         {user && !isSubmitting && (
           <button
-            className="btn btn-ghost btn-sm px-2 disabled:bg-inherit disabled:text-gray-300"
+            className="btn btn-ghost btn-sm disabled:bg-inherit! px-2 disabled:text-gray-300"
             disabled={!editor || editor.isEmpty}
             onClick={submit}
           >
