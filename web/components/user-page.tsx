@@ -94,22 +94,27 @@ export function UserPage(props: { user: User }) {
         <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
       )}
       {/* Banner image up top, with an circle avatar overlaid */}
-      <div
+      {/* <div
         className="h-32 w-full bg-cover bg-center sm:h-40"
         style={{
           backgroundImage: `url(${bannerUrl})`,
         }}
-      ></div>
-      <div className="relative mb-20">
-        <div className="absolute -top-10 left-4">
+      ></div> */}
+      <Col>
+        <Row className="px-4 py-4">
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
             size={24}
             className="bg-white ring-4 ring-white"
           />
-        </div>
-
+          <Col>
+            <span className="break-anywhere text-2xl font-bold">
+              {user.name}
+            </span>
+            <span className="text-gray-500">@{user.username}</span>
+          </Col>
+        </Row>
         {/* Top right buttons (e.g. edit, follow) */}
         <div className="absolute right-0 top-0 mt-2 mr-4">
           {!isCurrentUser && <UserFollowButton userId={user.id} />}
@@ -120,182 +125,184 @@ export function UserPage(props: { user: User }) {
             </SiteLink>
           )}
         </div>
-      </div>
 
-      {/* Profile details: name, username, bio, and link to twitter/discord */}
-      <Col className="mx-4 -mt-6">
-        <Row className={'flex-wrap justify-between gap-y-2'}>
-          <Col>
-            <span className="break-anywhere text-2xl font-bold">
-              {user.name}
-            </span>
-            <span className="text-gray-500">@{user.username}</span>
-          </Col>
-          <Col className={'justify-center'}>
-            <Row className={'gap-3'}>
-              <Col className={'items-center text-gray-500'}>
-                <span
+        {/* Profile details: name, username, bio, and link to twitter/discord */}
+        <Col className="mx-4 -mt-6">
+          <Row className={'flex-wrap justify-between gap-y-2'}>
+            {/* <Col>
+              <span className="break-anywhere text-2xl font-bold">
+                {user.name}
+              </span>
+              <span className="text-gray-500">@{user.username}</span>
+            </Col> */}
+            <Col className={'justify-center'}>
+              <Row className={'gap-3'}>
+                <Col className={'items-center text-gray-500'}>
+                  <span
+                    className={clsx(
+                      'text-md',
+                      profit >= 0 ? 'text-green-600' : 'text-red-400'
+                    )}
+                  >
+                    {formatMoney(profit)}
+                  </span>
+                  <span>profit</span>
+                </Col>
+                <Col
                   className={clsx(
-                    'text-md',
-                    profit >= 0 ? 'text-green-600' : 'text-red-400'
+                    'cursor-pointer items-center text-gray-500',
+                    isCurrentUser && !hasCompletedStreakToday(user)
+                      ? 'grayscale'
+                      : 'grayscale-0'
                   )}
+                  onClick={() => setShowBettingStreakModal(true)}
                 >
-                  {formatMoney(profit)}
-                </span>
-                <span>profit</span>
-              </Col>
-              <Col
-                className={clsx(
-                  'cursor-pointer items-center text-gray-500',
-                  isCurrentUser && !hasCompletedStreakToday(user)
-                    ? 'grayscale'
-                    : 'grayscale-0'
-                )}
-                onClick={() => setShowBettingStreakModal(true)}
-              >
-                <span>🔥 {user.currentBettingStreak ?? 0}</span>
-                <span>streak</span>
-              </Col>
-              <Col
-                className={
-                  'flex-shrink-0 cursor-pointer items-center text-gray-500'
-                }
-                onClick={() => setShowLoansModal(true)}
-              >
-                <span className="text-green-600">
-                  🏦 {formatMoney(user.nextLoanCached ?? 0)}
-                </span>
-                <span>next loan</span>
-              </Col>
-            </Row>
-          </Col>
-        </Row>
-        <Spacer h={4} />
-        {user.bio && (
-          <>
-            <div>
-              <Linkify text={user.bio}></Linkify>
-            </div>
-            <Spacer h={4} />
-          </>
-        )}
-        {(user.website || user.twitterHandle || user.discordHandle) && (
-          <Row className="mb-5 flex-wrap items-center gap-2 sm:gap-4">
-            {user.website && (
-              <SiteLink
-                href={
-                  'https://' +
-                  user.website.replace('http://', '').replace('https://', '')
-                }
-              >
-                <Row className="items-center gap-1">
-                  <LinkIcon className="h-4 w-4" />
-                  <span className="text-sm text-gray-500">{user.website}</span>
-                </Row>
-              </SiteLink>
-            )}
-
-            {user.twitterHandle && (
-              <SiteLink
-                href={`https://twitter.com/${user.twitterHandle
-                  .replace('https://www.twitter.com/', '')
-                  .replace('https://twitter.com/', '')
-                  .replace('www.twitter.com/', '')
-                  .replace('twitter.com/', '')}`}
-              >
-                <Row className="items-center gap-1">
-                  <img
-                    src="/twitter-logo.svg"
-                    className="h-4 w-4"
-                    alt="Twitter"
-                  />
-                  <span className="text-sm text-gray-500">
-                    {user.twitterHandle}
-                  </span>
-                </Row>
-              </SiteLink>
-            )}
-
-            {user.discordHandle && (
-              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
-                <Row className="items-center gap-1">
-                  <img
-                    src="/discord-logo.svg"
-                    className="h-4 w-4"
-                    alt="Discord"
-                  />
-                  <span className="text-sm text-gray-500">
-                    {user.discordHandle}
-                  </span>
-                </Row>
-              </SiteLink>
-            )}
-          </Row>
-        )}
-        {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
-          <Row
-            className={
-              'mb-5 w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
-            }
-          >
-            <span>
-              <SiteLink href="/referrals">
-                Earn {formatMoney(REFERRAL_AMOUNT)} when you refer a friend!
-              </SiteLink>{' '}
-              You've gotten{' '}
-              <ReferralsButton user={user} currentUser={currentUser} />
-            </span>
-            <ShareIconButton
-              copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
-              toastClassName={'sm:-left-40 -left-40 min-w-[250%]'}
-              buttonClassName={'h-10 w-10'}
-              iconClassName={'h-8 w-8 text-indigo-700'}
-            />
-          </Row>
-        )}
-        <QueryUncontrolledTabs
-          currentPageForAnalytics={'profile'}
-          labelClassName={'pb-2 pt-1 '}
-          tabs={[
-            {
-              title: 'Markets',
-              content: (
-                <CreatorContractsList user={currentUser} creator={user} />
-              ),
-            },
-            {
-              title: 'Comments',
-              content: (
-                <Col>
-                  <UserCommentsList user={user} />
+                  <span>🔥 {user.currentBettingStreak ?? 0}</span>
+                  <span>streak</span>
                 </Col>
-              ),
-            },
-            {
-              title: capitalize(PAST_BETS),
-              content: (
-                <>
-                  <BetsList user={user} />
-                </>
-              ),
-            },
-            {
-              title: 'Stats',
-              content: (
-                <Col className="mb-8">
-                  <Row className={'mb-8 flex-wrap items-center gap-6'}>
-                    <FollowingButton user={user} />
-                    <FollowersButton user={user} />
-                    <ReferralsButton user={user} />
-                    <GroupsButton user={user} />
-                    <UserLikesButton user={user} />
+                <Col
+                  className={
+                    'flex-shrink-0 cursor-pointer items-center text-gray-500'
+                  }
+                  onClick={() => setShowLoansModal(true)}
+                >
+                  <span className="text-green-600">
+                    🏦 {formatMoney(user.nextLoanCached ?? 0)}
+                  </span>
+                  <span>next loan</span>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
+          <Spacer h={4} />
+          {user.bio && (
+            <>
+              <div>
+                <Linkify text={user.bio}></Linkify>
+              </div>
+              <Spacer h={4} />
+            </>
+          )}
+          {(user.website || user.twitterHandle || user.discordHandle) && (
+            <Row className="mb-5 flex-wrap items-center gap-2 sm:gap-4">
+              {user.website && (
+                <SiteLink
+                  href={
+                    'https://' +
+                    user.website.replace('http://', '').replace('https://', '')
+                  }
+                >
+                  <Row className="items-center gap-1">
+                    <LinkIcon className="h-4 w-4" />
+                    <span className="text-sm text-gray-500">
+                      {user.website}
+                    </span>
                   </Row>
-                  <PortfolioValueSection userId={user.id} />
-                </Col>
-              ),
-            },
-          ]}
-        />
+                </SiteLink>
+              )}
+
+              {user.twitterHandle && (
+                <SiteLink
+                  href={`https://twitter.com/${user.twitterHandle
+                    .replace('https://www.twitter.com/', '')
+                    .replace('https://twitter.com/', '')
+                    .replace('www.twitter.com/', '')
+                    .replace('twitter.com/', '')}`}
+                >
+                  <Row className="items-center gap-1">
+                    <img
+                      src="/twitter-logo.svg"
+                      className="h-4 w-4"
+                      alt="Twitter"
+                    />
+                    <span className="text-sm text-gray-500">
+                      {user.twitterHandle}
+                    </span>
+                  </Row>
+                </SiteLink>
+              )}
+
+              {user.discordHandle && (
+                <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+                  <Row className="items-center gap-1">
+                    <img
+                      src="/discord-logo.svg"
+                      className="h-4 w-4"
+                      alt="Discord"
+                    />
+                    <span className="text-sm text-gray-500">
+                      {user.discordHandle}
+                    </span>
+                  </Row>
+                </SiteLink>
+              )}
+            </Row>
+          )}
+          {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
+            <Row
+              className={
+                'mb-5 w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
+              }
+            >
+              <span>
+                <SiteLink href="/referrals">
+                  Earn {formatMoney(REFERRAL_AMOUNT)} when you refer a friend!
+                </SiteLink>{' '}
+                You've gotten{' '}
+                <ReferralsButton user={user} currentUser={currentUser} />
+              </span>
+              <ShareIconButton
+                copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
+                toastClassName={'sm:-left-40 -left-40 min-w-[250%]'}
+                buttonClassName={'h-10 w-10'}
+                iconClassName={'h-8 w-8 text-indigo-700'}
+              />
+            </Row>
+          )}
+          <QueryUncontrolledTabs
+            currentPageForAnalytics={'profile'}
+            labelClassName={'pb-2 pt-1 '}
+            tabs={[
+              {
+                title: 'Markets',
+                content: (
+                  <CreatorContractsList user={currentUser} creator={user} />
+                ),
+              },
+              {
+                title: 'Comments',
+                content: (
+                  <Col>
+                    <UserCommentsList user={user} />
+                  </Col>
+                ),
+              },
+              {
+                title: capitalize(PAST_BETS),
+                content: (
+                  <>
+                    <BetsList user={user} />
+                  </>
+                ),
+              },
+              {
+                title: 'Stats',
+                content: (
+                  <Col className="mb-8">
+                    <Row className={'mb-8 flex-wrap items-center gap-6'}>
+                      <FollowingButton user={user} />
+                      <FollowersButton user={user} />
+                      <ReferralsButton user={user} />
+                      <GroupsButton user={user} />
+                      <UserLikesButton user={user} />
+                    </Row>
+                    <PortfolioValueSection userId={user.id} />
+                  </Col>
+                ),
+              },
+            ]}
+          />
+        </Col>
       </Col>
     </Page>
   )
