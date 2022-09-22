@@ -6,8 +6,9 @@ import { Contract } from '../../common/contract'
 import { log } from './utils'
 import { removeUndefinedProps } from '../../common/util/object'
 
-export const scoreContracts = functions.pubsub
-  .schedule('every 1 hours')
+export const scoreContracts = functions
+  .runWith({ memory: '4GB', timeoutSeconds: 540 })
+  .pubsub.schedule('every 1 hours')
   .onRun(async () => {
     await scoreContractsInternal()
   })
@@ -49,7 +50,8 @@ async function scoreContractsInternal() {
 
     let dailyScore: number | undefined
     if (contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1') {
-      dailyScore = popularityScore * Math.abs(contract.probChanges.day)
+      const percentChange = Math.abs(contract.probChanges.day)
+      dailyScore = popularityScore * percentChange
     }
 
     if (
