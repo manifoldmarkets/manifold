@@ -215,6 +215,7 @@ export default function GroupPage(props: {
         defaultFilter={suggestedFilter}
         additionalFilter={{ groupSlug: group.slug }}
         persistPrefix={`group-${group.slug}`}
+        includeProbSorts
       />
     </>
   )

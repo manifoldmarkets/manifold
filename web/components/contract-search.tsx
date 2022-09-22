@@ -49,17 +49,15 @@ export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: `Most traded`, value: 'most-traded' },
-  { label: '24h volume', value: '24-hour-vol' },
-  { label: '24h change', value: 'prob-change-day' },
   { label: 'Last updated', value: 'last-updated' },
-  { label: 'Subsidy', value: 'liquidity' },
-  { label: 'Close date', value: 'close-date' },
+  { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
   { label: 'Lowest %', value: 'prob-ascending' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
+export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
@@ -95,6 +93,7 @@ export function ContractSearch(props: {
   persistPrefix?: string
   useQueryUrlParam?: boolean
   isWholePage?: boolean
+  includeProbSorts?: boolean
   noControls?: boolean
   maxResults?: number
   renderContracts?: (
@@ -116,6 +115,7 @@ export function ContractSearch(props: {
     headerClassName,
     persistPrefix,
     useQueryUrlParam,
+    includeProbSorts,
     isWholePage,
     noControls,
     maxResults,
@@ -221,6 +221,7 @@ export function ContractSearch(props: {
         persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
         useQueryUrlParam={useQueryUrlParam}
+        includeProbSorts={includeProbSorts}
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
@@ -250,6 +251,7 @@ function ContractSearchControls(props: {
   additionalFilter?: AdditionalFilter
   persistPrefix?: string
   hideOrderSelector?: boolean
+  includeProbSorts?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
   user?: User | null
@@ -269,6 +271,7 @@ function ContractSearchControls(props: {
     user,
     noControls,
     autoFocus,
+    includeProbSorts,
   } = props
 
   const router = useRouter()
@@ -437,6 +440,7 @@ function ContractSearchControls(props: {
             selectSort={selectSort}
             sort={sort}
             className={'flex flex-row gap-2'}
+            includeProbSorts={includeProbSorts}
           />
         )}
         {isMobile && (
@@ -450,6 +454,7 @@ function ContractSearchControls(props: {
                   selectSort={selectSort}
                   sort={sort}
                   className={'flex flex-col gap-4'}
+                  includeProbSorts={includeProbSorts}
                 />
               }
             />
@@ -504,6 +509,7 @@ export function SearchFilters(props: {
   selectSort: (newSort: Sort) => void
   sort: string
   className?: string
+  includeProbSorts?: boolean
 }) {
   const {
     filter,
@@ -512,7 +518,13 @@ export function SearchFilters(props: {
     selectSort,
     sort,
     className,
+    includeProbSorts,
   } = props
+
+  const sorts = includeProbSorts
+    ? SORTS
+    : SORTS.filter((sort) => !PROB_SORTS.includes(sort.value))
+
   return (
     <div className={className}>
       <select
@@ -531,7 +543,7 @@ export function SearchFilters(props: {
           value={sort}
           onChange={(e) => selectSort(e.target.value as Sort)}
         >
-          {SORTS.map((option) => (
+          {sorts.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
