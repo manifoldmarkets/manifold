@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../loading-indicator'
 import { VisibilityObserver } from '../visibility-observer'
 import Masonry from 'react-masonry-css'
-import { CPMMBinaryContract} from 'common/contract'
+import { CPMMBinaryContract } from 'common/contract'
 
 export type ContractHighlightOptions = {
   contractIds?: string[]
