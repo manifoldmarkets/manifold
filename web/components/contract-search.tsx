@@ -48,7 +48,7 @@ import { Title } from './title'
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: `Most traded`, value: 'most-traded' },
+  { label: '24h volume', value: '24-hour-vol' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
