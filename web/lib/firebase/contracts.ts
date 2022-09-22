@@ -16,7 +16,7 @@ import {
 import { partition, sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { BinaryContract, Contract, CPMMContract } from 'common/contract'
+import { BinaryContract, Contract } from 'common/contract'
 import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
@@ -426,21 +426,3 @@ export async function getRecentBetsAndComments(contract: Contract) {
     recentComments,
   }
 }
-
-export const getProbChangesPositive = (userId: string) =>
-  query(
-    contracts,
-    where('uniqueBettorIds', 'array-contains', userId),
-    where('probChanges.day', '>', 0),
-    orderBy('probChanges.day', 'desc'),
-    limit(10)
-  ) as Query<CPMMContract>
-
-export const getProbChangesNegative = (userId: string) =>
-  query(
-    contracts,
-    where('uniqueBettorIds', 'array-contains', userId),
-    where('probChanges.day', '<', 0),
-    orderBy('probChanges.day', 'asc'),
-    limit(10)
-  ) as Query<CPMMContract>

@@ -7,6 +7,7 @@ import { Col } from '../layout/col'
 import {
   BinaryContract,
   Contract,
+  CPMMBinaryContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
@@ -32,6 +33,8 @@ import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
+import { SiteLink } from '../site-link'
+import { ProbChange } from './prob-change-table'
 
 export function ContractCard(props: {
   contract: Contract
@@ -376,6 +379,37 @@ export function PseudoNumericResolutionOrExpectation(props: {
           <div className={clsx('text-base', textColor)}>expected</div>
         </>
       )}
+    </Col>
+  )
+}
+
+export function ContractCardProbChange(props: {
+  contract: CPMMBinaryContract
+  noLinkAvatar?: boolean
+  className?: string
+}) {
+  const { contract, noLinkAvatar, className } = props
+  return (
+    <Col
+      className={clsx(
+        className,
+        'mb-4 rounded-lg bg-white shadow hover:shadow-lg'
+      )}
+    >
+      <AvatarDetails
+        contract={contract}
+        className={'px-6 pt-4'}
+        noLink={noLinkAvatar}
+      />
+      <Row className={clsx('items-start justify-between gap-4 ', className)}>
+        <SiteLink
+          className="pl-6 pr-0 pt-2 pb-4 font-semibold text-indigo-700"
+          href={contractPath(contract)}
+        >
+          <span className="line-clamp-3">{contract.question}</span>
+        </SiteLink>
+        <ProbChange className="py-2 pr-4" contract={contract} />
+      </Row>
     </Col>
   )
 }

@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { partition } from 'lodash'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
@@ -8,16 +9,17 @@ import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
 
 export function ProbChangeTable(props: {
-  changes:
-    | { positiveChanges: CPMMContract[]; negativeChanges: CPMMContract[] }
-    | undefined
+  changes: CPMMContract[] | undefined
   full?: boolean
 }) {
   const { changes, full } = props
 
   if (!changes) return <LoadingIndicator />
 
-  const { positiveChanges, negativeChanges } = changes
+  const [positiveChanges, negativeChanges] = partition(
+    changes,
+    (c) => c.probChanges.day > 0
+  )
 
   const threshold = 0.01
   const positiveAboveThreshold = positiveChanges.filter(
@@ -53,10 +55,18 @@ export function ProbChangeTable(props: {
   )
 }
 
-function ProbChangeRow(props: { contract: CPMMContract }) {
-  const { contract } = props
+export function ProbChangeRow(props: {
+  contract: CPMMContract
+  className?: string
+}) {
+  const { contract, className } = props
   return (
-    <Row className="items-center justify-between gap-4 hover:bg-gray-100">
+    <Row
+      className={clsx(
+        'items-center justify-between gap-4 hover:bg-gray-100',
+        className
+      )}
+    >
       <SiteLink
         className="p-4 pr-0 font-semibold text-indigo-700"
         href={contractPath(contract)}
