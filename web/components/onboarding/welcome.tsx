@@ -99,8 +99,6 @@ const useIsTwitch = (user: User | null | undefined) => {
   const isTwitch = router.pathname === '/twitch'
 
   useEffect(() => {
-    console.log('twich?', isTwitch)
-
     if (isTwitch && user?.shouldShowWelcome) {
       updateUser(user.id, { ['shouldShowWelcome']: false })
     }

@@ -99,6 +99,7 @@ export default function Groups(props: {
           </div>
 
           <Tabs
+            className="mb-4"
             currentPageForAnalytics={'groups'}
             tabs={[
               ...(user
