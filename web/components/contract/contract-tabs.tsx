@@ -49,6 +49,7 @@ export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
 
   return (
     <Tabs
+      className="mb-4"
       currentPageForAnalytics={'contract'}
       tabs={[
         {
