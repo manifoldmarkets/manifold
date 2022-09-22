@@ -264,6 +264,7 @@ export class Market {
       }
       newBets.reverse();
       for (const bet of newBets) {
+        if (bet.isRedemption) continue;
         const username = await this.getDisplayNameForUserID(bet.userId);
         const fullBet: FullBet = {
           ...bet,

@@ -1,10 +1,11 @@
 import { UserNotRegisteredException } from 'common/exceptions';
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import { collection, CollectionReference, deleteField, doc, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
-import { TWITCH_BOT_FIREBASE_KEY, MANIFOLD_DB_LOCATION } from './envs';
+import { MANIFOLD_DB_LOCATION, TWITCH_BOT_FIREBASE_KEY } from './envs';
 import log from './logger';
 import User, { UserData } from './user';
 
+/* cSpell:disable */
 const firebaseConfig = {
   apiKey: TWITCH_BOT_FIREBASE_KEY,
   authDomain: 'manifoldtwitchbot.firebaseapp.com',
@@ -13,6 +14,7 @@ const firebaseConfig = {
   messagingSenderId: '318358608434',
   appId: '1:318358608434:web:e04094b8b04ce9d20afa2b',
 };
+/* cSpell:enable */
 
 export default class AppFirestore {
   readonly app: FirebaseApp;

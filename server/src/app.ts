@@ -56,7 +56,7 @@ export default class App {
     });
   }
 
-  public getMarketForTwitchChannel(channel: string) {
+  public getMarketForTwitchChannel(channel: string): Market | null {
     return this.selectedMarketMap[channel];
   }
 
