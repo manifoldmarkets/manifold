@@ -28,7 +28,7 @@ export default function Home() {
   }
 
   const groups = useMemberGroupsSubscription(user)
-  const { sections } = getHomeItems(groups, homeSections)
+  const { sections } = getHomeItems(groups ?? [], homeSections)
 
   return (
     <Page>
