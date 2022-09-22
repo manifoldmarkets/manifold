@@ -1,7 +1,8 @@
 import { FullMarket } from './manifold-defs';
+import { ResolutionOutcome } from './outcome';
 
 export type PacketResolved = {
-  outcome: 'YES' | 'NO' | 'NA';
+  outcome: ResolutionOutcome;
   uniqueTraders: number;
   topWinners: { displayName: string; profit: number }[];
   topLosers: { displayName: string; profit: number }[];

@@ -1,10 +1,10 @@
 import fetch, { Response } from 'node-fetch';
 
-import * as ManifoldAPI from 'common/manifold-defs';
 import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException } from 'common/exceptions';
-import log from './logger';
+import * as ManifoldAPI from 'common/manifold-defs';
 import { ResolutionOutcome } from 'common/outcome';
 import { MANIFOLD_API_BASE_URL } from './envs';
+import log from './logger';
 
 async function post(url: string, APIKey: string, requestData: unknown): Promise<Response> {
   const r = await fetch(url, {

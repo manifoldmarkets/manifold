@@ -21,7 +21,7 @@ const MSG_RESOLVED = (market: Market) => {
   const maxWinners = 10;
   const outcome = market.resolveData.outcome;
   const topWinners = market.resolveData.topWinners;
-  let message = `The market has resolved to ${outcome === 'NA' ? 'N/A' : outcome}!`; //TODO: Types
+  let message = `The market has resolved to ${outcome === ResolutionOutcome.CANCEL ? 'N/A' : outcome}!`;
   if (topWinners.length > 0) {
     message += ` The top ${maxWinners} bettors are ` + topWinners.map((w) => `${w.displayName} (${w.profit > 0 ? '+' : ''}${w.profit.toFixed(0)}`).join(', ');
   }

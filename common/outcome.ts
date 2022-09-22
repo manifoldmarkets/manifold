@@ -5,7 +5,7 @@ export enum ResolutionOutcome {
   CANCEL = 'CANCEL',
 }
 
-export function getOutcomeForString(s: string) {
+export function getOutcomeForString(s: string): ResolutionOutcome {
   s = s.toLocaleUpperCase();
   let outcome = ResolutionOutcome[s];
   if (s === 'NA' || s === 'N/A') {

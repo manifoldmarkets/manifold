@@ -15,6 +15,7 @@ import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 
 import * as Manifold from 'common/manifold-defs';
+import { ResolutionOutcome } from 'common/outcome';
 import * as Packet from 'common/packet-ids';
 import { PacketResolved, PacketSelectMarket } from 'common/packets';
 import { FullBet } from 'common/transaction';
@@ -345,9 +346,9 @@ export default () => {
                 <Col className="absolute text-white bg-[#212121] leading-[normal] inset-0">
                   <Col className="flex items-center text-6xl justify-center font-bold grow">
                     <div>Resolved</div>
-                    {resolvedData.outcome == 'YES' ? (
+                    {resolvedData.outcome === ResolutionOutcome.YES ? (
                       <div className={clsx('mt-1', styles.green, styles.color)}>YES</div>
-                    ) : resolvedData.outcome == 'NO' ? (
+                    ) : resolvedData.outcome == ResolutionOutcome.NO ? (
                       <div className={clsx('mt-1', styles.red, styles.color)}>NO</div>
                     ) : (
                       <div className={clsx('mt-1', styles.blue, styles.color)}>N/A</div>
