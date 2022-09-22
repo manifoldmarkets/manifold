@@ -23,6 +23,7 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
           height={250}
           width={250}
           className="self-center"
+          alt="Manifold logo"
           src="/flappy-logo.gif"
         />
         <div className="m-4 max-w-[550px] self-center">
