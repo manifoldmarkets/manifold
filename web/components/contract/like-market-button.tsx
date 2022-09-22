@@ -13,6 +13,7 @@ import { Col } from 'web/components/layout/col'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useMarketTipTxns } from 'web/hooks/use-tip-txns'
 import { sum } from 'lodash'
+import { Tooltip } from '../tooltip'
 
 export function LikeMarketButton(props: {
   contract: Contract
@@ -37,37 +38,44 @@ export function LikeMarketButton(props: {
   }
 
   return (
-    <Button
-      size={'sm'}
-      className={'max-w-xs self-center'}
-      color={'gray-white'}
-      onClick={onLike}
+    <Tooltip
+      text={`Tip ${formatMoney(LIKE_TIP_AMOUNT)}`}
+      placement="bottom"
+      noTap
+      noFade
     >
-      <Col className={'relative items-center sm:flex-row'}>
-        <HeartIcon
-          className={clsx(
-            'h-5 w-5 sm:h-6 sm:w-6',
-            totalTipped > 0 ? 'mr-2' : '',
-            user &&
-              (userLikedContractIds?.includes(contract.id) ||
-                (!likes && contract.likedByUserIds?.includes(user.id)))
-              ? 'fill-red-500 text-red-500'
-              : ''
-          )}
-        />
-        {totalTipped > 0 && (
-          <div
+      <Button
+        size={'sm'}
+        className={'max-w-xs self-center'}
+        color={'gray-white'}
+        onClick={onLike}
+      >
+        <Col className={'relative items-center sm:flex-row'}>
+          <HeartIcon
             className={clsx(
-              'bg-greyscale-6 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
-              totalTipped > 99
-                ? 'text-[0.4rem] sm:text-[0.5rem]'
-                : 'sm:text-2xs text-[0.5rem]'
+              'h-5 w-5 sm:h-6 sm:w-6',
+              totalTipped > 0 ? 'mr-2' : '',
+              user &&
+                (userLikedContractIds?.includes(contract.id) ||
+                  (!likes && contract.likedByUserIds?.includes(user.id)))
+                ? 'fill-red-500 text-red-500'
+                : ''
             )}
-          >
-            {totalTipped}
-          </div>
-        )}
-      </Col>
-    </Button>
+          />
+          {totalTipped > 0 && (
+            <div
+              className={clsx(
+                'bg-greyscale-6 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
+                totalTipped > 99
+                  ? 'text-[0.4rem] sm:text-[0.5rem]'
+                  : 'sm:text-2xs text-[0.5rem]'
+              )}
+            >
+              {totalTipped}
+            </div>
+          )}
+        </Col>
+      </Button>
+    </Tooltip>
   )
 }
