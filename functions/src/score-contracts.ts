@@ -1,9 +1,10 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { Bet } from 'common/bet'
 import { uniq } from 'lodash'
-import { Contract } from 'common/contract'
+import { Bet } from '../../common/bet'
+import { Contract } from '../../common/contract'
 import { log } from './utils'
+import { removeUndefinedProps } from '../../common/util/object'
 
 export const scoreContracts = functions.pubsub
   .schedule('every 1 hours')
@@ -44,11 +45,21 @@ async function scoreContractsInternal() {
     const bettors = bets.docs
       .map((doc) => doc.data() as Bet)
       .map((bet) => bet.userId)
-    const score = uniq(bettors).length
-    if (contract.popularityScore !== score)
+    const popularityScore = uniq(bettors).length
+
+    let dailyScore: number | undefined
+    if (contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1') {
+      dailyScore = popularityScore * Math.abs(contract.probChanges.day)
+    }
+
+    if (
+      contract.popularityScore !== popularityScore ||
+      contract.dailyScore !== dailyScore
+    ) {
       await firestore
         .collection('contracts')
         .doc(contract.id)
-        .update({ popularityScore: score })
+        .update(removeUndefinedProps({ popularityScore, dailyScore }))
+    }
   }
 }
