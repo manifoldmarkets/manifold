@@ -25,6 +25,7 @@ const MSG_RESOLVED = (market: Market) => {
   if (topWinners.length > 0) {
     message += ` The top ${maxWinners} bettors are ` + topWinners.map((w) => `${w.displayName} (${w.profit > 0 ? '+' : ''}${w.profit.toFixed(0)}`).join(', ');
   }
+  message += ` See the market here: ${market.data.url}`;
   return message;
 };
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
@@ -258,7 +259,7 @@ export default class TwitchBot {
     }
   }
 
-  public resolveMarket(channel: string, market: Market) {
+  public onMarketResolved(channel: string, market: Market) {
     if (this.isMuted) return;
     this.client.say(channel, MSG_RESOLVED(market));
   }

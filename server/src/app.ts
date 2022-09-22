@@ -121,7 +121,7 @@ export default class App {
       this.selectMarket(channel, null);
       this.io.to(channel).emit(UNFEATURE_MARKET);
     }, 24000);
-    this.bot.resolveMarket(channel, market);
+    this.bot.onMarketResolved(channel, market);
   }
 
   async launch() {
