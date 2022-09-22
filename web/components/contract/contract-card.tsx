@@ -393,7 +393,7 @@ export function ContractCardProbChange(props: {
     <Col
       className={clsx(
         className,
-        'mb-4 rounded-lg bg-white shadow hover:shadow-lg'
+        'mb-4 rounded-lg bg-white shadow hover:bg-gray-100 hover:shadow-lg'
       )}
     >
       <AvatarDetails
