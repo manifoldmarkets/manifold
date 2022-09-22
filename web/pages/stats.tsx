@@ -26,6 +26,7 @@ export default function Analytics() {
   return (
     <Page>
       <Tabs
+        className="mb-4"
         currentPageForAnalytics={'stats'}
         tabs={[
           {
@@ -89,6 +90,7 @@ export function CustomAnalytics(props: Stats) {
       <Spacer h={4} />
 
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
@@ -141,6 +143,7 @@ export function CustomAnalytics(props: Stats) {
         period?
       </p>
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
@@ -198,6 +201,7 @@ export function CustomAnalytics(props: Stats) {
       <Spacer h={4} />
 
       <Tabs
+        className="mb-4"
         defaultIndex={2}
         tabs={[
           {
@@ -239,6 +243,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Title text="Daily activity" />
       <Tabs
+        className="mb-4"
         defaultIndex={0}
         tabs={[
           {
@@ -293,6 +298,7 @@ export function CustomAnalytics(props: Stats) {
       <Spacer h={4} />
 
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
@@ -323,6 +329,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Title text="Ratio of Active Users" />
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
@@ -367,6 +374,7 @@ export function CustomAnalytics(props: Stats) {
         Sum of bet amounts. (Divided by 100 to be more readable.)
       </p>
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
