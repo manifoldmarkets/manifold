@@ -56,6 +56,7 @@ type CommandDef = {
     marketFeatured?: boolean;
     isAdmin?: boolean;
     hasUser?: boolean;
+    minArgs?: number;
   };
 };
 
@@ -69,57 +70,58 @@ export default class TwitchBot {
   constructor(app: App) {
     this.app = app;
 
-    const betCommand: CommandDef = {
-      requirements: { hasUser: true, marketFeatured: true },
-      handler: async (params: CommandParams) => {
-        const { args, user, market, channel } = params;
-        if (args.length < 1) return;
-        let arg = args[0].toLocaleLowerCase();
-        if (args.length >= 2) {
-          arg += args[1].toLocaleLowerCase();
-        }
-        const commands = { yes: ['yes', 'y'], no: ['no', 'n'] };
-        const validateCommand = (arg: string): { valid: boolean; yes?: boolean; amount?: string } => {
-          for (const v in commands) {
-            const yes = v === 'yes';
-            for (const c of commands[v]) {
-              if (arg.startsWith(c)) return { valid: true, yes, amount: arg.substring(c.length) };
-              else if (arg.endsWith(c)) return { valid: true, yes, amount: arg.substring(0, arg.length - c.length) };
+    const betCommand = (sourceYes?: boolean) =>
+      <CommandDef>{
+        requirements: { hasUser: true, marketFeatured: true, minArgs: 1 },
+        handler: async (params: CommandParams) => {
+          const { args, user, market, channel } = params;
+          let arg = args[0].toLocaleLowerCase();
+          if (sourceYes === undefined) {
+            if (args.length >= 2) {
+              arg += args[1].toLocaleLowerCase();
+            }
+          } else {
+            arg += sourceYes ? 'y' : 'n';
+          }
+          const commands = { yes: ['yes', 'y'], no: ['no', 'n'] };
+          const validateCommand = (arg: string): { valid: boolean; yes?: boolean; amount?: string } => {
+            for (const v in commands) {
+              const yes = v === 'yes';
+              for (const c of commands[v]) {
+                if (arg.startsWith(c)) return { valid: true, yes, amount: arg.substring(c.length) };
+                else if (arg.endsWith(c)) return { valid: true, yes, amount: arg.substring(0, arg.length - c.length) };
+              }
+            }
+            return { valid: false };
+          };
+          const { valid, yes, amount } = validateCommand(arg);
+          if (!valid || isNaN(<any>amount)) return;
+
+          const value = Number.parseInt(amount);
+          try {
+            await user.placeBet(market.data.id, value, yes);
+          } catch (e) {
+            if (e instanceof InsufficientBalanceException) {
+              this.client.say(channel, MSG_NOT_ENOUGH_MANA_PLACE_BET(user.twitchDisplayName));
+            } else {
+              throw e;
             }
           }
-          return { valid: false };
-        };
-        const { valid, yes, amount } = validateCommand(arg);
-        log.info(validateCommand(arg));
-        if (!valid || isNaN(<any>amount)) return;
-
-        const value = Number.parseInt(amount);
-        try {
-          await user.placeBet(market.data.id, value, yes);
-        } catch (e) {
-          if (e instanceof InsufficientBalanceException) {
-            this.client.say(channel, MSG_NOT_ENOUGH_MANA_PLACE_BET(user.twitchDisplayName));
-          } else {
-            throw e;
-          }
-        }
-      },
-    };
+        },
+      };
 
     const featureCommand: CommandDef = {
-      requirements: { isAdmin: true },
+      requirements: { isAdmin: true, minArgs: 1 },
       handler: async (params: CommandParams) => {
         const { args, channel } = params;
-        if (args.length < 1) return;
         await this.app.selectMarket(channel, (await Manifold.getMarketBySlug(args[0])).id);
       },
     };
 
-    const resolveCommand = {
-      requirements: { isAdmin: true, marketFeatured: true },
+    const resolveCommand: CommandDef = {
+      requirements: { isAdmin: true, marketFeatured: true, minArgs: 1 },
       handler: async (params: CommandParams) => {
         const { args, market, broadcaster } = params;
-        if (args.length < 1) return;
         const resolutionString = args[0].toLocaleUpperCase();
         let outcome: ResolutionOutcome = ResolutionOutcome[resolutionString];
         if (resolutionString === 'NA' || resolutionString === 'N/A') {
@@ -143,10 +145,10 @@ export default class TwitchBot {
       signup: {
         handler: (params) => this.client.say(params.channel, MSG_SIGNUP(params.username)),
       },
-      buy: betCommand,
-      bet: betCommand,
-      // y: betCommand, //!!!
-      // n: betCommand, //!!!
+      buy: betCommand(),
+      bet: betCommand(),
+      y: betCommand(true),
+      n: betCommand(false),
       sell: {
         requirements: { hasUser: true, marketFeatured: true },
         handler: async (params: CommandParams) => {
@@ -155,10 +157,9 @@ export default class TwitchBot {
         },
       },
       allin: {
-        requirements: { hasUser: true, marketFeatured: true },
+        requirements: { hasUser: true, marketFeatured: true, minArgs: 1 },
         handler: async (params: CommandParams) => {
           const { args, user, market } = params;
-          if (args.length < 1) return;
           const arg = args[0].toLocaleLowerCase();
           let yes: boolean;
           if (arg == 'yes') {
@@ -190,10 +191,9 @@ export default class TwitchBot {
         },
       },
       create: {
-        requirements: { isAdmin: true },
+        requirements: { isAdmin: true, minArgs: 1 },
         handler: async (params: CommandParams) => {
           const { args, channel, broadcaster, username } = params;
-          if (args.length < 1) return;
           let question = '';
           for (const arg of args) {
             question += arg + ' ';
@@ -263,10 +263,6 @@ export default class TwitchBot {
         if (!command) return; // If it's not a valid command, ignore it
         if (command.requirements) {
           const requirements = command.requirements;
-          if (requirements.hasUser && !user) {
-            this.client.say(channel, MSG_SIGNUP(userDisplayName));
-            return;
-          }
           if (requirements.isAdmin && !this.isAllowedAdminCommand(tags)) {
             log.warn(`User ${userDisplayName} tried to use the command '${commandString}' without permission.`);
 
@@ -275,6 +271,13 @@ export default class TwitchBot {
               this.client.say(channel, userDisplayName + ` resolved ${args[0].toLocaleUpperCase()} Kappa`);
             }
 
+            return;
+          }
+          if (requirements.minArgs && args.length < requirements.minArgs) {
+            return;
+          }
+          if (requirements.hasUser && !user) {
+            this.client.say(channel, MSG_SIGNUP(userDisplayName));
             return;
           }
           if (requirements.marketFeatured && !market) {
