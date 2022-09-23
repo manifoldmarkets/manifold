@@ -165,6 +165,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       )
       // get the difference
       const performanceData = {
+        profit: formatMoney(user.profitCached.weekly, true),
         investment_value: formatMoney(
           mostRecentPortfolioMetrics.investmentValue
         ),
@@ -283,6 +284,7 @@ export type PerContractInvestmentsData = {
   questionChangeStyle: string
 }
 export type OverallPerformanceData = {
+  profit: string
   tips_received_style: string
   investment_change_style: string
   investment_value: string
