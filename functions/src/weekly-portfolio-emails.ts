@@ -24,8 +24,8 @@ import { formatMoney } from '../../common/util/format'
 // TODO: reset weeklyPortfolioUpdateEmailSent to false for all users at the start of each week
 export const weeklyPortfolioUpdateEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
-  // every minute on Wednesday for an hour at 12pm PT (UTC -07:00)
-  .pubsub.schedule('* 19 * * 3')
+  // every minute on Friday for an hour at 12pm PT (UTC -07:00)
+  .pubsub.schedule('* 19 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendPortfolioUpdateEmailsToAllUsers()
@@ -139,8 +139,6 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           .filter((bet) => bet.createdTime > Date.now() - 7 * DAY_MS)
           .map((bet) => bet.contractId)
       )
-      // get the most recent bet for each contract
-      // get the most recent portfolio metrics
       const mostRecentPortfolioMetrics = last(
         sortBy(
           usersPortfolioMetrics,
@@ -151,7 +149,6 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         log('No portfolio metrics for user', privateUser.id)
         return
       }
-      // get the portfolio metrics from a week ago
       const portfolioMetricsAWeekAgo = usersPortfolioMetrics.find(
         (portfolioMetric) => portfolioMetric.timestamp > Date.now() - 7 * DAY_MS
       )
@@ -183,13 +180,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           (user.currentBettingStreak?.toString() ?? '0') + ' days',
         // More options: bonuses, tips given,
       } as OverallPerformanceData
-      type investmentDiff = {
-        currentValue: number
-        pastValue: number
-        // contract: Contract
-        difference: number
-      }
-      // calculate the differences of their bets' probAfter to the current markets probabilities
+
       const investmentValueDifferences = sortBy(
         filterDefined(
           contractsUserBetOn.map((contract) => {
@@ -233,11 +224,12 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
                   ? 'rgba(0,160,0,1)'
                   : '#a80000'
               };`,
-            }
+            } as PerContractInvestmentsData
           })
         ),
         (differences) => Math.abs(differences.difference)
       ).reverse()
+
       log(
         'Found',
         investmentValueDifferences.length,
@@ -251,8 +243,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
             diff.pastValue > 0.01 &&
             Math.abs(diff.difference / diff.pastValue) > 0.01 // difference is greater than 1%
         ),
-        (investmentDiff: investmentDiff) => {
-          return investmentDiff.difference > 0
+        (investmentsData: PerContractInvestmentsData) => {
+          return investmentsData.difference > 0
         }
       )
       // pick 3 winning investments and 3 losing investments
@@ -280,7 +272,11 @@ export type PerContractInvestmentsData = {
   questionProb: string
   questionChange: string
   questionChangeStyle: string
+  currentValue: number
+  pastValue: number
+  difference: number
 }
+
 export type OverallPerformanceData = {
   profit: string
   prediction_streak: string
