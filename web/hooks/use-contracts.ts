@@ -11,7 +11,7 @@ import {
   trendingContractsQuery,
 } from 'web/lib/firebase/contracts'
 import { QueryClient, useQuery, useQueryClient } from 'react-query'
-import { MINUTE_MS } from 'common/util/time'
+import { MINUTE_MS, sleep } from 'common/util/time'
 import { query, limit } from 'firebase/firestore'
 import { dailyScoreIndex } from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
@@ -86,7 +86,7 @@ export const usePrefetchUserBetContracts = (userId: string) => {
   const queryClient = useQueryClient()
   return queryClient.prefetchQuery(
     ['contracts', 'bets', userId],
-    () => getUserBetContracts(userId),
+    () => sleep(1000).then(() => getUserBetContracts(userId)),
     { staleTime: 5 * MINUTE_MS }
   )
 }
