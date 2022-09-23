@@ -106,9 +106,9 @@ export default function Home() {
 
 const HOME_SECTIONS = [
   { label: 'Daily movers', id: 'daily-movers' },
+  { label: 'Daily trending', id: 'daily-trending' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
-  { label: 'Recently updated', id: 'recently-updated-for-you' },
 ]
 
 export const getHomeItems = (groups: Group[], sections: string[]) => {
@@ -146,12 +146,12 @@ function renderSection(
   if (id === 'daily-movers') {
     return <DailyMoversSection key={id} userId={user?.id} />
   }
-  if (id === 'recently-updated-for-you')
+  if (id === 'daily-trending')
     return (
       <SearchSection
         key={id}
         label={label}
-        sort={'last-updated'}
+        sort={'daily-score'}
         pill="personal"
         user={user}
       />
