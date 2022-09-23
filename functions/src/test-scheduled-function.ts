@@ -1,5 +1,5 @@
 import { APIError, newEndpoint } from './api'
-import { sendPortfolioUpdateEmailsToAllUsers } from './weekly-profit-loss-emails'
+import { sendPortfolioUpdateEmailsToAllUsers } from './weekly-portfolio-emails'
 import { isProd } from './utils'
 
 export const testscheduledfunction = newEndpoint(

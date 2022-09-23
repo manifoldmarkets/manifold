@@ -23,7 +23,7 @@ import {
 import {
   PerContractInvestmentsData,
   OverallPerformanceData,
-} from './weekly-profit-loss-emails'
+} from 'functions/src/weekly-portfolio-emails'
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
@@ -642,6 +642,7 @@ export const sendWeeklyPortfolioUpdateEmail = async (
     templateData[`question${i + 1}Url`] = investment.questionUrl
     templateData[`question${i + 1}Prob`] = investment.questionProb
     templateData[`question${i + 1}Change`] = investment.questionChange
+    templateData[`question${i + 1}ChangeStyle`] = investment.questionChangeStyle
   })
 
   await sendTemplateEmail(

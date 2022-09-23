@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 
 import { Contract, CPMMContract } from '../../common/contract'
 import {
-  getAllPrivateUsers,
   getPrivateUser,
   getUser,
   getValue,
@@ -36,7 +35,8 @@ const firestore = admin.firestore()
 
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
-    ? await getAllPrivateUsers()
+    ? // ? await getAllPrivateUsers()
+      filterDefined([await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')])
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers
@@ -152,15 +152,15 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         log('No portfolio metrics a week ago for user', privateUser.id)
         return
       }
+      const valueChange =
+        mostRecentPortfolioMetrics.investmentValue -
+        portfolioMetricsAWeekAgo.investmentValue
       // get the difference
       const performanceData = {
         investment_value: formatMoney(
           mostRecentPortfolioMetrics.investmentValue
         ),
-        investment_change: formatMoney(
-          portfolioMetricsAWeekAgo.investmentValue -
-            mostRecentPortfolioMetrics.investmentValue
-        ),
+        investment_change: formatMoney(valueChange),
         current_balance: formatMoney(user.balance),
         markets_created:
           usersToContractsCreated[privateUser.id].length.toString(),
@@ -174,6 +174,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
           .length.toString(),
+        investment_change_style: `font-size:14px;display: inline; padding: 2px; border-radius: 5px; background-color: ${
+          valueChange > 0 ? 'rgba(0,160,0,0.2)' : 'rgba(160,0,0,0.2)'
+        };`,
         // More options: bonuses, tips given,
       } as OverallPerformanceData
       type investmentDiff = {
@@ -219,6 +222,11 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
                 Math.round(
                   (currentMarketProbability - marketProbabilityAWeekAgo) * 100
                 ) + '%',
+              questionChangeStyle: `font-size:14px;display: inline; padding: 2px; border-radius: 5px; background-color: ${
+                currentMarketProbability > marketProbabilityAWeekAgo
+                  ? 'rgba(0,160,0,0.2)'
+                  : 'rgba(160,0,0,0.2)'
+              };`,
             }
           })
         ),
@@ -265,8 +273,10 @@ export type PerContractInvestmentsData = {
   questionUrl: string
   questionProb: string
   questionChange: string
+  questionChangeStyle: string
 }
 export type OverallPerformanceData = {
+  investment_change_style: string
   investment_value: string
   investment_change: string
   current_balance: string
