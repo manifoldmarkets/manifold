@@ -45,6 +45,7 @@ import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Title } from 'web/components/title'
 import { CPMMBinaryContract } from 'common/contract'
 import { useContractsByDailyScoreGroups } from 'web/hooks/use-contracts'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export default function Home() {
   const user = useUser()
@@ -82,13 +83,17 @@ export default function Home() {
           <DailyStats user={user} />
         </Row>
 
-        <>
-          {sections.map((section) =>
-            renderSection(section, user, groups, groupContracts)
-          )}
+        {!user ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            {sections.map((section) =>
+              renderSection(section, user, groups, groupContracts)
+            )}
 
-          <TrendingGroupsSection user={user} />
-        </>
+            <TrendingGroupsSection user={user} />
+          </>
+        )}
       </Col>
       <button
         type="button"
@@ -142,13 +147,13 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
 
 function renderSection(
   section: { id: string; label: string },
-  user: User | null | undefined,
+  user: User,
   groups: Group[] | undefined,
   groupContracts: Dictionary<CPMMBinaryContract[]> | undefined
 ) {
   const { id, label } = section
   if (id === 'daily-movers') {
-    return <DailyMoversSection key={id} userId={user?.id} />
+    return <DailyMoversSection key={id} userId={user.id} />
   }
   if (id === 'daily-trending')
     return (
@@ -214,7 +219,7 @@ function SectionHeader(props: {
 
 function SearchSection(props: {
   label: string
-  user: User | null | undefined | undefined
+  user: User
   sort: Sort
   pill?: string
 }) {
@@ -240,7 +245,7 @@ function SearchSection(props: {
 
 function GroupSection(props: {
   group: Group
-  user: User | null | undefined | undefined
+  user: User
   contracts: CPMMBinaryContract[]
 }) {
   const { group, user, contracts } = props
@@ -251,18 +256,16 @@ function GroupSection(props: {
         <Button
           color="gray-white"
           onClick={() => {
-            if (user) {
-              const homeSections = (user.homeSections ?? []).filter(
-                (id) => id !== group.id
-              )
-              updateUser(user.id, { homeSections })
+            const homeSections = (user.homeSections ?? []).filter(
+              (id) => id !== group.id
+            )
+            updateUser(user.id, { homeSections })
 
-              toast.promise(leaveGroup(group, user.id), {
-                loading: 'Unfollowing group...',
-                success: `Unfollowed ${group.name}`,
-                error: "Couldn't unfollow group, try again?",
-              })
-            }
+            toast.promise(leaveGroup(group, user.id), {
+              loading: 'Unfollowing group...',
+              success: `Unfollowed ${group.name}`,
+              error: "Couldn't unfollow group, try again?",
+            })
           }}
         >
           <XCircleIcon className={'h-5 w-5 flex-shrink-0'} aria-hidden="true" />
