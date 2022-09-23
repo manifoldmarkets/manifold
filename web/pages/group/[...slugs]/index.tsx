@@ -146,7 +146,7 @@ export default function GroupPage(props: {
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
   const tabIndex = ['markets', 'leaderboard', 'about', 'posts'].indexOf(
-    page as any
+    page ?? 'markets'
   )
 
   const group = useGroup(props.group?.id) ?? props.group
