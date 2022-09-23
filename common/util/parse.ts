@@ -79,6 +79,18 @@ export function parseMentions(data: JSONContent): string[] {
   return uniq(mentions)
 }
 
+export const plainTextToProseMirror = (text: string): JSONContent => {
+  return {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text }],
+      },
+    ],
+  }
+}
+
 // can't just do [StarterKit, Image...] because it doesn't work with cjs imports
 export const exhibitExts = [
   Blockquote,

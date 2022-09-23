@@ -29,6 +29,7 @@ import {
 } from '../../common/antes'
 import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
+import { plainTextToProseMirror } from '../../common/util/parse'
 import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
@@ -187,15 +188,7 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
   // convert string descriptions into JSONContent
   const newDescription =
     typeof description === 'string'
-      ? {
-          type: 'doc',
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: description }],
-            },
-          ],
-        }
+      ? plainTextToProseMirror(description)
       : description ?? {}
 
   const contract = getNewContract(
