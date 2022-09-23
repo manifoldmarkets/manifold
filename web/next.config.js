@@ -9,6 +9,9 @@ module.exports = {
   reactStrictMode: true,
   optimizeFonts: false,
   experimental: {
+    images: {
+      allowFutureImage: true,
+    },
     scrollRestoration: true,
     externalDir: true,
     modularizeImports: {
