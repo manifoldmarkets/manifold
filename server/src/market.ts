@@ -8,6 +8,7 @@ import moment from 'moment';
 import App from './app';
 import log from './logger';
 import * as Manifold from './manifold-api';
+import User from './user';
 
 const { keyBy, mapValues, sumBy, groupBy } = lodash;
 
@@ -18,7 +19,7 @@ export class Market {
   private userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
   private readonly pollTask: () => void;
 
-  public readonly bets: FullBet[] = [];
+  public readonly allBets: FullBet[] = [];
   public data: FullMarket;
   public resolveData: PacketResolved = null;
   public continuePolling = false;
@@ -83,6 +84,19 @@ export class Market {
     });
   }
 
+  /**
+   * Positive value represents net YES shares, negative value represents NO shares
+   */
+  getUsersExpectedPayout(user: User) {
+    let totalShares = 0;
+    for (const bet of this.allBets) {
+      if (bet.userId === user.data.manifoldID) {
+        totalShares += bet.shares * (bet.outcome === 'YES' ? 1 : -1); //!!! Types
+      }
+    }
+    return totalShares;
+  }
+
   async loadInitialBets() {
     let numLoadedBets = 0;
     let mostRecentBet: FullBet = undefined;
@@ -93,24 +107,25 @@ export class Market {
       if (bet.isRedemption) {
         continue;
       }
-      const displayName = await this.getDisplayNameForUserID(bet.userId);
-      const fullBet: FullBet = {
-        ...bet,
-        username: displayName,
-      };
+      let fullBet: FullBet;
+      if (numLoadedBets < 3) {
+        fullBet = await this.betToFullBet(bet);
+      } else {
+        fullBet = { ...bet, username: 'A trader' }; // TODO: this is a crude optimization. Should cache all users in App
+      }
       if (!mostRecentBet) {
         mostRecentBet = fullBet;
       }
       betsToAdd.push(fullBet);
       numLoadedBets++;
-      if (numLoadedBets >= 3) {
-        break;
-      }
+      // if (numLoadedBets >= 3) { //!!!
+      //   break;
+      // }
     }
 
     betsToAdd.reverse(); // Bets must be pushed oldest first, but betsToAdd is newest-first
     for (const bet of betsToAdd) {
-      this.addBet(bet);
+      this.addBet(bet, --numLoadedBets < 3);
     }
 
     log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
@@ -211,19 +226,29 @@ export class Market {
     return slug;
   }
 
-  private addBet(bet: FullBet) {
-    if (this.bets.length >= 3) {
-      this.bets.shift();
-    }
-    this.bets.push(bet);
+  private addBet(bet: FullBet, transmit = true) {
+    // if (this.bets.length >= 3) {
+    //   this.bets.shift();
+    // }
+    this.allBets.push(bet);
 
-    this.app.io.to(this.twitchChannel).emit(Packet.ADD_BETS, [bet]);
+    if (transmit) {
+      this.app.io.to(this.twitchChannel).emit(Packet.ADD_BETS, [bet]);
+    }
 
     log.info(
       `${bet.username} ${bet.amount > 0 ? 'bought' : 'sold'} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(
         bet.createdTime
       ).fromNow()}`
     );
+  }
+
+  private async betToFullBet(bet: Bet): Promise<FullBet> {
+    const username = await this.getDisplayNameForUserID(bet.userId);
+    return {
+      ...bet,
+      username,
+    };
   }
 
   private async getDisplayNameForUserID(userID: string) {
@@ -235,8 +260,13 @@ export class Market {
       const user = await this.app.firestore.getUserForManifoldID(userID);
       name = user.data.twitchLogin;
     } catch {
-      const user = await Manifold.getUserByID(userID);
-      name = user.name;
+      try {
+        const user = await Manifold.getUserByID(userID);
+        name = user.name;
+      } catch (e) {
+        log.warn(e);
+        name = 'A trader';
+      }
     }
     log.info(`Loaded user ${name}`);
     return (this.userIdToNameMap[userID] = name);
@@ -265,12 +295,7 @@ export class Market {
       newBets.reverse();
       for (const bet of newBets) {
         if (bet.isRedemption) continue;
-        const username = await this.getDisplayNameForUserID(bet.userId);
-        const fullBet: FullBet = {
-          ...bet,
-          username,
-        };
-        this.addBet(fullBet);
+        this.addBet(await this.betToFullBet(bet));
       }
       if (!foundPreviouslyLoadedBet) {
         log.info('Failed to find previously loaded bet. Expanding search...');

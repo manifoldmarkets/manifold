@@ -31,6 +31,9 @@ const MSG_RESOLVED = (market: Market) => {
   return message;
 };
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
+const MSG_POSITION = (username: string, shares_int: number) => {
+  return `${username} has ${Math.abs(shares_int).toFixed(0)}${shares_int === 0 ? '' : shares_int > 0 ? ' YES' : ' NO'} shares.`;
+};
 const MSG_MARKET_CREATED = (question: string) => `The market '${question}' has been created!`;
 const MSG_MARKET_UNFEATURED = () => `Market unfeatured.`;
 const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
@@ -135,6 +138,20 @@ export default class TwitchBot {
       },
     };
 
+    const positionCommand: CommandDef = {
+      requirements: { marketFeatured: true, hasUser: true },
+      handler: async (params: CommandParams) => {
+        const { channel, market, user } = params;
+        let shares = market.getUsersExpectedPayout(user);
+        if (shares >= 0) {
+          shares = Math.floor(shares);
+        } else {
+          shares = -Math.floor(-shares);
+        }
+        this.client.say(channel, MSG_POSITION(user.twitchDisplayName, shares));
+      },
+    };
+
     const commands: { [k: string]: CommandDef } = {
       commands: {
         handler: (params) => this.client.say(params.channel, MSG_HELP()),
@@ -217,6 +234,8 @@ export default class TwitchBot {
         },
       },
       resolve: resolveCommand,
+      position: positionCommand,
+      pos: positionCommand,
     };
 
     this.client = new Client({
