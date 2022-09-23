@@ -8,8 +8,6 @@ A list of community-created projects built on, or related to, Manifold Markets.
 
 ## Sites using Manifold
 
-- [CivicDashboard](https://civicdash.org/dashboard) - Uses Manifold to for tracked solutions for the SF city government
-- [Research.Bet](https://research.bet/) - Prediction market for scientific papers, using Manifold
 - [WagerWith.me](https://www.wagerwith.me/) — Bet with your friends, with full Manifold integration to bet with M$.
 - [Alignment Markets](https://alignmentmarkets.com/) - Bet on the progress of benchmarks in ML safety!
 
@@ -40,3 +38,10 @@ A list of community-created projects built on, or related to, Manifold Markets.
 
 - Folded origami and doodles by [@hamnox](https://manifold.markets/hamnox) ![](https://i.imgur.com/nVGY4pL.png)
 - Laser-cut Foldy by [@wasabipesto](https://manifold.markets/wasabipesto) ![](https://i.imgur.com/g9S6v3P.jpg)
+
+## Alumni
+
+_These projects are no longer active, but were really really cool!_
+
+- [Research.Bet](https://research.bet/) - Prediction market for scientific papers, using Manifold
+- [CivicDashboard](https://civicdash.org/dashboard) - Uses Manifold to for tracked solutions for the SF city government
