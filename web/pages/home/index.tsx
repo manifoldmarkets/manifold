@@ -127,6 +127,10 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
 
   const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
 
+  // Add new home section items to the top.
+  sectionItems.unshift(
+    ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
+  )
   // Add unmentioned items to the end.
   sectionItems.push(...items.filter((item) => !sectionItems.includes(item)))
 
