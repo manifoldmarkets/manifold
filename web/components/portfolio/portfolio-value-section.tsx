@@ -4,6 +4,7 @@ import { last } from 'lodash'
 import { memo, useRef, useState } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Period } from 'web/lib/firebase/users'
+import { PillButton } from '../buttons/pill-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -15,6 +16,7 @@ export const PortfolioValueSection = memo(
 
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
+    const [graphMode, setGraphMode] = useState<'profit' | 'value'>('profit')
 
     // Remember the last defined portfolio history.
     const portfolioRef = useRef(portfolioHistory)
@@ -32,38 +34,34 @@ export const PortfolioValueSection = memo(
 
     return (
       <>
-        <Row className="gap-8">
-          <Col className="flex-1 justify-center">
-            <div className="text-sm text-gray-500">Profit</div>
-            <div className="text-lg">{formatMoney(totalProfit)}</div>
-          </Col>
-          {/* <select
-            className="select select-bordered self-start"
-            value={portfolioPeriod}
-            onChange={(e) => {
-              setPortfolioPeriod(e.target.value as Period)
-            }}
-          >
-            <option value="allTime">All time</option>
-            <option value="monthly">Last Month</option>
-            <option value="weekly">Last 7d</option>
-            <option value="daily">Last 24h</option>
-          </select> */}
+        <Row className="justify-between">
+          <Row className="gap-4 sm:gap-8 ">
+            <Col>
+              <div className="text-greyscale-4 text-xs sm:text-sm">
+                Portfolio value
+              </div>
+              <div className="text-lg text-indigo-600 sm:text-xl">
+                {formatMoney(totalValue)}
+              </div>
+            </Col>
+            <Col>
+              <div className="text-greyscale-4 text-xs sm:text-sm">Profit</div>
+              <div
+                className={clsx(
+                  totalProfit > 0 ? 'text-green-500' : 'text-red-600',
+                  'text-lg sm:text-xl'
+                )}
+              >
+                {formatMoney(totalProfit)}
+              </div>
+            </Col>
+          </Row>
+          <GraphToggle setGraphMode={setGraphMode} graphMode={graphMode} />
         </Row>
         <PortfolioValueGraph
           portfolioHistory={currPortfolioHistory}
-          includeTime={portfolioPeriod == 'daily'}
-          mode="profit"
-        />
-        <Spacer h={8} />
-        <Col className="flex-1 justify-center">
-          <div className="text-sm text-gray-500">Portfolio value</div>
-          <div className="text-lg">{formatMoney(totalValue)}</div>
-        </Col>
-        <PortfolioValueGraph
-          portfolioHistory={currPortfolioHistory}
-          includeTime={portfolioPeriod == 'daily'}
-          mode="value"
+          includeTime={true}
+          mode={graphMode}
         />
         <PortfolioPeriodSelection
           portfolioPeriod={portfolioPeriod}
@@ -85,7 +83,7 @@ export function PortfolioPeriodSelection(props: {
   const { setPortfolioPeriod, portfolioPeriod, className, selectClassName } =
     props
   return (
-    <Row className={className}>
+    <Row className={clsx(className, 'text-greyscale-4')}>
       <button
         className={clsx(portfolioPeriod === 'daily' ? selectClassName : '')}
         onClick={() => setPortfolioPeriod('daily' as Period)}
@@ -110,6 +108,37 @@ export function PortfolioPeriodSelection(props: {
       >
         ALL
       </button>
+    </Row>
+  )
+}
+
+export function GraphToggle(props: {
+  setGraphMode: (mode: 'profit' | 'value') => void
+  graphMode: string
+}) {
+  const { setGraphMode, graphMode } = props
+  return (
+    <Row className="relative mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
+      <PillButton
+        selected={graphMode === 'value'}
+        onSelect={() => {
+          setGraphMode('value')
+        }}
+        xs={true}
+        className="z-50"
+      >
+        Value
+      </PillButton>
+      <PillButton
+        selected={graphMode === 'profit'}
+        onSelect={() => {
+          setGraphMode('profit')
+        }}
+        xs={true}
+        className="z-50"
+      >
+        Profit
+      </PillButton>
     </Row>
   )
 }

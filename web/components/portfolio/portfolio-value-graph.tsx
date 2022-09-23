@@ -15,20 +15,90 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
   const { portfolioHistory, height, includeTime, mode } = props
   const { width } = useWindowSize()
 
-  const points = portfolioHistory.map((p) => {
-    const { timestamp, balance, investmentValue, totalDeposits } = p
-    const value = balance + investmentValue
-    const profit = value - totalDeposits
+  function getPoints(line: 'value' | 'posProfit' | 'negProfit') {
+    let points = portfolioHistory.map((p) => {
+      const { timestamp, balance, investmentValue, totalDeposits } = p
+      const value = balance + investmentValue
+      const profit = value - totalDeposits
+      let posProfit = null
+      let negProfit = null
 
-    return {
-      x: new Date(timestamp),
-      y: mode === 'value' ? value : profit,
-    }
-  })
-  const data = [{ id: 'Value', data: points, color: '#11b981' }]
+      // const profit = value - totalDeposits
+      if (profit < 0) {
+        negProfit = profit
+      } else {
+        posProfit = profit
+      }
+
+      return {
+        x: new Date(timestamp),
+        y:
+          line === 'value'
+            ? value
+            : line === 'posProfit'
+            ? posProfit
+            : negProfit,
+      }
+    })
+    return points
+  }
+
+  let data
+
+  if (mode === 'value') {
+    data = [{ id: 'value', data: getPoints('value'), color: '#4f46e5' }]
+  } else {
+    data = [
+      {
+        id: 'negProfit',
+        data: getPoints('negProfit'),
+        color: '#dc2626',
+      },
+      {
+        id: 'posProfit',
+        data: getPoints('posProfit'),
+        color: '#14b8a6',
+      },
+    ]
+  }
+  const firstPoints = data[0].data
   const numXTickValues = !width || width < 800 ? 2 : 5
   const numYTickValues = 4
-  const endDate = last(points)?.x
+  const endDate = last(firstPoints)?.x
+
+  const firstPointsY = firstPoints
+    .filter((p) => {
+      return p.y !== null
+    })
+    .map((p) => p.y)
+  // console.log(firstPointsY)
+
+  console.log(
+    'MIN: ',
+    mode === 'value'
+      ? Math.min(...firstPointsY)
+      : Math.min(
+          ...firstPointsY,
+          ...data[1].data
+            .filter((p) => {
+              return p.y !== null
+            })
+            .map((p) => p.y)
+        ),
+
+    'MAX: ',
+    mode === 'value'
+      ? Math.max(...firstPointsY)
+      : Math.max(
+          ...firstPointsY,
+          ...data[1].data
+            .filter((p) => {
+              return p.y !== null
+            })
+            .map((p) => p.y)
+        )
+  )
+
   return (
     <div
       className="w-full overflow-hidden"
@@ -39,16 +109,37 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         margin={{ top: 20, right: 28, bottom: 22, left: 60 }}
         xScale={{
           type: 'time',
-          min: points[0]?.x,
+          min: firstPoints[0]?.x,
           max: endDate,
         }}
         yScale={{
           type: 'linear',
           stacked: false,
-          min: Math.min(...points.map((p) => p.y)),
+          min:
+            mode === 'value'
+              ? Math.min(...firstPointsY)
+              : Math.min(
+                  ...firstPointsY,
+                  ...data[1].data
+                    .filter((p) => {
+                      return p.y !== null
+                    })
+                    .map((p) => p.y)
+                ),
+          max:
+            mode === 'value'
+              ? Math.max(...firstPointsY)
+              : Math.max(
+                  ...firstPointsY,
+                  ...data[1].data
+                    .filter((p) => {
+                      return p.y !== null
+                    })
+                    .map((p) => p.y)
+                ),
         }}
         gridYValues={numYTickValues}
-        curve="stepAfter"
+        curve="linear"
         enablePoints={false}
         colors={{ datum: 'color' }}
         axisBottom={{
@@ -56,7 +147,7 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
           format: (time) => formatTime(+time, !!includeTime),
         }}
         pointBorderColor="#fff"
-        pointSize={points.length > 100 ? 0 : 6}
+        pointSize={firstPoints.length > 100 ? 0 : 6}
         axisLeft={{
           tickValues: numYTickValues,
           format: (value) => formatMoney(value),
@@ -66,6 +157,21 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         enableSlices="x"
         animate={false}
         yFormat={(value) => formatMoney(+value)}
+        // defs={[
+        //   {
+        //     id: 'purpleGradient',
+        //     type: 'linearGradient',
+        //     colors: [
+        //       { offset: 0, color: '#7c3aed' },
+        //       {
+        //         offset: 100,
+        //         color: '#inherit',
+        //         opacity: 0,
+        //       },
+        //     ],
+        //   },
+        // ]}
+        enableArea={true}
       ></ResponsiveLine>
     </div>
   )
