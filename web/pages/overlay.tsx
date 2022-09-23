@@ -258,7 +258,7 @@ export default () => {
               throw new Error('Unhandled case: ' + page);
           }
         });
-      }, 4000);
+      }, 6000);
       return () => clearInterval(interval);
     }
   }, [resolvedData]);
