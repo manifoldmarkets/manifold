@@ -145,6 +145,9 @@ export default function GroupPage(props: {
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
+  const tabIndex = ['markets', 'leaderboard', 'about', 'posts'].indexOf(
+    page as any
+  )
 
   const group = useGroup(props.group?.id) ?? props.group
   const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
@@ -277,7 +280,8 @@ export default function GroupPage(props: {
       />
       <TopGroupNavBar group={group} />
       <div className={'relative p-2 pt-0 md:pt-2'}>
-        <Tabs className={'mb-2'} tabs={tabs} />
+        {/* TODO: Switching tabs should also update the group path */}
+        <Tabs className={'mb-2'} tabs={tabs} defaultIndex={tabIndex} />
       </div>
     </Page>
   )
