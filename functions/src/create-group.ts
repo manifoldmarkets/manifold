@@ -62,6 +62,7 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
     totalContracts: 0,
     totalMembers: memberIds.length,
     postIds: [],
+    pinnedItems: [],
   }
 
   await groupRef.create(group)

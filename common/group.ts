@@ -23,6 +23,7 @@ export type Group = {
       score: number
     }[]
   }
+  pinnedItems: { itemId: string; type: 'post' | 'contract' }[]
 }
 
 export const MAX_GROUP_NAME_LENGTH = 75
