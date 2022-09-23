@@ -7,9 +7,13 @@ const formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
 })
 
-export function formatMoney(amount: number) {
+export function formatMoney(amount: number, explicitPositiveSign?: boolean) {
   const newAmount = Math.round(amount) === 0 ? 0 : Math.floor(amount) // handle -0 case
-  return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
+  return (
+    (explicitPositiveSign && newAmount > 0 ? '+' : '') +
+    ENV_CONFIG.moneyMoniker +
+    formatter.format(newAmount).replace('$', '')
+  )
 }
 
 export function formatMoneyWithDecimals(amount: number) {

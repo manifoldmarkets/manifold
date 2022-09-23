@@ -31,7 +31,7 @@
         }
         th {color:#000000; font-size:14px;}
         th, td {padding: 5px; }
-        td{ font-size: 20px}
+        td{ font-size: 17px}
         th, td { vertical-align: center; text-align: center }
         a { vertical-align: center; text-align: left}
         img {
@@ -46,6 +46,15 @@
         p {
             display: block;
             margin: 13px 0;
+        }
+        p.change{
+            margin: 0; vertical-align: middle;font-size:16px;display: inline; padding: 2px; border-radius: 5px;
+        }
+        p.prob{
+            font-size: 20px;display: inline; vertical-align: middle;
+        }
+        a.question{
+            font-size: 18px;display: inline; vertical-align: middle; padding-bottom: 25px;
         }
     </style>
     <!--[if mso]>
@@ -256,22 +265,22 @@
                                                     </tr>
                                                 <tr>
 
-<!--                                                    <td style="{{investment_value_style}}">-->
                                                     <td>
-                                                        <p style='display: inline'>
                                                         {{investment_value}}
 <!--                                                        M$10,000-->
-                                                        <p style='{{investment_change_style}}'>
+                                                        <p style='font-size:16px; margin-left:1px; display: inline; padding: 2px; border-radius: 5px; {{investment_change_style}}'>
                                                         {{investment_change}}
 <!--                                                            +17%-->
-                                                        </p>
                                                         </p>
                                                     </td>
                                                     <td>
                                                         {{current_balance}}
                                                     </td>
                                                     <td>
+                                                      <p  style='font-size:16px; display: inline; padding: 2px; border-radius: 5px; {{tips_received_style}}' >
                                                         {{tips_received}}
+                                                      </p>
+<!--                                                      +M$120-->
                                                     </td>
                                                     <td>
                                                         {{markets_created}}
@@ -308,16 +317,16 @@
                                                 <tr>
 <!--                                                    <td style="{{investment_value_style}}">-->
                                                     <td style='text-align: left'>
-                                                        <a href='{{question1Url}}'>
+                                                        <a class='question' href='{{question1Url}}'>
                                                         {{question1Title}}
 <!--                                                            Will the US economy recover from the pandemic?-->
                                                         </a>
                                                     </td>
                                                     <td style='padding-left: 10px; min-width: 115px'>
-                                                        <p style='font-size: 24px;display: inline'>
+                                                        <p class='prob'>
                                                         {{question1Prob}}
 <!--                                                        99.9%-->
-                                                        <p style='{{question1ChangeStyle}}'>
+                                                        <p class='change' style='{{question1ChangeStyle}}'>
                                                         {{question1Change}}
 <!--                                                            +17%-->
                                                         </p>
@@ -326,16 +335,16 @@
                                                 </tr><tr>
 <!--                                                    <td style="{{investment_value_style}}">-->
                                                     <td style='text-align: left'>
-                                                        <a href='{{question2Url}}'>
+                                                        <a class='question' href='{{question2Url}}'>
                                                         {{question2Title}}
 <!--                                                            Will the US economy recover from the pandemic?-->
                                                         </a>
                                                     </td>
                                                     <td style='padding-left: 10px; min-width: 115px'>
-                                                        <p style='font-size: 24px;display: inline'>
+                                                      <p class='prob'>
                                                         {{question2Prob}}
 <!--                                                        99.9%-->
-                                                        <p style='{{question2ChangeStyle}}'>
+                                                        <p class='change' style='{{question2ChangeStyle}}'>
                                                         {{question2Change}}
 <!--                                                            +17%-->
                                                         </p>
@@ -344,16 +353,16 @@
                                                 </tr><tr>
 <!--                                                    <td style="{{investment_value_style}}">-->
                                                     <td style='text-align: left'>
-                                                        <a href='{{question3Url}}'>
+                                                        <a class='question' href='{{question3Url}}'>
                                                         {{question3Title}}
 <!--                                                            Will the US economy recover from the pandemic?-->
                                                         </a>
                                                     </td>
                                                     <td style='padding-left: 10px; min-width: 115px'>
-                                                        <p style='font-size: 24px;display: inline'>
+                                                      <p class='prob'>
                                                         {{question3Prob}}
 <!--                                                        99.9%-->
-                                                        <p style='{{question3ChangeStyle}}'>
+                                                        <p class='change'  style='{{question3ChangeStyle}}'>
                                                         {{question3Change}}
 <!--                                                            +17%-->
                                                         </p>
@@ -362,16 +371,16 @@
                                                 </tr><tr>
 <!--                                                    <td style="{{investment_value_style}}">-->
                                                     <td style='text-align: left'>
-                                                        <a href='{{question4Url}}'>
+                                                        <a class='question' href='{{question4Url}}'>
                                                         {{question4Title}}
 <!--                                                            Will the US economy recover from the pandemic?-->
                                                         </a>
                                                     </td>
                                                     <td style='padding-left: 10px; min-width: 115px'>
-                                                        <p style='font-size: 24px;display: inline'>
+                                                      <p class='prob'>
                                                         {{question4Prob}}
 <!--                                                        99.9%-->
-                                                        <p style='{{question4ChangeStyle}}'>
+                                                        <p class='change' style='{{question4ChangeStyle}}'>
                                                         {{question4Change}}
 <!--                                                            +17%-->
                                                         </p>

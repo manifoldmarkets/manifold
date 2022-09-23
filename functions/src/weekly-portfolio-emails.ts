@@ -155,26 +155,28 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       const valueChange =
         mostRecentPortfolioMetrics.investmentValue -
         portfolioMetricsAWeekAgo.investmentValue
+      const totalTips = sum(
+        usersToTxnsReceived[privateUser.id]
+          .filter((txn) => txn.category === 'TIP')
+          .map((txn) => txn.amount)
+      )
       // get the difference
       const performanceData = {
         investment_value: formatMoney(
           mostRecentPortfolioMetrics.investmentValue
         ),
-        investment_change: formatMoney(valueChange),
+        investment_change: formatMoney(valueChange, true),
         current_balance: formatMoney(user.balance),
         markets_created:
           usersToContractsCreated[privateUser.id].length.toString(),
-        tips_received: formatMoney(
-          sum(
-            usersToTxnsReceived[privateUser.id]
-              .filter((txn) => txn.category === 'TIP')
-              .map((txn) => txn.amount)
-          )
-        ),
+        tips_received: formatMoney(totalTips, true),
+        tips_received_style: `background-color: ${
+          totalTips > 0 ? 'rgba(0,160,0,0.2)' : 'rgba(160,0,0,0.2)'
+        };`,
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
           .length.toString(),
-        investment_change_style: `font-size:14px;display: inline; padding: 2px; border-radius: 5px; background-color: ${
+        investment_change_style: `background-color: ${
           valueChange > 0 ? 'rgba(0,160,0,0.2)' : 'rgba(160,0,0,0.2)'
         };`,
         // More options: bonuses, tips given,
@@ -209,6 +211,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               contract,
               currentMarketProbability
             )
+            const marketChange =
+              currentMarketProbability - marketProbabilityAWeekAgo
             return {
               currentValue: currentBetsValue,
               pastValue: betsValueAWeekAgo,
@@ -219,13 +223,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               questionUrl: contractUrl(contract),
               questionProb: Math.round(cpmmContract.prob * 100) + '%',
               questionChange:
-                Math.round(
-                  (currentMarketProbability - marketProbabilityAWeekAgo) * 100
-                ) + '%',
-              questionChangeStyle: `font-size:14px;display: inline; padding: 2px; border-radius: 5px; background-color: ${
+                (marketChange > 0 ? '+' : '') +
+                Math.round(marketChange * 100) +
+                '%',
+              questionChangeStyle: `color: ${
                 currentMarketProbability > marketProbabilityAWeekAgo
-                  ? 'rgba(0,160,0,0.2)'
-                  : 'rgba(160,0,0,0.2)'
+                  ? 'rgba(0,160,0,1)'
+                  : '#a80000'
               };`,
             }
           })
@@ -276,6 +280,7 @@ export type PerContractInvestmentsData = {
   questionChangeStyle: string
 }
 export type OverallPerformanceData = {
+  tips_received_style: string
   investment_change_style: string
   investment_value: string
   investment_change: string
