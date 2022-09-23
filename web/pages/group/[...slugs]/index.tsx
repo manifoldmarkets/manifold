@@ -448,6 +448,7 @@ function GroupLeaderboard(props: {
 function GroupPosts(props: { posts: Post[]; group: Group }) {
   const { posts, group } = props
   const [showCreatePost, setShowCreatePost] = useState(false)
+  const user = useUser()
 
   const createPost = <CreatePost group={group} />
 
@@ -458,12 +459,14 @@ function GroupPosts(props: { posts: Post[]; group: Group }) {
           <Title text={'Posts'} className="!mt-0" />
         </Col>
         <Col>
-          <Button
-            className="btn-md"
-            onClick={() => setShowCreatePost(!showCreatePost)}
-          >
-            Add a Post
-          </Button>
+          {user && (
+            <Button
+              className="btn-md"
+              onClick={() => setShowCreatePost(!showCreatePost)}
+            >
+              Add a Post
+            </Button>
+          )}
         </Col>
       </Row>
 
