@@ -134,6 +134,11 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
         userBets.some((bet) => bet.contractId === contract.id)
       )
+      const contractsBetOnInLastWeek = uniq(
+        userBets
+          .filter((bet) => bet.createdTime > Date.now() - 7 * DAY_MS)
+          .map((bet) => bet.contractId)
+      )
       // get the most recent bet for each contract
       // get the most recent portfolio metrics
       const mostRecentPortfolioMetrics = last(
@@ -155,34 +160,27 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         log('No portfolio metrics a week ago for user', privateUser.id)
         return
       }
-      const valueChange =
-        mostRecentPortfolioMetrics.investmentValue -
-        portfolioMetricsAWeekAgo.investmentValue
       const totalTips = sum(
         usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'TIP')
           .map((txn) => txn.amount)
       )
-      // get the difference
+      const greenBg = 'rgba(0,160,0,0.2)'
+      const redBg = 'rgba(160,0,0,0.2)'
       const performanceData = {
-        profit: formatMoney(user.profitCached.weekly, true),
-        investment_value: formatMoney(
-          mostRecentPortfolioMetrics.investmentValue
-        ),
-        investment_change: formatMoney(valueChange, true),
-        current_balance: formatMoney(user.balance),
+        profit: formatMoney(user.profitCached.weekly),
+        profit_style: `background-color: ${
+          user.profitCached.weekly > 0 ? greenBg : redBg
+        }`,
         markets_created:
           usersToContractsCreated[privateUser.id].length.toString(),
-        tips_received: formatMoney(totalTips, true),
-        tips_received_style: `background-color: ${
-          totalTips > 0 ? 'rgba(0,160,0,0.2)' : 'rgba(160,0,0,0.2)'
-        };`,
+        tips_received: formatMoney(totalTips),
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
           .length.toString(),
-        investment_change_style: `background-color: ${
-          valueChange > 0 ? 'rgba(0,160,0,0.2)' : 'rgba(160,0,0,0.2)'
-        };`,
+        markets_traded: contractsBetOnInLastWeek.length.toString(),
+        prediction_streak:
+          (user.currentBettingStreak?.toString() ?? '0') + ' days',
         // More options: bonuses, tips given,
       } as OverallPerformanceData
       type investmentDiff = {
@@ -285,11 +283,9 @@ export type PerContractInvestmentsData = {
 }
 export type OverallPerformanceData = {
   profit: string
-  tips_received_style: string
-  investment_change_style: string
-  investment_value: string
-  investment_change: string
-  current_balance: string
+  prediction_streak: string
+  markets_traded: string
+  profit_style: string
   tips_received: string
   markets_created: string
   unique_bettors: string

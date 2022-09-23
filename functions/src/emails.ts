@@ -16,10 +16,7 @@ import { contractUrl, getUser } from './utils'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
 import { notification_reason_types } from '../../common/notification'
 import { Dictionary } from 'lodash'
-import {
-  getNotificationDestinationsForUser,
-  notification_preference,
-} from '../../common/user-notification-preferences'
+import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 import {
   PerContractInvestmentsData,
   OverallPerformanceData,
@@ -156,9 +153,10 @@ export const sendWelcomeEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
 
   return await sendTemplateEmail(
     privateUser.email,
@@ -224,9 +222,11 @@ export const sendOneWeekBonusEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
+
   return await sendTemplateEmail(
     privateUser.email,
     'Manifold Markets one week anniversary gift',
@@ -256,10 +256,10 @@ export const sendCreatorGuideEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
   return await sendTemplateEmail(
     privateUser.email,
     'Create your own prediction market',
@@ -290,10 +290,10 @@ export const sendThankYouEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'thank_you_for_purchases' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'thank_you_for_purchases'
+  )
 
   return await sendTemplateEmail(
     privateUser.email,
@@ -473,9 +473,10 @@ export const sendInterestingMarketsEmail = async (
   )
     return
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'trending_markets' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'trending_markets'
+  )
 
   const { name } = user
   const firstName = name.split(' ')[0]
@@ -626,9 +627,10 @@ export const sendWeeklyPortfolioUpdateEmail = async (
   )
     return
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'profit_loss_updates' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'profit_loss_updates'
+  )
 
   const { name } = user
   const firstName = name.split(' ')[0]
