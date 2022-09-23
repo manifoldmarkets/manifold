@@ -586,7 +586,6 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
 ### `POST /v0/market/[marketId]/close`
 
 Closes a market on behalf of the authorized user.
-- `contractId`: Required. The id of the market to close.
 - `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in past.
 
 
