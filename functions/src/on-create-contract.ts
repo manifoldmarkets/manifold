@@ -17,7 +17,7 @@ export const onCreateContract = functions
     const contractCreator = await getUser(contract.creatorId)
     if (!contractCreator) throw new Error('Could not find contract creator')
 
-    const desc = contract.description as JSONContent
+    const desc = JSON.parse(contract.description) as JSONContent
     const mentioned = parseMentions(desc)
     await addUserToContractFollowers(contract.id, contractCreator.id)
 

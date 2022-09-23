@@ -174,7 +174,8 @@ export const onCreateCommentOnContract = functions
       ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
       : answer?.userId
 
-    const mentionedUsers = compact(parseMentions(comment.content))
+    const parsedContent = JSON.parse(comment.content)
+    const mentionedUsers = compact(parseMentions(parsedContent))
     const repliedUsers: replied_users_info = {}
 
     // The parent of the reply chain could be a comment or an answer
@@ -210,7 +211,7 @@ export const onCreateCommentOnContract = functions
       'created',
       commentCreator,
       eventId,
-      richTextToString(comment.content),
+      richTextToString(parsedContent),
       contract,
       {
         repliedUsersInfo: repliedUsers,

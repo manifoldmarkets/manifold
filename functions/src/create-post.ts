@@ -57,7 +57,7 @@ export const createpost = newEndpoint({}, async (req, auth) => {
     slug,
     title,
     createdTime: Date.now(),
-    content: content,
+    content: JSON.stringify(content),
   }
 
   await postRef.create(post)

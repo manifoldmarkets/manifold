@@ -9,7 +9,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { Content } from '../editor'
+import { RichContent } from '../editor'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Button } from '../button'
 import { Spacer } from '../layout/spacer'
@@ -29,7 +29,7 @@ export function ContractDescription(props: {
       {isCreator || isAdmin ? (
         <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
       ) : (
-        <Content content={contract.description} />
+        <RichContent content={JSON.parse(contract.description)} />
       )}
     </div>
   )
@@ -60,7 +60,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     const lowercaseTags = tags.map((tag) => tag.toLowerCase())
 
     await updateContract(contract.id, {
-      description: editor.getJSON(),
+      description: JSON.stringify(editor.getJSON()),
       tags,
       lowercaseTags,
     })
@@ -88,7 +88,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     </>
   ) : (
     <>
-      <Content content={contract.description} />
+      <RichContent content={JSON.parse(contract.description)} />
       <Spacer h={2} />
       <Row className="items-center gap-2">
         {isAdmin && 'Admin: '}
@@ -139,9 +139,11 @@ function EditQuestion(props: {
     setEditing(false)
     await updateContract(contract.id, {
       question: newText,
-      description: joinContent(
-        contract.description,
-        questionChanged(contract.question, newText)
+      description: JSON.stringify(
+        joinContent(
+          JSON.parse(contract.description),
+          questionChanged(contract.question, newText)
+        )
       ),
     })
   }

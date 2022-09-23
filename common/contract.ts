@@ -1,6 +1,5 @@
 import { Answer } from './answer'
 import { Fees } from './fees'
-import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
 export type AnyMechanism = DPM | CPMM
@@ -28,7 +27,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   creatorAvatarUrl?: string
 
   question: string
-  description: string | JSONContent // More info about what the contract is about
+  description: string // More info about what the contract is about
   tags: string[]
   lowercaseTags: string[]
   visibility: visibility

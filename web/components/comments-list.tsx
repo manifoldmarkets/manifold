@@ -8,7 +8,7 @@ import { Avatar } from './avatar'
 import { RelativeTimestamp } from './relative-timestamp'
 import { User } from 'common/user'
 import { Col } from './layout/col'
-import { Content } from './editor'
+import { RichContent } from './editor'
 import { LoadingIndicator } from './loading-indicator'
 import { UserLink } from 'web/components/user-link'
 import { PaginationNextPrev } from 'web/components/pagination'
@@ -99,7 +99,7 @@ function ProfileCommentGroup(props: {
 
 function ProfileComment(props: { comment: ContractComment }) {
   const { comment } = props
-  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
+  const { content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
   // TODO: find and attach relevant bets by comment betId at some point
   return (
@@ -114,7 +114,7 @@ function ProfileComment(props: { comment: ContractComment }) {
           />{' '}
           <RelativeTimestamp time={createdTime} />
         </p>
-        <Content content={content || text} smallImage />
+        <RichContent content={JSON.parse(content)} smallImage />
       </div>
     </Row>
   )

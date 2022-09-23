@@ -14,7 +14,6 @@ import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { FileUploadButton } from './file-upload-button'
@@ -316,6 +315,7 @@ export function RichContent(props: {
   smallImage?: boolean
 }) {
   const { className, content, smallImage } = props
+
   const editor = useEditor({
     editorProps: { attributes: { class: proseClass } },
     extensions: [
@@ -340,24 +340,4 @@ export function RichContent(props: {
   )
 
   return <EditorContent className={className} editor={editor} />
-}
-
-// backwards compatibility: we used to store content as strings
-export function Content(props: {
-  content: JSONContent | string
-  className?: string
-  smallImage?: boolean
-}) {
-  const { className, content } = props
-  return typeof content === 'string' ? (
-    <Linkify
-      className={clsx(
-        className,
-        'whitespace-pre-line font-light leading-relaxed'
-      )}
-      text={content}
-    />
-  ) : (
-    <RichContent {...props} />
-  )
 }

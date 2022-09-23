@@ -1,5 +1,3 @@
-import type { JSONContent } from '@tiptap/core'
-
 export type AnyCommentType = OnContract | OnGroup | OnPost
 
 // Currently, comments are created after the bet, not atomically with the bet.
@@ -8,10 +6,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   id: string
   replyToCommentId?: string
   userId: string
-
-  /** @deprecated - content now stored as JSON in content*/
-  text?: string
-  content: JSONContent
+  content: string
   createdTime: number
 
   // Denormalized, for rendering comments

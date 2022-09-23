@@ -1,9 +1,7 @@
-import { JSONContent } from '@tiptap/core'
-
 export type Post = {
   id: string
   title: string
-  content: JSONContent
+  content: string
   creatorId: string // User id
   createdTime: number
   slug: string

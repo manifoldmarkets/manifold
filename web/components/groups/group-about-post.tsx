@@ -1,5 +1,5 @@
 import { Row } from '../layout/row'
-import { Content } from '../editor'
+import { RichContent } from '../editor'
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { Button } from '../button'
 import { Spacer } from '../layout/spacer'
@@ -24,7 +24,9 @@ export function GroupAboutPost(props: {
   return (
     <div className="rounded-md bg-white p-4 ">
       {isEditable && <RichEditGroupAboutPost group={group} post={post} />}
-      {!isEditable && post && <Content content={post.content} />}
+      {!isEditable && post && (
+        <RichContent content={JSON.parse(post.content)} />
+      )}
     </div>
   )
 }
@@ -56,7 +58,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
       })
     } else {
       await updatePost(post, {
-        content: newPost.content,
+        content: JSON.stringify(newPost.content),
       })
     }
   }
@@ -124,7 +126,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
             </Button>
           </div>
 
-          <Content content={post.content} />
+          <RichContent content={JSON.parse(post.content)} />
           <Spacer h={2} />
         </div>
       )}

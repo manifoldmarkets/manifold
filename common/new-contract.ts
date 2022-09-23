@@ -69,7 +69,7 @@ export function getNewContract(
     creatorAvatarUrl: creator.avatarUrl,
 
     question: question.trim(),
-    description,
+    description: JSON.stringify(description),
     tags,
     lowercaseTags,
     visibility,

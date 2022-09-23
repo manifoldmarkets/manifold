@@ -15,7 +15,7 @@ import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { Tipper } from '../tipper'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
-import { Content } from '../editor'
+import { RichContent } from '../editor'
 import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
@@ -76,7 +76,6 @@ export function FeedComment(props: {
 }) {
   const { contract, comment, tips, indent, onReplyClick } = props
   const {
-    text,
     content,
     userUsername,
     userName,
@@ -163,9 +162,9 @@ export function FeedComment(props: {
             elementId={comment.id}
           />
         </div>
-        <Content
+        <RichContent
           className="mt-2 text-[15px] text-gray-700"
-          content={content || text}
+          content={JSON.parse(content)}
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">

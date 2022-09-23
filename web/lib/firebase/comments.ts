@@ -100,7 +100,7 @@ async function createComment(
   const comment = removeUndefinedProps({
     id: ref.id,
     userId: user.id,
-    content: content,
+    content: JSON.stringify(content),
     createdTime: Date.now(),
     userName: user.name,
     userUsername: user.username,

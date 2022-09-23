@@ -9,7 +9,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { Avatar } from 'web/components/avatar'
 import { CommentInput } from 'web/components/comment-input'
-import { Content } from 'web/components/editor'
+import { RichContent } from 'web/components/editor'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -108,7 +108,7 @@ export function PostComment(props: {
   onReplyClick?: (comment: PostComment) => void
 }) {
   const { post, comment, tips, indent, onReplyClick } = props
-  const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
+  const { content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
 
   const [highlighted, setHighlighted] = useState(false)
@@ -150,9 +150,9 @@ export function PostComment(props: {
             elementId={comment.id}
           />
         </div>
-        <Content
+        <RichContent
           className="mt-2 text-[15px] text-gray-700"
-          content={content || text}
+          content={JSON.parse(content)}
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">

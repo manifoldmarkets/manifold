@@ -380,7 +380,7 @@ function EditableCloseDate(props: {
 
       updateContract(contract.id, {
         closeTime: newCloseTime,
-        description: editor.getJSON(),
+        description: JSON.stringify(editor.getJSON()),
       })
 
       setIsEditingCloseTime(false)

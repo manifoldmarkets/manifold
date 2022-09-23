@@ -4,7 +4,7 @@ import { postPath, getPostBySlug, updatePost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Title } from 'web/components/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { Content, TextEditor, useTextEditor } from 'web/components/editor'
+import { RichContent, TextEditor, useTextEditor } from 'web/components/editor'
 import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon, ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -110,7 +110,7 @@ export default function PostPage(props: {
             {user && user.id === post.creatorId ? (
               <RichEditPost post={post} />
             ) : (
-              <Content content={post.content} />
+              <RichContent content={JSON.parse(post.content)} />
             )}
           </div>
         </div>
@@ -178,7 +178,7 @@ function RichEditPost(props: { post: Post }) {
     if (!editor) return
 
     await updatePost(post, {
-      content: editor.getJSON(),
+      content: JSON.stringify(editor.getJSON()),
     })
   }
 
@@ -219,7 +219,7 @@ function RichEditPost(props: { post: Post }) {
           </Button>
         </div>
 
-        <Content content={post.content} />
+        <RichContent content={JSON.parse(post.content)} />
         <Spacer h={2} />
       </div>
     </>
