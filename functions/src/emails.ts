@@ -12,7 +12,7 @@ import { getValueFromBucket } from '../../common/calculate-dpm'
 import { formatNumericProbability } from '../../common/pseudo-numeric'
 
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { getUser } from './utils'
+import { contractUrl, getUser } from './utils'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
 import { notification_reason_types } from '../../common/notification'
 import { Dictionary } from 'lodash'
@@ -20,6 +20,10 @@ import {
   getNotificationDestinationsForUser,
   notification_preference,
 } from '../../common/user-notification-preferences'
+import {
+  PerContractInvestmentsData,
+  OverallPerformanceData,
+} from './weekly-profit-loss-emails'
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
@@ -507,10 +511,6 @@ export const sendInterestingMarketsEmail = async (
   )
 }
 
-function contractUrl(contract: Contract) {
-  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
-}
-
 function imageSourceUrl(contract: Contract) {
   return buildCardUrl(getOpenGraphProps(contract))
 }
@@ -610,5 +610,44 @@ export const sendNewUniqueBettorsEmail = async (
     {
       from: `Manifold Markets <no-reply@manifold.markets>`,
     }
+  )
+}
+
+export const sendWeeklyPortfolioUpdateEmail = async (
+  user: User,
+  privateUser: PrivateUser,
+  investments: PerContractInvestmentsData[],
+  overallPerformance: OverallPerformanceData
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    !privateUser.notificationPreferences.profit_loss_updates.includes('email')
+  )
+    return
+
+  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
+    'profit_loss_updates' as notification_preference
+  }`
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+  const templateData: Record<string, string> = {
+    name: firstName,
+    unsubscribeUrl,
+    ...overallPerformance,
+  }
+  investments.forEach((investment, i) => {
+    templateData[`question${i + 1}Title`] = investment.questionTitle
+    templateData[`question${i + 1}Url`] = investment.questionUrl
+    templateData[`question${i + 1}Prob`] = investment.questionProb
+    templateData[`question${i + 1}Change`] = investment.questionChange
+  })
+
+  await sendTemplateEmail(
+    privateUser.email,
+    `Here's your weekly portfolio update!`,
+    'portfolio-update',
+    templateData
   )
 }

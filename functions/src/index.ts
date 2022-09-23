@@ -30,6 +30,7 @@ export * from './reset-betting-streaks'
 export * from './reset-weekly-emails-flag'
 export * from './on-update-contract-follow'
 export * from './on-update-like'
+export * from './weekly-profit-loss-emails'
 
 // v2
 export * from './health'
@@ -50,6 +51,7 @@ export * from './resolve-market'
 export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-bonus-email'
+export * from './test-scheduled-function'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -72,6 +74,7 @@ import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
+import { testscheduledfunction } from './test-scheduled-function'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -98,6 +101,7 @@ const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
+const testScheduledFunction = toCloudFunction(testscheduledfunction)
 
 export {
   healthFunction as health,
@@ -121,5 +125,6 @@ export {
   getCurrentUserFunction as getcurrentuser,
   acceptChallenge as acceptchallenge,
   createPostFunction as createpost,
-  saveTwitchCredentials as savetwitchcredentials
+  saveTwitchCredentials as savetwitchcredentials,
+  testScheduledFunction as testscheduledfunction,
 }

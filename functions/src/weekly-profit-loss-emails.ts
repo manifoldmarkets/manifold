@@ -1,0 +1,276 @@
+import * as functions from 'firebase-functions'
+import * as admin from 'firebase-admin'
+
+import { Contract, CPMMContract } from '../../common/contract'
+import {
+  getAllPrivateUsers,
+  getPrivateUser,
+  getUser,
+  getValue,
+  getValues,
+  isProd,
+  log,
+} from './utils'
+import { filterDefined } from '../../common/util/array'
+import { PortfolioMetrics } from '../../common/user'
+import { DAY_MS } from '../../common/util/time'
+import { last, partition, sortBy, sum, uniq } from 'lodash'
+import { Bet } from '../../common/bet'
+import { computeInvestmentValueCustomProb } from '../../common/calculate-metrics'
+import { sendWeeklyPortfolioUpdateEmail } from './emails'
+import { contractUrl } from './utils'
+import { Txn } from '../../common/txn'
+import { formatMoney } from '../../common/util/format'
+
+// TODO: reset weeklyPortfolioUpdateEmailSent to false for all users at the start of each week
+export const weeklyPortfolioUpdateEmails = functions
+  .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
+  // every minute on Wednesday for an hour at 12pm PT (UTC -07:00)
+  .pubsub.schedule('* 19 * * 3')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await sendPortfolioUpdateEmailsToAllUsers()
+  })
+
+const firestore = admin.firestore()
+
+export async function sendPortfolioUpdateEmailsToAllUsers() {
+  const privateUsers = isProd()
+    ? await getAllPrivateUsers()
+    : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
+  // get all users that haven't unsubscribed from weekly emails
+  const privateUsersToSendEmailsTo = privateUsers
+    .filter((user) => {
+      return isProd()
+        ? user.notificationPreferences.profit_loss_updates.includes('email') &&
+            !user.weeklyPortfolioUpdateEmailSent
+        : true
+    })
+    // Send emails in batches
+    .slice(0, 200)
+  log(
+    'Sending weekly portfolio emails to',
+    privateUsersToSendEmailsTo.length,
+    'users'
+  )
+
+  const usersToPortfolioMetrics: { [userId: string]: PortfolioMetrics[] } = {}
+  // get all portfolio metrics for each user
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (user) => {
+      return getValues<PortfolioMetrics>(
+        firestore.collection(`users/${user.id}/portfolioHistory`)
+      ).then((portfolioMetrics) => {
+        return (usersToPortfolioMetrics[user.id] = portfolioMetrics)
+      })
+    })
+  )
+
+  const usersBets: { [userId: string]: Bet[] } = {}
+  // get all bets made by each user
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (user) => {
+      return getValues<Bet>(
+        firestore.collectionGroup('bets').where('userId', '==', user.id)
+      ).then((bets) => {
+        usersBets[user.id] = bets
+      })
+    })
+  )
+
+  const usersToContractsCreated: { [userId: string]: Contract[] } = {}
+  // Get all contracts created by each user
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (user) => {
+      return getValues<Contract>(
+        firestore
+          .collection('contracts')
+          .where('creatorId', '==', user.id)
+          .where('createdTime', '>', Date.now() - 7 * DAY_MS)
+      ).then((contracts) => {
+        usersToContractsCreated[user.id] = contracts
+      })
+    })
+  )
+
+  // Get all txns the users received over the past week
+  const usersToTxnsReceived: { [userId: string]: Txn[] } = {}
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (user) => {
+      return getValues<Txn>(
+        firestore
+          .collection(`txns`)
+          .where('toId', '==', user.id)
+          .where('createdTime', '>', Date.now() - 7 * DAY_MS)
+      ).then((txn) => {
+        usersToTxnsReceived[user.id] = txn
+      })
+    })
+  )
+
+  // Get a flat map of all the bets that users made to get the contracts they bet on
+  const contractsUsersBetOn = filterDefined(
+    await Promise.all(
+      uniq(
+        Object.values(usersBets).flatMap((bets) =>
+          bets.map((bet) => bet.contractId)
+        )
+      ).map((contractId) =>
+        getValue<Contract>(firestore.collection('contracts').doc(contractId))
+      )
+    )
+  )
+  log('Found', contractsUsersBetOn.length, 'contracts')
+
+  await Promise.all(
+    privateUsersToSendEmailsTo.map(async (privateUser) => {
+      const user = await getUser(privateUser.id)
+      if (!user) return
+      const usersPortfolioMetrics = usersToPortfolioMetrics[privateUser.id]
+      const userBets = usersBets[privateUser.id] as Bet[]
+      const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
+        userBets.some((bet) => bet.contractId === contract.id)
+      )
+      // get the most recent bet for each contract
+      // get the most recent portfolio metrics
+      const mostRecentPortfolioMetrics = last(
+        sortBy(
+          usersPortfolioMetrics,
+          (portfolioMetric) => portfolioMetric.timestamp
+        )
+      )
+      if (!mostRecentPortfolioMetrics) {
+        log('No portfolio metrics for user', privateUser.id)
+        return
+      }
+      // get the portfolio metrics from a week ago
+      const portfolioMetricsAWeekAgo = usersPortfolioMetrics.find(
+        (portfolioMetric) => portfolioMetric.timestamp > Date.now() - 7 * DAY_MS
+      )
+      if (!portfolioMetricsAWeekAgo) {
+        // TODO: send them a no change email?
+        log('No portfolio metrics a week ago for user', privateUser.id)
+        return
+      }
+      // get the difference
+      const performanceData = {
+        investment_value: formatMoney(
+          mostRecentPortfolioMetrics.investmentValue
+        ),
+        investment_change: formatMoney(
+          portfolioMetricsAWeekAgo.investmentValue -
+            mostRecentPortfolioMetrics.investmentValue
+        ),
+        current_balance: formatMoney(user.balance),
+        markets_created:
+          usersToContractsCreated[privateUser.id].length.toString(),
+        tips_received: formatMoney(
+          sum(
+            usersToTxnsReceived[privateUser.id]
+              .filter((txn) => txn.category === 'TIP')
+              .map((txn) => txn.amount)
+          )
+        ),
+        unique_bettors: usersToTxnsReceived[privateUser.id]
+          .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
+          .length.toString(),
+        // More options: bonuses, tips given,
+      } as OverallPerformanceData
+      type investmentDiff = {
+        currentValue: number
+        pastValue: number
+        // contract: Contract
+        difference: number
+      }
+      // calculate the differences of their bets' probAfter to the current markets probabilities
+      const investmentValueDifferences = sortBy(
+        filterDefined(
+          contractsUserBetOn.map((contract) => {
+            const cpmmContract = contract as CPMMContract
+            if (cpmmContract === undefined || cpmmContract.prob === undefined)
+              return
+            const bets = userBets.filter(
+              (bet) => bet.contractId === contract.id
+            )
+
+            const marketProbabilityAWeekAgo =
+              cpmmContract.prob - cpmmContract.probChanges.week
+            const currentMarketProbability = cpmmContract.prob
+            const betsValueAWeekAgo = computeInvestmentValueCustomProb(
+              bets.filter((b) => b.createdTime < Date.now() - 7 * DAY_MS),
+              contract,
+              marketProbabilityAWeekAgo
+            )
+            const currentBetsValue = computeInvestmentValueCustomProb(
+              bets,
+              contract,
+              currentMarketProbability
+            )
+            return {
+              currentValue: currentBetsValue,
+              pastValue: betsValueAWeekAgo,
+              difference: currentBetsValue - betsValueAWeekAgo,
+              contractSlug: contract.slug,
+              marketProbAWeekAgo: marketProbabilityAWeekAgo,
+              questionTitle: contract.question,
+              questionUrl: contractUrl(contract),
+              questionProb: Math.round(cpmmContract.prob * 100) + '%',
+              questionChange:
+                Math.round(
+                  (currentMarketProbability - marketProbabilityAWeekAgo) * 100
+                ) + '%',
+            }
+          })
+        ),
+        (differences) => Math.abs(differences.difference)
+      ).reverse()
+      log(
+        'Found',
+        investmentValueDifferences.length,
+        'investment differences for user',
+        privateUser.id
+      )
+
+      const [winningInvestments, losingInvestments] = partition(
+        investmentValueDifferences.filter(
+          (diff) =>
+            diff.pastValue > 0.01 &&
+            Math.abs(diff.difference / diff.pastValue) > 0.01 // difference is greater than 1%
+        ),
+        (investmentDiff: investmentDiff) => {
+          return investmentDiff.difference > 0
+        }
+      )
+      // pick 3 winning investments and 3 losing investments
+      const topInvestments = winningInvestments.slice(0, 2)
+      const worstInvestments = losingInvestments.slice(0, 2)
+      // console.log('winningInvestments', topInvestments)
+      console.log('losingInvestments', worstInvestments)
+      log('perf data:', performanceData)
+      await sendWeeklyPortfolioUpdateEmail(
+        user,
+        privateUser,
+        topInvestments.concat(worstInvestments) as PerContractInvestmentsData[],
+        performanceData
+      )
+      return firestore.collection('private-users').doc(privateUser.id).update({
+        weeklyPortfolioUpdateEmailSent: true,
+      })
+    })
+  )
+}
+
+export type PerContractInvestmentsData = {
+  questionTitle: string
+  questionUrl: string
+  questionProb: string
+  questionChange: string
+}
+export type OverallPerformanceData = {
+  investment_value: string
+  investment_change: string
+  current_balance: string
+  tips_received: string
+  markets_created: string
+  unique_bettors: string
+}
