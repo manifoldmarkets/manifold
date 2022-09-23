@@ -17,6 +17,7 @@ export const PortfolioValueSection = memo(
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
     const [graphMode, setGraphMode] = useState<'profit' | 'value'>('profit')
+    const [graphDisplayNumber, setGraphDisplayNumber] = useState(null)
 
     // Remember the last defined portfolio history.
     const portfolioRef = useRef(portfolioHistory)
@@ -41,7 +42,11 @@ export const PortfolioValueSection = memo(
                 Portfolio value
               </div>
               <div className="text-lg text-indigo-600 sm:text-xl">
-                {formatMoney(totalValue)}
+                {graphMode === 'value'
+                  ? graphDisplayNumber
+                    ? graphDisplayNumber
+                    : formatMoney(totalValue)
+                  : formatMoney(totalValue)}
               </div>
             </Col>
             <Col>
@@ -52,7 +57,11 @@ export const PortfolioValueSection = memo(
                   'text-lg sm:text-xl'
                 )}
               >
-                {formatMoney(totalProfit)}
+                {graphMode === 'profit'
+                  ? graphDisplayNumber
+                    ? graphDisplayNumber
+                    : formatMoney(totalProfit)
+                  : formatMoney(totalProfit)}
               </div>
             </Col>
           </Row>
@@ -62,6 +71,7 @@ export const PortfolioValueSection = memo(
           portfolioHistory={currPortfolioHistory}
           includeTime={true}
           mode={graphMode}
+          setGraphDisplayNumber={setGraphDisplayNumber}
         />
         <PortfolioPeriodSelection
           portfolioPeriod={portfolioPeriod}

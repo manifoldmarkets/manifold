@@ -1,18 +1,22 @@
 import { ResponsiveLine } from '@nivo/line'
 import { PortfolioMetrics } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { last } from 'lodash'
+import dayjs from 'dayjs'
+import { last, set } from 'lodash'
 import { memo } from 'react'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { formatTime } from 'web/lib/util/time'
+import { Col } from '../layout/col'
 
 export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
   portfolioHistory: PortfolioMetrics[]
   mode: 'value' | 'profit'
+  setGraphDisplayNumber: (value: number | string) => void
   height?: number
   includeTime?: boolean
 }) {
-  const { portfolioHistory, height, includeTime, mode } = props
+  const { portfolioHistory, height, includeTime, mode, setGraphDisplayNumber } =
+    props
   const { width } = useWindowSize()
 
   function getPoints(line: 'value' | 'posProfit' | 'negProfit') {
@@ -62,8 +66,8 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
     ]
   }
   const firstPoints = data[0].data
-  const numXTickValues = !width || width < 800 ? 2 : 5
-  const numYTickValues = 4
+  // const numXTickValues = !width || width < 800 ? 2 : 5
+  // const numYTickValues = 4
   const endDate = last(firstPoints)?.x
 
   const firstPointsY = firstPoints
@@ -73,8 +77,7 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
     .map((p) => p.y)
   // console.log(firstPointsY)
 
-  console.log(
-    'MIN: ',
+  const yMin =
     mode === 'value'
       ? Math.min(...firstPointsY)
       : Math.min(
@@ -84,9 +87,9 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
               return p.y !== null
             })
             .map((p) => p.y)
-        ),
+        )
 
-    'MAX: ',
+  const yMax =
     mode === 'value'
       ? Math.max(...firstPointsY)
       : Math.max(
@@ -97,16 +100,15 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
             })
             .map((p) => p.y)
         )
-  )
 
   return (
     <div
       className="w-full overflow-hidden"
-      style={{ height: height ?? (!width || width >= 800 ? 350 : 250) }}
+      style={{ height: height ?? (!width || width >= 800 ? 200 : 100) }}
     >
       <ResponsiveLine
+        margin={{ top: 10, right: 0, left: 0, bottom: 10 }}
         data={data}
-        margin={{ top: 20, right: 28, bottom: 22, left: 60 }}
         xScale={{
           type: 'time',
           min: firstPoints[0]?.x,
@@ -115,63 +117,56 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         yScale={{
           type: 'linear',
           stacked: false,
-          min:
-            mode === 'value'
-              ? Math.min(...firstPointsY)
-              : Math.min(
-                  ...firstPointsY,
-                  ...data[1].data
-                    .filter((p) => {
-                      return p.y !== null
-                    })
-                    .map((p) => p.y)
-                ),
-          max:
-            mode === 'value'
-              ? Math.max(...firstPointsY)
-              : Math.max(
-                  ...firstPointsY,
-                  ...data[1].data
-                    .filter((p) => {
-                      return p.y !== null
-                    })
-                    .map((p) => p.y)
-                ),
+          min: yMin,
+          max: yMax,
         }}
-        gridYValues={numYTickValues}
-        curve="linear"
+        curve="stepAfter"
         enablePoints={false}
         colors={{ datum: 'color' }}
         axisBottom={{
-          tickValues: numXTickValues,
+          tickValues: 0,
           format: (time) => formatTime(+time, !!includeTime),
         }}
         pointBorderColor="#fff"
         pointSize={firstPoints.length > 100 ? 0 : 6}
         axisLeft={{
-          tickValues: numYTickValues,
+          tickValues: 0,
           format: (value) => formatMoney(value),
         }}
-        enableGridX={!!width && width >= 800}
-        enableGridY={true}
+        enableGridX={false}
+        enableGridY={false}
         enableSlices="x"
         animate={false}
         yFormat={(value) => formatMoney(+value)}
-        // defs={[
-        //   {
-        //     id: 'purpleGradient',
-        //     type: 'linearGradient',
-        //     colors: [
-        //       { offset: 0, color: '#7c3aed' },
-        //       {
-        //         offset: 100,
-        //         color: '#inherit',
-        //         opacity: 0,
-        //       },
-        //     ],
-        //   },
-        // ]}
         enableArea={true}
+        areaOpacity={0.1}
+        sliceTooltip={({ slice }) => {
+          slice.points.map((point) =>
+            setGraphDisplayNumber(point.data.yFormatted)
+          )
+          return (
+            <div className="rounded bg-white px-4 py-2 opacity-80">
+              {slice.points.map((point) => (
+                <div
+                  key={point.id}
+                  style={{
+                    color: point.serieColor,
+                    padding: '3px 0',
+                  }}
+                >
+                  <Col>
+                    <div>
+                      <strong>Time</strong> [{point.data.xFormatted}]
+                    </div>
+                    <div>
+                      <strong>{point.serieId}</strong> [{point.data.yFormatted}]
+                    </div>
+                  </Col>
+                </div>
+              ))}
+            </div>
+          )
+        }}
       ></ResponsiveLine>
     </div>
   )
