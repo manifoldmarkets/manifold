@@ -1,23 +1,23 @@
+import { memo, useState } from 'react'
+import { getOutcomeProbability } from 'common/calculate'
+import { Pagination } from 'web/components/pagination'
+import { FeedBet } from '../feed/feed-bets'
+import { FeedLiquidity } from '../feed/feed-liquidity'
+import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
+import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
+import { groupBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
-import { Contract, CPMMBinaryContract } from 'common/contract'
-import { ContractComment } from 'common/comment'
-import { PAST_BETS, User } from 'common/user'
-import {
-  ContractCommentsActivity,
-  ContractBetsActivity,
-  FreeResponseContractCommentsActivity,
-} from '../feed/contract-activity'
+import { Contract } from 'common/contract'
+import { PAST_BETS } from 'common/user'
 import { ContractBetsTable, BetsSummary } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
-import { tradingAllowed } from 'web/lib/firebase/contracts'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
-import { BetSignUpPrompt } from '../sign-up-prompt'
-import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
-import BetButton from '../bet-button'
+import { useTipTxns } from 'web/hooks/use-tip-txns'
+import { useUser } from 'web/hooks/use-user'
 import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -25,88 +25,13 @@ import {
 } from 'common/antes'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
-export function ContractTabs(props: {
-  contract: Contract
-  user: User | null | undefined
-  bets: Bet[]
-  comments: ContractComment[]
-  tips: CommentTipMap
-}) {
-  const { contract, user, bets, tips } = props
-  const { outcomeType } = contract
+export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
+
   const isMobile = useIsMobile()
-
-  const lps = useLiquidity(contract.id)
-
+  const user = useUser()
   const userBets =
     user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
-  const visibleBets = bets.filter(
-    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
-  )
-  const visibleLps = (lps ?? []).filter(
-    (l) =>
-      !l.isAnte &&
-      l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.amount > 0
-  )
-
-  // Load comments here, so the badge count will be correct
-  const updatedComments = useComments(contract.id)
-  const comments = updatedComments ?? props.comments
-
-  const betActivity = lps != null && (
-    <ContractBetsActivity
-      contract={contract}
-      bets={visibleBets}
-      lps={visibleLps}
-    />
-  )
-
-  const generalBets = outcomeType === 'FREE_RESPONSE' ? [] : visibleBets
-  const generalComments = comments.filter(
-    (comment) =>
-      comment.answerOutcome === undefined &&
-      (outcomeType === 'FREE_RESPONSE' ? comment.betId === undefined : true)
-  )
-
-  const commentActivity =
-    outcomeType === 'FREE_RESPONSE' ? (
-      <>
-        <FreeResponseContractCommentsActivity
-          contract={contract}
-          betsByCurrentUser={
-            user ? visibleBets.filter((b) => b.userId === user.id) : []
-          }
-          comments={comments}
-          tips={tips}
-          user={user}
-        />
-        <Col className={'mt-8 flex w-full '}>
-          <div className={'text-md mt-8 mb-2 text-left'}>General Comments</div>
-          <div className={'mb-4 w-full border-b border-gray-200'} />
-          <ContractCommentsActivity
-            contract={contract}
-            betsByCurrentUser={
-              user ? generalBets.filter((b) => b.userId === user.id) : []
-            }
-            comments={generalComments}
-            tips={tips}
-            user={user}
-          />
-        </Col>
-      </>
-    ) : (
-      <ContractCommentsActivity
-        contract={contract}
-        betsByCurrentUser={
-          user ? visibleBets.filter((b) => b.userId === user.id) : []
-        }
-        comments={comments}
-        tips={tips}
-        user={user}
-      />
-    )
 
   const yourTrades = (
     <div>
@@ -123,44 +48,173 @@ export function ContractTabs(props: {
   )
 
   return (
-    <>
-      <Tabs
-        currentPageForAnalytics={'contract'}
-        tabs={[
-          {
-            title: 'Comments',
-            content: commentActivity,
-            badge: `${comments.length}`,
-          },
-          {
-            title: capitalize(PAST_BETS),
-            content: betActivity,
-            badge: `${visibleBets.length + visibleLps.length}`,
-          },
-          ...(!user || !userBets?.length
-            ? []
-            : [
-                {
-                  title: isMobile ? `You` : `Your ${PAST_BETS}`,
-                  content: yourTrades,
-                },
-              ]),
-        ]}
-      />
-      {!user ? (
-        <Col className="mt-4 max-w-sm items-center xl:hidden">
-          <BetSignUpPrompt />
-          <PlayMoneyDisclaimer />
-        </Col>
-      ) : (
-        outcomeType === 'BINARY' &&
-        tradingAllowed(contract) && (
-          <BetButton
-            contract={contract as CPMMBinaryContract}
-            className="mb-2 !mt-0 xl:hidden"
-          />
-        )
-      )}
-    </>
+    <Tabs
+      className="mb-4"
+      currentPageForAnalytics={'contract'}
+      tabs={[
+        {
+          title: 'Comments',
+          content: <CommentsTabContent contract={contract} />,
+        },
+        {
+          title: capitalize(PAST_BETS),
+          content: <BetsTabContent contract={contract} bets={bets} />,
+        },
+        ...(!user || !userBets?.length
+          ? []
+          : [
+              {
+                title: isMobile ? `You` : `Your ${PAST_BETS}`,
+                content: yourTrades,
+              },
+            ]),
+      ]}
+    />
   )
 }
+
+const CommentsTabContent = memo(function CommentsTabContent(props: {
+  contract: Contract
+}) {
+  const { contract } = props
+  const tips = useTipTxns({ contractId: contract.id })
+  const comments = useComments(contract.id)
+  if (comments == null) {
+    return <LoadingIndicator />
+  }
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    const generalComments = comments.filter(
+      (c) => c.answerOutcome === undefined && c.betId === undefined
+    )
+    const sortedAnswers = sortBy(
+      contract.answers,
+      (a) => -getOutcomeProbability(contract, a.id)
+    )
+    const commentsByOutcome = groupBy(
+      comments,
+      (c) => c.answerOutcome ?? c.betOutcome ?? '_'
+    )
+    return (
+      <>
+        {sortedAnswers.map((answer) => (
+          <div key={answer.id} className="relative pb-4">
+            <span
+              className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+            <FeedAnswerCommentGroup
+              contract={contract}
+              answer={answer}
+              answerComments={sortBy(
+                commentsByOutcome[answer.number.toString()] ?? [],
+                (c) => c.createdTime
+              )}
+              tips={tips}
+            />
+          </div>
+        ))}
+        <Col className="mt-8 flex w-full">
+          <div className="text-md mt-8 mb-2 text-left">General Comments</div>
+          <div className="mb-4 w-full border-b border-gray-200" />
+          <ContractCommentInput className="mb-5" contract={contract} />
+          {generalComments.map((comment) => (
+            <FeedCommentThread
+              key={comment.id}
+              contract={contract}
+              parentComment={comment}
+              threadComments={[]}
+              tips={tips}
+            />
+          ))}
+        </Col>
+      </>
+    )
+  } else {
+    const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
+    const topLevelComments = commentsByParent['_'] ?? []
+    return (
+      <>
+        <ContractCommentInput className="mb-5" contract={contract} />
+        {sortBy(topLevelComments, (c) => -c.createdTime).map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            contract={contract}
+            parentComment={parent}
+            threadComments={sortBy(
+              commentsByParent[parent.id] ?? [],
+              (c) => c.createdTime
+            )}
+            tips={tips}
+          />
+        ))}
+      </>
+    )
+  }
+})
+
+const BetsTabContent = memo(function BetsTabContent(props: {
+  contract: Contract
+  bets: Bet[]
+}) {
+  const { contract, bets } = props
+  const [page, setPage] = useState(0)
+  const ITEMS_PER_PAGE = 50
+  const start = page * ITEMS_PER_PAGE
+  const end = start + ITEMS_PER_PAGE
+
+  const lps = useLiquidity(contract.id) ?? []
+  const visibleBets = bets.filter(
+    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
+  )
+  const visibleLps = lps.filter(
+    (l) =>
+      !l.isAnte &&
+      l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+      l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
+      l.amount > 0
+  )
+
+  const items = [
+    ...visibleBets.map((bet) => ({
+      type: 'bet' as const,
+      id: bet.id + '-' + bet.isSold,
+      bet,
+    })),
+    ...visibleLps.map((lp) => ({
+      type: 'liquidity' as const,
+      id: lp.id,
+      lp,
+    })),
+  ]
+
+  const pageItems = sortBy(items, (item) =>
+    item.type === 'bet'
+      ? -item.bet.createdTime
+      : item.type === 'liquidity'
+      ? -item.lp.createdTime
+      : undefined
+  ).slice(start, end)
+
+  return (
+    <>
+      <Col className="mb-4 gap-4">
+        {pageItems.map((item) =>
+          item.type === 'bet' ? (
+            <FeedBet key={item.id} contract={contract} bet={item.bet} />
+          ) : (
+            <FeedLiquidity key={item.id} liquidity={item.lp} />
+          )
+        )}
+      </Col>
+      <Pagination
+        page={page}
+        itemsPerPage={50}
+        totalItems={items.length}
+        setPage={setPage}
+        scrollToTop
+        nextTitle={'Older'}
+        prevTitle={'Newer'}
+      />
+    </>
+  )
+})

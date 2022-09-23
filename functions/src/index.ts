@@ -51,7 +51,7 @@ export * from './resolve-market'
 export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-bonus-email'
-export * from './test-scheduled-function'
+export * from './close-market'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -68,13 +68,13 @@ import { addliquidity } from './add-liquidity'
 import { withdrawliquidity } from './withdraw-liquidity'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
+import { closemarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
-import { testscheduledfunction } from './test-scheduled-function'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -94,6 +94,7 @@ const addLiquidityFunction = toCloudFunction(addliquidity)
 const withdrawLiquidityFunction = toCloudFunction(withdrawliquidity)
 const createGroupFunction = toCloudFunction(creategroup)
 const resolveMarketFunction = toCloudFunction(resolvemarket)
+const closeMarketFunction = toCloudFunction(closemarket)
 const unsubscribeFunction = toCloudFunction(unsubscribe)
 const stripeWebhookFunction = toCloudFunction(stripewebhook)
 const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
@@ -101,7 +102,6 @@ const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
-const testScheduledFunction = toCloudFunction(testscheduledfunction)
 
 export {
   healthFunction as health,
@@ -119,6 +119,7 @@ export {
   withdrawLiquidityFunction as withdrawliquidity,
   createGroupFunction as creategroup,
   resolveMarketFunction as resolvemarket,
+  closeMarketFunction as closemarket,
   unsubscribeFunction as unsubscribe,
   stripeWebhookFunction as stripewebhook,
   createCheckoutSessionFunction as createcheckoutsession,
@@ -126,5 +127,4 @@ export {
   acceptChallenge as acceptchallenge,
   createPostFunction as createpost,
   saveTwitchCredentials as savetwitchcredentials,
-  testScheduledFunction as testscheduledfunction,
 }

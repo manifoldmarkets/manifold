@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { toast, Toaster } from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 
 import { Group, GROUP_CHAT_SLUG } from 'common/group'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
@@ -16,7 +16,7 @@ import {
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import {
   useGroup,
   useGroupContractIds,
@@ -42,17 +42,21 @@ import { GroupComment } from 'common/comment'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserLink } from 'web/components/user-link'
 import { GroupAboutPost } from 'web/components/groups/group-about-post'
-import { getPost } from 'web/lib/firebase/posts'
+import { getPost, listPosts, postPath } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { Spacer } from 'web/components/layout/spacer'
-import { usePost } from 'web/hooks/use-post'
+import { usePost, usePosts } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
 import { track } from '@amplitude/analytics-browser'
-import { GroupNavBar } from 'web/components/nav/group-nav-bar'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
-import { GroupSidebar } from 'web/components/nav/group-sidebar'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
+import { Page } from 'web/components/page'
+import { Tabs } from 'web/components/layout/tabs'
+import { Avatar } from 'web/components/avatar'
+import { Title } from 'web/components/title'
+import { fromNow } from 'web/lib/util/time'
+import { CreatePost } from 'web/components/create-post'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -70,7 +74,8 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       ? 'all'
       : 'open'
   const aboutPost =
-    group && group.aboutPostId != null && (await getPost(group.aboutPostId))
+    group && group.aboutPostId != null ? await getPost(group.aboutPostId) : null
+
   const messages = group && (await listAllCommentsOnGroup(group.id))
 
   const cachedTopTraderIds =
@@ -83,6 +88,9 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 
   const creator = await creatorPromise
 
+  const posts = ((group && (await listPosts(group.postIds))) ?? []).filter(
+    (p) => p != null
+  ) as Post[]
   return {
     props: {
       group,
@@ -93,6 +101,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
       messages,
       aboutPost,
       suggestedFilter,
+      posts,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -107,6 +116,7 @@ const groupSubpages = [
   'markets',
   'leaderboards',
   'about',
+  'posts',
 ] as const
 
 export default function GroupPage(props: {
@@ -116,8 +126,9 @@ export default function GroupPage(props: {
   topTraders: { user: User; score: number }[]
   topCreators: { user: User; score: number }[]
   messages: GroupComment[]
-  aboutPost: Post
+  aboutPost: Post | null
   suggestedFilter: 'open' | 'all'
+  posts: Post[]
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     group: null,
@@ -127,8 +138,9 @@ export default function GroupPage(props: {
     topCreators: [],
     messages: [],
     suggestedFilter: 'open',
+    posts: [],
   }
-  const { creator, topTraders, topCreators, suggestedFilter } = props
+  const { creator, topTraders, topCreators, suggestedFilter, posts } = props
 
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -137,13 +149,15 @@ export default function GroupPage(props: {
   const group = useGroup(props.group?.id) ?? props.group
   const aboutPost = usePost(props.aboutPost?.id) ?? props.aboutPost
 
+  let groupPosts = usePosts(group?.postIds ?? []) ?? posts
+
+  if (aboutPost != null) {
+    groupPosts = [aboutPost, ...groupPosts]
+  }
+
   const user = useUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
-  // Note: Keep in sync with sidebarPages
-  const [sidebarIndex, setSidebarIndex] = useState(
-    ['markets', 'leaderboards', 'about'].indexOf(page ?? 'markets')
-  )
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator.username,
@@ -157,7 +171,7 @@ export default function GroupPage(props: {
   const isMember = user && memberIds.includes(user.id)
   const maxLeaderboardSize = 50
 
-  const leaderboardPage = (
+  const leaderboardTab = (
     <Col>
       <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
         <GroupLeaderboard
@@ -176,7 +190,17 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const aboutPage = (
+  const postsPage = (
+    <>
+      <Col>
+        <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
+          {posts && <GroupPosts posts={groupPosts} group={group} />}
+        </div>
+      </Col>
+    </>
+  )
+
+  const aboutTab = (
     <Col>
       {(group.aboutPostId != null || isCreator || isAdmin) && (
         <GroupAboutPost
@@ -196,16 +220,21 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const questionsPage = (
+  const questionsTab = (
     <>
-      {/* align the divs to the right */}
-      <div className={' flex justify-end px-2 pb-2 sm:hidden'}>
-        <div>
-          <JoinOrAddQuestionsButtons
-            group={group}
-            user={user}
-            isMember={!!isMember}
-          />
+      <div className={'flex justify-end '}>
+        <div
+          className={
+            'flex items-end justify-self-end px-2 md:absolute md:top-0 md:pb-2'
+          }
+        >
+          <div>
+            <JoinOrAddQuestionsButtons
+              group={group}
+              user={user}
+              isMember={!!isMember}
+            />
+          </div>
         </div>
       </div>
       <ContractSearch
@@ -215,92 +244,46 @@ export default function GroupPage(props: {
         defaultFilter={suggestedFilter}
         additionalFilter={{ groupSlug: group.slug }}
         persistPrefix={`group-${group.slug}`}
+        includeProbSorts
       />
     </>
   )
 
-  const sidebarPages = [
+  const tabs = [
     {
       title: 'Markets',
-      content: questionsPage,
-      href: groupPath(group.slug, 'markets'),
-      key: 'markets',
+      content: questionsTab,
     },
     {
       title: 'Leaderboards',
-      content: leaderboardPage,
-      href: groupPath(group.slug, 'leaderboards'),
-      key: 'leaderboards',
+      content: leaderboardTab,
     },
     {
       title: 'About',
-      content: aboutPage,
-      href: groupPath(group.slug, 'about'),
-      key: 'about',
+      content: aboutTab,
+    },
+    {
+      title: 'Posts',
+      content: postsPage,
     },
   ]
 
-  const pageContent = sidebarPages[sidebarIndex].content
-  const onSidebarClick = (key: string) => {
-    const index = sidebarPages.findIndex((t) => t.key === key)
-    setSidebarIndex(index)
-    // Append the page to the URL, e.g. /group/mexifold/markets
-    router.replace(
-      { query: { ...router.query, slugs: [group.slug, key] } },
-      undefined,
-      { shallow: true }
-    )
-  }
-
-  const joinOrAddQuestionsButton = (
-    <JoinOrAddQuestionsButtons
-      group={group}
-      user={user}
-      isMember={!!isMember}
-    />
-  )
-
   return (
-    <>
-      <TopGroupNavBar
-        group={group}
-        currentPage={sidebarPages[sidebarIndex].key}
-        onClick={onSidebarClick}
+    <Page logoSubheading={group.name}>
+      <SEO
+        title={group.name}
+        description={`Created by ${creator.name}. ${group.about}`}
+        url={groupPath(group.slug)}
       />
-      <div>
-        <div
-          className={
-            'mx-auto w-full pb-[58px] lg:grid lg:grid-cols-12 lg:gap-x-2 lg:pb-0 xl:max-w-7xl xl:gap-x-8'
-          }
-        >
-          <Toaster />
-          <GroupSidebar
-            groupName={group.name}
-            className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex"
-            onClick={onSidebarClick}
-            joinOrAddQuestionsButton={joinOrAddQuestionsButton}
-            currentKey={sidebarPages[sidebarIndex].key}
-          />
-
-          <SEO
-            title={group.name}
-            description={`Created by ${creator.name}. ${group.about}`}
-            url={groupPath(group.slug)}
-          />
-          <main className={'px-2 pt-1 lg:col-span-8 lg:pt-6 xl:col-span-8'}>
-            {pageContent}
-          </main>
-        </div>
+      <TopGroupNavBar group={group} />
+      <div className={'relative p-2 pt-0 md:pt-2'}>
+        <Tabs className={'mb-2'} tabs={tabs} />
       </div>
-    </>
+    </Page>
   )
 }
 
-export function TopGroupNavBar(props: {
-  group: Group
-  currentPage: string
-  onClick: (key: string) => void
-}) {
+export function TopGroupNavBar(props: { group: Group }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
       <div className="flex items-center   bg-white  px-4">
@@ -317,7 +300,6 @@ export function TopGroupNavBar(props: {
           </h1>
         </div>
       </div>
-      <GroupNavBar currentPage={props.currentPage} onClick={props.onClick} />
     </header>
   )
 }
@@ -330,11 +312,13 @@ function JoinOrAddQuestionsButtons(props: {
 }) {
   const { group, user, isMember } = props
   return user && isMember ? (
-    <Row className={'w-full self-start pt-4'}>
+    <Row className={'mb-2 w-full self-start md:mt-2 '}>
       <AddContractButton group={group} user={user} />
     </Row>
   ) : group.anyoneCanJoin ? (
-    <JoinGroupButton group={group} user={user} />
+    <div className="mb-2 md:mb-0">
+      <JoinGroupButton group={group} user={user} />
+    </div>
   ) : null
 }
 
@@ -451,13 +435,91 @@ function GroupLeaderboard(props: {
   return (
     <Leaderboard
       className="max-w-xl"
-      users={topUsers.map((t) => t.user)}
+      entries={topUsers.map((t) => t.user)}
       title={title}
       columns={[
         { header, renderCell: (user) => formatMoney(scoresByUser[user.id]) },
       ]}
       maxToShow={maxToShow}
     />
+  )
+}
+
+function GroupPosts(props: { posts: Post[]; group: Group }) {
+  const { posts, group } = props
+  const [showCreatePost, setShowCreatePost] = useState(false)
+  const user = useUser()
+
+  const createPost = <CreatePost group={group} />
+
+  const postList = (
+    <div className=" align-start w-full items-start">
+      <Row className="flex justify-between">
+        <Col>
+          <Title text={'Posts'} className="!mt-0" />
+        </Col>
+        <Col>
+          {user && (
+            <Button
+              className="btn-md"
+              onClick={() => setShowCreatePost(!showCreatePost)}
+            >
+              Add a Post
+            </Button>
+          )}
+        </Col>
+      </Row>
+
+      <div className="mt-2">
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+        {posts.length === 0 && (
+          <div className="text-center text-gray-500">No posts yet</div>
+        )}
+      </div>
+    </div>
+  )
+
+  return showCreatePost ? createPost : postList
+}
+
+function PostCard(props: { post: Post }) {
+  const { post } = props
+  const creatorId = post.creatorId
+
+  const user = useUserById(creatorId)
+
+  if (!user) return <> </>
+
+  return (
+    <div className="py-1">
+      <Link href={postPath(post.slug)}>
+        <Row
+          className={
+            'relative gap-3 rounded-lg bg-white p-2 shadow-md hover:cursor-pointer hover:bg-gray-100'
+          }
+        >
+          <div className="flex-shrink-0">
+            <Avatar className="h-12 w-12" username={user?.username} />
+          </div>
+          <div className="">
+            <div className="text-sm text-gray-500">
+              <UserLink
+                className="text-neutral"
+                name={user?.name}
+                username={user?.username}
+              />
+              <span className="mx-1">•</span>
+              <span className="text-gray-500">{fromNow(post.createdTime)}</span>
+            </div>
+            <div className="text-lg font-medium text-gray-900">
+              {post.title}
+            </div>
+          </div>
+        </Row>
+      </Link>
+    </div>
   )
 }
 

@@ -47,13 +47,13 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   times.push(latestTime.valueOf())
   probs.push(probs[probs.length - 1])
 
-  const quartiles = [0, 25, 50, 75, 100]
+  const { width } = useWindowSize()
+
+  const quartiles = !width || width < 800 ? [0, 50, 100] : [0, 25, 50, 75, 100]
 
   const yTickValues = isBinary
     ? quartiles
     : quartiles.map((x) => x / 100).map(f)
-
-  const { width } = useWindowSize()
 
   const numXTickValues = !width || width < 800 ? 2 : 5
   const startDate = dayjs(times[0])
@@ -104,7 +104,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
   return (
     <div
       className="w-full overflow-visible"
-      style={{ height: height ?? (!width || width >= 800 ? 350 : 250) }}
+      style={{ height: height ?? (!width || width >= 800 ? 250 : 150) }}
     >
       <ResponsiveLine
         data={data}
@@ -144,7 +144,7 @@ export const ContractProbGraph = memo(function ContractProbGraph(props: {
         pointBorderWidth={1}
         pointBorderColor="#fff"
         enableSlices="x"
-        enableGridX={!!width && width >= 800}
+        enableGridX={false}
         enableArea
         areaBaselineValue={isBinary || isLogScale ? 0 : contract.min}
         margin={{ top: 20, right: 20, bottom: 25, left: 40 }}

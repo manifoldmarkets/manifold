@@ -40,7 +40,7 @@ export function Avatar(props: {
       style={{ maxWidth: `${s * 0.25}rem` }}
       src={avatarUrl}
       onClick={onClick}
-      alt={username}
+      alt={`${username ?? 'Unknown user'} avatar`}
       onError={() => {
         // If the image doesn't load, clear the avatarUrl to show the default
         // Mostly for localhost, when getting a 403 from googleusercontent

@@ -1,9 +1,6 @@
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import React, { useEffect, useState } from 'react'
-import { Dictionary } from 'lodash'
+import React, { useEffect, useRef, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -23,31 +20,16 @@ import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 
+export type ReplyTo = { id: string; username: string }
+
 export function FeedCommentThread(props: {
-  user: User | null | undefined
   contract: Contract
   threadComments: ContractComment[]
   tips: CommentTipMap
   parentComment: ContractComment
-  betsByCurrentUser: Bet[]
-  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const {
-    user,
-    contract,
-    threadComments,
-    commentsByUserId,
-    betsByCurrentUser,
-    tips,
-    parentComment,
-  } = props
-  const [showReply, setShowReply] = useState(false)
-  const [replyTo, setReplyTo] = useState<{ id: string; username: string }>()
-
-  function scrollAndOpenReplyInput(comment: ContractComment) {
-    setReplyTo({ id: comment.userId, username: comment.userUsername })
-    setShowReply(true)
-  }
+  const { contract, threadComments, tips, parentComment } = props
+  const [replyTo, setReplyTo] = useState<ReplyTo>()
 
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
@@ -61,11 +43,13 @@ export function FeedCommentThread(props: {
           indent={commentIdx != 0}
           contract={contract}
           comment={comment}
-          tips={tips[comment.id]}
-          onReplyClick={scrollAndOpenReplyInput}
+          tips={tips[comment.id] ?? {}}
+          onReplyClick={() =>
+            setReplyTo({ id: comment.id, username: comment.userUsername })
+          }
         />
       ))}
-      {showReply && (
+      {replyTo && (
         <Col className="-pb-2 relative ml-6">
           <span
             className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
@@ -73,14 +57,9 @@ export function FeedCommentThread(props: {
           />
           <ContractCommentInput
             contract={contract}
-            betsByCurrentUser={(user && betsByCurrentUser) ?? []}
-            commentsByCurrentUser={(user && commentsByUserId[user.id]) ?? []}
             parentCommentId={parentComment.id}
-            replyToUser={replyTo}
-            parentAnswerOutcome={parentComment.answerOutcome}
-            onSubmitComment={() => {
-              setShowReply(false)
-            }}
+            replyTo={replyTo}
+            onSubmitComment={() => setReplyTo(undefined)}
           />
         </Col>
       )}
@@ -91,9 +70,9 @@ export function FeedCommentThread(props: {
 export function FeedComment(props: {
   contract: Contract
   comment: ContractComment
-  tips: CommentTips
+  tips?: CommentTips
   indent?: boolean
-  onReplyClick?: (comment: ContractComment) => void
+  onReplyClick?: () => void
 }) {
   const { contract, comment, tips, indent, onReplyClick } = props
   const {
@@ -115,16 +94,19 @@ export function FeedComment(props: {
     money = formatMoney(Math.abs(comment.betAmount))
   }
 
-  const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
+  const highlighted = router.asPath.endsWith(`#${comment.id}`)
+  const commentRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
-    if (router.asPath.endsWith(`#${comment.id}`)) {
-      setHighlighted(true)
+    if (highlighted && commentRef.current != null) {
+      commentRef.current.scrollIntoView(true)
     }
-  }, [comment.id, router.asPath])
+  }, [highlighted])
 
   return (
     <Row
+      ref={commentRef}
       id={comment.id}
       className={clsx(
         'relative',
@@ -187,11 +169,11 @@ export function FeedComment(props: {
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          <Tipper comment={comment} tips={tips ?? {}} />
+          {tips && <Tipper comment={comment} tips={tips} />}
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
-              onClick={() => onReplyClick(comment)}
+              onClick={onReplyClick}
             >
               Reply
             </button>
@@ -200,34 +182,6 @@ export function FeedComment(props: {
       </div>
     </Row>
   )
-}
-
-export function getMostRecentCommentableBet(
-  betsByCurrentUser: Bet[],
-  commentsByCurrentUser: ContractComment[],
-  user?: User | null,
-  answerOutcome?: string
-) {
-  let sortedBetsByCurrentUser = betsByCurrentUser.sort(
-    (a, b) => b.createdTime - a.createdTime
-  )
-  if (answerOutcome) {
-    sortedBetsByCurrentUser = sortedBetsByCurrentUser.slice(0, 1)
-  }
-  return sortedBetsByCurrentUser
-    .filter((bet) => {
-      if (
-        canCommentOnBet(bet, user) &&
-        !commentsByCurrentUser.some(
-          (comment) => comment.createdTime > bet.createdTime
-        )
-      ) {
-        if (!answerOutcome) return true
-        return answerOutcome === bet.outcome
-      }
-      return false
-    })
-    .pop()
 }
 
 function CommentStatus(props: {
@@ -247,16 +201,14 @@ function CommentStatus(props: {
 
 export function ContractCommentInput(props: {
   contract: Contract
-  betsByCurrentUser: Bet[]
-  commentsByCurrentUser: ContractComment[]
   className?: string
   parentAnswerOutcome?: string | undefined
-  replyToUser?: { id: string; username: string }
+  replyTo?: ReplyTo
   parentCommentId?: string
   onSubmitComment?: () => void
 }) {
   const user = useUser()
-  async function onSubmitComment(editor: Editor, betId: string | undefined) {
+  async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
@@ -265,37 +217,19 @@ export function ContractCommentInput(props: {
       props.contract.id,
       editor.getJSON(),
       user,
-      betId,
       props.parentAnswerOutcome,
       props.parentCommentId
     )
     props.onSubmitComment?.()
   }
 
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    props.betsByCurrentUser,
-    props.commentsByCurrentUser,
-    user,
-    props.parentAnswerOutcome
-  )
-
-  const { id } = mostRecentCommentableBet || { id: undefined }
-
   return (
     <CommentInput
-      replyToUser={props.replyToUser}
+      replyTo={props.replyTo}
       parentAnswerOutcome={props.parentAnswerOutcome}
       parentCommentId={props.parentCommentId}
       onSubmitComment={onSubmitComment}
       className={props.className}
-      presetId={id}
     />
   )
-}
-
-function canCommentOnBet(bet: Bet, user?: User | null) {
-  const { userId, createdTime, isRedemption } = bet
-  const isSelf = user?.id === userId
-  // You can comment if your bet was posted in the last hour
-  return !isRedemption && isSelf && Date.now() - createdTime < 60 * 60 * 1000
 }

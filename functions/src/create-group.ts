@@ -61,6 +61,7 @@ export const creategroup = newEndpoint({}, async (req, auth) => {
     anyoneCanJoin,
     totalContracts: 0,
     totalMembers: memberIds.length,
+    postIds: [],
   }
 
   await groupRef.create(group)

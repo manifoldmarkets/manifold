@@ -2,13 +2,19 @@ import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { useProbChangesAlgolia } from 'web/hooks/use-prob-changes'
+import { useProbChanges } from 'web/hooks/use-prob-changes'
+import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 
 export default function DailyMovers() {
   const user = useUser()
+  const bettorId = user?.id ?? undefined
 
-  const changes = useProbChangesAlgolia(user?.id ?? '')
+  const changes = useProbChanges({ bettorId })?.filter(
+    (c) => Math.abs(c.probChanges.day) >= 0.01
+  )
+
+  useTracking('view daily movers')
 
   return (
     <Page>
