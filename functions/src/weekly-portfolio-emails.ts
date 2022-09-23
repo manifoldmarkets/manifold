@@ -36,7 +36,10 @@ const firestore = admin.firestore()
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
     ? // ? await getAllPrivateUsers()
-      filterDefined([await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')])
+      filterDefined([
+        await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
+        await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
+      ])
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers
