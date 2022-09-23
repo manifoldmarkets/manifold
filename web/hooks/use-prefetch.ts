@@ -1,5 +1,4 @@
 import { usePrefetchUserBetContracts } from './use-contracts'
-import { usePrefetchPortfolioHistory } from './use-portfolio-history'
 import { usePrefetchUserBets } from './use-user-bets'
 
 export function usePrefetch(userId: string | undefined) {
@@ -7,6 +6,5 @@ export function usePrefetch(userId: string | undefined) {
   return Promise.all([
     usePrefetchUserBets(maybeUserId),
     usePrefetchUserBetContracts(maybeUserId),
-    usePrefetchPortfolioHistory(maybeUserId, 'weekly'),
   ])
 }
