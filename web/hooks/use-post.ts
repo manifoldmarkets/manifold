@@ -32,4 +32,8 @@ export const usePosts = (postIds: string[]) => {
   }, [postIds])
 
   return posts
+    .filter(
+      (post, index, self) => index === self.findIndex((t) => t.id === post.id)
+    )
+    .sort((a, b) => b.createdTime - a.createdTime)
 }

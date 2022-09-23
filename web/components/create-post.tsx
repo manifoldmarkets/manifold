@@ -11,7 +11,7 @@ import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { postPath } from 'web/lib/firebase/posts'
 import { Group } from 'common/group'
 
-export default function CreatePost(props: { group?: Group }) {
+export function CreatePost(props: { group?: Group }) {
   const [title, setTitle] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)

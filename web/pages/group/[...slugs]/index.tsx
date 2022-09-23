@@ -56,7 +56,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { Avatar } from 'web/components/avatar'
 import { Title } from 'web/components/title'
 import { fromNow } from 'web/lib/util/time'
-import CreatePost from 'web/components/create-post'
+import { CreatePost } from 'web/components/create-post'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {

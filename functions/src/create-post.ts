@@ -68,10 +68,8 @@ export const createpost = newEndpoint({}, async (req, auth) => {
       const groupData = group.data()
       if (groupData) {
         const postIds = groupData.postIds ?? []
-        if (postIds) {
-          postIds.push(postRef.id)
-          await groupRef.update({ postIds })
-        }
+        postIds.push(postRef.id)
+        await groupRef.update({ postIds })
       }
     }
   }
