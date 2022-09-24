@@ -146,7 +146,7 @@ export function UserPage(props: { user: User }) {
             </>
           )}
           {(user.website || user.twitterHandle || user.discordHandle) && (
-            <Row className="mb-5 flex-wrap items-center gap-2 sm:gap-4">
+            <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
               {user.website && (
                 <SiteLink
                   href={
@@ -200,27 +200,6 @@ export function UserPage(props: { user: User }) {
               )}
             </Row>
           )}
-          {/* {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
-            <Row
-              className={
-                'mb-5 w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
-              }
-            >
-              <span>
-                <SiteLink href="/referrals">
-                  Earn {formatMoney(REFERRAL_AMOUNT)} when you refer a friend!
-                </SiteLink>{' '}
-                You've gotten{' '}
-                <ReferralsButton user={user} currentUser={currentUser} />
-              </span>
-              <ShareIconButton
-                copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
-                toastClassName={'sm:-left-40 -left-40 min-w-[250%]'}
-                buttonClassName={'h-10 w-10'}
-                iconClassName={'h-8 w-8 text-indigo-700'}
-              />
-            </Row>
-          )} */}
           <QueryUncontrolledTabs
             currentPageForAnalytics={'profile'}
             labelClassName={'pb-2 pt-1 sm:pt-4 '}

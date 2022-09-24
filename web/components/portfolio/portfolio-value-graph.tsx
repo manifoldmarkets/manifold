@@ -2,16 +2,18 @@ import { ResponsiveLine } from '@nivo/line'
 import { PortfolioMetrics } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import dayjs from 'dayjs'
+import { connectStorageEmulator } from 'firebase/storage'
 import { last, set } from 'lodash'
 import { memo } from 'react'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { nFormatter } from 'web/lib/util/appendNumber'
 import { formatTime } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 
 export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
   portfolioHistory: PortfolioMetrics[]
   mode: 'value' | 'profit'
-  setGraphDisplayNumber: (value: number | string) => void
+  setGraphDisplayNumber: (arg0: number | string | null) => void
   height?: number
   includeTime?: boolean
 }) {
@@ -23,11 +25,10 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
     let points = portfolioHistory.map((p) => {
       const { timestamp, balance, investmentValue, totalDeposits } = p
       const value = balance + investmentValue
+
       const profit = value - totalDeposits
       let posProfit = null
       let negProfit = null
-
-      // const profit = value - totalDeposits
       if (profit < 0) {
         negProfit = profit
       } else {
@@ -66,8 +67,8 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
     ]
   }
   const firstPoints = data[0].data
-  // const numXTickValues = !width || width < 800 ? 2 : 5
-  // const numYTickValues = 4
+  // const numYTickValues = !width || width < 800 ? 2 : 4
+  const numYTickValues = 2
   const endDate = last(firstPoints)?.x
 
   const firstPointsY = firstPoints
@@ -75,7 +76,6 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
       return p.y !== null
     })
     .map((p) => p.y)
-  // console.log(firstPointsY)
 
   const yMin =
     mode === 'value'
@@ -102,72 +102,72 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         )
 
   return (
-    <div
-      className="w-full overflow-hidden"
-      style={{ height: height ?? (!width || width >= 800 ? 200 : 100) }}
-    >
-      <ResponsiveLine
-        margin={{ top: 10, right: 0, left: 0, bottom: 10 }}
-        data={data}
-        xScale={{
-          type: 'time',
-          min: firstPoints[0]?.x,
-          max: endDate,
-        }}
-        yScale={{
-          type: 'linear',
-          stacked: false,
-          min: yMin,
-          max: yMax,
-        }}
-        curve="stepAfter"
-        enablePoints={false}
-        colors={{ datum: 'color' }}
-        axisBottom={{
-          tickValues: 0,
-          format: (time) => formatTime(+time, !!includeTime),
-        }}
-        pointBorderColor="#fff"
-        pointSize={firstPoints.length > 100 ? 0 : 6}
-        axisLeft={{
-          tickValues: 0,
-          format: (value) => formatMoney(value),
-        }}
-        enableGridX={false}
-        enableGridY={false}
-        enableSlices="x"
-        animate={false}
-        yFormat={(value) => formatMoney(+value)}
-        enableArea={true}
-        areaOpacity={0.1}
-        sliceTooltip={({ slice }) => {
-          slice.points.map((point) =>
-            setGraphDisplayNumber(point.data.yFormatted)
-          )
-          return (
-            <div className="rounded bg-white px-4 py-2 opacity-80">
-              {slice.points.map((point) => (
-                <div
-                  key={point.id}
-                  style={{
-                    color: point.serieColor,
-                    padding: '3px 0',
-                  }}
-                >
-                  <Col>
-                    <div>
-                      <strong>Time</strong> [{point.data.xFormatted}]
-                    </div>
-                    <div>
-                      <strong>{point.serieId}</strong> [{point.data.yFormatted}]
-                    </div>
-                  </Col>
-                </div>
-              ))}
-            </div>
-          )
-        }}
-      ></ResponsiveLine>
+    <div className="animate-rapidpulse">
+      <div
+        className="w-full overflow-hidden"
+        style={{ height: height ?? (!width || width >= 800 ? 200 : 100) }}
+        onMouseLeave={() => setGraphDisplayNumber(null)}
+      >
+        <ResponsiveLine
+          margin={{ top: 10, right: 0, left: 40, bottom: 10 }}
+          data={data}
+          xScale={{
+            type: 'time',
+            min: firstPoints[0]?.x,
+            max: endDate,
+          }}
+          yScale={{
+            type: 'linear',
+            stacked: false,
+            min: yMin,
+            max: yMax,
+          }}
+          curve="stepAfter"
+          enablePoints={false}
+          colors={{ datum: 'color' }}
+          axisBottom={{
+            tickValues: 0,
+          }}
+          pointBorderColor="#fff"
+          pointSize={firstPoints.length > 100 ? 0 : 6}
+          axisLeft={{
+            tickValues: numYTickValues,
+            format: '.3s',
+          }}
+          enableGridX={false}
+          enableGridY={true}
+          gridYValues={numYTickValues}
+          enableSlices="x"
+          animate={false}
+          yFormat={(value) => formatMoney(+value)}
+          enableArea={true}
+          areaOpacity={0.1}
+          sliceTooltip={({ slice }) => {
+            slice.points.map((point) =>
+              setGraphDisplayNumber(point.data.yFormatted)
+            )
+            return (
+              <div className="rounded bg-white px-4 py-2 opacity-80">
+                {slice.points.map((point) => (
+                  <div
+                    key={point.id}
+                    className="text-xs font-semibold sm:text-sm"
+                  >
+                    <Col>
+                      <div>
+                        {dayjs(point.data.xFormatted).format('MMM/D/YY')}
+                      </div>
+                      <div className="text-greyscale-6 text-2xs font-normal sm:text-xs">
+                        {dayjs(point.data.xFormatted).format('h:mm A')}
+                      </div>
+                    </Col>
+                  </div>
+                ))}
+              </div>
+            )
+          }}
+        ></ResponsiveLine>
+      </div>
     </div>
   )
 })

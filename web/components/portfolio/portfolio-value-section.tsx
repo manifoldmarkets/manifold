@@ -16,7 +16,7 @@ export const PortfolioValueSection = memo(
 
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
-    const [graphMode, setGraphMode] = useState<'profit' | 'value'>('profit')
+    const [graphMode, setGraphMode] = useState<'profit' | 'value'>('value')
     const [graphDisplayNumber, setGraphDisplayNumber] = useState(null)
 
     // Remember the last defined portfolio history.
@@ -32,16 +32,21 @@ export const PortfolioValueSection = memo(
     const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
     const totalProfit = totalValue - totalDeposits
-
     return (
       <>
-        <Row className="justify-between">
-          <Row className="gap-4 sm:gap-8 ">
-            <Col>
-              <div className="text-greyscale-4 text-xs sm:text-sm">
+        <Row className="mb-2 justify-between">
+          <Row className="gap-4 sm:gap-8">
+            <Col
+              className={clsx(
+                'cursor-pointer',
+                graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+              )}
+              onClick={() => setGraphMode('value')}
+            >
+              <div className="text-greyscale-6 text-xs sm:text-sm">
                 Portfolio value
               </div>
-              <div className="text-lg text-indigo-600 sm:text-xl">
+              <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
                 {graphMode === 'value'
                   ? graphDisplayNumber
                     ? graphDisplayNumber
@@ -49,11 +54,29 @@ export const PortfolioValueSection = memo(
                   : formatMoney(totalValue)}
               </div>
             </Col>
-            <Col>
-              <div className="text-greyscale-4 text-xs sm:text-sm">Profit</div>
+            <Col
+              className={clsx(
+                'cursor-pointer',
+                graphMode != 'profit'
+                  ? 'cursor-pointer opacity-40 hover:opacity-80'
+                  : ''
+              )}
+              onClick={() => setGraphMode('profit')}
+            >
+              <div className="text-greyscale-6 text-xs sm:text-sm">Profit</div>
               <div
                 className={clsx(
-                  totalProfit > 0 ? 'text-green-500' : 'text-red-600',
+                  graphMode === 'profit'
+                    ? graphDisplayNumber
+                      ? graphDisplayNumber[2] === '-'
+                        ? 'text-red-600'
+                        : 'text-teal-500'
+                      : totalProfit > 0
+                      ? 'text-teal-500'
+                      : 'text-red-600'
+                    : totalProfit > 0
+                    ? 'text-teal-500'
+                    : 'text-red-600',
                   'text-lg sm:text-xl'
                 )}
               >
@@ -65,7 +88,7 @@ export const PortfolioValueSection = memo(
               </div>
             </Col>
           </Row>
-          <GraphToggle setGraphMode={setGraphMode} graphMode={graphMode} />
+          {/* <GraphToggle setGraphMode={setGraphMode} graphMode={graphMode} /> */}
         </Row>
         <PortfolioValueGraph
           portfolioHistory={currPortfolioHistory}
