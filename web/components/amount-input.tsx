@@ -5,7 +5,7 @@ import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { useWindowSize } from 'web/hooks/use-window-size'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -34,8 +34,7 @@ export function AmountInput(props: {
     const isInvalid = !str || isNaN(amount)
     onChange(isInvalid ? undefined : amount)
   }
-  const { width } = useWindowSize()
-  const isMobile = (width ?? 0) < 768
+  const isMobile = useIsMobile(768)
   return (
     <Col className={className}>
       <label className="input-group mb-4">
