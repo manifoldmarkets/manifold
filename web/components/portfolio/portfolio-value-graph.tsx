@@ -2,12 +2,9 @@ import { ResponsiveLine } from '@nivo/line'
 import { PortfolioMetrics } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import dayjs from 'dayjs'
-import { connectStorageEmulator } from 'firebase/storage'
 import { last, set } from 'lodash'
 import { memo } from 'react'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { nFormatter } from 'web/lib/util/appendNumber'
-import { formatTime } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 
 export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
@@ -102,72 +99,68 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         )
 
   return (
-    <div className="animate-rapidpulse">
-      <div
-        className="w-full overflow-hidden"
-        style={{ height: height ?? (!width || width >= 800 ? 200 : 100) }}
-        onMouseLeave={() => setGraphDisplayNumber(null)}
-      >
-        <ResponsiveLine
-          margin={{ top: 10, right: 0, left: 40, bottom: 10 }}
-          data={data}
-          xScale={{
-            type: 'time',
-            min: firstPoints[0]?.x,
-            max: endDate,
-          }}
-          yScale={{
-            type: 'linear',
-            stacked: false,
-            min: yMin,
-            max: yMax,
-          }}
-          curve="stepAfter"
-          enablePoints={false}
-          colors={{ datum: 'color' }}
-          axisBottom={{
-            tickValues: 0,
-          }}
-          pointBorderColor="#fff"
-          pointSize={firstPoints.length > 100 ? 0 : 6}
-          axisLeft={{
-            tickValues: numYTickValues,
-            format: '.3s',
-          }}
-          enableGridX={false}
-          enableGridY={true}
-          gridYValues={numYTickValues}
-          enableSlices="x"
-          animate={false}
-          yFormat={(value) => formatMoney(+value)}
-          enableArea={true}
-          areaOpacity={0.1}
-          sliceTooltip={({ slice }) => {
-            slice.points.map((point) =>
-              setGraphDisplayNumber(point.data.yFormatted)
-            )
-            return (
-              <div className="rounded bg-white px-4 py-2 opacity-80">
-                {slice.points.map((point) => (
-                  <div
-                    key={point.id}
-                    className="text-xs font-semibold sm:text-sm"
-                  >
-                    <Col>
-                      <div>
-                        {dayjs(point.data.xFormatted).format('MMM/D/YY')}
-                      </div>
-                      <div className="text-greyscale-6 text-2xs font-normal sm:text-xs">
-                        {dayjs(point.data.xFormatted).format('h:mm A')}
-                      </div>
-                    </Col>
-                  </div>
-                ))}
-              </div>
-            )
-          }}
-        ></ResponsiveLine>
-      </div>
+    <div
+      className="w-full overflow-hidden"
+      style={{ height: height ?? (!width || width >= 800 ? 200 : 100) }}
+      onMouseLeave={() => setGraphDisplayNumber(null)}
+    >
+      <ResponsiveLine
+        margin={{ top: 10, right: 0, left: 40, bottom: 10 }}
+        data={data}
+        xScale={{
+          type: 'time',
+          min: firstPoints[0]?.x,
+          max: endDate,
+        }}
+        yScale={{
+          type: 'linear',
+          stacked: false,
+          min: yMin,
+          max: yMax,
+        }}
+        curve="stepAfter"
+        enablePoints={false}
+        colors={{ datum: 'color' }}
+        axisBottom={{
+          tickValues: 0,
+        }}
+        pointBorderColor="#fff"
+        pointSize={firstPoints.length > 100 ? 0 : 6}
+        axisLeft={{
+          tickValues: numYTickValues,
+          format: '.3s',
+        }}
+        enableGridX={false}
+        enableGridY={true}
+        gridYValues={numYTickValues}
+        enableSlices="x"
+        animate={false}
+        yFormat={(value) => formatMoney(+value)}
+        enableArea={true}
+        areaOpacity={0.1}
+        sliceTooltip={({ slice }) => {
+          slice.points.map((point) =>
+            setGraphDisplayNumber(point.data.yFormatted)
+          )
+          return (
+            <div className="rounded bg-white px-4 py-2 opacity-80">
+              {slice.points.map((point) => (
+                <div
+                  key={point.id}
+                  className="text-xs font-semibold sm:text-sm"
+                >
+                  <Col>
+                    <div>{dayjs(point.data.xFormatted).format('MMM/D/YY')}</div>
+                    <div className="text-greyscale-6 text-2xs font-normal sm:text-xs">
+                      {dayjs(point.data.xFormatted).format('h:mm A')}
+                    </div>
+                  </Col>
+                </div>
+              ))}
+            </div>
+          )
+        }}
+      ></ResponsiveLine>
     </div>
   )
 })

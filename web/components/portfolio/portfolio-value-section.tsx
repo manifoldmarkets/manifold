@@ -99,8 +99,8 @@ export const PortfolioValueSection = memo(
         <PortfolioPeriodSelection
           portfolioPeriod={portfolioPeriod}
           setPortfolioPeriod={setPortfolioPeriod}
-          className="mt-2 gap-4"
-          selectClassName="text-indigo-600 text-bold underline"
+          className="border-greyscale-2 mt-2 gap-4 border-b"
+          selectClassName="text-indigo-600 text-bold border-b border-indigo-600"
         />
       </>
     )
