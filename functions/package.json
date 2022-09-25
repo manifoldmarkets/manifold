@@ -47,7 +47,8 @@
     "@types/mailgun-js": "0.22.12",
     "@types/module-alias": "2.0.1",
     "@types/node-fetch": "2.6.2",
-    "firebase-functions-test": "0.3.3"
+    "firebase-functions-test": "0.3.3",
+    "puppeteer": "18.0.5"
   },
   "private": true
 }
