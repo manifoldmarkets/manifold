@@ -30,8 +30,9 @@ async function postMarket(submission: CEPSubmission) {
       initialProb: 10,
       // Super secret options:
       // groupId: 'y2hcaGybXT1UfobK3XTx', // [DEV] CEP Tournament
-      groupId: 'h3MhjYbSSG6HbxY8ZTwE', // [DEV] CART
       // groupId: 'cMcpBQ2p452jEcJD2SFw', // [PROD] Predict CEP
+      groupId: 'h3MhjYbSSG6HbxY8ZTwE', // [DEV] CART
+      // groupId: 'K86LmEmidMKdyCHdHNv4', // [PROD] CART
       visibility: 'unlisted',
       // TODO: Increase liquidity?
     }),
@@ -41,7 +42,7 @@ async function postMarket(submission: CEPSubmission) {
 }
 
 async function postAll() {
-  for (const submission of data.slice(3, 6)) {
+  for (const submission of data.slice(0, 3)) {
     await postMarket(submission)
   }
 }
