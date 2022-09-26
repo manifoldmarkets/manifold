@@ -36,38 +36,8 @@ export class Market {
       try {
         this.pollBets();
         if (await this.detectResolution()) {
-          this.data = await Manifold.getFullMarketByID(this.data.id);
-
           this.continuePolling = false;
-
-          const resolutionOutcome = getOutcomeForString(this.data.resolution);
-          const winners = (await this.calculateWinners()).filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
-          const uniqueTraderCount = _(this.data.bets).groupBy('userId').size();
-
-          type Result = { displayName: string; profit: number };
-          const topWinners: Result[] = [];
-          const topLosers: Result[] = [];
-          for (const winner of winners) {
-            if (winner.profit > 0) {
-              topWinners.push({ displayName: winner.user.name, profit: winner.profit });
-            } else {
-              topLosers.push({ displayName: winner.user.name, profit: winner.profit });
-            }
-          }
-          const sortFunction = (a: Result, b: Result) => (Math.abs(a.profit) > Math.abs(b.profit) ? -1 : 1);
-          topWinners.sort(sortFunction);
-          topLosers.sort(sortFunction);
-
-          this.resolveData = {
-            outcome: resolutionOutcome,
-            uniqueTraders: uniqueTraderCount,
-            topWinners: topWinners,
-            topLosers: topLosers,
-          };
-
-          this.app.marketResolved(this);
-          this.app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData);
-          this.app.io.to(this.twitchChannel).emit(Packet.RESOLVED);
+          await this.resolve();
         }
       } catch (e) {
         log.trace(e);
@@ -84,6 +54,39 @@ export class Market {
       this.continuePolling = true;
       setTimeout(this.pollTask, 1000);
     });
+  }
+
+  private async resolve() {
+    this.data = await Manifold.getFullMarketByID(this.data.id);
+
+    const resolutionOutcome = getOutcomeForString(this.data.resolution);
+    const winners = (await this.calculateWinners()).filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
+    const uniqueTraderCount = _(this.data.bets).groupBy('userId').size();
+
+    type Result = { displayName: string; profit: number };
+    const topWinners: Result[] = [];
+    const topLosers: Result[] = [];
+    for (const winner of winners) {
+      if (winner.profit > 0) {
+        topWinners.push({ displayName: winner.user.name, profit: winner.profit });
+      } else {
+        topLosers.push({ displayName: winner.user.name, profit: winner.profit });
+      }
+    }
+    const sortFunction = (a: Result, b: Result) => (Math.abs(a.profit) > Math.abs(b.profit) ? -1 : 1);
+    topWinners.sort(sortFunction);
+    topLosers.sort(sortFunction);
+
+    this.resolveData = {
+      outcome: resolutionOutcome,
+      uniqueTraders: uniqueTraderCount,
+      topWinners: topWinners,
+      topLosers: topLosers,
+    };
+
+    this.app.marketResolved(this);
+    this.app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData);
+    this.app.io.to(this.twitchChannel).emit(Packet.RESOLVED);
   }
 
   /**

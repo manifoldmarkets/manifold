@@ -194,8 +194,8 @@ class Application {
     if (this.currentMarket && this.loadedHistory) {
       this.currentMarket.probability = bet.probAfter;
       this.currentProbability_percent = this.currentMarket.probability * 100;
-      //!!! this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
-      //!!! this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
+      this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
+      this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
     }
   }
 }

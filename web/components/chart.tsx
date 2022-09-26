@@ -16,7 +16,11 @@ export default class Chart {
 
   constructor(canvasElement: HTMLCanvasElement) {
     this.canvasElement = canvasElement;
-    this.ctx = this.canvasElement.getContext('2d'); //!!! Handle failed context
+
+    this.ctx = this.canvasElement.getContext('2d');
+    if (!this.ctx) {
+      console.error('Failed to obtain render context for chart. Browser may not be compatible.');
+    }
 
     window.addEventListener('resize', () => {
       this.resize();
