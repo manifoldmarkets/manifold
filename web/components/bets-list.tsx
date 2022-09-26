@@ -33,12 +33,12 @@ import {
   getContractBetMetrics,
   resolvedPayout,
   getContractBetNullMetrics,
+  getProbability,
 } from 'common/calculate'
 import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { useUserBets } from 'web/hooks/use-user-bets'
-import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
@@ -46,6 +46,7 @@ import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
 import { UserLink } from 'web/components/user-link'
 import { useUserBetContracts } from 'web/hooks/use-contracts'
+import { InfoTooltip } from './info-tooltip'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -379,16 +380,15 @@ export function BetsSummary(props: {
   isYourBets: boolean
   className?: string
 }) {
-  const { contract, isYourBets, className } = props
-  const { resolution, closeTime, outcomeType, mechanism } = contract
+  const { contract, className } = props
+  const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isCpmm = mechanism === 'cpmm-1'
-  const isClosed = closeTime && Date.now() > closeTime
 
   const bets = props.bets.filter((b) => !b.isAnte)
-  const { hasShares, invested, profitPercent, payout, profit, totalShares } =
-    getContractBetMetrics(contract, bets)
+  const { profitPercent, payout, profit, totalShares } = getContractBetMetrics(
+    contract,
+    bets
+  )
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
   const yesWinnings = sumBy(excludeSales, (bet) =>
@@ -398,62 +398,19 @@ export function BetsSummary(props: {
     calculatePayout(contract, bet, 'NO')
   )
 
-  const [showSellModal, setShowSellModal] = useState(false)
-  const user = useUser()
+  const prob = isBinary ? getProbability(contract) : 0
+  const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
-  const sharesOutcome = floatingEqual(totalShares.YES ?? 0, 0)
-    ? floatingEqual(totalShares.NO ?? 0, 0)
-      ? undefined
-      : 'NO'
-    : 'YES'
-
-  const canSell =
-    isYourBets &&
-    isCpmm &&
-    (isBinary || isPseudoNumeric) &&
-    !isClosed &&
-    !resolution &&
-    hasShares &&
-    sharesOutcome &&
-    user
+  if (
+    isBinary &&
+    floatingEqual(totalShares.YES ?? 0, 0) &&
+    floatingEqual(totalShares.NO ?? 0, 0)
+  )
+    return <></>
 
   return (
     <Col className={clsx(className, 'gap-4')}>
       <Row className="flex-wrap gap-4 sm:flex-nowrap sm:gap-6">
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
-            Invested
-          </div>
-          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
-        </Col>
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
-          <div className="whitespace-nowrap">
-            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
-          </div>
-        </Col>
-        {canSell && (
-          <>
-            <button
-              className="btn btn-sm self-end"
-              onClick={() => setShowSellModal(true)}
-            >
-              Sell
-            </button>
-            {showSellModal && (
-              <SellSharesModal
-                contract={contract}
-                user={user}
-                userBets={bets}
-                shares={totalShares[sharesOutcome]}
-                sharesOutcome={sharesOutcome}
-                setOpen={setShowSellModal}
-              />
-            )}
-          </>
-        )}
-      </Row>
-      <Row className="flex-wrap-none gap-4">
         {resolution ? (
           <Col>
             <div className="text-sm text-gray-500">Payout</div>
@@ -463,31 +420,54 @@ export function BetsSummary(props: {
             </div>
           </Col>
         ) : isBinary ? (
-          <>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if <YesLabel />
-              </div>
-              <div className="whitespace-nowrap">
-                {formatMoney(yesWinnings)}
-              </div>
-            </Col>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if <NoLabel />
-              </div>
-              <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-            </Col>
-          </>
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Position{' '}
+              <InfoTooltip text="Number of shares you own on net. 1 YES share = M$1 if the market resolves YES." />
+            </div>
+            <div className="whitespace-nowrap">
+              {yesWinnings > 0 ? (
+                <>
+                  <YesLabel /> {formatWithCommas(yesWinnings)}
+                </>
+              ) : (
+                <>
+                  <NoLabel /> {formatWithCommas(noWinnings)}
+                </>
+              )}
+            </div>
+          </Col>
         ) : (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
-              Expected value
+              Expected value {''}
+              <InfoTooltip text="The estimated payout of your position using the current market probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(payout)}</div>
           </Col>
         )}
+
+        {isBinary && (
+          <Col>
+            <div className="whitespace-nowrap text-sm text-gray-500">
+              Expected value{' '}
+              <InfoTooltip text="The estimated payout of your position using the current market probability." />
+            </div>
+            <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
+          </Col>
+        )}
+
+        <Col>
+          <div className="whitespace-nowrap text-sm text-gray-500">
+            Profit{' '}
+            <InfoTooltip text="Includes both realized & unrealized gains/losses from trades." />
+          </div>
+          <div className="whitespace-nowrap">
+            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
+          </div>
+        </Col>
       </Row>
+      <Row className="flex-wrap-none gap-4"></Row>
     </Col>
   )
 }
