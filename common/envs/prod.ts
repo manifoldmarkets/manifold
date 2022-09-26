@@ -3,7 +3,7 @@ export type EnvConfig = {
   firebaseConfig: FirebaseConfig
   amplitudeApiKey?: string
   twitchBotEndpoint?: string
-  sprigEnvironmentId: string
+  sprigEnvironmentId?: string
 
   // IDs for v2 cloud functions -- find these by deploying a cloud function and
   // examining the URL, https://[name]-[cloudRunId]-[cloudRunRegion].a.run.app
