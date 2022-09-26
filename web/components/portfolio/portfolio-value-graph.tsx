@@ -2,7 +2,7 @@ import { ResponsiveLine } from '@nivo/line'
 import { PortfolioMetrics } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import dayjs from 'dayjs'
-import { last, set } from 'lodash'
+import { last } from 'lodash'
 import { memo } from 'react'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Col } from '../layout/col'
@@ -12,14 +12,12 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
   mode: 'value' | 'profit'
   setGraphDisplayNumber: (arg0: number | string | null) => void
   height?: number
-  includeTime?: boolean
 }) {
-  const { portfolioHistory, height, includeTime, mode, setGraphDisplayNumber } =
-    props
+  const { portfolioHistory, height, mode, setGraphDisplayNumber } = props
   const { width } = useWindowSize()
 
   function getPoints(line: 'value' | 'posProfit' | 'negProfit') {
-    let points = portfolioHistory.map((p) => {
+    const points = portfolioHistory.map((p) => {
       const { timestamp, balance, investmentValue, totalDeposits } = p
       const value = balance + investmentValue
 
@@ -63,7 +61,7 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
       },
     ]
   }
-  let firstPoints = data[0].data
+  const firstPoints = data[0].data
   const numYTickValues = 2
   const endDate = last(data[0].data)?.x
 

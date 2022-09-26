@@ -42,21 +42,12 @@ export function UserPage(props: { user: User }) {
   const router = useRouter()
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
-  const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
+  // const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
-  // const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
-  // const [showLoansModal, setShowLoansModal] = useState(false)
   const isMobile = useIsMobile()
 
   useEffect(() => {
-    const claimedMana = router.query['claimed-mana'] === 'yes'
-    // const showBettingStreak = router.query['show'] === 'betting-streak'
-    // setShowBettingStreakModal(showBettingStreak)
-    // setShowConfetti(claimedMana || showBettingStreak)
-
-    // const showLoansModel = router.query['show'] === 'loans'
-    // setShowLoansModal(showLoansModel)
-
+    // const claimedMana = router.query['claimed-mana'] === 'yes'
     const query = { ...router.query }
     if (query.claimedMana || query.show) {
       delete query['claimed-mana']

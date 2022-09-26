@@ -155,8 +155,8 @@ export function BetsList(props: { user: User }) {
     (c) => contractsMetrics[c.id].netPayout
   )
 
-  const totalPnl = user.profitCached.allTime
-  const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
+  // const totalPnl = user.profitCached.allTime
+  // const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
   const investedProfitPercent =
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
