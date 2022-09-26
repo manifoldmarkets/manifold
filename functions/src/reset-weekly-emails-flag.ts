@@ -17,6 +17,7 @@ export const resetWeeklyEmailsFlag = functions
       privateUsers.map(async (user) => {
         return firestore.collection('private-users').doc(user.id).update({
           weeklyTrendingEmailSent: false,
+          weeklyPortfolioEmailSent: false,
         })
       })
     )
