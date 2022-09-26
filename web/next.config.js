@@ -14,8 +14,4 @@ module.exports = {
   experimental: {
     externalDir: true,
   },
-  images: {
-    loader: 'custom',
-    unoptimized: true,
-  },
 };
