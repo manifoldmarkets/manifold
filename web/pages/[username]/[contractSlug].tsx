@@ -167,6 +167,10 @@ export function ContractPageContent(
     [bets]
   )
 
+  const userBets = user
+    ? bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
+    : []
+
   const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
@@ -249,13 +253,14 @@ export function ContractPageContent(
         )}
 
         <BetsSummary
-          className="px-2 mb-4"
+          className="mb-4 px-2"
           contract={contract}
-          bets={bets}
+          bets={userBets}
           isYourBets
         />
 
-        <ContractTabs contract={contract} bets={bets} />
+        <ContractTabs contract={contract} bets={bets} userBets={userBets} />
+
         {!user ? (
           <Col className="mt-4 max-w-sm items-center xl:hidden">
             <BetSignUpPrompt />
