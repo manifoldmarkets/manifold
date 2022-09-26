@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { getAllPrivateUsers } from './utils'
 
-export const resetWeeklyEmailsFlag = functions
+export const resetWeeklyEmailsFlags = functions
   .runWith({
     timeoutSeconds: 300,
     memory: '4GB',
@@ -17,7 +17,7 @@ export const resetWeeklyEmailsFlag = functions
       privateUsers.map(async (user) => {
         return firestore.collection('private-users').doc(user.id).update({
           weeklyTrendingEmailSent: false,
-          weeklyPortfolioEmailSent: false,
+          weeklyPortfolioUpdateEmailSent: false,
         })
       })
     )
