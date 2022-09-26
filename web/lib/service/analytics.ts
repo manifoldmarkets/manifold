@@ -64,10 +64,14 @@ export const withTracking =
 
 export async function identifyUser(userId: string) {
   setUserId(userId)
+  // @ts-expect-error Sprig doesn't yet have a native typescript snippet
+  window.Sprig.setUserId(userId)
 }
 
 export async function setUserProperty(property: string, value: string) {
   const identifyObj = new Identify()
   identifyObj.set(property, value)
   await identify(identifyObj)
+  // @ts-expect-error Sprig doesn't yet have a native typescript snippet
+  window.Sprig.setAttribute(property, value)
 }
