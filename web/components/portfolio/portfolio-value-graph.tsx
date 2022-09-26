@@ -63,16 +63,15 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
       },
     ]
   }
-  const firstPoints = data[0].data
-  // const numYTickValues = !width || width < 800 ? 2 : 4
+  let firstPoints = data[0].data
   const numYTickValues = 2
-  const endDate = last(firstPoints)?.x
+  const endDate = last(data[0].data)?.x
 
   const firstPointsY = firstPoints
-    .filter((p) => {
-      return p.y !== null
-    })
     .map((p) => p.y)
+    .filter((y) => {
+      return y !== null
+    })
 
   const yMin =
     mode === 'value'

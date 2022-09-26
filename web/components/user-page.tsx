@@ -122,7 +122,10 @@ export function UserPage(props: { user: User }) {
               {!isCurrentUser && <UserFollowButton userId={user.id} />}
             </div>
             {!isMobile && (
-              <ProfilePublicStats className="text-md" user={user} />
+              <ProfilePublicStats
+                className="sm:text-md text-greyscale-6 text-sm"
+                user={user}
+              />
             )}
           </Col>
         </Row>
@@ -132,7 +135,7 @@ export function UserPage(props: { user: User }) {
           <Spacer h={1} />
           {user.bio && (
             <>
-              <div className="sm:text-md text-greyscale-6 mt-2 text-sm sm:mt-0">
+              <div className="sm:text-md mt-2 text-sm sm:mt-0">
                 <Linkify text={user.bio}></Linkify>
               </div>
               <Spacer h={2} />

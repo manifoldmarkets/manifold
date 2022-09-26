@@ -7,7 +7,6 @@ import { Period } from 'web/lib/firebase/users'
 import { PillButton } from '../buttons/pill-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { PortfolioValueGraph } from './portfolio-value-graph'
 
 export const PortfolioValueSection = memo(
@@ -18,6 +17,9 @@ export const PortfolioValueSection = memo(
     const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
     const [graphMode, setGraphMode] = useState<'profit' | 'value'>('value')
     const [graphDisplayNumber, setGraphDisplayNumber] = useState(null)
+    const handleGraphDisplayChange = (num) => {
+      setGraphDisplayNumber(num)
+    }
 
     // Remember the last defined portfolio history.
     const portfolioRef = useRef(portfolioHistory)
@@ -94,7 +96,7 @@ export const PortfolioValueSection = memo(
           portfolioHistory={currPortfolioHistory}
           includeTime={true}
           mode={graphMode}
-          setGraphDisplayNumber={setGraphDisplayNumber}
+          setGraphDisplayNumber={handleGraphDisplayChange}
         />
         <PortfolioPeriodSelection
           portfolioPeriod={portfolioPeriod}
