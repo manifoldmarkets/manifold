@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // Integrate Sprig
 
@@ -25,6 +26,6 @@ export function setUserId(userId: string): void {
   window.Sprig.setUserId(userId)
 }
 
-export function setAttributes(attributes: Object): void {
+export function setAttributes(attributes: Record<string, unknown>): void {
   window.Sprig.setAttributes(attributes)
 }
