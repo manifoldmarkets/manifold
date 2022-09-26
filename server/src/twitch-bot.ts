@@ -4,7 +4,7 @@ import { InsufficientBalanceException } from 'common/exceptions';
 
 import { ResolutionOutcome } from 'common/outcome';
 import App from './app';
-import { MANIFOLD_SIGNUP_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from './envs';
+import { DEBUG_TWITCH_ACCOUNT, IS_DEV, MANIFOLD_SIGNUP_URL, TWITCH_BOT_OAUTH_TOKEN, TWITCH_BOT_USERNAME } from './envs';
 import log from './logger';
 import * as Manifold from './manifold-api';
 import { Market } from './market';
@@ -324,7 +324,11 @@ export default class TwitchBot {
   }
 
   public async connect() {
-    this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
+    if (IS_DEV) {
+      this.client.getOptions().channels = [DEBUG_TWITCH_ACCOUNT];
+    } else {
+      this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
+    }
 
     try {
       await this.client.connect();
@@ -364,7 +368,7 @@ export default class TwitchBot {
     return this.client
       .join('#' + channelName)
       .then(async () => {
-        await this.client.say(channelName, '/color BlueViolet');
+        await this.client.say(channelName, '/color BlueViolet'); // TODO this will become invalid as of February 18, 2023 (https://discuss.dev.twitch.tv/t/deprecation-of-chat-commands-through-irc/40486)
 
         let message = 'Hey there! I am the Manifold Markets chat bot.';
         if (!this.client.isMod(channelName, TWITCH_BOT_USERNAME)) {
@@ -373,7 +377,7 @@ export default class TwitchBot {
         await this.client.say(channelName, message);
       })
       .then(() => this.app.firestore.registerTwitchChannel(channelName))
-      .catch((e) => log.trace(e));
+      .catch(log.trace);
   }
 
   public async leaveChannel(channelName: string) {

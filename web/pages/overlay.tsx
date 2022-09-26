@@ -69,8 +69,11 @@ class Application {
 
   registerPacketHandlers() {
     this.socket.on(Packet.ADD_BETS, (bets: FullBet[]) => {
+      console.log('Request to add bets:');
+      console.log(bets);
       for (const bet of bets) {
         if (this.loadedHistory) {
+          console.log('History loaded so pushing bet immediately');
           this.addBet(bet);
         } else {
           this.betsToAddOnceLoadedHistory.push(bet);
@@ -83,12 +86,6 @@ class Application {
     });
     this.socket.on(Packet.CLEAR, () => {
       this.resetUI();
-
-      this.chart.data = [];
-      for (const bet of this.betElements) {
-        bet.element.parentElement.removeChild(bet.element);
-      }
-      this.betElements = [];
     });
     this.socket.on(Packet.MARKET_LOAD_COMPLETE, () => {
       this.loadingMarket = false;
@@ -127,15 +124,20 @@ class Application {
 
     this.loadBettingHistory();
 
-    setTimeout(() => this.chart.resize(), 10);
+    setTimeout(() => this.chart.resize(), 50);
   }
 
-  async loadBettingHistory() {
+  loadBettingHistory() {
     const data: Point[] = [];
     // Bets are stored returned oldest-first:
-    for (const bet of this.currentMarket.bets) {
-      data.push(new Point(bet.createdTime, bet.probBefore));
-      data.push(new Point(bet.createdTime, bet.probAfter));
+    data.push(new Point(Date.now() - 1e9, 0.5));
+    if (this.currentMarket.bets.length > 0) {
+      // const firstBet = this.currentMarket.bets[0];
+      for (const bet of this.currentMarket.bets) {
+        data.push(new Point(bet.createdTime, bet.probBefore));
+        data.push(new Point(bet.createdTime, bet.probAfter));
+        console.log(bet.createdTime);
+      }
     }
     this.chart.data = data;
 
@@ -144,6 +146,11 @@ class Application {
     }
 
     this.chart.canvasElement.style.display = '';
+
+    // if (this.betsToAddOnceLoadedHistory.length > 0) {
+    //   this.currentMarket.probability = this.betsToAddOnceLoadedHistory[this.betsToAddOnceLoadedHistory.length - 1].probAfter;
+    //   this.currentProbability_percent = this.currentMarket.probability * 100;
+    // }
 
     this.loadedHistory = true;
   }
@@ -184,11 +191,11 @@ class Application {
       }, 500);
     }
 
-    if (this.currentMarket && !this.loadingMarket) {
+    if (this.currentMarket && this.loadedHistory) {
       this.currentMarket.probability = bet.probAfter;
       this.currentProbability_percent = this.currentMarket.probability * 100;
-      this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
-      this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
+      //!!! this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
+      //!!! this.chart.data.push(new Point(bet.createdTime, bet.probAfter));
     }
   }
 }
@@ -246,7 +253,6 @@ export default () => {
       setPage(Page.RESOLVED_TRADERS);
       const interval = setInterval(() => {
         setPage((page) => {
-          console.log('Change page: ' + page);
           switch (page) {
             case Page.RESOLVED_RESULT:
               return Page.RESOLVED_TRADERS;

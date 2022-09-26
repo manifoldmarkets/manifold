@@ -17,7 +17,7 @@ export class Market {
   private readonly twitchChannel: string;
   private latestLoadedBetId: string = null;
   private userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
-  private readonly pollTask: () => void;
+  private pollTask: () => void;
 
   public readonly allBets: FullBet[] = [];
   public data: FullMarket;
@@ -29,7 +29,9 @@ export class Market {
     this.data = data;
 
     this.twitchChannel = twitchChannel;
+  }
 
+  async load() {
     this.pollTask = async () => {
       try {
         this.pollBets();
@@ -64,8 +66,8 @@ export class Market {
           };
 
           this.app.marketResolved(this);
-          app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData);
-          app.io.to(this.twitchChannel).emit(Packet.RESOLVED);
+          this.app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData);
+          this.app.io.to(this.twitchChannel).emit(Packet.RESOLVED);
         }
       } catch (e) {
         log.trace(e);

@@ -16,6 +16,8 @@ export const TWITCH_BOT_FIREBASE_KEY = process.env.TWITCH_BOT_FIREBASE_KEY;
 
 export const TARGET = process.env.TARGET || 'LOCAL';
 
+export const DEBUG_TWITCH_ACCOUNT = 'philbladen';
+
 export const IS_DEV = PUBLIC_FACING_URL.indexOf('localhost') > 0;
 
 const MANIFOLD_URLS = {

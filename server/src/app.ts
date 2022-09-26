@@ -10,7 +10,7 @@ import { Server } from 'socket.io';
 import registerAPIEndpoints from './api';
 import DockClient from './clients/dock';
 import OverlayClient from './clients/overlay';
-import { IS_DEV, PORT } from './envs';
+import { PORT } from './envs';
 import AppFirestore from './firestore';
 import log from './logger';
 import * as Manifold from './manifold-api';
@@ -81,6 +81,7 @@ export default class App {
       const marketData = await Manifold.getFullMarketByID(id);
       if (!marketData || marketData.isResolved) throw new Error('Attempted to feature invalid market');
       const market = new Market(this, marketData, channel);
+      await market.load();
       this.selectedMarketMap[channel] = market;
       log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
       if (sourceDock) {
@@ -126,16 +127,6 @@ export default class App {
 
   async launch() {
     await this.bot.connect();
-
-    if (!IS_DEV) {
-      this.firestore.onDevBotActiveUpdated((d) => {
-        if (d.devBotLastActive && d.devBotLastActive > Date.now() - 1000 * 10) {
-          this.bot.temporarilyMute();
-        }
-      });
-    } else {
-      setInterval(() => this.firestore.updateDevBotLastActive(), 5000);
-    }
 
     const server = this.app.listen(PORT, () => {
       const addressInfo = <AddressInfo>server.address();
