@@ -68,6 +68,7 @@ function ReferralsDialog(props: {
         <div className="p-2 pb-1 text-xl">{user.name}</div>
         <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
         <Tabs
+          className="mb-4"
           tabs={[
             {
               title: 'Referrals',

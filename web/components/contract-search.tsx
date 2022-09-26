@@ -48,18 +48,17 @@ import { Title } from './title'
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: `Most traded`, value: 'most-traded' },
+  { label: 'Daily trending', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
-  { label: '24h change', value: 'prob-change-day' },
   { label: 'Last updated', value: 'last-updated' },
-  { label: 'Subsidy', value: 'liquidity' },
-  { label: 'Close date', value: 'close-date' },
+  { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
   { label: 'Lowest %', value: 'prob-ascending' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
+export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
@@ -90,11 +89,13 @@ export function ContractSearch(props: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
     noLinkAvatar?: boolean
+    showProbChange?: boolean
   }
   headerClassName?: string
   persistPrefix?: string
   useQueryUrlParam?: boolean
   isWholePage?: boolean
+  includeProbSorts?: boolean
   noControls?: boolean
   maxResults?: number
   renderContracts?: (
@@ -117,6 +118,7 @@ export function ContractSearch(props: {
     headerClassName,
     persistPrefix,
     useQueryUrlParam,
+    includeProbSorts,
     isWholePage,
     noControls,
     maxResults,
@@ -130,6 +132,7 @@ export function ContractSearch(props: {
       numPages: 1,
       pages: [] as Contract[][],
       showTime: null as ShowTime | null,
+      showProbChange: false,
     },
     !persistPrefix
       ? undefined
@@ -183,8 +186,9 @@ export function ContractSearch(props: {
         const newPage = results.hits as any as Contract[]
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
+        const showProbChange = sort === 'daily-score'
         const pages = freshQuery ? [newPage] : [...state.pages, newPage]
-        setState({ numPages: results.nbPages, pages, showTime })
+        setState({ numPages: results.nbPages, pages, showTime, showProbChange })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
@@ -201,6 +205,12 @@ export function ContractSearch(props: {
       }
     }, 100)
   ).current
+
+  const updatedCardUIOptions = useMemo(() => {
+    if (cardUIOptions?.showProbChange === undefined && state.showProbChange)
+      return { ...cardUIOptions, showProbChange: true }
+    return cardUIOptions
+  }, [cardUIOptions, state.showProbChange])
 
   const contracts = state.pages
     .flat()
@@ -223,6 +233,7 @@ export function ContractSearch(props: {
         persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
         useQueryUrlParam={useQueryUrlParam}
+        includeProbSorts={includeProbSorts}
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
@@ -241,7 +252,7 @@ export function ContractSearch(props: {
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightOptions={highlightOptions}
-          cardUIOptions={cardUIOptions}
+          cardUIOptions={updatedCardUIOptions}
         />
       )}
     </Col>
@@ -256,6 +267,7 @@ function ContractSearchControls(props: {
   additionalFilter?: AdditionalFilter
   persistPrefix?: string
   hideOrderSelector?: boolean
+  includeProbSorts?: boolean
   onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
   user?: User | null
@@ -275,6 +287,7 @@ function ContractSearchControls(props: {
     user,
     noControls,
     autoFocus,
+    includeProbSorts,
   } = props
 
   const router = useRouter()
@@ -443,6 +456,7 @@ function ContractSearchControls(props: {
             selectSort={selectSort}
             sort={sort}
             className={'flex flex-row gap-2'}
+            includeProbSorts={includeProbSorts}
           />
         )}
         {isMobile && (
@@ -456,6 +470,7 @@ function ContractSearchControls(props: {
                   selectSort={selectSort}
                   sort={sort}
                   className={'flex flex-col gap-4'}
+                  includeProbSorts={includeProbSorts}
                 />
               }
             />
@@ -510,6 +525,7 @@ export function SearchFilters(props: {
   selectSort: (newSort: Sort) => void
   sort: string
   className?: string
+  includeProbSorts?: boolean
 }) {
   const {
     filter,
@@ -518,7 +534,13 @@ export function SearchFilters(props: {
     selectSort,
     sort,
     className,
+    includeProbSorts,
   } = props
+
+  const sorts = includeProbSorts
+    ? SORTS
+    : SORTS.filter((sort) => !PROB_SORTS.includes(sort.value))
+
   return (
     <div className={className}>
       <select
@@ -537,7 +559,7 @@ export function SearchFilters(props: {
           value={sort}
           onChange={(e) => selectSort(e.target.value as Sort)}
         >
-          {SORTS.map((option) => (
+          {sorts.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

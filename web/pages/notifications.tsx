@@ -971,6 +971,8 @@ function ContractResolvedNotification(props: {
   const { sourceText, data } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const subtitle = 'resolved the market'
+  const profitable = userPayout >= userInvestment
+  const ROI = (userPayout - userInvestment) / userInvestment
 
   const resolutionDescription = () => {
     if (!sourceText) return <div />
@@ -1002,23 +1004,21 @@ function ContractResolvedNotification(props: {
 
   const description =
     userInvestment && userPayout !== undefined ? (
-      <Row className={'gap-1 '}>
-        Resolved: {resolutionDescription()}
-        Invested:
+      <>
+        Resolved: {resolutionDescription()} Invested:
         <span className={'text-primary'}>{formatMoney(userInvestment)} </span>
         Payout:
         <span
           className={clsx(
-            userPayout > 0 ? 'text-primary' : 'text-red-500',
-            'truncate'
+            profitable ? 'text-primary' : 'text-red-500',
+            'truncate text-ellipsis'
           )}
         >
           {formatMoney(userPayout)}
-          {` (${userPayout > 0 ? '+' : ''}${Math.round(
-            ((userPayout - userInvestment) / userInvestment) * 100
-          )}%)`}
+          {userPayout > 0 &&
+            ` (${profitable ? '+' : ''}${Math.round(ROI * 100)}%)`}
         </span>
-      </Row>
+      </>
     ) : (
       <span>Resolved {resolutionDescription()}</span>
     )
@@ -1038,9 +1038,7 @@ function ContractResolvedNotification(props: {
       highlighted={highlighted}
       subtitle={subtitle}
     >
-      <Row>
-        <span>{description}</span>
-      </Row>
+      <Row className={'line-clamp-2 space-x-1'}>{description}</Row>
     </NotificationFrame>
   )
 }

@@ -104,7 +104,7 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
 }
 
 export function useMemberGroupsSubscription(user: User | null | undefined) {
-  const cachedGroups = useMemberGroups(user?.id) ?? []
+  const cachedGroups = useMemberGroups(user?.id)
   const [groups, setGroups] = useState(cachedGroups)
 
   const userId = user?.id

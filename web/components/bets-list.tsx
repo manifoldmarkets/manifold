@@ -601,18 +601,24 @@ function BetRow(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
-  const saleAmount = saleBet?.sale?.amount
+  // calculateSaleAmount is very slow right now so that's why we memoized this
+  const payout = useMemo(() => {
+    const saleBetAmount = saleBet?.sale?.amount
+    if (saleBetAmount) {
+      return saleBetAmount
+    } else if (contract.isResolved) {
+      return resolvedPayout(contract, bet)
+    } else {
+      return calculateSaleAmount(contract, bet, unfilledBets)
+    }
+  }, [contract, bet, saleBet, unfilledBets])
 
   const saleDisplay = isAnte ? (
     'ANTE'
-  ) : saleAmount !== undefined ? (
-    <>{formatMoney(saleAmount)} (sold)</>
+  ) : saleBet ? (
+    <>{formatMoney(payout)} (sold)</>
   ) : (
-    formatMoney(
-      isResolved
-        ? resolvedPayout(contract, bet)
-        : calculateSaleAmount(contract, bet, unfilledBets)
-    )
+    formatMoney(payout)
   )
 
   const payoutIfChosenDisplay =

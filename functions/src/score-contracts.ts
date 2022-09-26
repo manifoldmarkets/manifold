@@ -1,12 +1,15 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { Bet } from 'common/bet'
 import { uniq } from 'lodash'
-import { Contract } from 'common/contract'
+import { Bet } from '../../common/bet'
+import { Contract } from '../../common/contract'
 import { log } from './utils'
+import { removeUndefinedProps } from '../../common/util/object'
+import { DAY_MS, HOUR_MS } from '../../common/util/time'
 
-export const scoreContracts = functions.pubsub
-  .schedule('every 1 hours')
+export const scoreContracts = functions
+  .runWith({ memory: '4GB', timeoutSeconds: 540 })
+  .pubsub.schedule('every 1 hours')
   .onRun(async () => {
     await scoreContractsInternal()
   })
@@ -14,11 +17,12 @@ const firestore = admin.firestore()
 
 async function scoreContractsInternal() {
   const now = Date.now()
-  const lastHour = now - 60 * 60 * 1000
-  const last3Days = now - 1000 * 60 * 60 * 24 * 3
+  const hourAgo = now - HOUR_MS
+  const dayAgo = now - DAY_MS
+  const threeDaysAgo = now - DAY_MS * 3
   const activeContractsSnap = await firestore
     .collection('contracts')
-    .where('lastUpdatedTime', '>', lastHour)
+    .where('lastUpdatedTime', '>', hourAgo)
     .get()
   const activeContracts = activeContractsSnap.docs.map(
     (doc) => doc.data() as Contract
@@ -39,16 +43,33 @@ async function scoreContractsInternal() {
   for (const contract of contracts) {
     const bets = await firestore
       .collection(`contracts/${contract.id}/bets`)
-      .where('createdTime', '>', last3Days)
+      .where('createdTime', '>', threeDaysAgo)
       .get()
     const bettors = bets.docs
       .map((doc) => doc.data() as Bet)
       .map((bet) => bet.userId)
-    const score = uniq(bettors).length
-    if (contract.popularityScore !== score)
+    const popularityScore = uniq(bettors).length
+
+    const wasCreatedToday = contract.createdTime > dayAgo
+
+    let dailyScore: number | undefined
+    if (
+      contract.outcomeType === 'BINARY' &&
+      contract.mechanism === 'cpmm-1' &&
+      !wasCreatedToday
+    ) {
+      const percentChange = Math.abs(contract.probChanges.day)
+      dailyScore = popularityScore * percentChange
+    }
+
+    if (
+      contract.popularityScore !== popularityScore ||
+      contract.dailyScore !== dailyScore
+    ) {
       await firestore
         .collection('contracts')
         .doc(contract.id)
-        .update({ popularityScore: score })
+        .update(removeUndefinedProps({ popularityScore, dailyScore }))
+    }
   }
 }

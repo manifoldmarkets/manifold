@@ -32,7 +32,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   return (
     <>
       <nav
-        className={clsx('mb-4 space-x-8 border-b border-gray-200', className)}
+        className={clsx('space-x-8 border-b border-gray-200', className)}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (

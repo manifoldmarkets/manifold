@@ -92,7 +92,7 @@ export function PostCommentInput(props: {
 
   return (
     <CommentInput
-      replyToUser={replyToUser}
+      replyTo={replyToUser}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
     />

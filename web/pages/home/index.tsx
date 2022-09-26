@@ -8,6 +8,7 @@ import {
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast, Toaster } from 'react-hot-toast'
+import { Dictionary } from 'lodash'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
@@ -31,11 +32,10 @@ import { ProbChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
-import { useProbChangesAlgolia } from 'web/hooks/use-prob-changes'
+import { useProbChanges } from 'web/hooks/use-prob-changes'
 import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
-import { useContractsQuery } from 'web/hooks/use-contracts'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
@@ -43,6 +43,9 @@ import { updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Title } from 'web/components/title'
+import { CPMMBinaryContract } from 'common/contract'
+import { useContractsByDailyScoreGroups } from 'web/hooks/use-contracts'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export default function Home() {
   const user = useUser()
@@ -52,21 +55,27 @@ export default function Home() {
   useSaveReferral()
   usePrefetch(user?.id)
 
+  useEffect(() => {
+    if (user === null) {
+      // Go to landing page if not logged in.
+      Router.push('/')
+    }
+  })
+
   const groups = useMemberGroupsSubscription(user)
 
-  const { sections } = getHomeItems(groups, user?.homeSections ?? [])
+  const { sections } = getHomeItems(groups ?? [], user?.homeSections ?? [])
 
   useEffect(() => {
-    if (
-      user &&
-      !user.homeSections &&
-      sections.length > 0 &&
-      groups.length > 0
-    ) {
+    if (user && !user.homeSections && sections.length > 0 && groups) {
       // Save initial home sections.
       updateUser(user.id, { homeSections: sections.map((s) => s.id) })
     }
   }, [user, sections, groups])
+
+  const groupContracts = useContractsByDailyScoreGroups(
+    groups?.map((g) => g.slug)
+  )
 
   return (
     <Page>
@@ -81,9 +90,17 @@ export default function Home() {
           <DailyStats user={user} />
         </Row>
 
-        {sections.map((section) => renderSection(section, user, groups))}
+        {!user ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            {sections.map((section) =>
+              renderSection(section, user, groups, groupContracts)
+            )}
 
-        <TrendingGroupsSection user={user} />
+            <TrendingGroupsSection user={user} />
+          </>
+        )}
       </Col>
       <button
         type="button"
@@ -101,9 +118,9 @@ export default function Home() {
 
 const HOME_SECTIONS = [
   { label: 'Daily movers', id: 'daily-movers' },
+  { label: 'Daily trending', id: 'daily-trending' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
-  { label: 'Recently updated', id: 'recently-updated-for-you' },
 ]
 
 export const getHomeItems = (groups: Group[], sections: string[]) => {
@@ -122,6 +139,10 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
 
   const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
 
+  // Add new home section items to the top.
+  sectionItems.unshift(
+    ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
+  )
   // Add unmentioned items to the end.
   sectionItems.push(...items.filter((item) => !sectionItems.includes(item)))
 
@@ -133,19 +154,20 @@ export const getHomeItems = (groups: Group[], sections: string[]) => {
 
 function renderSection(
   section: { id: string; label: string },
-  user: User | null | undefined,
-  groups: Group[]
+  user: User,
+  groups: Group[] | undefined,
+  groupContracts: Dictionary<CPMMBinaryContract[]> | undefined
 ) {
   const { id, label } = section
   if (id === 'daily-movers') {
-    return <DailyMoversSection key={id} userId={user?.id} />
+    return <DailyMoversSection key={id} userId={user.id} />
   }
-  if (id === 'recently-updated-for-you')
+  if (id === 'daily-trending')
     return (
       <SearchSection
         key={id}
         label={label}
-        sort={'last-updated'}
+        sort={'daily-score'}
         pill="personal"
         user={user}
       />
@@ -156,8 +178,23 @@ function renderSection(
       <SearchSection key={id} label={label} sort={sort.value} user={user} />
     )
 
-  const group = groups.find((g) => g.id === id)
-  if (group) return <GroupSection key={id} group={group} user={user} />
+  if (groups && groupContracts) {
+    const group = groups.find((g) => g.id === id)
+    if (group) {
+      const contracts = groupContracts[group.slug].filter(
+        (c) => Math.abs(c.probChanges.day) >= 0.01
+      )
+      if (contracts.length === 0) return null
+      return (
+        <GroupSection
+          key={id}
+          group={group}
+          user={user}
+          contracts={contracts}
+        />
+      )
+    }
+  }
 
   return null
 }
@@ -189,7 +226,7 @@ function SectionHeader(props: {
 
 function SearchSection(props: {
   label: string
-  user: User | null | undefined | undefined
+  user: User
   sort: Sort
   pill?: string
 }) {
@@ -207,7 +244,6 @@ function SearchSection(props: {
         defaultPill={pill}
         noControls
         maxResults={6}
-        headerClassName="sticky"
         persistPrefix={`home-${sort}`}
       />
     </Col>
@@ -216,11 +252,10 @@ function SearchSection(props: {
 
 function GroupSection(props: {
   group: Group
-  user: User | null | undefined | undefined
+  user: User
+  contracts: CPMMBinaryContract[]
 }) {
-  const { group, user } = props
-
-  const contracts = useContractsQuery('score', 4, { groupSlug: group.slug })
+  const { group, user, contracts } = props
 
   return (
     <Col>
@@ -228,39 +263,37 @@ function GroupSection(props: {
         <Button
           color="gray-white"
           onClick={() => {
-            if (user) {
-              const homeSections = (user.homeSections ?? []).filter(
-                (id) => id !== group.id
-              )
-              updateUser(user.id, { homeSections })
+            const homeSections = (user.homeSections ?? []).filter(
+              (id) => id !== group.id
+            )
+            updateUser(user.id, { homeSections })
 
-              toast.promise(leaveGroup(group, user.id), {
-                loading: 'Unfollowing group...',
-                success: `Unfollowed ${group.name}`,
-                error: "Couldn't unfollow group, try again?",
-              })
-            }
+            toast.promise(leaveGroup(group, user.id), {
+              loading: 'Unfollowing group...',
+              success: `Unfollowed ${group.name}`,
+              error: "Couldn't unfollow group, try again?",
+            })
           }}
         >
           <XCircleIcon className={'h-5 w-5 flex-shrink-0'} aria-hidden="true" />
         </Button>
       </SectionHeader>
-      <ContractsGrid contracts={contracts} />
+      <ContractsGrid
+        contracts={contracts.slice(0, 4)}
+        cardUIOptions={{ showProbChange: true }}
+      />
     </Col>
   )
 }
 
 function DailyMoversSection(props: { userId: string | null | undefined }) {
   const { userId } = props
-  const changes = useProbChangesAlgolia(userId ?? '')
+  const changes = useProbChanges({ bettorId: userId ?? undefined })?.filter(
+    (c) => Math.abs(c.probChanges.day) >= 0.01
+  )
 
-  if (changes) {
-    const { positiveChanges, negativeChanges } = changes
-    if (
-      !positiveChanges.find((c) => c.probChanges.day >= 0.01) ||
-      !negativeChanges.find((c) => c.probChanges.day <= -0.01)
-    )
-      return null
+  if (changes && changes.length === 0) {
+    return null
   }
 
   return (
@@ -331,6 +364,10 @@ export function TrendingGroupsSection(props: {
   )
   const count = full ? 100 : 25
   const chosenGroups = groups.slice(0, count)
+
+  if (chosenGroups.length === 0) {
+    return null
+  }
 
   return (
     <Col className={className}>

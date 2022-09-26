@@ -15,9 +15,6 @@ module.exports = {
       }
     ),
     extend: {
-      backgroundImage: {
-        'world-trading': "url('/world-trading-background.webp')",
-      },
       colors: {
         'greyscale-1': '#FBFBFF',
         'greyscale-2': '#E7E7F4',
