@@ -34,11 +34,12 @@ const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
 const postSchema = z.object({
   title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
   content: contentSchema,
+  groupId: z.string().optional(),
 })
 
 export const createpost = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { title, content } = validate(postSchema, req.body)
+  const { title, content, groupId } = validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
   if (!creator)
@@ -60,6 +61,18 @@ export const createpost = newEndpoint({}, async (req, auth) => {
   }
 
   await postRef.create(post)
+  if (groupId) {
+    const groupRef = firestore.collection('groups').doc(groupId)
+    const group = await groupRef.get()
+    if (group.exists) {
+      const groupData = group.data()
+      if (groupData) {
+        const postIds = groupData.postIds ?? []
+        postIds.push(postRef.id)
+        await groupRef.update({ postIds })
+      }
+    }
+  }
 
   return { status: 'success', post }
 })

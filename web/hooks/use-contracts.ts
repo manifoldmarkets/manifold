@@ -9,12 +9,10 @@ import {
   getUserBetContractsQuery,
   listAllContracts,
   trendingContractsQuery,
-  getContractsQuery,
 } from 'web/lib/firebase/contracts'
 import { QueryClient, useQuery, useQueryClient } from 'react-query'
-import { MINUTE_MS } from 'common/util/time'
+import { MINUTE_MS, sleep } from 'common/util/time'
 import { query, limit } from 'firebase/firestore'
-import { Sort } from 'web/components/contract-search'
 import { dailyScoreIndex } from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
 import { zipObject } from 'lodash'
@@ -66,19 +64,6 @@ export const useTrendingContracts = (maxContracts: number) => {
   return result.data
 }
 
-export const useContractsQuery = (
-  sort: Sort,
-  maxContracts: number,
-  filters: { groupSlug?: string } = {},
-  visibility?: 'public'
-) => {
-  const result = useFirestoreQueryData(
-    ['contracts-query', sort, maxContracts, filters],
-    getContractsQuery(sort, maxContracts, filters, visibility)
-  )
-  return result.data
-}
-
 export const useInactiveContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
@@ -101,7 +86,7 @@ export const usePrefetchUserBetContracts = (userId: string) => {
   const queryClient = useQueryClient()
   return queryClient.prefetchQuery(
     ['contracts', 'bets', userId],
-    () => getUserBetContracts(userId),
+    () => sleep(1000).then(() => getUserBetContracts(userId)),
     { staleTime: 5 * MINUTE_MS }
   )
 }

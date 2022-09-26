@@ -8,9 +8,8 @@ A list of community-created projects built on, or related to, Manifold Markets.
 
 ## Sites using Manifold
 
-- [CivicDashboard](https://civicdash.org/dashboard) - Uses Manifold to for tracked solutions for the SF city government
-- [Research.Bet](https://research.bet/) - Prediction market for scientific papers, using Manifold
 - [WagerWith.me](https://www.wagerwith.me/) — Bet with your friends, with full Manifold integration to bet with M$.
+- [Alignment Markets](https://alignmentmarkets.com/) - Bet on the progress of benchmarks in ML safety!
 
 ## API / Dev
 
@@ -28,6 +27,7 @@ A list of community-created projects built on, or related to, Manifold Markets.
 - [mana](https://github.com/AnnikaCodes/mana) - A Discord bot for Manifold by [@arae](https://manifold.markets/arae)
 
 ## Writeups
+
 - [Information Markets, Decision Markets, Attention Markets, Action Markets](https://astralcodexten.substack.com/p/information-markets-decision-markets) by Scott Alexander
 - [Mismatched Monetary Motivation in Manifold Markets](https://kevin.zielnicki.com/2022/02/17/manifold/) by Kevin Zielnicki
 - [Introducing the Salem/CSPI Forecasting Tournament](https://www.cspicenter.com/p/introducing-the-salemcspi-forecasting) by Richard Hanania
@@ -36,5 +36,12 @@ A list of community-created projects built on, or related to, Manifold Markets.
 
 ## Art
 
-- Folded origami and doodles by [@hamnox](https://manifold.markets/hamnox) ![](https://i.imgur.com/nVGY4pL.png) 
-- Laser-cut Foldy by [@wasabipesto](https://manifold.markets/wasabipesto) ![](https://i.imgur.com/g9S6v3P.jpg) 
+- Folded origami and doodles by [@hamnox](https://manifold.markets/hamnox) ![](https://i.imgur.com/nVGY4pL.png)
+- Laser-cut Foldy by [@wasabipesto](https://manifold.markets/wasabipesto) ![](https://i.imgur.com/g9S6v3P.jpg)
+
+## Alumni
+
+_These projects are no longer active, but were really really cool!_
+
+- [Research.Bet](https://research.bet/) - Prediction market for scientific papers, using Manifold
+- [CivicDashboard](https://civicdash.org/dashboard) - Uses Manifold to for tracked solutions for the SF city government
