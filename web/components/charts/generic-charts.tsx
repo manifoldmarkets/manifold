@@ -15,7 +15,7 @@ import {
 import { range } from 'lodash'
 import dayjs from 'dayjs'
 
-import { SVGChart, LinePath, AreaPath } from './helpers'
+import { SVGChart, AreaPath, AreaWithTopStroke } from './helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 
@@ -90,21 +90,13 @@ export const SingleValueDistributionChart = (props: {
         className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
       />
       <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
-        <LinePath
+        <AreaWithTopStroke
+          color={color}
           data={data}
-          curve={curveLinear}
-          px={px}
-          py={py1}
-          stroke={color}
-        />
-        <AreaPath
-          data={data}
-          curve={curveLinear}
           px={px}
           py0={py0}
           py1={py1}
-          fill={color}
-          opacity={0.3}
+          curve={curveLinear}
         />
       </SVGChart>
     </div>
@@ -158,13 +150,6 @@ export const MultiValueHistoryChart = (props: {
       <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
         {d3Stack(data).map((s, i) => (
           <g key={s.key}>
-            <LinePath
-              data={s}
-              px={px}
-              py={py1}
-              curve={curveStepAfter}
-              stroke={colors[i]}
-            />
             <AreaPath
               data={s}
               px={px}
@@ -246,21 +231,13 @@ export const SingleValueHistoryChart = (props: {
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
       >
-        <LinePath
-          data={data}
-          px={px}
-          py={py1}
-          curve={curveStepAfter}
-          stroke={color}
-        />
-        <AreaPath
+        <AreaWithTopStroke
+          color={color}
           data={data}
           px={px}
           py0={py0}
           py1={py1}
           curve={curveStepAfter}
-          fill={color}
-          opacity={0.3}
         />
       </SVGChart>
     </div>

@@ -1,5 +1,13 @@
 import { ReactNode, SVGProps, memo, useRef, useEffect } from 'react'
-import { Axis, AxisDomain, CurveFactory, area, line, select } from 'd3'
+import {
+  Axis,
+  AxisDomain,
+  CurveFactory,
+  area,
+  curveStepAfter,
+  line,
+  select,
+} from 'd3'
 import dayjs from 'dayjs'
 
 import { Contract } from 'common/contract'
@@ -50,11 +58,11 @@ const LinePathInternal = <P,>(
     data: P[]
     px: number | ((p: P) => number)
     py: number | ((p: P) => number)
-    curve: CurveFactory
+    curve?: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
   const { data, px, py, curve, ...rest } = props
-  const d3Line = line<P>(px, py).curve(curve)
+  const d3Line = line<P>(px, py).curve(curve ?? curveStepAfter)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} fill="none" d={d3Line(data)!} />
 }
@@ -66,15 +74,40 @@ const AreaPathInternal = <P,>(
     px: number | ((p: P) => number)
     py0: number | ((p: P) => number)
     py1: number | ((p: P) => number)
-    curve: CurveFactory
+    curve?: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
   const { data, px, py0, py1, curve, ...rest } = props
-  const d3Area = area<P>(px, py0, py1).curve(curve)
+  const d3Area = area<P>(px, py0, py1).curve(curve ?? curveStepAfter)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} d={d3Area(data)!} />
 }
 export const AreaPath = memo(AreaPathInternal) as typeof AreaPathInternal
+
+export const AreaWithTopStroke = <P,>(props: {
+  color: string
+  data: P[]
+  px: number | ((p: P) => number)
+  py0: number | ((p: P) => number)
+  py1: number | ((p: P) => number)
+  curve?: CurveFactory
+}) => {
+  const { color, data, px, py0, py1, curve } = props
+  return (
+    <g>
+      <AreaPath
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+        fill={color}
+        opacity={0.3}
+      />
+      <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
+    </g>
+  )
+}
 
 export const SVGChart = <X extends AxisDomain, Y extends AxisDomain>(props: {
   children: ReactNode
