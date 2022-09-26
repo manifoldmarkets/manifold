@@ -2,6 +2,8 @@
 // @ts-nocheck
 // Integrate Sprig
 
+import { ENV_CONFIG } from 'common/envs/constants'
+
 try {
   ;(function (l, e, a, p) {
     if (window.Sprig) return
