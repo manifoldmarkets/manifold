@@ -42,5 +42,5 @@ export async function setUserProperty(property: string, value: string) {
   const identifyObj = new Identify()
   identifyObj.set(property, value)
   await identify(identifyObj)
-  Sprig.setAttributes(identifyObj)
+  Sprig.setAttributes({ [property]: value })
 }
