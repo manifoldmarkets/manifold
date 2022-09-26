@@ -27,9 +27,10 @@ export * from './on-delete-group'
 export * from './score-contracts'
 export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
-export * from './reset-weekly-emails-flag'
+export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
 export * from './on-update-like'
+export * from './weekly-portfolio-emails'
 
 // v2
 export * from './health'
