@@ -38,13 +38,26 @@ export function AnswersPanel(props: {
   const answers = (useAnswers(contract.id) ?? contract.answers).filter(
     (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
   )
-  const [winningAnswers, notWinningAnswers] = partition(
-    answers,
-    (a) => a.id === resolution || (resolutions && resolutions[a.id])
+  const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] < 1)
+
+  const [winningAnswers, losingAnswers] = partition(
+    answers.filter((a) => (showAllAnswers ? true : totalBets[a.id] > 0)),
+    (answer) =>
+      answer.id === resolution || (resolutions && resolutions[answer.id])
   )
-  const [visibleAnswers, invisibleAnswers] = partition(
-    sortBy(notWinningAnswers, (a) => -getOutcomeProbability(contract, a.id)),
-    (a) => showAllAnswers || totalBets[a.id] > 0
+  const sortedAnswers = [
+    ...sortBy(winningAnswers, (answer) =>
+      resolutions ? -1 * resolutions[answer.id] : 0
+    ),
+    ...sortBy(
+      resolution ? [] : losingAnswers,
+      (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
+    ),
+  ]
+
+  const answerItems = sortBy(
+    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
+    (answer) => -getOutcomeProbability(contract, answer.id)
   )
 
   const user = useUser()
@@ -94,13 +107,13 @@ export function AnswersPanel(props: {
   return (
     <Col className="gap-3">
       {(resolveOption || resolution) &&
-        sortBy(winningAnswers, (a) => -(resolutions?.[a.id] ?? 0)).map((a) => (
+        sortedAnswers.map((answer) => (
           <AnswerItem
-            key={a.id}
-            answer={a}
+            key={answer.id}
+            answer={answer}
             contract={contract}
             showChoice={showChoice}
-            chosenProb={chosenAnswers[a.id]}
+            chosenProb={chosenAnswers[answer.id]}
             totalChosenProb={chosenTotal}
             onChoose={onChoose}
             onDeselect={onDeselect}
@@ -114,10 +127,10 @@ export function AnswersPanel(props: {
             tradingAllowed(contract) ? '' : '-mb-6'
           )}
         >
-          {visibleAnswers.map((a) => (
-            <OpenAnswer key={a.id} answer={a} contract={contract} />
+          {answerItems.map((item) => (
+            <OpenAnswer key={item.id} answer={item} contract={contract} />
           ))}
-          {invisibleAnswers.length > 0 && !showAllAnswers && (
+          {hasZeroBetAnswers && !showAllAnswers && (
             <Button
               className="self-end"
               color="gray-white"
@@ -130,7 +143,7 @@ export function AnswersPanel(props: {
         </Col>
       )}
 
-      {answers.length === 0 && (
+      {answers.length <= 1 && (
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
