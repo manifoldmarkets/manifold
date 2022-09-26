@@ -16,18 +16,30 @@ export { track }
 
 try {
   ;(function (l, e, a, p) {
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     if (window.Sprig) return
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     window.Sprig = function (...args) {
+      // @ts-expect-error Sprig doesn't yet have a native typescript snippet
       S._queue.push(args)
     }
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     const S = window.Sprig
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     S.appId = a
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     S._queue = []
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     window.UserLeap = S
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     a = l.createElement('script')
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     a.async = 1
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     a.src = e + '?id=' + S.appId
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     p = l.getElementsByTagName('script')[0]
+    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     p.parentNode.insertBefore(a, p)
   })(document, 'https://cdn.sprig.com/shim.js', ENV_CONFIG.sprigEnvironmentId)
 } catch (error) {
