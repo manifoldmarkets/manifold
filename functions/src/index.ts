@@ -30,6 +30,7 @@ export * from './reset-betting-streaks'
 export * from './reset-weekly-emails-flag'
 export * from './on-update-contract-follow'
 export * from './on-update-like'
+export * from './weekly-portfolio-emails'
 
 // v2
 export * from './health'
