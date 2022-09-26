@@ -128,6 +128,7 @@ export function CreatorContractsList(props: {
         creatorId: creator.id,
       }}
       persistPrefix={`user-${creator.id}`}
+      profile={true}
     />
   )
 }

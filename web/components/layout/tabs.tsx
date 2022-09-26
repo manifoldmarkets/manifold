@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
 import { track } from '@amplitude/analytics-browser'
+import { Col } from './col'
 
 type Tab = {
   title: string
@@ -55,11 +56,13 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             )}
             aria-current={activeIndex === i ? 'page' : undefined}
           >
-            {tab.tabIcon && <span>{tab.tabIcon}</span>}
             {tab.badge ? (
               <span className="px-0.5 font-bold">{tab.badge}</span>
             ) : null}
-            {tab.title}
+            <Col>
+              {tab.tabIcon && <div className="mx-auto">{tab.tabIcon}</div>}
+              {tab.title}
+            </Col>
           </a>
         ))}
       </nav>
