@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 
 import { Contract, CPMMContract } from '../../common/contract'
 import {
+  getAllPrivateUsers,
   getPrivateUser,
   getUser,
   getValue,
@@ -11,9 +12,8 @@ import {
   log,
 } from './utils'
 import { filterDefined } from '../../common/util/array'
-import { PortfolioMetrics } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
-import { last, partition, sortBy, sum, uniq } from 'lodash'
+import { partition, sortBy, sum, uniq } from 'lodash'
 import { Bet } from '../../common/bet'
 import { computeInvestmentValueCustomProb } from '../../common/calculate-metrics'
 import { sendWeeklyPortfolioUpdateEmail } from './emails'
@@ -35,12 +35,12 @@ const firestore = admin.firestore()
 
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
-    ? // TODO: switch back to all private users
-      // ? await getAllPrivateUsers()
-      filterDefined([
-        await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
-        await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
-      ])
+    ? // ian & stephen's ids
+      // ? filterDefined([
+      //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
+      //   await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
+      // ])
+      await getAllPrivateUsers()
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers
@@ -56,18 +56,6 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     'Sending weekly portfolio emails to',
     privateUsersToSendEmailsTo.length,
     'users'
-  )
-
-  const usersToPortfolioMetrics: { [userId: string]: PortfolioMetrics[] } = {}
-  // get all portfolio metrics for each user
-  await Promise.all(
-    privateUsersToSendEmailsTo.map(async (user) => {
-      return getValues<PortfolioMetrics>(
-        firestore.collection(`users/${user.id}/portfolioHistory`)
-      ).then((portfolioMetrics) => {
-        return (usersToPortfolioMetrics[user.id] = portfolioMetrics)
-      })
-    })
   )
 
   const usersBets: { [userId: string]: Bet[] } = {}
@@ -125,12 +113,11 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     )
   )
   log('Found', contractsUsersBetOn.length, 'contracts')
-
+  let count = 0
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
       const user = await getUser(privateUser.id)
       if (!user) return
-      const usersPortfolioMetrics = usersToPortfolioMetrics[privateUser.id]
       const userBets = usersBets[privateUser.id] as Bet[]
       const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
         userBets.some((bet) => bet.contractId === contract.id)
@@ -140,24 +127,6 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           .filter((bet) => bet.createdTime > Date.now() - 7 * DAY_MS)
           .map((bet) => bet.contractId)
       )
-      const mostRecentPortfolioMetrics = last(
-        sortBy(
-          usersPortfolioMetrics,
-          (portfolioMetric) => portfolioMetric.timestamp
-        )
-      )
-      if (!mostRecentPortfolioMetrics) {
-        log('No portfolio metrics for user', privateUser.id)
-        return
-      }
-      const portfolioMetricsAWeekAgo = usersPortfolioMetrics.find(
-        (portfolioMetric) => portfolioMetric.timestamp > Date.now() - 7 * DAY_MS
-      )
-      if (!portfolioMetricsAWeekAgo) {
-        // TODO: send them a no change email?
-        log('No portfolio metrics a week ago for user', privateUser.id)
-        return
-      }
       const totalTips = sum(
         usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'TIP')
@@ -165,10 +134,15 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       )
       const greenBg = 'rgba(0,160,0,0.2)'
       const redBg = 'rgba(160,0,0,0.2)'
+      const clearBg = 'rgba(255,255,255,0)'
+      const roundedProfit =
+        Math.round(user.profitCached.weekly) === 0
+          ? 0
+          : Math.floor(user.profitCached.weekly)
       const performanceData = {
         profit: formatMoney(user.profitCached.weekly),
         profit_style: `background-color: ${
-          user.profitCached.weekly > 0 ? greenBg : redBg
+          roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
         }`,
         markets_created:
           usersToContractsCreated[privateUser.id].length.toString(),
@@ -194,7 +168,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
 
             const marketProbabilityAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
-            const currentMarketProbability = cpmmContract.prob
+            const currentMarketProbability = cpmmContract.resolutionProbability
+              ? cpmmContract.resolutionProbability
+              : cpmmContract.prob
             const betsValueAWeekAgo = computeInvestmentValueCustomProb(
               bets.filter((b) => b.createdTime < Date.now() - 7 * DAY_MS),
               contract,
@@ -215,7 +191,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               marketProbAWeekAgo: marketProbabilityAWeekAgo,
               questionTitle: contract.question,
               questionUrl: contractUrl(contract),
-              questionProb: Math.round(cpmmContract.prob * 100) + '%',
+              questionProb: cpmmContract.resolution
+                ? cpmmContract.resolution
+                : Math.round(cpmmContract.prob * 100) + '%',
               questionChange:
                 (marketChange > 0 ? '+' : '') +
                 Math.round(marketChange * 100) +
@@ -251,18 +229,31 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       // pick 3 winning investments and 3 losing investments
       const topInvestments = winningInvestments.slice(0, 2)
       const worstInvestments = losingInvestments.slice(0, 2)
-      // console.log('winningInvestments', topInvestments)
-      console.log('losingInvestments', worstInvestments)
-      log('perf data:', performanceData)
+      // if no bets in the last week ANd no market movers AND no markets created, don't send email
+      if (
+        contractsBetOnInLastWeek.length === 0 &&
+        topInvestments.length === 0 &&
+        worstInvestments.length === 0 &&
+        usersToContractsCreated[privateUser.id].length === 0
+      ) {
+        log('No bets in last week, no market movers, no markets created')
+        await firestore.collection('private-users').doc(privateUser.id).update({
+          weeklyPortfolioUpdateEmailSent: true,
+        })
+        return
+      }
       await sendWeeklyPortfolioUpdateEmail(
         user,
         privateUser,
         topInvestments.concat(worstInvestments) as PerContractInvestmentsData[],
         performanceData
       )
-      return firestore.collection('private-users').doc(privateUser.id).update({
+      await firestore.collection('private-users').doc(privateUser.id).update({
         weeklyPortfolioUpdateEmailSent: true,
       })
+      log('Sent weekly portfolio update email to', privateUser.email)
+      count++
+      log('sent out emails to user count:', count)
     })
   )
 }

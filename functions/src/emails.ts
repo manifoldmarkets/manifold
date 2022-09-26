@@ -648,9 +648,12 @@ export const sendWeeklyPortfolioUpdateEmail = async (
   })
 
   await sendTemplateEmail(
-    privateUser.email,
+    // privateUser.email,
+    'iansphilips@gmail.com',
     `Here's your weekly portfolio update!`,
-    'portfolio-update',
+    investments.length === 0
+      ? 'portfolio-update-no-movers'
+      : 'portfolio-update',
     templateData
   )
 }
