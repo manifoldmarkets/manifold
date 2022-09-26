@@ -1,5 +1,6 @@
 import React, { memo, useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
+import dayjs from 'dayjs'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -44,9 +45,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import BetButton from 'web/components/bet-button'
-
-import dayjs from 'dayjs'
-import { BetsSummary } from 'web/components/bets-list'
+import { BetsSummary } from 'web/components/bet-summary'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {

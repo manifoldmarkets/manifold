@@ -22,7 +22,7 @@ import {
 import { Row } from './layout/row'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { OutcomeLabel } from './outcome-label'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 import {
@@ -33,7 +33,6 @@ import {
   getContractBetMetrics,
   resolvedPayout,
   getContractBetNullMetrics,
-  getProbability,
 } from 'common/calculate'
 import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
@@ -41,12 +40,12 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserBets } from 'web/hooks/use-user-bets'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
-import { floatingEqual } from 'common/util/math'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
 import { UserLink } from 'web/components/user-link'
 import { useUserBetContracts } from 'web/hooks/use-contracts'
-import { InfoTooltip } from './info-tooltip'
+import { BetsSummary } from './bet-summary'
+import { ProfitBadge } from './profit-badge'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -374,104 +373,6 @@ function ContractBets(props: {
   )
 }
 
-export function BetsSummary(props: {
-  contract: Contract
-  bets: Bet[]
-  isYourBets: boolean
-  className?: string
-}) {
-  const { contract, className } = props
-  const { resolution, outcomeType } = contract
-  const isBinary = outcomeType === 'BINARY'
-
-  const bets = props.bets.filter((b) => !b.isAnte)
-  const { profitPercent, payout, profit, totalShares } = getContractBetMetrics(
-    contract,
-    bets
-  )
-
-  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const yesWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'YES')
-  )
-  const noWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'NO')
-  )
-
-  const prob = isBinary ? getProbability(contract) : 0
-  const expectation = prob * yesWinnings + (1 - prob) * noWinnings
-
-  if (
-    isBinary &&
-    floatingEqual(totalShares.YES ?? 0, 0) &&
-    floatingEqual(totalShares.NO ?? 0, 0)
-  )
-    return <></>
-
-  return (
-    <Col className={clsx(className, 'gap-4')}>
-      <Row className="flex-wrap gap-4 sm:flex-nowrap sm:gap-6">
-        {resolution ? (
-          <Col>
-            <div className="text-sm text-gray-500">Payout</div>
-            <div className="whitespace-nowrap">
-              {formatMoney(payout)}{' '}
-              <ProfitBadge profitPercent={profitPercent} />
-            </div>
-          </Col>
-        ) : isBinary ? (
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Position{' '}
-              <InfoTooltip text="Number of shares you own on net. 1 YES share = M$1 if the market resolves YES." />
-            </div>
-            <div className="whitespace-nowrap">
-              {yesWinnings > 0 ? (
-                <>
-                  <YesLabel /> {formatWithCommas(yesWinnings)}
-                </>
-              ) : (
-                <>
-                  <NoLabel /> {formatWithCommas(noWinnings)}
-                </>
-              )}
-            </div>
-          </Col>
-        ) : (
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Expected value {''}
-              <InfoTooltip text="The estimated payout of your position using the current market probability." />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-          </Col>
-        )}
-
-        {isBinary && (
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Expected value{' '}
-              <InfoTooltip text="The estimated payout of your position using the current market probability." />
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
-          </Col>
-        )}
-
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
-            Profit{' '}
-            <InfoTooltip text="Includes both realized & unrealized gains/losses from trades." />
-          </div>
-          <div className="whitespace-nowrap">
-            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
-          </div>
-        </Col>
-      </Row>
-      <Row className="flex-wrap-none gap-4"></Row>
-    </Col>
-  )
-}
-
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
@@ -731,32 +632,5 @@ function SellButton(props: {
         {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>
-  )
-}
-
-export function ProfitBadge(props: {
-  profitPercent: number
-  round?: boolean
-  className?: string
-}) {
-  const { profitPercent, round, className } = props
-  if (!profitPercent) return null
-  const colors =
-    profitPercent > 0
-      ? 'bg-green-100 text-green-800'
-      : 'bg-red-100 text-red-800'
-
-  return (
-    <span
-      className={clsx(
-        'ml-1 inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium',
-        colors,
-        className
-      )}
-    >
-      {(profitPercent > 0 ? '+' : '') +
-        profitPercent.toFixed(round ? 0 : 1) +
-        '%'}
-    </span>
   )
 }

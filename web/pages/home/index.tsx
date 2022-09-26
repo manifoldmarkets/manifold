@@ -33,7 +33,6 @@ import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
-import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -45,6 +44,7 @@ import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Title } from 'web/components/title'
 import { CPMMBinaryContract } from 'common/contract'
 import { useContractsByDailyScoreGroups } from 'web/hooks/use-contracts'
+import { ProfitBadge } from 'web/components/profit-badge'
 
 export default function Home() {
   const user = useUser()
