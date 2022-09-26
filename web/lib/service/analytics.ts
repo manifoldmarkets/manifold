@@ -21,7 +21,7 @@ try {
     // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     window.Sprig = function(...args){S._queue.push(args)}
     // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    var S = window.Sprig;S.appId = a;S._queue = [];window.UserLeap=S
+    const S = window.Sprig;S.appId = a;S._queue = [];window.UserLeap=S
     // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     a=l.createElement('script')
     // @ts-expect-error Sprig doesn't yet have a native typescript snippet
