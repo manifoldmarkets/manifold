@@ -39,8 +39,6 @@ class Application {
 
   currentMarket: Manifold.FullMarket = null;
 
-  loadedHistory: boolean;
-  loadingMarket: boolean;
   betsToAddOnceLoadedHistory: FullBet[];
 
   constructor() {
@@ -69,15 +67,8 @@ class Application {
 
   registerPacketHandlers() {
     this.socket.on(Packet.ADD_BETS, (bets: FullBet[]) => {
-      console.log('Request to add bets:');
-      console.log(bets);
       for (const bet of bets) {
-        if (this.loadedHistory) {
-          console.log('History loaded so pushing bet immediately');
-          this.addBet(bet);
-        } else {
-          this.betsToAddOnceLoadedHistory.push(bet);
-        }
+        this.addBet(bet);
       }
     });
     this.socket.on(Packet.SELECT_MARKET, (p: PacketSelectMarket) => {
@@ -87,22 +78,22 @@ class Application {
     this.socket.on(Packet.CLEAR, () => {
       this.resetUI();
     });
-    this.socket.on(Packet.MARKET_LOAD_COMPLETE, () => {
-      this.loadingMarket = false;
+    this.socket.on('connect', () => {
+      console.log(`Using transport: ${this.socket.io.engine.transport.name}`);
+      this.socket.io.engine.on('upgrade', () => {
+        console.log(`Upgraded transport: ${this.socket.io.engine.transport.name}`);
+      });
     });
   }
 
   resetUI() {
     document.getElementById('question').innerHTML = '';
-    this.chart.canvasElement.style.display = 'none';
     this.chart.data = [];
     this.betElements.forEach((b) => {
       b?.element?.remove();
     });
     this.betElements = [];
 
-    this.loadedHistory = false;
-    this.loadingMarket = true;
     this.betsToAddOnceLoadedHistory = [];
   }
 
@@ -129,33 +120,22 @@ class Application {
 
   loadBettingHistory() {
     const data: Point[] = [];
-    // Bets are stored returned oldest-first:
+    // Bets are stored oldest-first:
     data.push(new Point(Date.now() - 1e9, 0.5));
     if (this.currentMarket.bets.length > 0) {
-      // const firstBet = this.currentMarket.bets[0];
       for (const bet of this.currentMarket.bets) {
         data.push(new Point(bet.createdTime, bet.probBefore));
         data.push(new Point(bet.createdTime, bet.probAfter));
-        console.log(bet.createdTime);
       }
     }
     this.chart.data = data;
 
-    for (const bet of this.betsToAddOnceLoadedHistory) {
-      this.addBet(bet);
+    for (const bet of (this.currentMarket as PacketSelectMarket).initialBets) {
+      this.addBet(bet, false);
     }
-
-    this.chart.canvasElement.style.display = '';
-
-    // if (this.betsToAddOnceLoadedHistory.length > 0) {
-    //   this.currentMarket.probability = this.betsToAddOnceLoadedHistory[this.betsToAddOnceLoadedHistory.length - 1].probAfter;
-    //   this.currentProbability_percent = this.currentMarket.probability * 100;
-    // }
-
-    this.loadedHistory = true;
   }
 
-  addBet(bet: FullBet) {
+  addBet(bet: FullBet, addToChart = true) {
     const name = bet.username;
 
     const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
@@ -180,18 +160,17 @@ class Application {
     this.betElements.push(betElement);
     t.offsetLeft;
     setTimeout(() => {
-      t.classList.add('!h-[1.2em]');
+      t.classList.add('!min-h-[1.2em]');
     }, 1);
 
     if (this.betElements.length > 3) {
       const transactionToRemove = this.betElements.shift().element;
-      transactionToRemove.classList.remove('!h-[1.2em]');
       setTimeout(() => {
-        transactionToRemove.parentElement.removeChild(transactionToRemove);
-      }, 500);
+        transactionToRemove.remove();
+      }, 1000);
     }
 
-    if (this.currentMarket && this.loadedHistory) {
+    if (this.currentMarket && addToChart) {
       this.currentMarket.probability = bet.probAfter;
       this.currentProbability_percent = this.currentMarket.probability * 100;
       this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
@@ -224,7 +203,6 @@ export default () => {
       }
     });
     app.socket.on('connect', () => {
-      console.debug('Socked connected to server.');
       setConnectionState(ConnectionState.CONNECTED);
     });
     app.socket.on('disconnect', () => {
@@ -306,13 +284,15 @@ export default () => {
               <canvas id="chart" className="absolute" style={{ aspectRatio: 'unset' }}></canvas>
             </Col>
             <Row className={clsx('justify-end items-center p-[0.2em]', resolvedData && 'hidden')}>
-              <Col id="transactions" className="grow shrink h-full items-start justify-end">
-                <div id="transaction-template" className={clsx(styles.bet)}>
-                  <div id="name" className="font-bold inline-block truncate max-w-[15em] align-bottom"></div>{' '}
-                  <div className="color inline">
-                    <p className="boughtSold"></p> M$<p className="amount">1000</p>
+              <Col className="grow shrink h-full items-start justify-end max-h-[2.5em] overflow-hidden">
+                <Col id="transactions" className="grow shrink h-full">
+                  <div id="transaction-template" className={clsx(styles.bet)}>
+                    <div id="name" className="font-bold inline-block truncate max-w-[15em] align-bottom"></div>{' '}
+                    <div className="color inline">
+                      <p className="boughtSold"></p> M$<p className="amount">1000</p>
+                    </div>
                   </div>
-                </div>
+                </Col>
               </Col>
               <Col className="text-center">
                 <div

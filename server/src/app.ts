@@ -3,6 +3,7 @@ import { UNFEATURE_MARKET } from 'common/packet-ids';
 import { PacketSelectMarket } from 'common/packets';
 import cors from 'cors';
 import express, { Express } from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import moment from 'moment';
 import { AddressInfo } from 'net';
 import path from 'path';
@@ -10,7 +11,7 @@ import { Server } from 'socket.io';
 import registerAPIEndpoints from './api';
 import DockClient from './clients/dock';
 import OverlayClient from './clients/overlay';
-import { PORT } from './envs';
+import { IS_DEV, PORT } from './envs';
 import AppFirestore from './firestore';
 import log from './logger';
 import * as Manifold from './manifold-api';
@@ -161,7 +162,11 @@ export default class App {
 
     registerAPIEndpoints(this, this.app);
 
-    this.app.use(express.static(path.resolve('static'), { index: false, extensions: ['html'] }));
-    //!!! this.app.get("*", (req, res) => res.sendFile(path.resolve("static/404.html")));
+    if (IS_DEV) {
+      this.app.use('*', createProxyMiddleware({ target: 'http://localhost:1000', ws: true }));
+    } else {
+      this.app.use(express.static(path.resolve('static'), { index: false, extensions: ['html'] }));
+      this.app.get('*', (req, res) => res.sendFile(path.resolve('static/404.html')));
+    }
   }
 }

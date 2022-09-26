@@ -123,9 +123,6 @@ export class Market {
       }
       betsToAdd.push(fullBet);
       numLoadedBets++;
-      // if (numLoadedBets >= 3) { //!!!
-      //   break;
-      // }
     }
 
     betsToAdd.reverse(); // Bets must be pushed oldest first, but betsToAdd is newest-first

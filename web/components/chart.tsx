@@ -67,7 +67,7 @@ export default class Chart {
     const yAxisWidth_px = ctx.measureText('100%').width >> 0;
     const numXAxisLines = 6;
     const numYAxisLines = 3;
-    const chartXTime_min = 10;
+    const chartXTime_minutes = 10;
     const renderGridLines = false;
 
     const canvasWidth_px = this.canvasElement.width >> 0;
@@ -83,7 +83,7 @@ export default class Chart {
     grd.addColorStop(1, 'rgba(73, 201, 159, 0.0)');
 
     const maxX = Date.now();
-    const minX = maxX - chartXTime_min * 60 * 1000;
+    const minX = maxX - chartXTime_minutes * 60 * 1000;
 
     ctx.translate(padding_px + 0.5, padding_px + 0.5);
     {
@@ -102,7 +102,7 @@ export default class Chart {
       ctx.translate(0, graphHeight_px);
       for (let i = 0; i < numXAxisLines; i++) {
         const x = ((i * graphWidth_px) / (numXAxisLines - 1)) >> 0;
-        let labelText = ((numXAxisLines - 1 - i) * chartXTime_min) / (numXAxisLines - 1) + 'm';
+        let labelText = ((numXAxisLines - 1 - i) * chartXTime_minutes) / (numXAxisLines - 1) + 'm';
         if (i == numXAxisLines - 1) {
           labelText = 'now';
           const m = ctx.measureText(labelText);

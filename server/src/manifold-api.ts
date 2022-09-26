@@ -166,9 +166,9 @@ export async function getMarketBySlug(marketSlug: string): Promise<ManifoldAPI.L
 }
 
 export async function getFullMarketByID(marketID: string): Promise<ManifoldAPI.FullMarket> {
-  const fulLMarket = <ManifoldAPI.FullMarket>await (await get(`${MANIFOLD_API_BASE_URL}market/${marketID}`)).json();
-  fulLMarket.bets.sort((a, b) => a.createdTime - b.createdTime); // Ensure that bets are oldest-first. The Manifold API doesn't consistently order them.
-  return fulLMarket;
+  const fullMarket = <ManifoldAPI.FullMarket>await (await get(`${MANIFOLD_API_BASE_URL}market/${marketID}`)).json();
+  fullMarket.bets.sort((a, b) => a.createdTime - b.createdTime); // Ensure that bets are oldest-first. The Manifold API doesn't consistently order them.
+  return fullMarket;
 }
 
 export async function getLiteMarketByID(marketID: string): Promise<ManifoldAPI.LiteMarket> {

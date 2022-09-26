@@ -1,5 +1,6 @@
 import { FullMarket } from './manifold-defs';
 import { ResolutionOutcome } from './outcome';
+import { FullBet } from './transaction';
 
 export type PacketResolved = {
   outcome: ResolutionOutcome;
@@ -32,4 +33,6 @@ export type PacketHandshakeComplete = {
   manifoldAPIBase: string;
 };
 
-export type PacketSelectMarket = FullMarket;
+export type PacketSelectMarket = FullMarket & {
+  initialBets: FullBet[];
+};
