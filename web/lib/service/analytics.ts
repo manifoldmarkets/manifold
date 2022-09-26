@@ -6,42 +6,13 @@ import {
   Identify,
 } from '@amplitude/analytics-browser'
 
+import * as Sprig from 'web/lib/service/sprig'
+
 import { ENV_CONFIG } from 'common/envs/constants'
 
 init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, { includeReferrer: true })
 
 export { track }
-
-// Integrate Sprig
-
-try {
-  ;(function (l, e, a, p) {
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    if (window.Sprig) return
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    window.Sprig = function (...args) {
-      S._queue.push(args)
-    }
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    const S = window.Sprig
-    S.appId = a
-    S._queue = []
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    window.UserLeap = S
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    a = l.createElement('script')
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    a.async = 1
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    a.src = e + '?id=' + S.appId
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    p = l.getElementsByTagName('script')[0]
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-    p.parentNode.insertBefore(a, p)
-  })(document, 'https://cdn.sprig.com/shim.js', ENV_CONFIG.sprigEnvironmentId)
-} catch (error) {
-  console.log('Error initializing Sprig, please complain to Barak', error)
-}
 
 // Convenience functions:
 
@@ -64,14 +35,12 @@ export const withTracking =
 
 export async function identifyUser(userId: string) {
   setUserId(userId)
-  // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-  window.Sprig.setUserId(userId)
+  Sprig.setUserId(userId)
 }
 
 export async function setUserProperty(property: string, value: string) {
   const identifyObj = new Identify()
   identifyObj.set(property, value)
   await identify(identifyObj)
-  // @ts-expect-error Sprig doesn't yet have a native typescript snippet
-  window.Sprig.setAttribute(property, value)
+  Sprig.setAttributes(identifyObj)
 }
