@@ -4,6 +4,7 @@ import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
   BinaryContractChart,
+  NumericContractChart,
   PseudoNumericContractChart,
   ChoiceContractChart,
 } from './contract-prob-graph'
@@ -28,7 +29,6 @@ import {
   BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
-import { NumericGraph } from './numeric-graph'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -66,7 +66,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
           contract={contract}
         />
       </Col>
-      <NumericGraph contract={contract} />
+      <NumericContractChart contract={contract} />
     </Col>
   )
 }

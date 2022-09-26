@@ -1,21 +1,24 @@
 import dayjs from 'dayjs'
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Bet } from 'common/bet'
 import {
   getInitialProbability,
   getOutcomeProbability,
   getProbability,
 } from 'common/calculate'
+import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
 import {
   Contract,
   BinaryContract,
   PseudoNumericContract,
+  NumericContract,
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { formatLargeNumber } from 'common/util/format'
-import { range, sortBy, groupBy, sumBy } from 'lodash'
+import { max, range, sortBy, groupBy, sum } from 'lodash'
 import { useEvent } from 'web/hooks/use-event'
 
 import * as d3 from 'd3'
@@ -24,8 +27,9 @@ const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 const MARGIN_X = MARGIN.right + MARGIN.left
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-type MultiPoint = readonly [Date, number[]]
-type Point = readonly [Date, number]
+type MultiPoint = readonly [Date, number[]] // [time, [ordered outcome probs]]
+type HistoryPoint = readonly [Date, number] // [time, number or percentage]
+type NumericPoint = readonly [number, number] // [number, prob]
 
 const useElementWidth = <T extends Element>(ref: React.RefObject<T>) => {
   const [width, setWidth] = useState<number>()
@@ -85,6 +89,17 @@ const getTickValues = (min: number, max: number, n: number) => {
   return [min, ...range(1, n - 1).map((i) => min + step * i), max]
 }
 
+const getNumericChartData = (contract: NumericContract) => {
+  const { totalShares, bucketCount, min, max } = contract
+  const bucketProbs = getDpmOutcomeProbabilities(totalShares)
+
+  const xs = range(bucketCount).map(
+    (i) => min + ((max - min) * i) / bucketCount
+  )
+  const probs = range(bucketCount).map((i) => bucketProbs[`${i}`])
+  return probs.map((prob, i) => [xs[i], prob] as const)
+}
+
 const getMultiChartData = (
   contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
@@ -121,7 +136,7 @@ const getMultiChartData = (
     const { outcome, shares } = bet
     sharesByOutcome[outcome] += shares
 
-    const sharesSquared = sumBy(
+    const sharesSquared = sum(
       Object.values(sharesByOutcome).map((shares) => shares ** 2)
     )
     points.push([
@@ -148,7 +163,7 @@ const getMultiChartData = (
 const getChartData = (
   contract: BinaryContract | PseudoNumericContract,
   bets: Bet[]
-): Point[] => {
+): HistoryPoint[] => {
   const getY = (p: number) => {
     if (contract.outcomeType === 'PSEUDO_NUMERIC') {
       const { min, max } = contract
@@ -169,36 +184,32 @@ const getChartData = (
   ]
 }
 
-const XAxis = (props: { w: number; h: number; scale: d3.AxisScale<Date> }) => {
-  const { h, scale } = props
+const XAxis = <X extends d3.AxisDomain>(props: {
+  w: number
+  h: number
+  axis: d3.Axis<X>
+}) => {
+  const { h, axis } = props
   const axisRef = useRef<SVGGElement>(null)
-  const [start, end] = scale.domain()
-  const fmt = getFormatterForDateRange(start, end)
   useEffect(() => {
     if (axisRef.current != null) {
-      const axis = d3.axisBottom(scale).tickFormat(fmt)
       d3.select(axisRef.current)
         .call(axis)
         .call((g) => g.select('.domain').remove())
     }
-  })
+  }, [h, axis])
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
 }
 
-const YAxis = (props: {
+const YAxis = <Y extends d3.AxisDomain>(props: {
   w: number
   h: number
-  scale: d3.AxisScale<number>
-  pct?: boolean
+  axis: d3.Axis<Y>
 }) => {
-  const { w, h, scale, pct } = props
+  const { w, h, axis } = props
   const axisRef = useRef<SVGGElement>(null)
-  const [min, max] = scale.domain()
-  const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
-  const fmt = (n: number) => (pct ? d3.format('.0%')(n) : formatLargeNumber(n))
   useEffect(() => {
     if (axisRef.current != null) {
-      const axis = d3.axisLeft(scale).tickValues(tickValues).tickFormat(fmt)
       d3.select(axisRef.current)
         .call(axis)
         .call((g) => g.select('.domain').remove())
@@ -206,7 +217,7 @@ const YAxis = (props: {
           g.selectAll('.tick line').attr('x2', w).attr('stroke-opacity', 0.1)
         )
     }
-  })
+  }, [w, h, axis])
   return <g ref={axisRef} />
 }
 
@@ -215,10 +226,11 @@ const LinePathInternal = <P,>(
     data: P[]
     px: number | ((p: P) => number)
     py: number | ((p: P) => number)
+    curve: d3.CurveFactory
   } & React.SVGProps<SVGPathElement>
 ) => {
-  const { data, px, py, ...rest } = props
-  const line = d3.line<P>(px, py).curve(d3.curveStepAfter)
+  const { data, px, py, curve, ...rest } = props
+  const line = d3.line<P>(px, py).curve(curve)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} fill="none" d={line(data)!} />
 }
@@ -230,40 +242,40 @@ const AreaPathInternal = <P,>(
     px: number | ((p: P) => number)
     py0: number | ((p: P) => number)
     py1: number | ((p: P) => number)
+    curve: d3.CurveFactory
   } & React.SVGProps<SVGPathElement>
 ) => {
-  const { data, px, py0, py1, ...rest } = props
-  const area = d3.area<P>(px, py0, py1).curve(d3.curveStepAfter)
+  const { data, px, py0, py1, curve, ...rest } = props
+  const area = d3.area<P>(px, py0, py1).curve(curve)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} d={area(data)!} />
 }
 const AreaPath = memo(AreaPathInternal) as typeof AreaPathInternal
 
-const TwoAxisChart = (props: {
+const SVGChart = <X extends d3.AxisDomain, Y extends d3.AxisDomain>(props: {
   children: React.ReactNode
   w: number
   h: number
-  xScale: d3.ScaleTime<number, number>
-  yScale: d3.ScaleContinuousNumeric<number, number>
+  xAxis: d3.Axis<X>
+  yAxis: d3.Axis<Y>
   onMouseOver?: (ev: React.PointerEvent) => void
   onMouseLeave?: (ev: React.PointerEvent) => void
   pct?: boolean
 }) => {
-  const { children, w, h, xScale, yScale, onMouseOver, onMouseLeave, pct } =
-    props
+  const { children, w, h, xAxis, yAxis, onMouseOver, onMouseLeave } = props
   const innerW = w - MARGIN_X
   const innerH = h - MARGIN_Y
   return (
     <svg className="w-full" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
       <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
-        <XAxis scale={xScale} w={innerW} h={innerH} />
-        <YAxis scale={yScale} w={innerW} h={innerH} pct={pct} />
+        <XAxis axis={xAxis} w={innerW} h={innerH} />
+        <YAxis axis={yAxis} w={innerW} h={innerH} />
         {children}
         <rect
           x="0"
           y="0"
-          width={innerW}
-          height={innerH}
+          width={w - MARGIN_X}
+          height={h - MARGIN_Y}
           fill="none"
           pointerEvents="all"
           onPointerEnter={onMouseOver}
@@ -272,6 +284,54 @@ const TwoAxisChart = (props: {
         />
       </g>
     </svg>
+  )
+}
+
+export const SingleValueDistributionChart = (props: {
+  data: NumericPoint[]
+  w: number
+  h: number
+  color: string
+  xScale: d3.ScaleContinuousNumeric<number, number>
+  yScale: d3.ScaleContinuousNumeric<number, number>
+}) => {
+  const { color, data, xScale, yScale, w, h } = props
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const px = useCallback((p: NumericPoint) => xScale(p[0]), [xScale])
+  const py0 = yScale(0)
+  const py1 = useCallback((p: NumericPoint) => yScale(p[1]), [yScale])
+
+  const formatX = (n: number) => formatLargeNumber(n)
+  const formatY = (n: number) => d3.format(',.2%')(n)
+  const xAxis = d3.axisBottom<number>(xScale).tickFormat(formatX)
+  const yAxis = d3.axisLeft<number>(yScale).tickFormat(formatY)
+
+  return (
+    <div className="relative">
+      <div
+        ref={tooltipRef}
+        style={{ display: 'none' }}
+        className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
+      />
+      <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
+        <LinePath
+          data={data}
+          curve={d3.curveLinear}
+          px={px}
+          py={py1}
+          stroke={color}
+        />
+        <AreaPath
+          data={data}
+          curve={d3.curveLinear}
+          px={px}
+          py0={py0}
+          py1={py1}
+          fill={color}
+          opacity={0.3}
+        />
+      </SVGChart>
+    </div>
   )
 }
 
@@ -287,10 +347,34 @@ export const MultiValueHistoryChart = (props: {
 }) => {
   const { colors, data, xScale, yScale, labels, w, h, pct } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const px = useCallback(
+    (p: d3.SeriesPoint<MultiPoint>) => xScale(p.data[0]),
+    [xScale]
+  )
+  const py0 = useCallback(
+    (p: d3.SeriesPoint<MultiPoint>) => yScale(p[0]),
+    [yScale]
+  )
+  const py1 = useCallback(
+    (p: d3.SeriesPoint<MultiPoint>) => yScale(p[1]),
+    [yScale]
+  )
   const stack = d3
     .stack<MultiPoint, number>()
     .keys(range(0, labels.length))
-    .value((p, o) => p[1][o])
+    .value(([_date, probs], o) => probs[o])
+
+  const [xStart, xEnd] = xScale.domain()
+  const fmtX = getFormatterForDateRange(xStart, xEnd)
+  const fmtY = (n: number) => (pct ? d3.format('.0%')(n) : formatLargeNumber(n))
+
+  const [min, max] = yScale.domain()
+  const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+  const xAxis = d3.axisBottom<Date>(xScale).tickFormat(fmtX)
+  const yAxis = d3
+    .axisLeft<number>(yScale)
+    .tickValues(tickValues)
+    .tickFormat(fmtY)
 
   return (
     <div className="relative">
@@ -299,31 +383,33 @@ export const MultiValueHistoryChart = (props: {
         style={{ display: 'none' }}
         className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
       />
-      <TwoAxisChart w={w} h={h} xScale={xScale} yScale={yScale} pct={pct}>
+      <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
         {stack(data).map((s, i) => (
           <g key={s.key}>
             <LinePath
               data={s}
-              px={(p) => xScale(p.data[0])}
-              py={(p) => yScale(p[1])}
+              px={px}
+              py={py1}
+              curve={d3.curveStepAfter}
               stroke={colors[i]}
             />
             <AreaPath
               data={s}
-              px={(p) => xScale(p.data[0])}
-              py0={(p) => yScale(p[0])}
-              py1={(p) => yScale(p[1])}
+              px={px}
+              py0={py0}
+              py1={py1}
+              curve={d3.curveStepAfter}
               fill={colors[i]}
             />
           </g>
         ))}
-      </TwoAxisChart>
+      </SVGChart>
     </div>
   )
 }
 
 export const SingleValueHistoryChart = (props: {
-  data: Point[]
+  data: HistoryPoint[]
   w: number
   h: number
   color: string
@@ -333,6 +419,10 @@ export const SingleValueHistoryChart = (props: {
 }) => {
   const { color, data, xScale, yScale, pct, w, h } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const px = useCallback((p: HistoryPoint) => xScale(p[0]), [xScale])
+  const py0 = yScale(0)
+  const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
+
   const dates = useMemo(() => data.map(([d]) => d), [data])
   const [startDate, endDate] = xScale.domain().map(dayjs)
   const includeYear = !startDate.isSame(endDate, 'year')
@@ -342,6 +432,14 @@ export const SingleValueHistoryChart = (props: {
     formatDate(d, { includeYear, includeHour, includeMinute })
   const formatY = (n: number) =>
     pct ? d3.format('.0%')(n) : formatLargeNumber(n)
+
+  const [min, max] = yScale.domain()
+  const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+  const xAxis = d3.axisBottom<Date>(xScale).tickFormat(formatX)
+  const yAxis = d3
+    .axisLeft<number>(yScale)
+    .tickValues(tickValues)
+    .tickFormat(formatY)
 
   const onMouseOver = useEvent((event: React.PointerEvent) => {
     const tt = tooltipRef.current
@@ -370,30 +468,31 @@ export const SingleValueHistoryChart = (props: {
         style={{ display: 'none' }}
         className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
       />
-      <TwoAxisChart
+      <SVGChart
         w={w}
         h={h}
-        xScale={xScale}
-        yScale={yScale}
-        pct={pct}
+        xAxis={xAxis}
+        yAxis={yAxis}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
       >
         <LinePath
           data={data}
-          px={(p) => xScale(p[0])}
-          py={(p) => yScale(p[1])}
+          px={px}
+          py={py1}
+          curve={d3.curveStepAfter}
           stroke={color}
         />
         <AreaPath
           data={data}
-          px={(p) => xScale(p[0])}
-          py0={yScale(0)}
-          py1={(p) => yScale(p[1])}
+          px={px}
+          py0={py0}
+          py1={py1}
+          curve={d3.curveStepAfter}
           fill={color}
-          fillOpacity={0.3}
+          opacity={0.3}
         />
-      </TwoAxisChart>
+      </SVGChart>
     </div>
   )
 }
@@ -412,6 +511,8 @@ export const ContractChart = (props: {
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return <ChoiceContractChart {...{ ...props, contract }} />
+    case 'NUMERIC':
+      return <NumericContractChart {...{ ...props, contract }} />
     default:
       return null
   }
@@ -424,6 +525,38 @@ const getFormatterForDateRange = (start: Date, end: Date) => {
     includeMinute: dayjs(end).diff(start, 'hours') < 2,
   }
   return (d: Date) => formatDate(d, opts)
+}
+
+export const NumericContractChart = (props: {
+  contract: NumericContract
+  height?: number
+}) => {
+  const { contract } = props
+  const data = useMemo(() => getNumericChartData(contract), [contract])
+  const isMobile = useIsMobile(800)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const width = useElementWidth(containerRef) ?? 0
+  const height = props.height ?? isMobile ? 150 : 250
+  const maxY = max(data.map((d) => d[1])) as number
+  const xScale = d3.scaleLinear(
+    [contract.min, contract.max],
+    [0, width - MARGIN_X]
+  )
+  const yScale = d3.scaleLinear([0, maxY], [height - MARGIN_Y, 0])
+  return (
+    <div ref={containerRef}>
+      {width && (
+        <SingleValueDistributionChart
+          w={width}
+          h={height}
+          xScale={xScale}
+          yScale={yScale}
+          data={data}
+          color={NUMERIC_GRAPH_COLOR}
+        />
+      )}
+    </div>
+  )
 }
 
 export const PseudoNumericContractChart = (props: {
@@ -449,7 +582,7 @@ export const PseudoNumericContractChart = (props: {
           xScale={xScale}
           yScale={yScale}
           data={data}
-          color="#5fa5f9"
+          color={NUMERIC_GRAPH_COLOR}
         />
       )}
     </div>
