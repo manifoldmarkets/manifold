@@ -5,7 +5,6 @@ import {
   bisectCenter,
   curveLinear,
   curveStepAfter,
-  format,
   pointer,
   stack,
   ScaleTime,
@@ -22,6 +21,10 @@ import { useEvent } from 'web/hooks/use-event'
 export type MultiPoint = readonly [Date, number[]] // [time, [ordered outcome probs]]
 export type HistoryPoint = readonly [Date, number] // [time, number or percentage]
 export type NumericPoint = readonly [number, number] // [number, prob]
+
+const formatPct = (n: number, digits?: number) => {
+  return `${(n * 100).toFixed(digits ?? 0)}%`
+}
 
 const formatDate = (
   date: Date,
@@ -73,12 +76,14 @@ export const SingleValueDistributionChart = (props: {
 }) => {
   const { color, data, xScale, yScale, w, h } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
+
   const px = useCallback((p: NumericPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(0)
   const py1 = useCallback((p: NumericPoint) => yScale(p[1]), [yScale])
 
   const formatX = (n: number) => formatLargeNumber(n)
-  const formatY = (n: number) => format(',.2%')(n)
+  const formatY = (n: number) => formatPct(n, 2)
+
   const xAxis = axisBottom<number>(xScale).tickFormat(formatX)
   const yAxis = axisLeft<number>(yScale).tickFormat(formatY)
 
@@ -115,6 +120,7 @@ export const MultiValueHistoryChart = (props: {
 }) => {
   const { colors, data, xScale, yScale, labels, w, h, pct } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
+
   const px = useCallback(
     (p: SeriesPoint<MultiPoint>) => xScale(p.data[0]),
     [xScale]
@@ -127,18 +133,20 @@ export const MultiValueHistoryChart = (props: {
     (p: SeriesPoint<MultiPoint>) => yScale(p[1]),
     [yScale]
   )
-  const d3Stack = stack<MultiPoint, number>()
-    .keys(range(0, labels.length))
-    .value(([_date, probs], o) => probs[o])
 
   const [xStart, xEnd] = xScale.domain()
   const fmtX = getFormatterForDateRange(xStart, xEnd)
-  const fmtY = (n: number) => (pct ? format('.0%')(n) : formatLargeNumber(n))
+  const fmtY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
 
   const [min, max] = yScale.domain()
   const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+
   const xAxis = axisBottom<Date>(xScale).tickFormat(fmtX)
   const yAxis = axisLeft<number>(yScale).tickValues(tickValues).tickFormat(fmtY)
+
+  const d3Stack = stack<MultiPoint, number>()
+    .keys(range(0, labels.length))
+    .value(([_date, probs], o) => probs[o])
 
   return (
     <div className="relative">
@@ -149,16 +157,15 @@ export const MultiValueHistoryChart = (props: {
       />
       <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
         {d3Stack(data).map((s, i) => (
-          <g key={s.key}>
-            <AreaPath
-              data={s}
-              px={px}
-              py0={py0}
-              py1={py1}
-              curve={curveStepAfter}
-              fill={colors[i]}
-            />
-          </g>
+          <AreaPath
+            key={s.key}
+            data={s}
+            px={px}
+            py0={py0}
+            py1={py1}
+            curve={curveStepAfter}
+            fill={colors[i]}
+          />
         ))}
       </SVGChart>
     </div>
@@ -176,6 +183,7 @@ export const SingleValueHistoryChart = (props: {
 }) => {
   const { color, data, xScale, yScale, pct, w, h } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
+
   const px = useCallback((p: HistoryPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(0)
   const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
@@ -187,10 +195,11 @@ export const SingleValueHistoryChart = (props: {
   const includeMinute = endDate.diff(startDate, 'hours') < 2
   const formatX = (d: Date) =>
     formatDate(d, { includeYear, includeHour, includeMinute })
-  const formatY = (n: number) => (pct ? format('.0%')(n) : formatLargeNumber(n))
+  const formatY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
 
   const [min, max] = yScale.domain()
   const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+
   const xAxis = axisBottom<Date>(xScale).tickFormat(formatX)
   const yAxis = axisLeft<number>(yScale)
     .tickValues(tickValues)
