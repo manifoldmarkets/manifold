@@ -11,7 +11,7 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { MarketSubheader } from 'web/components/contract/contract-details'
-import { ContractChart } from 'web/components/contract/contract-prob-graph'
+import { ContractChart } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'

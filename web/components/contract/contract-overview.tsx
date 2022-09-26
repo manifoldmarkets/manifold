@@ -7,7 +7,7 @@ import {
   NumericContractChart,
   PseudoNumericContractChart,
   ChoiceContractChart,
-} from './contract-prob-graph'
+} from 'web/components/charts/contract'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
