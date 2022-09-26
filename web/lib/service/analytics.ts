@@ -20,14 +20,11 @@ try {
     if (window.Sprig) return
     // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     window.Sprig = function (...args) {
-      // @ts-expect-error Sprig doesn't yet have a native typescript snippet
       S._queue.push(args)
     }
     // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     const S = window.Sprig
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     S.appId = a
-    // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     S._queue = []
     // @ts-expect-error Sprig doesn't yet have a native typescript snippet
     window.UserLeap = S
