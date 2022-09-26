@@ -1,7 +1,8 @@
-import Router from 'next/router';
-import clsx from 'clsx';
-import { MouseEvent } from 'react';
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid';
+import clsx from 'clsx';
+import Image from 'next/image';
+import Router from 'next/router';
+import { MouseEvent } from 'react';
 
 export function Avatar(props: { username?: string; avatarUrl?: string; noLink?: boolean; size: 'xs' | 'sm' | 'lg'; className?: string }) {
   const { username, avatarUrl, noLink, size, className } = props;
@@ -32,7 +33,7 @@ export function Avatar(props: { username?: string; avatarUrl?: string; noLink?: 
   // there can be no avatar URL or username in the feed, we show a "submit comment"
   // item with a fake grey user circle guy even if you aren't signed in
   return avatarUrl ? (
-    <img
+    <Image
       className={clsx('flex-shrink-0 rounded-full bg-white object-cover', `${w} ${h}`, !noLink && 'cursor-pointer', className)}
       style={{ maxWidth: `${s * 0.25}rem` }}
       src={avatarUrl}
