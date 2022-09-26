@@ -9,7 +9,7 @@ import { groupBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { PAST_BETS } from 'common/user'
-import { ContractBetsTable, BetsSummary } from '../bets-list'
+import { ContractBetsTable } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
@@ -35,12 +35,6 @@ export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
 
   const yourTrades = (
     <div>
-      <BetsSummary
-        className="px-2"
-        contract={contract}
-        bets={userBets ?? []}
-        isYourBets
-      />
       <Spacer h={6} />
       <ContractBetsTable contract={contract} bets={userBets ?? []} isYourBets />
       <Spacer h={12} />

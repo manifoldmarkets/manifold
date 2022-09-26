@@ -46,6 +46,7 @@ import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import BetButton from 'web/components/bet-button'
 
 import dayjs from 'dayjs'
+import { BetsSummary } from 'web/components/bets-list'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -247,6 +248,13 @@ export function ContractPageContent(
             <Spacer h={12} />
           </>
         )}
+
+        <BetsSummary
+          className="px-2 mb-4"
+          contract={contract}
+          bets={bets}
+          isYourBets
+        />
 
         <ContractTabs contract={contract} bets={bets} />
         {!user ? (
