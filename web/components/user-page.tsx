@@ -35,16 +35,13 @@ import {
   hasCompletedStreakToday,
 } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from './profile/loans-modal'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
   const router = useRouter()
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
-  // const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
-  const isMobile = useIsMobile()
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -113,17 +110,18 @@ export function UserPage(props: { user: User }) {
               )}
               {!isCurrentUser && <UserFollowButton userId={user.id} />}
             </div>
-            {!isMobile && (
-              <ProfilePublicStats
-                className="sm:text-md text-greyscale-6 text-sm"
-                user={user}
-              />
-            )}
+            <ProfilePublicStats
+              className="sm:text-md text-greyscale-6 hidden text-sm md:inline"
+              user={user}
+            />
           </Col>
         </Row>
         <Col className="mx-4 mt-2">
           <Spacer h={1} />
-          {isMobile && <ProfilePublicStats className="text-sm" user={user} />}
+          <ProfilePublicStats
+            className="text-greyscale-6 text-sm md:hidden"
+            user={user}
+          />
           <Spacer h={1} />
           {user.bio && (
             <>
@@ -197,6 +195,7 @@ export function UserPage(props: { user: User }) {
                 tabIcon: <FolderIcon className="h-5" />,
                 content: (
                   <>
+                    <Spacer h={4} />
                     <PortfolioValueSection userId={user.id} />
                     <Spacer h={4} />
                     <BetsList user={user} />
@@ -207,16 +206,22 @@ export function UserPage(props: { user: User }) {
                 title: 'Markets',
                 tabIcon: <ScaleIcon className="h-5" />,
                 content: (
-                  <CreatorContractsList user={currentUser} creator={user} />
+                  <>
+                    <Spacer h={4} />
+                    <CreatorContractsList user={currentUser} creator={user} />
+                  </>
                 ),
               },
               {
                 title: 'Comments',
                 tabIcon: <ChatIcon className="h-5" />,
                 content: (
-                  <Col>
-                    <UserCommentsList user={user} />
-                  </Col>
+                  <>
+                    <Spacer h={4} />
+                    <Col>
+                      <UserCommentsList user={user} />
+                    </Col>
+                  </>
                 ),
               },
             ]}
