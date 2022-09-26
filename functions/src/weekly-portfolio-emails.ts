@@ -35,7 +35,8 @@ const firestore = admin.firestore()
 
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
-    ? // ? await getAllPrivateUsers()
+    ? // TODO: switch back to all private users
+      // ? await getAllPrivateUsers()
       filterDefined([
         await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
         await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
