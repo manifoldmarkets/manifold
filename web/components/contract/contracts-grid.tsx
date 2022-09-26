@@ -55,13 +55,6 @@ export function ContractsGrid(props: {
   }
 
   if (contracts.length === 0) {
-    // if (profile) {
-    //   return (
-    //     <p className="mx-2 text-gray-500">
-    //       This creator does not yet have any markets.
-    //     </p>
-    //   )
-    // } else {
     return (
       <p className="mx-2 text-gray-500">
         No markets found. Why not{' '}
@@ -70,7 +63,6 @@ export function ContractsGrid(props: {
         </SiteLink>
       </p>
     )
-    // }
   }
 
   return (

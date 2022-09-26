@@ -47,7 +47,8 @@ export function UserPage(props: { user: User }) {
   const isMobile = useIsMobile()
 
   useEffect(() => {
-    // const claimedMana = router.query['claimed-mana'] === 'yes'
+    const claimedMana = router.query['claimed-mana'] === 'yes'
+    setShowConfetti(claimedMana)
     const query = { ...router.query }
     if (query.claimedMana || query.show) {
       delete query['claimed-mana']
@@ -218,14 +219,6 @@ export function UserPage(props: { user: User }) {
                   </Col>
                 ),
               },
-              // {
-              //   title: 'Stats',
-              //   content: (
-              //     <Col className="mb-8">
-              //       <PortfolioValueSection userId={user.id} />
-              //     </Col>
-              //   ),
-              // },
             ]}
           />
         </Col>
@@ -263,6 +256,7 @@ export function ProfilePrivateStats(props: {
 
     const showLoansModel = router.query['show'] === 'loans'
     setShowLoansModal(showLoansModel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   return (
     <>

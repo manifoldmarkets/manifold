@@ -16,8 +16,10 @@ export const PortfolioValueSection = memo(
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
     const [graphMode, setGraphMode] = useState<'profit' | 'value'>('value')
-    const [graphDisplayNumber, setGraphDisplayNumber] = useState(null)
-    const handleGraphDisplayChange = (num) => {
+    const [graphDisplayNumber, setGraphDisplayNumber] = useState<
+      number | string | null
+    >(null)
+    const handleGraphDisplayChange = (num: string | number | null) => {
       setGraphDisplayNumber(num)
     }
 
@@ -70,7 +72,7 @@ export const PortfolioValueSection = memo(
                 className={clsx(
                   graphMode === 'profit'
                     ? graphDisplayNumber
-                      ? graphDisplayNumber[2] === '-'
+                      ? graphDisplayNumber.toString().includes('-')
                         ? 'text-red-600'
                         : 'text-teal-500'
                       : totalProfit > 0
@@ -90,13 +92,11 @@ export const PortfolioValueSection = memo(
               </div>
             </Col>
           </Row>
-          {/* <GraphToggle setGraphMode={setGraphMode} graphMode={graphMode} /> */}
         </Row>
         <PortfolioValueGraph
           portfolioHistory={currPortfolioHistory}
-          includeTime={true}
           mode={graphMode}
-          setGraphDisplayNumber={handleGraphDisplayChange}
+          handleGraphDisplayChange={handleGraphDisplayChange}
         />
         <PortfolioPeriodSelection
           portfolioPeriod={portfolioPeriod}
