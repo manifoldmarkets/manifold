@@ -55,6 +55,13 @@ export default function Home() {
   useSaveReferral()
   usePrefetch(user?.id)
 
+  useEffect(() => {
+    if (user === null) {
+      // Go to landing page if not logged in.
+      Router.push('/')
+    }
+  })
+
   const groups = useMemberGroupsSubscription(user)
 
   const { sections } = getHomeItems(groups ?? [], user?.homeSections ?? [])
