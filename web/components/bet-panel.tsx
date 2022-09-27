@@ -401,7 +401,7 @@ export function BuyPanel(props: {
             isSubmitting={isSubmitting}
             openModalButtonClass={clsx(
               'btn mb-2 flex-1',
-              betDisabled
+              betDisabled || outcome === undefined
                 ? 'btn-disabled bg-greyscale-2'
                 : outcome === 'NO'
                 ? 'border-none bg-red-400 hover:bg-red-500'
