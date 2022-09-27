@@ -5,7 +5,10 @@ import { useEffect, useState } from 'react'
 import { getProbability } from 'common/calculate'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { Customize, USAMap } from './usa-map'
-import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import {
+  getContractFromSlug,
+  listenForContract,
+} from 'web/lib/firebase/contracts'
 
 export interface StateElectionMarket {
   creatorUsername: string
@@ -59,5 +62,24 @@ const useContracts = (slugs: string[]) => {
     )
   }, [slugs])
 
+  useEffect(() => {
+    if (contracts.some((c) => c === undefined)) return
+
+    // listen to contract updates
+    const unsubs = (contracts as Contract[]).map((c, i) =>
+      listenForContract(
+        c.id,
+        (newC) => newC && setContracts(setAt(contracts, i, newC))
+      )
+    )
+    return () => unsubs.forEach((u) => u())
+  }, [contracts])
+
   return contracts
+}
+
+function setAt<T>(arr: T[], i: number, val: T) {
+  const newArr = [...arr]
+  newArr[i] = val
+  return newArr
 }
