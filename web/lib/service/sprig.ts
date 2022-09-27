@@ -25,9 +25,9 @@ try {
 }
 
 export function setUserId(userId: string): void {
-  window.Sprig.setUserId(userId)
+  window.Sprig('setUserId', userId)
 }
 
 export function setAttributes(attributes: Record<string, unknown>): void {
-  window.Sprig.setAttributes(attributes)
+  window.Sprig('setAttributes', attributes)
 }
