@@ -184,6 +184,7 @@ export function AnswerBetPanel(props: {
       <Spacer h={6} />
       {user ? (
         <WarningConfirmationButton
+          marketType="freeResponse"
           amount={betAmount}
           warning={warning}
           onSubmit={submitBet}
@@ -191,8 +192,7 @@ export function AnswerBetPanel(props: {
           disabled={!!betDisabled}
           openModalButtonClass={clsx(
             'btn self-stretch',
-            betDisabled ? 'btn-disabled' : 'btn-primary',
-            isSubmitting ? 'loading' : ''
+            betDisabled ? 'btn-disabled' : 'btn-primary'
           )}
         />
       ) : (

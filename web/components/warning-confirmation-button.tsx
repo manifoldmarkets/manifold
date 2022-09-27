@@ -9,6 +9,7 @@ import { formatMoney } from 'common/util/format'
 export function WarningConfirmationButton(props: {
   amount: number | undefined
   outcome?: 'YES' | 'NO' | undefined
+  marketType: 'freeResponse' | 'binary'
   warning?: string
   onSubmit: () => void
   disabled?: boolean
@@ -25,15 +26,24 @@ export function WarningConfirmationButton(props: {
     openModalButtonClass,
     submitButtonClassName,
     outcome,
+    marketType,
   } = props
+  {
+    console.log(outcome)
+  }
 
   if (!warning) {
     return (
       <button
         className={clsx(
           openModalButtonClass,
-          isSubmitting ? 'loading' : '',
-          (disabled || !outcome) && 'btn-disabled bg-greyscale-2'
+          isSubmitting ? 'loading btn-disabled' : '',
+          disabled && 'btn-disabled',
+          marketType === 'binary'
+            ? !outcome
+              ? 'btn-disabled bg-greyscale-2'
+              : ''
+            : ''
         )}
         onClick={onSubmit}
       >

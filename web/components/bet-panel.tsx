@@ -393,6 +393,7 @@ export function BuyPanel(props: {
 
         {user && (
           <WarningConfirmationButton
+            marketType="binary"
             amount={betAmount}
             outcome={outcome}
             warning={warning}
@@ -401,7 +402,7 @@ export function BuyPanel(props: {
             openModalButtonClass={clsx(
               'btn mb-2 flex-1',
               betDisabled
-                ? 'btn-disabled bg-greyscale-1'
+                ? 'btn-disabled bg-greyscale-2'
                 : outcome === 'NO'
                 ? 'border-none bg-red-400 hover:bg-red-500'
                 : 'border-none bg-teal-500 hover:bg-teal-600'
