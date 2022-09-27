@@ -242,7 +242,7 @@ export const MultiValueHistoryChart = (props: {
   const onMouseOver = useEvent((event: React.PointerEvent) => {
     const [mouseX, mouseY] = pointer(event)
     const queryX = xScale.invert(mouseX)
-    const [_x, ys] = data[xBisector.center(data, queryX)]
+    const [_x, ys] = data[xBisector.left(data, queryX) - 1]
     setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, ys] })
   })
 
@@ -345,7 +345,7 @@ export const SingleValueHistoryChart = (props: {
   const onMouseOver = useEvent((ev: React.PointerEvent) => {
     const [mouseX, mouseY] = pointer(ev)
     const queryX = xScale.invert(mouseX)
-    const [_x, y] = data[xBisector.center(data, queryX)]
+    const [_x, y] = data[xBisector.left(data, queryX) - 1]
     setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
   })
 
