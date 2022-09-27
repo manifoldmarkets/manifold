@@ -14,6 +14,7 @@ export type DateDoc = Post & {
   birthday: number
   photoUrl: string
   type: 'date-doc'
+  contractSlug: string
 }
 
 export const MAX_POST_TITLE_LENGTH = 480

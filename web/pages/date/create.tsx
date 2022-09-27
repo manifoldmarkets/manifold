@@ -1,5 +1,6 @@
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
+import Textarea from 'react-expanding-textarea'
 
 import { DateDoc } from 'common/post'
 import { useTextEditor, TextEditor } from 'web/components/editor'
@@ -15,6 +16,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import { MAX_QUESTION_LENGTH } from 'common/contract'
 
 export default function CreateDateDocPage() {
   const user = useUser()
@@ -25,8 +27,11 @@ export default function CreateDateDocPage() {
 
   const title = `${user?.name}'s Date Doc`
   const [birthday, setBirthday] = useState<undefined | string>(undefined)
-  const [photoUrl, setPhotoUrl] = useState(user?.avatarUrl ?? '')
+  const [photoUrl, setPhotoUrl] = useState('')
   const [avatarLoading, setAvatarLoading] = useState(false)
+  const [question, setQuestion] = useState(
+    'Will I find a partner in the next 3 months?'
+  )
 
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -37,7 +42,12 @@ export default function CreateDateDocPage() {
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
-    user && birthday && photoUrl && editor && editor.isEmpty === false
+    user &&
+    birthday &&
+    photoUrl &&
+    editor &&
+    editor.isEmpty === false &&
+    question
 
   const fileHandler = async (event: any) => {
     if (!user) return
@@ -53,22 +63,25 @@ export default function CreateDateDocPage() {
       })
       .catch(() => {
         setAvatarLoading(false)
-        setPhotoUrl(user.avatarUrl || '')
+        setPhotoUrl('')
       })
   }
 
   async function saveDateDoc() {
     if (!editor || !birthdayTime) return
 
-    const newPost: Omit<DateDoc, 'id' | 'creatorId' | 'createdTime' | 'slug'> =
-      {
-        title,
-        content: editor.getJSON(),
-        bounty: 0,
-        birthday: birthdayTime,
-        photoUrl,
-        type: 'date-doc',
-      }
+    const newPost: Omit<
+      DateDoc,
+      'id' | 'creatorId' | 'createdTime' | 'slug' | 'contractSlug'
+    > & { question: string } = {
+      title,
+      content: editor.getJSON(),
+      bounty: 0,
+      birthday: birthdayTime,
+      photoUrl,
+      type: 'date-doc',
+      question,
+    }
 
     const result = await createPost(newPost).catch((e) => {
       console.log(e)
@@ -83,7 +96,7 @@ export default function CreateDateDocPage() {
   return (
     <Page>
       <div className="mx-auto w-full max-w-3xl">
-        <div className="rounded-lg px-6 py-4 sm:py-0">
+        <div className="rounded-lg px-6 py-4 pb-4 sm:py-0">
           <Row className="mb-8 items-center justify-between">
             <Title className="!my-0 text-blue-500" text="Your Date Doc" />
             <Button
@@ -100,8 +113,8 @@ export default function CreateDateDocPage() {
             </Button>
           </Row>
 
-          <Col className="gap-6">
-            <Col className="max-w-[150px] justify-start gap-4">
+          <Col className="gap-8">
+            <Col className="max-w-[160px] justify-start gap-4">
               <div className="">Birthday</div>
               <input
                 type={'date'}
@@ -126,7 +139,7 @@ export default function CreateDateDocPage() {
                         src={photoUrl}
                         width={80}
                         height={80}
-                        className="flex h-[80px] w-[80px] items-center justify-center rounded-full bg-gray-400 object-cover"
+                        className="flex h-[80px] w-[80px] items-center justify-center rounded-lg bg-gray-400 object-cover"
                       />
                     )}
                     <input
@@ -146,6 +159,22 @@ export default function CreateDateDocPage() {
                 Tell us about you! What are you looking for?
               </div>
               <TextEditor editor={editor} upload={upload} />
+            </Col>
+
+            <Col className="gap-4">
+              <div className="">
+                Finally, we'll create an (unlisted) prediction market!
+              </div>
+
+              <Col className="gap-2">
+                <Textarea
+                  className="input input-bordered resize-none"
+                  maxLength={MAX_QUESTION_LENGTH}
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value || '')}
+                />
+                <div className="ml-2 text-gray-500">Cost: M$100</div>
+              </Col>
             </Col>
           </Col>
         </div>
