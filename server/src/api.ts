@@ -47,8 +47,11 @@ export default function registerAPIEndpoints(app: App, express: Express) {
 
   express.post('/api/linkInit', async (request, response) => {
     try {
-      const { manifoldID, apiKey, redirectURL } = request.body.manifoldID;
-      if (!manifoldID || !apiKey || !redirectURL) throw new Error('manifoldID, apiKey and redirectURL parameters are required.');
+      const { manifoldID, apiKey, redirectURL } = request.body;
+      if (!manifoldID || !apiKey || !redirectURL) {
+        log.warn('Invalid request made to /api/linkInit: ' + JSON.stringify(request.body));
+        throw new Error('manifoldID, apiKey and redirectURL parameters are required.');
+      }
       if (!(await Manifold.verifyAPIKey(apiKey))) throw new Error('API key invalid.');
 
       const sessionToken = crypto.randomBytes(24).toString('hex');
