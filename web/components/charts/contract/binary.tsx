@@ -10,14 +10,19 @@ import { MARGIN_X, MARGIN_Y, getDateRange } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
-const getChartData = (contract: BinaryContract, bets: Bet[]) => {
+const getChartData = (
+  contract: BinaryContract,
+  bets: Bet[],
+  start: Date,
+  end: Date
+) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const startProb = getInitialProbability(contract)
   const endProb = getProbability(contract)
   return [
-    [new Date(contract.createdTime), startProb] as const,
+    [start, startProb] as const,
     ...sortedBets.map((b) => [new Date(b.createdTime), b.probAfter] as const),
-    [new Date(Date.now()), endProb] as const,
+    [end, endProb] as const,
   ]
 }
 
@@ -27,12 +32,16 @@ export const BinaryContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const data = useMemo(() => getChartData(contract, bets), [contract, bets])
+  const [start, end] = useMemo(() => getDateRange(contract), [contract])
+  const data = useMemo(
+    () => getChartData(contract, bets, start, end),
+    [contract, bets, start, end]
+  )
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime(getDateRange(contract), [0, width - MARGIN_X])
+  const xScale = scaleTime([start, end], [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>

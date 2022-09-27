@@ -13,6 +13,8 @@ import { useElementWidth } from 'web/hooks/use-element-width'
 const getMultiChartData = (
   contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[],
+  start: Date,
+  end: Date,
   topN: number
 ) => {
   const { answers, totalBets, outcomeType } = contract
@@ -57,10 +59,10 @@ const getMultiChartData = (
   }
 
   const allPoints: MultiPoint[] = [
-    [new Date(contract.createdTime), trackedAnswers.map((_) => 0)],
+    [start, trackedAnswers.map((_) => 0)],
     ...points,
     [
-      new Date(Date.now()),
+      end,
       trackedAnswers.map((answer) =>
         getOutcomeProbability(contract, answer.id)
       ),
@@ -78,15 +80,16 @@ export const ChoiceContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
+  const [start, end] = useMemo(() => getDateRange(contract), [contract])
   const data = useMemo(
-    () => getMultiChartData(contract, bets, 6),
-    [contract, bets]
+    () => getMultiChartData(contract, bets, start, end, 6),
+    [contract, bets, start, end]
   )
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime(getDateRange(contract), [0, width - MARGIN_X])
+  const xScale = scaleTime([start, end], [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>
