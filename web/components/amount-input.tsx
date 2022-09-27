@@ -41,7 +41,7 @@ export function AmountInput(props: {
   return (
     <>
       <Col className={className}>
-        <label className={clsx(isMobile ? 'font-sm' : 'font-lg')}>
+        <label className="font-sm md:font-lg">
           <span className={clsx('text-greyscale-4 absolute ml-2 mt-[9px]')}>
             {label}
           </span>
