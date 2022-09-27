@@ -1,4 +1,5 @@
 import { getDateDoc } from 'web/lib/firebase/posts'
+import { LinkIcon } from '@heroicons/react/outline'
 import { Page } from 'web/components/page'
 import dayjs from 'dayjs'
 
@@ -11,6 +12,12 @@ import { SiteLink } from 'web/components/site-link'
 import { User } from 'web/lib/firebase/users'
 import { DOMAIN } from 'common/envs/constants'
 import Custom404 from '../404'
+import { ShareIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { Button } from 'web/components/button'
+import { track } from '@amplitude/analytics-browser'
+import toast from 'react-hot-toast'
+import { copyToClipboard } from 'web/lib/util/copy'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
@@ -54,31 +61,57 @@ export function DateDocPost(props: {
   creator: User
   link?: boolean
 }) {
-  const { dateDoc, creator } = props
+  const { dateDoc, creator, link } = props
   const { content, birthday, photoUrl, contractSlug } = dateDoc
   const { name, username } = creator
 
   const age = dayjs().diff(birthday, 'year')
+  const shareUrl = `https://${DOMAIN}/date-docs/${username}`
   const marketUrl = `https://${DOMAIN}/${username}/${contractSlug}`
 
   return (
     <Col className="rounded-lg bg-white px-6 py-6">
-      <SiteLink
-        href={props.link ? `/date-docs/${creator.username}` : undefined}
-      >
-        <Col className="gap-2 self-center">
-          <Row>
-            <img
-              className="w-full max-w-lg rounded-lg object-cover"
-              src={photoUrl}
-              alt={name}
-            />
-          </Row>
-          <Row className="gap-4 text-2xl">
+      <SiteLink href={link ? `/date-docs/${creator.username}` : undefined}>
+        <Col className="gap-4 self-center">
+          <Row className="relative justify-between gap-4 text-2xl">
             <div>
               {name}, {age}
             </div>
+
+            <Col className="absolute right-0 px-2">
+              <Button
+                size="lg"
+                color="gray-white"
+                className={'flex'}
+                onClick={(e) => {
+                  e.preventDefault()
+                  copyToClipboard(shareUrl)
+                  toast.success('Link copied!', {
+                    icon: (
+                      <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
+                    ),
+                  })
+                  track('copy share post link')
+                }}
+              >
+                <ShareIcon
+                  className={clsx('mr-2 h-[24px] w-5')}
+                  aria-hidden="true"
+                />
+                <div
+                  className="!hover:no-underline !decoration-0"
+                  style={{ textDecoration: 'none' }}
+                >
+                  Share
+                </div>
+              </Button>
+            </Col>
           </Row>
+          <img
+            className="w-full max-w-lg rounded-lg object-cover"
+            src={photoUrl}
+            alt={name}
+          />
         </Col>
       </SiteLink>
       <Spacer h={6} />
