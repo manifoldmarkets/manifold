@@ -42,7 +42,6 @@ const postSchema = z.object({
   // Date doc fields:
   bounty: z.number().optional(),
   birthday: z.number().optional(),
-  photoUrl: z.string().optional(),
   type: z.string().optional(),
   question: z.string().optional(),
 })

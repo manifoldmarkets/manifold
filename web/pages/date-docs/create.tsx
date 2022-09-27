@@ -13,8 +13,6 @@ import { Button } from 'web/components/button'
 import dayjs from 'dayjs'
 import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
-import { uploadImage } from 'web/lib/firebase/storage'
-import { LoadingIndicator } from 'web/components/loading-indicator'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 
 export default function CreateDateDocPage() {
@@ -26,8 +24,6 @@ export default function CreateDateDocPage() {
 
   const title = `${user?.name}'s Date Doc`
   const [birthday, setBirthday] = useState<undefined | string>(undefined)
-  const [photoUrl, setPhotoUrl] = useState('')
-  const [avatarLoading, setAvatarLoading] = useState(false)
   const [question, setQuestion] = useState(
     'Will I find a partner in the next 3 months?'
   )
@@ -40,30 +36,7 @@ export default function CreateDateDocPage() {
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
-    user &&
-    birthday &&
-    photoUrl &&
-    editor &&
-    editor.isEmpty === false &&
-    question
-
-  const fileHandler = async (event: any) => {
-    if (!user) return
-
-    const file = event.target.files[0]
-
-    setAvatarLoading(true)
-
-    await uploadImage(user.username, file)
-      .then(async (url) => {
-        setPhotoUrl(url)
-        setAvatarLoading(false)
-      })
-      .catch(() => {
-        setAvatarLoading(false)
-        setPhotoUrl('')
-      })
-  }
+    user && birthday && editor && editor.isEmpty === false && question
 
   async function saveDateDoc() {
     if (!user || !editor || !birthdayTime) return
@@ -76,7 +49,6 @@ export default function CreateDateDocPage() {
       content: editor.getJSON(),
       bounty: 0,
       birthday: birthdayTime,
-      photoUrl,
       type: 'date-doc',
       question,
     }
@@ -120,33 +92,6 @@ export default function CreateDateDocPage() {
                 disabled={isSubmitting}
                 value={birthday}
               />
-            </Col>
-
-            <Col className="gap-4">
-              <div className="">Photo</div>
-              <Row className="items-center gap-4">
-                {avatarLoading ? (
-                  <LoadingIndicator />
-                ) : (
-                  <>
-                    {photoUrl && (
-                      <img
-                        src={photoUrl}
-                        width={80}
-                        height={80}
-                        className="flex h-[80px] w-[80px] items-center justify-center rounded-lg bg-gray-400 object-cover"
-                      />
-                    )}
-                    <input
-                      className="text-sm text-gray-500"
-                      type="file"
-                      name="file"
-                      accept="image/*"
-                      onChange={fileHandler}
-                    />
-                  </>
-                )}
-              </Row>
             </Col>
 
             <Col className="gap-4">
