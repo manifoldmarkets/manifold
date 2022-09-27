@@ -22,7 +22,7 @@ import {
 import { Row } from './layout/row'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { OutcomeLabel } from './outcome-label'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 import {
@@ -38,14 +38,14 @@ import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { useUserBets } from 'web/hooks/use-user-bets'
-import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
-import { floatingEqual } from 'common/util/math'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
 import { UserLink } from 'web/components/user-link'
 import { useUserBetContracts } from 'web/hooks/use-contracts'
+import { BetsSummary } from './bet-summary'
+import { ProfitBadge } from './profit-badge'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -337,8 +337,7 @@ function ContractBets(props: {
           <BetsSummary
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
-            bets={bets}
-            isYourBets={isYourBets}
+            userBets={bets}
           />
 
           {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
@@ -361,125 +360,6 @@ function ContractBets(props: {
         </div>
       )}
     </div>
-  )
-}
-
-export function BetsSummary(props: {
-  contract: Contract
-  bets: Bet[]
-  isYourBets: boolean
-  className?: string
-}) {
-  const { contract, isYourBets, className } = props
-  const { resolution, closeTime, outcomeType, mechanism } = contract
-  const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isCpmm = mechanism === 'cpmm-1'
-  const isClosed = closeTime && Date.now() > closeTime
-
-  const bets = props.bets.filter((b) => !b.isAnte)
-  const { hasShares, invested, profitPercent, payout, profit, totalShares } =
-    getContractBetMetrics(contract, bets)
-
-  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const yesWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'YES')
-  )
-  const noWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'NO')
-  )
-
-  const [showSellModal, setShowSellModal] = useState(false)
-  const user = useUser()
-
-  const sharesOutcome = floatingEqual(totalShares.YES ?? 0, 0)
-    ? floatingEqual(totalShares.NO ?? 0, 0)
-      ? undefined
-      : 'NO'
-    : 'YES'
-
-  const canSell =
-    isYourBets &&
-    isCpmm &&
-    (isBinary || isPseudoNumeric) &&
-    !isClosed &&
-    !resolution &&
-    hasShares &&
-    sharesOutcome &&
-    user
-
-  return (
-    <Col className={clsx(className, 'gap-4')}>
-      <Row className="flex-wrap gap-4 sm:flex-nowrap sm:gap-6">
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
-            Invested
-          </div>
-          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
-        </Col>
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
-          <div className="whitespace-nowrap">
-            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
-          </div>
-        </Col>
-        {canSell && (
-          <>
-            <button
-              className="btn btn-sm self-end"
-              onClick={() => setShowSellModal(true)}
-            >
-              Sell
-            </button>
-            {showSellModal && (
-              <SellSharesModal
-                contract={contract}
-                user={user}
-                userBets={bets}
-                shares={totalShares[sharesOutcome]}
-                sharesOutcome={sharesOutcome}
-                setOpen={setShowSellModal}
-              />
-            )}
-          </>
-        )}
-      </Row>
-      <Row className="flex-wrap-none gap-4">
-        {resolution ? (
-          <Col>
-            <div className="text-sm text-gray-500">Payout</div>
-            <div className="whitespace-nowrap">
-              {formatMoney(payout)}{' '}
-              <ProfitBadge profitPercent={profitPercent} />
-            </div>
-          </Col>
-        ) : isBinary ? (
-          <>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if <YesLabel />
-              </div>
-              <div className="whitespace-nowrap">
-                {formatMoney(yesWinnings)}
-              </div>
-            </Col>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if <NoLabel />
-              </div>
-              <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-            </Col>
-          </>
-        ) : (
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Expected value
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-          </Col>
-        )}
-      </Row>
-    </Col>
   )
 }
 
@@ -748,32 +628,5 @@ function SellButton(props: {
         {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>
-  )
-}
-
-export function ProfitBadge(props: {
-  profitPercent: number
-  round?: boolean
-  className?: string
-}) {
-  const { profitPercent, round, className } = props
-  if (!profitPercent) return null
-  const colors =
-    profitPercent > 0
-      ? 'bg-green-100 text-green-800'
-      : 'bg-red-100 text-red-800'
-
-  return (
-    <span
-      className={clsx(
-        'ml-1 inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium',
-        colors,
-        className
-      )}
-    >
-      {(profitPercent > 0 ? '+' : '') +
-        profitPercent.toFixed(round ? 0 : 1) +
-        '%'}
-    </span>
   )
 }
