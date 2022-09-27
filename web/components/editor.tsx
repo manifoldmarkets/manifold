@@ -29,6 +29,7 @@ import { EmbedModal } from './editor/embed-modal'
 import {
   CheckIcon,
   CodeIcon,
+  EyeOffIcon,
   PhotographIcon,
   PresentationChartLineIcon,
   TrashIcon,
@@ -170,6 +171,7 @@ function FloatingMenu(props: { editor: Editor | null }) {
   const isBold = editor.isActive('bold')
   const isItalic = editor.isActive('italic')
   const isLink = editor.isActive('link')
+  const isSpoiler = editor.isActive('spoiler')
 
   const setLink = () => {
     const href = url && getUrl(url)
@@ -197,6 +199,11 @@ function FloatingMenu(props: { editor: Editor | null }) {
           </button>
           <button onClick={() => (isLink ? unsetLink() : setUrl(''))}>
             <LinkIcon className={clsx('h-5', isLink && 'text-indigo-200')} />
+          </button>
+          <button onClick={() => editor.chain().focus().toggleSpoiler().run()}>
+            <EyeOffIcon
+              className={clsx('h-5', isSpoiler && 'text-indigo-200')}
+            />
           </button>
         </>
       ) : (
