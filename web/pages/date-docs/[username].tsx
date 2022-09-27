@@ -85,7 +85,7 @@ export function DateDocPost(props: {
   link?: boolean
 }) {
   const { dateDoc, creator, link } = props
-  const { content, birthday, photoUrl, contractSlug } = dateDoc
+  const { content, birthday, contractSlug } = dateDoc
   const { name, username } = creator
 
   const user = useUser()
@@ -133,11 +133,6 @@ export function DateDocPost(props: {
               </Button>
             </Col>
           </Row>
-          <img
-            className="w-full max-w-lg rounded-lg object-cover"
-            src={photoUrl}
-            alt={name}
-          />
         </Col>
       </SiteLink>
       {user && user.id === creator.id ? (

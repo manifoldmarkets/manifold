@@ -12,7 +12,6 @@ export type Post = {
 export type DateDoc = Post & {
   bounty: number
   birthday: number
-  photoUrl: string
   type: 'date-doc'
   contractSlug: string
 }
