@@ -346,8 +346,7 @@ function ContractBets(props: {
           <BetsSummary
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
-            bets={bets}
-            isYourBets={isYourBets}
+            userBets={bets}
           />
 
           {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (

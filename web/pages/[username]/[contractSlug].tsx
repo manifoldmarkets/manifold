@@ -255,8 +255,7 @@ export function ContractPageContent(
         <BetsSummary
           className="mb-4 px-2"
           contract={contract}
-          bets={userBets}
-          isYourBets
+          userBets={userBets}
         />
 
         <ContractTabs contract={contract} bets={bets} userBets={userBets} />

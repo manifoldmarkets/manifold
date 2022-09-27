@@ -2,14 +2,9 @@ import { sumBy } from 'lodash'
 import clsx from 'clsx'
 
 import { Bet } from 'web/lib/firebase/bets'
-import {
-  formatMoney,
-  formatWithCommas,
-} from 'common/util/format'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { Col } from './layout/col'
-import {
-  Contract,
-} from 'web/lib/firebase/contracts'
+import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { YesLabel, NoLabel } from './outcome-label'
 import {
@@ -17,22 +12,20 @@ import {
   getContractBetMetrics,
   getProbability,
 } from 'common/calculate'
-import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from './info-tooltip'
 import { ProfitBadge } from './profit-badge'
 
 export function BetsSummary(props: {
   contract: Contract
-  bets: Bet[]
-  isYourBets: boolean
+  userBets: Bet[]
   className?: string
 }) {
   const { contract, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
-  const bets = props.bets.filter((b) => !b.isAnte)
-  const { profitPercent, payout, profit, totalShares } = getContractBetMetrics(
+  const bets = props.userBets.filter((b) => !b.isAnte)
+  const { profitPercent, payout, profit, invested } = getContractBetMetrics(
     contract,
     bets
   )
@@ -48,12 +41,7 @@ export function BetsSummary(props: {
   const prob = isBinary ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
-  if (
-    isBinary &&
-    floatingEqual(totalShares.YES ?? 0, 0) &&
-    floatingEqual(totalShares.NO ?? 0, 0)
-  )
-    return <></>
+  if (bets.length === 0) return <></>
 
   return (
     <Col className={clsx(className, 'gap-4')}>
@@ -87,17 +75,25 @@ export function BetsSummary(props: {
         ) : (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
-              Expected value {''}
+              Expectation{''}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(payout)}</div>
           </Col>
         )}
 
+        <Col className="hidden sm:inline">
+          <div className="whitespace-nowrap text-sm text-gray-500">
+            Invested{' '}
+            <InfoTooltip text="Cash currently invested in this market." />
+          </div>
+          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
+        </Col>
+
         {isBinary && (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
-              Expected value{' '}
+              Expectation{' '}
               <InfoTooltip text="The estimated payout of your position using the current market probability." />
             </div>
             <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
@@ -110,7 +106,8 @@ export function BetsSummary(props: {
             <InfoTooltip text="Includes both realized & unrealized gains/losses from trades." />
           </div>
           <div className="whitespace-nowrap">
-            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
+            {formatMoney(profit)}
+            <ProfitBadge profitPercent={profitPercent} />
           </div>
         </Col>
       </Row>
