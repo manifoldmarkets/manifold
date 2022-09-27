@@ -13,7 +13,7 @@ import {
   ScaleContinuousNumeric,
   SeriesPoint,
 } from 'd3'
-import { range } from 'lodash'
+import { range, sortBy } from 'lodash'
 import dayjs from 'dayjs'
 
 import {
@@ -203,7 +203,7 @@ export const MultiValueHistoryChart = (props: {
   const py1 = useCallback((p: SP) => yScale(p[1]), [yScale])
   const xBisector = bisector((p: MultiPoint) => p[0])
 
-  const { fmtX, fmtY, xAxis, yAxis, series } = useMemo(() => {
+  const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const [start, end] = xScale.domain()
     const fmtX = getFormatterForDateRange(start, end)
     const fmtY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
@@ -215,13 +215,16 @@ export const MultiValueHistoryChart = (props: {
       .tickValues(tickValues)
       .tickFormat(fmtY)
 
+    return { fmtX, fmtY, xAxis, yAxis }
+  }, [h, pct, xScale, yScale])
+
+  const series = useMemo(() => {
     const d3Stack = stack<MultiPoint, number>()
       .keys(range(0, labels.length))
       .value(([_date, probs], o) => probs[o])
       .order(stackOrderReverse)
-    const series = d3Stack(data)
-    return { fmtX, fmtY, xAxis, yAxis, series }
-  }, [h, pct, xScale, yScale, data, labels.length])
+    return d3Stack(data)
+  }, [data, labels.length])
 
   const onSelect = useEvent((ev: D3BrushEvent<MultiPoint>) => {
     if (ev.selection) {
@@ -247,19 +250,23 @@ export const MultiValueHistoryChart = (props: {
     setMouseState(undefined)
   })
 
+  const mouseProbs = mouseState?.p[1] ?? []
+  const legendItems = sortBy(
+    mouseProbs.map((p, i) => ({
+      color: colors[i],
+      label: labels[i],
+      value: fmtY(p),
+      p,
+    })),
+    (item) => -item.p
+  ).slice(0, 10)
+
   return (
     <div className="relative">
       {mouseState && (
         <ChartTooltip {...mouseState}>
           {fmtX(mouseState.p[0])}
-          <Legend
-            className="text-sm"
-            items={mouseState.p[1].map((p, i) => ({
-              color: colors[i],
-              label: labels[i],
-              value: fmtY(p),
-            }))}
-          />
+          <Legend className="text-sm" items={legendItems} />
         </ChartTooltip>
       )}
       <SVGChart
