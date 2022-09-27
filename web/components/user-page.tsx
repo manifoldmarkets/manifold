@@ -191,6 +191,16 @@ export function UserPage(props: { user: User }) {
             labelClassName={'pb-2 pt-1 sm:pt-4 '}
             tabs={[
               {
+                title: 'Markets',
+                tabIcon: <ScaleIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <CreatorContractsList user={currentUser} creator={user} />
+                  </>
+                ),
+              },
+              {
                 title: 'Portfolio',
                 tabIcon: <FolderIcon className="h-5" />,
                 content: (
@@ -199,16 +209,6 @@ export function UserPage(props: { user: User }) {
                     <PortfolioValueSection userId={user.id} />
                     <Spacer h={4} />
                     <BetsList user={user} />
-                  </>
-                ),
-              },
-              {
-                title: 'Markets',
-                tabIcon: <ScaleIcon className="h-5" />,
-                content: (
-                  <>
-                    <Spacer h={4} />
-                    <CreatorContractsList user={currentUser} creator={user} />
                   </>
                 ),
               },
