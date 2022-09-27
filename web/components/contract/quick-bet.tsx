@@ -344,7 +344,7 @@ export function getColor(contract: Contract) {
     return (
       OUTCOME_TO_COLOR[resolution as resolution] ??
       // If resolved to a FR answer, use 'primary'
-      'primary'
+      'teal-500'
     )
   }
 
@@ -355,5 +355,5 @@ export function getColor(contract: Contract) {
   }
 
   // TODO: Not sure why eg green-400 doesn't work here; try upgrading Tailwind
-  return 'primary'
+  return 'teal-500'
 }
