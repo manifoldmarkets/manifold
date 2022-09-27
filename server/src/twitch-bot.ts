@@ -32,7 +32,7 @@ const MSG_RESOLVED = (market: Market) => {
 };
 const MSG_BALANCE = (username: string, balance: number) => `${username} currently has M$${Math.floor(balance).toFixed(0)}`;
 const MSG_POSITION = (username: string, shares_int: number) => {
-  return `${username} has ${Math.abs(shares_int).toFixed(0)}${shares_int === 0 ? '' : shares_int > 0 ? ' YES' : ' NO'} shares.`;
+  return `${username} has ${Math.abs(shares_int).toFixed(0)}${shares_int === 0 ? '' : shares_int > 0 ? ' YES' : ' NO'} share${shares_int === 1 ? '' : 's'}.`;
 };
 const MSG_MARKET_CREATED = (question: string) => `The market '${question}' has been created!`;
 const MSG_MARKET_UNFEATURED = () => `Market unfeatured.`;
@@ -278,8 +278,14 @@ export default class TwitchBot {
         } catch (e) {}
         const commandParams: CommandParams = { ...basicParams, market, user };
 
-        const command = commands[commandString];
-        if (!command) return; // If it's not a valid command, ignore it
+        let command = commands[commandString];
+        if (!command) {
+          const match = commandString.match('^([yn])[0-9]+$'); // Catch shortened betting commands !y12 etc
+          if (match) {
+            command = betCommand();
+            args.unshift(commandString); // Push the command (e.g. y12) as the first arg
+          } else return; // If it's not a valid command, ignore it
+        }
         if (command.requirements) {
           const requirements = command.requirements;
           if (requirements.isAdmin && !this.isAllowedAdminCommand(tags)) {
