@@ -14,27 +14,25 @@ const getMultiChartData = (
   contract: FreeResponseContract | MultipleChoiceContract,
   bets: Bet[]
 ) => {
-  const { totalBets, outcomeType } = contract
+  const { answers, totalBets, outcomeType } = contract
 
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
-  const outcomes = Object.keys(betsByOutcome).filter((outcome) => {
+  const validAnswers = answers.filter((answer) => {
     const maxProb = Math.max(
-      ...betsByOutcome[outcome].map((bet) => bet.probAfter)
+      ...betsByOutcome[answer.id].map((bet) => bet.probAfter)
     )
     return (
-      (outcome !== '0' || outcomeType === 'MULTIPLE_CHOICE') &&
+      (answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE') &&
       maxProb > 0.02 &&
-      totalBets[outcome] > 0.000000001
+      totalBets[answer.id] > 0.000000001
     )
   })
 
-  const trackedOutcomes = sortBy(
-    outcomes,
-    (outcome) => -1 * getOutcomeProbability(contract, outcome)
-  )
-    .slice(0, 10)
-    .reverse()
+  const trackedAnswers = sortBy(
+    validAnswers,
+    (answer) => -1 * getOutcomeProbability(contract, answer.id)
+  ).slice(0, 10)
 
   const points: MultiPoint[] = []
 
@@ -51,23 +49,26 @@ const getMultiChartData = (
     )
     points.push([
       new Date(bet.createdTime),
-      trackedOutcomes.map(
-        (outcome) => sharesByOutcome[outcome] ** 2 / sharesSquared
+      trackedAnswers.map(
+        (answer) => sharesByOutcome[answer.id] ** 2 / sharesSquared
       ),
     ])
   }
 
   const allPoints: MultiPoint[] = [
-    [new Date(contract.createdTime), trackedOutcomes.map((_) => 0)],
+    [new Date(contract.createdTime), trackedAnswers.map((_) => 0)],
     ...points,
     [
       new Date(Date.now()),
-      trackedOutcomes.map((outcome) =>
-        getOutcomeProbability(contract, outcome)
+      trackedAnswers.map((answer) =>
+        getOutcomeProbability(contract, answer.id)
       ),
     ],
   ]
-  return { points: allPoints, labels: trackedOutcomes }
+  return {
+    points: allPoints,
+    labels: trackedAnswers.map((answer) => answer.text),
+  }
 }
 
 export const ChoiceContractChart = (props: {

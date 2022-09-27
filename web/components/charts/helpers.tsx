@@ -1,13 +1,5 @@
 import { ReactNode, SVGProps, memo, useRef, useEffect } from 'react'
-import {
-  Axis,
-  AxisDomain,
-  CurveFactory,
-  area,
-  curveStepAfter,
-  line,
-  select,
-} from 'd3'
+import { Axis, CurveFactory, area, curveStepAfter, line, select } from 'd3'
 import dayjs from 'dayjs'
 
 import { Contract } from 'common/contract'
@@ -16,11 +8,7 @@ export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
 export const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-export const XAxis = <X extends AxisDomain>(props: {
-  w: number
-  h: number
-  axis: Axis<X>
-}) => {
+export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
   const axisRef = useRef<SVGGElement>(null)
   useEffect(() => {
@@ -33,11 +21,7 @@ export const XAxis = <X extends AxisDomain>(props: {
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
 }
 
-export const YAxis = <Y extends AxisDomain>(props: {
-  w: number
-  h: number
-  axis: Axis<Y>
-}) => {
+export const YAxis = <Y,>(props: { w: number; h: number; axis: Axis<Y> }) => {
   const { w, h, axis } = props
   const axisRef = useRef<SVGGElement>(null)
   useEffect(() => {
@@ -109,7 +93,7 @@ export const AreaWithTopStroke = <P,>(props: {
   )
 }
 
-export const SVGChart = <X extends AxisDomain, Y extends AxisDomain>(props: {
+export const SVGChart = <X, Y>(props: {
   children: ReactNode
   w: number
   h: number
@@ -131,8 +115,8 @@ export const SVGChart = <X extends AxisDomain, Y extends AxisDomain>(props: {
         <rect
           x="0"
           y="0"
-          width={w - MARGIN_X}
-          height={h - MARGIN_Y}
+          width={innerW}
+          height={innerH}
           fill="none"
           pointerEvents="all"
           onPointerEnter={onMouseOver}
@@ -141,6 +125,22 @@ export const SVGChart = <X extends AxisDomain, Y extends AxisDomain>(props: {
         />
       </g>
     </svg>
+  )
+}
+
+export type TooltipPosition = { top: number; left: number }
+
+export const ChartTooltip = (
+  props: TooltipPosition & { children: React.ReactNode }
+) => {
+  const { top, left, children } = props
+  return (
+    <div
+      className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-white/90 p-2"
+      style={{ top, left }}
+    >
+      {children}
+    </div>
   )
 }
 

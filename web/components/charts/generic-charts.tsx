@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   axisBottom,
   axisLeft,
@@ -7,6 +7,7 @@ import {
   curveStepAfter,
   pointer,
   stack,
+  stackOrderReverse,
   ScaleTime,
   ScaleContinuousNumeric,
   SeriesPoint,
@@ -14,13 +15,21 @@ import {
 import { range } from 'lodash'
 import dayjs from 'dayjs'
 
-import { SVGChart, AreaPath, AreaWithTopStroke } from './helpers'
+import {
+  SVGChart,
+  AreaPath,
+  AreaWithTopStroke,
+  ChartTooltip,
+  TooltipPosition,
+} from './helpers'
 import { formatLargeNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
+import { Row } from 'web/components/layout/row'
 
 export type MultiPoint = readonly [Date, number[]] // [time, [ordered outcome probs]]
 export type HistoryPoint = readonly [Date, number] // [time, number or percentage]
-export type DistributionPoint = readonly [number, number] // [number, prob]
+export type DistributionPoint = readonly [number, number] // [outcome amount, prob]
+export type PositionValue<P> = TooltipPosition & { p: P }
 
 const formatPct = (n: number, digits?: number) => {
   return `${(n * 100).toFixed(digits ?? 0)}%`
@@ -66,6 +75,28 @@ const getTickValues = (min: number, max: number, n: number) => {
   return [min, ...range(1, n - 1).map((i) => min + step * i), max]
 }
 
+type LegendItem = { color: string; label: string; value?: string }
+
+const Legend = (props: { className?: string; items: LegendItem[] }) => {
+  const { items, className } = props
+  return (
+    <ol className={className}>
+      {items.map((item) => (
+        <li key={item.label} className="flex flex-row justify-between">
+          <Row className="mr-4 items-center">
+            <span
+              className="mr-2 h-4 w-4"
+              style={{ backgroundColor: item.color }}
+            ></span>
+            {item.label}
+          </Row>
+          {item.value}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 export const SingleValueDistributionChart = (props: {
   data: DistributionPoint[]
   w: number
@@ -75,46 +106,40 @@ export const SingleValueDistributionChart = (props: {
   yScale: ScaleContinuousNumeric<number, number>
 }) => {
   const { color, data, xScale, yScale, w, h } = props
-  const tooltipRef = useRef<HTMLDivElement>(null)
+  const [mouseState, setMouseState] =
+    useState<PositionValue<DistributionPoint>>()
 
   const px = useCallback((p: DistributionPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(0)
   const py1 = useCallback((p: DistributionPoint) => yScale(p[1]), [yScale])
-
-  const formatX = (n: number) => formatLargeNumber(n)
-  const formatY = (n: number) => formatPct(n, 2)
-
-  const xAxis = axisBottom<number>(xScale).tickFormat(formatX)
-  const yAxis = axisLeft<number>(yScale).tickFormat(formatY)
-
   const xBisector = bisector((p: DistributionPoint) => p[0])
+
+  const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
+    const fmtX = (n: number) => formatLargeNumber(n)
+    const fmtY = (n: number) => formatPct(n, 2)
+    const xAxis = axisBottom<number>(xScale).tickFormat(fmtX)
+    const yAxis = axisLeft<number>(yScale).tickFormat(fmtY)
+    return { fmtX, fmtY, xAxis, yAxis }
+  }, [xScale, yScale])
+
   const onMouseOver = useEvent((event: React.PointerEvent) => {
-    const tt = tooltipRef.current
-    if (tt != null) {
-      const [mouseX, mouseY] = pointer(event)
-      const queryX = xScale.invert(mouseX)
-      const [_x, y] = data[xBisector.center(data, queryX)]
-      tt.innerHTML = `<strong>${formatY(y)}</strong> ${formatX(queryX)}`
-      tt.style.display = 'block'
-      tt.style.top = mouseY - 10 + 'px'
-      tt.style.left = mouseX + 20 + 'px'
-    }
+    const [mouseX, mouseY] = pointer(event)
+    const queryX = xScale.invert(mouseX)
+    const [_x, y] = data[xBisector.center(data, queryX)]
+    setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
   })
 
   const onMouseLeave = useEvent(() => {
-    const tt = tooltipRef.current
-    if (tt != null) {
-      tt.style.display = 'none'
-    }
+    setMouseState(undefined)
   })
 
   return (
     <div className="relative">
-      <div
-        ref={tooltipRef}
-        style={{ display: 'none' }}
-        className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
-      />
+      {mouseState && (
+        <ChartTooltip {...mouseState}>
+          <strong>{fmtY(mouseState.p[1])}</strong> {fmtX(mouseState.p[0])}
+        </ChartTooltip>
+      )}
       <SVGChart
         w={w}
         h={h}
@@ -147,46 +172,71 @@ export const MultiValueHistoryChart = (props: {
   pct?: boolean
 }) => {
   const { colors, data, xScale, yScale, labels, w, h, pct } = props
-  const tooltipRef = useRef<HTMLDivElement>(null)
+  const [mouseState, setMouseState] = useState<PositionValue<MultiPoint>>()
 
-  const px = useCallback(
-    (p: SeriesPoint<MultiPoint>) => xScale(p.data[0]),
-    [xScale]
-  )
-  const py0 = useCallback(
-    (p: SeriesPoint<MultiPoint>) => yScale(p[0]),
-    [yScale]
-  )
-  const py1 = useCallback(
-    (p: SeriesPoint<MultiPoint>) => yScale(p[1]),
-    [yScale]
-  )
+  type SP = SeriesPoint<MultiPoint>
+  const px = useCallback((p: SP) => xScale(p.data[0]), [xScale])
+  const py0 = useCallback((p: SP) => yScale(p[0]), [yScale])
+  const py1 = useCallback((p: SP) => yScale(p[1]), [yScale])
+  const xBisector = bisector((p: MultiPoint) => p[0])
 
-  const [xStart, xEnd] = xScale.domain()
-  const fmtX = getFormatterForDateRange(xStart, xEnd)
-  const fmtY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
+  const { fmtX, fmtY, xAxis, yAxis, series } = useMemo(() => {
+    const [start, end] = xScale.domain()
+    const fmtX = getFormatterForDateRange(start, end)
+    const fmtY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
 
-  const [min, max] = yScale.domain()
-  const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const [min, max] = yScale.domain()
+    const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const xAxis = axisBottom<Date>(xScale).tickFormat(fmtX)
+    const yAxis = axisLeft<number>(yScale)
+      .tickValues(tickValues)
+      .tickFormat(fmtY)
 
-  const xAxis = axisBottom<Date>(xScale).tickFormat(fmtX)
-  const yAxis = axisLeft<number>(yScale).tickValues(tickValues).tickFormat(fmtY)
+    const d3Stack = stack<MultiPoint, number>()
+      .keys(range(0, labels.length))
+      .value(([_date, probs], o) => probs[o])
+      .order(stackOrderReverse)
+    const series = d3Stack(data)
+    return { fmtX, fmtY, xAxis, yAxis, series }
+  }, [h, pct, xScale, yScale, data, labels.length])
 
-  const d3Stack = stack<MultiPoint, number>()
-    .keys(range(0, labels.length))
-    .value(([_date, probs], o) => probs[o])
+  const onMouseOver = useEvent((event: React.PointerEvent) => {
+    const [mouseX, mouseY] = pointer(event)
+    const queryX = xScale.invert(mouseX)
+    const [_x, ys] = data[xBisector.center(data, queryX)]
+    setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, ys] })
+  })
+
+  const onMouseLeave = useEvent(() => {
+    setMouseState(undefined)
+  })
 
   return (
     <div className="relative">
-      <div
-        ref={tooltipRef}
-        style={{ display: 'none' }}
-        className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
-      />
-      <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
-        {d3Stack(data).map((s, i) => (
+      {mouseState && (
+        <ChartTooltip {...mouseState}>
+          {fmtX(mouseState.p[0])}
+          <Legend
+            className="text-sm"
+            items={mouseState.p[1].map((p, i) => ({
+              color: colors[i],
+              label: labels[i],
+              value: fmtY(p),
+            }))}
+          />
+        </ChartTooltip>
+      )}
+      <SVGChart
+        w={w}
+        h={h}
+        xAxis={xAxis}
+        yAxis={yAxis}
+        onMouseOver={onMouseOver}
+        onMouseLeave={onMouseLeave}
+      >
+        {series.map((s, i) => (
           <AreaPath
-            key={s.key}
+            key={i}
             data={s}
             px={px}
             py0={py0}
@@ -210,52 +260,45 @@ export const SingleValueHistoryChart = (props: {
   pct?: boolean
 }) => {
   const { color, data, xScale, yScale, pct, w, h } = props
-  const tooltipRef = useRef<HTMLDivElement>(null)
+  const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint>>()
 
   const px = useCallback((p: HistoryPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(0)
   const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
 
-  const [start, end] = xScale.domain()
-  const formatX = getFormatterForDateRange(start, end)
-  const formatY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
+  const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
+    const [start, end] = xScale.domain()
+    const fmtX = getFormatterForDateRange(start, end)
+    const fmtY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
 
-  const [min, max] = yScale.domain()
-  const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
-
-  const xAxis = axisBottom<Date>(xScale).tickFormat(formatX)
-  const yAxis = axisLeft<number>(yScale)
-    .tickValues(tickValues)
-    .tickFormat(formatY)
+    const [min, max] = yScale.domain()
+    const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const xAxis = axisBottom<Date>(xScale).tickFormat(fmtX)
+    const yAxis = axisLeft<number>(yScale)
+      .tickValues(tickValues)
+      .tickFormat(fmtY)
+    return { fmtX, fmtY, xAxis, yAxis }
+  }, [h, pct, xScale, yScale])
 
   const xBisector = bisector((p: HistoryPoint) => p[0])
   const onMouseOver = useEvent((event: React.PointerEvent) => {
-    const tt = tooltipRef.current
-    if (tt != null) {
-      const [mouseX, mouseY] = pointer(event)
-      const queryX = xScale.invert(mouseX)
-      const [_x, y] = data[xBisector.center(data, queryX)]
-      tt.innerHTML = `<strong>${formatY(y)}</strong> ${formatX(queryX)}`
-      tt.style.display = 'block'
-      tt.style.top = mouseY - 10 + 'px'
-      tt.style.left = mouseX + 20 + 'px'
-    }
+    const [mouseX, mouseY] = pointer(event)
+    const queryX = xScale.invert(mouseX)
+    const [_x, y] = data[xBisector.center(data, queryX)]
+    setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
   })
 
   const onMouseLeave = useEvent(() => {
-    const tt = tooltipRef.current
-    if (tt != null) {
-      tt.style.display = 'none'
-    }
+    setMouseState(undefined)
   })
 
   return (
     <div className="relative">
-      <div
-        ref={tooltipRef}
-        style={{ display: 'none' }}
-        className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
-      />
+      {mouseState && (
+        <ChartTooltip {...mouseState}>
+          <strong>{fmtY(mouseState.p[1])}</strong> {fmtX(mouseState.p[0])}
+        </ChartTooltip>
+      )}
       <SVGChart
         w={w}
         h={h}
