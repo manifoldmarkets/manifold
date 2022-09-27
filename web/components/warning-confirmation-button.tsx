@@ -28,10 +28,6 @@ export function WarningConfirmationButton(props: {
     outcome,
     marketType,
   } = props
-  {
-    console.log(outcome)
-  }
-
   if (!warning) {
     return (
       <button
