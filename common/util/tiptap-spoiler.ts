@@ -1,15 +1,12 @@
 // adapted from @n8body/tiptap-spoiler
 
-import type { ElementType } from 'react'
 import {
-  Node,
   Mark,
   markInputRule,
   markPasteRule,
   mergeAttributes,
-  nodeInputRule,
-  nodePasteRule,
 } from '@tiptap/core'
+import type { ElementType } from 'react'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
