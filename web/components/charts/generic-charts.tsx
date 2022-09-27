@@ -1,8 +1,8 @@
-import { useMemo, useRef, useCallback } from 'react'
+import { useRef, useCallback } from 'react'
 import {
   axisBottom,
   axisLeft,
-  bisectCenter,
+  bisector,
   curveLinear,
   curveStepAfter,
   pointer,
@@ -188,7 +188,6 @@ export const SingleValueHistoryChart = (props: {
   const py0 = yScale(0)
   const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
 
-  const dates = useMemo(() => data.map(([d]) => d), [data])
   const [start, end] = xScale.domain()
   const formatX = getFormatterForDateRange(start, end)
   const formatY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
@@ -201,12 +200,13 @@ export const SingleValueHistoryChart = (props: {
     .tickValues(tickValues)
     .tickFormat(formatY)
 
+  const dateBisector = bisector((p: HistoryPoint) => p[0])
   const onMouseOver = useEvent((event: React.PointerEvent) => {
     const tt = tooltipRef.current
     if (tt != null) {
       const [mouseX, mouseY] = pointer(event)
       const date = xScale.invert(mouseX)
-      const [_, prob] = data[bisectCenter(dates, date)]
+      const [_, prob] = data[dateBisector.center(data, date)]
       tt.innerHTML = `<strong>${formatY(prob)}</strong> ${formatX(date)}`
       tt.style.display = 'block'
       tt.style.top = mouseY - 10 + 'px'
