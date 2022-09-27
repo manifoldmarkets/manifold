@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore'
 import { DateDoc, Post } from 'common/post'
 import { coll, getValue, getValues, listenForValue } from './utils'
+import { getUserByUsername } from './users'
 
 export const posts = coll<Post>('posts')
 
@@ -48,4 +49,18 @@ export async function listPosts(postIds?: string[]) {
 export async function getDateDocs() {
   const q = query(posts, where('type', '==', 'date-doc'))
   return getValues<DateDoc>(q)
+}
+
+export async function getDateDoc(username: string) {
+  const user = await getUserByUsername(username)
+  if (!user) return null
+
+  const q = query(
+    posts,
+    where('type', '==', 'date-doc'),
+    where('creatorId', '==', user.id)
+  )
+  const docs = await getValues<DateDoc>(q)
+  const post = docs.length === 0 ? null : docs[0]
+  return { post, user }
 }
