@@ -152,7 +152,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           className="mb-4"
           onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
         >
-          Sort by: {sort}
+          Sorted by: {sort}
         </Button>
         <ContractCommentInput className="mb-5" contract={contract} />
         {topLevelComments.map((parent) => (
