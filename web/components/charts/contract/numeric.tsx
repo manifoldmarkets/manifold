@@ -12,10 +12,9 @@ import { useElementWidth } from 'web/hooks/use-element-width'
 
 const getNumericChartData = (contract: NumericContract) => {
   const { totalShares, bucketCount, min, max } = contract
+  const step = (max - min) / bucketCount
   const bucketProbs = getDpmOutcomeProbabilities(totalShares)
-  const xs = range(bucketCount).map(
-    (i) => min + ((max - min) * i) / bucketCount
-  )
+  const xs = range(bucketCount).map((i) => min + step * (i + 0.5))
   const probs = range(bucketCount).map((i) => bucketProbs[`${i}`])
   return probs.map((prob, i) => [xs[i], prob] as const)
 }
