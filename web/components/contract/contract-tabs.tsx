@@ -24,9 +24,9 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { formatMoney } from 'common/lib/util/format'
+import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/button'
-import { MINUTE_MS } from 'common/lib/util/time'
+import { MINUTE_MS } from 'common/util/time'
 
 export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props

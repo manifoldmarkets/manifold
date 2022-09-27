@@ -7,14 +7,13 @@ import { Row } from './layout/row'
 import { Contract } from 'common/contract'
 import { TextButton } from 'web/components/text-button'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export function AwardBountyButton(prop: {
   comment: ContractComment
   contract: Contract
 }) {
   const { comment, contract } = prop
-  const { bountiesAwarded } = comment
-  const amountAwarded = bountiesAwarded ?? 0
 
   const me = useUser()
 
@@ -39,7 +38,7 @@ export function AwardBountyButton(prop: {
   return (
     <Row className={clsx('-ml-2 items-center gap-0.5', !canUp ? '-ml-6' : '')}>
       <TextButton className={'font-bold'} onClick={submit}>
-        Award
+        Award {formatMoney(COMMENT_BOUNTY_AMOUNT)}
       </TextButton>
     </Row>
   )

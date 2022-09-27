@@ -13,6 +13,7 @@ import { isProd } from './utils'
 import { CommentBountyDepositTxn, CommentBountyWithdrawalTxn } from 'common/txn'
 import { runTxn } from 'functions/src/transact'
 import { Comment } from 'common/comment'
+import { createBountyNotification } from 'functions/src/create-notification'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -78,7 +79,7 @@ export const awardcommentbounty = newEndpoint({}, async (req, auth) => {
   if (!isFinite(amount)) throw new APIError(400, 'Invalid amount')
 
   // run as transaction to prevent race conditions
-  return await firestore.runTransaction(async (transaction) => {
+  const res = await firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
     if (!userSnap.exists) throw new APIError(400, 'User not found')
@@ -138,8 +139,21 @@ export const awardcommentbounty = newEndpoint({}, async (req, auth) => {
       })
     )
 
-    return result
+    return { ...result, comment, contract, user }
   })
+  if (res.txn?.id) {
+    const { comment, contract, user } = res
+    await createBountyNotification(
+      user,
+      comment.userId,
+      amount,
+      res.txn.id,
+      contract,
+      comment.id
+    )
+  }
+
+  return res
 })
 
 const firestore = admin.firestore()
