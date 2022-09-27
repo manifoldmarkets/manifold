@@ -70,9 +70,18 @@ const senateMidterms: StateElectionMarket[] = [
 
 const App = () => {
   return (
-    <Col className="items-center justify-center">
-      <StateElectionMap markets={senateMidterms} />
+    <Col className="items-center justify-center bg-white">
       <Title text="2022 US Senate Midterms" className="mt-8" />
+      <StateElectionMap markets={senateMidterms} />
+
+      <iframe
+        src="https://manifold.markets/embed/NathanpmYoung/will-the-democrats-control-the-sena"
+        title="Will the Democrats control the Senate after the Midterms?"
+        frameBorder="0"
+        width={800}
+        height={400}
+        className="mt-8"
+      ></iframe>
     </Col>
   )
 }
