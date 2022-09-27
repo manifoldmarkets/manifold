@@ -9,8 +9,9 @@ import {
   line,
   select,
 } from 'd3'
-import dayjs from 'dayjs'
 import { nanoid } from 'nanoid'
+import dayjs from 'dayjs'
+import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 
@@ -180,12 +181,15 @@ export const SVGChart = <X, Y>(props: {
 export type TooltipPosition = { top: number; left: number }
 
 export const ChartTooltip = (
-  props: TooltipPosition & { children: React.ReactNode }
+  props: TooltipPosition & { className?: string; children: React.ReactNode }
 ) => {
-  const { top, left, children } = props
+  const { top, left, className, children } = props
   return (
     <div
-      className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-white/90 p-2"
+      className={clsx(
+        className,
+        'pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-white/90 p-2'
+      )}
       style={{ top, left }}
     >
       {children}

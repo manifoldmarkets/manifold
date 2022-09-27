@@ -156,7 +156,7 @@ export const SingleValueDistributionChart = (props: {
   return (
     <div className="relative">
       {mouseState && (
-        <ChartTooltip {...mouseState}>
+        <ChartTooltip className="text-sm" {...mouseState}>
           <strong>{fmtY(mouseState.p[1])}</strong> {fmtX(mouseState.p[0])}
         </ChartTooltip>
       )}
@@ -362,7 +362,7 @@ export const SingleValueHistoryChart = (props: {
   return (
     <div className="relative">
       {mouseState && (
-        <ChartTooltip {...mouseState}>
+        <ChartTooltip className="text-sm" {...mouseState}>
           <strong>{fmtY(mouseState.p[1])}</strong> {fmtX(mouseState.p[0])}
         </ChartTooltip>
       )}
