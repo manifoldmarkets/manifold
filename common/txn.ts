@@ -31,6 +31,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'UNIQUE_BETTOR_BONUS'
     | 'BETTING_STREAK_BONUS'
     | 'CANCEL_UNIQUE_BETTOR_BONUS'
+    | 'COMMENT_BOUNTY'
 
   // Any extra data
   data?: { [key: string]: any }
@@ -98,6 +99,25 @@ type CancelUniqueBettorBonus = {
   }
 }
 
+type CommentBountyDeposit = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'COMMENT_BOUNTY'
+  data: {
+    contractId: string
+  }
+}
+
+type CommentBountyWithdrawal = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'COMMENT_BOUNTY'
+  data: {
+    contractId: string
+    commentId: string
+  }
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -105,3 +125,5 @@ export type ReferralTxn = Txn & Referral
 export type BettingStreakBonusTxn = Txn & BettingStreakBonus
 export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
 export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
+export type CommentBountyDepositTxn = Txn & CommentBountyDeposit
+export type CommentBountyWithdrawalTxn = Txn & CommentBountyWithdrawal

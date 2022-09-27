@@ -5,7 +5,7 @@ import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { PAST_BETS } from 'common/user'
@@ -24,9 +24,13 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { formatMoney } from 'common/lib/util/format'
+import { Button } from 'web/components/button'
+import { MINUTE_MS } from 'common/lib/util/time'
 
 export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
+  const { openCommentBounties } = contract
 
   const isMobile = useIsMobile()
   const user = useUser()
@@ -53,7 +57,14 @@ export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
       currentPageForAnalytics={'contract'}
       tabs={[
         {
-          title: 'Comments',
+          title: `Comments ${
+            openCommentBounties
+              ? '(' + formatMoney(openCommentBounties) + ' Bounty)'
+              : ''
+          }`,
+          tooltip: openCommentBounties
+            ? 'The creator of this market will award bounties to good comments'
+            : undefined,
           content: <CommentsTabContent contract={contract} />,
         },
         {
@@ -78,6 +89,8 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 }) {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
+  const [sort, setSort] = useState<'Newest' | 'Best'>('Best')
+  const me = useUser()
   const comments = useComments(contract.id)
   if (comments == null) {
     return <LoadingIndicator />
@@ -130,12 +143,31 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       </>
     )
   } else {
-    const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
+    const commentsByParent = groupBy(
+      sortBy(comments, (c) =>
+        sort === 'Newest'
+          ? -c.createdTime
+          : // Is this too magic? 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+          c.createdTime > Date.now() - 10 * MINUTE_MS && c.userId === me?.id
+          ? -Infinity
+          : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
+      ),
+      (c) => c.replyToCommentId ?? '_'
+    )
+
     const topLevelComments = commentsByParent['_'] ?? []
     return (
       <>
+        <Button
+          size={'xs'}
+          color={'gray-white'}
+          className="mb-4"
+          onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+        >
+          Sort by: {sort}
+        </Button>
         <ContractCommentInput className="mb-5" contract={contract} />
-        {sortBy(topLevelComments, (c) => -c.createdTime).map((parent) => (
+        {topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}
             contract={contract}
