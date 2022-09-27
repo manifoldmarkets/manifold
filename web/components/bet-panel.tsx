@@ -410,7 +410,7 @@ export function BuyPanel(props: {
           />
         )}
         <button
-          className="text-greyscale-6 mx-auto select-none text-sm underline xl:hidden"
+          className="text-greyscale-6 mx-auto mt-3 select-none text-sm underline xl:hidden"
           onClick={() => setSeeLimit(true)}
         >
           Advanced

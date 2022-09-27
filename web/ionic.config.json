@@ -1,0 +1,7 @@
+{
+  "name": "Manifold Markets",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
