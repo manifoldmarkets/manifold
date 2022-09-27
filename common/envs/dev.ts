@@ -18,4 +18,5 @@ export const DEV_CONFIG: EnvConfig = {
   amplitudeApiKey: 'fd8cbfd964b9a205b8678a39faae71b3',
   // this is Phil's deployment
   twitchBotEndpoint: 'https://king-prawn-app-5btyw.ondigitalocean.app',
+  sprigEnvironmentId: 'Tu7kRZPm7daP',
 }
