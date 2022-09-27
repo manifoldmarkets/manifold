@@ -125,7 +125,7 @@ export const SingleValueDistributionChart = (props: {
     const xAxis = axisBottom<number>(xScale).ticks(w / 100)
     const yAxis = axisLeft<number>(yScale).tickFormat(fmtY)
     return { fmtX, fmtY, xAxis, yAxis }
-  }, [xScale, yScale])
+  }, [w, xScale, yScale])
 
   const onSelect = useEvent((ev: D3BrushEvent<DistributionPoint>) => {
     if (ev.selection) {
@@ -218,7 +218,7 @@ export const MultiValueHistoryChart = (props: {
       : axisLeft<number>(yScale)
 
     return { fmtX, fmtY, xAxis, yAxis }
-  }, [h, pct, xScale, yScale])
+  }, [w, h, pct, xScale, yScale])
 
   const series = useMemo(() => {
     const d3Stack = stack<MultiPoint, number>()
@@ -331,7 +331,7 @@ export const SingleValueHistoryChart = (props: {
       ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(fmtY)
       : axisLeft<number>(yScale)
     return { fmtX, fmtY, xAxis, yAxis }
-  }, [h, pct, xScale, yScale])
+  }, [w, h, pct, xScale, yScale])
 
   const onSelect = useEvent((ev: D3BrushEvent<HistoryPoint>) => {
     if (ev.selection) {
