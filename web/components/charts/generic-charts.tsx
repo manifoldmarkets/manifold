@@ -122,7 +122,7 @@ export const SingleValueDistributionChart = (props: {
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const fmtX = (n: number) => formatLargeNumber(n)
     const fmtY = (n: number) => formatPct(n, 2)
-    const xAxis = axisBottom<number>(xScale).tickFormat(fmtX)
+    const xAxis = axisBottom<number>(xScale).ticks(w / 100)
     const yAxis = axisLeft<number>(yScale).tickFormat(fmtY)
     return { fmtX, fmtY, xAxis, yAxis }
   }, [xScale, yScale])
@@ -210,7 +210,7 @@ export const MultiValueHistoryChart = (props: {
 
     const [min, max] = yScale.domain()
     const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
-    const xAxis = axisBottom<Date>(xScale)
+    const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = pct
       ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(fmtY)
       : axisLeft<number>(yScale)
@@ -322,7 +322,7 @@ export const SingleValueHistoryChart = (props: {
 
     const [min, max] = yScale.domain()
     const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
-    const xAxis = axisBottom<Date>(xScale)
+    const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = pct
       ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(fmtY)
       : axisLeft<number>(yScale)
