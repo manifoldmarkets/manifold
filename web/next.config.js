@@ -25,6 +25,7 @@ module.exports = {
     },
   },
   images: {
+    unoptimized: true,
     domains: [
       'manifold.markets',
       'lh3.googleusercontent.com',
