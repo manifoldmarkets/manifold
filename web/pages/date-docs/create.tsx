@@ -32,7 +32,6 @@ export default function CreateDateDocPage() {
     'Will I find a partner in the next 3 months?'
   )
 
-  const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { editor, upload } = useTextEditor({
@@ -82,11 +81,8 @@ export default function CreateDateDocPage() {
       question,
     }
 
-    const result = await createPost(newPost).catch((e) => {
-      console.log(e)
-      setError('There was an error creating the post, please try again')
-      return e
-    })
+    const result = await createPost(newPost)
+
     if (result.post) {
       await Router.push(`/date-docs/${user.username}`)
     }
