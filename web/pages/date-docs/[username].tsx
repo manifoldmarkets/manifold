@@ -1,5 +1,5 @@
 import { getDateDoc } from 'web/lib/firebase/posts'
-import { LinkIcon } from '@heroicons/react/outline'
+import { ArrowLeftIcon, LinkIcon } from '@heroicons/react/outline'
 import { Page } from 'web/components/page'
 import dayjs from 'dayjs'
 
@@ -18,19 +18,21 @@ import { track } from '@amplitude/analytics-browser'
 import toast from 'react-hot-toast'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { useUser } from 'web/hooks/use-user'
-import { RichEditPost } from '../post/[...slugs]'
+import { PostCommentsActivity, RichEditPost } from '../post/[...slugs]'
 import { usePost } from 'web/hooks/use-post'
+import { useTipTxns } from 'web/hooks/use-tip-txns'
+import { useCommentsOnPost } from 'web/hooks/use-comments'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
-  const { user, post } = (await getDateDoc(username)) ?? {
-    user: null,
+  const { user: creator, post } = (await getDateDoc(username)) ?? {
+    creator: null,
     post: null,
   }
 
   return {
     props: {
-      user,
+      creator,
       post,
     },
     revalidate: 5, // regenerate after five seconds
@@ -41,19 +43,38 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function DateDocPage(props: {
-  user: User | null
+export default function DateDocPageHelper(props: {
+  creator: User | null
   post: DateDoc | null
 }) {
-  const { user, post } = props
+  const { creator, post } = props
 
-  if (!user || !post) return <Custom404 />
+  if (!creator || !post) return <Custom404 />
+
+  return <DateDocPage creator={creator} post={post} />
+}
+
+function DateDocPage(props: { creator: User; post: DateDoc }) {
+  const { creator, post } = props
+
+  const tips = useTipTxns({ postId: post.id })
+  const comments = useCommentsOnPost(post.id) ?? []
 
   return (
     <Page>
-      <div className="mx-auto w-full max-w-xl">
-        <DateDocPost dateDoc={post} creator={user} />
-      </div>
+      <Col className="mx-auto w-full max-w-xl gap-6 sm:mb-6">
+        <SiteLink href="/date-docs">
+          <Row className="items-center gap-2">
+            <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+            <div>Date docs</div>
+          </Row>
+        </SiteLink>
+        <DateDocPost dateDoc={post} creator={creator} />
+        <Col className="gap-4 rounded-lg bg-white px-6 py-4">
+          <div className="">Add your endorsement of {creator.name}!</div>
+          <PostCommentsActivity post={post} comments={comments} tips={tips} />
+        </Col>
+      </Col>
     </Page>
   )
 }
