@@ -83,6 +83,10 @@ export default class DockClient {
       }
     });
 
+    this.socket.on(Packet.PING, () => {
+      this.socket.emit(Packet.PONG);
+    });
+
     this.socket.on('disconnect', () => {
       this.socket.leave(connectedTwitchStream);
       this.socket.removeAllListeners();

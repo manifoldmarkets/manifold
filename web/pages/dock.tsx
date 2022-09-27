@@ -67,6 +67,7 @@ export default () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
   const [manifoldUserID, setManifoldUserID] = useState<string>(undefined);
   const [refreshSignal, forceRefreshGroups] = useState(0);
+  const [ping, setPing] = useState(0);
 
   const ante = CONTRACT_ANTE;
   const onSubmitNewQuestion = async () => {
@@ -97,6 +98,8 @@ export default () => {
   };
 
   useEffect(() => {
+    let pingSent = Date.now();
+
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
@@ -146,6 +149,20 @@ export default () => {
     socket.on(Packets.UNFEATURE_MARKET, () => {
       setSelectedContract(undefined);
     });
+
+    const sendPing = () => {
+      socket.emit(Packets.PING);
+      pingSent = Date.now();
+    };
+    socket.on(Packets.PONG, () => {
+      const ping = Date.now() - pingSent;
+      setPing(ping);
+
+      setTimeout(() => {
+        sendPing();
+      }, 1000);
+    });
+    sendPing();
   }, []);
 
   const onContractFeature = (contract: LiteMarket) => {
@@ -206,7 +223,7 @@ export default () => {
                     label: `Create and feature a question`,
                     className: clsx(
                       !selectedGroup ? 'btn-disabled' : 'from-indigo-500 to-blue-500 hover:from-indigo-700 hover:to-blue-700 bg-gradient-to-r border-0 w-full rounded-md',
-                      'uppercase w-full mt-2 py-2.5 text-base font-semibold text-white shadow-sm h-11'
+                      'uppercase w-full mt-2 py-2.5 font-semibold text-white shadow-sm min-h-11 !h-[unset] text-base'
                     ),
                   }}
                   submitBtn={{
@@ -298,7 +315,7 @@ export default () => {
               <div className={clsx('fixed inset-0 flex flex-col items-center overflow-y-auto', selectedContract ?? 'pointer-events-none')}>
                 <Transition appear unmount={false} show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
                   <div className="w-full max-w-xl grow flex flex-col justify-end p-2">
-                    <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} />
+                    <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} ping={ping} />
                   </div>
                 </Transition>
               </div>
@@ -310,8 +327,8 @@ export default () => {
   );
 };
 
-function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; onUnfeatureMarket: () => void }) {
-  const { controlUserID, contract, onUnfeatureMarket } = props;
+function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; onUnfeatureMarket: () => void; ping?: number }) {
+  const { controlUserID, contract, onUnfeatureMarket, ping } = props;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [outcome, setOutcome] = useState<Resolution | undefined>();
@@ -340,7 +357,11 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
 
   return (
     <Col className={'rounded-md bg-white px-8 py-6 cursor-default'} onClick={(e) => e.stopPropagation()}>
-      <div className="whitespace-nowrap text-2xl">Resolve market</div>
+      <Row className="justify-center items-center">
+        <div className="whitespace-nowrap text-2xl">Resolve market</div>
+        <div className="grow" />
+        <div className="min-h-10">{ping}ms</div>
+      </Row>
 
       <p
         className="break-words font-semibold text-indigo-700 my-3"
