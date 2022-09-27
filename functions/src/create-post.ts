@@ -75,6 +75,8 @@ export const createpost = newEndpoint({}, async (req, auth) => {
         outcomeType: 'BINARY',
         visibility: 'unlisted',
         initialProb: 50,
+        // Dating group!
+        groupId: 'j3ZE8fkeqiKmRGumy3O1',
       },
       auth
     )
