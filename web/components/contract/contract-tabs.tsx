@@ -9,7 +9,7 @@ import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { PAST_BETS } from 'common/user'
-import { ContractBetsTable, BetsSummary } from '../bets-list'
+import { ContractBetsTable } from '../bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
@@ -17,12 +17,13 @@ import { LoadingIndicator } from 'web/components/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
-import { useUser } from 'web/hooks/use-user'
 import { capitalize } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import { buildArray } from 'common/util/array'
+
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/button'
@@ -37,26 +38,23 @@ export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
   const userBets =
     user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
 
+export function ContractTabs(props: {
+  contract: Contract
+  bets: Bet[]
+  userBets: Bet[]
+}) {
+  const { contract, bets, userBets } = props
+
   const yourTrades = (
     <div>
-      <BetsSummary
-        className="px-2"
-        contract={contract}
-        bets={userBets ?? []}
-        isYourBets
-      />
       <Spacer h={6} />
-      <ContractBetsTable contract={contract} bets={userBets ?? []} isYourBets />
+      <ContractBetsTable contract={contract} bets={userBets} isYourBets />
       <Spacer h={12} />
     </div>
   )
 
-  return (
-    <Tabs
-      className="mb-4"
-      currentPageForAnalytics={'contract'}
-      tabs={[
-        {
+  const tabs = buildArray(
+    {
           title: `Comments ${
             openCommentBounties
               ? '(' + formatMoney(openCommentBounties) + ' Bounty)'
@@ -67,20 +65,18 @@ export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
             : undefined,
           content: <CommentsTabContent contract={contract} />,
         },
-        {
-          title: capitalize(PAST_BETS),
-          content: <BetsTabContent contract={contract} bets={bets} />,
-        },
-        ...(!user || !userBets?.length
-          ? []
-          : [
-              {
-                title: isMobile ? `You` : `Your ${PAST_BETS}`,
-                content: yourTrades,
-              },
-            ]),
-      ]}
-    />
+    {
+      title: capitalize(PAST_BETS),
+      content: <BetsTabContent contract={contract} bets={bets} />,
+    },
+    userBets.length > 0 && {
+      title: 'Your trades',
+      content: yourTrades,
+    }
+  )
+
+  return (
+    <Tabs className="mb-4" currentPageForAnalytics={'contract'} tabs={tabs} />
   )
 }
 

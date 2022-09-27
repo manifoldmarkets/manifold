@@ -4,12 +4,11 @@ import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../avatar'
 import { trackCallback } from 'web/lib/service/analytics'
-import { PAST_BETS } from 'common/user'
 
 export function ProfileSummary(props: { user: User }) {
   const { user } = props
   return (
-    <Link href={`/${user.username}?tab=${PAST_BETS}`}>
+    <Link href={`/${user.username}?tab=portfolio`}>
       <a
         onClick={trackCallback('sidebar: profile')}
         className="group mb-3 flex flex-row items-center gap-4 truncate rounded-md py-3 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
