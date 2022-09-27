@@ -64,8 +64,7 @@ export const USAMap = ({
 
   const stateClickHandler = (state: string) =>
     customize?.[state]?.clickHandler
-      ? (customize[state].clickHandler as ClickHandler)
-      : onClick
+     
 
   return (
     <svg
