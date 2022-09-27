@@ -140,11 +140,13 @@ export const SingleValueDistributionChart = (props: {
     }
   })
 
-  const onMouseOver = useEvent((event: React.PointerEvent) => {
-    const [mouseX, mouseY] = pointer(event)
-    const queryX = xScale.invert(mouseX)
-    const [_x, y] = data[xBisector.center(data, queryX)]
-    setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
+  const onMouseOver = useEvent((ev: React.PointerEvent) => {
+    if (ev.pointerType === 'mouse') {
+      const [mouseX, mouseY] = pointer(ev)
+      const queryX = xScale.invert(mouseX)
+      const [_x, y] = data[xBisector.center(data, queryX)]
+      setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
+    }
   })
 
   const onMouseLeave = useEvent(() => {
@@ -239,11 +241,13 @@ export const MultiValueHistoryChart = (props: {
     }
   })
 
-  const onMouseOver = useEvent((event: React.PointerEvent) => {
-    const [mouseX, mouseY] = pointer(event)
-    const queryX = xScale.invert(mouseX)
-    const [_x, ys] = data[xBisector.left(data, queryX) - 1]
-    setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, ys] })
+  const onMouseOver = useEvent((ev: React.PointerEvent) => {
+    if (ev.pointerType === 'mouse') {
+      const [mouseX, mouseY] = pointer(ev)
+      const queryX = xScale.invert(mouseX)
+      const [_x, ys] = data[xBisector.left(data, queryX) - 1]
+      setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, ys] })
+    }
   })
 
   const onMouseLeave = useEvent(() => {
@@ -343,10 +347,12 @@ export const SingleValueHistoryChart = (props: {
   })
 
   const onMouseOver = useEvent((ev: React.PointerEvent) => {
-    const [mouseX, mouseY] = pointer(ev)
-    const queryX = xScale.invert(mouseX)
-    const [_x, y] = data[xBisector.left(data, queryX) - 1]
-    setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
+    if (ev.pointerType === 'mouse') {
+      const [mouseX, mouseY] = pointer(ev)
+      const queryX = xScale.invert(mouseX)
+      const [_x, y] = data[xBisector.left(data, queryX) - 1]
+      setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
+    }
   })
 
   const onMouseLeave = useEvent(() => {
