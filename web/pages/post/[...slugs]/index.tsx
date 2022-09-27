@@ -164,7 +164,7 @@ export function PostCommentsActivity(props: {
   )
 }
 
-function RichEditPost(props: { post: Post }) {
+export function RichEditPost(props: { post: Post }) {
   const { post } = props
   const [editing, setEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)

@@ -18,6 +18,9 @@ import { Button } from 'web/components/button'
 import { track } from '@amplitude/analytics-browser'
 import toast from 'react-hot-toast'
 import { copyToClipboard } from 'web/lib/util/copy'
+import { useUser } from 'web/hooks/use-user'
+import { RichEditPost } from '../post/[...slugs]'
+import { usePost } from 'web/hooks/use-post'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
@@ -64,6 +67,9 @@ export function DateDocPost(props: {
   const { dateDoc, creator, link } = props
   const { content, birthday, photoUrl, contractSlug } = dateDoc
   const { name, username } = creator
+
+  const user = useUser()
+  const post = usePost(dateDoc.id) ?? dateDoc
 
   const age = dayjs().diff(birthday, 'year')
   const shareUrl = `https://${DOMAIN}/date-docs/${username}`
@@ -115,7 +121,11 @@ export function DateDocPost(props: {
         </Col>
       </SiteLink>
       <Spacer h={6} />
-      <Content content={content} />
+      {user && user.id === creator.id ? (
+        <RichEditPost post={post} />
+      ) : (
+        <Content content={content} />
+      )}
       <Spacer h={6} />
       <div className="mt-10 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-5">
         <iframe
