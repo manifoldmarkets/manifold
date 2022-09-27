@@ -99,7 +99,7 @@ function DateDoc(props: { dateDoc: DateDoc; creator: User }) {
       <Spacer h={6} />
       <Content content={content} />
       <Spacer h={6} />
-      <div className="mt-10 w-full rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-5">
+      <div className="mt-10 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-5">
         <iframe
           height="405"
           src={marketUrl}
