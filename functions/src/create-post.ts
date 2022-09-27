@@ -38,6 +38,8 @@ const postSchema = z.object({
   title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
   content: contentSchema,
   groupId: z.string().optional(),
+
+  // Date doc fields:
   bounty: z.number().optional(),
   birthday: z.number().optional(),
   photoUrl: z.string().optional(),
@@ -62,6 +64,7 @@ export const createpost = newEndpoint({}, async (req, auth) => {
 
   const postRef = firestore.collection('posts').doc()
 
+  // If this is a date doc, create a market for it.
   let contractSlug
   if (question) {
     const closeTime = Date.now() + DAY_MS * 30 * 3
