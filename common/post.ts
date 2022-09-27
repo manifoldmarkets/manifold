@@ -9,4 +9,11 @@ export type Post = {
   slug: string
 }
 
+export type DateDoc = Post & {
+  bounty: number
+  birthday: number
+  profilePicUrl: string
+  type: 'date-doc'
+}
+
 export const MAX_POST_TITLE_LENGTH = 480

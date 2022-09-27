@@ -6,8 +6,8 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { Post } from 'common/post'
-import { coll, getValue, listenForValue } from './utils'
+import { DateDoc, Post } from 'common/post'
+import { coll, getValue, getValues, listenForValue } from './utils'
 
 export const posts = coll<Post>('posts')
 
@@ -43,4 +43,9 @@ export function listenForPost(
 export async function listPosts(postIds?: string[]) {
   if (postIds === undefined) return []
   return Promise.all(postIds.map(getPost))
+}
+
+export async function getDateDocs() {
+  const q = query(posts, where('type', '==', 'date-doc'))
+  return getValues<DateDoc>(q)
 }
