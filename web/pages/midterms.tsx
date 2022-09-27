@@ -1,4 +1,5 @@
 import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import {
   StateElectionMarket,
@@ -70,19 +71,21 @@ const senateMidterms: StateElectionMarket[] = [
 
 const App = () => {
   return (
-    <Col className="items-center justify-center bg-white">
-      <Title text="2022 US Senate Midterms" className="mt-8" />
-      <StateElectionMap markets={senateMidterms} />
+    <Page className="">
+      <Col className="items-center justify-center">
+        <Title text="2022 US Senate Midterms" className="mt-8" />
+        <StateElectionMap markets={senateMidterms} />
 
-      <iframe
-        src="https://manifold.markets/embed/NathanpmYoung/will-the-democrats-control-the-sena"
-        title="Will the Democrats control the Senate after the Midterms?"
-        frameBorder="0"
-        width={800}
-        height={400}
-        className="mt-8"
-      ></iframe>
-    </Col>
+        <iframe
+          src="https://manifold.markets/embed/NathanpmYoung/will-the-democrats-control-the-sena"
+          title="Will the Democrats control the Senate after the Midterms?"
+          frameBorder="0"
+          width={800}
+          height={400}
+          className="mt-8"
+        ></iframe>
+      </Col>
+    </Page>
   )
 }
 

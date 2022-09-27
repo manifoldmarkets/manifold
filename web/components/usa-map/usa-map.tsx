@@ -46,6 +46,7 @@ type USAMapPropTypes = {
   defaultFill?: string
   customize?: Customize
   hideStateTitle?: boolean
+  className?: string
 }
 
 export const USAMap = ({
@@ -58,6 +59,7 @@ export const USAMap = ({
   defaultFill = '#d3d3d3',
   customize,
   hideStateTitle,
+  className,
 }: USAMapPropTypes) => {
   const fillStateColor = (state: string) =>
     customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
@@ -66,7 +68,7 @@ export const USAMap = ({
 
   return (
     <svg
-      className="us-state-map"
+      className={className}
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={height}

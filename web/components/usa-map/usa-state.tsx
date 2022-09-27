@@ -28,9 +28,6 @@ export const USAState = ({
       onClick={onClickState}
       id={state}
     >
-      <text>
-        <textPath xlinkHref={`#${state}`}>{stateName}</textPath>
-      </text>
       {hideStateTitle ? null : <title>{stateName}</title>}
     </path>
   )
