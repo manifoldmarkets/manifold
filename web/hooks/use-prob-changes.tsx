@@ -41,7 +41,7 @@ export const useProbChanges = (
   const hits = uniqBy(
     [...positiveChanges.hits, ...negativeChanges.hits],
     (c) => c.id
-  )
+  ).filter((c) => c.probChanges)
 
   return sortBy(hits, (c) => Math.abs(c.probChanges.day)).reverse()
 }

@@ -102,6 +102,32 @@ export default function Groups(props: {
             className="mb-4"
             currentPageForAnalytics={'groups'}
             tabs={[
+              {
+                title: 'All',
+                content: (
+                  <Col>
+                    <input
+                      type="text"
+                      onChange={(e) => debouncedQuery(e.target.value)}
+                      placeholder="Search groups"
+                      value={query}
+                      className="input input-bordered mb-4 w-full"
+                    />
+
+                    <div className="flex flex-wrap justify-center gap-4">
+                      {matchesOrderedByMostContractAndMembers.map((group) => (
+                        <GroupCard
+                          key={group.id}
+                          group={group}
+                          creator={creatorsDict[group.creatorId]}
+                          user={user}
+                          isMember={memberGroupIds.includes(group.id)}
+                        />
+                      ))}
+                    </div>
+                  </Col>
+                ),
+              },
               ...(user
                 ? [
                     {
@@ -136,32 +162,6 @@ export default function Groups(props: {
                     },
                   ]
                 : []),
-              {
-                title: 'All',
-                content: (
-                  <Col>
-                    <input
-                      type="text"
-                      onChange={(e) => debouncedQuery(e.target.value)}
-                      placeholder="Search groups"
-                      value={query}
-                      className="input input-bordered mb-4 w-full"
-                    />
-
-                    <div className="flex flex-wrap justify-center gap-4">
-                      {matchesOrderedByMostContractAndMembers.map((group) => (
-                        <GroupCard
-                          key={group.id}
-                          group={group}
-                          creator={creatorsDict[group.creatorId]}
-                          user={user}
-                          isMember={memberGroupIds.includes(group.id)}
-                        />
-                      ))}
-                    </div>
-                  </Col>
-                ),
-              },
             ]}
           />
         </Col>

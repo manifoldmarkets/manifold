@@ -1,7 +1,13 @@
-import { useWindowSize } from 'web/hooks/use-window-size'
+import { useEffect, useState } from 'react'
 
-// matches talwind sm breakpoint
-export function useIsMobile() {
-  const { width } = useWindowSize()
-  return (width ?? 0) < 640
+export function useIsMobile(threshold?: number) {
+  const [isMobile, setIsMobile] = useState<boolean>()
+  useEffect(() => {
+    // 640 matches tailwind sm breakpoint
+    const onResize = () => setIsMobile(window.innerWidth < (threshold ?? 640))
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [threshold])
+  return isMobile
 }

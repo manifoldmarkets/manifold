@@ -77,7 +77,7 @@ export function BetsList(props: { user: User }) {
   }, [contractList])
 
   const [sort, setSort] = useState<BetSort>('newest')
-  const [filter, setFilter] = useState<BetFilter>('open')
+  const [filter, setFilter] = useState<BetFilter>('all')
   const [page, setPage] = useState(0)
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
@@ -155,34 +155,25 @@ export function BetsList(props: { user: User }) {
     (c) => contractsMetrics[c.id].netPayout
   )
 
-  const totalPnl = user.profitCached.allTime
-  const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
   const investedProfitPercent =
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
     <Col>
-      <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
-        <Row className="gap-8">
-          <Col>
-            <div className="text-sm text-gray-500">Investment value</div>
-            <div className="text-lg">
-              {formatMoney(currentNetInvestment)}{' '}
-              <ProfitBadge profitPercent={investedProfitPercent} />
-            </div>
-          </Col>
-          <Col>
-            <div className="text-sm text-gray-500">Total profit</div>
-            <div className="text-lg">
-              {formatMoney(totalPnl)}{' '}
-              <ProfitBadge profitPercent={totalProfitPercent} />
-            </div>
-          </Col>
-        </Row>
+      <Row className="justify-between gap-4 sm:flex-row">
+        <Col>
+          <div className="text-greyscale-6 text-xs sm:text-sm">
+            Investment value
+          </div>
+          <div className="text-lg">
+            {formatMoney(currentNetInvestment)}{' '}
+            <ProfitBadge profitPercent={investedProfitPercent} />
+          </div>
+        </Col>
 
-        <Row className="gap-8">
+        <Row className="gap-2">
           <select
-            className="select select-bordered self-start"
+            className="border-greyscale-4 self-start overflow-hidden rounded border px-2 py-2 text-sm"
             value={filter}
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
@@ -195,7 +186,7 @@ export function BetsList(props: { user: User }) {
           </select>
 
           <select
-            className="select select-bordered self-start"
+            className="border-greyscale-4 self-start overflow-hidden rounded px-2 py-2 text-sm"
             value={sort}
             onChange={(e) => setSort(e.target.value as BetSort)}
           >
@@ -205,7 +196,7 @@ export function BetsList(props: { user: User }) {
             <option value="closeTime">Close date</option>
           </select>
         </Row>
-      </Col>
+      </Row>
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
@@ -490,18 +481,24 @@ function BetRow(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
-  const saleAmount = saleBet?.sale?.amount
+  // calculateSaleAmount is very slow right now so that's why we memoized this
+  const payout = useMemo(() => {
+    const saleBetAmount = saleBet?.sale?.amount
+    if (saleBetAmount) {
+      return saleBetAmount
+    } else if (contract.isResolved) {
+      return resolvedPayout(contract, bet)
+    } else {
+      return calculateSaleAmount(contract, bet, unfilledBets)
+    }
+  }, [contract, bet, saleBet, unfilledBets])
 
   const saleDisplay = isAnte ? (
     'ANTE'
-  ) : saleAmount !== undefined ? (
-    <>{formatMoney(saleAmount)} (sold)</>
+  ) : saleBet ? (
+    <>{formatMoney(payout)} (sold)</>
   ) : (
-    formatMoney(
-      isResolved
-        ? resolvedPayout(contract, bet)
-        : calculateSaleAmount(contract, bet, unfilledBets)
-    )
+    formatMoney(payout)
   )
 
   const payoutIfChosenDisplay =
