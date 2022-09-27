@@ -182,7 +182,6 @@ export function BuyPanel(props: {
   const windowSize = useWindowSize()
   const initialOutcome =
     windowSize.width && windowSize.width >= 1280 ? 'YES' : undefined
-  console.log('initialOutcome>', initialOutcome)
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
     initialOutcome
   )
@@ -304,28 +303,19 @@ export function BuyPanel(props: {
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
-      {!mobileView && (
-        <>
-          <YesNoSelector
-            className="mb-4"
-            btnClassName="flex-1"
-            selected={outcome}
-            onSelect={(choice) => onBetChoice(choice)}
-            isPseudoNumeric={isPseudoNumeric}
-          />
-        </>
-      )}
-      {mobileView && (
-        <>
-          <YesNoSelector
-            className="mb-4"
-            btnClassName="flex-1"
-            selected={outcome}
-            onSelect={(choice) => mobileOnBetChoice(choice)}
-            isPseudoNumeric={isPseudoNumeric}
-          />
-        </>
-      )}
+      <YesNoSelector
+        className="mb-4"
+        btnClassName="flex-1"
+        selected={outcome}
+        onSelect={(choice) => {
+          if (mobileView) {
+            mobileOnBetChoice(choice)
+          } else {
+            onBetChoice(choice)
+          }
+        }}
+        isPseudoNumeric={isPseudoNumeric}
+      />
 
       <Col
         className={clsx(

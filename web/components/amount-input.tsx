@@ -41,20 +41,15 @@ export function AmountInput(props: {
   return (
     <>
       <Col className={className}>
-        <label>
-          <span
-            className={clsx(
-              'text-greyscale-4 absolute ml-2 mt-[9px]',
-              isMobile ? 'font-sm' : 'font-lg'
-            )}
-          >
+        <label className={clsx(isMobile ? 'font-sm' : 'font-lg')}>
+          <span className={clsx('text-greyscale-4 absolute ml-2 mt-[9px]')}>
             {label}
           </span>
           <input
             className={clsx(
               'placeholder:text-greyscale-4 border-greyscale-2 rounded-md pl-9',
               error && 'input-error',
-              isMobile ? 'font-sm w-24' : 'font-lg',
+              isMobile ? 'w-24' : '',
               inputClassName
             )}
             ref={inputRef}
