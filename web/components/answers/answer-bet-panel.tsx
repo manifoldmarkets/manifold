@@ -182,9 +182,9 @@ export function AnswerBetPanel(props: {
       </Col>
 
       <Spacer h={6} />
-
       {user ? (
         <WarningConfirmationButton
+          amount={betAmount}
           warning={warning}
           onSubmit={submitBet}
           isSubmitting={isSubmitting}

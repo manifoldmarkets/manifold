@@ -4,8 +4,11 @@ import React from 'react'
 import { Row } from './layout/row'
 import { ConfirmationButton } from './confirmation-button'
 import { ExclamationIcon } from '@heroicons/react/solid'
+import { formatMoney } from 'common/util/format'
 
 export function WarningConfirmationButton(props: {
+  amount: number | undefined
+  outcome?: 'YES' | 'NO' | undefined
   warning?: string
   onSubmit: () => void
   disabled?: boolean
@@ -14,12 +17,14 @@ export function WarningConfirmationButton(props: {
   submitButtonClassName?: string
 }) {
   const {
+    amount,
     onSubmit,
     warning,
     disabled,
     isSubmitting,
     openModalButtonClass,
     submitButtonClassName,
+    outcome,
   } = props
 
   if (!warning) {
@@ -28,12 +33,15 @@ export function WarningConfirmationButton(props: {
         className={clsx(
           openModalButtonClass,
           isSubmitting ? 'loading' : '',
-          disabled && 'btn-disabled'
+          (disabled || !outcome) && 'btn-disabled bg-greyscale-2'
         )}
         onClick={onSubmit}
-        disabled={disabled}
       >
-        {isSubmitting ? 'Submitting...' : 'Submit'}
+        {isSubmitting
+          ? 'Submitting...'
+          : amount
+          ? `Wager ${formatMoney(amount)}`
+          : 'Wager'}
       </button>
     )
   }
@@ -45,7 +53,7 @@ export function WarningConfirmationButton(props: {
           openModalButtonClass,
           isSubmitting && 'btn-disabled loading'
         ),
-        label: 'Submit',
+        label: amount ? `Wager ${formatMoney(amount)}` : 'Wager',
       }}
       cancelBtn={{
         label: 'Cancel',
