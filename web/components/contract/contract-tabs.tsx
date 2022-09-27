@@ -24,19 +24,10 @@ import {
 } from 'common/antes'
 import { buildArray } from 'common/util/array'
 
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/button'
 import { MINUTE_MS } from 'common/util/time'
-
-export function ContractTabs(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
-  const { openCommentBounties } = contract
-
-  const isMobile = useIsMobile()
-  const user = useUser()
-  const userBets =
-    user && bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
+import { useUser } from 'web/hooks/use-user'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -44,6 +35,7 @@ export function ContractTabs(props: {
   userBets: Bet[]
 }) {
   const { contract, bets, userBets } = props
+  const { openCommentBounties } = contract
 
   const yourTrades = (
     <div>
@@ -55,16 +47,16 @@ export function ContractTabs(props: {
 
   const tabs = buildArray(
     {
-          title: `Comments ${
-            openCommentBounties
-              ? '(' + formatMoney(openCommentBounties) + ' Bounty)'
-              : ''
-          }`,
-          tooltip: openCommentBounties
-            ? 'The creator of this market will award bounties to good comments'
-            : undefined,
-          content: <CommentsTabContent contract={contract} />,
-        },
+      title: `Comments ${
+        openCommentBounties
+          ? '(' + formatMoney(openCommentBounties) + ' Bounty)'
+          : ''
+      }`,
+      tooltip: openCommentBounties
+        ? 'The creator of this market will award bounties to good comments'
+        : undefined,
+      content: <CommentsTabContent contract={contract} />,
+    },
     {
       title: capitalize(PAST_BETS),
       content: <BetsTabContent contract={contract} bets={bets} />,
