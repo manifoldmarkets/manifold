@@ -41,7 +41,7 @@ export default function DatePage(props: {
   return (
     <Page>
       <div className="mx-auto w-full max-w-xl">
-        <Row className="items-center justify-between">
+        <Row className="items-center justify-between p-4 sm:p-0">
           <Title className="!my-0 px-2 text-blue-500" text="Date docs" />
           {!hasDoc && (
             <SiteLink href="/date-docs/create" className="!no-underline">
