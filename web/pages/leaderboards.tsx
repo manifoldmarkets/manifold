@@ -81,7 +81,7 @@ export default function Leaderboards(_props: {
         <Col className="mx-4 items-center gap-10 lg:flex-row">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
-            users={topTraders}
+            entries={topTraders}
             columns={[
               {
                 header: 'Total profit',
@@ -92,7 +92,7 @@ export default function Leaderboards(_props: {
 
           <Leaderboard
             title="🏅 Top creators"
-            users={topCreators}
+            entries={topCreators}
             columns={[
               {
                 header: 'Total bet',
@@ -106,7 +106,7 @@ export default function Leaderboards(_props: {
           <Col className="mx-4 my-10 items-center gap-10 lg:mx-0 lg:w-1/2 lg:flex-row">
             <Leaderboard
               title="🏅 Top followed"
-              users={topFollowed}
+              entries={topFollowed}
               columns={[
                 {
                   header: 'Total followers',
@@ -132,6 +132,7 @@ export default function Leaderboards(_props: {
       />
       <Title text={'Leaderboards'} className={'hidden md:block'} />
       <Tabs
+        className="mb-4"
         currentPageForAnalytics={'leaderboards'}
         defaultIndex={1}
         tabs={[

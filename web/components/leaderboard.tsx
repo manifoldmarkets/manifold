@@ -1,28 +1,33 @@
 import clsx from 'clsx'
-import { User } from 'common/user'
 import { Avatar } from './avatar'
 import { Row } from './layout/row'
 import { SiteLink } from './site-link'
 import { Title } from './title'
 
-export function Leaderboard(props: {
+interface LeaderboardEntry {
+  username: string
+  name: string
+  avatarUrl?: string
+}
+
+export function Leaderboard<T extends LeaderboardEntry>(props: {
   title: string
-  users: User[]
+  entries: T[]
   columns: {
     header: string
-    renderCell: (user: User) => any
+    renderCell: (entry: T) => any
   }[]
   className?: string
   maxToShow?: number
 }) {
   // TODO: Ideally, highlight your own entry on the leaderboard
   const { title, columns, className } = props
-  const maxToShow = props.maxToShow ?? props.users.length
-  const users = props.users.slice(0, maxToShow)
+  const maxToShow = props.maxToShow ?? props.entries.length
+  const entries = props.entries.slice(0, maxToShow)
   return (
     <div className={clsx('w-full px-1', className)}>
       <Title text={title} className="!mt-0" />
-      {users.length === 0 ? (
+      {entries.length === 0 ? (
         <div className="ml-2 text-gray-500">None yet</div>
       ) : (
         <div className="overflow-x-auto">
@@ -37,19 +42,19 @@ export function Leaderboard(props: {
               </tr>
             </thead>
             <tbody>
-              {users.map((user, index) => (
-                <tr key={user.id}>
+              {entries.map((entry, index) => (
+                <tr key={index}>
                   <td>{index + 1}</td>
                   <td className="max-w-[190px]">
-                    <SiteLink className="relative" href={`/${user.username}`}>
+                    <SiteLink className="relative" href={`/${entry.username}`}>
                       <Row className="items-center gap-4">
-                        <Avatar avatarUrl={user.avatarUrl} size={8} />
-                        <div className="truncate">{user.name}</div>
+                        <Avatar avatarUrl={entry.avatarUrl} size={8} />
+                        <div className="truncate">{entry.name}</div>
                       </Row>
                     </SiteLink>
                   </td>
                   {columns.map((column) => (
-                    <td key={column.header}>{column.renderCell(user)}</td>
+                    <td key={column.header}>{column.renderCell(entry)}</td>
                   ))}
                 </tr>
               ))}

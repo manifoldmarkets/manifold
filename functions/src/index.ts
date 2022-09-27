@@ -27,9 +27,10 @@ export * from './on-delete-group'
 export * from './score-contracts'
 export * from './weekly-markets-emails'
 export * from './reset-betting-streaks'
-export * from './reset-weekly-emails-flag'
+export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
 export * from './on-update-like'
+export * from './weekly-portfolio-emails'
 
 // v2
 export * from './health'
@@ -50,6 +51,7 @@ export * from './resolve-market'
 export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-bonus-email'
+export * from './close-market'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -66,6 +68,7 @@ import { addliquidity } from './add-liquidity'
 import { withdrawliquidity } from './withdraw-liquidity'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
+import { closemarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
@@ -91,6 +94,7 @@ const addLiquidityFunction = toCloudFunction(addliquidity)
 const withdrawLiquidityFunction = toCloudFunction(withdrawliquidity)
 const createGroupFunction = toCloudFunction(creategroup)
 const resolveMarketFunction = toCloudFunction(resolvemarket)
+const closeMarketFunction = toCloudFunction(closemarket)
 const unsubscribeFunction = toCloudFunction(unsubscribe)
 const stripeWebhookFunction = toCloudFunction(stripewebhook)
 const createCheckoutSessionFunction = toCloudFunction(createcheckoutsession)
@@ -115,11 +119,12 @@ export {
   withdrawLiquidityFunction as withdrawliquidity,
   createGroupFunction as creategroup,
   resolveMarketFunction as resolvemarket,
+  closeMarketFunction as closemarket,
   unsubscribeFunction as unsubscribe,
   stripeWebhookFunction as stripewebhook,
   createCheckoutSessionFunction as createcheckoutsession,
   getCurrentUserFunction as getcurrentuser,
   acceptChallenge as acceptchallenge,
   createPostFunction as createpost,
-  saveTwitchCredentials as savetwitchcredentials
+  saveTwitchCredentials as savetwitchcredentials,
 }

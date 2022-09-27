@@ -90,6 +90,10 @@ export function getCurrentUser(params: any) {
   return call(getFunctionUrl('getcurrentuser'), 'GET', params)
 }
 
-export function createPost(params: { title: string; content: JSONContent }) {
+export function createPost(params: {
+  title: string
+  content: JSONContent
+  groupId?: string
+}) {
   return call(getFunctionUrl('createpost'), 'POST', params)
 }

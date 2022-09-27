@@ -146,7 +146,8 @@ function TwitchPlaysManifoldMarkets(props: {
         <div>
           Instead of Twitch channel points we use our own play money, mana (M$).
           All viewers start with M$1,000 and can earn more for free by betting
-          well.
+          well. Just like channel points, mana cannot be converted to real
+          money.
         </div>
       </Col>
     </div>
@@ -176,35 +177,47 @@ function TwitchChatCommands() {
       <Col className="gap-4">
         <Subtitle text="For Chat" />
         <Command
-          command="bet yes #"
-          desc="Bets an amount of M$ on yes, for example !bet yes 20"
+          command="y#"
+          desc="Bets # amount of M$ on yes, for example !y20 would bet M$20 on yes."
         />
-        <Command command="bet no #" desc="Bets an amount of M$ on no." />
+        <Command
+          command="n#"
+          desc="Bets # amount of M$ on no, for example !n30 would bet M$30 on no."
+        />
         <Command
           command="sell"
           desc="Sells all shares you own. Using this command causes you to
-          cash out early before the market resolves. This could be profitable
-          (if the probability has moved towards the direction you bet) or cause
-          a loss, although at least you keep some mana. For maximum profit (but
-          also risk) it is better to not sell and wait for a favourable
-          resolution."
+          cash out early based on the current probability.
+          Shares will always be worth the most if you wait for a favourable resolution. But, selling allows you to lower risk, or trade throughout the event which can maximise earnings."
         />
-        <Command command="balance" desc="Shows how much M$ you have." />
-        <Command command="allin yes" desc="Bets your entire balance on yes." />
-        <Command command="allin no" desc="Bets your entire balance on no." />
+        <Command
+          command="position"
+          desc="Shows how many shares you own in the current market and what your fixed payout is."
+        />
+        <Command command="balance" desc="Shows how much M$ your account has." />
 
         <div className="mb-4" />
 
         <Subtitle text="For Mods/Streamer" />
+
+        <div>
+          We recommend streamers sharing the link to the control dock with their
+          mods. Alternatively, chat commands can be used to control markets.{' '}
+        </div>
+
         <Command
-          command="create <question>"
-          desc="Creates and features the question. Be careful... this will override any question that is currently featured."
+          command="create [question]"
+          desc="Creates and features a question. Be careful, this will replace any question that is currently featured."
         />
         <Command command="resolve yes" desc="Resolves the market as 'Yes'." />
         <Command command="resolve no" desc="Resolves the market as 'No'." />
         <Command
-          command="resolve n/a"
-          desc="Resolves the market as 'N/A' and refunds everyone their mana."
+          command="resolve na"
+          desc="Cancels the market and refunds everyone their mana."
+        />
+        <Command
+          command="unfeature"
+          desc="Unfeatures the market. The market will still be open on our site and available to be refeatured again. If you plan to never interact with a market again we recommend resolving to N/A and not this command."
         />
       </Col>
     </div>
@@ -384,8 +397,8 @@ function SetUpBot(props: {
             buttonOnClick={copyOverlayLink}
           >
             Create a new browser source in your streaming software such as OBS.
-            Paste in the above link and resize it to your liking. We recommend
-            setting the size to 400x400.
+            Paste in the above link and type in the desired size. We recommend
+            450x375.
           </BotSetupStep>
           <BotSetupStep
             stepNum={3}
@@ -396,6 +409,10 @@ function SetUpBot(props: {
             to use control panel. Share the link with your mods or embed it into
             your OBS as a custom dock.
           </BotSetupStep>
+        </div>
+        <div>
+          Need help? Contact SirSalty#5770 in Discord or email
+          david@manifold.markets
         </div>
       </Col>
     </>

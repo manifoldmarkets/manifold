@@ -13,7 +13,6 @@ import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
-import { defaultBannerUrl } from 'web/components/user-page'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
@@ -176,27 +175,6 @@ export default function ProfilePage(props: {
               onBlur={updateUsername}
             />
           </div>
-
-          {/* TODO: Allow users with M$ 2000 of assets to set custom banners */}
-          {/* <EditUserField
-                user={user}
-                field="bannerUrl"
-                label="Banner Url"
-                isEditing={isEditing}
-              /> */}
-          <label className="label">
-            Banner image{' '}
-            <span className="text-sm text-gray-400">Not editable for now</span>
-          </label>
-          <div
-            className="h-32 w-full bg-cover bg-center sm:h-40"
-            style={{
-              backgroundImage: `url(${
-                user.bannerUrl || defaultBannerUrl(user.id)
-              })`,
-            }}
-          />
-
           {(
             [
               ['bio', 'Bio'],

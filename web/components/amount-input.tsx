@@ -38,6 +38,8 @@ export function AmountInput(props: {
 
   const { width } = useWindowSize()
   const isMobile = (width ?? 0) < 768
+  const isMobile = useIsMobile(768)
+
   return (
     <>
       <Col className={className}>

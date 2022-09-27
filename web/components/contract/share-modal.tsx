@@ -21,6 +21,7 @@ import { CreateChallengeModal } from 'web/components/challenges/create-challenge
 import { useState } from 'react'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
+import { QRCode } from '../qr-code'
 
 export function ShareModal(props: {
   contract: Contract
@@ -54,6 +55,12 @@ export function ShareModal(props: {
           </SiteLink>{' '}
           if a new user signs up using the link!
         </p>
+        <QRCode
+          url={shareUrl}
+          className="self-center"
+          width={150}
+          height={150}
+        />
         <Button
           size="2xl"
           color="indigo"

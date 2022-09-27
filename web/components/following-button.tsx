@@ -13,16 +13,18 @@ import { useDiscoverUsers } from 'web/hooks/use-users'
 import { TextButton } from './text-button'
 import { track } from 'web/lib/service/analytics'
 
-export function FollowingButton(props: { user: User }) {
-  const { user } = props
+export function FollowingButton(props: { user: User; className?: string }) {
+  const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
   const followingIds = useFollows(user.id)
   const followerIds = useFollowers(user.id)
 
   return (
     <>
-      <TextButton onClick={() => setIsOpen(true)}>
-        <span className="font-semibold">{followingIds?.length ?? ''}</span>{' '}
+      <TextButton onClick={() => setIsOpen(true)} className={className}>
+        <span className={clsx('font-semibold')}>
+          {followingIds?.length ?? ''}
+        </span>{' '}
         Following
       </TextButton>
 
@@ -69,15 +71,15 @@ export function EditFollowingButton(props: { user: User; className?: string }) {
   )
 }
 
-export function FollowersButton(props: { user: User }) {
-  const { user } = props
+export function FollowersButton(props: { user: User; className?: string }) {
+  const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
   const followingIds = useFollows(user.id)
   const followerIds = useFollowers(user.id)
 
   return (
     <>
-      <TextButton onClick={() => setIsOpen(true)}>
+      <TextButton onClick={() => setIsOpen(true)} className={className}>
         <span className="font-semibold">{followerIds?.length ?? ''}</span>{' '}
         Followers
       </TextButton>
@@ -115,6 +117,7 @@ function FollowsDialog(props: {
         <div className="p-2 pb-1 text-xl">{user.name}</div>
         <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
         <Tabs
+          className="mb-4"
           tabs={[
             {
               title: 'Following',

@@ -13,14 +13,18 @@ import { getUser, updateUser } from 'web/lib/firebase/users'
 import { TextButton } from 'web/components/text-button'
 import { UserLink } from 'web/components/user-link'
 
-export function ReferralsButton(props: { user: User; currentUser?: User }) {
-  const { user, currentUser } = props
+export function ReferralsButton(props: {
+  user: User
+  currentUser?: User
+  className?: string
+}) {
+  const { user, currentUser, className } = props
   const [isOpen, setIsOpen] = useState(false)
   const referralIds = useReferrals(user.id)
 
   return (
     <>
-      <TextButton onClick={() => setIsOpen(true)}>
+      <TextButton onClick={() => setIsOpen(true)} className={className}>
         <span className="font-semibold">{referralIds?.length ?? ''}</span>{' '}
         Referrals
       </TextButton>
@@ -64,6 +68,7 @@ function ReferralsDialog(props: {
         <div className="p-2 pb-1 text-xl">{user.name}</div>
         <div className="p-2 pt-0 text-sm text-gray-500">@{user.username}</div>
         <Tabs
+          className="mb-4"
           tabs={[
             {
               title: 'Referrals',

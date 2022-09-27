@@ -92,7 +92,7 @@ export default function ChallengesListPage() {
           tap the button above to create a new market & challenge in one.
         </p>
 
-        <Tabs tabs={[...userTab, ...publicTab]} />
+        <Tabs className="mb-4" tabs={[...userTab, ...publicTab]} />
       </Col>
     </Page>
   )

@@ -60,7 +60,7 @@ async function sendMarketCloseEmails() {
       'contract',
       'closed',
       user,
-      'closed' + contract.id.slice(6, contract.id.length),
+      contract.id + '-closed-at-' + contract.closeTime,
       contract.closeTime?.toString() ?? new Date().toString(),
       { contract }
     )
