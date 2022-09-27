@@ -12,7 +12,7 @@ export type Post = {
 export type DateDoc = Post & {
   bounty: number
   birthday: number
-  profilePicUrl: string
+  photoUrl: string
   type: 'date-doc'
 }
 

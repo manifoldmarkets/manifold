@@ -32,7 +32,7 @@ export default function DatePage(props: { dateDocs: DateDoc[] }) {
     <Page>
       <div className="mx-auto w-full max-w-3xl ">
         <Row className="items-center justify-between">
-          <Title className="!my-0 px-2 text-blue-400" text="Date docs" />
+          <Title className="!my-0 px-2 text-blue-500" text="Date docs" />
           <SiteLink href="/date/create" className="!no-underline">
             <Button className="flex flex-row gap-1" color="blue">
               <PlusCircleIcon
