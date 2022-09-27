@@ -38,6 +38,8 @@ export function BetsSummary(props: {
     calculatePayout(contract, bet, 'NO')
   )
 
+  const position = yesWinnings - noWinnings
+
   const prob = isBinary ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
@@ -61,14 +63,16 @@ export function BetsSummary(props: {
               <InfoTooltip text="Number of shares you own on net. 1 YES share = M$1 if the market resolves YES." />
             </div>
             <div className="whitespace-nowrap">
-              {yesWinnings > 0 ? (
+              {position > 1e-7 ? (
                 <>
-                  <YesLabel /> {formatWithCommas(yesWinnings)}
+                  <YesLabel /> {formatWithCommas(position)}
+                </>
+              ) : position < -1e-7 ? (
+                <>
+                  <NoLabel /> {formatWithCommas(-position)}
                 </>
               ) : (
-                <>
-                  <NoLabel /> {formatWithCommas(noWinnings)}
-                </>
+                '——'
               )}
             </div>
           </Col>
@@ -90,7 +94,7 @@ export function BetsSummary(props: {
           <div className="whitespace-nowrap">{formatMoney(invested)}</div>
         </Col>
 
-        {isBinary && (
+        {isBinary && !resolution && (
           <Col>
             <div className="whitespace-nowrap text-sm text-gray-500">
               Expectation{' '}
@@ -103,7 +107,7 @@ export function BetsSummary(props: {
         <Col>
           <div className="whitespace-nowrap text-sm text-gray-500">
             Profit{' '}
-            <InfoTooltip text="Includes both realized & unrealized gains/losses from trades." />
+            <InfoTooltip text="Includes both realized & unrealized gains/losses." />
           </div>
           <div className="whitespace-nowrap">
             {formatMoney(profit)}
@@ -111,7 +115,6 @@ export function BetsSummary(props: {
           </div>
         </Col>
       </Row>
-      <Row className="flex-wrap-none gap-4"></Row>
     </Col>
   )
 }
