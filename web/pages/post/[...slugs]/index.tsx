@@ -34,9 +34,9 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
 
   return {
     props: {
-      post: post,
-      creator: creator,
-      comments: comments,
+      post,
+      creator,
+      comments,
     },
 
     revalidate: 60, // regenerate after a minute
@@ -117,12 +117,7 @@ export default function PostPage(props: {
 
         <Spacer h={4} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
-          <PostCommentsActivity
-            post={post}
-            comments={comments}
-            tips={tips}
-            user={creator}
-          />
+          <PostCommentsActivity post={post} comments={comments} tips={tips} />
         </div>
       </div>
     </Page>
@@ -133,9 +128,8 @@ export function PostCommentsActivity(props: {
   post: Post
   comments: PostComment[]
   tips: CommentTipMap
-  user: User | null | undefined
 }) {
-  const { post, comments, user, tips } = props
+  const { post, comments, tips } = props
   const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
   const topLevelComments = sortBy(
@@ -149,7 +143,6 @@ export function PostCommentsActivity(props: {
       {topLevelComments.map((parent) => (
         <PostCommentThread
           key={parent.id}
-          user={user}
           post={post}
           parentComment={parent}
           threadComments={sortBy(
@@ -164,7 +157,7 @@ export function PostCommentsActivity(props: {
   )
 }
 
-function RichEditPost(props: { post: Post }) {
+export function RichEditPost(props: { post: Post }) {
   const { post } = props
   const [editing, setEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)

@@ -16,7 +16,7 @@ import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
 import { chargeUser, getContract, isProd } from './utils'
-import { APIError, newEndpoint, validate, zTimestamp } from './api'
+import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 
 import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from '../../common/economy'
 import {
@@ -92,7 +92,11 @@ const multipleChoiceSchema = z.object({
   answers: z.string().trim().min(1).array().min(2),
 })
 
-export const createmarket = newEndpoint({}, async (req, auth) => {
+export const createmarket = newEndpoint({}, (req, auth) => {
+  return createMarketHelper(req.body, auth)
+})
+
+export async function createMarketHelper(body: any, auth: AuthedUser) {
   const {
     question,
     description,
@@ -101,16 +105,13 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
     outcomeType,
     groupId,
     visibility = 'public',
-  } = validate(bodySchema, req.body)
+  } = validate(bodySchema, body)
 
   let min, max, initialProb, isLogScale, answers
 
   if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
     let initialValue
-    ;({ min, max, initialValue, isLogScale } = validate(
-      numericSchema,
-      req.body
-    ))
+    ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
     if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
       throw new APIError(400, 'Invalid range.')
 
@@ -126,11 +127,11 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
   }
 
   if (outcomeType === 'BINARY') {
-    ;({ initialProb } = validate(binarySchema, req.body))
+    ;({ initialProb } = validate(binarySchema, body))
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers } = validate(multipleChoiceSchema, req.body))
+    ;({ answers } = validate(multipleChoiceSchema, body))
   }
 
   const userDoc = await firestore.collection('users').doc(auth.uid).get()
@@ -186,17 +187,17 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
 
   // convert string descriptions into JSONContent
   const newDescription =
-    typeof description === 'string'
+    !description || typeof description === 'string'
       ? {
           type: 'doc',
           content: [
             {
               type: 'paragraph',
-              content: [{ type: 'text', text: description }],
+              content: [{ type: 'text', text: description || ' ' }],
             },
           ],
         }
-      : description ?? {}
+      : description
 
   const contract = getNewContract(
     contractRef.id,
@@ -323,7 +324,7 @@ export const createmarket = newEndpoint({}, async (req, auth) => {
   }
 
   return contract
-})
+}
 
 const getSlug = async (question: string) => {
   const proposedSlug = slugify(question)
