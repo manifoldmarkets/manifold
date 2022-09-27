@@ -28,7 +28,7 @@ export const NumericContractChart = (props: {
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
-  const height = props.height ?? isMobile ? 150 : 250
+  const height = props.height ?? (isMobile ? 150 : 250)
   const maxY = max(data.map((d) => d[1])) as number
   const xScale = scaleLinear(
     [contract.min, contract.max],

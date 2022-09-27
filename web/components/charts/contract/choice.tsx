@@ -12,7 +12,8 @@ import { useElementWidth } from 'web/hooks/use-element-width'
 
 const getMultiChartData = (
   contract: FreeResponseContract | MultipleChoiceContract,
-  bets: Bet[]
+  bets: Bet[],
+  topN: number
 ) => {
   const { answers, totalBets, outcomeType } = contract
 
@@ -32,7 +33,7 @@ const getMultiChartData = (
   const trackedAnswers = sortBy(
     validAnswers,
     (answer) => -1 * getOutcomeProbability(contract, answer.id)
-  ).slice(0, 10)
+  ).slice(0, topN)
 
   const points: MultiPoint[] = []
 
@@ -78,13 +79,13 @@ export const ChoiceContractChart = (props: {
 }) => {
   const { contract, bets } = props
   const data = useMemo(
-    () => getMultiChartData(contract, bets),
+    () => getMultiChartData(contract, bets, 6),
     [contract, bets]
   )
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
-  const height = props.height ?? isMobile ? 150 : 250
+  const height = props.height ?? (isMobile ? 150 : 250)
   const xScale = scaleTime(getDateRange(contract), [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
