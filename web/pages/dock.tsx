@@ -8,6 +8,7 @@ import Head from 'next/head';
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import Textarea from 'react-expanding-textarea';
 import io, { Socket } from 'socket.io-client';
+import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
 import ContractCard from 'web/components/contract-card';
 import { InfoTooltip } from 'web/components/info-tooltip';
 import { Col } from 'web/components/layout/col';
@@ -108,8 +109,24 @@ export default () => {
       setLoadingMessage('Failed to connect to server: ' + err.message);
       setConnectionState(ConnectionState.FAILED);
     });
-    socket.on('disconnect', () => {
-      console.debug('Lost connection to server.');
+    socket.on('disconnect', (reason: Socket.DisconnectReason, description?: DisconnectDescription) => {
+      const reasons: { reason: Socket.DisconnectReason; desc: string }[] = [
+        { reason: 'io server disconnect', desc: 'The server has forcefully disconnected the socket with socket.disconnect()' },
+        { reason: 'io client disconnect', desc: 'The socket was manually disconnected using socket.disconnect()' },
+        { reason: 'ping timeout', desc: 'The server did not send a PING within the pingInterval + pingTimeout range' },
+        { reason: 'transport close', desc: 'The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G)' },
+        { reason: 'transport error', desc: 'The connection has encountered an error (example: the server was killed during a HTTP long-polling cycle)' },
+      ];
+
+      let desc: DisconnectDescription | string = description;
+      for (const r of reasons) {
+        if (r.reason === reason) {
+          desc = r.desc;
+          break;
+        }
+      }
+
+      console.debug(`Lost connection to server [reason: ${reason}, description: ${JSON.stringify(desc)}]`);
       setConnectionState(ConnectionState.CONNECTING);
       setLoadingMessage('Connecting to server...');
     });
