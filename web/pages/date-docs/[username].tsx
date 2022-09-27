@@ -4,7 +4,6 @@ import { Page } from 'web/components/page'
 import dayjs from 'dayjs'
 
 import { DateDoc } from 'common/post'
-import { Spacer } from 'web/components/layout/spacer'
 import { Content } from 'web/components/editor'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -76,10 +75,10 @@ export function DateDocPost(props: {
   const marketUrl = `https://${DOMAIN}/${username}/${contractSlug}`
 
   return (
-    <Col className="rounded-lg bg-white px-6 py-6">
+    <Col className="gap-6 rounded-lg bg-white px-6 py-6">
       <SiteLink href={link ? `/date-docs/${creator.username}` : undefined}>
-        <Col className="gap-4 self-center">
-          <Row className="relative justify-between gap-4 text-2xl">
+        <Col className="gap-6 self-center">
+          <Row className="relative items-center justify-between gap-4 text-2xl">
             <div>
               {name}, {age}
             </div>
@@ -120,13 +119,11 @@ export function DateDocPost(props: {
           />
         </Col>
       </SiteLink>
-      <Spacer h={6} />
       {user && user.id === creator.id ? (
         <RichEditPost post={post} />
       ) : (
         <Content content={content} />
       )}
-      <Spacer h={6} />
       <div className="mt-10 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-5">
         <iframe
           height="405"
