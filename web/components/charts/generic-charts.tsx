@@ -87,6 +87,27 @@ export const SingleValueDistributionChart = (props: {
   const xAxis = axisBottom<number>(xScale).tickFormat(formatX)
   const yAxis = axisLeft<number>(yScale).tickFormat(formatY)
 
+  const xBisector = bisector((p: DistributionPoint) => p[0])
+  const onMouseOver = useEvent((event: React.PointerEvent) => {
+    const tt = tooltipRef.current
+    if (tt != null) {
+      const [mouseX, mouseY] = pointer(event)
+      const queryX = xScale.invert(mouseX)
+      const [_x, y] = data[xBisector.center(data, queryX)]
+      tt.innerHTML = `<strong>${formatY(y)}</strong> ${formatX(queryX)}`
+      tt.style.display = 'block'
+      tt.style.top = mouseY - 10 + 'px'
+      tt.style.left = mouseX + 20 + 'px'
+    }
+  })
+
+  const onMouseLeave = useEvent(() => {
+    const tt = tooltipRef.current
+    if (tt != null) {
+      tt.style.display = 'none'
+    }
+  })
+
   return (
     <div className="relative">
       <div
@@ -94,7 +115,14 @@ export const SingleValueDistributionChart = (props: {
         style={{ display: 'none' }}
         className="pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-slate-600/75 p-2 text-white"
       />
-      <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
+      <SVGChart
+        w={w}
+        h={h}
+        xAxis={xAxis}
+        yAxis={yAxis}
+        onMouseOver={onMouseOver}
+        onMouseLeave={onMouseLeave}
+      >
         <AreaWithTopStroke
           color={color}
           data={data}
@@ -200,14 +228,14 @@ export const SingleValueHistoryChart = (props: {
     .tickValues(tickValues)
     .tickFormat(formatY)
 
-  const dateBisector = bisector((p: HistoryPoint) => p[0])
+  const xBisector = bisector((p: HistoryPoint) => p[0])
   const onMouseOver = useEvent((event: React.PointerEvent) => {
     const tt = tooltipRef.current
     if (tt != null) {
       const [mouseX, mouseY] = pointer(event)
-      const date = xScale.invert(mouseX)
-      const [_, prob] = data[dateBisector.center(data, date)]
-      tt.innerHTML = `<strong>${formatY(prob)}</strong> ${formatX(date)}`
+      const queryX = xScale.invert(mouseX)
+      const [_x, y] = data[xBisector.center(data, queryX)]
+      tt.innerHTML = `<strong>${formatY(y)}</strong> ${formatX(queryX)}`
       tt.style.display = 'block'
       tt.style.top = mouseY - 10 + 'px'
       tt.style.left = mouseX + 20 + 'px'
