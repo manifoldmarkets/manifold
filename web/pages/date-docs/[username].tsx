@@ -98,13 +98,13 @@ export function DateDocPost(props: {
   return (
     <Col className="gap-6 rounded-lg bg-white px-6 py-6">
       <SiteLink href={link ? `/date-docs/${creator.username}` : undefined}>
-        <Col className="gap-6 self-center">
-          <Row className="relative items-center justify-between gap-4 text-2xl">
+        <Col className="gap-6">
+          <Row className="relative justify-between gap-4 text-2xl">
             <div>
               {name}, {age}
             </div>
 
-            <Col className="absolute right-0 px-2">
+            <Col className={clsx(link && 'absolute', 'right-0 px-2')}>
               <Button
                 size="lg"
                 color="gray-white"
