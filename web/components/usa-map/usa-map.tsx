@@ -7,7 +7,7 @@ import { USAState } from './usa-state'
 export type ClickHandler<E = SVGPathElement | SVGCircleElement, R = any> = (
   e: React.MouseEvent<E, MouseEvent>
 ) => R
-export type GetClickHandler = (stateKey: string) => ClickHandler
+export type GetClickHandler = (stateKey: string) => ClickHandler | undefined
 export type CustomizeObj = {
   fill?: string
   clickHandler?: ClickHandler
@@ -62,9 +62,7 @@ export const USAMap = ({
   const fillStateColor = (state: string) =>
     customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
 
-  const stateClickHandler = (state: string) =>
-    customize?.[state]?.clickHandler
-     
+  const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
 
   return (
     <svg
