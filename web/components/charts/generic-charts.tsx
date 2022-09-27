@@ -20,7 +20,7 @@ import { useEvent } from 'web/hooks/use-event'
 
 export type MultiPoint = readonly [Date, number[]] // [time, [ordered outcome probs]]
 export type HistoryPoint = readonly [Date, number] // [time, number or percentage]
-export type NumericPoint = readonly [number, number] // [number, prob]
+export type DistributionPoint = readonly [number, number] // [number, prob]
 
 const formatPct = (n: number, digits?: number) => {
   return `${(n * 100).toFixed(digits ?? 0)}%`
@@ -67,7 +67,7 @@ const getTickValues = (min: number, max: number, n: number) => {
 }
 
 export const SingleValueDistributionChart = (props: {
-  data: NumericPoint[]
+  data: DistributionPoint[]
   w: number
   h: number
   color: string
@@ -77,9 +77,9 @@ export const SingleValueDistributionChart = (props: {
   const { color, data, xScale, yScale, w, h } = props
   const tooltipRef = useRef<HTMLDivElement>(null)
 
-  const px = useCallback((p: NumericPoint) => xScale(p[0]), [xScale])
+  const px = useCallback((p: DistributionPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(0)
-  const py1 = useCallback((p: NumericPoint) => yScale(p[1]), [yScale])
+  const py1 = useCallback((p: DistributionPoint) => yScale(p[1]), [yScale])
 
   const formatX = (n: number) => formatLargeNumber(n)
   const formatY = (n: number) => formatPct(n, 2)
