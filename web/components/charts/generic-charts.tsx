@@ -189,12 +189,8 @@ export const SingleValueHistoryChart = (props: {
   const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
 
   const dates = useMemo(() => data.map(([d]) => d), [data])
-  const [startDate, endDate] = xScale.domain().map(dayjs)
-  const includeYear = !startDate.isSame(endDate, 'year')
-  const includeHour = startDate.add(8, 'day').isAfter(endDate)
-  const includeMinute = endDate.diff(startDate, 'hours') < 2
-  const formatX = (d: Date) =>
-    formatDate(d, { includeYear, includeHour, includeMinute })
+  const [start, end] = xScale.domain()
+  const formatX = getFormatterForDateRange(start, end)
   const formatY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
 
   const [min, max] = yScale.domain()
