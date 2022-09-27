@@ -40,6 +40,7 @@ import BoldIcon from 'web/lib/icons/bold-icon'
 import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
+import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -107,6 +108,9 @@ export function useTextEditor(props: {
       }),
       Iframe,
       TiptapTweet,
+      TiptapSpoiler.configure({
+        spoilerOpenClass: 'rounded-sm bg-greyscale-2',
+      }),
     ],
     content: defaultValue,
   })
@@ -329,6 +333,11 @@ export function RichContent(props: {
       }),
       Iframe,
       TiptapTweet,
+      TiptapSpoiler.configure({
+        spoilerOpenClass: 'rounded-sm bg-greyscale-2 cursor-text',
+        spoilerCloseClass:
+          'rounded-sm bg-greyscale-6 text-greyscale-6 cursor-pointer select-none',
+      }),
     ],
     content,
     editable: false,
