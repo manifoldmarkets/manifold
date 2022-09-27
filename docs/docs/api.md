@@ -408,7 +408,7 @@ Requires no authorization.
   type FullMarket = LiteMarket & {
     bets: Bet[]
     comments: Comment[]
-    answers?: Answer[]
+    answers?: Answer[]  // dpm-2 markets only
     description: JSONContent // Rich text content. See https://tiptap.dev/guide/output#option-1-json
     textDescription: string // string description without formatting, images, or embeds
   }
