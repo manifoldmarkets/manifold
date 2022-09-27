@@ -68,10 +68,7 @@ export function ConfirmationButton(props: {
           </Row>
         </Col>
       </Modal>
-      <div
-        className={clsx('btn', openModalBtn.className)}
-        onClick={() => updateOpen(true)}
-      >
+      <div className={openModalBtn.className} onClick={() => updateOpen(true)}>
         {openModalBtn.icon}
         {openModalBtn.label}
       </div>
@@ -91,7 +88,7 @@ export function ResolveConfirmationButton(props: {
     <ConfirmationButton
       openModalBtn={{
         className: clsx(
-          'border-none self-start',
+          'btn border-none self-start',
           openModalButtonClass,
           isSubmitting && 'btn-disabled loading'
         ),

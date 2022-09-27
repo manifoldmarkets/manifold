@@ -35,6 +35,7 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
 import { SiteLink } from '../site-link'
 import { ProbChange } from './prob-change-table'
+import { ContractReportResolution } from './contract-report-resolution'
 
 export function ContractCard(props: {
   contract: Contract
@@ -213,17 +214,20 @@ export function BinaryResolutionOrChance(props: {
   return (
     <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
       {resolution ? (
-        <>
-          <div
-            className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
-          >
-            Resolved
+        <Row className="flex items-start">
+          <div>
+            <div
+              className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
+            >
+              Resolved
+            </div>
+            <BinaryContractOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+            />
           </div>
-          <BinaryContractOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-          />
-        </>
+          <ContractReportResolution contract={contract} />
+        </Row>
       ) : (
         <>
           {probAfter && probChanged ? (

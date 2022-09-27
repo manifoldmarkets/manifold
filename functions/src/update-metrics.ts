@@ -116,6 +116,25 @@ export async function updateMetricsCore() {
       lastPortfolio.investmentValue !== newPortfolio.investmentValue
 
     const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+    const contractRatios = userContracts
+      .map((contract) => {
+        if (
+          !contract.resolutionReports ||
+          contract.resolutionReports?.length === 0
+        ) {
+          return 0
+        }
+        const contractRatio =
+          contract.resolutionReports.length / (contract.uniqueBettorCount ?? 1)
+
+        return contractRatio
+      })
+      .filter((ratio) => ratio > 0)
+    const badResolutions = contractRatios.filter(
+      (ratio) => ratio > BAD_RESOLUTION_THRESHOLD
+    )
+    const newCorrectResolutionPercentage =
+      (userContracts.length - badResolutions.length) / userContracts.length
 
     return {
       user,
@@ -123,6 +142,7 @@ export async function updateMetricsCore() {
       newPortfolio,
       newProfit,
       didPortfolioChange,
+      newCorrectResolutionPercentage,
     }
   })
 
@@ -144,6 +164,7 @@ export async function updateMetricsCore() {
       newPortfolio,
       newProfit,
       didPortfolioChange,
+      newCorrectResolutionPercentage,
     }) => {
       const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
       return {
@@ -153,6 +174,7 @@ export async function updateMetricsCore() {
             creatorVolumeCached: newCreatorVolume,
             profitCached: newProfit,
             nextLoanCached,
+            correctResolutionPercentageCached: newCorrectResolutionPercentage,
           },
         },
 
@@ -224,3 +246,5 @@ const topUserScores = (scores: { [userId: string]: number }) => {
 }
 
 type GroupContractDoc = { contractId: string; createdTime: number }
+
+const BAD_RESOLUTION_THRESHOLD = 0.1
