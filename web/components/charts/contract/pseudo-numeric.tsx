@@ -11,14 +11,23 @@ import { MARGIN_X, MARGIN_Y, getDateRange } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
+// mqp: note that we have an idiosyncratic version of 'log scale'
+// contracts. the values are stored "linearly" and can include zero.
+// as a result, we have to do some weird-looking stuff in this code
+
 const getChartData = (
   contract: PseudoNumericContract,
   bets: Bet[],
   start: Date,
   end: Date
 ) => {
-  const { min, max } = contract
-  const getY = (p: number) => p * (max - min) + min
+  const { min, max, isLogScale } = contract
+  const getY = (p: number) =>
+    isLogScale
+      ? 10 ** (p * Math.log10(contract.max - contract.min + 1)) +
+        contract.min -
+        1
+      : p * (max - min) + min
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const startProb = getInitialProbability(contract)
   const endProb = getProbability(contract)
@@ -46,9 +55,14 @@ export const PseudoNumericContractChart = (props: {
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const scaleType = contract.isLogScale ? scaleLog : scaleLinear
   const xScale = scaleTime([start, end], [0, width - MARGIN_X])
-  const yScale = scaleType([contract.min, contract.max], [height - MARGIN_Y, 0])
+  const yScale = contract.isLogScale
+    ? scaleLog(
+        [Math.max(contract.min, 1), contract.max],
+        [height - MARGIN_Y, 0]
+      ).clamp(true) // make sure zeroes go to the bottom
+    : scaleLinear([contract.min, contract.max], [height - MARGIN_Y, 0])
+
   return (
     <div ref={containerRef}>
       {width && (

@@ -115,7 +115,7 @@ export const SingleValueDistributionChart = (props: {
     useState<PositionValue<DistributionPoint>>()
 
   const px = useCallback((p: DistributionPoint) => xScale(p[0]), [xScale])
-  const py0 = yScale(0)
+  const py0 = yScale(yScale.domain()[0])
   const py1 = useCallback((p: DistributionPoint) => yScale(p[1]), [yScale])
   const xBisector = bisector((p: DistributionPoint) => p[0])
 
@@ -209,11 +209,11 @@ export const MultiValueHistoryChart = (props: {
     const fmtY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
 
     const [min, max] = yScale.domain()
-    const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
     const xAxis = axisBottom<Date>(xScale)
-    const yAxis = axisLeft<number>(yScale)
-      .tickValues(tickValues)
-      .tickFormat(fmtY)
+    const yAxis = pct
+      ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(fmtY)
+      : axisLeft<number>(yScale)
 
     return { fmtX, fmtY, xAxis, yAxis }
   }, [h, pct, xScale, yScale])
@@ -311,7 +311,7 @@ export const SingleValueHistoryChart = (props: {
   const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint>>()
 
   const px = useCallback((p: HistoryPoint) => xScale(p[0]), [xScale])
-  const py0 = yScale(0)
+  const py0 = yScale(yScale.domain()[0])
   const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
   const xBisector = bisector((p: HistoryPoint) => p[0])
 
@@ -321,11 +321,11 @@ export const SingleValueHistoryChart = (props: {
     const fmtY = (n: number) => (pct ? formatPct(n, 0) : formatLargeNumber(n))
 
     const [min, max] = yScale.domain()
-    const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
     const xAxis = axisBottom<Date>(xScale)
-    const yAxis = axisLeft<number>(yScale)
-      .tickValues(tickValues)
-      .tickFormat(fmtY)
+    const yAxis = pct
+      ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(fmtY)
+      : axisLeft<number>(yScale)
     return { fmtX, fmtY, xAxis, yAxis }
   }, [h, pct, xScale, yScale])
 
