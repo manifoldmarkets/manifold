@@ -44,7 +44,7 @@ export default function DatePage(props: {
         <Row className="items-center justify-between">
           <Title className="!my-0 px-2 text-blue-500" text="Date docs" />
           {!hasDoc && (
-            <SiteLink href="/date/create" className="!no-underline">
+            <SiteLink href="/date-docs/create" className="!no-underline">
               <Button className="flex flex-row gap-1" color="blue">
                 <PlusCircleIcon
                   className={'h-5 w-5 flex-shrink-0 text-white'}

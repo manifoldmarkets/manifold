@@ -8,7 +8,6 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { useUser } from 'web/hooks/use-user'
 import { createPost } from 'web/lib/firebase/api'
-import { postPath } from 'web/lib/firebase/posts'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/button'
 import dayjs from 'dayjs'
@@ -68,7 +67,7 @@ export default function CreateDateDocPage() {
   }
 
   async function saveDateDoc() {
-    if (!editor || !birthdayTime) return
+    if (!user || !editor || !birthdayTime) return
 
     const newPost: Omit<
       DateDoc,
@@ -89,7 +88,7 @@ export default function CreateDateDocPage() {
       return e
     })
     if (result.post) {
-      await Router.push(postPath(result.post.slug))
+      await Router.push(`/date-docs/${user.username}`)
     }
   }
 
