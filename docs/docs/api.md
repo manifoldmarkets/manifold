@@ -55,6 +55,7 @@ Returns the authenticated user.
 Gets all groups, in no particular order.
 
 Parameters:
+
 - `availableToUserId`: Optional. if specified, only groups that the user can
   join and groups they've already joined will be returned.
 
@@ -80,7 +81,6 @@ Gets a group's markets by its unique ID.
 
 Requires no authorization.  
 Note: group is singular in the URL.
-
 
 ### `GET /v0/markets`
 
@@ -582,12 +582,17 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "initialProb":25}'
 ```
 
+### `POST /v0/market/[marketId]/add-liquidity`
+
+Adds a specified amount of liquidity into the market.
+
+- `amount`: Required. The amount of liquidity to add, in M$.
 
 ### `POST /v0/market/[marketId]/close`
 
 Closes a market on behalf of the authorized user.
-- `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in past.
 
+- `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in past.
 
 ### `POST /v0/market/[marketId]/resolve`
 
