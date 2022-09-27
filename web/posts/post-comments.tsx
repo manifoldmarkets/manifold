@@ -3,7 +3,6 @@ import { Editor } from '@tiptap/core'
 import clsx from 'clsx'
 import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
-import { User } from 'common/user'
 import { Dictionary } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -21,7 +20,6 @@ import { createCommentOnPost } from 'web/lib/firebase/comments'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 export function PostCommentThread(props: {
-  user: User | null | undefined
   post: Post
   threadComments: PostComment[]
   tips: CommentTipMap
