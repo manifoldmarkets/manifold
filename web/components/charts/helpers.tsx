@@ -1,6 +1,16 @@
-import { ReactNode, SVGProps, memo, useRef, useEffect } from 'react'
-import { Axis, CurveFactory, area, curveStepAfter, line, select } from 'd3'
+import { ReactNode, SVGProps, memo, useRef, useEffect, useMemo } from 'react'
+import {
+  Axis,
+  CurveFactory,
+  D3BrushEvent,
+  area,
+  brushX,
+  curveStepAfter,
+  line,
+  select,
+} from 'd3'
 import dayjs from 'dayjs'
+import { nanoid } from 'nanoid'
 
 import { Contract } from 'common/contract'
 
@@ -14,8 +24,11 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
+        .transition()
+        .duration(250)
         .call(axis)
-        .call((g) => g.select('.domain').remove())
+        .select('.domain')
+        .attr('stroke-width', 0)
     }
   }, [h, axis])
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
@@ -27,11 +40,14 @@ export const YAxis = <Y,>(props: { w: number; h: number; axis: Axis<Y> }) => {
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
+        .transition()
+        .duration(250)
         .call(axis)
-        .call((g) => g.select('.domain').remove())
         .call((g) =>
           g.selectAll('.tick line').attr('x2', w).attr('stroke-opacity', 0.1)
         )
+        .select('.domain')
+        .attr('stroke-width', 0)
     }
   }, [w, h, axis])
   return <g ref={axisRef} />
@@ -99,20 +115,53 @@ export const SVGChart = <X, Y>(props: {
   h: number
   xAxis: Axis<X>
   yAxis: Axis<Y>
+  onSelect?: (ev: D3BrushEvent<any>) => void
   onMouseOver?: (ev: React.PointerEvent) => void
   onMouseLeave?: (ev: React.PointerEvent) => void
   pct?: boolean
 }) => {
-  const { children, w, h, xAxis, yAxis, onMouseOver, onMouseLeave } = props
+  const { children, w, h, xAxis, yAxis, onMouseOver, onMouseLeave, onSelect } =
+    props
+  const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - MARGIN_X
   const innerH = h - MARGIN_Y
+  const clipPathId = useMemo(() => nanoid(), [])
+
+  const justSelected = useRef(false)
+  useEffect(() => {
+    if (onSelect != null && overlayRef.current) {
+      const brush = brushX().extent([
+        [0, 0],
+        [innerW, innerH],
+      ])
+      brush.on('end', (ev) => {
+        // when we clear the brush after a selection, that would normally cause
+        // another 'end' event, so we have to suppress it with this flag
+        if (!justSelected.current) {
+          justSelected.current = true
+          onSelect(ev)
+          if (overlayRef.current) {
+            select(overlayRef.current).call(brush.clear)
+          }
+        } else {
+          justSelected.current = false
+        }
+      })
+      select(overlayRef.current).call(brush)
+    }
+  }, [innerW, innerH, onSelect])
+
   return (
     <svg className="w-full" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <clipPath id={clipPathId}>
+        <rect x={0} y={0} width={innerW} height={innerH} />
+      </clipPath>
       <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
         <XAxis axis={xAxis} w={innerW} h={innerH} />
         <YAxis axis={yAxis} w={innerW} h={innerH} />
-        {children}
-        <rect
+        <g clipPath={`url(#${clipPathId})`}>{children}</g>
+        <g
+          ref={overlayRef}
           x="0"
           y="0"
           width={innerW}

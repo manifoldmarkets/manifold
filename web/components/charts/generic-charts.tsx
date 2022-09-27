@@ -8,6 +8,7 @@ import {
   pointer,
   stack,
   stackOrderReverse,
+  D3BrushEvent,
   ScaleTime,
   ScaleContinuousNumeric,
   SeriesPoint,
@@ -105,7 +106,11 @@ export const SingleValueDistributionChart = (props: {
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
 }) => {
-  const { color, data, xScale, yScale, w, h } = props
+  const { color, data, yScale, w, h } = props
+
+  // note that we have to type this funkily in order to succesfully store
+  // a function inside of useState
+  const [xScale, setXScale] = useState(() => props.xScale)
   const [mouseState, setMouseState] =
     useState<PositionValue<DistributionPoint>>()
 
@@ -121,6 +126,19 @@ export const SingleValueDistributionChart = (props: {
     const yAxis = axisLeft<number>(yScale).tickFormat(fmtY)
     return { fmtX, fmtY, xAxis, yAxis }
   }, [xScale, yScale])
+
+  const onSelect = useEvent((ev: D3BrushEvent<DistributionPoint>) => {
+    if (ev.selection) {
+      const [mouseX0, mouseX1] = ev.selection as [number, number]
+      setXScale(() =>
+        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
+      )
+      setMouseState(undefined)
+    } else {
+      setXScale(() => props.xScale)
+      setMouseState(undefined)
+    }
+  })
 
   const onMouseOver = useEvent((event: React.PointerEvent) => {
     const [mouseX, mouseY] = pointer(event)
@@ -145,6 +163,7 @@ export const SingleValueDistributionChart = (props: {
         h={h}
         xAxis={xAxis}
         yAxis={yAxis}
+        onSelect={onSelect}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
       >
@@ -171,7 +190,11 @@ export const MultiValueHistoryChart = (props: {
   yScale: ScaleContinuousNumeric<number, number>
   pct?: boolean
 }) => {
-  const { colors, data, xScale, yScale, labels, w, h, pct } = props
+  const { colors, data, yScale, labels, w, h, pct } = props
+
+  // note that we have to type this funkily in order to succesfully store
+  // a function inside of useState
+  const [xScale, setXScale] = useState(() => props.xScale)
   const [mouseState, setMouseState] = useState<PositionValue<MultiPoint>>()
 
   type SP = SeriesPoint<MultiPoint>
@@ -187,7 +210,7 @@ export const MultiValueHistoryChart = (props: {
 
     const [min, max] = yScale.domain()
     const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
-    const xAxis = axisBottom<Date>(xScale).tickFormat(fmtX)
+    const xAxis = axisBottom<Date>(xScale)
     const yAxis = axisLeft<number>(yScale)
       .tickValues(tickValues)
       .tickFormat(fmtY)
@@ -199,6 +222,19 @@ export const MultiValueHistoryChart = (props: {
     const series = d3Stack(data)
     return { fmtX, fmtY, xAxis, yAxis, series }
   }, [h, pct, xScale, yScale, data, labels.length])
+
+  const onSelect = useEvent((ev: D3BrushEvent<MultiPoint>) => {
+    if (ev.selection) {
+      const [mouseX0, mouseX1] = ev.selection as [number, number]
+      setXScale(() =>
+        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
+      )
+      setMouseState(undefined)
+    } else {
+      setXScale(() => props.xScale)
+      setMouseState(undefined)
+    }
+  })
 
   const onMouseOver = useEvent((event: React.PointerEvent) => {
     const [mouseX, mouseY] = pointer(event)
@@ -231,6 +267,7 @@ export const MultiValueHistoryChart = (props: {
         h={h}
         xAxis={xAxis}
         yAxis={yAxis}
+        onSelect={onSelect}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
       >
@@ -259,12 +296,17 @@ export const SingleValueHistoryChart = (props: {
   yScale: d3.ScaleContinuousNumeric<number, number>
   pct?: boolean
 }) => {
-  const { color, data, xScale, yScale, pct, w, h } = props
+  const { color, data, pct, yScale, w, h } = props
+
+  // note that we have to type this funkily in order to succesfully store
+  // a function inside of useState
+  const [xScale, setXScale] = useState(() => props.xScale)
   const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint>>()
 
   const px = useCallback((p: HistoryPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(0)
   const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
+  const xBisector = bisector((p: HistoryPoint) => p[0])
 
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const [start, end] = xScale.domain()
@@ -273,16 +315,28 @@ export const SingleValueHistoryChart = (props: {
 
     const [min, max] = yScale.domain()
     const tickValues = getTickValues(min, max, h < 200 ? 3 : 5)
-    const xAxis = axisBottom<Date>(xScale).tickFormat(fmtX)
+    const xAxis = axisBottom<Date>(xScale)
     const yAxis = axisLeft<number>(yScale)
       .tickValues(tickValues)
       .tickFormat(fmtY)
     return { fmtX, fmtY, xAxis, yAxis }
   }, [h, pct, xScale, yScale])
 
-  const xBisector = bisector((p: HistoryPoint) => p[0])
-  const onMouseOver = useEvent((event: React.PointerEvent) => {
-    const [mouseX, mouseY] = pointer(event)
+  const onSelect = useEvent((ev: D3BrushEvent<HistoryPoint>) => {
+    if (ev.selection) {
+      const [mouseX0, mouseX1] = ev.selection as [number, number]
+      setXScale(() =>
+        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
+      )
+      setMouseState(undefined)
+    } else {
+      setXScale(() => props.xScale)
+      setMouseState(undefined)
+    }
+  })
+
+  const onMouseOver = useEvent((ev: React.PointerEvent) => {
+    const [mouseX, mouseY] = pointer(ev)
     const queryX = xScale.invert(mouseX)
     const [_x, y] = data[xBisector.center(data, queryX)]
     setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
@@ -304,6 +358,7 @@ export const SingleValueHistoryChart = (props: {
         h={h}
         xAxis={xAxis}
         yAxis={yAxis}
+        onSelect={onSelect}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
       >
