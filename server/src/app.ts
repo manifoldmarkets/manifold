@@ -73,28 +73,25 @@ export default class App {
     this.unfeatureCurrentMarket(channel, sourceDock);
 
     if (id) {
-      if (sourceDock) {
-        sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-      } else {
-        this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-      }
-
       const marketData = await Manifold.getFullMarketByID(id);
       if (!marketData || marketData.isResolved) throw new Error('Attempted to feature invalid market');
       const market = new Market(this, marketData, channel);
       await market.load();
       this.selectedMarketMap[channel] = market;
       log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
+      const selectMarketPacket: PacketSelectMarket = { ...market.data, initialBets: market.allBets.slice(market.allBets.length - 3) };
       if (sourceDock) {
-        sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET, market.data as PacketSelectMarket);
+        sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+        sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
       } else {
-        this.io.to(channel).emit(Packet.SELECT_MARKET, market.data as PacketSelectMarket);
+        this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+        this.io.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
       }
       return market;
     }
   }
 
-  public async unfeatureCurrentMarket(channel: string, sourceDock?: DockClient) {
+  public unfeatureCurrentMarket(channel: string, sourceDock?: DockClient) {
     if (this.autoUnfeatureTimers[channel]) {
       clearTimeout(this.autoUnfeatureTimers[channel]);
       delete this.autoUnfeatureTimers[channel];

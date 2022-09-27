@@ -39,8 +39,6 @@ class Application {
 
   currentMarket: Manifold.FullMarket = null;
 
-  betsToAddOnceLoadedHistory: FullBet[];
-
   constructor() {
     this.transactionTemplate = document.getElementById('transaction-template');
     this.transactionTemplate.removeAttribute('id');
@@ -79,9 +77,9 @@ class Application {
       this.resetUI();
     });
     this.socket.on('connect', () => {
-      console.log(`Using transport: ${this.socket.io.engine.transport.name}`);
+      console.debug(`Using transport: ${this.socket.io.engine.transport.name}`);
       this.socket.io.engine.on('upgrade', () => {
-        console.log(`Upgraded transport: ${this.socket.io.engine.transport.name}`);
+        console.debug(`Upgraded transport: ${this.socket.io.engine.transport.name}`);
       });
     });
   }
@@ -93,12 +91,10 @@ class Application {
       b?.element?.remove();
     });
     this.betElements = [];
-
-    this.betsToAddOnceLoadedHistory = [];
   }
 
-  loadMarket(market: Manifold.FullMarket) {
-    this.currentMarket = market;
+  loadMarket(p: PacketSelectMarket) {
+    this.currentMarket = { ...p };
 
     const questionLength = this.currentMarket.question.length;
     const questionDiv = document.getElementById('question');
@@ -113,16 +109,16 @@ class Application {
     this.currentProbability_percent = this.currentMarket.probability * 100;
     this.animatedProbability_percent = this.currentProbability_percent;
 
-    this.loadBettingHistory();
+    this.loadBettingHistory(p);
 
     setTimeout(() => this.chart.resize(), 50);
   }
 
-  loadBettingHistory() {
+  loadBettingHistory(p: PacketSelectMarket) {
     const data: Point[] = [];
     // Bets are stored oldest-first:
     data.push(new Point(Date.now() - 1e9, 0.5));
-    if (this.currentMarket.bets.length > 0) {
+    if (p.bets.length > 0) {
       for (const bet of this.currentMarket.bets) {
         data.push(new Point(bet.createdTime, bet.probBefore));
         data.push(new Point(bet.createdTime, bet.probAfter));
@@ -130,7 +126,7 @@ class Application {
     }
     this.chart.data = data;
 
-    for (const bet of (this.currentMarket as PacketSelectMarket).initialBets) {
+    for (const bet of p.initialBets) {
       this.addBet(bet, false);
     }
   }

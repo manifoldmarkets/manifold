@@ -1,14 +1,14 @@
 import { Socket } from 'socket.io';
 
-import * as Packet from 'common/packet-ids';
 import { getOutcomeForString } from 'common/outcome';
+import * as Packet from 'common/packet-ids';
 
+import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
 import App from '../app';
+import { MANIFOLD_API_BASE_URL } from '../envs';
+import log from '../logger';
 import * as ManifoldAPI from '../manifold-api';
 import User from '../user';
-import log from '../logger';
-import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
-import { MANIFOLD_API_BASE_URL } from '../envs';
 
 export default class DockClient {
   readonly socket: Socket;
