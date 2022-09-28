@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { last, sum, sortBy, groupBy } from 'lodash'
-import { scaleTime, scaleLinear } from 'd3'
+import { scaleTime, scaleLinear } from 'd3-scale'
 
 import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'

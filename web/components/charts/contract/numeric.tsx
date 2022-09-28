@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { max, range } from 'lodash'
-import { scaleLinear } from 'd3'
+import { scaleLinear } from 'd3-scale'
 
 import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
 import { NumericContract } from 'common/contract'

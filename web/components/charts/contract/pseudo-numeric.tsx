@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { last, sortBy } from 'lodash'
-import { scaleTime, scaleLog, scaleLinear } from 'd3'
+import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
