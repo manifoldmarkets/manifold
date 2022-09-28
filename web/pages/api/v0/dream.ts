@@ -44,12 +44,12 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
   noStore: boolean
   imagePrompt: {mime: string; content: Buffer} | null
   stepSchedule: {start?: number; end?: number}
-   */
+  */
 
   try {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    const { dreamResponse, images } = await generateAsync({
+    const { _dreamResponse, images } = await generateAsync({
       ...body,
       // Don't actually write to disk, because we're going to upload it to Firestore
       noStore: true,
@@ -59,7 +59,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
     res.status(200).json({ url })
   } catch (e) {
-    res.status(500).json({ message: `Error running code: ${e}` })
+    res.status(501).json({ message: `Error running code: ${e}` })
   }
 }
 
