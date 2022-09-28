@@ -10,7 +10,6 @@ import {
   select,
 } from 'd3'
 import { nanoid } from 'nanoid'
-import dayjs from 'dayjs'
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
@@ -202,9 +201,5 @@ export const getDateRange = (contract: Contract) => {
   const now = Date.now()
   const isClosed = !!closeTime && now > closeTime
   const endDate = resolutionTime ?? (isClosed ? closeTime : now)
-  // the graph should be minimum an hour wide
-  const adjustedEndDate = dayjs(createdTime).add(1, 'hour').isAfter(endDate)
-    ? dayjs(endDate).add(1, 'hours')
-    : dayjs(endDate)
-  return [new Date(createdTime), adjustedEndDate.toDate()] as const
+  return [new Date(createdTime), new Date(endDate)] as const
 }

@@ -10,20 +10,18 @@ import { MARGIN_X, MARGIN_Y, getDateRange } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
-const getChartData = (
-  contract: BinaryContract,
-  bets: Bet[],
-  start: Date,
-  end: Date
-) => {
-  const sortedBets = sortBy(bets, (b) => b.createdTime)
-  const startProb = getInitialProbability(contract)
-  const endProb = getProbability(contract)
-  return [
-    [start, startProb] as const,
-    ...sortedBets.map((b) => [new Date(b.createdTime), b.probAfter] as const),
-    [end, endProb] as const,
-  ]
+const getBetPoints = (bets: Bet[]) => {
+  return sortBy(bets, (b) => b.createdTime).map(
+    (b) => [new Date(b.createdTime), b.probAfter] as const
+  )
+}
+
+const getStartPoint = (contract: BinaryContract, start: Date) => {
+  return [start, getInitialProbability(contract)] as const
+}
+
+const getEndPoint = (contract: BinaryContract, end: Date) => {
+  return [end, getProbability(contract)] as const
 }
 
 export const BinaryContractChart = (props: {
@@ -32,10 +30,15 @@ export const BinaryContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [start, end] = useMemo(() => getDateRange(contract), [contract])
+  const [start, end] = getDateRange(contract)
+  const betPoints = useMemo(() => getBetPoints(bets), [bets])
   const data = useMemo(
-    () => getChartData(contract, bets, start, end),
-    [contract, bets, start, end]
+    () => [
+      getStartPoint(contract, start),
+      ...betPoints,
+      getEndPoint(contract, end),
+    ],
+    [contract, betPoints, start, end]
   )
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)

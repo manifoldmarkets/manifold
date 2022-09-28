@@ -3,6 +3,7 @@ import { sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3'
 
 import { Bet } from 'common/bet'
+import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -68,35 +69,45 @@ const CATEGORY_COLORS = [
   '#70a560',
 ]
 
-const getMultiChartData = (
+const getTrackedAnswers = (
   contract: FreeResponseContract | MultipleChoiceContract,
-  bets: Bet[],
-  start: Date,
-  end: Date,
   topN: number
 ) => {
-  const { answers, totalBets, outcomeType } = contract
-
-  const sortedBets = sortBy(bets, (b) => b.createdTime)
-  const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
+  const { answers, outcomeType, totalBets } = contract
   const validAnswers = answers.filter((answer) => {
     return (
       (answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE') &&
       totalBets[answer.id] > 0.000000001
     )
   })
-
-  const trackedAnswers = sortBy(
+  return sortBy(
     validAnswers,
     (answer) => -1 * getOutcomeProbability(contract, answer.id)
   ).slice(0, topN)
+}
 
-  const points: MultiPoint[] = []
+const getStartPoint = (answers: Answer[], start: Date) => {
+  return [start, answers.map((_) => 0)] as const
+}
 
+const getEndPoint = (
+  answers: Answer[],
+  contract: FreeResponseContract | MultipleChoiceContract,
+  end: Date
+) => {
+  return [
+    end,
+    answers.map((a) => getOutcomeProbability(contract, a.id)),
+  ] as const
+}
+
+const getBetPoints = (answers: Answer[], bets: Bet[]) => {
+  const sortedBets = sortBy(bets, (b) => b.createdTime)
+  const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
     Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
   )
-
+  const points: MultiPoint[] = []
   for (const bet of sortedBets) {
     const { outcome, shares } = bet
     sharesByOutcome[outcome] += shares
@@ -106,26 +117,10 @@ const getMultiChartData = (
     )
     points.push([
       new Date(bet.createdTime),
-      trackedAnswers.map(
-        (answer) => sharesByOutcome[answer.id] ** 2 / sharesSquared
-      ),
+      answers.map((answer) => sharesByOutcome[answer.id] ** 2 / sharesSquared),
     ])
   }
-
-  const allPoints: MultiPoint[] = [
-    [start, trackedAnswers.map((_) => 0)],
-    ...points,
-    [
-      end,
-      trackedAnswers.map((answer) =>
-        getOutcomeProbability(contract, answer.id)
-      ),
-    ],
-  ]
-  return {
-    points: allPoints,
-    labels: trackedAnswers.map((answer) => answer.text),
-  }
+  return points
 }
 
 export const ChoiceContractChart = (props: {
@@ -134,10 +129,19 @@ export const ChoiceContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [start, end] = useMemo(() => getDateRange(contract), [contract])
+  const [start, end] = getDateRange(contract)
+  const answers = useMemo(
+    () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
+    [contract]
+  )
+  const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
-    () => getMultiChartData(contract, bets, start, end, CATEGORY_COLORS.length),
-    [contract, bets, start, end]
+    () => [
+      getStartPoint(answers, start),
+      ...betPoints,
+      getEndPoint(answers, contract, end),
+    ],
+    [answers, contract, betPoints, start, end]
   )
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -153,9 +157,9 @@ export const ChoiceContractChart = (props: {
           h={height}
           xScale={xScale}
           yScale={yScale}
-          data={data.points}
+          data={data}
           colors={CATEGORY_COLORS}
-          labels={data.labels}
+          labels={answers.map((answer) => answer.text)}
           pct
         />
       )}

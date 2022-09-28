@@ -15,29 +15,25 @@ import { useElementWidth } from 'web/hooks/use-element-width'
 // contracts. the values are stored "linearly" and can include zero.
 // as a result, we have to do some weird-looking stuff in this code
 
-const getChartData = (
-  contract: PseudoNumericContract,
-  bets: Bet[],
-  start: Date,
-  end: Date
-) => {
+const getY = (p: number, contract: PseudoNumericContract) => {
   const { min, max, isLogScale } = contract
-  const getY = (p: number) =>
-    isLogScale
-      ? 10 ** (p * Math.log10(contract.max - contract.min + 1)) +
-        contract.min -
-        1
-      : p * (max - min) + min
-  const sortedBets = sortBy(bets, (b) => b.createdTime)
-  const startProb = getInitialProbability(contract)
-  const endProb = getProbability(contract)
-  return [
-    [start, getY(startProb)] as const,
-    ...sortedBets.map(
-      (b) => [new Date(b.createdTime), getY(b.probAfter)] as const
-    ),
-    [end, getY(endProb)] as const,
-  ]
+  return isLogScale
+    ? 10 ** (p * Math.log10(max - min + 1)) + min - 1
+    : p * (max - min) + min
+}
+
+const getBetPoints = (contract: PseudoNumericContract, bets: Bet[]) => {
+  return sortBy(bets, (b) => b.createdTime).map(
+    (b) => [new Date(b.createdTime), getY(b.probAfter, contract)] as const
+  )
+}
+
+const getStartPoint = (contract: PseudoNumericContract, start: Date) => {
+  return [start, getY(getInitialProbability(contract), contract)] as const
+}
+
+const getEndPoint = (contract: PseudoNumericContract, end: Date) => {
+  return [end, getY(getProbability(contract), contract)] as const
 }
 
 export const PseudoNumericContractChart = (props: {
@@ -46,10 +42,18 @@ export const PseudoNumericContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [start, end] = useMemo(() => getDateRange(contract), [contract])
+  const [start, end] = getDateRange(contract)
+  const betPoints = useMemo(
+    () => getBetPoints(contract, bets),
+    [contract, bets]
+  )
   const data = useMemo(
-    () => getChartData(contract, bets, start, end),
-    [contract, bets, start, end]
+    () => [
+      getStartPoint(contract, start),
+      ...betPoints,
+      getEndPoint(contract, end),
+    ],
+    [contract, betPoints, start, end]
   )
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)

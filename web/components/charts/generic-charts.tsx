@@ -110,9 +110,11 @@ export const SingleValueDistributionChart = (props: {
 
   // note that we have to type this funkily in order to succesfully store
   // a function inside of useState
-  const [xScale, setXScale] = useState(() => props.xScale)
+  const [viewXScale, setViewXScale] =
+    useState<ScaleContinuousNumeric<number, number>>()
   const [mouseState, setMouseState] =
     useState<PositionValue<DistributionPoint>>()
+  const xScale = viewXScale ?? props.xScale
 
   const px = useCallback((p: DistributionPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(yScale.domain()[0])
@@ -130,12 +132,12 @@ export const SingleValueDistributionChart = (props: {
   const onSelect = useEvent((ev: D3BrushEvent<DistributionPoint>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
-      setXScale(() =>
+      setViewXScale(() =>
         xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
       )
       setMouseState(undefined)
     } else {
-      setXScale(() => props.xScale)
+      setViewXScale(undefined)
       setMouseState(undefined)
     }
   })
@@ -194,10 +196,9 @@ export const MultiValueHistoryChart = (props: {
 }) => {
   const { colors, data, yScale, labels, w, h, pct } = props
 
-  // note that we have to type this funkily in order to succesfully store
-  // a function inside of useState
-  const [xScale, setXScale] = useState(() => props.xScale)
+  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const [mouseState, setMouseState] = useState<PositionValue<MultiPoint>>()
+  const xScale = viewXScale ?? props.xScale
 
   type SP = SeriesPoint<MultiPoint>
   const px = useCallback((p: SP) => xScale(p.data[0]), [xScale])
@@ -231,12 +232,12 @@ export const MultiValueHistoryChart = (props: {
   const onSelect = useEvent((ev: D3BrushEvent<MultiPoint>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
-      setXScale(() =>
+      setViewXScale(() =>
         xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
       )
       setMouseState(undefined)
     } else {
-      setXScale(() => props.xScale)
+      setViewXScale(undefined)
       setMouseState(undefined)
     }
   })
@@ -303,16 +304,15 @@ export const SingleValueHistoryChart = (props: {
   w: number
   h: number
   color: string
-  xScale: d3.ScaleTime<number, number>
-  yScale: d3.ScaleContinuousNumeric<number, number>
+  xScale: ScaleTime<number, number>
+  yScale: ScaleContinuousNumeric<number, number>
   pct?: boolean
 }) => {
   const { color, data, pct, yScale, w, h } = props
 
-  // note that we have to type this funkily in order to succesfully store
-  // a function inside of useState
-  const [xScale, setXScale] = useState(() => props.xScale)
+  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint>>()
+  const xScale = viewXScale ?? props.xScale
 
   const px = useCallback((p: HistoryPoint) => xScale(p[0]), [xScale])
   const py0 = yScale(yScale.domain()[0])
@@ -336,12 +336,12 @@ export const SingleValueHistoryChart = (props: {
   const onSelect = useEvent((ev: D3BrushEvent<HistoryPoint>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
-      setXScale(() =>
+      setViewXScale(() =>
         xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
       )
       setMouseState(undefined)
     } else {
-      setXScale(() => props.xScale)
+      setViewXScale(undefined)
       setMouseState(undefined)
     }
   })
