@@ -43,14 +43,18 @@ const formatDate = (
   const { includeYear, includeHour, includeMinute } = opts
   const d = dayjs(date)
   const now = Date.now()
-  if (d.add(1, 'minute').isAfter(now) && d.subtract(1, 'minute').isBefore(now))
+  if (
+    d.add(1, 'minute').isAfter(now) &&
+    d.subtract(1, 'minute').isBefore(now)
+  ) {
     return 'Now'
-  if (d.isSame(now, 'day')) {
-    return '[Today]'
-  } else if (d.add(1, 'day').isSame(now, 'day')) {
-    return '[Yesterday]'
   } else {
-    let format = 'MMM D'
+    const dayName = d.isSame(now, 'day')
+      ? 'Today'
+      : d.add(1, 'day').isSame(now, 'day')
+      ? 'Yesterday'
+      : null
+    let format = dayName ? `[${dayName}]` : 'MMM D'
     if (includeMinute) {
       format += ', h:mma'
     } else if (includeHour) {
