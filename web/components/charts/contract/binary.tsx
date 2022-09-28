@@ -60,7 +60,7 @@ export const BinaryContractChart = (props: {
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>
-      {width && (
+      {width > 0 && (
         <SingleValueHistoryChart
           w={width}
           h={height}
