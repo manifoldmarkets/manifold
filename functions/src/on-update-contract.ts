@@ -40,6 +40,11 @@ export const onUpdateContract = functions.firestore
       )
       if (toBank.length <= fromBank.length) return
 
+      await firestore
+        .collection('contracts')
+        .doc(contract.id)
+        .update({ openCommentBounties: 0 })
+
       const refunds = toBank.slice(fromBank.length)
       await Promise.all(
         refunds.map(async (extraBountyTxn) => {

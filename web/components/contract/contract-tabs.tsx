@@ -50,9 +50,11 @@ export function ContractTabs(props: {
     {
       title: `Comments`,
       tooltip: openCommentBounties
-        ? `The creator of this market will award bounties of ${formatMoney(
+        ? `The creator of this market may award ${formatMoney(
             COMMENT_BOUNTY_AMOUNT
-          )} to good comments`
+          )} for good comments. ${formatMoney(
+            openCommentBounties
+          )} currently available.`
         : undefined,
       content: <CommentsTabContent contract={contract} />,
       inlineTabIcon: <span>({formatMoney(COMMENT_BOUNTY_AMOUNT)})</span>,

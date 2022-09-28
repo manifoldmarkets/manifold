@@ -15,6 +15,7 @@ export function AddCommentBountyPanel(props: { contract: Contract }) {
 
   const user = useUser()
   const amount = COMMENT_BOUNTY_AMOUNT
+  const totalAdded = contract.openCommentBounties ?? 0
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -43,7 +44,8 @@ export function AddCommentBountyPanel(props: { contract: Contract }) {
     <>
       <div className="mb-4 text-gray-500">
         Add a {formatMoney(amount)} bounty for good comments that the creator
-        can award.
+        can award.{' '}
+        {totalAdded > 0 && `(${formatMoney(totalAdded)} currently added)`}
       </div>
 
       <Row className={'items-center gap-2'}>
