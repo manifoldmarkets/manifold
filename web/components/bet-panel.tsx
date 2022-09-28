@@ -415,20 +415,23 @@ export function BuyPanel(props: {
         >
           Advanced
         </button>
-        <Modal open={seeLimit} setOpen={setSeeLimit} position="center">
-          <Col className="rounded-lg bg-white px-4 pb-4">
-            <Title text="Limit Order" />
-            <LimitOrderPanel
-              hidden={!seeLimit}
-              contract={contract}
-              user={user}
-              unfilledBets={unfilledBets}
-            />
-          </Col>
+        <Modal
+          open={seeLimit}
+          setOpen={setSeeLimit}
+          position="center"
+          className="rounded-lg bg-white px-4 pb-4"
+        >
+          <Title text="Limit Order" />
+          <LimitOrderPanel
+            hidden={!seeLimit}
+            contract={contract}
+            user={user}
+            unfilledBets={unfilledBets}
+          />
           <LimitBets
             contract={contract}
             bets={unfilledBets as LimitBet[]}
-            className="mt-2 rounded-lg bg-white px-4 pb-4"
+            className="mt-4"
           />
         </Modal>
       </Col>
