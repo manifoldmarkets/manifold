@@ -205,3 +205,18 @@ export const getDateRange = (contract: Contract) => {
   const endDate = resolutionTime ?? (isClosed ? closeTime : null)
   return [new Date(createdTime), endDate ? new Date(endDate) : null] as const
 }
+
+export const getRightmostVisibleDate = (
+  contractEnd: Date | null | undefined,
+  lastActivity: Date | null | undefined,
+  now: Date
+) => {
+  if (contractEnd != null) {
+    return contractEnd
+  } else if (lastActivity != null) {
+    // client-DB clock divergence may cause last activity to be later than now
+    return new Date(Math.max(lastActivity.getTime(), now.getTime()))
+  } else {
+    return now
+  }
+}

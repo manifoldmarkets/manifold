@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react'
-import { sum, sortBy, groupBy } from 'lodash'
+import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3'
 
 import { Bet } from 'common/bet'
@@ -7,7 +7,13 @@ import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MARGIN_X, MARGIN_Y, MAX_DATE, getDateRange } from '../helpers'
+import {
+  MARGIN_X,
+  MARGIN_Y,
+  MAX_DATE,
+  getDateRange,
+  getRightmostVisibleDate,
+} from '../helpers'
 import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
@@ -143,8 +149,12 @@ export const ChoiceContractChart = (props: {
     ],
     [answers, contract, betPoints, contractStart, contractEnd]
   )
-  const visibleRange = [contractStart, contractEnd ?? Date.now()]
-
+  const rightmostDate = getRightmostVisibleDate(
+    contractEnd,
+    last(betPoints)?.[0],
+    new Date(Date.now())
+  )
+  const visibleRange = [contractStart, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
