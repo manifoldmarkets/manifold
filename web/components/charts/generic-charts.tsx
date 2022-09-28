@@ -150,7 +150,13 @@ export const SingleValueDistributionChart = (props: {
     if (ev.pointerType === 'mouse') {
       const [mouseX, mouseY] = pointer(ev)
       const queryX = xScale.invert(mouseX)
-      const [_x, y] = data[xBisector.center(data, queryX)]
+      const item = data[xBisector.left(data, queryX) - 1]
+      if (item == null) {
+        // this can happen if you are on the very left or right edge of the chart,
+        // so your queryX is out of bounds
+        return
+      }
+      const [_x, y] = item
       setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
     }
   })
@@ -250,7 +256,13 @@ export const MultiValueHistoryChart = (props: {
     if (ev.pointerType === 'mouse') {
       const [mouseX, mouseY] = pointer(ev)
       const queryX = xScale.invert(mouseX)
-      const [_x, ys] = data[xBisector.left(data, queryX) - 1]
+      const item = data[xBisector.left(data, queryX) - 1]
+      if (item == null) {
+        // this can happen if you are on the very left or right edge of the chart,
+        // so your queryX is out of bounds
+        return
+      }
+      const [_x, ys] = item
       setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, ys] })
     }
   })
@@ -354,7 +366,13 @@ export const SingleValueHistoryChart = (props: {
     if (ev.pointerType === 'mouse') {
       const [mouseX, mouseY] = pointer(ev)
       const queryX = xScale.invert(mouseX)
-      const [_x, y] = data[xBisector.left(data, queryX) - 1]
+      const item = data[xBisector.left(data, queryX) - 1]
+      if (item == null) {
+        // this can happen if you are on the very left or right edge of the chart,
+        // so your queryX is out of bounds
+        return
+      }
+      const [_x, y] = item
       setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
     }
   })
