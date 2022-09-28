@@ -41,6 +41,10 @@ export function LiquidityBountyPanel(props: { contract: Contract }) {
   return (
     <Tabs
       tabs={buildArray(
+        {
+          title: 'Bounty Comments',
+          content: <AddCommentBountyPanel contract={contract} />,
+        },
         (isCreator || isAdmin) &&
           isCPMM && {
             title: (isAdmin ? '[Admin] ' : '') + 'Subsidize',
@@ -56,10 +60,7 @@ export function LiquidityBountyPanel(props: { contract: Contract }) {
               />
             ),
           },
-        {
-          title: 'Bounty Comments',
-          content: <AddCommentBountyPanel contract={contract} />,
-        },
+
         isCPMM && {
           title: 'Pool',
           content: <ViewLiquidityPanel contract={contract} />,

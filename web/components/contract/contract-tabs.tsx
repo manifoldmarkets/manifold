@@ -28,6 +28,7 @@ import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/button'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
+import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -53,7 +54,9 @@ export function ContractTabs(props: {
           : ''
       }`,
       tooltip: openCommentBounties
-        ? 'The creator of this market will award bounties to good comments'
+        ? `The creator of this market will award bounties of ${formatMoney(
+            COMMENT_BOUNTY_AMOUNT
+          )} to good comments`
         : undefined,
       content: <CommentsTabContent contract={contract} />,
     },
