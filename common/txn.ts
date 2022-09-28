@@ -8,6 +8,7 @@ type AnyTxnType =
   | UniqueBettorBonus
   | BettingStreakBonus
   | CancelUniqueBettorBonus
+  | CommentBountyRefund
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -32,6 +33,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'BETTING_STREAK_BONUS'
     | 'CANCEL_UNIQUE_BETTOR_BONUS'
     | 'COMMENT_BOUNTY'
+    | 'REFUND_COMMENT_BOUNTY'
 
   // Any extra data
   data?: { [key: string]: any }
@@ -115,6 +117,15 @@ type CommentBountyWithdrawal = {
   data: {
     contractId: string
     commentId: string
+  }
+}
+
+type CommentBountyRefund = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'REFUND_COMMENT_BOUNTY'
+  data: {
+    contractId: string
   }
 }
 

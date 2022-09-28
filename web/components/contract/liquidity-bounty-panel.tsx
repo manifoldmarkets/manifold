@@ -36,8 +36,6 @@ export function LiquidityBountyPanel(props: { contract: Contract }) {
   const isCreator = user?.id === contract.creatorId
   const isAdmin = useAdmin()
 
-  if (!showWithdrawal && !isAdmin && !isCreator) return <></>
-
   return (
     <Tabs
       tabs={buildArray(
@@ -61,10 +59,11 @@ export function LiquidityBountyPanel(props: { contract: Contract }) {
             ),
           },
 
-        isCPMM && {
-          title: 'Pool',
-          content: <ViewLiquidityPanel contract={contract} />,
-        }
+        (isCreator || isAdmin) &&
+          isCPMM && {
+            title: 'Pool',
+            content: <ViewLiquidityPanel contract={contract} />,
+          }
       )}
     />
   )
