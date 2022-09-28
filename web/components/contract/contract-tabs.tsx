@@ -48,17 +48,14 @@ export function ContractTabs(props: {
 
   const tabs = buildArray(
     {
-      title: `Comments ${
-        openCommentBounties
-          ? '(' + formatMoney(openCommentBounties) + ' Bounty)'
-          : ''
-      }`,
+      title: `Comments`,
       tooltip: openCommentBounties
         ? `The creator of this market will award bounties of ${formatMoney(
             COMMENT_BOUNTY_AMOUNT
           )} to good comments`
         : undefined,
       content: <CommentsTabContent contract={contract} />,
+      inlineTabIcon: <span>({formatMoney(COMMENT_BOUNTY_AMOUNT)})</span>,
     },
     {
       title: capitalize(PAST_BETS),

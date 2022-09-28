@@ -192,7 +192,7 @@ export function UserPage(props: { user: User }) {
             tabs={[
               {
                 title: 'Markets',
-                tabIcon: <ScaleIcon className="h-5" />,
+                stackedTabIcon: <ScaleIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
@@ -202,7 +202,7 @@ export function UserPage(props: { user: User }) {
               },
               {
                 title: 'Portfolio',
-                tabIcon: <FolderIcon className="h-5" />,
+                stackedTabIcon: <FolderIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
@@ -214,7 +214,7 @@ export function UserPage(props: { user: User }) {
               },
               {
                 title: 'Comments',
-                tabIcon: <ChatIcon className="h-5" />,
+                stackedTabIcon: <ChatIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
