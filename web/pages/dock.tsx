@@ -69,6 +69,7 @@ export default () => {
   const [manifoldUserID, setManifoldUserID] = useState<string>(undefined);
   const [refreshSignal, forceRefreshGroups] = useState(0);
   const [ping, setPing] = useState(0);
+  const [initialized, setInitialized] = useState(false);
 
   const ante = CONTRACT_ANTE;
   const onSubmitNewQuestion = async () => {
@@ -104,7 +105,13 @@ export default () => {
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
-    socket = io({ query: { type: 'dock', controlToken: params['t'] } });
+    socket = io({ query: { type: 'dock', controlToken: params['t'] }, reconnectionDelay: 0, reconnectionDelayMax: 0, rememberUpgrade: true });
+    socket.on('connect', () => {
+      console.debug(`Using transport: ${socket.io.engine.transport.name}`);
+      socket.io.engine.on('upgrade', () => {
+        console.debug(`Upgraded transport: ${socket.io.engine.transport.name}`);
+      });
+    });
     socket.on('connect_error', (err) => {
       setLoadingMessage('Failed to connect to server: ' + err.message);
       setConnectionState(ConnectionState.FAILED);
@@ -129,17 +136,32 @@ export default () => {
       console.debug(`Lost connection to server [reason: ${reason}, description: ${JSON.stringify(desc)}]`);
       setConnectionState(ConnectionState.CONNECTING);
       setLoadingMessage('Connecting to server...');
+
+      if (reason === 'io server disconnect') {
+        console.debug('Manual reconnect');
+        socket.connect();
+      }
     });
     socket.on(Packets.HANDSHAKE_COMPLETE, (p: PacketHandshakeComplete) => {
+      const firstConnect = APIBase === undefined;
       APIBase = p.manifoldAPIBase;
 
-      setManifoldUserID(p.actingManifoldUserID);
-      getUserBalance(p.actingManifoldUserID).then((b) => setBalance(b));
+      if (firstConnect) {
+        setManifoldUserID(p.actingManifoldUserID);
+        getUserBalance(p.actingManifoldUserID).then((b) => setBalance(b));
+        setSelectedContract(undefined);
+      }
 
-      console.debug('Socked connected to server.');
+      console.debug('Socked connected to server');
       setConnectionState(ConnectionState.CONNECTED);
       setLoadingMessage('Connected');
-      setSelectedContract(undefined);
+      setInitialized(true);
+    });
+
+    socket.io.on('reconnect', () => {
+      console.debug('Reconnected');
+      setConnectionState(ConnectionState.CONNECTED);
+      setLoadingMessage('Connected');
     });
 
     socket.on(Packets.RESOLVED, () => {
@@ -229,7 +251,7 @@ export default () => {
         className="bg-base-200 text-slate-500"
         spinnerBorderColor="border-slate-500"
       />
-      {connectionState == ConnectionState.CONNECTED && (
+      {initialized && (
         <div className="flex justify-center">
           <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
             <div className="p-2">
