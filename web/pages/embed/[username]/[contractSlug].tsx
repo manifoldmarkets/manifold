@@ -2,7 +2,6 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useState } from 'react'
-import { AnswersGraph } from 'web/components/answers/answers-graph'
 import { BetInline } from 'web/components/bet-inline'
 import { Button } from 'web/components/button'
 import {
@@ -12,8 +11,7 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
 import { MarketSubheader } from 'web/components/contract/contract-details'
-import { ContractProbGraph } from 'web/components/contract/contract-prob-graph'
-import { NumericGraph } from 'web/components/contract/numeric-graph'
+import { ContractChart } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -134,22 +132,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
       )}
 
       <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
-        {(isBinary || isPseudoNumeric) && (
-          <ContractProbGraph
-            contract={contract}
-            bets={[...bets].reverse()}
-            height={graphHeight}
-          />
-        )}
-
-        {(outcomeType === 'FREE_RESPONSE' ||
-          outcomeType === 'MULTIPLE_CHOICE') && (
-          <AnswersGraph contract={contract} bets={bets} height={graphHeight} />
-        )}
-
-        {outcomeType === 'NUMERIC' && (
-          <NumericGraph contract={contract} height={graphHeight} />
-        )}
+        <ContractChart contract={contract} bets={bets} height={graphHeight} />
       </div>
     </Col>
   )
