@@ -83,7 +83,7 @@ export function UserPage(props: { user: User }) {
             className="bg-white shadow-sm shadow-indigo-300"
           />
           {isCurrentUser && (
-            <div className="absolute z-50 ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
+            <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
               <SiteLink href="/profile">
                 <PencilIcon className="h-5" />{' '}
               </SiteLink>
