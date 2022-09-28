@@ -17,7 +17,7 @@ import { BetSignUpPrompt } from './sign-up-prompt'
 import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
 import { useUnfilledBets } from 'web/hooks/use-bets'
-import { LimitBets, OrderBookButton } from './limit-bets'
+import { LimitBets } from './limit-bets'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
