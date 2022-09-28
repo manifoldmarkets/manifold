@@ -18,6 +18,9 @@ export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
 export const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
+export const MAX_TIMESTAMP = 8640000000000000
+export const MAX_DATE = new Date(MAX_TIMESTAMP)
+
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
   const axisRef = useRef<SVGGElement>(null)
@@ -198,8 +201,7 @@ export const ChartTooltip = (
 
 export const getDateRange = (contract: Contract) => {
   const { createdTime, closeTime, resolutionTime } = contract
-  const now = Date.now()
-  const isClosed = !!closeTime && now > closeTime
-  const endDate = resolutionTime ?? (isClosed ? closeTime : now)
-  return [new Date(createdTime), new Date(endDate)] as const
+  const isClosed = !!closeTime && Date.now() > closeTime
+  const endDate = resolutionTime ?? (isClosed ? closeTime : null)
+  return [new Date(createdTime), endDate ? new Date(endDate) : null] as const
 }

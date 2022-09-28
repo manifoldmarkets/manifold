@@ -7,7 +7,7 @@ import { getInitialProbability, getProbability } from 'common/calculate'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MARGIN_X, MARGIN_Y, getDateRange } from '../helpers'
+import { MARGIN_X, MARGIN_Y, MAX_DATE, getDateRange } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
@@ -42,24 +42,26 @@ export const PseudoNumericContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [start, end] = getDateRange(contract)
+  const [contractStart, contractEnd] = getDateRange(contract)
   const betPoints = useMemo(
     () => getBetPoints(contract, bets),
     [contract, bets]
   )
   const data = useMemo(
     () => [
-      getStartPoint(contract, start),
+      getStartPoint(contract, contractStart),
       ...betPoints,
-      getEndPoint(contract, end),
+      getEndPoint(contract, contractEnd ?? MAX_DATE),
     ],
-    [contract, betPoints, start, end]
+    [contract, betPoints, contractStart, contractEnd]
   )
+  const visibleRange = [contractStart, contractEnd ?? Date.now()]
+
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime([start, end], [0, width - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = contract.isLogScale
     ? scaleLog(
         [Math.max(contract.min, 1), contract.max],

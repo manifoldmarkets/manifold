@@ -7,7 +7,7 @@ import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MARGIN_X, MARGIN_Y, getDateRange } from '../helpers'
+import { MARGIN_X, MARGIN_Y, MAX_DATE, getDateRange } from '../helpers'
 import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
@@ -129,7 +129,7 @@ export const ChoiceContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [start, end] = getDateRange(contract)
+  const [contractStart, contractEnd] = getDateRange(contract)
   const answers = useMemo(
     () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
     [contract]
@@ -137,17 +137,19 @@ export const ChoiceContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
     () => [
-      getStartPoint(answers, start),
+      getStartPoint(answers, contractStart),
       ...betPoints,
-      getEndPoint(answers, contract, end),
+      getEndPoint(answers, contract, contractEnd ?? MAX_DATE),
     ],
-    [answers, contract, betPoints, start, end]
+    [answers, contract, betPoints, contractStart, contractEnd]
   )
+  const visibleRange = [contractStart, contractEnd ?? Date.now()]
+
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime([start, end], [0, width - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>
