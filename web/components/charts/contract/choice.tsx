@@ -159,7 +159,7 @@ export const ChoiceContractChart = (props: {
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>
