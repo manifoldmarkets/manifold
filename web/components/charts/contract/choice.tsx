@@ -163,7 +163,7 @@ export const ChoiceContractChart = (props: {
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>
-      {width && (
+      {width > 0 && (
         <MultiValueHistoryChart
           w={width}
           h={height}

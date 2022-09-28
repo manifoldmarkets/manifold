@@ -37,7 +37,7 @@ export const NumericContractChart = (props: {
   const yScale = scaleLinear([0, maxY], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>
-      {width && (
+      {width > 0 && (
         <SingleValueDistributionChart
           w={width}
           h={height}
