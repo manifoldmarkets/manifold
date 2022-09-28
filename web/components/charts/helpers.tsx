@@ -1,14 +1,8 @@
 import { ReactNode, SVGProps, memo, useRef, useEffect, useMemo } from 'react'
-import {
-  Axis,
-  CurveFactory,
-  D3BrushEvent,
-  area,
-  brushX,
-  curveStepAfter,
-  line,
-  select,
-} from 'd3'
+import { select } from 'd3-selection'
+import { Axis } from 'd3-axis'
+import { brushX, D3BrushEvent } from 'd3-brush'
+import { area, line, curveStepAfter, CurveFactory } from 'd3-shape'
 import { nanoid } from 'nanoid'
 import clsx from 'clsx'
 

@@ -1,18 +1,16 @@
 import { useCallback, useMemo, useState } from 'react'
+import { bisector } from 'd3-array'
+import { axisBottom, axisLeft } from 'd3-axis'
+import { D3BrushEvent } from 'd3-brush'
+import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
+import { pointer } from 'd3-selection'
 import {
-  axisBottom,
-  axisLeft,
-  bisector,
   curveLinear,
   curveStepAfter,
-  pointer,
   stack,
   stackOrderReverse,
-  D3BrushEvent,
-  ScaleTime,
-  ScaleContinuousNumeric,
   SeriesPoint,
-} from 'd3'
+} from 'd3-shape'
 import { range, sortBy } from 'lodash'
 import dayjs from 'dayjs'
 
