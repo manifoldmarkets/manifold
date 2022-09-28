@@ -10,10 +10,13 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { isProd } from './utils'
-import { CommentBountyDepositTxn, CommentBountyWithdrawalTxn } from 'common/txn'
-import { runTxn } from 'functions/src/transact'
-import { Comment } from 'common/comment'
-import { createBountyNotification } from 'functions/src/create-notification'
+import {
+  CommentBountyDepositTxn,
+  CommentBountyWithdrawalTxn,
+} from '../../common/txn'
+import { runTxn } from './transact'
+import { Comment } from '../../common/comment'
+import { createBountyNotification } from './create-notification'
 
 const bodySchema = z.object({
   contractId: z.string(),
