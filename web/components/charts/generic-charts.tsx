@@ -88,12 +88,12 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
     <ol className={className}>
       {items.map((item) => (
         <li key={item.label} className="flex flex-row justify-between">
-          <Row className="mr-4 items-center">
+          <Row className="mr-2 items-center overflow-hidden">
             <span
-              className="mr-2 h-4 w-4"
+              className="mr-2 h-4 w-4 shrink-0"
               style={{ backgroundColor: item.color }}
             ></span>
-            {item.label}
+            <span className="overflow-hidden text-ellipsis">{item.label}</span>
           </Row>
           {item.value}
         </li>
@@ -275,7 +275,7 @@ export const MultiValueHistoryChart = (props: {
       {mouseState && (
         <ChartTooltip {...mouseState}>
           {fmtX(mouseState.p[0])}
-          <Legend className="text-sm" items={legendItems} />
+          <Legend className="max-w-xs text-sm" items={legendItems} />
         </ChartTooltip>
       )}
       <SVGChart
