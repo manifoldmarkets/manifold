@@ -10,7 +10,7 @@ const App = () => {
         description="A picture of a cowpy cowp copwer cowp saying 'salutations'"
         url="/cowp"
       />
-      <Link href="https://en.wikipedia.org/wiki/Earl_Cowper">
+      <Link href="https://www.youtube.com/watch?v=FavUpD_IjVY">
         <img src="https://i.imgur.com/Lt54IiU.png" />
       </Link>
     </Page>
