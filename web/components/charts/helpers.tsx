@@ -150,7 +150,13 @@ export const SVGChart = <X, Y>(props: {
           justSelected.current = false
         }
       })
-      select(overlayRef.current).call(brush)
+      // mqp: shape-rendering null overrides the default d3-brush shape-rendering
+      // of `crisp-edges`, which seems to cause graphical glitches on Chrome
+      // (i.e. the bug where the area fill flickers white)
+      select(overlayRef.current)
+        .call(brush)
+        .select('.selection')
+        .attr('shape-rendering', 'null')
     }
   }, [innerW, innerH, onSelect])
 
