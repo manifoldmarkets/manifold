@@ -52,7 +52,7 @@ export * from './unsubscribe'
 export * from './stripe'
 export * from './mana-bonus-email'
 export * from './close-market'
-export * from 'functions/src/update-comment-bounty'
+export * from './update-comment-bounty'
 
 import { health } from './health'
 import { transact } from './transact'
