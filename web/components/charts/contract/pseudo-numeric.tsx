@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react'
-import { sortBy } from 'lodash'
+import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3'
 
 import { Bet } from 'common/bet'
@@ -7,7 +7,13 @@ import { getInitialProbability, getProbability } from 'common/calculate'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MARGIN_X, MARGIN_Y, MAX_DATE, getDateRange } from '../helpers'
+import {
+  MARGIN_X,
+  MARGIN_Y,
+  MAX_DATE,
+  getDateRange,
+  getRightmostVisibleDate,
+} from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
@@ -55,8 +61,12 @@ export const PseudoNumericContractChart = (props: {
     ],
     [contract, betPoints, contractStart, contractEnd]
   )
-  const visibleRange = [contractStart, contractEnd ?? Date.now()]
-
+  const rightmostDate = getRightmostVisibleDate(
+    contractEnd,
+    last(betPoints)?.[0],
+    new Date(Date.now())
+  )
+  const visibleRange = [contractStart, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
