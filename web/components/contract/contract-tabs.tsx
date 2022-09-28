@@ -23,13 +23,15 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { buildArray } from 'common/util/array'
+import { ContractComment } from 'common/comment'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
+  comments: ContractComment[]
 }) {
-  const { contract, bets, userBets } = props
+  const { contract, bets, userBets, comments } = props
 
   const yourTrades = (
     <div>
@@ -42,7 +44,7 @@ export function ContractTabs(props: {
   const tabs = buildArray(
     {
       title: 'Comments',
-      content: <CommentsTabContent contract={contract} />,
+      content: <CommentsTabContent contract={contract} comments={comments} />,
     },
     {
       title: capitalize(PAST_BETS),
@@ -61,10 +63,11 @@ export function ContractTabs(props: {
 
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
+  comments: ContractComment[]
 }) {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
-  const comments = useComments(contract.id)
+  const comments = useComments(contract.id) ?? props.comments
   if (comments == null) {
     return <LoadingIndicator />
   }
