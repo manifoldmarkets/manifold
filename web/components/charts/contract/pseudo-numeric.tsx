@@ -81,7 +81,7 @@ export const PseudoNumericContractChart = (props: {
 
   return (
     <div ref={containerRef}>
-      {width && (
+      {width > 0 && (
         <SingleValueHistoryChart
           w={width}
           h={height}
