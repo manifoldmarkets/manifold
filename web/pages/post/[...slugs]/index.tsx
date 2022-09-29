@@ -24,6 +24,7 @@ import { PostCommentInput, PostCommentThread } from 'web/posts/post-comments'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
+import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -68,6 +69,11 @@ export default function PostPage(props: {
 
   return (
     <Page>
+      <SEO
+        title={post.title}
+        description={'A post by ' + creator.username}
+        url={'/post/' + post.slug}
+      />
       <div className="mx-auto w-full max-w-3xl ">
         <Title className="!mt-0 py-4 px-2" text={post.title} />
         <Row>
