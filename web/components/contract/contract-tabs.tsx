@@ -23,19 +23,22 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import { buildArray } from 'common/util/array'
+import { ContractComment } from 'common/comment'
 
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/button'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
+import { Tooltip } from 'web/components/tooltip'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
+  comments: ContractComment[]
 }) {
-  const { contract, bets, userBets } = props
+  const { contract, bets, userBets, comments } = props
   const { openCommentBounties } = contract
 
   const yourTrades = (
@@ -56,7 +59,7 @@ export function ContractTabs(props: {
             openCommentBounties
           )} currently available.`
         : undefined,
-      content: <CommentsTabContent contract={contract} />,
+      content: <CommentsTabContent contract={contract} comments={comments} />,
       inlineTabIcon: <span>({formatMoney(COMMENT_BOUNTY_AMOUNT)})</span>,
     },
     {
@@ -76,12 +79,13 @@ export function ContractTabs(props: {
 
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
+  comments: ContractComment[]
 }) {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
+  const comments = useComments(contract.id) ?? props.comments
   const [sort, setSort] = useState<'Newest' | 'Best'>('Best')
   const me = useUser()
-  const comments = useComments(contract.id)
   if (comments == null) {
     return <LoadingIndicator />
   }
@@ -133,12 +137,16 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       </>
     )
   } else {
+    const tipsOrBountiesAwarded =
+      Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
     const commentsByParent = groupBy(
       sortBy(comments, (c) =>
         sort === 'Newest'
           ? -c.createdTime
-          : // Is this too magic? 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-          c.createdTime > Date.now() - 10 * MINUTE_MS && c.userId === me?.id
+          : // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+          tipsOrBountiesAwarded &&
+            c.createdTime > Date.now() - 10 * MINUTE_MS &&
+            c.userId === me?.id
           ? -Infinity
           : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
       ),
@@ -154,7 +162,15 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           className="mb-4"
           onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
         >
-          Sorted by: {sort}
+          <Tooltip
+            text={
+              sort === 'Best'
+                ? 'Comments with tips or bounties will be shown first. Your comments made within the last 10 minutes will temporarily appear (to you) first.'
+                : ''
+            }
+          >
+            Sorted by: {sort}
+          </Tooltip>
         </Button>
         <ContractCommentInput className="mb-5" contract={contract} />
         {topLevelComments.map((parent) => (

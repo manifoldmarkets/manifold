@@ -46,6 +46,8 @@ import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
 import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
 import BetButton from 'web/components/bet-button'
 import { BetsSummary } from 'web/components/bet-summary'
+import { listAllComments } from 'web/lib/firebase/comments'
+import { ContractComment } from 'common/comment'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -55,10 +57,15 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId ? await listAllBets(contractId) : []
+  const comments = contractId ? await listAllComments(contractId) : []
 
   return {
-    // Limit the data sent to the client. Client will still load all bets directly.
-    props: { contract, bets: bets.slice(0, 5000) },
+    props: {
+      contract,
+      // Limit the data sent to the client. Client will still load all bets/comments directly.
+      bets: bets.slice(0, 5000),
+      comments: comments.slice(0, 1000),
+    },
     revalidate: 5, // regenerate after five seconds
   }
 }
@@ -70,9 +77,14 @@ export async function getStaticPaths() {
 export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
+  comments: ContractComment[]
   backToHome?: () => void
 }) {
-  props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
+  props = usePropz(props, getStaticPropz) ?? {
+    contract: null,
+    bets: [],
+    comments: [],
+  }
 
   const inIframe = useIsIframe()
   if (inIframe) {
@@ -147,7 +159,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { backToHome } = props
+  const { backToHome, comments } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const user = useUser()
   usePrefetch(user?.id)
@@ -258,7 +270,12 @@ export function ContractPageContent(
           userBets={userBets}
         />
 
-        <ContractTabs contract={contract} bets={bets} userBets={userBets} />
+        <ContractTabs
+          contract={contract}
+          bets={bets}
+          userBets={userBets}
+          comments={comments}
+        />
 
         {!user ? (
           <Col className="mt-4 max-w-sm items-center xl:hidden">

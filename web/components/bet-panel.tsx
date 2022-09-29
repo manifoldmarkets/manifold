@@ -419,7 +419,7 @@ export function BuyPanel(props: {
           open={seeLimit}
           setOpen={setSeeLimit}
           position="center"
-          className="rounded-lg bg-white px-4 pb-8"
+          className="rounded-lg bg-white px-4 pb-4"
         >
           <Title text="Limit Order" />
           <LimitOrderPanel
@@ -427,6 +427,11 @@ export function BuyPanel(props: {
             contract={contract}
             user={user}
             unfilledBets={unfilledBets}
+          />
+          <LimitBets
+            contract={contract}
+            bets={unfilledBets as LimitBet[]}
+            className="mt-4"
           />
         </Modal>
       </Col>

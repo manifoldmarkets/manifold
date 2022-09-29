@@ -7,6 +7,7 @@ import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
+import { useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ProbChangeTable(props: {
   changes: CPMMContract[] | undefined
@@ -59,7 +60,9 @@ export function ProbChangeRow(props: {
   contract: CPMMContract
   className?: string
 }) {
-  const { contract, className } = props
+  const { className } = props
+  const contract =
+    (useContractWithPreload(props.contract) as CPMMContract) ?? props.contract
   return (
     <Row
       className={clsx(
