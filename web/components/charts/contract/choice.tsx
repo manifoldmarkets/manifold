@@ -8,14 +8,23 @@ import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
+  Legend,
   MARGIN_X,
   MARGIN_Y,
   MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
+  formatPct,
+  formatDateInRange,
 } from '../helpers'
-import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
+import {
+  MultiPoint,
+  MultiValueHistoryChart,
+  MultiValueHistoryTooltipProps,
+} from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/avatar'
 
 // thanks to https://observablehq.com/@jonhelfman/optimal-orders-for-choosing-categorical-colors
 const CATEGORY_COLORS = [
@@ -92,28 +101,13 @@ const getTrackedAnswers = (
   ).slice(0, topN)
 }
 
-const getStartPoint = (answers: Answer[], start: Date) => {
-  return [start, answers.map((_) => 0)] as const
-}
-
-const getEndPoint = (
-  answers: Answer[],
-  contract: FreeResponseContract | MultipleChoiceContract,
-  end: Date
-) => {
-  return [
-    end,
-    answers.map((a) => getOutcomeProbability(contract, a.id)),
-  ] as const
-}
-
 const getBetPoints = (answers: Answer[], bets: Bet[]) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
     Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
   )
-  const points: MultiPoint[] = []
+  const points: MultiPoint<Bet>[] = []
   for (const bet of sortedBets) {
     const { outcome, shares } = bet
     sharesByOutcome[outcome] += shares
@@ -121,10 +115,11 @@ const getBetPoints = (answers: Answer[], bets: Bet[]) => {
     const sharesSquared = sum(
       Object.values(sharesByOutcome).map((shares) => shares ** 2)
     )
-    points.push([
-      new Date(bet.createdTime),
-      answers.map((answer) => sharesByOutcome[answer.id] ** 2 / sharesSquared),
-    ])
+    points.push({
+      x: new Date(bet.createdTime),
+      y: answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared),
+      datum: bet,
+    })
   }
   return points
 }
@@ -135,7 +130,7 @@ export const ChoiceContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [contractStart, contractEnd] = getDateRange(contract)
+  const [start, end] = getDateRange(contract)
   const answers = useMemo(
     () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
     [contract]
@@ -143,24 +138,54 @@ export const ChoiceContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
     () => [
-      getStartPoint(answers, contractStart),
+      { x: start, y: answers.map((_) => 0) },
       ...betPoints,
-      getEndPoint(answers, contract, contractEnd ?? MAX_DATE),
+      {
+        x: end ?? MAX_DATE,
+        y: answers.map((a) => getOutcomeProbability(contract, a.id)),
+      },
     ],
-    [answers, contract, betPoints, contractStart, contractEnd]
+    [answers, contract, betPoints, start, end]
   )
   const rightmostDate = getRightmostVisibleDate(
-    contractEnd,
-    last(betPoints)?.[0],
+    end,
+    last(betPoints)?.x,
     new Date(Date.now())
   )
-  const visibleRange = [contractStart, rightmostDate]
+  const visibleRange = [start, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+
+  const ChoiceTooltip = useMemo(
+    () => (props: MultiValueHistoryTooltipProps<Bet>) => {
+      const { x, y, xScale, datum } = props
+      const [start, end] = xScale.domain()
+      const legendItems = sortBy(
+        y.map((p, i) => ({
+          color: CATEGORY_COLORS[i],
+          label: answers[i].text,
+          value: formatPct(p),
+          p,
+        })),
+        (item) => -item.p
+      ).slice(0, 10)
+      return (
+        <div>
+          <Row className="items-center gap-2">
+            {datum && <Avatar size="xxs" avatarUrl={datum.userAvatarUrl} />}
+            <span>{formatDateInRange(x, start, end)}</span>
+          </Row>
+          <Legend className="max-w-xs text-sm" items={legendItems} />
+        </div>
+      )
+    },
+    [answers]
+  )
+
   return (
     <div ref={containerRef}>
       {width > 0 && (
@@ -171,7 +196,7 @@ export const ChoiceContractChart = (props: {
           yScale={yScale}
           data={data}
           colors={CATEGORY_COLORS}
-          labels={answers.map((answer) => answer.text)}
+          Tooltip={ChoiceTooltip}
           pct
         />
       )}

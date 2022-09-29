@@ -12,13 +12,34 @@ import {
   MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
+  formatDateInRange,
+  formatPct,
 } from '../helpers'
-import { SingleValueHistoryChart } from '../generic-charts'
+import {
+  SingleValueHistoryTooltipProps,
+  SingleValueHistoryChart,
+} from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/avatar'
 
 const getBetPoints = (bets: Bet[]) => {
-  return sortBy(bets, (b) => b.createdTime).map(
-    (b) => [new Date(b.createdTime), b.probAfter] as const
+  return sortBy(bets, (b) => b.createdTime).map((b) => ({
+    x: new Date(b.createdTime),
+    y: b.probAfter,
+    datum: b,
+  }))
+}
+
+const BinaryChartTooltip = (props: SingleValueHistoryTooltipProps<Bet>) => {
+  const { x, y, xScale, datum } = props
+  const [start, end] = xScale.domain()
+  return (
+    <Row className="items-center gap-2 text-sm">
+      {datum && <Avatar size="xs" avatarUrl={datum.userAvatarUrl} />}
+      <strong>{formatPct(y)}</strong>
+      <span>{formatDateInRange(x, start, end)}</span>
+    </Row>
   )
 }
 
@@ -34,16 +55,16 @@ export const BinaryContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(bets), [bets])
   const data = useMemo(
     () => [
-      [startDate, startP] as const,
+      { x: startDate, y: startP },
       ...betPoints,
-      [endDate ?? MAX_DATE, endP] as const,
+      { x: endDate ?? MAX_DATE, y: endP },
     ],
     [startDate, startP, endDate, endP, betPoints]
   )
 
   const rightmostDate = getRightmostVisibleDate(
     endDate,
-    last(betPoints)?.[0],
+    last(betPoints)?.x,
     new Date(Date.now())
   )
   const visibleRange = [startDate, rightmostDate]
@@ -53,6 +74,7 @@ export const BinaryContractChart = (props: {
   const height = props.height ?? (isMobile ? 250 : 350)
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+
   return (
     <div ref={containerRef}>
       {width > 0 && (
@@ -63,6 +85,7 @@ export const BinaryContractChart = (props: {
           yScale={yScale}
           data={data}
           color="#11b981"
+          Tooltip={BinaryChartTooltip}
           pct
         />
       )}

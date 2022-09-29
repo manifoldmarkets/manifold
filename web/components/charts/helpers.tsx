@@ -4,9 +4,11 @@ import { Axis } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
 import { area, line, curveStepAfter, CurveFactory } from 'd3-shape'
 import { nanoid } from 'nanoid'
+import dayjs from 'dayjs'
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
+import { Row } from 'web/components/layout/row'
 
 export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
@@ -180,9 +182,9 @@ export const SVGChart = <X, Y>(props: {
   )
 }
 
+export type TooltipContent<P> = React.ComponentType<P>
 export type TooltipPosition = { top: number; left: number }
-
-export const ChartTooltip = (
+export const TooltipContainer = (
   props: TooltipPosition & { className?: string; children: React.ReactNode }
 ) => {
   const { top, left, className, children } = props
@@ -196,6 +198,27 @@ export const ChartTooltip = (
     >
       {children}
     </div>
+  )
+}
+
+export type LegendItem = { color: string; label: string; value?: string }
+export const Legend = (props: { className?: string; items: LegendItem[] }) => {
+  const { items, className } = props
+  return (
+    <ol className={className}>
+      {items.map((item) => (
+        <li key={item.label} className="flex flex-row justify-between">
+          <Row className="mr-2 items-center overflow-hidden">
+            <span
+              className="mr-2 h-4 w-4 shrink-0"
+              style={{ backgroundColor: item.color }}
+            ></span>
+            <span className="overflow-hidden text-ellipsis">{item.label}</span>
+          </Row>
+          {item.value}
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -219,4 +242,47 @@ export const getRightmostVisibleDate = (
   } else {
     return now
   }
+}
+
+export const formatPct = (n: number, digits?: number) => {
+  return `${(n * 100).toFixed(digits ?? 0)}%`
+}
+
+export const formatDate = (
+  date: Date,
+  opts: { includeYear: boolean; includeHour: boolean; includeMinute: boolean }
+) => {
+  const { includeYear, includeHour, includeMinute } = opts
+  const d = dayjs(date)
+  const now = Date.now()
+  if (
+    d.add(1, 'minute').isAfter(now) &&
+    d.subtract(1, 'minute').isBefore(now)
+  ) {
+    return 'Now'
+  } else {
+    const dayName = d.isSame(now, 'day')
+      ? 'Today'
+      : d.add(1, 'day').isSame(now, 'day')
+      ? 'Yesterday'
+      : null
+    let format = dayName ? `[${dayName}]` : 'MMM D'
+    if (includeMinute) {
+      format += ', h:mma'
+    } else if (includeHour) {
+      format += ', ha'
+    } else if (includeYear) {
+      format += ', YYYY'
+    }
+    return d.format(format)
+  }
+}
+
+export const formatDateInRange = (d: Date, start: Date, end: Date) => {
+  const opts = {
+    includeYear: !dayjs(start).isSame(end, 'year'),
+    includeHour: dayjs(start).add(8, 'day').isAfter(end),
+    includeMinute: dayjs(end).diff(start, 'hours') < 2,
+  }
+  return formatDate(d, opts)
 }
