@@ -4,6 +4,7 @@ import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
+import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -13,9 +14,15 @@ import {
   MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
+  formatDateInRange,
 } from '../helpers'
-import { SingleValueHistoryChart } from '../generic-charts'
+import {
+  SingleValueHistoryChart,
+  SingleValueHistoryTooltipProps,
+} from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/avatar'
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
@@ -29,8 +36,24 @@ const getScaleP = (min: number, max: number, isLogScale: boolean) => {
 }
 
 const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
-  return sortBy(bets, (b) => b.createdTime).map(
-    (b) => [new Date(b.createdTime), scaleP(b.probAfter)] as const
+  return sortBy(bets, (b) => b.createdTime).map((b) => ({
+    x: new Date(b.createdTime),
+    y: scaleP(b.probAfter),
+    datum: b,
+  }))
+}
+
+const PseudoNumericChartTooltip = (
+  props: SingleValueHistoryTooltipProps<Bet>
+) => {
+  const { x, y, xScale, datum } = props
+  const [start, end] = xScale.domain()
+  return (
+    <Row className="items-center gap-2 text-sm">
+      {datum && <Avatar size="xs" avatarUrl={datum.userAvatarUrl} />}
+      <strong>{formatLargeNumber(y)}</strong>
+      <span>{formatDateInRange(x, start, end)}</span>
+    </Row>
   )
 }
 
@@ -51,15 +74,15 @@ export const PseudoNumericContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(bets, scaleP), [bets, scaleP])
   const data = useMemo(
     () => [
-      [startDate, startP] as const,
+      { x: startDate, y: startP },
       ...betPoints,
-      [endDate ?? MAX_DATE, endP] as const,
+      { x: endDate ?? MAX_DATE, y: endP },
     ],
     [betPoints, startDate, startP, endDate, endP]
   )
   const rightmostDate = getRightmostVisibleDate(
     endDate,
-    last(betPoints)?.[0],
+    last(betPoints)?.x,
     new Date(Date.now())
   )
   const visibleRange = [startDate, rightmostDate]
@@ -82,6 +105,7 @@ export const PseudoNumericContractChart = (props: {
           xScale={xScale}
           yScale={yScale}
           data={data}
+          Tooltip={PseudoNumericChartTooltip}
           color={NUMERIC_GRAPH_COLOR}
         />
       )}
