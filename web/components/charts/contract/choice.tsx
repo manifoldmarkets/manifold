@@ -10,6 +10,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { DAY_MS } from 'common/util/time'
 import {
   Legend,
+  TooltipProps,
   MARGIN_X,
   MARGIN_Y,
   getDateRange,
@@ -17,11 +18,7 @@ import {
   formatPct,
   formatDateInRange,
 } from '../helpers'
-import {
-  MultiPoint,
-  MultiValueHistoryChart,
-  MultiValueHistoryTooltipProps,
-} from '../generic-charts'
+import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
@@ -161,7 +158,7 @@ export const ChoiceContractChart = (props: {
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
 
   const ChoiceTooltip = useMemo(
-    () => (props: MultiValueHistoryTooltipProps<Bet>) => {
+    () => (props: TooltipProps<MultiPoint<Bet>>) => {
       const { p, xScale } = props
       const { x, y, datum } = p
       const [start, end] = xScale.domain()

@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react'
 import { pointer, select } from 'd3-selection'
-import { Axis } from 'd3-axis'
+import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
 import { area, line, curveStepAfter, CurveFactory } from 'd3-shape'
 import { nanoid } from 'nanoid'
@@ -17,6 +17,10 @@ import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 import { Row } from 'web/components/layout/row'
+
+export type Point<X, Y, T = unknown> = { x: X; y: Y; datum?: T }
+export type XScale<P> = P extends Point<infer X, infer _> ? AxisScale<X> : never
+export type YScale<P> = P extends Point<infer _, infer Y> ? AxisScale<Y> : never
 
 export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
@@ -113,15 +117,15 @@ export const AreaWithTopStroke = <P,>(props: {
   )
 }
 
-export const SVGChart = <X, Y, P, XS>(props: {
+export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
   children: ReactNode
   w: number
   h: number
   xAxis: Axis<X>
-  yAxis: Axis<Y>
+  yAxis: Axis<number>
   onSelect?: (ev: D3BrushEvent<any>) => void
   onMouseOver?: (mouseX: number, mouseY: number) => P | undefined
-  Tooltip?: TooltipContent<{ xScale: XS } & { p: P }>
+  Tooltip?: TooltipComponent<P>
 }) => {
   const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
   const [mouseState, setMouseState] = useState<TooltipPosition & { p: P }>()
@@ -181,7 +185,7 @@ export const SVGChart = <X, Y, P, XS>(props: {
     <div className="relative">
       {mouseState && Tooltip && (
         <TooltipContainer top={mouseState.top} left={mouseState.left}>
-          <Tooltip xScale={xAxis.scale() as XS} p={mouseState.p} />
+          <Tooltip xScale={xAxis.scale()} p={mouseState.p} />
         </TooltipContainer>
       )}
       <svg className="w-full" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
@@ -210,7 +214,8 @@ export const SVGChart = <X, Y, P, XS>(props: {
   )
 }
 
-export type TooltipContent<P> = React.ComponentType<P>
+export type TooltipProps<P> = { p: P; xScale: XScale<P> }
+export type TooltipComponent<P> = React.ComponentType<TooltipProps<P>>
 export type TooltipPosition = { top: number; left: number }
 export const TooltipContainer = (
   props: TooltipPosition & { className?: string; children: React.ReactNode }
