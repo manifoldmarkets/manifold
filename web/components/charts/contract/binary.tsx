@@ -20,6 +20,8 @@ import {
   SingleValueHistoryChart,
 } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/avatar'
 
 const getBetPoints = (bets: Bet[]) => {
   return sortBy(bets, (b) => b.createdTime).map((b) => ({
@@ -30,12 +32,14 @@ const getBetPoints = (bets: Bet[]) => {
 }
 
 const BinaryChartTooltip = (props: SingleValueHistoryTooltipProps<Bet>) => {
-  const { x, y, xScale } = props
+  const { x, y, xScale, datum } = props
   const [start, end] = xScale.domain()
   return (
-    <span className="text-sm">
-      <strong>{formatPct(y)}</strong> {formatDateInRange(x, start, end)}
-    </span>
+    <Row className="items-center gap-2 text-sm">
+      {datum && <Avatar size="xs" avatarUrl={datum.userAvatarUrl} />}
+      <strong>{formatPct(y)}</strong>
+      <span>{formatDateInRange(x, start, end)}</span>
+    </Row>
   )
 }
 

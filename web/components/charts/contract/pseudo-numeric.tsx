@@ -21,6 +21,8 @@ import {
   SingleValueHistoryTooltipProps,
 } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/avatar'
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
@@ -41,13 +43,17 @@ const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
   }))
 }
 
-const PseudoNumericChartTooltip = (props: SingleValueHistoryTooltipProps) => {
-  const { x, y, xScale } = props
+const PseudoNumericChartTooltip = (
+  props: SingleValueHistoryTooltipProps<Bet>
+) => {
+  const { x, y, xScale, datum } = props
   const [start, end] = xScale.domain()
   return (
-    <span className="text-sm">
-      <strong>{formatLargeNumber(y)}</strong> {formatDateInRange(x, start, end)}
-    </span>
+    <Row className="items-center gap-2 text-sm">
+      {datum && <Avatar size="xs" avatarUrl={datum.userAvatarUrl} />}
+      <strong>{formatLargeNumber(y)}</strong>
+      <span>{formatDateInRange(x, start, end)}</span>
+    </Row>
   )
 }
 

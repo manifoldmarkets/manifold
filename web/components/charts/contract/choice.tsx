@@ -23,6 +23,8 @@ import {
   MultiValueHistoryTooltipProps,
 } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
+import { Row } from 'web/components/layout/row'
+import { Avatar } from 'web/components/avatar'
 
 // thanks to https://observablehq.com/@jonhelfman/optimal-orders-for-choosing-categorical-colors
 const CATEGORY_COLORS = [
@@ -160,7 +162,7 @@ export const ChoiceContractChart = (props: {
 
   const ChoiceTooltip = useMemo(
     () => (props: MultiValueHistoryTooltipProps<Bet>) => {
-      const { x, y, xScale } = props
+      const { x, y, xScale, datum } = props
       const [start, end] = xScale.domain()
       const legendItems = sortBy(
         y.map((p, i) => ({
@@ -173,7 +175,10 @@ export const ChoiceContractChart = (props: {
       ).slice(0, 10)
       return (
         <div>
-          <p>{formatDateInRange(x, start, end)}</p>
+          <Row className="items-center gap-2">
+            {datum && <Avatar size="xxs" avatarUrl={datum.userAvatarUrl} />}
+            <span>{formatDateInRange(x, start, end)}</span>
+          </Row>
           <Legend className="max-w-xs text-sm" items={legendItems} />
         </div>
       )
