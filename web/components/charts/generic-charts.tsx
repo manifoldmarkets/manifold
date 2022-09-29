@@ -25,10 +25,11 @@ import { formatLargeNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import { Row } from 'web/components/layout/row'
 
-export type MultiPoint = { x: Date; y: number[] }
-export type HistoryPoint = { x: Date; y: number }
-export type DistributionPoint = { x: number; y: number }
-export type PositionValue<P> = TooltipPosition & { p: P }
+export type MultiPoint<T = unknown> = { x: Date; y: number[]; datum?: T }
+export type HistoryPoint<T = unknown> = { x: Date; y: number; datum?: T }
+export type DistributionPoint<T = unknown> = { x: number; y: number; datum?: T }
+
+type PositionValue<P> = TooltipPosition & { p: P }
 
 const formatPct = (n: number, digits?: number) => {
   return `${(n * 100).toFixed(digits ?? 0)}%`
@@ -100,8 +101,8 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
   )
 }
 
-export const SingleValueDistributionChart = (props: {
-  data: DistributionPoint[]
+export const SingleValueDistributionChart = <T = unknown,>(props: {
+  data: DistributionPoint<T>[]
   w: number
   h: number
   color: string
@@ -115,13 +116,13 @@ export const SingleValueDistributionChart = (props: {
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
   const [mouseState, setMouseState] =
-    useState<PositionValue<DistributionPoint>>()
+    useState<PositionValue<DistributionPoint<T>>>()
   const xScale = viewXScale ?? props.xScale
 
-  const px = useCallback((p: DistributionPoint) => xScale(p.x), [xScale])
+  const px = useCallback((p: DistributionPoint<T>) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
-  const py1 = useCallback((p: DistributionPoint) => yScale(p.y), [yScale])
-  const xBisector = bisector((p: DistributionPoint) => p.x)
+  const py1 = useCallback((p: DistributionPoint<T>) => yScale(p.y), [yScale])
+  const xBisector = bisector((p: DistributionPoint<T>) => p.x)
 
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const fmtX = (n: number) => formatLargeNumber(n)
@@ -131,7 +132,7 @@ export const SingleValueDistributionChart = (props: {
     return { fmtX, fmtY, xAxis, yAxis }
   }, [w, xScale, yScale])
 
-  const onSelect = useEvent((ev: D3BrushEvent<DistributionPoint>) => {
+  const onSelect = useEvent((ev: D3BrushEvent<DistributionPoint<T>>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
       setViewXScale(() =>
@@ -154,7 +155,7 @@ export const SingleValueDistributionChart = (props: {
         // so your queryX is out of bounds
         return
       }
-      const p = { x: queryX, y: item.y }
+      const p = { x: queryX, y: item.y, datum: item.datum }
       setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
     }
   })
@@ -192,8 +193,8 @@ export const SingleValueDistributionChart = (props: {
   )
 }
 
-export const MultiValueHistoryChart = (props: {
-  data: MultiPoint[]
+export const MultiValueHistoryChart = <T = unknown,>(props: {
+  data: MultiPoint<T>[]
   w: number
   h: number
   labels: readonly string[]
@@ -205,14 +206,14 @@ export const MultiValueHistoryChart = (props: {
   const { colors, data, yScale, labels, w, h, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [mouseState, setMouseState] = useState<PositionValue<MultiPoint>>()
+  const [mouseState, setMouseState] = useState<PositionValue<MultiPoint<T>>>()
   const xScale = viewXScale ?? props.xScale
 
-  type SP = SeriesPoint<MultiPoint>
+  type SP = SeriesPoint<MultiPoint<T>>
   const px = useCallback((p: SP) => xScale(p.data.x), [xScale])
   const py0 = useCallback((p: SP) => yScale(p[0]), [yScale])
   const py1 = useCallback((p: SP) => yScale(p[1]), [yScale])
-  const xBisector = bisector((p: MultiPoint) => p.x)
+  const xBisector = bisector((p: MultiPoint<T>) => p.x)
 
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const [start, end] = xScale.domain()
@@ -230,14 +231,14 @@ export const MultiValueHistoryChart = (props: {
   }, [w, h, pct, xScale, yScale])
 
   const series = useMemo(() => {
-    const d3Stack = stack<MultiPoint, number>()
+    const d3Stack = stack<MultiPoint<T>, number>()
       .keys(range(0, labels.length))
       .value(({ y }, o) => y[o])
       .order(stackOrderReverse)
     return d3Stack(data)
   }, [data, labels.length])
 
-  const onSelect = useEvent((ev: D3BrushEvent<MultiPoint>) => {
+  const onSelect = useEvent((ev: D3BrushEvent<MultiPoint<T>>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
       setViewXScale(() =>
@@ -260,7 +261,7 @@ export const MultiValueHistoryChart = (props: {
         // so your queryX is out of bounds
         return
       }
-      const p = { x: queryX, y: item.y }
+      const p = { x: queryX, y: item.y, datum: item.datum }
       setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
     }
   })
@@ -313,8 +314,8 @@ export const MultiValueHistoryChart = (props: {
   )
 }
 
-export const SingleValueHistoryChart = (props: {
-  data: HistoryPoint[]
+export const SingleValueHistoryChart = <T = unknown,>(props: {
+  data: HistoryPoint<T>[]
   w: number
   h: number
   color: string
@@ -325,13 +326,13 @@ export const SingleValueHistoryChart = (props: {
   const { color, data, pct, yScale, w, h } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint>>()
+  const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint<T>>>()
   const xScale = viewXScale ?? props.xScale
 
-  const px = useCallback((p: HistoryPoint) => xScale(p.x), [xScale])
+  const px = useCallback((p: HistoryPoint<T>) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
-  const py1 = useCallback((p: HistoryPoint) => yScale(p.y), [yScale])
-  const xBisector = bisector((p: HistoryPoint) => p.x)
+  const py1 = useCallback((p: HistoryPoint<T>) => yScale(p.y), [yScale])
+  const xBisector = bisector((p: HistoryPoint<T>) => p.x)
 
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const [start, end] = xScale.domain()
@@ -347,7 +348,7 @@ export const SingleValueHistoryChart = (props: {
     return { fmtX, fmtY, xAxis, yAxis }
   }, [w, h, pct, xScale, yScale])
 
-  const onSelect = useEvent((ev: D3BrushEvent<HistoryPoint>) => {
+  const onSelect = useEvent((ev: D3BrushEvent<HistoryPoint<T>>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
       setViewXScale(() =>
@@ -370,7 +371,7 @@ export const SingleValueHistoryChart = (props: {
         // so your queryX is out of bounds
         return
       }
-      const p = { x: queryX, y: item.y }
+      const p = { x: queryX, y: item.y, datum: item.datum }
       setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
     }
   })
@@ -383,7 +384,7 @@ export const SingleValueHistoryChart = (props: {
     <div className="relative">
       {mouseState && (
         <ChartTooltip className="text-sm" {...mouseState}>
-          <strong>{fmtY(mouseState.p.y)}</strong> {fmtX(mouseState.p.x)}
+          <strong>{fmtY(mouseState.p.y)}</strong> {fmtX(mouseState.p.x)}{' '}
         </ChartTooltip>
       )}
       <SVGChart

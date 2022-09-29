@@ -32,6 +32,7 @@ const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
   return sortBy(bets, (b) => b.createdTime).map((b) => ({
     x: new Date(b.createdTime),
     y: scaleP(b.probAfter),
+    datum: b,
   }))
 }
 

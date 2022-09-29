@@ -20,6 +20,7 @@ const getBetPoints = (bets: Bet[]) => {
   return sortBy(bets, (b) => b.createdTime).map((b) => ({
     x: new Date(b.createdTime),
     y: b.probAfter,
+    datum: b,
   }))
 }
 

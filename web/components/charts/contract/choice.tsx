@@ -92,28 +92,13 @@ const getTrackedAnswers = (
   ).slice(0, topN)
 }
 
-const getStartPoint = (answers: Answer[], start: Date) => {
-  return { x: start, y: answers.map((_) => 0) }
-}
-
-const getEndPoint = (
-  answers: Answer[],
-  contract: FreeResponseContract | MultipleChoiceContract,
-  end: Date
-) => {
-  return {
-    x: end,
-    y: answers.map((a) => getOutcomeProbability(contract, a.id)),
-  }
-}
-
 const getBetPoints = (answers: Answer[], bets: Bet[]) => {
   const sortedBets = sortBy(bets, (b) => b.createdTime)
   const betsByOutcome = groupBy(sortedBets, (bet) => bet.outcome)
   const sharesByOutcome = Object.fromEntries(
     Object.keys(betsByOutcome).map((outcome) => [outcome, 0])
   )
-  const points: MultiPoint[] = []
+  const points: MultiPoint<Bet>[] = []
   for (const bet of sortedBets) {
     const { outcome, shares } = bet
     sharesByOutcome[outcome] += shares
@@ -124,6 +109,7 @@ const getBetPoints = (answers: Answer[], bets: Bet[]) => {
     points.push({
       x: new Date(bet.createdTime),
       y: answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared),
+      datum: bet,
     })
   }
   return points
@@ -135,7 +121,7 @@ export const ChoiceContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [contractStart, contractEnd] = getDateRange(contract)
+  const [start, end] = getDateRange(contract)
   const answers = useMemo(
     () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
     [contract]
@@ -143,18 +129,21 @@ export const ChoiceContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
     () => [
-      getStartPoint(answers, contractStart),
+      { x: start, y: answers.map((_) => 0) },
       ...betPoints,
-      getEndPoint(answers, contract, contractEnd ?? MAX_DATE),
+      {
+        x: end ?? MAX_DATE,
+        y: answers.map((a) => getOutcomeProbability(contract, a.id)),
+      },
     ],
-    [answers, contract, betPoints, contractStart, contractEnd]
+    [answers, contract, betPoints, start, end]
   )
   const rightmostDate = getRightmostVisibleDate(
-    contractEnd,
+    end,
     last(betPoints)?.x,
     new Date(Date.now())
   )
-  const visibleRange = [contractStart, rightmostDate]
+  const visibleRange = [start, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
