@@ -210,7 +210,6 @@ export function ContractPageContent(
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
-
       {ogCardProps && (
         <SEO
           title={question}
@@ -219,7 +218,6 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-
       <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
