@@ -1,5 +1,5 @@
+import { sortBy } from 'lodash'
 import clsx from 'clsx'
-import { partition } from 'lodash'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
@@ -17,16 +17,14 @@ export function ProbChangeTable(props: {
 
   if (!changes) return <LoadingIndicator />
 
-  const [positiveChanges, negativeChanges] = partition(
-    changes,
-    (c) => c.probChanges.day > 0
-  )
+  const descendingChanges = sortBy(changes, (c) => c.probChanges.day).reverse()
+  const ascendingChanges = sortBy(changes, (c) => c.probChanges.day)
 
   const threshold = 0.01
-  const positiveAboveThreshold = positiveChanges.filter(
+  const positiveAboveThreshold = descendingChanges.filter(
     (c) => c.probChanges.day > threshold
   )
-  const negativeAboveThreshold = negativeChanges.filter(
+  const negativeAboveThreshold = ascendingChanges.filter(
     (c) => c.probChanges.day < threshold
   )
   const maxRows = Math.min(
