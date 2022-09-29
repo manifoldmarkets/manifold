@@ -327,7 +327,7 @@ export default () => {
               <Col className="grow shrink h-full items-start justify-end max-h-[3.5em] overflow-hidden">
                 <Col id="transactions" className="grow shrink h-full">
                   <div id="transaction-template" className={clsx(styles.bet, 'text-[1em]')}>
-                    <div id="name" className="font-bold inline-block truncate max-w-[15em] align-bottom"></div>{' '}
+                    <div id="name" className="font-bold inline-block truncate max-w-[65%] align-bottom"></div>{' '}
                     <div className="color inline">
                       <p className="boughtSold"></p> M$ <p className="amount"></p>
                     </div>
