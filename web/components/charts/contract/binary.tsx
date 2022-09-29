@@ -3,7 +3,7 @@ import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 
 import { Bet } from 'common/bet'
-import { getInitialProbability, getProbability } from 'common/calculate'
+import { getProbability, getInitialProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
@@ -22,36 +22,31 @@ const getBetPoints = (bets: Bet[]) => {
   )
 }
 
-const getStartPoint = (contract: BinaryContract, start: Date) => {
-  return [start, getInitialProbability(contract)] as const
-}
-
-const getEndPoint = (contract: BinaryContract, end: Date) => {
-  return [end, getProbability(contract)] as const
-}
-
 export const BinaryContractChart = (props: {
   contract: BinaryContract
   bets: Bet[]
   height?: number
 }) => {
   const { contract, bets } = props
-  const [contractStart, contractEnd] = getDateRange(contract)
+  const [startDate, endDate] = getDateRange(contract)
+  const startP = getInitialProbability(contract)
+  const endP = getProbability(contract)
   const betPoints = useMemo(() => getBetPoints(bets), [bets])
   const data = useMemo(
     () => [
-      getStartPoint(contract, contractStart),
+      [startDate, startP] as const,
       ...betPoints,
-      getEndPoint(contract, contractEnd ?? MAX_DATE),
+      [endDate ?? MAX_DATE, endP] as const,
     ],
-    [contract, betPoints, contractStart, contractEnd]
+    [startDate, startP, endDate, endP, betPoints]
   )
+
   const rightmostDate = getRightmostVisibleDate(
-    contractEnd,
+    endDate,
     last(betPoints)?.[0],
     new Date(Date.now())
   )
-  const visibleRange = [contractStart, rightmostDate]
+  const visibleRange = [startDate, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
