@@ -21,25 +21,17 @@ import { useElementWidth } from 'web/hooks/use-element-width'
 // contracts. the values are stored "linearly" and can include zero.
 // as a result, we have to do some weird-looking stuff in this code
 
-const getY = (p: number, contract: PseudoNumericContract) => {
-  const { min, max, isLogScale } = contract
-  return isLogScale
-    ? 10 ** (p * Math.log10(max - min + 1)) + min - 1
-    : p * (max - min) + min
+const getScaleP = (min: number, max: number, isLogScale: boolean) => {
+  return (p: number) =>
+    isLogScale
+      ? 10 ** (p * Math.log10(max - min + 1)) + min - 1
+      : p * (max - min) + min
 }
 
-const getBetPoints = (contract: PseudoNumericContract, bets: Bet[]) => {
+const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
   return sortBy(bets, (b) => b.createdTime).map(
-    (b) => [new Date(b.createdTime), getY(b.probAfter, contract)] as const
+    (b) => [new Date(b.createdTime), scaleP(b.probAfter)] as const
   )
-}
-
-const getStartPoint = (contract: PseudoNumericContract, start: Date) => {
-  return [start, getY(getInitialProbability(contract), contract)] as const
-}
-
-const getEndPoint = (contract: PseudoNumericContract, end: Date) => {
-  return [end, getY(getProbability(contract), contract)] as const
 }
 
 export const PseudoNumericContractChart = (props: {
@@ -48,36 +40,38 @@ export const PseudoNumericContractChart = (props: {
   height?: number
 }) => {
   const { contract, bets } = props
-  const [contractStart, contractEnd] = getDateRange(contract)
-  const betPoints = useMemo(
-    () => getBetPoints(contract, bets),
-    [contract, bets]
+  const { min, max, isLogScale } = contract
+  const [startDate, endDate] = getDateRange(contract)
+  const scaleP = useMemo(
+    () => getScaleP(min, max, isLogScale),
+    [min, max, isLogScale]
   )
+  const startP = scaleP(getInitialProbability(contract))
+  const endP = scaleP(getProbability(contract))
+  const betPoints = useMemo(() => getBetPoints(bets, scaleP), [bets, scaleP])
   const data = useMemo(
     () => [
-      getStartPoint(contract, contractStart),
+      [startDate, startP] as const,
       ...betPoints,
-      getEndPoint(contract, contractEnd ?? MAX_DATE),
+      [endDate ?? MAX_DATE, endP] as const,
     ],
-    [contract, betPoints, contractStart, contractEnd]
+    [betPoints, startDate, startP, endDate, endP]
   )
   const rightmostDate = getRightmostVisibleDate(
-    contractEnd,
+    endDate,
     last(betPoints)?.[0],
     new Date(Date.now())
   )
-  const visibleRange = [contractStart, rightmostDate]
+  const visibleRange = [startDate, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
-  const yScale = contract.isLogScale
-    ? scaleLog(
-        [Math.max(contract.min, 1), contract.max],
-        [height - MARGIN_Y, 0]
-      ).clamp(true) // make sure zeroes go to the bottom
-    : scaleLinear([contract.min, contract.max], [height - MARGIN_Y, 0])
+  // clamp log scale to make sure zeroes go to the bottom
+  const yScale = isLogScale
+    ? scaleLog([Math.max(min, 1), max], [height - MARGIN_Y, 0]).clamp(true)
+    : scaleLinear([min, max], [height - MARGIN_Y, 0])
 
   return (
     <div ref={containerRef}>
