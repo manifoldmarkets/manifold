@@ -15,7 +15,7 @@ export const PortfolioValueSection = memo(
 
     const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
     const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
-    const [graphMode, setGraphMode] = useState<'profit' | 'value'>('value')
+    const [graphMode, setGraphMode] = useState<'profit' | 'value'>('profit')
     const [graphDisplayNumber, setGraphDisplayNumber] = useState<
       number | string | null
     >(null)
@@ -40,24 +40,6 @@ export const PortfolioValueSection = memo(
       <>
         <Row className="mb-2 justify-between">
           <Row className="gap-4 sm:gap-8">
-            <Col
-              className={clsx(
-                'cursor-pointer',
-                graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-              )}
-              onClick={() => setGraphMode('value')}
-            >
-              <div className="text-greyscale-6 text-xs sm:text-sm">
-                Portfolio value
-              </div>
-              <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
-                {graphMode === 'value'
-                  ? graphDisplayNumber
-                    ? graphDisplayNumber
-                    : formatMoney(totalValue)
-                  : formatMoney(totalValue)}
-              </div>
-            </Col>
             <Col
               className={clsx(
                 'cursor-pointer',
@@ -89,6 +71,25 @@ export const PortfolioValueSection = memo(
                     ? graphDisplayNumber
                     : formatMoney(totalProfit)
                   : formatMoney(totalProfit)}
+              </div>
+            </Col>
+
+            <Col
+              className={clsx(
+                'cursor-pointer',
+                graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+              )}
+              onClick={() => setGraphMode('value')}
+            >
+              <div className="text-greyscale-6 text-xs sm:text-sm">
+                Portfolio value
+              </div>
+              <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
+                {graphMode === 'value'
+                  ? graphDisplayNumber
+                    ? graphDisplayNumber
+                    : formatMoney(totalValue)
+                  : formatMoney(totalValue)}
               </div>
             </Col>
           </Row>
