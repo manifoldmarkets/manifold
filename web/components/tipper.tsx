@@ -128,7 +128,7 @@ function DownTip(props: { onClick?: () => void }) {
 
 function UpTip(props: { onClick?: () => void; value: number }) {
   const { onClick, value } = props
-  const IconKind = value >= 10 ? ChevronDoubleRightIcon : ChevronRightIcon
+  const IconKind = value > TIP_SIZE ? ChevronDoubleRightIcon : ChevronRightIcon
   return (
     <Tooltip
       className="h-6 w-6"
