@@ -4,7 +4,6 @@ import { last } from 'lodash'
 import { memo, useRef, useState } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Period } from 'web/lib/firebase/users'
-import { PillButton } from '../buttons/pill-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PortfolioValueGraph } from './portfolio-value-graph'
@@ -144,37 +143,6 @@ export function PortfolioPeriodSelection(props: {
       >
         ALL
       </button>
-    </Row>
-  )
-}
-
-export function GraphToggle(props: {
-  setGraphMode: (mode: 'profit' | 'value') => void
-  graphMode: string
-}) {
-  const { setGraphMode, graphMode } = props
-  return (
-    <Row className="relative mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
-      <PillButton
-        selected={graphMode === 'value'}
-        onSelect={() => {
-          setGraphMode('value')
-        }}
-        xs={true}
-        className="z-50"
-      >
-        Value
-      </PillButton>
-      <PillButton
-        selected={graphMode === 'profit'}
-        onSelect={() => {
-          setGraphMode('profit')
-        }}
-        xs={true}
-        className="z-50"
-      >
-        Profit
-      </PillButton>
     </Row>
   )
 }
