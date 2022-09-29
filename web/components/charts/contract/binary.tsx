@@ -8,6 +8,7 @@ import { BinaryContract } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
+  TooltipProps,
   MARGIN_X,
   MARGIN_Y,
   getDateRange,
@@ -15,10 +16,7 @@ import {
   formatDateInRange,
   formatPct,
 } from '../helpers'
-import {
-  SingleValueHistoryTooltipProps,
-  SingleValueHistoryChart,
-} from '../generic-charts'
+import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
@@ -31,7 +29,7 @@ const getBetPoints = (bets: Bet[]) => {
   }))
 }
 
-const BinaryChartTooltip = (props: SingleValueHistoryTooltipProps<Bet>) => {
+const BinaryChartTooltip = (props: TooltipProps<HistoryPoint<Bet>>) => {
   const { p, xScale } = props
   const { x, y, datum } = p
   const [start, end] = xScale.domain()
