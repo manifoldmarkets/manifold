@@ -15,6 +15,7 @@ import { IS_DEV, PORT } from './envs';
 import AppFirestore from './firestore';
 import log from './logger';
 import * as Manifold from './manifold-api';
+import ManifoldFirestore from './manifold-firestore';
 import { Market } from './market';
 import TwitchBot from './twitch-bot';
 import User from './user';
@@ -24,6 +25,7 @@ export default class App {
   io: Server;
   readonly bot: TwitchBot;
   readonly firestore: AppFirestore;
+  readonly manifoldFirestore: ManifoldFirestore;
 
   selectedMarketMap: { [twitchChannel: string]: Market } = {};
 
@@ -36,6 +38,7 @@ export default class App {
 
     this.bot = new TwitchBot(this);
     this.firestore = new AppFirestore();
+    this.manifoldFirestore = new ManifoldFirestore();
 
     moment.updateLocale('en', {
       relativeTime: {
@@ -138,11 +141,13 @@ export default class App {
       const type = socket.handshake.query.type;
       const controlToken = socket.handshake.query.controlToken;
       if (!(type === 'dock' || type === 'overlay')) {
+        log.warn('Socket connection failed: Invalid connection type');
         next(new Error('Invalid connection type'));
         return;
       }
       const connectedUser = await this.firestore.getUserForControlToken(<string>controlToken);
       if (!connectedUser) {
+        log.warn('Socket connection failed: No account associated with this control token');
         next(new Error('No account associated with this control token'));
         return;
       }
@@ -154,6 +159,8 @@ export default class App {
         new DockClient(this, socket);
       } else if (socket.handshake.query.type === 'overlay') {
         new OverlayClient(this, socket);
+      } else {
+        log.error('Invalid connection type connected. This indicates a software bug on the server.');
       }
     });
 

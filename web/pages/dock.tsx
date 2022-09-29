@@ -105,7 +105,7 @@ export default () => {
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
-    socket = io({ query: { type: 'dock', controlToken: params['t'] }, reconnectionDelay: 0, reconnectionDelayMax: 0, rememberUpgrade: true });
+    socket = io({ query: { type: 'dock', controlToken: params['t'] }, reconnectionDelay: 100, reconnectionDelayMax: 100, rememberUpgrade: true });
     socket.on('connect', () => {
       console.debug(`Using transport: ${socket.io.engine.transport.name}`);
       socket.io.engine.on('upgrade', () => {

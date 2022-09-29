@@ -60,7 +60,7 @@ class Application {
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
-    this.socket = io({ query: { type: 'overlay', controlToken: params['t'] }, reconnectionDelay: 0, reconnectionDelayMax: 0, rememberUpgrade: true });
+    this.socket = io({ query: { type: 'overlay', controlToken: params['t'] }, reconnectionDelay: 100, reconnectionDelayMax: 100, rememberUpgrade: true });
     this.socket.on('disconnect', (reason: Socket.DisconnectReason, description?: DisconnectDescription) => {
       const reasons: { reason: Socket.DisconnectReason; desc: string }[] = [
         { reason: 'io server disconnect', desc: 'The server has forcefully disconnected the socket with socket.disconnect()' },
@@ -90,20 +90,29 @@ class Application {
 
   registerPacketHandlers() {
     this.socket.on(Packet.ADD_BETS, (bets: FullBet[]) => {
-      for (const bet of bets) {
-        this.addBet(bet);
+      try {
+        for (const bet of bets) {
+          this.addBet(bet);
+        }
+      } catch (e) {
+        console.trace(e);
       }
     });
     this.socket.on(Packet.SELECT_MARKET, (p: PacketSelectMarket) => {
-      this.resetUI();
-      console.log(p);
-      this.loadMarket(p);
+      try {
+        this.resetUI();
+        this.loadMarket(p);
+      } catch (e) {
+        console.trace(e);
+      }
     });
     this.socket.on(Packet.CLEAR, () => {
       this.resetUI();
     });
     this.socket.on('connect', () => {
       console.debug(`Using transport: ${this.socket.io.engine.transport.name}`);
+
+      // This event handler needs to be registered inside the 'connect' handler:
       this.socket.io.engine.on('upgrade', () => {
         console.debug(`Upgraded transport: ${this.socket.io.engine.transport.name}`);
       });
@@ -121,6 +130,10 @@ class Application {
 
   loadMarket(p: PacketSelectMarket) {
     this.currentMarket = { ...p };
+
+    if (this.currentMarket.bets.length > 0) {
+      this.currentMarket.probability = this.currentMarket.bets[this.currentMarket.bets.length - 1].probAfter;
+    }
 
     const questionLength = this.currentMarket.question.length;
     const questionDiv = document.getElementById('question');
@@ -153,11 +166,11 @@ class Application {
     this.chart.data = data;
 
     for (const bet of p.initialBets) {
-      this.addBet(bet, false);
+      this.addBet(bet, { addToChart: false, animateHeight: false });
     }
   }
 
-  addBet(bet: FullBet, addToChart = true) {
+  addBet(bet: FullBet, options = { addToChart: true, animateHeight: true }) {
     const name = bet.username;
 
     const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));
@@ -181,6 +194,10 @@ class Application {
 
     this.betElements.push(betElement);
     t.offsetLeft;
+
+    if (!options.animateHeight) {
+      t.style.height = '1.2em';
+    }
     setTimeout(() => {
       t.classList.add('!min-h-[1.2em]');
     }, 1);
@@ -192,7 +209,7 @@ class Application {
       }, 1000);
     }
 
-    if (this.currentMarket && addToChart) {
+    if (this.currentMarket && options.addToChart) {
       this.currentMarket.probability = bet.probAfter;
       this.currentProbability_percent = this.currentMarket.probability * 100;
       this.chart.data.push(new Point(bet.createdTime, bet.probBefore));
@@ -228,8 +245,9 @@ export default () => {
       setConnectionState(ConnectionState.CONNECTED);
     });
     app.socket.on('disconnect', () => {
-      setLoadingMessage('Connecting to server...');
-      setConnectionState(ConnectionState.CONNECTING);
+      // These lines are commented out as a test fix not showing temporary disconnects:
+      // setLoadingMessage('Connecting to server...');
+      // setConnectionState(ConnectionState.CONNECTING);
     });
     app.socket.on(Packet.RESOLVE, (packet: PacketResolved) => {
       setResolvedData(packet);

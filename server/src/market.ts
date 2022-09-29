@@ -263,7 +263,7 @@ export class Market {
       name = user.data.twitchLogin;
     } catch {
       try {
-        const user = await Manifold.getUserByID(userID);
+        const user = this.app.manifoldFirestore.getManifoldUserByManifoldID(userID); //!!! To remove: await Manifold.getUserByID(userID);
         name = user.name;
       } catch (e) {
         log.warn(e);

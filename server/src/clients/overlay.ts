@@ -31,7 +31,8 @@ export default class OverlayClient {
     const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
     this.socket.emit(Packet.CLEAR);
     if (market) {
-      const selectMarketPacket: PacketSelectMarket = { ...market.data, initialBets: market.allBets.slice(market.allBets.length - 3) };
+      const initialBetIndex = Math.max(0, market.allBets.length - 3);
+      const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.allBets, initialBets: market.allBets.slice(initialBetIndex) };
       this.socket.emit(Packet.SELECT_MARKET, selectMarketPacket);
       if (market.resolveData) {
         this.socket.emit(Packet.RESOLVE, market.resolveData);
