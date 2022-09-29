@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 
 import { Contract, CPMMContract } from '../../common/contract'
 import {
-  getAllPrivateUsers,
   getPrivateUser,
   getUser,
   getValue,
@@ -20,6 +19,7 @@ import { sendWeeklyPortfolioUpdateEmail } from './emails'
 import { contractUrl } from './utils'
 import { Txn } from '../../common/txn'
 import { formatMoney } from '../../common/util/format'
+import { getContractBetMetrics } from '../../common/calculate'
 
 // TODO: reset weeklyPortfolioUpdateEmailSent to false for all users at the start of each week
 export const weeklyPortfolioUpdateEmails = functions
@@ -36,12 +36,12 @@ const firestore = admin.firestore()
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
     ? // ian & stephen's ids
-      // ? filterDefined([
-      //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
-      //   await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
-      // ])
-      await getAllPrivateUsers()
-    : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
+      filterDefined([
+        await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
+        // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
+      ])
+    : // await getAllPrivateUsers()
+      filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers
     .filter((user) => {
@@ -165,28 +165,42 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
             const bets = userBets.filter(
               (bet) => bet.contractId === contract.id
             )
+            const previousBets = bets.filter(
+              (b) => b.createdTime < Date.now() - 7 * DAY_MS
+            )
+
+            const betsInLastWeek = bets.filter(
+              (b) => b.createdTime >= Date.now() - 7 * DAY_MS
+            )
 
             const marketProbabilityAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
             const currentMarketProbability = cpmmContract.resolutionProbability
               ? cpmmContract.resolutionProbability
               : cpmmContract.prob
-            const betsValueAWeekAgo = computeInvestmentValueCustomProb(
-              bets.filter((b) => b.createdTime < Date.now() - 7 * DAY_MS),
+            const betsMadeAWeekAgoValue = computeInvestmentValueCustomProb(
+              previousBets,
               contract,
               marketProbabilityAWeekAgo
             )
-            const currentBetsValue = computeInvestmentValueCustomProb(
-              bets,
+            const currentBetsMadeAWeekAgoValue =
+              computeInvestmentValueCustomProb(
+                previousBets,
+                contract,
+                currentMarketProbability
+              )
+            const betsMadeInLastWeekProfit = getContractBetMetrics(
               contract,
-              currentMarketProbability
-            )
+              betsInLastWeek
+            ).profit
             const marketChange =
               currentMarketProbability - marketProbabilityAWeekAgo
             return {
-              currentValue: currentBetsValue,
-              pastValue: betsValueAWeekAgo,
-              difference: currentBetsValue - betsValueAWeekAgo,
+              currentValue: currentBetsMadeAWeekAgoValue,
+              pastValue: betsMadeAWeekAgoValue,
+              difference:
+                betsMadeInLastWeekProfit +
+                (currentBetsMadeAWeekAgoValue - betsMadeAWeekAgoValue),
               contractSlug: contract.slug,
               marketProbAWeekAgo: marketProbabilityAWeekAgo,
               questionTitle: contract.question,
