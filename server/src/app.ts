@@ -6,6 +6,7 @@ import express, { Express } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import moment from 'moment';
 import { AddressInfo } from 'net';
+import fetch from 'node-fetch';
 import path from 'path';
 import { Server } from 'socket.io';
 import registerAPIEndpoints from './api';
@@ -58,6 +59,13 @@ export default class App {
         yy: '%dY',
       },
     });
+
+    fetch('http://metadata.google.internal/computeMetadata/v1/instance/id', { headers: { 'Metadata-Flavor': 'Google' } })
+      .then(async (r) => {
+        const id = await r.text();
+        log.info('Running with Google Cloud Run instance id: ' + id);
+      })
+      .catch(() => {});
   }
 
   public getMarketForTwitchChannel(channel: string): Market | null {
