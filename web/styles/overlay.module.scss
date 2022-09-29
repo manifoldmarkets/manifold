@@ -26,7 +26,6 @@ $borderColor: color.scale($backgroundColor, $lightness: 10%);
   min-height: 0;
   overflow: hidden;
   transition: min-height 0.5s ease-in-out;
-  font-size: 0.7em;
 
   & p {
     white-space: pre-wrap;

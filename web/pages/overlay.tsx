@@ -138,11 +138,11 @@ class Application {
     const questionLength = this.currentMarket.question.length;
     const questionDiv = document.getElementById('question');
     if (questionLength > 60) {
-      questionDiv.style.fontSize = '0.8em';
+      questionDiv.style.fontSize = '1.0em';
     } else if (questionLength > 150) {
       questionDiv.style.fontSize = '0.8em';
     } else {
-      questionDiv.style.fontSize = '';
+      questionDiv.style.fontSize = '1.5em';
     }
     questionDiv.innerHTML = this.currentMarket.question;
     this.currentProbability_percent = this.currentMarket.probability * 100;
@@ -186,7 +186,7 @@ class Application {
     t.querySelector('#name').innerHTML = name;
     t.querySelector('.amount').innerHTML = betAmountMagnitude.toFixed(0);
     t.querySelector('.boughtSold').innerHTML = (bet.amount < 0 ? 'sold ' : '') + ((bet.amount < 0 ? !positiveBet : positiveBet) ? 'YES' : 'NO');
-    (t.querySelector('.color') as HTMLElement).style.color = positiveBet ? '#92ff83' : '#ff3d3d';
+    (t.querySelector('.color') as HTMLElement).style.color = positiveBet ? '#92ff83' : '#ff6666';
 
     const betElement = new BetElement();
     betElement.element = t;
@@ -315,21 +315,21 @@ export default () => {
           <Col className={clsx('absolute text-white bg-[#212121] leading-[normal] inset-0')} style={{ fontSize: 'calc(min(70px, 4.5vw))' }}>
             <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
               <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
-              <Col className="items-center justify-center justify-self-end min-w-[3em]">
-                <div id="chance" className="after:content-['%'] text-[1.5em] text-[#A5FF6E]"></div>
-                <div className="-mt-[0.3em] text-[0.7em] text-[#A5FF6E]">chance</div>
+              <Col className="items-center justify-center justify-self-end w-[5em]">
+                <div id="chance" className="after:content-['%'] text-[2.5em] text-[#A5FF6E]"></div>
+                <div className="-mt-[0.3em] text-[1.0em] text-[#A5FF6E]">chance</div>
               </Col>
             </Row>
             <Col className={clsx('relative grow shrink items-stretch min-h-0', resolvedData && 'mb-1')}>
               <canvas id="chart" className="absolute" style={{ aspectRatio: 'unset' }}></canvas>
             </Col>
             <Row className={clsx('justify-end items-center p-[0.2em]', resolvedData && 'hidden')}>
-              <Col className="grow shrink h-full items-start justify-end max-h-[2.5em] overflow-hidden">
+              <Col className="grow shrink h-full items-start justify-end max-h-[3.5em] overflow-hidden">
                 <Col id="transactions" className="grow shrink h-full">
-                  <div id="transaction-template" className={clsx(styles.bet)}>
+                  <div id="transaction-template" className={clsx(styles.bet, 'text-[1em]')}>
                     <div id="name" className="font-bold inline-block truncate max-w-[15em] align-bottom"></div>{' '}
                     <div className="color inline">
-                      <p className="boughtSold"></p> M$<p className="amount">1000</p>
+                      <p className="boughtSold"></p> M$ <p className="amount"></p>
                     </div>
                   </div>
                 </Col>
@@ -344,6 +344,7 @@ export default () => {
                     aspectRatio: '1',
                     display: 'block',
                     height: '2.0em',
+                    transform: 'scale(1.8)',
                   }}
                 ></div>
                 {/* <div className="text-[0.4em] whitespace-nowrap" style={{ fontFamily: "Major Mono Display, monospace" }}>
@@ -351,7 +352,7 @@ export default () => {
                                     <br />
                                     markets
                                 </div> */}
-                <div className="text-center text-[0.7em]" style={{ fontWeight: 'bold' }}>
+                <div className="text-center text-[1.0em]" style={{ fontWeight: 'bold' }}>
                   !signup
                 </div>
               </Col>
