@@ -147,34 +147,3 @@ export function PortfolioPeriodSelection(props: {
     </Row>
   )
 }
-
-export function GraphToggle(props: {
-  setGraphMode: (mode: 'profit' | 'value') => void
-  graphMode: string
-}) {
-  const { setGraphMode, graphMode } = props
-  return (
-    <Row className="relative mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
-      <PillButton
-        selected={graphMode === 'value'}
-        onSelect={() => {
-          setGraphMode('value')
-        }}
-        xs={true}
-        className="z-50"
-      >
-        Value
-      </PillButton>
-      <PillButton
-        selected={graphMode === 'profit'}
-        onSelect={() => {
-          setGraphMode('profit')
-        }}
-        xs={true}
-        className="z-50"
-      >
-        Profit
-      </PillButton>
-    </Row>
-  )
-}
