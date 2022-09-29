@@ -93,7 +93,7 @@ const getTrackedAnswers = (
 }
 
 const getStartPoint = (answers: Answer[], start: Date) => {
-  return [start, answers.map((_) => 0)] as const
+  return { x: start, y: answers.map((_) => 0) }
 }
 
 const getEndPoint = (
@@ -101,10 +101,10 @@ const getEndPoint = (
   contract: FreeResponseContract | MultipleChoiceContract,
   end: Date
 ) => {
-  return [
-    end,
-    answers.map((a) => getOutcomeProbability(contract, a.id)),
-  ] as const
+  return {
+    x: end,
+    y: answers.map((a) => getOutcomeProbability(contract, a.id)),
+  }
 }
 
 const getBetPoints = (answers: Answer[], bets: Bet[]) => {
@@ -121,10 +121,10 @@ const getBetPoints = (answers: Answer[], bets: Bet[]) => {
     const sharesSquared = sum(
       Object.values(sharesByOutcome).map((shares) => shares ** 2)
     )
-    points.push([
-      new Date(bet.createdTime),
-      answers.map((answer) => sharesByOutcome[answer.id] ** 2 / sharesSquared),
-    ])
+    points.push({
+      x: new Date(bet.createdTime),
+      y: answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared),
+    })
   }
   return points
 }
@@ -151,7 +151,7 @@ export const ChoiceContractChart = (props: {
   )
   const rightmostDate = getRightmostVisibleDate(
     contractEnd,
-    last(betPoints)?.[0],
+    last(betPoints)?.x,
     new Date(Date.now())
   )
   const visibleRange = [contractStart, rightmostDate]

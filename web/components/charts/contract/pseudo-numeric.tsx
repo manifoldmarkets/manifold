@@ -29,9 +29,10 @@ const getScaleP = (min: number, max: number, isLogScale: boolean) => {
 }
 
 const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
-  return sortBy(bets, (b) => b.createdTime).map(
-    (b) => [new Date(b.createdTime), scaleP(b.probAfter)] as const
-  )
+  return sortBy(bets, (b) => b.createdTime).map((b) => ({
+    x: new Date(b.createdTime),
+    y: scaleP(b.probAfter),
+  }))
 }
 
 export const PseudoNumericContractChart = (props: {
@@ -51,15 +52,15 @@ export const PseudoNumericContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(bets, scaleP), [bets, scaleP])
   const data = useMemo(
     () => [
-      [startDate, startP] as const,
+      { x: startDate, y: startP },
       ...betPoints,
-      [endDate ?? MAX_DATE, endP] as const,
+      { x: endDate ?? MAX_DATE, y: endP },
     ],
     [betPoints, startDate, startP, endDate, endP]
   )
   const rightmostDate = getRightmostVisibleDate(
     endDate,
-    last(betPoints)?.[0],
+    last(betPoints)?.x,
     new Date(Date.now())
   )
   const visibleRange = [startDate, rightmostDate]

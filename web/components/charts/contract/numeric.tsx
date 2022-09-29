@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react'
-import { max, range } from 'lodash'
+import { range } from 'lodash'
 import { scaleLinear } from 'd3-scale'
 
 import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
@@ -14,9 +14,10 @@ const getNumericChartData = (contract: NumericContract) => {
   const { totalShares, bucketCount, min, max } = contract
   const step = (max - min) / bucketCount
   const bucketProbs = getDpmOutcomeProbabilities(totalShares)
-  return range(bucketCount).map(
-    (i) => [min + step * (i + 0.5), bucketProbs[`${i}`]] as const
-  )
+  return range(bucketCount).map((i) => ({
+    x: min + step * (i + 0.5),
+    y: bucketProbs[`${i}`],
+  }))
 }
 
 export const NumericContractChart = (props: {
@@ -24,16 +25,14 @@ export const NumericContractChart = (props: {
   height?: number
 }) => {
   const { contract } = props
+  const { min, max } = contract
   const data = useMemo(() => getNumericChartData(contract), [contract])
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const maxY = max(data.map((d) => d[1])) as number
-  const xScale = scaleLinear(
-    [contract.min, contract.max],
-    [0, width - MARGIN_X]
-  )
+  const maxY = Math.max(...data.map((d) => d.y))
+  const xScale = scaleLinear([min, max], [0, width - MARGIN_X])
   const yScale = scaleLinear([0, maxY], [height - MARGIN_Y, 0])
   return (
     <div ref={containerRef}>

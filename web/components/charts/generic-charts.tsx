@@ -25,9 +25,9 @@ import { formatLargeNumber } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import { Row } from 'web/components/layout/row'
 
-export type MultiPoint = readonly [Date, number[]] // [time, [ordered outcome probs]]
-export type HistoryPoint = readonly [Date, number] // [time, number or percentage]
-export type DistributionPoint = readonly [number, number] // [outcome amount, prob]
+export type MultiPoint = { x: Date; y: number[] }
+export type HistoryPoint = { x: Date; y: number }
+export type DistributionPoint = { x: number; y: number }
 export type PositionValue<P> = TooltipPosition & { p: P }
 
 const formatPct = (n: number, digits?: number) => {
@@ -118,10 +118,10 @@ export const SingleValueDistributionChart = (props: {
     useState<PositionValue<DistributionPoint>>()
   const xScale = viewXScale ?? props.xScale
 
-  const px = useCallback((p: DistributionPoint) => xScale(p[0]), [xScale])
+  const px = useCallback((p: DistributionPoint) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
-  const py1 = useCallback((p: DistributionPoint) => yScale(p[1]), [yScale])
-  const xBisector = bisector((p: DistributionPoint) => p[0])
+  const py1 = useCallback((p: DistributionPoint) => yScale(p.y), [yScale])
+  const xBisector = bisector((p: DistributionPoint) => p.x)
 
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const fmtX = (n: number) => formatLargeNumber(n)
@@ -154,8 +154,8 @@ export const SingleValueDistributionChart = (props: {
         // so your queryX is out of bounds
         return
       }
-      const [_x, y] = item
-      setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
+      const p = { x: queryX, y: item.y }
+      setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
     }
   })
 
@@ -167,7 +167,7 @@ export const SingleValueDistributionChart = (props: {
     <div className="relative">
       {mouseState && (
         <ChartTooltip className="text-sm" {...mouseState}>
-          <strong>{fmtY(mouseState.p[1])}</strong> {fmtX(mouseState.p[0])}
+          <strong>{fmtY(mouseState.p.y)}</strong> {fmtX(mouseState.p.x)}
         </ChartTooltip>
       )}
       <SVGChart
@@ -209,10 +209,10 @@ export const MultiValueHistoryChart = (props: {
   const xScale = viewXScale ?? props.xScale
 
   type SP = SeriesPoint<MultiPoint>
-  const px = useCallback((p: SP) => xScale(p.data[0]), [xScale])
+  const px = useCallback((p: SP) => xScale(p.data.x), [xScale])
   const py0 = useCallback((p: SP) => yScale(p[0]), [yScale])
   const py1 = useCallback((p: SP) => yScale(p[1]), [yScale])
-  const xBisector = bisector((p: MultiPoint) => p[0])
+  const xBisector = bisector((p: MultiPoint) => p.x)
 
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const [start, end] = xScale.domain()
@@ -232,7 +232,7 @@ export const MultiValueHistoryChart = (props: {
   const series = useMemo(() => {
     const d3Stack = stack<MultiPoint, number>()
       .keys(range(0, labels.length))
-      .value(([_date, probs], o) => probs[o])
+      .value(({ y }, o) => y[o])
       .order(stackOrderReverse)
     return d3Stack(data)
   }, [data, labels.length])
@@ -260,8 +260,8 @@ export const MultiValueHistoryChart = (props: {
         // so your queryX is out of bounds
         return
       }
-      const [_x, ys] = item
-      setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, ys] })
+      const p = { x: queryX, y: item.y }
+      setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
     }
   })
 
@@ -269,7 +269,7 @@ export const MultiValueHistoryChart = (props: {
     setMouseState(undefined)
   })
 
-  const mouseProbs = mouseState?.p[1] ?? []
+  const mouseProbs = mouseState?.p.y ?? []
   const legendItems = sortBy(
     mouseProbs.map((p, i) => ({
       color: colors[i],
@@ -284,7 +284,7 @@ export const MultiValueHistoryChart = (props: {
     <div className="relative">
       {mouseState && (
         <ChartTooltip {...mouseState}>
-          {fmtX(mouseState.p[0])}
+          {fmtX(mouseState.p.x)}
           <Legend className="max-w-xs text-sm" items={legendItems} />
         </ChartTooltip>
       )}
@@ -328,10 +328,10 @@ export const SingleValueHistoryChart = (props: {
   const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint>>()
   const xScale = viewXScale ?? props.xScale
 
-  const px = useCallback((p: HistoryPoint) => xScale(p[0]), [xScale])
+  const px = useCallback((p: HistoryPoint) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
-  const py1 = useCallback((p: HistoryPoint) => yScale(p[1]), [yScale])
-  const xBisector = bisector((p: HistoryPoint) => p[0])
+  const py1 = useCallback((p: HistoryPoint) => yScale(p.y), [yScale])
+  const xBisector = bisector((p: HistoryPoint) => p.x)
 
   const { fmtX, fmtY, xAxis, yAxis } = useMemo(() => {
     const [start, end] = xScale.domain()
@@ -370,8 +370,8 @@ export const SingleValueHistoryChart = (props: {
         // so your queryX is out of bounds
         return
       }
-      const [_x, y] = item
-      setMouseState({ top: mouseY - 10, left: mouseX + 60, p: [queryX, y] })
+      const p = { x: queryX, y: item.y }
+      setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
     }
   })
 
@@ -383,7 +383,7 @@ export const SingleValueHistoryChart = (props: {
     <div className="relative">
       {mouseState && (
         <ChartTooltip className="text-sm" {...mouseState}>
-          <strong>{fmtY(mouseState.p[1])}</strong> {fmtX(mouseState.p[0])}
+          <strong>{fmtY(mouseState.p.y)}</strong> {fmtX(mouseState.p.x)}
         </ChartTooltip>
       )}
       <SVGChart

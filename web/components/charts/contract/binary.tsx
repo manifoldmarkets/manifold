@@ -17,9 +17,10 @@ import { SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
 const getBetPoints = (bets: Bet[]) => {
-  return sortBy(bets, (b) => b.createdTime).map(
-    (b) => [new Date(b.createdTime), b.probAfter] as const
-  )
+  return sortBy(bets, (b) => b.createdTime).map((b) => ({
+    x: new Date(b.createdTime),
+    y: b.probAfter,
+  }))
 }
 
 export const BinaryContractChart = (props: {
@@ -34,16 +35,16 @@ export const BinaryContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(bets), [bets])
   const data = useMemo(
     () => [
-      [startDate, startP] as const,
+      { x: startDate, y: startP },
       ...betPoints,
-      [endDate ?? MAX_DATE, endP] as const,
+      { x: endDate ?? MAX_DATE, y: endP },
     ],
     [startDate, startP, endDate, endP, betPoints]
   )
 
   const rightmostDate = getRightmostVisibleDate(
     endDate,
-    last(betPoints)?.[0],
+    last(betPoints)?.x,
     new Date(Date.now())
   )
   const visibleRange = [startDate, rightmostDate]
