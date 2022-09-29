@@ -46,12 +46,14 @@ async function sendTrendingMarketsEmailsToAllUsers() {
     ? await getAllPrivateUsers()
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
-  const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
-    return (
-      user.notificationPreferences.trending_markets.includes('email') &&
-      !user.weeklyTrendingEmailSent
-    )
-  })
+  const privateUsersToSendEmailsTo = privateUsers
+    .filter((user) => {
+      return (
+        user.notificationPreferences.trending_markets.includes('email') &&
+        !user.weeklyTrendingEmailSent
+      )
+    })
+    .slice(150) // Send the emails out in batches
   log(
     'Sending weekly trending emails to',
     privateUsersToSendEmailsTo.length,
@@ -74,6 +76,7 @@ async function sendTrendingMarketsEmailsToAllUsers() {
     trendingContracts.map((c) => c.question).join('\n ')
   )
 
+  // TODO: convert to Promise.all
   for (const privateUser of privateUsersToSendEmailsTo) {
     if (!privateUser.email) {
       log(`No email for ${privateUser.username}`)
@@ -84,6 +87,9 @@ async function sendTrendingMarketsEmailsToAllUsers() {
     })
     if (contractsAvailableToSend.length < numContractsToSend) {
       log('not enough new, unbet-on contracts to send to user', privateUser.id)
+      await firestore.collection('private-users').doc(privateUser.id).update({
+        weeklyTrendingEmailSent: true,
+      })
       continue
     }
     // choose random subset of contracts to send to user

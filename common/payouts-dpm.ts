@@ -168,7 +168,7 @@ export const getPayoutsMultiOutcome = (
     const winnings = (shares / sharesByOutcome[outcome]) * prob * poolTotal
     const profit = winnings - amount
 
-    const payout = amount + (1 - DPM_FEES) * Math.max(0, profit)
+    const payout = amount + (1 - DPM_FEES) * profit
     return { userId, profit, payout }
   })
 

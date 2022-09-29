@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 
-import { SimpleBetPanel } from './bet-panel'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import { BuyPanel, SimpleBetPanel } from './bet-panel'
+import {
+  BinaryContract,
+  CPMMBinaryContract,
+  PseudoNumericContract,
+} from 'common/contract'
 import { Modal } from './layout/modal'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -10,6 +14,9 @@ import { useSaveBinaryShares } from './use-save-binary-shares'
 import { Col } from './layout/col'
 import { Button } from 'web/components/button'
 import { BetSignUpPrompt } from './sign-up-prompt'
+import { User } from 'web/lib/firebase/users'
+import { SellRow } from './sell-row'
+import { useUnfilledBets } from 'web/hooks/use-bets'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -64,11 +71,51 @@ export default function BetButton(props: {
         <SimpleBetPanel
           className={betPanelClassName}
           contract={contract}
-          selected="YES"
           onBetSuccess={() => setOpen(false)}
           hasShares={hasYesShares || hasNoShares}
         />
       </Modal>
+    </>
+  )
+}
+
+export function BinaryMobileBetting(props: { contract: BinaryContract }) {
+  const { contract } = props
+  const user = useUser()
+  if (user) {
+    return <SignedInBinaryMobileBetting contract={contract} user={user} />
+  } else {
+    return <BetSignUpPrompt className="w-full" />
+  }
+}
+
+export function SignedInBinaryMobileBetting(props: {
+  contract: BinaryContract
+  user: User
+}) {
+  const { contract, user } = props
+  const unfilledBets = useUnfilledBets(contract.id) ?? []
+
+  return (
+    <>
+      <Col className="w-full gap-2 px-1">
+        <Col>
+          <BuyPanel
+            hidden={false}
+            contract={contract as CPMMBinaryContract}
+            user={user}
+            unfilledBets={unfilledBets}
+            mobileView={true}
+          />
+        </Col>
+        <SellRow
+          contract={contract}
+          user={user}
+          className={
+            'border-greyscale-3 bg-greyscale-1 rounded-md border-2 px-4 py-2'
+          }
+        />
+      </Col>
     </>
   )
 }

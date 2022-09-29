@@ -131,7 +131,7 @@ function getCommentsOnPostCollection(postId: string) {
 }
 
 export async function listAllComments(contractId: string) {
-  return await getValues<Comment>(
+  return await getValues<ContractComment>(
     query(getCommentsCollection(contractId), orderBy('createdTime', 'desc'))
   )
 }

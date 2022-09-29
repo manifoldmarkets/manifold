@@ -12,14 +12,15 @@ import { getValueFromBucket } from '../../common/calculate-dpm'
 import { formatNumericProbability } from '../../common/pseudo-numeric'
 
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { getUser } from './utils'
+import { contractUrl, getUser } from './utils'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
 import { notification_reason_types } from '../../common/notification'
 import { Dictionary } from 'lodash'
+import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 import {
-  getNotificationDestinationsForUser,
-  notification_preference,
-} from '../../common/user-notification-preferences'
+  PerContractInvestmentsData,
+  OverallPerformanceData,
+} from './weekly-portfolio-emails'
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
@@ -152,9 +153,10 @@ export const sendWelcomeEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
 
   return await sendTemplateEmail(
     privateUser.email,
@@ -220,9 +222,11 @@ export const sendOneWeekBonusEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
+
   return await sendTemplateEmail(
     privateUser.email,
     'Manifold Markets one week anniversary gift',
@@ -252,10 +256,10 @@ export const sendCreatorGuideEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'onboarding_flow' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
   return await sendTemplateEmail(
     privateUser.email,
     'Create your own prediction market',
@@ -286,10 +290,10 @@ export const sendThankYouEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'thank_you_for_purchases' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'thank_you_for_purchases'
+  )
 
   return await sendTemplateEmail(
     privateUser.email,
@@ -469,9 +473,10 @@ export const sendInterestingMarketsEmail = async (
   )
     return
 
-  const unsubscribeUrl = `${DOMAIN}/notifications?tab=settings&section=${
-    'trending_markets' as notification_preference
-  }`
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'trending_markets'
+  )
 
   const { name } = user
   const firstName = name.split(' ')[0]
@@ -505,10 +510,6 @@ export const sendInterestingMarketsEmail = async (
     },
     deliveryTime ? { 'o:deliverytime': deliveryTime } : undefined
   )
-}
-
-function contractUrl(contract: Contract) {
-  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
 }
 
 function imageSourceUrl(contract: Contract) {
@@ -610,5 +611,49 @@ export const sendNewUniqueBettorsEmail = async (
     {
       from: `Manifold Markets <no-reply@manifold.markets>`,
     }
+  )
+}
+
+export const sendWeeklyPortfolioUpdateEmail = async (
+  user: User,
+  privateUser: PrivateUser,
+  investments: PerContractInvestmentsData[],
+  overallPerformance: OverallPerformanceData
+) => {
+  if (
+    !privateUser ||
+    !privateUser.email ||
+    !privateUser.notificationPreferences.profit_loss_updates.includes('email')
+  )
+    return
+
+  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+    privateUser,
+    'profit_loss_updates'
+  )
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+  const templateData: Record<string, string> = {
+    name: firstName,
+    unsubscribeUrl,
+    ...overallPerformance,
+  }
+  investments.forEach((investment, i) => {
+    templateData[`question${i + 1}Title`] = investment.questionTitle
+    templateData[`question${i + 1}Url`] = investment.questionUrl
+    templateData[`question${i + 1}Prob`] = investment.questionProb
+    templateData[`question${i + 1}Change`] = formatMoney(investment.difference)
+    templateData[`question${i + 1}ChangeStyle`] = investment.questionChangeStyle
+  })
+
+  await sendTemplateEmail(
+    // privateUser.email,
+    'iansphilips@gmail.com',
+    `Here's your weekly portfolio update!`,
+    investments.length === 0
+      ? 'portfolio-update-no-movers'
+      : 'portfolio-update',
+    templateData
   )
 }

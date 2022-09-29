@@ -170,3 +170,7 @@ export const chargeUser = (
 export const getContractPath = (contract: Contract) => {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
+
+export function contractUrl(contract: Contract) {
+  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
+}

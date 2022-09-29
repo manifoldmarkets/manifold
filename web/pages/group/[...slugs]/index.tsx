@@ -122,7 +122,7 @@ const groupSubpages = [
 export default function GroupPage(props: {
   group: Group | null
   memberIds: string[]
-  creator: User
+  creator: User | null
   topTraders: { user: User; score: number }[]
   topCreators: { user: User; score: number }[]
   messages: GroupComment[]
@@ -163,11 +163,11 @@ export default function GroupPage(props: {
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
 
   useSaveReferral(user, {
-    defaultReferrerUsername: creator.username,
+    defaultReferrerUsername: creator?.username,
     groupId: group?.id,
   })
 
-  if (group === null || !groupSubpages.includes(page) || slugs[2]) {
+  if (group === null || !groupSubpages.includes(page) || slugs[2] || !creator) {
     return <Custom404 />
   }
   const isCreator = user && group && user.id === group.creatorId

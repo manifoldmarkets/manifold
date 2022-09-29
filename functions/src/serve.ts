@@ -28,6 +28,7 @@ import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
+import { testscheduledfunction } from './test-scheduled-function'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -69,6 +70,7 @@ addJsonEndpointRoute('/getcurrentuser', getcurrentuser)
 addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
+addEndpointRoute('/testscheduledfunction', testscheduledfunction)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

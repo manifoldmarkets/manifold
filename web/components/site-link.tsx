@@ -6,12 +6,14 @@ export const linkClass =
   'z-10 break-anywhere hover:underline hover:decoration-indigo-400 hover:decoration-2'
 
 export const SiteLink = (props: {
-  href: string
+  href: string | undefined
   children?: ReactNode
   onClick?: () => void
   className?: string
 }) => {
   const { href, children, onClick, className } = props
+
+  if (!href) return <>{children}</>
 
   return (
     <MaybeLink href={href}>

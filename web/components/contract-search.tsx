@@ -103,6 +103,7 @@ export function ContractSearch(props: {
     loadMore: () => void
   ) => ReactNode
   autoFocus?: boolean
+  profile?: boolean | undefined
 }) {
   const {
     user,
@@ -123,6 +124,7 @@ export function ContractSearch(props: {
     maxResults,
     renderContracts,
     autoFocus,
+    profile,
   } = props
 
   const [state, setState] = usePersistentState(
@@ -239,6 +241,10 @@ export function ContractSearch(props: {
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
+      ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+        <p className="mx-2 text-gray-500">
+          This creator does not yet have any markets.
+        </p>
       ) : (
         <ContractsGrid
           contracts={renderedContracts}

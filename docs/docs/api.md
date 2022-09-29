@@ -55,6 +55,7 @@ Returns the authenticated user.
 Gets all groups, in no particular order.
 
 Parameters:
+
 - `availableToUserId`: Optional. if specified, only groups that the user can
   join and groups they've already joined will be returned.
 
@@ -64,23 +65,22 @@ Requires no authorization.
 
 Gets a group by its slug.
 
-Requires no authorization.  
+Requires no authorization.
 Note: group is singular in the URL.
 
 ### `GET /v0/group/by-id/[id]`
 
 Gets a group by its unique ID.
 
-Requires no authorization.  
+Requires no authorization.
 Note: group is singular in the URL.
 
 ### `GET /v0/group/by-id/[id]/markets`
 
 Gets a group's markets by its unique ID.
 
-Requires no authorization.  
+Requires no authorization.
 Note: group is singular in the URL.
-
 
 ### `GET /v0/markets`
 
@@ -158,13 +158,16 @@ Requires no authorization.
     //   i.e. https://manifold.markets/Austin/test-market is the same as https://manifold.markets/foo/test-market
     url: string
 
-    outcomeType: string // BINARY, FREE_RESPONSE, or NUMERIC
+    outcomeType: string // BINARY, FREE_RESPONSE, MULTIPLE_CHOICE, NUMERIC, or PSEUDO_NUMERIC
     mechanism: string // dpm-2 or cpmm-1
 
     probability: number
     pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
     p?: number // CPMM markets only, probability constant in y^p * n^(1-p) = k
     totalLiquidity?: number // CPMM markets only, the amount of mana deposited into the liquidity pool
+    min?: number // PSEUDO_NUMERIC markets only, the minimum resolvable value
+    max?: number // PSEUDO_NUMERIC markets only, the maximum resolvable value
+    isLogScale?: bool // PSEUDO_NUMERIC markets only, if true `number = (max - min + 1)^probability + minstart - 1`, otherwise `number = min + (max - min) * probability`
 
     volume: number
     volume7Days: number
@@ -554,7 +557,7 @@ Creates a new market on behalf of the authorized user.
 
 Parameters:
 
-- `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, or `NUMERIC`.
+- `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, `MULTIPLE_CHOICE`, or `PSEUDO_NUMERIC`.
 - `question`: Required. The headline question for the market.
 - `description`: Required. A long description describing the rules for the market.
   - Note: string descriptions do **not** turn into links, mentions, formatted text. Instead, rich text descriptions must be in [TipTap json](https://tiptap.dev/guide/output#option-1-json).
@@ -569,6 +572,12 @@ For numeric markets, you must also provide:
 
 - `min`: The minimum value that the market may resolve to.
 - `max`: The maximum value that the market may resolve to.
+- `isLogScale`: If true, your numeric market will increase exponentially from min to max.
+- `initialValue`: An initial value for the market, between min and max, exclusive.
+
+For multiple choice markets, you must also provide:
+
+- `answers`: An array of strings, each of which will be a valid answer for the market.
 
 Example request:
 
@@ -582,12 +591,17 @@ $ curl https://manifold.markets/api/v0/market -X POST -H 'Content-Type: applicat
                  "initialProb":25}'
 ```
 
+### `POST /v0/market/[marketId]/add-liquidity`
+
+Adds a specified amount of liquidity into the market.
+
+- `amount`: Required. The amount of liquidity to add, in M$.
 
 ### `POST /v0/market/[marketId]/close`
 
 Closes a market on behalf of the authorized user.
-- `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in past.
 
+- `closeTime`: Optional. Milliseconds since the epoch to close the market at. If not provided, the market will be closed immediately. Cannot provide close time in past.
 
 ### `POST /v0/market/[marketId]/resolve`
 
@@ -600,15 +614,18 @@ For binary markets:
 - `outcome`: Required. One of `YES`, `NO`, `MKT`, or `CANCEL`.
 - `probabilityInt`: Optional. The probability to use for `MKT` resolution.
 
-For free response markets:
+For free response or multiple choice markets:
 
 - `outcome`: Required. One of `MKT`, `CANCEL`, or a `number` indicating the answer index.
-- `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome.
+- `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome. Note that the total weights must add to 100.
 
 For numeric markets:
 
 - `outcome`: Required. One of `CANCEL`, or a `number` indicating the selected numeric bucket ID.
 - `value`: The value that the market may resolves to.
+- `probabilityInt`: Required if `value` is present. Should be equal to
+  - If log scale: `log10(value - min + 1) / log10(max - min + 1)`
+  - Otherwise: `(value - min) / (max - min)`
 
 Example request:
 
@@ -752,6 +769,7 @@ Requires no authorization.
 
 ## Changelog
 
+- 2022-09-24: Expand market POST docs to include new market types (`PSEUDO_NUMERIC`, `MULTIPLE_CHOICE`)
 - 2022-07-15: Add user by username and user by ID APIs
 - 2022-06-08: Add paging to markets endpoint
 - 2022-06-05: Add new authorized write endpoints

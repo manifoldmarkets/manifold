@@ -14,14 +14,14 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { GroupLinkItem } from 'web/pages/groups'
 import toast from 'react-hot-toast'
 
-export function GroupsButton(props: { user: User }) {
-  const { user } = props
+export function GroupsButton(props: { user: User; className?: string }) {
+  const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
   const groups = useMemberGroups(user.id)
 
   return (
     <>
-      <TextButton onClick={() => setIsOpen(true)}>
+      <TextButton onClick={() => setIsOpen(true)} className={className}>
         <span className="font-semibold">{groups?.length ?? ''}</span> Groups
       </TextButton>
 

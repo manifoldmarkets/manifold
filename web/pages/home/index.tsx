@@ -33,7 +33,6 @@ import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import { useProbChanges } from 'web/hooks/use-prob-changes'
-import { ProfitBadge } from 'web/components/bets-list'
 import { calculatePortfolioProfit } from 'common/calculate-metrics'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -45,6 +44,7 @@ import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Title } from 'web/components/title'
 import { CPMMBinaryContract } from 'common/contract'
 import { useContractsByDailyScoreGroups } from 'web/hooks/use-contracts'
+import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export default function Home() {
@@ -54,6 +54,13 @@ export default function Home() {
 
   useSaveReferral()
   usePrefetch(user?.id)
+
+  useEffect(() => {
+    if (user === null) {
+      // Go to landing page if not logged in.
+      Router.push('/')
+    }
+  })
 
   const groups = useMemberGroupsSubscription(user)
 
@@ -279,9 +286,9 @@ function GroupSection(props: {
   )
 }
 
-function DailyMoversSection(props: { userId: string | null | undefined }) {
+function DailyMoversSection(props: { userId: string }) {
   const { userId } = props
-  const changes = useProbChanges({ bettorId: userId ?? undefined })?.filter(
+  const changes = useProbChanges({ bettorId: userId })?.filter(
     (c) => Math.abs(c.probChanges.day) >= 0.01
   )
 

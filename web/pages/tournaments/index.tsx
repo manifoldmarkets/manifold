@@ -107,7 +107,14 @@ const tourneys: Tourney[] = [
     groupId: 'SxGRqXRpV3RAQKudbcNb',
   },
 
-  // Tournaments without awards get featured belows
+  // Tournaments without awards get featured below
+  {
+    title: 'Criticism and Red Teaming Contest',
+    blurb:
+      'Which criticisms of Effective Altruism have been the most valuable?',
+    endTime: toDate('Sep 30, 2022'),
+    groupId: 'K86LmEmidMKdyCHdHNv4',
+  },
   {
     title: 'SF 2022 Ballot',
     blurb: 'Which ballot initiatives will pass this year in SF and CA?',

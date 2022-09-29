@@ -2,7 +2,12 @@ import React from 'react'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { ContractProbGraph } from './contract-prob-graph'
+import {
+  BinaryContractChart,
+  NumericContractChart,
+  PseudoNumericContractChart,
+  ChoiceContractChart,
+} from 'web/components/charts/contract'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
@@ -13,20 +18,17 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton from '../bet-button'
-import { AnswersGraph } from '../answers/answers-graph'
+import BetButton, { BinaryMobileBetting } from '../bet-button'
 import {
   Contract,
-  BinaryContract,
   CPMMContract,
-  CPMMBinaryContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
+  BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
-import { NumericGraph } from './numeric-graph'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -64,7 +66,7 @@ const NumericOverview = (props: { contract: NumericContract }) => {
           contract={contract}
         />
       </Col>
-      <NumericGraph contract={contract} />
+      <NumericContractChart contract={contract} />
     </Col>
   )
 }
@@ -78,19 +80,18 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
           <BinaryResolutionOrChance
-            className="hidden items-end xl:flex"
+            className="flex items-end"
             contract={contract}
             large
           />
         </Row>
-        <Row className="items-center justify-between gap-4 xl:hidden">
-          <BinaryResolutionOrChance contract={contract} />
-          {tradingAllowed(contract) && (
-            <BetWidget contract={contract as CPMMBinaryContract} />
-          )}
-        </Row>
       </Col>
-      <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
+      <BinaryContractChart contract={contract} bets={bets} />
+      <Row className="items-center justify-between gap-4 xl:hidden">
+        {tradingAllowed(contract) && (
+          <BinaryMobileBetting contract={contract} />
+        )}
+      </Row>
     </Col>
   )
 }
@@ -111,7 +112,7 @@ const ChoiceOverview = (props: {
         )}
       </Col>
       <Col className={'mb-1 gap-y-2'}>
-        <AnswersGraph contract={contract} bets={[...bets].reverse()} />
+        <ChoiceContractChart contract={contract} bets={bets} />
       </Col>
     </Col>
   )
@@ -138,7 +139,7 @@ const PseudoNumericOverview = (props: {
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>
-      <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
+      <PseudoNumericContractChart contract={contract} bets={bets} />
     </Col>
   )
 }
