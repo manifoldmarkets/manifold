@@ -2,12 +2,16 @@ import { useMemo, useRef } from 'react'
 import { range } from 'lodash'
 import { scaleLinear } from 'd3-scale'
 
+import { formatLargeNumber } from 'common/util/format'
 import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
 import { NumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MARGIN_X, MARGIN_Y } from '../helpers'
-import { SingleValueDistributionChart } from '../generic-charts'
+import { MARGIN_X, MARGIN_Y, formatPct } from '../helpers'
+import {
+  SingleValueDistributionChart,
+  SingleValueDistributionTooltipProps,
+} from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
 const getNumericChartData = (contract: NumericContract) => {
@@ -18,6 +22,15 @@ const getNumericChartData = (contract: NumericContract) => {
     x: min + step * (i + 0.5),
     y: bucketProbs[`${i}`],
   }))
+}
+
+const NumericChartTooltip = (props: SingleValueDistributionTooltipProps) => {
+  const { x, y } = props
+  return (
+    <span className="text-sm">
+      <strong>{formatPct(y, 2)}</strong> {formatLargeNumber(x)}
+    </span>
+  )
 }
 
 export const NumericContractChart = (props: {
@@ -44,6 +57,7 @@ export const NumericContractChart = (props: {
           yScale={yScale}
           data={data}
           color={NUMERIC_GRAPH_COLOR}
+          Tooltip={NumericChartTooltip}
         />
       )}
     </div>

@@ -4,6 +4,7 @@ import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 
 import { Bet } from 'common/bet'
 import { getInitialProbability, getProbability } from 'common/calculate'
+import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -13,8 +14,12 @@ import {
   MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
+  formatDateInRange,
 } from '../helpers'
-import { SingleValueHistoryChart } from '../generic-charts'
+import {
+  SingleValueHistoryChart,
+  SingleValueHistoryTooltipProps,
+} from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
@@ -34,6 +39,16 @@ const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
     y: scaleP(b.probAfter),
     datum: b,
   }))
+}
+
+const PseudoNumericChartTooltip = (props: SingleValueHistoryTooltipProps) => {
+  const { x, y, xScale } = props
+  const [start, end] = xScale.domain()
+  return (
+    <span className="text-sm">
+      <strong>{formatLargeNumber(y)}</strong> {formatDateInRange(x, start, end)}
+    </span>
+  )
 }
 
 export const PseudoNumericContractChart = (props: {
@@ -84,6 +99,7 @@ export const PseudoNumericContractChart = (props: {
           xScale={xScale}
           yScale={yScale}
           data={data}
+          Tooltip={PseudoNumericChartTooltip}
           color={NUMERIC_GRAPH_COLOR}
         />
       )}

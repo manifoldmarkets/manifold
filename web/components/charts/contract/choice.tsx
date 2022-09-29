@@ -13,8 +13,15 @@ import {
   MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
+  formatPct,
+  formatDateInRange,
 } from '../helpers'
-import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
+import {
+  Legend,
+  MultiPoint,
+  MultiValueHistoryChart,
+  MultiValueHistoryTooltipProps,
+} from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
 // thanks to https://observablehq.com/@jonhelfman/optimal-orders-for-choosing-categorical-colors
@@ -150,6 +157,30 @@ export const ChoiceContractChart = (props: {
   const height = props.height ?? (isMobile ? 150 : 250)
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+
+  const ChoiceTooltip = useMemo(
+    () => (props: MultiValueHistoryTooltipProps<Bet>) => {
+      const { x, y, xScale } = props
+      const [start, end] = xScale.domain()
+      const legendItems = sortBy(
+        y.map((p, i) => ({
+          color: CATEGORY_COLORS[i],
+          label: answers[i].text,
+          value: formatPct(p),
+          p,
+        })),
+        (item) => -item.p
+      ).slice(0, 10)
+      return (
+        <div>
+          <p>{formatDateInRange(x, start, end)}</p>
+          <Legend className="max-w-xs text-sm" items={legendItems} />
+        </div>
+      )
+    },
+    [answers]
+  )
+
   return (
     <div ref={containerRef}>
       {width > 0 && (
@@ -161,6 +192,7 @@ export const ChoiceContractChart = (props: {
           data={data}
           colors={CATEGORY_COLORS}
           labels={answers.map((answer) => answer.text)}
+          Tooltip={ChoiceTooltip}
           pct
         />
       )}

@@ -4,6 +4,7 @@ import { Axis } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
 import { area, line, curveStepAfter, CurveFactory } from 'd3-shape'
 import { nanoid } from 'nanoid'
+import dayjs from 'dayjs'
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
@@ -182,7 +183,7 @@ export const SVGChart = <X, Y>(props: {
 
 export type TooltipPosition = { top: number; left: number }
 
-export const ChartTooltip = (
+export const TooltipContainer = (
   props: TooltipPosition & { className?: string; children: React.ReactNode }
 ) => {
   const { top, left, className, children } = props
@@ -198,6 +199,8 @@ export const ChartTooltip = (
     </div>
   )
 }
+
+export type TooltipContent<P> = React.ComponentType<P>
 
 export const getDateRange = (contract: Contract) => {
   const { createdTime, closeTime, resolutionTime } = contract
@@ -219,4 +222,47 @@ export const getRightmostVisibleDate = (
   } else {
     return now
   }
+}
+
+export const formatPct = (n: number, digits?: number) => {
+  return `${(n * 100).toFixed(digits ?? 0)}%`
+}
+
+export const formatDate = (
+  date: Date,
+  opts: { includeYear: boolean; includeHour: boolean; includeMinute: boolean }
+) => {
+  const { includeYear, includeHour, includeMinute } = opts
+  const d = dayjs(date)
+  const now = Date.now()
+  if (
+    d.add(1, 'minute').isAfter(now) &&
+    d.subtract(1, 'minute').isBefore(now)
+  ) {
+    return 'Now'
+  } else {
+    const dayName = d.isSame(now, 'day')
+      ? 'Today'
+      : d.add(1, 'day').isSame(now, 'day')
+      ? 'Yesterday'
+      : null
+    let format = dayName ? `[${dayName}]` : 'MMM D'
+    if (includeMinute) {
+      format += ', h:mma'
+    } else if (includeHour) {
+      format += ', ha'
+    } else if (includeYear) {
+      format += ', YYYY'
+    }
+    return d.format(format)
+  }
+}
+
+export const formatDateInRange = (d: Date, start: Date, end: Date) => {
+  const opts = {
+    includeYear: !dayjs(start).isSame(end, 'year'),
+    includeHour: dayjs(start).add(8, 'day').isAfter(end),
+    includeMinute: dayjs(end).diff(start, 'hours') < 2,
+  }
+  return formatDate(d, opts)
 }

@@ -12,8 +12,13 @@ import {
   MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
+  formatDateInRange,
+  formatPct,
 } from '../helpers'
-import { SingleValueHistoryChart } from '../generic-charts'
+import {
+  SingleValueHistoryTooltipProps,
+  SingleValueHistoryChart,
+} from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
 const getBetPoints = (bets: Bet[]) => {
@@ -22,6 +27,16 @@ const getBetPoints = (bets: Bet[]) => {
     y: b.probAfter,
     datum: b,
   }))
+}
+
+const BinaryChartTooltip = (props: SingleValueHistoryTooltipProps<Bet>) => {
+  const { x, y, xScale } = props
+  const [start, end] = xScale.domain()
+  return (
+    <span className="text-sm">
+      <strong>{formatPct(y)}</strong> {formatDateInRange(x, start, end)}
+    </span>
+  )
 }
 
 export const BinaryContractChart = (props: {
@@ -55,6 +70,7 @@ export const BinaryContractChart = (props: {
   const height = props.height ?? (isMobile ? 250 : 350)
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
+
   return (
     <div ref={containerRef}>
       {width > 0 && (
@@ -65,6 +81,7 @@ export const BinaryContractChart = (props: {
           yScale={yScale}
           data={data}
           color="#11b981"
+          Tooltip={BinaryChartTooltip}
           pct
         />
       )}
