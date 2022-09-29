@@ -3,6 +3,7 @@ import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 
 import { Bet } from 'common/bet'
+import { DAY_MS } from 'common/util/time'
 import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
@@ -11,7 +12,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   MARGIN_X,
   MARGIN_Y,
-  MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
   formatDateInRange,
@@ -77,7 +77,7 @@ export const PseudoNumericContractChart = (props: {
     () => [
       { x: startDate, y: startP },
       ...betPoints,
-      { x: endDate ?? MAX_DATE, y: endP },
+      { x: endDate ?? new Date(Date.now() + DAY_MS), y: endP },
     ],
     [betPoints, startDate, startP, endDate, endP]
   )
@@ -91,7 +91,7 @@ export const PseudoNumericContractChart = (props: {
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
+  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
     ? scaleLog([Math.max(min, 1), max], [height - MARGIN_Y, 0]).clamp(true)

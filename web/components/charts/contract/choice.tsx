@@ -7,11 +7,11 @@ import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { DAY_MS } from 'common/util/time'
 import {
   Legend,
   MARGIN_X,
   MARGIN_Y,
-  MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
   formatPct,
@@ -141,7 +141,7 @@ export const ChoiceContractChart = (props: {
       { x: start, y: answers.map((_) => 0) },
       ...betPoints,
       {
-        x: end ?? MAX_DATE,
+        x: end ?? new Date(Date.now() + DAY_MS),
         y: answers.map((a) => getOutcomeProbability(contract, a.id)),
       },
     ],
@@ -157,7 +157,7 @@ export const ChoiceContractChart = (props: {
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
+  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
 
   const ChoiceTooltip = useMemo(

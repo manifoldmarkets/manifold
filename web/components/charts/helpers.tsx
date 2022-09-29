@@ -22,9 +22,6 @@ export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
 export const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-export const MAX_TIMESTAMP = 8640000000000000
-export const MAX_DATE = new Date(MAX_TIMESTAMP)
-
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
   const axisRef = useRef<SVGGElement>(null)

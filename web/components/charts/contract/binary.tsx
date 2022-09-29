@@ -5,11 +5,11 @@ import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
 import { getProbability, getInitialProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
+import { DAY_MS } from 'common/util/time'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   MARGIN_X,
   MARGIN_Y,
-  MAX_DATE,
   getDateRange,
   getRightmostVisibleDate,
   formatDateInRange,
@@ -58,7 +58,7 @@ export const BinaryContractChart = (props: {
     () => [
       { x: startDate, y: startP },
       ...betPoints,
-      { x: endDate ?? MAX_DATE, y: endP },
+      { x: endDate ?? new Date(Date.now() + DAY_MS), y: endP },
     ],
     [startDate, startP, endDate, endP, betPoints]
   )
@@ -73,7 +73,7 @@ export const BinaryContractChart = (props: {
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
   const height = props.height ?? (isMobile ? 250 : 350)
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X]).clamp(true)
+  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
 
   return (
