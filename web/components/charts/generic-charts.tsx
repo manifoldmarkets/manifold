@@ -21,21 +21,9 @@ import {
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 
-export type MultiPoint<T = never> = {
-  x: Date
-  y: number[]
-  datum?: T
-}
-export type HistoryPoint<T = never> = {
-  x: Date
-  y: number
-  datum?: T
-}
-export type DistributionPoint<T = never> = {
-  x: number
-  y: number
-  datum?: T
-}
+export type MultiPoint<T = never> = { x: Date; y: number[]; datum?: T }
+export type HistoryPoint<T = never> = { x: Date; y: number; datum?: T }
+export type DistributionPoint<T = never> = { x: number; y: number; datum?: T }
 
 const getTickValues = (min: number, max: number, n: number) => {
   const step = (max - min) / (n - 1)
@@ -143,7 +131,9 @@ export const MultiValueHistoryChart = <T,>(props: {
     const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = pct
-      ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(formatPct)
+      ? axisLeft<number>(yScale)
+          .tickValues(pctTickValues)
+          .tickFormat((n) => formatPct(n))
       : axisLeft<number>(yScale)
     return { xAxis, yAxis }
   }, [w, h, pct, xScale, yScale])
@@ -233,7 +223,9 @@ export const SingleValueHistoryChart = <T,>(props: {
     const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = pct
-      ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(formatPct)
+      ? axisLeft<number>(yScale)
+          .tickValues(pctTickValues)
+          .tickFormat((n) => formatPct(n))
       : axisLeft<number>(yScale)
     return { xAxis, yAxis }
   }, [w, h, pct, xScale, yScale])
