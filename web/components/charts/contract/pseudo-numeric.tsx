@@ -46,7 +46,8 @@ const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
 const PseudoNumericChartTooltip = (
   props: SingleValueHistoryTooltipProps<Bet>
 ) => {
-  const { x, y, xScale, datum } = props
+  const { p, xScale } = props
+  const { x, y, datum } = p
   const [start, end] = xScale.domain()
   return (
     <Row className="items-center gap-2 text-sm">

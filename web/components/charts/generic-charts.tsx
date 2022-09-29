@@ -3,7 +3,6 @@ import { bisector } from 'd3-array'
 import { axisBottom, axisLeft } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
-import { pointer } from 'd3-selection'
 import {
   curveLinear,
   curveStepAfter,
@@ -18,17 +17,25 @@ import {
   AreaPath,
   AreaWithTopStroke,
   TooltipContent,
-  TooltipContainer,
-  TooltipPosition,
   formatPct,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 
-export type MultiPoint<T = never> = { x: Date; y: number[]; datum?: T }
-export type HistoryPoint<T = never> = { x: Date; y: number; datum?: T }
-export type DistributionPoint<T = never> = { x: number; y: number; datum?: T }
-
-type PositionValue<P> = TooltipPosition & { p: P }
+export type MultiPoint<T = never> = {
+  x: Date
+  y: number[]
+  datum?: T
+}
+export type HistoryPoint<T = never> = {
+  x: Date
+  y: number
+  datum?: T
+}
+export type DistributionPoint<T = never> = {
+  x: number
+  y: number
+  datum?: T
+}
 
 const getTickValues = (min: number, max: number, n: number) => {
   const step = (max - min) / (n - 1)
@@ -48,8 +55,6 @@ export const SingleValueDistributionChart = <T,>(props: {
 
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
-  const [mouseState, setMouseState] =
-    useState<PositionValue<DistributionPoint<T>>>()
   const xScale = viewXScale ?? props.xScale
 
   const px = useCallback((p: DistributionPoint<T>) => xScale(p.x), [xScale])
@@ -69,67 +74,48 @@ export const SingleValueDistributionChart = <T,>(props: {
       setViewXScale(() =>
         xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
       )
-      setMouseState(undefined)
     } else {
       setViewXScale(undefined)
-      setMouseState(undefined)
     }
   })
 
-  const onMouseOver = useEvent((ev: React.PointerEvent) => {
-    if (ev.pointerType === 'mouse') {
-      const [mouseX, mouseY] = pointer(ev)
-      const queryX = xScale.invert(mouseX)
-      const item = data[xBisector.left(data, queryX) - 1]
-      if (item == null) {
-        // this can happen if you are on the very left or right edge of the chart,
-        // so your queryX is out of bounds
-        return
-      }
-      const p = { x: queryX, y: item.y, datum: item.datum }
-      setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
+  const onMouseOver = useEvent((mouseX: number) => {
+    const queryX = xScale.invert(mouseX)
+    const item = data[xBisector.left(data, queryX) - 1]
+    if (item == null) {
+      // this can happen if you are on the very left or right edge of the chart,
+      // so your queryX is out of bounds
+      return
     }
-  })
-
-  const onMouseLeave = useEvent(() => {
-    setMouseState(undefined)
+    return { x: queryX, y: item.y, datum: item.datum }
   })
 
   return (
-    <div className="relative">
-      {mouseState && Tooltip && (
-        <TooltipContainer className="text-sm" {...mouseState}>
-          <Tooltip xScale={xScale} {...mouseState.p} />
-        </TooltipContainer>
-      )}
-      <SVGChart
-        w={w}
-        h={h}
-        xAxis={xAxis}
-        yAxis={yAxis}
-        onSelect={onSelect}
-        onMouseOver={onMouseOver}
-        onMouseLeave={onMouseLeave}
-      >
-        <AreaWithTopStroke
-          color={color}
-          data={data}
-          px={px}
-          py0={py0}
-          py1={py1}
-          curve={curveLinear}
-        />
-      </SVGChart>
-    </div>
+    <SVGChart
+      w={w}
+      h={h}
+      xAxis={xAxis}
+      yAxis={yAxis}
+      onSelect={onSelect}
+      onMouseOver={onMouseOver}
+      Tooltip={Tooltip}
+    >
+      <AreaWithTopStroke
+        color={color}
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curveLinear}
+      />
+    </SVGChart>
   )
 }
 
-export type SingleValueDistributionTooltipProps<T = unknown> =
-  DistributionPoint<T> & {
-    xScale: React.ComponentProps<
-      typeof SingleValueDistributionChart<T>
-    >['xScale']
-  }
+export type SingleValueDistributionTooltipProps<T = unknown> = {
+  p: DistributionPoint<T>
+  xScale: React.ComponentProps<typeof SingleValueDistributionChart<T>>['xScale']
+}
 
 export const MultiValueHistoryChart = <T,>(props: {
   data: MultiPoint<T>[]
@@ -144,7 +130,6 @@ export const MultiValueHistoryChart = <T,>(props: {
   const { colors, data, yScale, w, h, Tooltip, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [mouseState, setMouseState] = useState<PositionValue<MultiPoint<T>>>()
   const xScale = viewXScale ?? props.xScale
 
   type SP = SeriesPoint<MultiPoint<T>>
@@ -177,65 +162,49 @@ export const MultiValueHistoryChart = <T,>(props: {
       setViewXScale(() =>
         xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
       )
-      setMouseState(undefined)
     } else {
       setViewXScale(undefined)
-      setMouseState(undefined)
     }
   })
 
-  const onMouseOver = useEvent((ev: React.PointerEvent) => {
-    if (ev.pointerType === 'mouse') {
-      const [mouseX, mouseY] = pointer(ev)
-      const queryX = xScale.invert(mouseX)
-      const item = data[xBisector.left(data, queryX) - 1]
-      if (item == null) {
-        // this can happen if you are on the very left or right edge of the chart,
-        // so your queryX is out of bounds
-        return
-      }
-      const p = { x: queryX, y: item.y, datum: item.datum }
-      setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
+  const onMouseOver = useEvent((mouseX: number) => {
+    const queryX = xScale.invert(mouseX)
+    const item = data[xBisector.left(data, queryX) - 1]
+    if (item == null) {
+      // this can happen if you are on the very left or right edge of the chart,
+      // so your queryX is out of bounds
+      return
     }
-  })
-
-  const onMouseLeave = useEvent(() => {
-    setMouseState(undefined)
+    return { x: queryX, y: item.y, datum: item.datum }
   })
 
   return (
-    <div className="relative">
-      {mouseState && Tooltip && (
-        <TooltipContainer top={mouseState.top} left={mouseState.left}>
-          <Tooltip xScale={xScale} {...mouseState.p} />
-        </TooltipContainer>
-      )}
-      <SVGChart
-        w={w}
-        h={h}
-        xAxis={xAxis}
-        yAxis={yAxis}
-        onSelect={onSelect}
-        onMouseOver={onMouseOver}
-        onMouseLeave={onMouseLeave}
-      >
-        {series.map((s, i) => (
-          <AreaPath
-            key={i}
-            data={s}
-            px={px}
-            py0={py0}
-            py1={py1}
-            curve={curveStepAfter}
-            fill={colors[i]}
-          />
-        ))}
-      </SVGChart>
-    </div>
+    <SVGChart
+      w={w}
+      h={h}
+      xAxis={xAxis}
+      yAxis={yAxis}
+      onSelect={onSelect}
+      onMouseOver={onMouseOver}
+      Tooltip={Tooltip}
+    >
+      {series.map((s, i) => (
+        <AreaPath
+          key={i}
+          data={s}
+          px={px}
+          py0={py0}
+          py1={py1}
+          curve={curveStepAfter}
+          fill={colors[i]}
+        />
+      ))}
+    </SVGChart>
   )
 }
 
-export type MultiValueHistoryTooltipProps<T = unknown> = MultiPoint<T> & {
+export type MultiValueHistoryTooltipProps<T = unknown> = {
+  p: MultiPoint<T>
   xScale: React.ComponentProps<typeof MultiValueHistoryChart<T>>['xScale']
 }
 
@@ -252,7 +221,6 @@ export const SingleValueHistoryChart = <T,>(props: {
   const { color, data, pct, yScale, w, h, Tooltip } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [mouseState, setMouseState] = useState<PositionValue<HistoryPoint<T>>>()
   const xScale = viewXScale ?? props.xScale
 
   const px = useCallback((p: HistoryPoint<T>) => xScale(p.x), [xScale])
@@ -276,61 +244,45 @@ export const SingleValueHistoryChart = <T,>(props: {
       setViewXScale(() =>
         xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
       )
-      setMouseState(undefined)
     } else {
       setViewXScale(undefined)
-      setMouseState(undefined)
     }
   })
 
-  const onMouseOver = useEvent((ev: React.PointerEvent) => {
-    if (ev.pointerType === 'mouse') {
-      const [mouseX, mouseY] = pointer(ev)
-      const queryX = xScale.invert(mouseX)
-      const item = data[xBisector.left(data, queryX) - 1]
-      if (item == null) {
-        // this can happen if you are on the very left or right edge of the chart,
-        // so your queryX is out of bounds
-        return
-      }
-      const p = { x: queryX, y: item.y, datum: item.datum }
-      setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
+  const onMouseOver = useEvent((mouseX: number) => {
+    const queryX = xScale.invert(mouseX)
+    const item = data[xBisector.left(data, queryX) - 1]
+    if (item == null) {
+      // this can happen if you are on the very left or right edge of the chart,
+      // so your queryX is out of bounds
+      return
     }
-  })
-
-  const onMouseLeave = useEvent(() => {
-    setMouseState(undefined)
+    return { x: queryX, y: item.y, datum: item.datum }
   })
 
   return (
-    <div className="relative">
-      {mouseState && Tooltip && (
-        <TooltipContainer top={mouseState.top} left={mouseState.left}>
-          <Tooltip xScale={xScale} {...mouseState.p} />
-        </TooltipContainer>
-      )}
-      <SVGChart
-        w={w}
-        h={h}
-        xAxis={xAxis}
-        yAxis={yAxis}
-        onSelect={onSelect}
-        onMouseOver={onMouseOver}
-        onMouseLeave={onMouseLeave}
-      >
-        <AreaWithTopStroke
-          color={color}
-          data={data}
-          px={px}
-          py0={py0}
-          py1={py1}
-          curve={curveStepAfter}
-        />
-      </SVGChart>
-    </div>
+    <SVGChart
+      w={w}
+      h={h}
+      xAxis={xAxis}
+      yAxis={yAxis}
+      onSelect={onSelect}
+      onMouseOver={onMouseOver}
+      Tooltip={Tooltip}
+    >
+      <AreaWithTopStroke
+        color={color}
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curveStepAfter}
+      />
+    </SVGChart>
   )
 }
 
-export type SingleValueHistoryTooltipProps<T = unknown> = HistoryPoint<T> & {
+export type SingleValueHistoryTooltipProps<T = unknown> = {
+  p: HistoryPoint<T>
   xScale: React.ComponentProps<typeof SingleValueHistoryChart<T>>['xScale']
 }
