@@ -2,8 +2,7 @@ import clsx from 'clsx'
 import { Fragment } from 'react'
 import { SiteLink } from './site-link'
 
-// Return a JSX span, linkifying @username, #hashtags, and https://...
-// TODO: Use a markdown parser instead of rolling our own here.
+// Return a JSX span, linkifying @username, and https://...
 export function Linkify(props: {
   text: string
   className?: string
@@ -16,7 +15,7 @@ export function Linkify(props: {
 
   // Find instances of @username, #hashtag, and https://...
   const regex =
-    /(?:^|\s)(?:[@#][a-z0-9_]+|https?:\/\/[-A-Za-z0-9+&@#/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#/%=~_|])/gi
+    /(?:^|\s)(?:@[a-z0-9_]+|https?:\/\/[-A-Za-z0-9+&@#/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#/%=~_|])/gi
   const matches = text.match(regex) || []
   const links = matches.map((match) => {
     // Matches are in the form: " @username" or "https://example.com"
@@ -26,7 +25,6 @@ export function Linkify(props: {
     const href =
       {
         '@': `/${tag}`,
-        '#': `/tag/${tag}`,
       }[symbol] ?? match.trim()
 
     return (
