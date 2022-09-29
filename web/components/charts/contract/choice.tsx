@@ -8,6 +8,7 @@ import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
+  Legend,
   MARGIN_X,
   MARGIN_Y,
   MAX_DATE,
@@ -17,7 +18,6 @@ import {
   formatDateInRange,
 } from '../helpers'
 import {
-  Legend,
   MultiPoint,
   MultiValueHistoryChart,
   MultiValueHistoryTooltipProps,
@@ -196,7 +196,6 @@ export const ChoiceContractChart = (props: {
           yScale={yScale}
           data={data}
           colors={CATEGORY_COLORS}
-          labels={answers.map((answer) => answer.text)}
           Tooltip={ChoiceTooltip}
           pct
         />

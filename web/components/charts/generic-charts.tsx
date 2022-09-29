@@ -23,7 +23,6 @@ import {
   formatPct,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
-import { Row } from 'web/components/layout/row'
 
 export type MultiPoint<T = never> = { x: Date; y: number[]; datum?: T }
 export type HistoryPoint<T = never> = { x: Date; y: number; datum?: T }
@@ -34,28 +33,6 @@ type PositionValue<P> = TooltipPosition & { p: P }
 const getTickValues = (min: number, max: number, n: number) => {
   const step = (max - min) / (n - 1)
   return [min, ...range(1, n - 1).map((i) => min + step * i), max]
-}
-
-type LegendItem = { color: string; label: string; value?: string }
-
-export const Legend = (props: { className?: string; items: LegendItem[] }) => {
-  const { items, className } = props
-  return (
-    <ol className={className}>
-      {items.map((item) => (
-        <li key={item.label} className="flex flex-row justify-between">
-          <Row className="mr-2 items-center overflow-hidden">
-            <span
-              className="mr-2 h-4 w-4 shrink-0"
-              style={{ backgroundColor: item.color }}
-            ></span>
-            <span className="overflow-hidden text-ellipsis">{item.label}</span>
-          </Row>
-          {item.value}
-        </li>
-      ))}
-    </ol>
-  )
 }
 
 export const SingleValueDistributionChart = <T,>(props: {
@@ -158,14 +135,13 @@ export const MultiValueHistoryChart = <T,>(props: {
   data: MultiPoint<T>[]
   w: number
   h: number
-  labels: readonly string[]
   colors: readonly string[]
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   Tooltip?: TooltipContent<MultiValueHistoryTooltipProps<T>>
   pct?: boolean
 }) => {
-  const { colors, data, yScale, labels, w, h, Tooltip, pct } = props
+  const { colors, data, yScale, w, h, Tooltip, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const [mouseState, setMouseState] = useState<PositionValue<MultiPoint<T>>>()
@@ -184,17 +160,16 @@ export const MultiValueHistoryChart = <T,>(props: {
     const yAxis = pct
       ? axisLeft<number>(yScale).tickValues(pctTickValues).tickFormat(formatPct)
       : axisLeft<number>(yScale)
-
     return { xAxis, yAxis }
   }, [w, h, pct, xScale, yScale])
 
   const series = useMemo(() => {
     const d3Stack = stack<MultiPoint<T>, number>()
-      .keys(range(0, labels.length))
+      .keys(range(0, Math.max(...data.map(({ y }) => y.length))))
       .value(({ y }, o) => y[o])
       .order(stackOrderReverse)
     return d3Stack(data)
-  }, [data, labels.length])
+  }, [data])
 
   const onSelect = useEvent((ev: D3BrushEvent<MultiPoint<T>>) => {
     if (ev.selection) {

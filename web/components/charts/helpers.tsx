@@ -8,6 +8,7 @@ import dayjs from 'dayjs'
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
+import { Row } from 'web/components/layout/row'
 
 export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
@@ -181,8 +182,8 @@ export const SVGChart = <X, Y>(props: {
   )
 }
 
+export type TooltipContent<P> = React.ComponentType<P>
 export type TooltipPosition = { top: number; left: number }
-
 export const TooltipContainer = (
   props: TooltipPosition & { className?: string; children: React.ReactNode }
 ) => {
@@ -200,7 +201,26 @@ export const TooltipContainer = (
   )
 }
 
-export type TooltipContent<P> = React.ComponentType<P>
+export type LegendItem = { color: string; label: string; value?: string }
+export const Legend = (props: { className?: string; items: LegendItem[] }) => {
+  const { items, className } = props
+  return (
+    <ol className={className}>
+      {items.map((item) => (
+        <li key={item.label} className="flex flex-row justify-between">
+          <Row className="mr-2 items-center overflow-hidden">
+            <span
+              className="mr-2 h-4 w-4 shrink-0"
+              style={{ backgroundColor: item.color }}
+            ></span>
+            <span className="overflow-hidden text-ellipsis">{item.label}</span>
+          </Row>
+          {item.value}
+        </li>
+      ))}
+    </ol>
+  )
+}
 
 export const getDateRange = (contract: Contract) => {
   const { createdTime, closeTime, resolutionTime } = contract
