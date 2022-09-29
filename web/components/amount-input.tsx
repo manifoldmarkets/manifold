@@ -162,7 +162,7 @@ export function BuyAmountInput(props: {
             max="205"
             value={getRaw(amount ?? 0)}
             onChange={(e) => onAmountChange(parseRaw(parseInt(e.target.value)))}
-            className="range range-lg only-thumb z-40 my-auto align-middle xl:hidden"
+            className="range range-lg only-thumb my-auto align-middle xl:hidden"
             step="5"
           />
         )}
