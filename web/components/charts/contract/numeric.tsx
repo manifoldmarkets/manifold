@@ -25,7 +25,8 @@ const getNumericChartData = (contract: NumericContract) => {
 }
 
 const NumericChartTooltip = (props: SingleValueDistributionTooltipProps) => {
-  const { x, y } = props
+  const { p } = props
+  const { x, y } = p
   return (
     <span className="text-sm">
       <strong>{formatPct(y, 2)}</strong> {formatLargeNumber(x)}

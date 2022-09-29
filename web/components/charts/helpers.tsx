@@ -1,5 +1,13 @@
-import { ReactNode, SVGProps, memo, useRef, useEffect, useMemo } from 'react'
-import { select } from 'd3-selection'
+import {
+  ReactNode,
+  SVGProps,
+  memo,
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import { pointer, select } from 'd3-selection'
 import { Axis } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
 import { area, line, curveStepAfter, CurveFactory } from 'd3-shape'
@@ -108,19 +116,18 @@ export const AreaWithTopStroke = <P,>(props: {
   )
 }
 
-export const SVGChart = <X, Y>(props: {
+export const SVGChart = <X, Y, P, XS>(props: {
   children: ReactNode
   w: number
   h: number
   xAxis: Axis<X>
   yAxis: Axis<Y>
   onSelect?: (ev: D3BrushEvent<any>) => void
-  onMouseOver?: (ev: React.PointerEvent) => void
-  onMouseLeave?: (ev: React.PointerEvent) => void
-  pct?: boolean
+  onMouseOver?: (mouseX: number, mouseY: number) => P | undefined
+  Tooltip?: TooltipContent<{ xScale: XS } & { p: P }>
 }) => {
-  const { children, w, h, xAxis, yAxis, onMouseOver, onMouseLeave, onSelect } =
-    props
+  const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
+  const [mouseState, setMouseState] = useState<TooltipPosition & { p: P }>()
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - MARGIN_X
   const innerH = h - MARGIN_Y
@@ -139,6 +146,7 @@ export const SVGChart = <X, Y>(props: {
         if (!justSelected.current) {
           justSelected.current = true
           onSelect(ev)
+          setMouseState(undefined)
           if (overlayRef.current) {
             select(overlayRef.current).call(brush.clear)
           }
@@ -156,29 +164,52 @@ export const SVGChart = <X, Y>(props: {
     }
   }, [innerW, innerH, onSelect])
 
+  const onPointerMove = (ev: React.PointerEvent) => {
+    if (ev.pointerType === 'mouse' && onMouseOver) {
+      const [mouseX, mouseY] = pointer(ev)
+      const p = onMouseOver(mouseX, mouseY)
+      if (p != null) {
+        setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
+      } else {
+        setMouseState(undefined)
+      }
+    }
+  }
+
+  const onPointerLeave = () => {
+    setMouseState(undefined)
+  }
+
   return (
-    <svg className="w-full" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-      <clipPath id={clipPathId}>
-        <rect x={0} y={0} width={innerW} height={innerH} />
-      </clipPath>
-      <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
-        <XAxis axis={xAxis} w={innerW} h={innerH} />
-        <YAxis axis={yAxis} w={innerW} h={innerH} />
-        <g clipPath={`url(#${clipPathId})`}>{children}</g>
-        <g
-          ref={overlayRef}
-          x="0"
-          y="0"
-          width={innerW}
-          height={innerH}
-          fill="none"
-          pointerEvents="all"
-          onPointerEnter={onMouseOver}
-          onPointerMove={onMouseOver}
-          onPointerLeave={onMouseLeave}
-        />
-      </g>
-    </svg>
+    <div className="relative">
+      {mouseState && Tooltip && (
+        <TooltipContainer top={mouseState.top} left={mouseState.left}>
+          <Tooltip xScale={xAxis.scale() as XS} p={mouseState.p} />
+        </TooltipContainer>
+      )}
+      <svg className="w-full" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <clipPath id={clipPathId}>
+          <rect x={0} y={0} width={innerW} height={innerH} />
+        </clipPath>
+        <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
+          <XAxis axis={xAxis} w={innerW} h={innerH} />
+          <YAxis axis={yAxis} w={innerW} h={innerH} />
+          <g clipPath={`url(#${clipPathId})`}>{children}</g>
+          <g
+            ref={overlayRef}
+            x="0"
+            y="0"
+            width={innerW}
+            height={innerH}
+            fill="none"
+            pointerEvents="all"
+            onPointerEnter={onPointerMove}
+            onPointerMove={onPointerMove}
+            onPointerLeave={onPointerLeave}
+          />
+        </g>
+      </svg>
+    </div>
   )
 }
 

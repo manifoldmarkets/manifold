@@ -162,7 +162,8 @@ export const ChoiceContractChart = (props: {
 
   const ChoiceTooltip = useMemo(
     () => (props: MultiValueHistoryTooltipProps<Bet>) => {
-      const { x, y, xScale, datum } = props
+      const { p, xScale } = props
+      const { x, y, datum } = p
       const [start, end] = xScale.domain()
       const legendItems = sortBy(
         y.map((p, i) => ({
