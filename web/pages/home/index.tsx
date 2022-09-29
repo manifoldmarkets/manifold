@@ -286,9 +286,9 @@ function GroupSection(props: {
   )
 }
 
-function DailyMoversSection(props: { userId: string | null | undefined }) {
+function DailyMoversSection(props: { userId: string }) {
   const { userId } = props
-  const changes = useProbChanges({ bettorId: userId ?? undefined })?.filter(
+  const changes = useProbChanges({ bettorId: userId })?.filter(
     (c) => Math.abs(c.probChanges.day) >= 0.01
   )
 

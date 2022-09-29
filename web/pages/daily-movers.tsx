@@ -8,20 +8,24 @@ import { useUser } from 'web/hooks/use-user'
 
 export default function DailyMovers() {
   const user = useUser()
-  const bettorId = user?.id ?? undefined
-
-  const changes = useProbChanges({ bettorId })?.filter(
-    (c) => Math.abs(c.probChanges.day) >= 0.01
-  )
-
   useTracking('view daily movers')
 
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
         <Title className="mx-4 !mb-0 sm:mx-0" text="Daily movers" />
-        <ProbChangeTable changes={changes} full />
+        {user && <ProbChangesWrapper userId={user.id} />}
       </Col>
     </Page>
   )
+}
+
+function ProbChangesWrapper(props: { userId: string }) {
+  const { userId } = props
+
+  const changes = useProbChanges({ bettorId: userId })?.filter(
+    (c) => Math.abs(c.probChanges.day) >= 0.01
+  )
+
+  return <ProbChangeTable changes={changes} full />
 }
