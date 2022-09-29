@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 
 import { Contract, CPMMContract } from '../../common/contract'
 import {
+  getAllPrivateUsers,
   getPrivateUser,
   getUser,
   getValue,
@@ -36,12 +37,12 @@ const firestore = admin.firestore()
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
     ? // ian & stephen's ids
-      filterDefined([
-        await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
-        // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
-      ])
-    : // await getAllPrivateUsers()
-      filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
+      // filterDefined([
+      // await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
+      // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
+      // ])
+      await getAllPrivateUsers()
+    : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers
     .filter((user) => {
