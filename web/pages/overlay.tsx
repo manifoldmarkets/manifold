@@ -19,6 +19,7 @@ import { ResolutionOutcome } from 'common/outcome';
 import * as Packet from 'common/packet-ids';
 import { PacketResolved, PacketSelectMarket } from 'common/packets';
 import { FullBet } from 'common/transaction';
+import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
 import { LoadingOverlay } from 'web/components/loading-overlay';
 import { ConnectionState } from 'web/lib/connection-state';
 
@@ -59,7 +60,31 @@ class Application {
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
-    this.socket = io({ query: { type: 'overlay', controlToken: params['t'] } });
+    this.socket = io({ query: { type: 'overlay', controlToken: params['t'] }, reconnectionDelay: 0, reconnectionDelayMax: 0, rememberUpgrade: true });
+    this.socket.on('disconnect', (reason: Socket.DisconnectReason, description?: DisconnectDescription) => {
+      const reasons: { reason: Socket.DisconnectReason; desc: string }[] = [
+        { reason: 'io server disconnect', desc: 'The server has forcefully disconnected the socket with socket.disconnect()' },
+        { reason: 'io client disconnect', desc: 'The socket was manually disconnected using socket.disconnect()' },
+        { reason: 'ping timeout', desc: 'The server did not send a PING within the pingInterval + pingTimeout range' },
+        { reason: 'transport close', desc: 'The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G)' },
+        { reason: 'transport error', desc: 'The connection has encountered an error (example: the server was killed during a HTTP long-polling cycle)' },
+      ];
+
+      let desc: DisconnectDescription | string = description;
+      for (const r of reasons) {
+        if (r.reason === reason) {
+          desc = r.desc;
+          break;
+        }
+      }
+
+      console.debug(`Lost connection to server [reason: ${reason}, description: ${JSON.stringify(desc)}]`);
+
+      if (reason === 'io server disconnect') {
+        console.debug('Manual reconnect');
+        this.socket.connect();
+      }
+    });
     this.registerPacketHandlers();
   }
 
@@ -71,6 +96,7 @@ class Application {
     });
     this.socket.on(Packet.SELECT_MARKET, (p: PacketSelectMarket) => {
       this.resetUI();
+      console.log(p);
       this.loadMarket(p);
     });
     this.socket.on(Packet.CLEAR, () => {

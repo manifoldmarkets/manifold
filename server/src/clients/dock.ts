@@ -28,12 +28,16 @@ export default class DockClient {
 
     const connectedTwitchStream = (this.connectedTwitchStream = this.connectedUser.data.twitchLogin);
 
+    log.debug(`Dock socket for Twitch user ${connectedTwitchStream} connected (SID: ${this.socket.id})`);
+
     this.socket.join(connectedTwitchStream);
 
     const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
     this.socket.emit(Packet.HANDSHAKE_COMPLETE, <PacketHandshakeComplete>{ actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: MANIFOLD_API_BASE_URL });
     if (market) {
       this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
+    } else {
+      this.socket.emit(Packet.UNFEATURE_MARKET);
     }
 
     this.socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
@@ -88,8 +92,7 @@ export default class DockClient {
     });
 
     this.socket.on('disconnect', () => {
-      this.socket.leave(connectedTwitchStream);
-      this.socket.removeAllListeners();
+      log.info(`Dock socket for Twitch user ${connectedTwitchStream} disconnected (SID: ${this.socket.id})`);
     });
   }
 }

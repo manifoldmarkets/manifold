@@ -16,8 +16,6 @@ export default class OverlayClient {
     this.app = app;
     this.socket = socket;
 
-    log.debug('Overlay socket connected.');
-
     this.init();
   }
 
@@ -25,6 +23,8 @@ export default class OverlayClient {
     this.connectedUserAccount = <User>this.socket.data;
 
     const connectedTwitchStream = this.connectedUserAccount.data.twitchLogin;
+
+    log.debug(`Overlay socket for Twitch user ${connectedTwitchStream} connected (SID: ${this.socket.id})`);
 
     this.socket.join(connectedTwitchStream);
 
@@ -39,8 +39,7 @@ export default class OverlayClient {
     }
 
     this.socket.on('disconnect', () => {
-      this.socket.leave(connectedTwitchStream);
-      this.socket.removeAllListeners();
+      log.debug(`Overlay socket for Twitch user ${connectedTwitchStream} disconnected (SID: ${this.socket.id})`);
     });
   }
 }

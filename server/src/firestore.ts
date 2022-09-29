@@ -66,7 +66,6 @@ export default class AppFirestore {
   }
 
   async getUserForControlToken(controlToken: string): Promise<User> {
-    log.debug(`Examining control token: ${controlToken}`);
     if (!controlToken) return null;
     const docs = await getDocs(query(this.userCollection, where('controlToken', '==', controlToken)));
     if (docs.size < 1) return null;

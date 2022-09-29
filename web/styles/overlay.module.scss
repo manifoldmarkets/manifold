@@ -22,6 +22,7 @@ $borderColor: color.scale($backgroundColor, $lightness: 10%);
 }
 
 .bet {
+  height: 0;
   min-height: 0;
   overflow: hidden;
   transition: min-height 0.5s ease-in-out;
