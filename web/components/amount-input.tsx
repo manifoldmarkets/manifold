@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import React from 'react'
+import React, { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
@@ -7,6 +7,7 @@ import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { Row } from './layout/row'
+import { AddFundsModal } from './add-funds-modal'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -38,6 +39,8 @@ export function AmountInput(props: {
 
   const { width } = useWindowSize()
   const isMobile = (width ?? 0) < 768
+
+  const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
 
   return (
     <>
@@ -71,9 +74,16 @@ export function AmountInput(props: {
             {error === 'Insufficient balance' ? (
               <>
                 Not enough funds.
-                <span className="ml-1 text-indigo-500">
-                  <SiteLink href="/add-funds">Buy more?</SiteLink>
-                </span>
+                <button
+                  className="ml-1 text-indigo-500 hover:underline hover:decoration-indigo-400"
+                  onClick={() => setAddFundsModalOpen(true)}
+                >
+                  Buy more?
+                </button>
+                <AddFundsModal
+                  open={addFundsModalOpen}
+                  setOpen={setAddFundsModalOpen}
+                />
               </>
             ) : (
               error

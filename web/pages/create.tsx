@@ -36,6 +36,8 @@ import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-an
 import { MINUTE_MS } from 'common/util/time'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { SiteLink } from 'web/components/site-link'
+import { Button } from 'web/components/button'
+import { AddFundsModal } from 'web/components/add-funds-modal'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -167,6 +169,8 @@ export function NewContract(props: {
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
   const [visibility, setVisibility] = useState<visibility>('public')
+
+  const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -507,12 +511,17 @@ export function NewContract(props: {
           {ante > balance && !deservesFreeMarket && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
               <span className="mr-2 text-red-500">Insufficient balance</span>
-              <button
-                className="btn btn-xs btn-primary"
-                onClick={() => (window.location.href = '/add-funds')}
+              <Button
+                size="xs"
+                color="green"
+                onClick={() => setFundsModalOpen(true)}
               >
                 Get M$
-              </button>
+              </Button>
+              <AddFundsModal
+                open={fundsModalOpen}
+                setOpen={setFundsModalOpen}
+              />
             </div>
           )}
         </div>
