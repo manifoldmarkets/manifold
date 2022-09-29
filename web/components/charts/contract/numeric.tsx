@@ -7,11 +7,8 @@ import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
 import { NumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MARGIN_X, MARGIN_Y, formatPct } from '../helpers'
-import {
-  SingleValueDistributionChart,
-  SingleValueDistributionTooltipProps,
-} from '../generic-charts'
+import { TooltipProps, MARGIN_X, MARGIN_Y, formatPct } from '../helpers'
+import { DistributionPoint, DistributionChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 
 const getNumericChartData = (contract: NumericContract) => {
@@ -24,9 +21,8 @@ const getNumericChartData = (contract: NumericContract) => {
   }))
 }
 
-const NumericChartTooltip = (props: SingleValueDistributionTooltipProps) => {
-  const { p } = props
-  const { x, y } = p
+const NumericChartTooltip = (props: TooltipProps<DistributionPoint>) => {
+  const { x, y } = props.p
   return (
     <span className="text-sm">
       <strong>{formatPct(y, 2)}</strong> {formatLargeNumber(x)}
@@ -51,7 +47,7 @@ export const NumericContractChart = (props: {
   return (
     <div ref={containerRef}>
       {width > 0 && (
-        <SingleValueDistributionChart
+        <DistributionChart
           w={width}
           h={height}
           xScale={xScale}

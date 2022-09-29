@@ -10,16 +10,14 @@ import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
+  TooltipProps,
   MARGIN_X,
   MARGIN_Y,
   getDateRange,
   getRightmostVisibleDate,
   formatDateInRange,
 } from '../helpers'
-import {
-  SingleValueHistoryChart,
-  SingleValueHistoryTooltipProps,
-} from '../generic-charts'
+import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { useElementWidth } from 'web/hooks/use-element-width'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
@@ -43,9 +41,7 @@ const getBetPoints = (bets: Bet[], scaleP: (p: number) => number) => {
   }))
 }
 
-const PseudoNumericChartTooltip = (
-  props: SingleValueHistoryTooltipProps<Bet>
-) => {
+const PseudoNumericChartTooltip = (props: TooltipProps<HistoryPoint<Bet>>) => {
   const { p, xScale } = props
   const { x, y, datum } = p
   const [start, end] = xScale.domain()
