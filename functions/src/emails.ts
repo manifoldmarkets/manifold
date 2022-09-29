@@ -20,7 +20,7 @@ import { getNotificationDestinationsForUser } from '../../common/user-notificati
 import {
   PerContractInvestmentsData,
   OverallPerformanceData,
-} from 'functions/src/weekly-portfolio-emails'
+} from './weekly-portfolio-emails'
 
 export const sendMarketResolutionEmail = async (
   reason: notification_reason_types,
@@ -643,7 +643,7 @@ export const sendWeeklyPortfolioUpdateEmail = async (
     templateData[`question${i + 1}Title`] = investment.questionTitle
     templateData[`question${i + 1}Url`] = investment.questionUrl
     templateData[`question${i + 1}Prob`] = investment.questionProb
-    templateData[`question${i + 1}Change`] = investment.questionChange
+    templateData[`question${i + 1}Change`] = formatMoney(investment.difference)
     templateData[`question${i + 1}ChangeStyle`] = investment.questionChangeStyle
   })
 

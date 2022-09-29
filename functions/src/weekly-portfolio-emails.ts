@@ -22,7 +22,6 @@ import { Txn } from '../../common/txn'
 import { formatMoney } from '../../common/util/format'
 import { getContractBetMetrics } from '../../common/calculate'
 
-// TODO: reset weeklyPortfolioUpdateEmailSent to false for all users at the start of each week
 export const weeklyPortfolioUpdateEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
   // every minute on Friday for an hour at 12pm PT (UTC -07:00)
@@ -179,6 +178,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
             const currentMarketProbability = cpmmContract.resolutionProbability
               ? cpmmContract.resolutionProbability
               : cpmmContract.prob
+
+            // TODO: returns 0 for resolved markets - doesn't include them
             const betsMadeAWeekAgoValue = computeInvestmentValueCustomProb(
               previousBets,
               contract,
@@ -196,12 +197,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
             ).profit
             const marketChange =
               currentMarketProbability - marketProbabilityAWeekAgo
+            const profit =
+              betsMadeInLastWeekProfit +
+              (currentBetsMadeAWeekAgoValue - betsMadeAWeekAgoValue)
             return {
               currentValue: currentBetsMadeAWeekAgoValue,
               pastValue: betsMadeAWeekAgoValue,
-              difference:
-                betsMadeInLastWeekProfit +
-                (currentBetsMadeAWeekAgoValue - betsMadeAWeekAgoValue),
+              difference: profit,
               contractSlug: contract.slug,
               marketProbAWeekAgo: marketProbabilityAWeekAgo,
               questionTitle: contract.question,
@@ -214,9 +216,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
                 Math.round(marketChange * 100) +
                 '%',
               questionChangeStyle: `color: ${
-                currentMarketProbability > marketProbabilityAWeekAgo
-                  ? 'rgba(0,160,0,1)'
-                  : '#a80000'
+                profit > 0 ? 'rgba(0,160,0,1)' : '#a80000'
               };`,
             } as PerContractInvestmentsData
           })
