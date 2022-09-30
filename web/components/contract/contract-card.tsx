@@ -2,7 +2,8 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
-import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { getBinaryProb } from 'common/contract-details'
+import { contractPath } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
   BinaryContract,
@@ -200,13 +201,14 @@ export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
   large?: boolean
   className?: string
-  probAfter?: number // 0 to 1
+  probNow?: number
+  probAfter?: number
 }) {
-  const { contract, large, className, probAfter } = props
+  const { contract, large, className, probNow, probAfter } = props
   const { resolution } = contract
   const textColor = `text-${getColor(contract)}`
 
-  const before = getBinaryProbPercent(contract)
+  const before = formatPercent(probNow ?? getBinaryProb(contract))
   const after = probAfter && formatPercent(probAfter)
   const probChanged = before !== after
 

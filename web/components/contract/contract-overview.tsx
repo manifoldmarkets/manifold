@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -29,6 +29,7 @@ import {
   BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
+import { useEvent } from 'web/hooks/use-event'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -73,6 +74,11 @@ const NumericOverview = (props: { contract: NumericContract }) => {
 
 const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
   const { contract, bets } = props
+  const [displayProb, setDisplayProb] = useState<number>()
+  const onChartMouseOver = useEvent((p: { y: number } | undefined) => {
+    setDisplayProb(p?.y)
+  })
+
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-1 px-2">
@@ -82,11 +88,16 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
           <BinaryResolutionOrChance
             className="flex items-end"
             contract={contract}
+            probNow={displayProb}
             large
           />
         </Row>
       </Col>
-      <BinaryContractChart contract={contract} bets={bets} />
+      <BinaryContractChart
+        contract={contract}
+        bets={bets}
+        onMouseOver={onChartMouseOver}
+      />
       <Row className="items-center justify-between gap-4 xl:hidden">
         {tradingAllowed(contract) && (
           <BinaryMobileBetting contract={contract} />
