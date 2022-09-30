@@ -48,7 +48,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       return isProd()
         ? user.notificationPreferences.profit_loss_updates.includes('email') &&
             !user.weeklyPortfolioUpdateEmailSent
-        : true
+        : user.notificationPreferences.profit_loss_updates.includes('email')
     })
     // Send emails in batches
     .slice(0, 200)
