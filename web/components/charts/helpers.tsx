@@ -25,6 +25,8 @@ export type YScale<P> = P extends Point<infer _, infer Y> ? AxisScale<Y> : never
 export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
 export const MARGIN_Y = MARGIN.top + MARGIN.bottom
+const MARGIN_STYLE = `${MARGIN.top}px ${MARGIN.right}px ${MARGIN.bottom}px ${MARGIN.left}px`
+const MARGIN_XFORM = `translate(${MARGIN.left}, ${MARGIN.top})`
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
@@ -128,7 +130,7 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
   Tooltip?: TooltipComponent<P>
 }) => {
   const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
-  const [mouseState, setMouseState] = useState<TooltipPosition & { p: P }>()
+  const [mouseState, setMouseState] = useState<{ pos: TooltipPosition; p: P }>()
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - MARGIN_X
   const innerH = h - MARGIN_Y
@@ -170,7 +172,8 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
       const [mouseX, mouseY] = pointer(ev)
       const p = onMouseOver(mouseX, mouseY)
       if (p != null) {
-        setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
+        const pos = getTooltipPosition(mouseX, mouseY, innerW, innerH)
+        setMouseState({ pos, p })
       } else {
         setMouseState(undefined)
       }
@@ -184,15 +187,15 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
   return (
     <div className="relative">
       {mouseState && Tooltip && (
-        <TooltipContainer top={mouseState.top} left={mouseState.left}>
+        <TooltipContainer pos={mouseState.pos}>
           <Tooltip xScale={xAxis.scale()} p={mouseState.p} />
         </TooltipContainer>
       )}
-      <svg className="w-full" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
         <clipPath id={clipPathId}>
           <rect x={0} y={0} width={innerW} height={innerH} />
         </clipPath>
-        <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
+        <g transform={MARGIN_XFORM}>
           <XAxis axis={xAxis} w={innerW} h={innerH} />
           <YAxis axis={yAxis} w={innerW} h={innerH} />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
@@ -214,20 +217,48 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
   )
 }
 
+export type TooltipPosition = {
+  top?: number
+  right?: number
+  bottom?: number
+  left?: number
+}
+
+export const getTooltipPosition = (
+  mouseX: number,
+  mouseY: number,
+  w: number,
+  h: number
+) => {
+  const result: TooltipPosition = {}
+  if (mouseX <= (3 * w) / 4) {
+    result.left = mouseX + 10 // in the left three quarters
+  } else {
+    result.right = w - mouseX + 10 // in the right quarter
+  }
+  if (mouseY <= h / 4) {
+    result.top = mouseY + 10 // in the top quarter
+  } else {
+    result.bottom = h - mouseY + 10 // in the bottom three quarters
+  }
+  return result
+}
+
 export type TooltipProps<P> = { p: P; xScale: XScale<P> }
 export type TooltipComponent<P> = React.ComponentType<TooltipProps<P>>
-export type TooltipPosition = { top: number; left: number }
-export const TooltipContainer = (
-  props: TooltipPosition & { className?: string; children: React.ReactNode }
-) => {
-  const { top, left, className, children } = props
+export const TooltipContainer = (props: {
+  pos: TooltipPosition
+  className?: string
+  children: React.ReactNode
+}) => {
+  const { pos, className, children } = props
   return (
     <div
       className={clsx(
         className,
         'pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-white/90 p-2'
       )}
-      style={{ top, left }}
+      style={{ margin: MARGIN_STYLE, ...pos }}
     >
       {children}
     </div>
