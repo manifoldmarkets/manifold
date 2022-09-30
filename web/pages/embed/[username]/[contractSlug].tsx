@@ -86,9 +86,9 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const [probAfter, setProbAfter] = useState<number>()
 
   return (
-    <Col className="h-[100vh] w-full bg-white">
+    <Col className="border-greyscale-2 bg-greyscale-1 h-[100vh] w-full rounded-lg border-2 p-4">
       <Row className="justify-between gap-4 px-2">
-        <div className="text-xl text-indigo-700 md:text-2xl">
+        <div className="text-md text-lg text-indigo-700 md:text-xl">
           <SiteLink href={href}>{question}</SiteLink>
         </div>
         {isBinary && (
