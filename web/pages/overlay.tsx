@@ -137,12 +137,13 @@ class Application {
 
     const questionLength = this.currentMarket.question.length;
     const questionDiv = document.getElementById('question');
-    if (questionLength > 60) {
-      questionDiv.style.fontSize = '1.0em';
-    } else if (questionLength > 150) {
-      questionDiv.style.fontSize = '0.8em';
-    } else {
+    console.log(questionLength);
+    if (questionLength < 60) {
       questionDiv.style.fontSize = '1.5em';
+    } else if (questionLength < 150) {
+      questionDiv.style.fontSize = '1.0em';
+    } else {
+      questionDiv.style.fontSize = '0.85em';
     }
     questionDiv.innerHTML = this.currentMarket.question;
     this.currentProbability_percent = this.currentMarket.probability * 100;
@@ -196,11 +197,12 @@ class Application {
     t.offsetLeft;
 
     if (!options.animateHeight) {
-      t.style.height = '1.2em';
+      t.style.minHeight = t.style.height = '1.2em';
+    } else {
+      setTimeout(() => {
+        t.classList.add('!min-h-[1.2em]');
+      }, 10);
     }
-    setTimeout(() => {
-      t.classList.add('!min-h-[1.2em]');
-    }, 1);
 
     if (this.betElements.length > 3) {
       const transactionToRemove = this.betElements.shift().element;
@@ -324,7 +326,7 @@ export default () => {
               <canvas id="chart" className="absolute" style={{ aspectRatio: 'unset' }}></canvas>
             </Col>
             <Row className={clsx('justify-end items-center p-[0.2em]', resolvedData && 'hidden')}>
-              <Col className="grow shrink h-full items-start justify-end max-h-[3.5em] overflow-hidden">
+              <Col className="grow shrink items-start justify-end max-h-[3.6em] h-[3.6em] overflow-hidden">
                 <Col id="transactions" className="grow shrink h-full">
                   <div id="transaction-template" className={clsx(styles.bet, 'text-[1em]')}>
                     <div id="name" className="font-bold inline-block truncate max-w-[65%] align-bottom"></div>{' '}

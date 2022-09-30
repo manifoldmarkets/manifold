@@ -29,10 +29,14 @@ export default class Chart {
 
     const animationFrame = () => {
       this.render();
-      // this.resize();
       window.requestAnimationFrame(animationFrame);
     };
     window.requestAnimationFrame(animationFrame);
+
+    // Hopefully this isn't needed. Patch to resolve any edge-cases where chart resize is not triggered by other components changing size:
+    setInterval(() => {
+      this.resize();
+    }, 1000);
 
     this.data = this.produceData();
   }

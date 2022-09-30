@@ -15,10 +15,10 @@ export default function ContractCard(props: { controlUserID: string; contract: L
   const isFeatureable = !isClosed && contract.outcomeType === 'BINARY';
   const canResolveMarket = controlUserID === contract.creatorId;
   return (
-    <Col className={clsx('group relative gap-3 rounded-lg bg-white py-4 pl-6 pr-5 shadow-md', !isFeatureable && 'bg-gray-100')}>
-      <Row>
+    <Col className={clsx('group relative gap-3 rounded-lg bg-white py-4 p-4 xs:pl-6 pr-5 shadow-md', !isFeatureable && 'bg-gray-100')}>
+      <div className="flex flex-col xs:flex-row">
         <Col className="relative flex-1 gap-3 pr-1">
-          <div className={clsx('absolute -left-6 -top-4 -bottom-4 right-0')}></div>
+          {/* <div className={clsx('absolute -left-6 -top-4 -bottom-4 right-0')}></div> */}
           <AvatarDetails contract={contract} />
           <p
             className={clsx('break-words font-semibold text-indigo-700')}
@@ -33,7 +33,7 @@ export default function ContractCard(props: { controlUserID: string; contract: L
             <MiscDetails contract={contract} />
           </Row>
         </Col>
-        <Col className="items-end">
+        <Col className="xs:items-end items-stretch">
           <Col className="grow justify-center">
             {contract.outcomeType === 'BINARY' && <BinaryResolutionOrChance className="items-center" contract={contract} />}
 
@@ -47,24 +47,17 @@ export default function ContractCard(props: { controlUserID: string; contract: L
             <ProbBar previewProb={contract.probability} />
           </Col>
           <Row className="items-center mt-2">
-            {isResolved ? (
-              <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={'This market has been resolved'}>
+            {(isResolved || contract.outcomeType !== 'BINARY' || isClosed) && (
+              <div
+                className="tooltip tooltip-right xs:tooltip pr-1 before:content-[attr(data-tip)] xs:before:max-w-[15em] before:max-w-[70vw] before:z-50 before:!transition-[opacity] before:duration-200"
+                data-tip={isResolved ? 'This market has been resolved' : contract.outcomeType !== 'BINARY' ? 'This type of market is not currently supported' : 'This market is currently closed'}
+              >
                 <InformationCircleIcon className="h-5 w-5 text-gray-500" />
               </div>
-            ) : contract.outcomeType !== 'BINARY' ? (
-              <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={'This type of market is not currently supported'}>
-                <InformationCircleIcon className="h-5 w-5 text-gray-500" />
-              </div>
-            ) : (
-              isClosed && (
-                <div className="tooltip tooltip-left pr-1 before:content-[attr(data-tip)] before:max-w-[15em]" data-tip={'This market is currently closed'}>
-                  <InformationCircleIcon className="h-5 w-5 text-gray-500" />
-                </div>
-              )
             )}
             <ConfirmationButton
               openModalBtn={{
-                className: clsx('z-40 btn btn-sm border-2 rounded-lg', contract.outcomeType !== 'BINARY' || isClosed ? 'btn-disabled' : 'btn-outline btn-secondary'),
+                className: clsx('z-40 btn btn-sm border-2 rounded-lg grow', contract.outcomeType !== 'BINARY' || isClosed ? 'btn-disabled' : 'btn-outline btn-secondary'),
                 label: 'Feature',
               }}
               cancelBtn={{
@@ -83,7 +76,7 @@ export default function ContractCard(props: { controlUserID: string; contract: L
             </ConfirmationButton>
           </Row>
         </Col>
-      </Row>
+      </div>
     </Col>
   );
 }
@@ -149,26 +142,28 @@ function ProbBar(props: { previewProb?: number }) {
   );
 }
 
-function BinaryResolutionOrChance(props: { contract: LiteMarket; large?: boolean; className?: string }) {
-  const { contract, large, className } = props;
+function BinaryResolutionOrChance(props: { contract: LiteMarket; className?: string }) {
+  const { contract, className } = props;
   const { resolution } = contract;
   // const textColor = `text-${getColor(contract)}`
   const textColor = 'text-primary'; //!!!
 
   return (
-    <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
+    <div className={clsx('text-xl xs:text-3xl', className)}>
       {resolution ? (
-        <>
-          <div className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}>Resolved</div>
+        <div className="xs:flex flex-col items-center">
+          <div className={clsx('text-gray-500 text-base inline')}>Resolved</div>
+          <div className="xs:hidden inline"> </div>
           <BinaryContractOutcomeLabel contract={contract} resolution={resolution} />
-        </>
+        </div>
       ) : (
-        <>
-          <div className={textColor}>{(contract.probability * 100).toFixed(0)}%</div>
-          <div className={clsx('-my-1', textColor, large ? 'text-xl' : 'text-base')}>chance</div>
-        </>
+        <div className="xs:flex flex-col items-center">
+          <div className={clsx('inline text-lg xs:text-[length:unset] font-bold xs:font-normal', textColor)}>{(contract.probability * 100).toFixed(0)}%</div>
+          <div className="xs:hidden inline"> </div>
+          <div className={clsx('inline -my-1', textColor, 'text-base')}>chance</div>
+        </div>
       )}
-    </Col>
+    </div>
   );
 }
 

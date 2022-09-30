@@ -90,7 +90,8 @@ export default class App {
       await market.load();
       this.selectedMarketMap[channel] = market;
       log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
-      const selectMarketPacket: PacketSelectMarket = { ...market.data, initialBets: market.allBets.slice(market.allBets.length - 3) };
+      const initialBetIndex = Math.max(0, market.allBets.length - 3);
+      const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.allBets, initialBets: market.allBets.slice(initialBetIndex) };
       if (sourceDock) {
         sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
         sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);

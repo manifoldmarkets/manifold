@@ -50,7 +50,7 @@ export class Market {
       }
     };
 
-    this.loadInitialBets().then(() => {
+    await this.loadInitialBets().then(() => {
       this.continuePolling = true;
       setTimeout(this.pollTask, 1000);
     });

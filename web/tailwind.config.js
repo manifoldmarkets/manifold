@@ -24,6 +24,10 @@ module.exports = {
         },
       },
     },
+    screens: {
+      xs: '300px',
+      ...defaultTheme.screens,
+    },
   },
   plugins: [
     require('@tailwindcss/forms'),

@@ -36,7 +36,7 @@ export function ConfirmationButton(props: {
   return (
     <>
       <Modal open={open} setOpen={updateOpen} size="md">
-        <Col className="gap-4 rounded-md bg-white px-8 py-6">
+        <Col className="gap-4 rounded-md bg-white px-4 xs:px-8 py-4 xs:py-6">
           {children}
           <Row className="flex justify-between items-center gap-4">
             <button ref={completeButtonRef} className={clsx('btn normal-case grow max-w-[15rem]', cancelBtn?.className)} onClick={() => updateOpen(false)}>

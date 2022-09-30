@@ -89,7 +89,7 @@ export type Bet = {
   };
 };
 
-export type User = {
+export type UserData = {
   id: string;
   createdTime: number;
 
@@ -160,23 +160,26 @@ function registerChangeListener(doc: DocumentReference, listener: (snapshot?: Do
 
 export default class ManifoldFirestore {
   private readonly contracts: CollectionReference<Contract>;
-  private readonly users: CollectionReference<User>;
+  private readonly users: CollectionReference<UserData>;
 
-  private allUsers: { [k: string]: User } = {};
+  private allUsers: { [k: string]: UserData } = {};
 
   constructor() {
     const app = initializeApp(MANIFOLD_FIREBASE_CONFIG, 'manifold');
     const db = getFirestore(app);
     this.contracts = <CollectionReference<Contract>>collection(db, 'contracts');
-    this.users = <CollectionReference<User>>collection(db, 'users');
+    this.users = <CollectionReference<UserData>>collection(db, 'users');
+
+    log.info('Accessing Manifold Firestore...');
+
+    ts('users');
+    this.loadAllUsers();
+    log.info(`Updated ${this.allUsers.length} users in ${te('users')}.`);
 
     this.test();
   }
 
   async loadAllUsers() {
-    // const users = await getDocs(this.users);
-    // users.forEach((u) => console.log(u.data().username));
-
     await new Promise<void>((r) =>
       onSnapshot(this.users, (changes?) => {
         changes.docs.map((d) => (this.allUsers[d.data().id] = d.data()));
@@ -229,12 +232,6 @@ export default class ManifoldFirestore {
   // }
 
   async test() {
-    log.info('Accessing Manifold Firestore...');
-
-    ts('users');
-    await this.loadAllUsers();
-    log.info(`Updated ${this.allUsers.length} users in ${te('users')}.`);
-
     ts('contracts');
     // const docs = await getDocs(query(contracts));
     // log.info("Found " + docs.size + " markets in " + te("contracts"));
