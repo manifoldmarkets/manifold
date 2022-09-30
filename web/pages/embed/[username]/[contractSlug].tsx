@@ -79,7 +79,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
-  const { setElem, height: graphHeight } = useMeasureSize()
+  const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
 
   const [betPanelOpen, setBetPanelOpen] = useState(false)
 
@@ -132,7 +132,14 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
       )}
 
       <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
-        <ContractChart contract={contract} bets={bets} height={graphHeight} />
+        {graphWidth != null && graphHeight != null && (
+          <ContractChart
+            contract={contract}
+            bets={bets}
+            width={graphWidth}
+            height={graphHeight}
+          />
+        )}
       </div>
     </Col>
   )
