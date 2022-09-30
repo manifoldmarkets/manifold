@@ -1,3 +1,4 @@
+import { ArrowUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import { Row } from './layout/row'
