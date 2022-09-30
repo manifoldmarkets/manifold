@@ -213,7 +213,7 @@ export function NumberCancelSelector(props: {
   return (
     <Col className={clsx('gap-2', className)}>
       <Button
-        color={selected === 'NUMBER' ? 'green' : 'gray'}
+        color={selected === 'NUMBER' ? 'indigo' : 'gray'}
         onClick={() => onSelect('NUMBER')}
         className={clsx('whitespace-nowrap', btnClassName)}
       >
@@ -244,7 +244,7 @@ function Button(props: {
       type="button"
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'btn-primary text-white',
+        color === 'green' && 'bg-teal-500 bg-teal-600 text-white',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',

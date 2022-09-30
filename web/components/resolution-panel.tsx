@@ -57,16 +57,16 @@ export function ResolutionPanel(props: {
     setIsSubmitting(false)
   }
 
-  const submitButtonClass =
-    outcome === 'YES'
-      ? 'btn-primary'
-      : outcome === 'NO'
-      ? 'bg-red-400 hover:bg-red-500'
-      : outcome === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : outcome === 'MKT'
-      ? 'bg-blue-400 hover:bg-blue-500'
-      : 'btn-disabled'
+  // const submitButtonClass =
+  //   outcome === 'YES'
+  //     ? 'btn-primary'
+  //     : outcome === 'NO'
+  //     ? 'bg-red-400 hover:bg-red-500'
+  //     : outcome === 'CANCEL'
+  //     ? 'bg-yellow-400 hover:bg-yellow-500'
+  //     : outcome === 'MKT'
+  //     ? 'bg-blue-400 hover:bg-blue-500'
+  //     : 'btn-disabled'
 
   return (
     <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
@@ -76,18 +76,14 @@ export function ResolutionPanel(props: {
         </span>
       )}
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
-
       <div className="mb-3 text-sm text-gray-500">Outcome</div>
-
       <YesNoCancelSelector
         className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
         btnClassName={isSubmitting ? 'btn-disabled' : ''}
       />
-
       <Spacer h={4} />
-
       <div>
         {outcome === 'YES' ? (
           <>
@@ -123,16 +119,25 @@ export function ResolutionPanel(props: {
           <>Resolving this market will immediately pay out {BETTORS}.</>
         )}
       </div>
-
       <Spacer h={4} />
-
       {!!error && <div className="text-red-500">{error}</div>}
-
       <ResolveConfirmationButton
+        color={
+          outcome === 'YES'
+            ? 'green'
+            : outcome === 'NO'
+            ? 'red'
+            : outcome === 'CANCEL'
+            ? 'yellow'
+            : outcome === 'MKT'
+            ? 'blue'
+            : 'indigo'
+        }
+        disabled={!outcome}
         onResolve={resolve}
         isSubmitting={isSubmitting}
-        openModalButtonClass={clsx('w-full mt-2', submitButtonClass)}
-        submitButtonClass={submitButtonClass}
+        // openModalButtonClass={clsx('w-full mt-2', submitButtonClass)}
+        // submitButtonClass={submitButtonClass}
       />
     </Col>
   )

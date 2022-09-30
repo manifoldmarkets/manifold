@@ -85,16 +85,16 @@ export function AnswerResolvePanel(props: {
     setIsSubmitting(false)
   }
 
-  const resolutionButtonClass =
-    resolveOption === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : resolveOption === 'CHOOSE' && answers.length
-      ? 'btn-primary'
-      : resolveOption === 'CHOOSE_MULTIPLE' &&
-        answers.length > 1 &&
-        answers.every((answer) => chosenAnswers[answer] > 0)
-      ? 'bg-blue-400 hover:bg-blue-500'
-      : 'btn-disabled'
+  // const resolutionButtonClass =
+  //   resolveOption === 'CANCEL'
+  //     ? 'bg-yellow-400 hover:bg-yellow-500'
+  //     : resolveOption === 'CHOOSE' && answers.length
+  //     ? 'btn-primary'
+  //     : resolveOption === 'CHOOSE_MULTIPLE' &&
+  //       answers.length > 1 &&
+  //       answers.every((answer) => chosenAnswers[answer] > 0)
+  //     ? 'bg-blue-400 hover:bg-blue-500'
+  //     : 'btn-disabled'
 
   return (
     <Col className="gap-4 rounded">
@@ -129,11 +129,28 @@ export function AnswerResolvePanel(props: {
               Clear
             </button>
           )}
+
           <ResolveConfirmationButton
+            color={
+              resolveOption === 'CANCEL'
+                ? 'yellow'
+                : resolveOption === 'CHOOSE' && answers.length
+                ? 'green'
+                : resolveOption === 'CHOOSE_MULTIPLE' &&
+                  answers.length > 1 &&
+                  answers.every((answer) => chosenAnswers[answer] > 0)
+                ? 'blue'
+                : 'indigo'
+            }
+            disabled={
+              !resolveOption ||
+              (resolveOption === 'CHOOSE' && !answers.length) ||
+              (resolveOption === 'CHOOSE_MULTIPLE' &&
+                (!(answers.length > 1) ||
+                  !answers.every((answer) => chosenAnswers[answer] > 0)))
+            }
             onResolve={onResolve}
             isSubmitting={isSubmitting}
-            openModalButtonClass={resolutionButtonClass}
-            submitButtonClass={resolutionButtonClass}
           />
         </Row>
       </Col>

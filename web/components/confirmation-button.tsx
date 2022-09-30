@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
-import { Button, SizeType } from './button'
+import { Button, ColorType, SizeType } from './button'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
@@ -10,6 +10,9 @@ export function ConfirmationButton(props: {
     label: string
     icon?: JSX.Element
     className?: string
+    color?: ColorType
+    size?: SizeType
+    disabled?: boolean
   }
   cancelBtn?: {
     label?: string
@@ -23,8 +26,6 @@ export function ConfirmationButton(props: {
   onSubmit?: () => void
   onOpenChanged?: (isOpen: boolean) => void
   onSubmitWithSuccess?: () => Promise<boolean>
-  disabled: boolean
-  size?: SizeType
 }) {
   const {
     openModalBtn,
@@ -34,8 +35,6 @@ export function ConfirmationButton(props: {
     children,
     onOpenChanged,
     onSubmitWithSuccess,
-    disabled,
-    size,
   } = props
 
   const [open, setOpen] = useState(false)
@@ -76,9 +75,9 @@ export function ConfirmationButton(props: {
       <Button
         className={clsx(openModalBtn.className)}
         onClick={() => updateOpen(true)}
-        disabled={disabled}
-        color="yellow"
-        size={size}
+        disabled={openModalBtn.disabled}
+        color={openModalBtn.color}
+        size={openModalBtn.size}
       >
         {openModalBtn.icon}
         {openModalBtn.label}
@@ -92,9 +91,17 @@ export function ResolveConfirmationButton(props: {
   isSubmitting: boolean
   openModalButtonClass?: string
   submitButtonClass?: string
+  color?: ColorType
+  disabled?: boolean
 }) {
-  const { onResolve, isSubmitting, openModalButtonClass, submitButtonClass } =
-    props
+  const {
+    onResolve,
+    isSubmitting,
+    openModalButtonClass,
+    submitButtonClass,
+    color,
+    disabled,
+  } = props
   return (
     <ConfirmationButton
       openModalBtn={{
@@ -104,6 +111,9 @@ export function ResolveConfirmationButton(props: {
           isSubmitting && 'btn-disabled loading'
         ),
         label: 'Resolve',
+        color: color,
+        disabled: isSubmitting || disabled,
+        size: 'xl',
       }}
       cancelBtn={{
         label: 'Back',

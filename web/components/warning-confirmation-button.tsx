@@ -5,18 +5,17 @@ import { Row } from './layout/row'
 import { ConfirmationButton } from './confirmation-button'
 import { ExclamationIcon } from '@heroicons/react/solid'
 import { formatMoney } from 'common/util/format'
-import { Button, SizeType } from './button'
+import { Button, ColorType, SizeType } from './button'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
-  outcome?: 'YES' | 'NO' | undefined
   marketType: 'freeResponse' | 'binary'
   warning?: string
   onSubmit: () => void
   disabled: boolean
   isSubmitting: boolean
   openModalButtonClass?: string
-  submitButtonClassName?: string
+  color: ColorType
   size: SizeType
 }) {
   const {
@@ -26,9 +25,8 @@ export function WarningConfirmationButton(props: {
     disabled,
     isSubmitting,
     openModalButtonClass,
-    submitButtonClassName,
-    outcome,
     size,
+    color,
   } = props
 
   if (!warning) {
@@ -36,9 +34,9 @@ export function WarningConfirmationButton(props: {
       <Button
         size={size}
         disabled={isSubmitting || disabled}
-        className={clsx(openModalButtonClass, isSubmitting ? 'loading' : '')}
+        className={clsx(openModalButtonClass)}
         onClick={onSubmit}
-        color={outcome === 'NO' ? 'red' : 'green'}
+        color={color}
       >
         {isSubmitting
           ? 'Submitting...'
@@ -51,10 +49,12 @@ export function WarningConfirmationButton(props: {
 
   return (
     <ConfirmationButton
-      disabled={isSubmitting}
       openModalBtn={{
         className: clsx(isSubmitting && 'loading'),
         label: amount ? `Wager ${formatMoney(amount)}` : 'Wager',
+        size: size,
+        color: 'yellow',
+        disabled: isSubmitting,
       }}
       cancelBtn={{
         label: 'Cancel',
@@ -65,7 +65,6 @@ export function WarningConfirmationButton(props: {
         className: clsx('btn border-none btn-sm btn-ghost self-center'),
       }}
       onSubmit={onSubmit}
-      size={size}
     >
       <Row className="items-center text-xl">
         <ExclamationIcon

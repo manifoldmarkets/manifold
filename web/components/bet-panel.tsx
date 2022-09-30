@@ -395,12 +395,12 @@ export function BuyPanel(props: {
           <WarningConfirmationButton
             marketType="binary"
             amount={betAmount}
-            outcome={outcome}
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
             disabled={!!betDisabled || outcome === undefined}
             size="xl"
+            color={outcome === 'NO' ? 'red' : 'green'}
           />
         )}
         <button
