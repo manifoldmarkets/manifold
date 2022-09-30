@@ -146,9 +146,9 @@ export const ChoiceContractChart = (props: {
     [answers, contract, betPoints, start, end]
   )
   const rightmostDate = getRightmostVisibleDate(
-    end ? new Date(end) : null,
-    last(betPoints)?.x,
-    new Date(Date.now())
+    end,
+    last(betPoints)?.x?.getTime(),
+    Date.now()
   )
   const visibleRange = [start, rightmostDate]
   const isMobile = useIsMobile(800)

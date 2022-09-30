@@ -62,7 +62,7 @@ export const PseudoNumericContractChart = (props: {
 }) => {
   const { contract, bets, onMouseOver } = props
   const { min, max, isLogScale } = contract
-  const [startDate, endDate] = getDateRange(contract)
+  const [start, end] = getDateRange(contract)
   const scaleP = useMemo(
     () => getScaleP(min, max, isLogScale),
     [min, max, isLogScale]
@@ -72,18 +72,18 @@ export const PseudoNumericContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(bets, scaleP), [bets, scaleP])
   const data = useMemo(
     () => [
-      { x: new Date(startDate), y: startP },
+      { x: new Date(start), y: startP },
       ...betPoints,
-      { x: new Date(endDate ?? Date.now() + DAY_MS), y: endP },
+      { x: new Date(end ?? Date.now() + DAY_MS), y: endP },
     ],
-    [betPoints, startDate, startP, endDate, endP]
+    [betPoints, start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(
-    endDate ? new Date(endDate) : null,
-    last(betPoints)?.x,
-    new Date(Date.now())
+    end,
+    last(betPoints)?.x?.getTime(),
+    Date.now()
   )
-  const visibleRange = [startDate, rightmostDate]
+  const visibleRange = [start, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0
