@@ -62,8 +62,8 @@ export function NotificationSettings(props: {
     'tagged_user', // missing tagged on contract description email
     'contract_from_followed_user',
     'unique_bettors_on_your_contract',
+    'profit_loss_updates',
     // TODO: add these
-    // 'profit_loss_updates', - changes in markets you have shares in
     // biggest winner, here are the rest of your markets
 
     // 'referral_bonuses',
@@ -153,6 +153,7 @@ export function NotificationSettings(props: {
       'trending_markets',
       'thank_you_for_purchases',
       'onboarding_flow',
+      'profit_loss_updates',
     ],
   }
 
