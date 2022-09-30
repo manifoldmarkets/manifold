@@ -356,18 +356,22 @@ function EditableCloseDate(props: {
     closeTime && dayJsCloseTime.format('HH:mm')
   )
 
-  const newCloseTime = closeDate
-    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
-    : undefined
-
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
 
-  const onSave = () => {
+  let newCloseTime = closeDate
+    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
+    : undefined
+  function onSave(customTime?: number) {
+    if (customTime) {
+      newCloseTime = customTime
+      setCloseDate(dayjs(newCloseTime).format('YYYY-MM-DD'))
+      setCloseHoursMinutes(dayjs(newCloseTime).format('HH:mm'))
+    }
     if (!newCloseTime) return
 
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
-    else if (newCloseTime > Date.now()) {
+    else {
       const content = contract.description
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
@@ -416,12 +420,20 @@ function EditableCloseDate(props: {
             />
           </Row>
           <Button
-            className="mt-2"
+            className="mt-4"
             size={'xs'}
             color={'indigo'}
-            onClick={onSave}
+            onClick={() => onSave()}
           >
             Done
+          </Button>
+          <Button
+            className="mt-4"
+            size={'xs'}
+            color={'gray-white'}
+            onClick={() => onSave(Date.now())}
+          >
+            Close Now
           </Button>
         </Col>
       </Modal>
