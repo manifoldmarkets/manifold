@@ -33,8 +33,9 @@ const NumericChartTooltip = (props: TooltipProps<DistributionPoint>) => {
 export const NumericContractChart = (props: {
   contract: NumericContract
   height?: number
+  onMouseOver?: (p: DistributionPoint | undefined) => void
 }) => {
-  const { contract } = props
+  const { contract, onMouseOver } = props
   const { min, max } = contract
   const data = useMemo(() => getNumericChartData(contract), [contract])
   const isMobile = useIsMobile(800)
@@ -54,6 +55,7 @@ export const NumericContractChart = (props: {
           yScale={yScale}
           data={data}
           color={NUMERIC_GRAPH_COLOR}
+          onMouseOver={onMouseOver}
           Tooltip={NumericChartTooltip}
         />
       )}
