@@ -1,7 +1,5 @@
-import { ArrowCircleUpIcon, ArrowUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { Button } from './button'
 import { Row } from './layout/row'
 
 export function ScrollToTopButton(props: { className?: string }) {
