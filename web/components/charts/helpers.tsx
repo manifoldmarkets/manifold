@@ -259,19 +259,19 @@ export const getDateRange = (contract: Contract) => {
   const { createdTime, closeTime, resolutionTime } = contract
   const isClosed = !!closeTime && Date.now() > closeTime
   const endDate = resolutionTime ?? (isClosed ? closeTime : null)
-  return [new Date(createdTime), endDate ? new Date(endDate) : null] as const
+  return [createdTime, endDate ?? null] as const
 }
 
 export const getRightmostVisibleDate = (
-  contractEnd: Date | null | undefined,
-  lastActivity: Date | null | undefined,
-  now: Date
+  contractEnd: number | null | undefined,
+  lastActivity: number | null | undefined,
+  now: number
 ) => {
   if (contractEnd != null) {
     return contractEnd
   } else if (lastActivity != null) {
     // client-DB clock divergence may cause last activity to be later than now
-    return new Date(Math.max(lastActivity.getTime(), now.getTime()))
+    return Math.max(lastActivity, now)
   } else {
     return now
   }
