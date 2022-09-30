@@ -11,6 +11,8 @@ import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
 import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
+import { Row } from 'web/components/layout/row'
+import { capitalize } from 'lodash'
 
 export function ResolutionPanel(props: {
   isAdmin: boolean
@@ -94,9 +96,10 @@ export function ResolutionPanel(props: {
             withdrawn from your account
           </>
         ) : outcome === 'MKT' ? (
-          <Col className="gap-6">
+          <Col className="items-center gap-6">
             <div>
-              {PAST_BETS} will be paid out at the probability you specify:
+              {capitalize(PAST_BETS)} will be paid out at the probability you
+              specify:
             </div>
             <ProbabilitySelector
               probabilityInt={Math.round(prob)}
@@ -110,22 +113,24 @@ export function ResolutionPanel(props: {
       </div>
       <Spacer h={4} />
       {!!error && <div className="text-red-500">{error}</div>}
-      <ResolveConfirmationButton
-        color={
-          outcome === 'YES'
-            ? 'green'
-            : outcome === 'NO'
-            ? 'red'
-            : outcome === 'CANCEL'
-            ? 'yellow'
-            : outcome === 'MKT'
-            ? 'blue'
-            : 'indigo'
-        }
-        disabled={!outcome}
-        onResolve={resolve}
-        isSubmitting={isSubmitting}
-      />
+      <Row className={'justify-center'}>
+        <ResolveConfirmationButton
+          color={
+            outcome === 'YES'
+              ? 'green'
+              : outcome === 'NO'
+              ? 'red'
+              : outcome === 'CANCEL'
+              ? 'yellow'
+              : outcome === 'MKT'
+              ? 'blue'
+              : 'indigo'
+          }
+          disabled={!outcome}
+          onResolve={resolve}
+          isSubmitting={isSubmitting}
+        />
+      </Row>
     </Col>
   )
 }
