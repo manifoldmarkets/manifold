@@ -111,7 +111,7 @@ export const AreaWithTopStroke = <P,>(props: {
         py1={py1}
         curve={curve}
         fill={color}
-        opacity={0.3}
+        opacity={0.2}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
     </g>
