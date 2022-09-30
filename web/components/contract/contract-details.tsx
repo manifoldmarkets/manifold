@@ -32,7 +32,10 @@ import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { BountiedContractBadge } from 'web/components/contract/bountied-contract-badge'
+import {
+  BountiedContractBadge,
+  BountiedContractSmallBadge,
+} from 'web/components/contract/bountied-contract-badge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -129,9 +132,10 @@ export function ContractDetails(props: {
       </Row>
       {/* GROUPS */}
       {isMobile && (
-        <div className="mt-2">
+        <Row className="mt-2 gap-1">
+          <BountiedContractSmallBadge contract={contract} />
           <MarketGroups contract={contract} disabled={disabled} />
-        </div>
+        </Row>
       )}
     </Col>
   )
@@ -181,7 +185,10 @@ export function MarketSubheader(props: {
             isCreator={isCreator}
           />
           {!isMobile && (
-            <MarketGroups contract={contract} disabled={disabled} />
+            <Row className={'gap-1'}>
+              <BountiedContractSmallBadge contract={contract} />
+              <MarketGroups contract={contract} disabled={disabled} />
+            </Row>
           )}
         </Row>
       </Col>
@@ -328,14 +335,14 @@ export function GroupDisplay(props: { groupToDisplay?: GroupLink | null }) {
   if (groupToDisplay) {
     return (
       <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate rounded-full px-2 text-xs text-white sm:max-w-[250px]">
+        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]">
           {groupToDisplay.name}
         </a>
       </Link>
     )
   } else
     return (
-      <div className="bg-greyscale-4 truncate rounded-full px-2 text-xs text-white">
+      <div className="bg-greyscale-4 truncate rounded-full py-0.5 px-2 text-xs text-white">
         No Group
       </div>
     )
