@@ -7,15 +7,14 @@ export function ScrollToTopButton(props: { className?: string }) {
   const { className } = props
   const [visible, setVisible] = useState(false)
 
-  const onScroll = () => {
-    if (window.scrollY > 500) {
-      setVisible(true)
-    } else {
-      setVisible(false)
-    }
-  }
-
   useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > 500) {
+        setVisible(true)
+      } else {
+        setVisible(false)
+      }
+    }
     window.addEventListener('scroll', onScroll, { passive: true })
 
     return () => {
