@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
+import { Button, SizeType } from './button'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
@@ -22,6 +23,8 @@ export function ConfirmationButton(props: {
   onSubmit?: () => void
   onOpenChanged?: (isOpen: boolean) => void
   onSubmitWithSuccess?: () => Promise<boolean>
+  disabled: boolean
+  size?: SizeType
 }) {
   const {
     openModalBtn,
@@ -31,6 +34,8 @@ export function ConfirmationButton(props: {
     children,
     onOpenChanged,
     onSubmitWithSuccess,
+    disabled,
+    size,
   } = props
 
   const [open, setOpen] = useState(false)
@@ -68,13 +73,16 @@ export function ConfirmationButton(props: {
           </Row>
         </Col>
       </Modal>
-      <div
-        className={clsx('btn', openModalBtn.className)}
+      <Button
+        className={clsx(openModalBtn.className)}
         onClick={() => updateOpen(true)}
+        disabled={disabled}
+        color="yellow"
+        size={size}
       >
         {openModalBtn.icon}
         {openModalBtn.label}
-      </div>
+      </Button>
     </>
   )
 }
