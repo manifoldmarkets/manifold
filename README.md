@@ -44,3 +44,8 @@ These can either be defined as global environmental variables on the system, or 
 This repo can be built into a Docker image for deployment to a hosting site. The container host must have all the [environmental variables](#environmental-variables) set.
 
 The Docker image can be built with `docker build -t {IMAGE_NAME} .` in the root of the repository, and run with `docker run --env-file .env -p 9172:9172 -it {IMAGE_NAME}`
+
+## Future development
+
+- [ ] Integrate fully into Manifold's Firebase to decrease latency when loading markets, detecting new bets and detecting market resolution.
+- [ ] Port the overlay to a [Twitch Extension](https://www.twitch.tv/p/en/extensions/) to decrease viewer latency when viewing bets.
