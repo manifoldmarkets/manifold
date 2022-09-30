@@ -16,7 +16,6 @@ import dayjs from 'dayjs'
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
-import { Row } from 'web/components/layout/row'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; datum?: T }
 export type XScale<P> = P extends Point<infer X, infer _> ? AxisScale<X> : never
@@ -256,33 +255,12 @@ export const TooltipContainer = (props: {
     <div
       className={clsx(
         className,
-        'pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-white/90 p-2'
+        'pointer-events-none absolute z-10 whitespace-pre rounded bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
       )}
       style={{ margin: MARGIN_STYLE, ...pos }}
     >
       {children}
     </div>
-  )
-}
-
-export type LegendItem = { color: string; label: string; value?: string }
-export const Legend = (props: { className?: string; items: LegendItem[] }) => {
-  const { items, className } = props
-  return (
-    <ol className={className}>
-      {items.map((item) => (
-        <li key={item.label} className="flex flex-row justify-between">
-          <Row className="mr-2 items-center overflow-hidden">
-            <span
-              className="mr-2 h-4 w-4 shrink-0"
-              style={{ backgroundColor: item.color }}
-            ></span>
-            <span className="overflow-hidden text-ellipsis">{item.label}</span>
-          </Row>
-          {item.value}
-        </li>
-      ))}
-    </ol>
   )
 }
 

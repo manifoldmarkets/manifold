@@ -9,7 +9,6 @@ import { getOutcomeProbability } from 'common/calculate'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { DAY_MS } from 'common/util/time'
 import {
-  Legend,
   TooltipProps,
   MARGIN_X,
   MARGIN_Y,
@@ -121,6 +120,29 @@ const getBetPoints = (answers: Answer[], bets: Bet[]) => {
   return points
 }
 
+type LegendItem = { color: string; label: string; value?: string }
+const Legend = (props: { className?: string; items: LegendItem[] }) => {
+  const { items, className } = props
+  return (
+    <ol className={className}>
+      {items.map((item) => (
+        <li key={item.label} className="flex flex-row justify-between gap-4">
+          <Row className="items-center gap-2 overflow-hidden">
+            <span
+              className="h-4 w-4 shrink-0"
+              style={{ backgroundColor: item.color }}
+            ></span>
+            <span className="text-semibold overflow-hidden text-ellipsis">
+              {item.label}
+            </span>
+          </Row>
+          <span className="text-greyscale-6">{item.value}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 export const ChoiceContractChart = (props: {
   contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
@@ -173,13 +195,15 @@ export const ChoiceContractChart = (props: {
         (item) => -item.p
       ).slice(0, 10)
       return (
-        <div>
+        <>
           <Row className="items-center gap-2">
             {datum && <Avatar size="xxs" avatarUrl={datum.userAvatarUrl} />}
-            <span>{formatDateInRange(x, start, end)}</span>
+            <span className="text-semibold text-base">
+              {formatDateInRange(x, start, end)}
+            </span>
           </Row>
-          <Legend className="max-w-xs text-sm" items={legendItems} />
-        </div>
+          <Legend className="max-w-xs" items={legendItems} />
+        </>
       )
     },
     [answers]
