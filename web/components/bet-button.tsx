@@ -17,6 +17,7 @@ import { BetSignUpPrompt } from './sign-up-prompt'
 import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
 import { useUnfilledBets } from 'web/hooks/use-bets'
+import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {
@@ -51,7 +52,9 @@ export default function BetButton(props: {
             Predict
           </Button>
         ) : (
-          <BetSignUpPrompt />
+          <>
+            <BetSignUpPrompt />
+          </>
         )}
 
         {user && (
@@ -85,7 +88,12 @@ export function BinaryMobileBetting(props: { contract: BinaryContract }) {
   if (user) {
     return <SignedInBinaryMobileBetting contract={contract} user={user} />
   } else {
-    return <BetSignUpPrompt className="w-full" />
+    return (
+      <Col className="w-full">
+        <BetSignUpPrompt className="w-full" />
+        <PlayMoneyDisclaimer />
+      </Col>
+    )
   }
 }
 
