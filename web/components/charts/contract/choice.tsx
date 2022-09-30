@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 
@@ -6,7 +6,6 @@ import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { DAY_MS } from 'common/util/time'
 import {
   TooltipProps,
@@ -18,7 +17,6 @@ import {
   formatDateInRange,
 } from '../helpers'
 import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
-import { useElementWidth } from 'web/hooks/use-element-width'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 
@@ -146,10 +144,11 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
 export const ChoiceContractChart = (props: {
   contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
-  height?: number
+  width: number
+  height: number
   onMouseOver?: (p: MultiPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets, onMouseOver } = props
+  const { contract, bets, width, height, onMouseOver } = props
   const [start, end] = getDateRange(contract)
   const answers = useMemo(
     () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
@@ -173,10 +172,6 @@ export const ChoiceContractChart = (props: {
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
-  const isMobile = useIsMobile(800)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const width = useElementWidth(containerRef) ?? 0
-  const height = props.height ?? (isMobile ? 250 : 350)
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
 
@@ -212,20 +207,16 @@ export const ChoiceContractChart = (props: {
   )
 
   return (
-    <div ref={containerRef}>
-      {width > 0 && (
-        <MultiValueHistoryChart
-          w={width}
-          h={height}
-          xScale={xScale}
-          yScale={yScale}
-          data={data}
-          colors={CATEGORY_COLORS}
-          onMouseOver={onMouseOver}
-          Tooltip={ChoiceTooltip}
-          pct
-        />
-      )}
-    </div>
+    <MultiValueHistoryChart
+      w={width}
+      h={height}
+      xScale={xScale}
+      yScale={yScale}
+      data={data}
+      colors={CATEGORY_COLORS}
+      onMouseOver={onMouseOver}
+      Tooltip={ChoiceTooltip}
+      pct
+    />
   )
 }
