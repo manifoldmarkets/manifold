@@ -21,8 +21,11 @@ export function BountiedContractSmallBadge(props: {
   if (!openCommentBounties) return <div />
 
   return (
-    <Tooltip text={CommentBountiesTooltipText(openCommentBounties)}>
-      <span className="inline-flex cursor-default items-center gap-1 rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white">
+    <Tooltip
+      text={CommentBountiesTooltipText(openCommentBounties)}
+      placement="bottom"
+    >
+      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white">
         <CurrencyDollarIcon className={'h3 w-3'} />
         {showAmount && formatMoney(openCommentBounties)} Bounty
       </span>

@@ -178,7 +178,7 @@ export function MarketSubheader(props: {
             />
           )}
         </Row>
-        <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
+        <Row className="text-2xs text-greyscale-4 flex-wrap gap-2 sm:text-xs">
           <CloseOrResolveTime
             contract={contract}
             resolvedDate={resolvedDate}
@@ -335,7 +335,7 @@ export function GroupDisplay(props: { groupToDisplay?: GroupLink | null }) {
   if (groupToDisplay) {
     return (
       <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]">
+        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]">
           {groupToDisplay.name}
         </a>
       </Link>
