@@ -366,16 +366,15 @@ function DailyStats(props: {
 
 export function TrendingGroupsSection(props: {
   user: User | null | undefined
-  full?: boolean
   className?: string
 }) {
-  const { user, full, className } = props
+  const { user, className } = props
   const memberGroupIds = useMemberGroupIds(user) || []
 
   const groups = useTrendingGroups().filter(
     (g) => !memberGroupIds.includes(g.id)
   )
-  const count = full ? 100 : 25
+  const count = 7
   const chosenGroups = groups.slice(0, count)
 
   if (chosenGroups.length === 0) {
