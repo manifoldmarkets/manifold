@@ -372,12 +372,12 @@ function SetUpBot(props: {
     <>
       <Title
         text={'Set up the bot for your own stream'}
-        className={'!mb-4 md:block'}
+        className={'!mb-0 md:block'}
       />
       <Col className="gap-4">
         <img
-          src="https://raw.githubusercontent.com/PhilBladen/ManifoldTwitchIntegration/master/docs/OBS.png" // TODO: Copy this into the Manifold codebase public folder
-          className="!-my-2"
+          src="/twitch-bot-obs-screenshot.jpg"
+          className="rounded-md border-t border-l border-r shadow-md"
         ></img>
         To add the bot to your stream make sure you have logged in then follow
         the steps below.
