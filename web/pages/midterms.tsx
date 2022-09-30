@@ -67,6 +67,12 @@ const senateMidterms: StateElectionMarket[] = [
     slug: 'will-mike-lee-win-the-2022-utah-sen',
     isWinRepublican: true,
   },
+  {
+    state: 'CO',
+    creatorUsername: 'SG',
+    slug: 'will-michael-bennet-win-the-2022-co',
+    isWinRepublican: false,
+  },
 ]
 
 const App = () => {
@@ -79,6 +85,25 @@ const App = () => {
         <iframe
           src="https://manifold.markets/embed/NathanpmYoung/will-the-democrats-control-the-sena"
           title="Will the Democrats control the Senate after the Midterms?"
+          frameBorder="0"
+          width={800}
+          height={400}
+          className="mt-8"
+        ></iframe>
+
+        <div className="mt-8 text-2xl">Related markets</div>
+        <iframe
+          src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of"
+          title="Will the Democrats control the House after the Midterms?"
+          frameBorder="0"
+          width={800}
+          height={400}
+          className="mt-8"
+        ></iframe>
+
+        <iframe
+          src="https://manifold.markets/SG/will-a-democrat-win-the-2024-us-pre"
+          title="Will a Democrat win the 2024 US presidential election?"
           frameBorder="0"
           width={800}
           height={400}
