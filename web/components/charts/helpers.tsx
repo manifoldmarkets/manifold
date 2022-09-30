@@ -17,7 +17,12 @@ import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 
-export type Point<X, Y, T = unknown> = { x: X; y: Y; datum?: T }
+export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
+
+export interface ContinuousScale<T> extends AxisScale<T> {
+  invert(n: number): T
+}
+
 export type XScale<P> = P extends Point<infer X, infer _> ? AxisScale<X> : never
 export type YScale<P> = P extends Point<infer _, infer Y> ? AxisScale<Y> : never
 
@@ -118,18 +123,18 @@ export const AreaWithTopStroke = <P,>(props: {
   )
 }
 
-export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
+export const SVGChart = <X, TT>(props: {
   children: ReactNode
   w: number
   h: number
   xAxis: Axis<X>
   yAxis: Axis<number>
   onSelect?: (ev: D3BrushEvent<any>) => void
-  onMouseOver?: (mouseX: number, mouseY: number) => P | undefined
-  Tooltip?: TooltipComponent<P>
+  onMouseOver?: (mouseX: number, mouseY: number) => TT | undefined
+  Tooltip?: TooltipComponent<X, TT>
 }) => {
   const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
-  const [mouseState, setMouseState] = useState<{ pos: TooltipPosition; p: P }>()
+  const [mouse, setMouse] = useState<{ x: number; y: number; data: TT }>()
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - MARGIN_X
   const innerH = h - MARGIN_Y
@@ -148,7 +153,7 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
         if (!justSelected.current) {
           justSelected.current = true
           onSelect(ev)
-          setMouseState(undefined)
+          setMouse(undefined)
           if (overlayRef.current) {
             select(overlayRef.current).call(brush.clear)
           }
@@ -168,26 +173,32 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
 
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' && onMouseOver) {
-      const [mouseX, mouseY] = pointer(ev)
-      const p = onMouseOver(mouseX, mouseY)
-      if (p != null) {
-        const pos = getTooltipPosition(mouseX, mouseY, innerW, innerH)
-        setMouseState({ pos, p })
+      const [x, y] = pointer(ev)
+      const data = onMouseOver(x, y)
+      if (data !== undefined) {
+        setMouse({ x, y, data })
       } else {
-        setMouseState(undefined)
+        setMouse(undefined)
       }
     }
   }
 
   const onPointerLeave = () => {
-    setMouseState(undefined)
+    setMouse(undefined)
   }
 
   return (
     <div className="relative">
-      {mouseState && Tooltip && (
-        <TooltipContainer pos={mouseState.pos}>
-          <Tooltip xScale={xAxis.scale()} p={mouseState.p} />
+      {mouse && Tooltip && (
+        <TooltipContainer
+          pos={getTooltipPosition(mouse.x, mouse.y, innerW, innerH)}
+        >
+          <Tooltip
+            xScale={xAxis.scale()}
+            mouseX={mouse.x}
+            mouseY={mouse.y}
+            data={mouse.data}
+          />
         </TooltipContainer>
       )}
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
@@ -243,8 +254,13 @@ export const getTooltipPosition = (
   return result
 }
 
-export type TooltipProps<P> = { p: P; xScale: XScale<P> }
-export type TooltipComponent<P> = React.ComponentType<TooltipProps<P>>
+export type TooltipProps<X, T> = {
+  mouseX: number
+  mouseY: number
+  xScale: ContinuousScale<X>
+  data: T
+}
+export type TooltipComponent<X, T> = React.ComponentType<TooltipProps<X, T>>
 export const TooltipContainer = (props: {
   pos: TooltipPosition
   className?: string
