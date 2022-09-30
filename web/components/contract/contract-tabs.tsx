@@ -5,7 +5,7 @@ import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { PAST_BETS } from 'common/user'
@@ -25,6 +25,13 @@ import {
 import { buildArray } from 'common/util/array'
 import { ContractComment } from 'common/comment'
 
+import { formatMoney } from 'common/util/format'
+import { Button } from 'web/components/button'
+import { MINUTE_MS } from 'common/util/time'
+import { useUser } from 'web/hooks/use-user'
+import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
+import { Tooltip } from 'web/components/tooltip'
+
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
@@ -32,6 +39,7 @@ export function ContractTabs(props: {
   comments: ContractComment[]
 }) {
   const { contract, bets, userBets, comments } = props
+  const { openCommentBounties } = contract
 
   const yourTrades = (
     <div>
@@ -43,8 +51,16 @@ export function ContractTabs(props: {
 
   const tabs = buildArray(
     {
-      title: 'Comments',
+      title: `Comments`,
+      tooltip: openCommentBounties
+        ? `The creator of this market may award ${formatMoney(
+            COMMENT_BOUNTY_AMOUNT
+          )} for good comments. ${formatMoney(
+            openCommentBounties
+          )} currently available.`
+        : undefined,
       content: <CommentsTabContent contract={contract} comments={comments} />,
+      inlineTabIcon: <span>({formatMoney(COMMENT_BOUNTY_AMOUNT)})</span>,
     },
     {
       title: capitalize(PAST_BETS),
@@ -68,6 +84,8 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
+  const [sort, setSort] = useState<'Newest' | 'Best'>('Best')
+  const me = useUser()
   if (comments == null) {
     return <LoadingIndicator />
   }
@@ -119,12 +137,44 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       </>
     )
   } else {
-    const commentsByParent = groupBy(comments, (c) => c.replyToCommentId ?? '_')
+    const tipsOrBountiesAwarded =
+      Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
+
+    const commentsByParent = groupBy(
+      sortBy(comments, (c) =>
+        sort === 'Newest'
+          ? -c.createdTime
+          : // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+          tipsOrBountiesAwarded &&
+            c.createdTime > Date.now() - 10 * MINUTE_MS &&
+            c.userId === me?.id
+          ? -Infinity
+          : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
+      ),
+      (c) => c.replyToCommentId ?? '_'
+    )
+
     const topLevelComments = commentsByParent['_'] ?? []
     return (
       <>
+        <Button
+          size={'xs'}
+          color={'gray-white'}
+          className="mb-4"
+          onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+        >
+          <Tooltip
+            text={
+              sort === 'Best'
+                ? 'Comments with tips or bounties will be shown first. Your comments made within the last 10 minutes will temporarily appear (to you) first.'
+                : ''
+            }
+          >
+            Sorted by: {sort}
+          </Tooltip>
+        </Button>
         <ContractCommentInput className="mb-5" contract={contract} />
-        {sortBy(topLevelComments, (c) => -c.createdTime).map((parent) => (
+        {topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}
             contract={contract}

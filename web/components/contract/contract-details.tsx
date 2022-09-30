@@ -32,6 +32,7 @@ import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { BountiedContractBadge } from 'web/components/contract/bountied-contract-badge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -63,6 +64,8 @@ export function MiscDetails(props: {
         </Row>
       ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
         <FeaturedContractBadge />
+      ) : (contract.openCommentBounties ?? 0) > 0 ? (
+        <BountiedContractBadge />
       ) : volume > 0 || !isNew ? (
         <Row className={'shrink-0'}>{formatMoney(volume)} bet</Row>
       ) : (

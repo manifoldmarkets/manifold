@@ -22,7 +22,7 @@
     "@amplitude/analytics-browser": "0.4.1",
     "@floating-ui/react-dom-interactions": "0.9.2",
     "@headlessui/react": "1.6.1",
-    "@heroicons/react": "1.0.5",
+    "@heroicons/react": "1.0.6",
     "@nivo/core": "0.80.0",
     "@nivo/line": "0.80.0",
     "@nivo/tooltip": "0.80.0",
