@@ -46,10 +46,10 @@ const PseudoNumericChartTooltip = (props: TooltipProps<HistoryPoint<Bet>>) => {
   const { x, y, datum } = p
   const [start, end] = xScale.domain()
   return (
-    <Row className="items-center gap-2 text-sm">
+    <Row className="items-center gap-2">
       {datum && <Avatar size="xs" avatarUrl={datum.userAvatarUrl} />}
-      <strong>{formatLargeNumber(y)}</strong>
-      <span>{formatDateInRange(x, start, end)}</span>
+      <span className="font-semibold">{formatDateInRange(x, start, end)}</span>
+      <span className="text-greyscale-6">{formatLargeNumber(y)}</span>
     </Row>
   )
 }
