@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
 
@@ -8,7 +8,6 @@ import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   TooltipProps,
   MARGIN_X,
@@ -18,7 +17,6 @@ import {
   formatDateInRange,
 } from '../helpers'
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
-import { useElementWidth } from 'web/hooks/use-element-width'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 
@@ -59,10 +57,11 @@ const PseudoNumericChartTooltip = (
 export const PseudoNumericContractChart = (props: {
   contract: PseudoNumericContract
   bets: Bet[]
-  height?: number
+  width: number
+  height: number
   onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets, onMouseOver } = props
+  const { contract, bets, width, height, onMouseOver } = props
   const { min, max, isLogScale } = contract
   const [start, end] = getDateRange(contract)
   const scaleP = useMemo(
@@ -86,30 +85,21 @@ export const PseudoNumericContractChart = (props: {
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
-  const isMobile = useIsMobile(800)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const width = useElementWidth(containerRef) ?? 0
-  const height = props.height ?? (isMobile ? 150 : 250)
-  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width ?? 0 - MARGIN_X])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
-    ? scaleLog([Math.max(min, 1), max], [height - MARGIN_Y, 0]).clamp(true)
-    : scaleLinear([min, max], [height - MARGIN_Y, 0])
-
+    ? scaleLog([Math.max(min, 1), max], [height ?? 0 - MARGIN_Y, 0]).clamp(true)
+    : scaleLinear([min, max], [height ?? 0 - MARGIN_Y, 0])
   return (
-    <div ref={containerRef}>
-      {width > 0 && (
-        <SingleValueHistoryChart
-          w={width}
-          h={height}
-          xScale={xScale}
-          yScale={yScale}
-          data={data}
-          onMouseOver={onMouseOver}
-          Tooltip={PseudoNumericChartTooltip}
-          color={NUMERIC_GRAPH_COLOR}
-        />
-      )}
-    </div>
+    <SingleValueHistoryChart
+      w={width}
+      h={height}
+      xScale={xScale}
+      yScale={yScale}
+      data={data}
+      onMouseOver={onMouseOver}
+      Tooltip={PseudoNumericChartTooltip}
+      color={NUMERIC_GRAPH_COLOR}
+    />
   )
 }

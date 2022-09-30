@@ -1,13 +1,8 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import {
-  BinaryContractChart,
-  NumericContractChart,
-  PseudoNumericContractChart,
-  ChoiceContractChart,
-} from 'web/components/charts/contract'
+import { ContractChart } from 'web/components/charts/contract'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
@@ -48,8 +43,43 @@ const BetWidget = (props: { contract: CPMMContract }) => {
   )
 }
 
-const NumericOverview = (props: { contract: NumericContract }) => {
-  const { contract } = props
+const SizedContractChart = (props: {
+  contract: Contract
+  bets: Bet[]
+  fullHeight: number
+  mobileHeight: number
+}) => {
+  const { contract, bets, fullHeight, mobileHeight } = props
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [chartWidth, setChartWidth] = useState<number>()
+  const [chartHeight, setChartHeight] = useState<number>()
+  useEffect(() => {
+    const handleResize = () => {
+      setChartHeight(window.innerWidth < 800 ? mobileHeight : fullHeight)
+      setChartWidth(containerRef.current?.clientWidth)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [fullHeight, mobileHeight])
+  return (
+    <div ref={containerRef}>
+      {chartWidth != null && chartHeight != null && (
+        <ContractChart
+          contract={contract}
+          bets={bets}
+          width={chartWidth}
+          height={chartHeight}
+        />
+      )}
+    </div>
+  )
+}
+
+const NumericOverview = (props: { contract: NumericContract; bets: Bet[] }) => {
+  const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
@@ -66,7 +96,12 @@ const NumericOverview = (props: { contract: NumericContract }) => {
           contract={contract}
         />
       </Col>
-      <NumericContractChart contract={contract} />
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={250}
+        mobileHeight={150}
+      />
     </Col>
   )
 }
@@ -86,7 +121,12 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
           />
         </Row>
       </Col>
-      <BinaryContractChart contract={contract} bets={bets} />
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={250}
+        mobileHeight={150}
+      />
       <Row className="items-center justify-between gap-4 xl:hidden">
         {tradingAllowed(contract) && (
           <BinaryMobileBetting contract={contract} />
@@ -111,9 +151,12 @@ const ChoiceOverview = (props: {
           <FreeResponseResolutionOrChance contract={contract} truncate="none" />
         )}
       </Col>
-      <Col className={'mb-1 gap-y-2'}>
-        <ChoiceContractChart contract={contract} bets={bets} />
-      </Col>
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={350}
+        mobileHeight={250}
+      />
     </Col>
   )
 }
@@ -139,7 +182,12 @@ const PseudoNumericOverview = (props: {
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>
-      <PseudoNumericContractChart contract={contract} bets={bets} />
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={250}
+        mobileHeight={150}
+      />
     </Col>
   )
 }
@@ -153,7 +201,7 @@ export const ContractOverview = (props: {
     case 'BINARY':
       return <BinaryOverview contract={contract} bets={bets} />
     case 'NUMERIC':
-      return <NumericOverview contract={contract} />
+      return <NumericOverview contract={contract} bets={bets} />
     case 'PSEUDO_NUMERIC':
       return <PseudoNumericOverview contract={contract} bets={bets} />
     case 'FREE_RESPONSE':
