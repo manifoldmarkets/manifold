@@ -55,14 +55,14 @@ export const BinaryContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(bets), [bets])
   const data = useMemo(() => {
     return [
-      { x: startDate, y: startP },
+      { x: new Date(startDate), y: startP },
       ...betPoints,
-      { x: endDate ?? new Date(Date.now() + DAY_MS), y: endP },
+      { x: new Date(endDate ?? Date.now() + DAY_MS), y: endP },
     ]
   }, [startDate, startP, endDate, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(
-    endDate,
+    endDate ? new Date(endDate) : null,
     last(betPoints)?.x,
     new Date(Date.now())
   )

@@ -259,7 +259,7 @@ export const getDateRange = (contract: Contract) => {
   const { createdTime, closeTime, resolutionTime } = contract
   const isClosed = !!closeTime && Date.now() > closeTime
   const endDate = resolutionTime ?? (isClosed ? closeTime : null)
-  return [new Date(createdTime), endDate ? new Date(endDate) : null] as const
+  return [createdTime, endDate ?? null] as const
 }
 
 export const getRightmostVisibleDate = (
