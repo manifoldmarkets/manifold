@@ -12,15 +12,15 @@ export function BountiedContractBadge() {
   )
 }
 
-export function BountiedContractSmallBadge(props: { contract: Contract }) {
-  const { contract } = props
+export function BountiedContractSmallBadge(props: { contract: Contract, showAmount?: boolean }) {
+  const { contract, showAmount } = props
   const { openCommentBounties } = contract
   if (!openCommentBounties) return <div />
 
   return (
     <Tooltip text={CommentBountiesTooltipText(openCommentBounties)}>
-      <span className="bg-greyscale-4 inline-flex cursor-default items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white">
-        <CurrencyDollarIcon className={'h3 w-3'} /> Bountied Comments
+      <span className="bg-indigo-300 inline-flex cursor-default items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white">
+        <CurrencyDollarIcon className={'h3 w-3'} />{showAmount && formatMoney(openCommentBounties)} Bounty
       </span>
     </Tooltip>
   )

@@ -25,13 +25,14 @@ import {
 import { buildArray } from 'common/util/array'
 import { ContractComment } from 'common/comment'
 
-import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/button'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
-import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 import { Tooltip } from 'web/components/tooltip'
-import { CommentBountiesTooltipText } from 'web/components/contract/bountied-contract-badge'
+import {
+  BountiedContractSmallBadge,
+} from 'web/components/contract/bountied-contract-badge'
+import { Row } from '../layout/row'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -40,7 +41,6 @@ export function ContractTabs(props: {
   comments: ContractComment[]
 }) {
   const { contract, bets, userBets, comments } = props
-  const { openCommentBounties } = contract
 
   const yourTrades = (
     <div>
@@ -52,14 +52,8 @@ export function ContractTabs(props: {
 
   const tabs = buildArray(
     {
-      title: `Comments`,
-      tooltip: openCommentBounties
-        ? CommentBountiesTooltipText(openCommentBounties)
-        : undefined,
+      title: 'Comments',
       content: <CommentsTabContent contract={contract} comments={comments} />,
-      inlineTabIcon: openCommentBounties ? (
-        <span>({formatMoney(COMMENT_BOUNTY_AMOUNT)})</span>
-      ) : undefined,
     },
     {
       title: capitalize(PAST_BETS),
@@ -156,23 +150,28 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     const topLevelComments = commentsByParent['_'] ?? []
     return (
       <>
-        <Button
-          size={'xs'}
-          color={'gray-white'}
-          className="mb-4"
-          onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
-        >
-          <Tooltip
-            text={
-              sort === 'Best'
-                ? 'Comments with tips or bounties will be shown first. Your comments made within the last 10 minutes will temporarily appear (to you) first.'
-                : ''
-            }
-          >
-            Sorted by: {sort}
-          </Tooltip>
-        </Button>
         <ContractCommentInput className="mb-5" contract={contract} />
+
+        <Row className="mb-4 items-center">
+          <Button
+            size={'xs'}
+            color={'gray-white'}
+            onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+          >
+            <Tooltip
+              text={
+                sort === 'Best'
+                  ? 'Comments with tips or bounties will be shown first. Your comments made within the last 10 minutes will temporarily appear (to you) first.'
+                  : ''
+              }
+            >
+              Sorted by: {sort}
+            </Tooltip>
+          </Button>
+
+          <BountiedContractSmallBadge contract={contract} showAmount />
+        </Row>
+
         {topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}
