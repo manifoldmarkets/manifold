@@ -4,6 +4,7 @@ import { getPrivateUser } from './utils'
 import { PrivateUser } from '../../common/user'
 import { NOTIFICATION_DESCRIPTIONS } from '../../common/notification'
 import { notification_preference } from '../../common/user-notification-preferences'
+import { getFunctionUrl } from '../../common/api'
 
 export const unsubscribe: EndpointDefinition = {
   opts: { method: 'GET', minInstances: 1 },
@@ -20,6 +21,8 @@ export const unsubscribe: EndpointDefinition = {
       res.status(400).send('Invalid subscription type parameter.')
       return
     }
+    const optOutAllType: notification_preference = 'opt_out_all'
+    const wantsToOptOutAll = notificationSubscriptionType === optOutAllType
 
     const user = await getPrivateUser(id)
 
@@ -37,14 +40,18 @@ export const unsubscribe: EndpointDefinition = {
     const update: Partial<PrivateUser> = {
       notificationPreferences: {
         ...user.notificationPreferences,
-        [notificationSubscriptionType]: previousDestinations.filter(
-          (destination) => destination !== 'email'
-        ),
+        [notificationSubscriptionType]: wantsToOptOutAll
+          ? previousDestinations.push('email')
+          : previousDestinations.filter(
+              (destination) => destination !== 'email'
+            ),
       },
     }
 
     await firestore.collection('private-users').doc(id).update(update)
+    const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
 
+    const optOutAllUrl = `${unsubscribeEndpoint}?id=${id}&type=${optOutAllType}`
     res.send(
       `
 <!DOCTYPE html>
@@ -199,6 +206,10 @@ export const unsubscribe: EndpointDefinition = {
                     <span>Click
                     <a href='https://manifold.markets/notifications?tab=settings'>here</a>
                        to manage the rest of your notification settings.
+                      </span>
+                      <span>Click
+                    <a href=${optOutAllUrl}>here</a>
+                       to unsubscribe from all unnecessary emails.
                       </span>
                   </div>
 

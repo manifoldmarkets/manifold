@@ -96,6 +96,7 @@ type notification_descriptions = {
   [key in notification_preference]: {
     simple: string
     detailed: string
+    necessary?: boolean
   }
 }
 export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
@@ -208,8 +209,9 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Bonuses for unique predictors on your markets',
   },
   your_contract_closed: {
-    simple: 'Your market has closed and you need to resolve it',
-    detailed: 'Your market has closed and you need to resolve it',
+    simple: 'Your market has closed and you need to resolve it (necessary)',
+    detailed: 'Your market has closed and you need to resolve it (necessary)',
+    necessary: true,
   },
   all_comments_on_watched_markets: {
     simple: 'All new comments',
@@ -234,6 +236,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   all_answers_on_contracts_with_shares_in_on_watched_markets: {
     simple: `Only on markets you're invested in`,
     detailed: `Answers on markets that you're watching and that you're invested in`,
+  },
+  opt_out_all: {
+    simple: 'Opt out of all notifications (excludes when your markets close)',
+    detailed:
+      'Opt out of all notifications excluding your own market closure notifications',
   },
 }
 
