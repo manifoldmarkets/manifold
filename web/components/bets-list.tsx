@@ -45,6 +45,11 @@ import { UserLink } from 'web/components/user-link'
 import { useUserBetContracts } from 'web/hooks/use-contracts'
 import { BetsSummary } from './bet-summary'
 import { ProfitBadge } from './profit-badge'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -75,8 +80,14 @@ export function BetsList(props: { user: User }) {
     return contractList ? keyBy(contractList, 'id') : undefined
   }, [contractList])
 
-  const [sort, setSort] = useState<BetSort>('newest')
-  const [filter, setFilter] = useState<BetFilter>('all')
+  const [sort, setSort] = usePersistentState<BetSort>('newest', {
+    key: 'bets-list-sort',
+    store: storageStore(safeLocalStorage()),
+  })
+  const [filter, setFilter] = usePersistentState<BetFilter>('all', {
+    key: 'bets-list-filter',
+    store: storageStore(safeLocalStorage()),
+  })
   const [page, setPage] = useState(0)
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
