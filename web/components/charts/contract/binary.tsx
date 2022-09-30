@@ -49,24 +49,24 @@ export const BinaryContractChart = (props: {
   onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
 }) => {
   const { contract, bets, onMouseOver } = props
-  const [startDate, endDate] = getDateRange(contract)
+  const [start, end] = getDateRange(contract)
   const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
   const betPoints = useMemo(() => getBetPoints(bets), [bets])
   const data = useMemo(() => {
     return [
-      { x: startDate, y: startP },
+      { x: new Date(start), y: startP },
       ...betPoints,
-      { x: endDate ?? new Date(Date.now() + DAY_MS), y: endP },
+      { x: new Date(end ?? Date.now() + DAY_MS), y: endP },
     ]
-  }, [startDate, startP, endDate, endP, betPoints])
+  }, [start, startP, end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(
-    endDate,
-    last(betPoints)?.x,
-    new Date(Date.now())
+    end,
+    last(betPoints)?.x?.getTime(),
+    Date.now()
   )
-  const visibleRange = [startDate, rightmostDate]
+  const visibleRange = [start, rightmostDate]
   const isMobile = useIsMobile(800)
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useElementWidth(containerRef) ?? 0

@@ -136,10 +136,10 @@ export const ChoiceContractChart = (props: {
   const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
     () => [
-      { x: start, y: answers.map((_) => 0) },
+      { x: new Date(start), y: answers.map((_) => 0) },
       ...betPoints,
       {
-        x: end ?? new Date(Date.now() + DAY_MS),
+        x: new Date(end ?? Date.now() + DAY_MS),
         y: answers.map((a) => getOutcomeProbability(contract, a.id)),
       },
     ],
@@ -147,8 +147,8 @@ export const ChoiceContractChart = (props: {
   )
   const rightmostDate = getRightmostVisibleDate(
     end,
-    last(betPoints)?.x,
-    new Date(Date.now())
+    last(betPoints)?.x?.getTime(),
+    Date.now()
   )
   const visibleRange = [start, rightmostDate]
   const isMobile = useIsMobile(800)
