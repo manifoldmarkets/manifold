@@ -117,7 +117,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
       const user = await getUser(privateUser.id)
-      if (!user) return
+      // Don't send to a user unless they're over 5 days old
+      if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
       const userBets = usersBets[privateUser.id] as Bet[]
       const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
         userBets.some((bet) => bet.contractId === contract.id)
