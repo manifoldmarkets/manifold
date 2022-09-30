@@ -38,6 +38,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   color: string
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<P>
 }) => {
   const { color, data, yScale, w, h, Tooltip } = props
@@ -71,12 +72,9 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   const onMouseOver = useEvent((mouseX: number) => {
     const queryX = xScale.invert(mouseX)
     const item = data[xBisector.left(data, queryX) - 1]
-    if (item == null) {
-      // this can happen if you are on the very left or right edge of the chart,
-      // so your queryX is out of bounds
-      return
-    }
-    return { ...item, x: queryX }
+    const result = item ? { ...item, x: queryX } : undefined
+    props.onMouseOver?.(result)
+    return result
   })
 
   return (
@@ -108,6 +106,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   colors: readonly string[]
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<P>
   pct?: boolean
 }) => {
@@ -156,12 +155,9 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   const onMouseOver = useEvent((mouseX: number) => {
     const queryX = xScale.invert(mouseX)
     const item = data[xBisector.left(data, queryX) - 1]
-    if (item == null) {
-      // this can happen if you are on the very left or right edge of the chart,
-      // so your queryX is out of bounds
-      return
-    }
-    return { ...item, x: queryX }
+    const result = item ? { ...item, x: queryX } : undefined
+    props.onMouseOver?.(result)
+    return result
   })
 
   return (
@@ -196,10 +192,11 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   color: string
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<P>
   pct?: boolean
 }) => {
-  const { color, data, pct, yScale, w, h, Tooltip } = props
+  const { color, data, yScale, w, h, Tooltip, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -235,12 +232,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onMouseOver = useEvent((mouseX: number) => {
     const queryX = xScale.invert(mouseX)
     const item = data[xBisector.left(data, queryX) - 1]
-    if (item == null) {
-      // this can happen if you are on the very left or right edge of the chart,
-      // so your queryX is out of bounds
-      return
-    }
-    return { ...item, x: queryX }
+    const result = item ? { ...item, x: queryX } : undefined
+    props.onMouseOver?.(result)
+    return result
   })
 
   return (
