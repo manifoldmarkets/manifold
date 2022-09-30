@@ -29,6 +29,7 @@ The following environmental variables are available but optional:
   - DEV (https://dev.manifold.markets/)
   - PR_DEV (https://dev-git-twitch-prerelease-mantic.vercel.app/)
   - LOCAL (http://localhost:3000/)
+- **DEBUG_TWITCH_ACCOUNT**: The Twitch account to attach to when testing the bot locally. This must be all lowercase.
 
 These can either be defined as global environmental variables on the system, or as a `.env` file in the root of the repository.
 

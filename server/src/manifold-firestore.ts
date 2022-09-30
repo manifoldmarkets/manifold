@@ -172,20 +172,20 @@ export default class ManifoldFirestore {
 
     log.info('Accessing Manifold Firestore...');
 
-    ts('users');
     this.loadAllUsers();
-    log.info(`Updated ${this.allUsers.length} users in ${te('users')}.`);
 
-    this.test();
+    // this.test();
   }
 
   async loadAllUsers() {
+    ts('users');
     await new Promise<void>((r) =>
       onSnapshot(this.users, (changes?) => {
         changes.docs.map((d) => (this.allUsers[d.data().id] = d.data()));
         r();
       })
     );
+    log.info(`Loaded ${Object.keys(this.allUsers).length} users in ${te('users')}.`);
   }
 
   getManifoldUserByManifoldID(manifoldID: string) {
