@@ -19,6 +19,7 @@ import { Content } from '../editor'
 import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
+import { AwardBountyButton } from 'web/components/award-bounty-button'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -85,6 +86,7 @@ export function FeedComment(props: {
     commenterPositionShares,
     commenterPositionOutcome,
     createdTime,
+    bountiesAwarded,
   } = comment
   const betOutcome = comment.betOutcome
   let bought: string | undefined
@@ -93,6 +95,7 @@ export function FeedComment(props: {
     bought = comment.betAmount >= 0 ? 'bought' : 'sold'
     money = formatMoney(Math.abs(comment.betAmount))
   }
+  const totalAwarded = bountiesAwarded ?? 0
 
   const router = useRouter()
   const highlighted = router.asPath.endsWith(`#${comment.id}`)
@@ -162,6 +165,11 @@ export function FeedComment(props: {
             createdTime={createdTime}
             elementId={comment.id}
           />
+          {totalAwarded > 0 && (
+            <span className=" text-primary ml-2 text-sm">
+              +{formatMoney(totalAwarded)}
+            </span>
+          )}
         </div>
         <Content
           className="mt-2 text-[15px] text-gray-700"
@@ -170,6 +178,9 @@ export function FeedComment(props: {
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           {tips && <Tipper comment={comment} tips={tips} />}
+          {(contract.openCommentBounties ?? 0) > 0 && (
+            <AwardBountyButton comment={comment} contract={contract} />
+          )}
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
@@ -208,28 +219,32 @@ export function ContractCommentInput(props: {
   onSubmitComment?: () => void
 }) {
   const user = useUser()
+  const { contract, parentAnswerOutcome, parentCommentId, replyTo, className } =
+    props
+  const { openCommentBounties } = contract
   async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
     }
     await createCommentOnContract(
-      props.contract.id,
+      contract.id,
       editor.getJSON(),
       user,
-      props.parentAnswerOutcome,
-      props.parentCommentId
+      !!openCommentBounties,
+      parentAnswerOutcome,
+      parentCommentId
     )
     props.onSubmitComment?.()
   }
 
   return (
     <CommentInput
-      replyTo={props.replyTo}
-      parentAnswerOutcome={props.parentAnswerOutcome}
-      parentCommentId={props.parentCommentId}
+      replyTo={replyTo}
+      parentAnswerOutcome={parentAnswerOutcome}
+      parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
-      className={props.className}
+      className={className}
     />
   )
 }

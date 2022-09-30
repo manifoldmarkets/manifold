@@ -46,6 +46,14 @@ export function addLiquidity(params: any) {
   return call(getFunctionUrl('addliquidity'), 'POST', params)
 }
 
+export function addCommentBounty(params: any) {
+  return call(getFunctionUrl('addcommentbounty'), 'POST', params)
+}
+
+export function awardCommentBounty(params: any) {
+  return call(getFunctionUrl('awardcommentbounty'), 'POST', params)
+}
+
 export function withdrawLiquidity(params: any) {
   return call(getFunctionUrl('withdrawliquidity'), 'POST', params)
 }

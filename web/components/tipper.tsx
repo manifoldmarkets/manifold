@@ -116,7 +116,7 @@ function DownTip(props: { onClick?: () => void }) {
       noTap
     >
       <button
-        className="hover:text-red-600 disabled:text-gray-300"
+        className="hover:text-red-600 disabled:text-gray-100"
         disabled={!onClick}
         onClick={onClick}
       >
@@ -137,7 +137,7 @@ function UpTip(props: { onClick?: () => void; value: number }) {
       noTap
     >
       <button
-        className="hover:text-primary disabled:text-gray-300"
+        className="hover:text-primary disabled:text-gray-100"
         disabled={!onClick}
         onClick={onClick}
       >

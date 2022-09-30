@@ -7,7 +7,7 @@ import { capitalize } from 'lodash'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
-import { LiquidityPanel } from '../liquidity-panel'
+import { LiquidityBountyPanel } from 'web/components/contract/liquidity-bounty-panel'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../title'
@@ -196,9 +196,7 @@ export function ContractInfoDialog(props: {
           <Row className="flex-wrap">
             <DuplicateContractButton contract={contract} />
           </Row>
-          {contract.mechanism === 'cpmm-1' && !contract.resolution && (
-            <LiquidityPanel contract={contract} />
-          )}
+          {!contract.resolution && <LiquidityBountyPanel contract={contract} />}
         </Col>
       </Modal>
     </>
