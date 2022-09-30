@@ -257,6 +257,30 @@ function BotSetupStep(props: {
   )
 }
 
+function CopyLinkButton(props: { link: string; text: string }) {
+  const { link, text } = props
+  const toastTheme = {
+    className: '!bg-primary !text-white',
+    icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
+  }
+  const copyLinkCallback = async () => {
+    copyToClipboard(link)
+    toast.success(text + ' copied', toastTheme)
+  }
+  return (
+    <a href={link} onClick={(e) => e.preventDefault()}>
+      <Button
+        size={'md'}
+        color={'green'}
+        className="w-full !border-none"
+        onClick={copyLinkCallback}
+      >
+        {text}
+      </Button>
+    </a>
+  )
+}
+
 function BotConnectButton(props: {
   privateUser: PrivateUser | null | undefined
 }) {
@@ -338,24 +362,11 @@ function SetUpBot(props: {
 }) {
   const { user, privateUser } = props
   const twitchLinked =
+    privateUser &&
     privateUser?.twitchInfo?.twitchName &&
     !privateUser?.twitchInfo?.needsRelinking
       ? true
       : undefined
-  const toastTheme = {
-    className: '!bg-primary !text-white',
-    icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
-  }
-  const copyOverlayLink = async () => {
-    if (!privateUser) return
-    copyToClipboard(getOverlayURLForUser(privateUser))
-    toast.success('Overlay link copied!', toastTheme)
-  }
-  const copyDockLink = async () => {
-    if (!privateUser) return
-    copyToClipboard(getDockURLForUser(privateUser))
-    toast.success('Dock link copied!', toastTheme)
-  }
 
   return (
     <>
@@ -370,7 +381,48 @@ function SetUpBot(props: {
         ></img>
         To add the bot to your stream make sure you have logged in then follow
         the steps below.
-        {!twitchLinked && (
+        {twitchLinked && privateUser ? (
+          <div className="flex flex-col gap-6 sm:flex-row">
+            <BotSetupStep
+              stepNum={1}
+              overrideButton={
+                twitchLinked && <BotConnectButton privateUser={privateUser} />
+              }
+            >
+              Use the button above to add the bot to your channel. Then mod it
+              by typing in your Twitch chat: <b>/mod ManifoldBot</b>
+              <br />
+              If the bot is not modded it will not be able to respond to
+              commands properly.
+            </BotSetupStep>
+            <BotSetupStep
+              stepNum={2}
+              overrideButton={
+                <CopyLinkButton
+                  link={getOverlayURLForUser(privateUser)}
+                  text={'Overlay link'}
+                />
+              }
+            >
+              Create a new browser source in your streaming software such as
+              OBS. Paste in the above link and type in the desired size. We
+              recommend 450x375.
+            </BotSetupStep>
+            <BotSetupStep
+              stepNum={3}
+              overrideButton={
+                <CopyLinkButton
+                  link={getDockURLForUser(privateUser)}
+                  text={'Control dock link'}
+                />
+              }
+            >
+              The bot can be controlled entirely through chat. But we made an
+              easy to use control panel. Share the link with your mods or embed
+              it into your OBS as a custom dock.
+            </BotSetupStep>
+          </div>
+        ) : (
           <ButtonGetStarted
             user={user}
             privateUser={privateUser}
@@ -378,38 +430,6 @@ function SetUpBot(props: {
             spinnerClass={'!my-0'}
           />
         )}
-        <div className="flex flex-col gap-6 sm:flex-row">
-          <BotSetupStep
-            stepNum={1}
-            overrideButton={
-              twitchLinked && <BotConnectButton privateUser={privateUser} />
-            }
-          >
-            Use the button above to add the bot to your channel. Then mod it by
-            typing in your Twitch chat: <b>/mod ManifoldBot</b>
-            <br />
-            If the bot is not modded it will not be able to respond to commands
-            properly.
-          </BotSetupStep>
-          <BotSetupStep
-            stepNum={2}
-            buttonName={twitchLinked && 'Overlay link'}
-            buttonOnClick={copyOverlayLink}
-          >
-            Create a new browser source in your streaming software such as OBS.
-            Paste in the above link and type in the desired size. We recommend
-            450x375.
-          </BotSetupStep>
-          <BotSetupStep
-            stepNum={3}
-            buttonName={twitchLinked && 'Control dock link'}
-            buttonOnClick={copyDockLink}
-          >
-            The bot can be controlled entirely through chat. But we made an easy
-            to use control panel. Share the link with your mods or embed it into
-            your OBS as a custom dock.
-          </BotSetupStep>
-        </div>
         <div>
           Need help? Contact SirSalty#5770 in Discord or email
           david@manifold.markets
