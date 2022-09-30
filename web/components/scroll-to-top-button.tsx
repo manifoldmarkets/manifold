@@ -10,7 +10,6 @@ export function ScrollToTopButton(props: { className?: string }) {
   useEffect(() => {
     window.addEventListener('scroll', () => {
       if (window.scrollY > 500) {
-        console.log('button commence')
         setVisible(true)
       } else {
         setVisible(false)
