@@ -50,7 +50,6 @@ export function WarningConfirmationButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        className: clsx(isSubmitting && 'loading'),
         label: amount ? `Wager ${formatMoney(amount)}` : 'Wager',
         size: size,
         color: 'yellow',

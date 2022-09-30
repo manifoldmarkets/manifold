@@ -85,17 +85,6 @@ export function AnswerResolvePanel(props: {
     setIsSubmitting(false)
   }
 
-  // const resolutionButtonClass =
-  //   resolveOption === 'CANCEL'
-  //     ? 'bg-yellow-400 hover:bg-yellow-500'
-  //     : resolveOption === 'CHOOSE' && answers.length
-  //     ? 'btn-primary'
-  //     : resolveOption === 'CHOOSE_MULTIPLE' &&
-  //       answers.length > 1 &&
-  //       answers.every((answer) => chosenAnswers[answer] > 0)
-  //     ? 'bg-blue-400 hover:bg-blue-500'
-  //     : 'btn-disabled'
-
   return (
     <Col className="gap-4 rounded">
       <Row className="justify-between">

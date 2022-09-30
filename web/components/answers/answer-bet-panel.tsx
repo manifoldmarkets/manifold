@@ -191,7 +191,7 @@ export function AnswerBetPanel(props: {
           onSubmit={submitBet}
           isSubmitting={isSubmitting}
           disabled={!!betDisabled}
-          color={'green'}
+          color={'indigo'}
         />
       ) : (
         <BetSignUpPrompt />

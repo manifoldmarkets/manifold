@@ -57,17 +57,6 @@ export function ResolutionPanel(props: {
     setIsSubmitting(false)
   }
 
-  // const submitButtonClass =
-  //   outcome === 'YES'
-  //     ? 'btn-primary'
-  //     : outcome === 'NO'
-  //     ? 'bg-red-400 hover:bg-red-500'
-  //     : outcome === 'CANCEL'
-  //     ? 'bg-yellow-400 hover:bg-yellow-500'
-  //     : outcome === 'MKT'
-  //     ? 'bg-blue-400 hover:bg-blue-500'
-  //     : 'btn-disabled'
-
   return (
     <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
       {isAdmin && !isCreator && (
@@ -136,8 +125,6 @@ export function ResolutionPanel(props: {
         disabled={!outcome}
         onResolve={resolve}
         isSubmitting={isSubmitting}
-        // openModalButtonClass={clsx('w-full mt-2', submitButtonClass)}
-        // submitButtonClass={submitButtonClass}
       />
     </Col>
   )
