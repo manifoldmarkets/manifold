@@ -195,15 +195,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               contract,
               betsInLastWeek
             ).profit
-            const marketChange =
-              currentMarketProbability - marketProbabilityAWeekAgo
             const profit =
               betsMadeInLastWeekProfit +
               (currentBetsMadeAWeekAgoValue - betsMadeAWeekAgoValue)
             return {
               currentValue: currentBetsMadeAWeekAgoValue,
               pastValue: betsMadeAWeekAgoValue,
-              difference: profit,
+              profit,
               contractSlug: contract.slug,
               marketProbAWeekAgo: marketProbabilityAWeekAgo,
               questionTitle: contract.question,
@@ -211,17 +209,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               questionProb: cpmmContract.resolution
                 ? cpmmContract.resolution
                 : Math.round(cpmmContract.prob * 100) + '%',
-              questionChange:
-                (marketChange > 0 ? '+' : '') +
-                Math.round(marketChange * 100) +
-                '%',
-              questionChangeStyle: `color: ${
+              profitStyle: `color: ${
                 profit > 0 ? 'rgba(0,160,0,1)' : '#a80000'
               };`,
             } as PerContractInvestmentsData
           })
         ),
-        (differences) => Math.abs(differences.difference)
+        (differences) => Math.abs(differences.profit)
       ).reverse()
 
       log(
@@ -233,12 +227,10 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
 
       const [winningInvestments, losingInvestments] = partition(
         investmentValueDifferences.filter(
-          (diff) =>
-            diff.pastValue > 0.01 &&
-            Math.abs(diff.difference / diff.pastValue) > 0.01 // difference is greater than 1%
+          (diff) => diff.pastValue > 0.01 && Math.abs(diff.profit) > 1
         ),
         (investmentsData: PerContractInvestmentsData) => {
-          return investmentsData.difference > 0
+          return investmentsData.profit > 0
         }
       )
       // pick 3 winning investments and 3 losing investments
@@ -251,7 +243,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         worstInvestments.length === 0 &&
         usersToContractsCreated[privateUser.id].length === 0
       ) {
-        log('No bets in last week, no market movers, no markets created')
+        log(
+          'No bets in last week, no market movers, no markets created. Not sending an email.'
+        )
         await firestore.collection('private-users').doc(privateUser.id).update({
           weeklyPortfolioUpdateEmailSent: true,
         })
@@ -268,7 +262,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       })
       log('Sent weekly portfolio update email to', privateUser.email)
       count++
-      log('sent out emails to user count:', count)
+      log('sent out emails to users:', count)
     })
   )
 }
@@ -277,11 +271,10 @@ export type PerContractInvestmentsData = {
   questionTitle: string
   questionUrl: string
   questionProb: string
-  questionChange: string
-  questionChangeStyle: string
+  profitStyle: string
   currentValue: number
   pastValue: number
-  difference: number
+  profit: number
 }
 
 export type OverallPerformanceData = {
