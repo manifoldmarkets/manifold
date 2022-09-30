@@ -25,19 +25,19 @@ const getBetPoints = (bets: Bet[]) => {
   return sortBy(bets, (b) => b.createdTime).map((b) => ({
     x: new Date(b.createdTime),
     y: b.probAfter,
-    datum: b,
+    obj: b,
   }))
 }
 
-const BinaryChartTooltip = (props: TooltipProps<HistoryPoint<Bet>>) => {
-  const { p, xScale } = props
-  const { x, y, datum } = p
+const BinaryChartTooltip = (props: TooltipProps<Date, HistoryPoint<Bet>>) => {
+  const { data, mouseX, xScale } = props
   const [start, end] = xScale.domain()
+  const d = xScale.invert(mouseX)
   return (
     <Row className="items-center gap-2">
-      {datum && <Avatar size="xs" avatarUrl={datum.userAvatarUrl} />}
-      <span className="font-semibold">{formatDateInRange(x, start, end)}</span>
-      <span className="text-greyscale-6">{formatPct(y)}</span>
+      {data.obj && <Avatar size="xs" avatarUrl={data.obj.userAvatarUrl} />}
+      <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
+      <span className="text-greyscale-6">{formatPct(data.y)}</span>
     </Row>
   )
 }
