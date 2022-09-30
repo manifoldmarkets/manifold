@@ -109,7 +109,7 @@ export class Market {
     // Bets are in oldest-first order, so must iterate backwards to get most recent bets:
     for (let betIndex = this.data.bets.length - 1; betIndex >= 0; betIndex--) {
       const bet = this.data.bets[betIndex];
-      if (bet.isRedemption) {
+      if (bet.isRedemption || bet.shares === 0) {
         continue;
       }
       let fullBet: FullBet;
@@ -296,7 +296,7 @@ export class Market {
       }
       newBets.reverse();
       for (const bet of newBets) {
-        if (bet.isRedemption) continue;
+        if (bet.isRedemption || bet.shares === 0) continue;
         this.addBet(await this.betToFullBet(bet));
       }
       if (!foundPreviouslyLoadedBet) {

@@ -139,7 +139,7 @@ class Application {
     const questionDiv = document.getElementById('question');
     console.log(questionLength);
     if (questionLength < 60) {
-      questionDiv.style.fontSize = '1.5em';
+      questionDiv.style.fontSize = '1.3em';
     } else if (questionLength < 150) {
       questionDiv.style.fontSize = '1.0em';
     } else {
@@ -198,9 +198,13 @@ class Application {
 
     if (!options.animateHeight) {
       t.style.minHeight = t.style.height = '1.2em';
+      t.style.transition = 'none';
     } else {
       setTimeout(() => {
         t.classList.add('!min-h-[1.2em]');
+        setTimeout(() => {
+          t.style.transition = 'none';
+        }, 1000);
       }, 10);
     }
 
@@ -317,7 +321,7 @@ export default () => {
           <Col className={clsx('absolute text-white bg-[#212121] leading-[normal] inset-0')} style={{ fontSize: 'calc(min(70px, 4.5vw))' }}>
             <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
               <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
-              <Col className="items-center justify-center justify-self-end w-[5em]">
+              <Col className="items-center justify-center justify-self-end min-w-[5.2em]">
                 <div id="chance" className="after:content-['%'] text-[2.5em] text-[#A5FF6E]"></div>
                 <div className="-mt-[0.3em] text-[1.0em] text-[#A5FF6E]">chance</div>
               </Col>
