@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { memo, useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 import dayjs from 'dayjs'
 
@@ -46,7 +46,6 @@ import { BetsSummary } from 'web/components/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
-import { VisibilityObserver } from 'web/components/visibility-observer'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
