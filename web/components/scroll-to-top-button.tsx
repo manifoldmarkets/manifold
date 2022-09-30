@@ -27,7 +27,7 @@ export function ScrollToTopButton(props: { className?: string }) {
   return (
     <button
       className={clsx(
-        'border-greyscale-2 bg-greyscale-1 rounded-full border py-2 pr-3 pl-2 text-sm',
+        'border-greyscale-2 bg-greyscale-1 hover:bg-greyscale-2 rounded-full border py-2 pr-3 pl-2 text-sm transition-colors',
         visible ? 'inline' : 'hidden',
         className
       )}
