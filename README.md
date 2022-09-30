@@ -48,5 +48,11 @@ The Docker image can be built with `docker build -t {IMAGE_NAME} .` in the root 
 
 ## Future development
 
-- [ ] Integrate fully into Manifold's Firebase to decrease latency when loading markets, detecting new bets and detecting market resolution.
-- [ ] Port the overlay to a [Twitch Extension](https://www.twitch.tv/p/en/extensions/) to decrease viewer latency when viewing bets.
+- [ ] Integrate access to Manifold's Firestore fully to decrease latency when loading markets, detecting new bets and detecting market resolution
+- [ ] Port the overlay to a [Twitch Extension](https://www.twitch.tv/p/en/extensions/) to decrease viewer latency when viewing bets
+- [ ] Support market types other than binary
+- [ ] Rate limit management in the Twitch bot to prioritize outgoing messages when there is a risk of Twitch dropping them
+- [ ] Support betting to a percentage
+- [ ] Save which markets are currently featured on each Twitch channel to Firestore to support server rebooting without interruption
+- [ ] Allow docks to set the group within which markets created through chat will be added
+- [ ] Support renewing dock and overlay links in case of a leak
