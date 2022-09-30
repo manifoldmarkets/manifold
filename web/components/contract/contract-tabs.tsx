@@ -139,6 +139,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   } else {
     const tipsOrBountiesAwarded =
       Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
+
     const commentsByParent = groupBy(
       sortBy(comments, (c) =>
         sort === 'Newest'
