@@ -29,9 +29,7 @@ import { Button } from 'web/components/button'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/tooltip'
-import {
-  BountiedContractSmallBadge,
-} from 'web/components/contract/bountied-contract-badge'
+import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Row } from '../layout/row'
 
 export function ContractTabs(props: {
