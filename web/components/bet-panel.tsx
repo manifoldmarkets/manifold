@@ -395,22 +395,16 @@ export function BuyPanel(props: {
           <WarningConfirmationButton
             marketType="binary"
             amount={betAmount}
-            outcome={outcome}
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
-            openModalButtonClass={clsx(
-              'btn mb-2 flex-1',
-              betDisabled || outcome === undefined
-                ? 'btn-disabled bg-greyscale-2'
-                : outcome === 'NO'
-                ? 'border-none bg-red-400 hover:bg-red-500'
-                : 'border-none bg-teal-500 hover:bg-teal-600'
-            )}
+            disabled={!!betDisabled || outcome === undefined}
+            size="xl"
+            color={outcome === 'NO' ? 'red' : 'green'}
           />
         )}
         <button
-          className="text-greyscale-6 mx-auto select-none text-sm underline xl:hidden"
+          className="text-greyscale-6 mx-auto mt-3 select-none text-sm underline xl:hidden"
           onClick={() => setSeeLimit(true)}
         >
           Advanced

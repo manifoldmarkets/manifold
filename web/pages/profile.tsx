@@ -218,9 +218,10 @@ export default function ProfilePage(props: {
               />
               <ConfirmationButton
                 openModalBtn={{
-                  className: 'btn btn-primary btn-square p-2',
+                  className: 'p-2',
                   label: '',
-                  icon: <RefreshIcon />,
+                  icon: <RefreshIcon className="h-5 w-5" />,
+                  color: 'indigo',
                 }}
                 submitBtn={{
                   label: 'Update key',

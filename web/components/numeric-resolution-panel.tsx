@@ -128,8 +128,10 @@ export function NumericResolutionPanel(props: {
       <ResolveConfirmationButton
         onResolve={resolve}
         isSubmitting={isSubmitting}
-        openModalButtonClass={clsx('w-full mt-2', submitButtonClass)}
+        openModalButtonClass={clsx('w-full mt-2')}
         submitButtonClass={submitButtonClass}
+        color={outcomeMode === 'CANCEL' ? 'yellow' : 'indigo'}
+        disabled={outcomeMode === undefined}
       />
     </Col>
   )

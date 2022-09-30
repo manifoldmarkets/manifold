@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { keyBy, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
-import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -599,8 +598,8 @@ function SellButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',
+        disabled: isSubmitting,
       }}
       submitBtn={{ className: 'btn-primary', label: 'Sell' }}
       onSubmit={async () => {
