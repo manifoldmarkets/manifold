@@ -6,6 +6,7 @@ import { BetInline } from 'web/components/bet-inline'
 import { Button } from 'web/components/button'
 import {
   BinaryResolutionOrChance,
+  ContractCard,
   FreeResponseResolutionOrChance,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
@@ -27,6 +28,7 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
+import { useWindowSize } from 'web/hooks/use-window-size'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -64,15 +66,30 @@ export default function ContractEmbedPage(props: {
   return <ContractEmbed contract={contract} bets={bets} />
 }
 
-export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
-  const { contract, bets } = props
-  const { question, outcomeType } = contract
+interface EmbedProps {
+  contract: Contract
+  bets: Bet[]
+}
 
+export function ContractEmbed(props: EmbedProps) {
+  const { contract } = props
   useTracking('view market embed', {
     slug: contract.slug,
     contractId: contract.id,
     creatorId: contract.creatorId,
   })
+
+  const { height = 0 } = useWindowSize()
+
+  return height < 250 ? (
+    <ContractCard contract={contract} className="h-screen" />
+  ) : (
+    <ContractSmolView {...props} />
+  )
+}
+
+function ContractSmolView({ contract, bets }: EmbedProps) {
+  const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
