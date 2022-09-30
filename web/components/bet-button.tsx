@@ -52,9 +52,7 @@ export default function BetButton(props: {
             Predict
           </Button>
         ) : (
-          <>
-            <BetSignUpPrompt />
-          </>
+          <BetSignUpPrompt />
         )}
 
         {user && (
