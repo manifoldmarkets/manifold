@@ -219,28 +219,32 @@ export function ContractCommentInput(props: {
   onSubmitComment?: () => void
 }) {
   const user = useUser()
+  const { contract, parentAnswerOutcome, parentCommentId, replyTo, className } =
+    props
+  const { openCommentBounties } = contract
   async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
     }
     await createCommentOnContract(
-      props.contract.id,
+      contract.id,
       editor.getJSON(),
       user,
-      props.parentAnswerOutcome,
-      props.parentCommentId
+      !!openCommentBounties,
+      parentAnswerOutcome,
+      parentCommentId
     )
     props.onSubmitComment?.()
   }
 
   return (
     <CommentInput
-      replyTo={props.replyTo}
-      parentAnswerOutcome={props.parentAnswerOutcome}
-      parentCommentId={props.parentCommentId}
+      replyTo={replyTo}
+      parentAnswerOutcome={parentAnswerOutcome}
+      parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
-      className={props.className}
+      className={className}
     />
   )
 }

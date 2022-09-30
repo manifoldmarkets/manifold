@@ -31,6 +31,10 @@ export function AddCommentBountyPanel(props: { contract: Contract }) {
 
     addCommentBounty({ amount, contractId })
       .then((_) => {
+        track('offer comment bounty', {
+          amount,
+          contractId,
+        })
         setIsSuccess(true)
         setError(undefined)
         setIsLoading(false)

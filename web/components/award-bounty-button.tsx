@@ -27,6 +27,7 @@ export function AwardBountyButton(prop: {
     awardCommentBounty(data)
       .then((_) => {
         console.log('success')
+        track('award comment bounty', data)
       })
       .catch((reason) => console.log('Server error:', reason))
 
