@@ -643,13 +643,13 @@ export const sendWeeklyPortfolioUpdateEmail = async (
     templateData[`question${i + 1}Title`] = investment.questionTitle
     templateData[`question${i + 1}Url`] = investment.questionUrl
     templateData[`question${i + 1}Prob`] = investment.questionProb
-    templateData[`question${i + 1}Change`] = formatMoney(investment.difference)
-    templateData[`question${i + 1}ChangeStyle`] = investment.questionChangeStyle
+    templateData[`question${i + 1}Change`] = formatMoney(investment.profit)
+    templateData[`question${i + 1}ChangeStyle`] = investment.profitStyle
   })
 
   await sendTemplateEmail(
-    // privateUser.email,
-    'iansphilips@gmail.com',
+    privateUser.email,
+    // 'iansphilips@gmail.com',
     `Here's your weekly portfolio update!`,
     investments.length === 0
       ? 'portfolio-update-no-movers'
