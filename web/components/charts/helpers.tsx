@@ -111,7 +111,7 @@ export const AreaWithTopStroke = <P,>(props: {
         py1={py1}
         curve={curve}
         fill={color}
-        opacity={0.3}
+        opacity={0.2}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
     </g>
@@ -255,7 +255,7 @@ export const TooltipContainer = (props: {
     <div
       className={clsx(
         className,
-        'pointer-events-none absolute z-10 whitespace-pre rounded bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
+        'pointer-events-none absolute z-10 whitespace-pre rounded border border-gray-200 bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
       )}
       style={{ margin: MARGIN_STYLE, ...pos }}
     >
