@@ -105,11 +105,7 @@ export function ResolveConfirmationButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        className: clsx(
-          'border-none self-start',
-          openModalButtonClass,
-          isSubmitting && 'btn-disabled loading'
-        ),
+        className: clsx('border-none self-start', openModalButtonClass),
         label: 'Resolve',
         color: color,
         disabled: isSubmitting || disabled,

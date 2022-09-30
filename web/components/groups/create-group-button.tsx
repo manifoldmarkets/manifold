@@ -82,7 +82,7 @@ export function CreateGroupButton(props: {
       openModalBtn={{
         label: label ? label : 'Create Group',
         icon: icon,
-        className: clsx(className),
+        className: className,
         disabled: isSubmitting,
       }}
       submitBtn={{
