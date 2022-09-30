@@ -114,7 +114,7 @@ const getBetPoints = (answers: Answer[], bets: Bet[]) => {
     points.push({
       x: new Date(bet.createdTime),
       y: answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared),
-      datum: bet,
+      obj: bet,
     })
   }
   return points
@@ -181,12 +181,12 @@ export const ChoiceContractChart = (props: {
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
 
   const ChoiceTooltip = useMemo(
-    () => (props: TooltipProps<MultiPoint<Bet>>) => {
-      const { p, xScale } = props
-      const { x, y, datum } = p
+    () => (props: TooltipProps<Date, MultiPoint<Bet>>) => {
+      const { data, mouseX, xScale } = props
       const [start, end] = xScale.domain()
+      const d = xScale.invert(mouseX)
       const legendItems = sortBy(
-        y.map((p, i) => ({
+        data.y.map((p, i) => ({
           color: CATEGORY_COLORS[i],
           label: answers[i].text,
           value: formatPct(p),
@@ -197,9 +197,11 @@ export const ChoiceContractChart = (props: {
       return (
         <>
           <Row className="items-center gap-2">
-            {datum && <Avatar size="xxs" avatarUrl={datum.userAvatarUrl} />}
+            {data.obj && (
+              <Avatar size="xxs" avatarUrl={data.obj.userAvatarUrl} />
+            )}
             <span className="text-semibold text-base">
-              {formatDateInRange(x, start, end)}
+              {formatDateInRange(d, start, end)}
             </span>
           </Row>
           <Legend className="max-w-xs" items={legendItems} />
