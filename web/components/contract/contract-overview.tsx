@@ -79,11 +79,7 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
-          <BinaryResolutionOrChance
-            className="flex items-end"
-            contract={contract}
-            large
-          />
+          <BinaryResolutionOrChance contract={contract} large />
         </Row>
       </Col>
       <BinaryContractChart contract={contract} bets={bets} />

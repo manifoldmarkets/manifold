@@ -211,7 +211,9 @@ export function BinaryResolutionOrChance(props: {
   const probChanged = before !== after
 
   return (
-    <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
+    <Col
+      className={clsx('items-end', large ? 'text-4xl' : 'text-3xl', className)}
+    >
       {resolution ? (
         <>
           <div
