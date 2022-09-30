@@ -60,7 +60,9 @@ export function ContractTabs(props: {
           )} currently available.`
         : undefined,
       content: <CommentsTabContent contract={contract} comments={comments} />,
-      inlineTabIcon: <span>({formatMoney(COMMENT_BOUNTY_AMOUNT)})</span>,
+      inlineTabIcon: openCommentBounties ? (
+        <span>({formatMoney(COMMENT_BOUNTY_AMOUNT)})</span>
+      ) : undefined,
     },
     {
       title: capitalize(PAST_BETS),
