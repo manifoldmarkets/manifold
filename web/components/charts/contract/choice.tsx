@@ -125,8 +125,9 @@ export const ChoiceContractChart = (props: {
   contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
   height?: number
+  onMouseOver?: (p: MultiPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets } = props
+  const { contract, bets, onMouseOver } = props
   const [start, end] = getDateRange(contract)
   const answers = useMemo(
     () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
@@ -194,6 +195,7 @@ export const ChoiceContractChart = (props: {
           yScale={yScale}
           data={data}
           colors={CATEGORY_COLORS}
+          onMouseOver={onMouseOver}
           Tooltip={ChoiceTooltip}
           pct
         />

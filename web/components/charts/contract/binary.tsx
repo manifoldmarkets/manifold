@@ -46,20 +46,20 @@ export const BinaryContractChart = (props: {
   contract: BinaryContract
   bets: Bet[]
   height?: number
+  onMouseOver?: (p: HistoryPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets } = props
+  const { contract, bets, onMouseOver } = props
   const [startDate, endDate] = getDateRange(contract)
   const startP = getInitialProbability(contract)
   const endP = getProbability(contract)
   const betPoints = useMemo(() => getBetPoints(bets), [bets])
-  const data = useMemo(
-    () => [
+  const data = useMemo(() => {
+    return [
       { x: startDate, y: startP },
       ...betPoints,
       { x: endDate ?? new Date(Date.now() + DAY_MS), y: endP },
-    ],
-    [startDate, startP, endDate, endP, betPoints]
-  )
+    ]
+  }, [startDate, startP, endDate, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(
     endDate,
@@ -84,6 +84,7 @@ export const BinaryContractChart = (props: {
           yScale={yScale}
           data={data}
           color="#11b981"
+          onMouseOver={onMouseOver}
           Tooltip={BinaryChartTooltip}
           pct
         />
