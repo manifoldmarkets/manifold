@@ -1,7 +1,8 @@
-import { ArrowCircleUpIcon } from '@heroicons/react/solid'
+import { ArrowCircleUpIcon, ArrowUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import { Button } from './button'
+import { Row } from './layout/row'
 
 export function ScrollToTopButton(props: { className?: string }) {
   const { className } = props
@@ -9,7 +10,7 @@ export function ScrollToTopButton(props: { className?: string }) {
 
   useEffect(() => {
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 400) {
+      if (window.scrollY > 500) {
         console.log('button commence')
         setVisible(true)
       } else {
@@ -28,12 +29,16 @@ export function ScrollToTopButton(props: { className?: string }) {
   return (
     <button
       className={clsx(
-        'border-5 h-14 w-14 border border-yellow-400 bg-green-400',
+        'border-greyscale-2 bg-greyscale-1 rounded-full border py-2 px-4 text-sm',
         visible ? 'inline' : 'hidden',
         className
       )}
+      onClick={scrollToTop}
     >
-      <ArrowCircleUpIcon onClick={scrollToTop} />
+      <Row className="text-greyscale-6 gap-1 align-middle">
+        <ArrowUpIcon className="text-greyscale-4 h-5 w-5" />
+        Scroll to top
+      </Row>
     </button>
   )
 }

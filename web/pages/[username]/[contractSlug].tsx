@@ -48,6 +48,7 @@ import BetButton from 'web/components/bet-button'
 import { BetsSummary } from 'web/components/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
+import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -274,23 +275,9 @@ export function ContractPageContent(
           userBets={userBets}
           comments={comments}
         />
-
-        {!user ? (
-          <Col className="mt-4 max-w-sm items-center xl:hidden">
-            <BetSignUpPrompt />
-            <PlayMoneyDisclaimer />
-          </Col>
-        ) : (
-          outcomeType === 'BINARY' &&
-          allowTrade && (
-            <BetButton
-              contract={contract as CPMMBinaryContract}
-              className="mb-2 !mt-0 xl:hidden"
-            />
-          )
-        )}
       </Col>
       <RecommendedContractsWidget contract={contract} />
+      <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
 }

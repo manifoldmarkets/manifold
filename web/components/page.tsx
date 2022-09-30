@@ -3,7 +3,6 @@ import { ReactNode } from 'react'
 import { BottomNavBar } from './nav/bottom-nav-bar'
 import Sidebar from './nav/sidebar'
 import { Toaster } from 'react-hot-toast'
-import { ScrollToTopButton } from './scroll-to-top-button'
 
 export function Page(props: {
   rightSidebar?: ReactNode
@@ -54,7 +53,6 @@ export function Page(props: {
           </div>
         </aside>
       </div>
-      <ScrollToTopButton className="inset-left-[90%] inset-right-0 fixed bottom-8" />
       <BottomNavBar />
     </>
   )
