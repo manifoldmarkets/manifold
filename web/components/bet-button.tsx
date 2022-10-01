@@ -79,11 +79,21 @@ export default function BetButton(props: {
   )
 }
 
-export function BinaryMobileBetting(props: { contract: BinaryContract }) {
-  const { contract } = props
+export function BinaryMobileBetting(props: {
+  contract: BinaryContract
+  hideSellRow?: boolean
+}) {
+  const { contract, hideSellRow } = props
   const user = useUser()
+
   if (user) {
-    return <SignedInBinaryMobileBetting contract={contract} user={user} />
+    return (
+      <SignedInBinaryMobileBetting
+        contract={contract}
+        user={user}
+        hideSellRow={hideSellRow}
+      />
+    )
   } else {
     return <BetSignUpPrompt className="w-full" />
   }
@@ -92,8 +102,9 @@ export function BinaryMobileBetting(props: { contract: BinaryContract }) {
 export function SignedInBinaryMobileBetting(props: {
   contract: BinaryContract
   user: User
+  hideSellRow?: boolean
 }) {
-  const { contract, user } = props
+  const { contract, user, hideSellRow } = props
   const unfilledBets = useUnfilledBets(contract.id) ?? []
 
   return (
@@ -108,13 +119,16 @@ export function SignedInBinaryMobileBetting(props: {
             mobileView={true}
           />
         </Col>
-        <SellRow
-          contract={contract}
-          user={user}
-          className={
-            'border-greyscale-3 bg-greyscale-1 rounded-md border-2 px-4 py-2'
-          }
-        />
+
+        {!hideSellRow && (
+          <SellRow
+            contract={contract}
+            user={user}
+            className={
+              'border-greyscale-3 bg-greyscale-1 rounded-md border-2 px-4 py-2'
+            }
+          />
+        )}
       </Col>
     </>
   )

@@ -1,9 +1,6 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { useState } from 'react'
-import { BetInline } from 'web/components/bet-inline'
-import { Button } from 'web/components/button'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
@@ -27,6 +24,7 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
+import { BinaryMobileBetting } from 'web/components/bet-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -81,19 +79,13 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
 
   const { setElem, height: graphHeight } = useMeasureSize()
 
-  const [betPanelOpen, setBetPanelOpen] = useState(false)
-
-  const [probAfter, setProbAfter] = useState<number>()
-
   return (
     <Col className="h-[100vh] w-full bg-white">
-      <Row className="justify-between gap-4 px-2">
+      <Row className="mt-1 justify-between gap-4 px-2">
         <div className="text-xl text-indigo-700 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
         </div>
-        {isBinary && (
-          <BinaryResolutionOrChance contract={contract} probAfter={probAfter} />
-        )}
+        {isBinary && <BinaryResolutionOrChance contract={contract} />}
 
         {isPseudoNumeric && (
           <PseudoNumericResolutionOrExpectation contract={contract} />
@@ -107,33 +99,21 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           <NumericResolutionOrExpectation contract={contract} />
         )}
       </Row>
-      <Spacer h={3} />
       <Row className="items-center justify-between gap-4 px-2">
         <MarketSubheader contract={contract} disabled />
-
-        {(isBinary || isPseudoNumeric) &&
-          tradingAllowed(contract) &&
-          !betPanelOpen && (
-            <Button color="gradient" onClick={() => setBetPanelOpen(true)}>
-              Predict
-            </Button>
-          )}
       </Row>
 
       <Spacer h={2} />
 
-      {(isBinary || isPseudoNumeric) && betPanelOpen && (
-        <BetInline
-          contract={contract as any}
-          setProbAfter={setProbAfter}
-          onClose={() => setBetPanelOpen(false)}
-          className="self-center"
-        />
-      )}
-
       <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
         <ContractChart contract={contract} bets={bets} height={graphHeight} />
       </div>
+
+      <Row className="mx-8 mb-2 items-center justify-between gap-4">
+        {isBinary && tradingAllowed(contract) && (
+          <BinaryMobileBetting contract={contract} hideSellRow />
+        )}
+      </Row>
     </Col>
   )
 }
