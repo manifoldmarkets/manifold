@@ -154,7 +154,6 @@ export function PostComment(props: {
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
@@ -163,6 +162,7 @@ export function PostComment(props: {
               Reply
             </button>
           )}
+          <Tipper comment={comment} tips={tips ?? {}} />
         </Row>
       </div>
     </Row>

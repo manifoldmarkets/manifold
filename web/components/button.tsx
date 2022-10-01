@@ -46,7 +46,6 @@ export function Button(props: {
     <button
       type={type}
       className={clsx(
-        className,
         'font-md items-center justify-center rounded-md border border-transparent shadow-sm transition-colors disabled:cursor-not-allowed',
         sizeClasses,
         color === 'green' &&
@@ -66,7 +65,8 @@ export function Button(props: {
         color === 'gray-white' &&
           'text-greyscale-6 hover:bg-greyscale-2 border-none shadow-none disabled:opacity-50',
         color === 'highlight-blue' &&
-          'text-highlight-blue disabled:bg-greyscale-2 border-none shadow-none'
+        'text-highlight-blue disabled:bg-greyscale-2 border-none shadow-none',
+        className
       )}
       disabled={disabled}
       onClick={onClick}
