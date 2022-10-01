@@ -16,6 +16,7 @@ import dayjs from 'dayjs'
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 
@@ -135,6 +136,7 @@ export const SVGChart = <X, TT>(props: {
 }) => {
   const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
   const [mouse, setMouse] = useState<{ x: number; y: number; data: TT }>()
+  const tooltipMeasure = useMeasureSize()
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - MARGIN_X
   const innerH = h - MARGIN_Y
@@ -188,10 +190,18 @@ export const SVGChart = <X, TT>(props: {
   }
 
   return (
-    <div className="relative">
+    <div className="relative overflow-hidden">
       {mouse && Tooltip && (
         <TooltipContainer
-          pos={getTooltipPosition(mouse.x, mouse.y, innerW, innerH)}
+          setElem={tooltipMeasure.setElem}
+          pos={getTooltipPosition(
+            mouse.x,
+            mouse.y,
+            innerW,
+            innerH,
+            tooltipMeasure.width,
+            tooltipMeasure.height
+          )}
         >
           <Tooltip
             xScale={xAxis.scale()}
@@ -227,31 +237,31 @@ export const SVGChart = <X, TT>(props: {
   )
 }
 
-export type TooltipPosition = {
-  top?: number
-  right?: number
-  bottom?: number
-  left?: number
-}
+export type TooltipPosition = { left: number; bottom: number }
 
 export const getTooltipPosition = (
   mouseX: number,
   mouseY: number,
-  w: number,
-  h: number
+  containerWidth: number,
+  containerHeight: number,
+  tooltipWidth?: number,
+  tooltipHeight?: number
 ) => {
-  const result: TooltipPosition = {}
-  if (mouseX <= (3 * w) / 4) {
-    result.left = mouseX + 10 // in the left three quarters
-  } else {
-    result.right = w - mouseX + 10 // in the right quarter
+  let left = mouseX + 12
+  let bottom = containerHeight - mouseY + 12
+  if (tooltipWidth != null) {
+    const overflow = left + tooltipWidth - containerWidth
+    if (overflow > 0) {
+      left -= overflow
+    }
   }
-  if (mouseY <= h / 4) {
-    result.top = mouseY + 10 // in the top quarter
-  } else {
-    result.bottom = h - mouseY + 10 // in the bottom three quarters
+  if (tooltipHeight != null) {
+    const overflow = tooltipHeight - mouseY
+    if (overflow > 0) {
+      bottom -= overflow
+    }
   }
-  return result
+  return { left, bottom }
 }
 
 export type TooltipProps<X, T> = {
@@ -260,15 +270,18 @@ export type TooltipProps<X, T> = {
   xScale: ContinuousScale<X>
   data: T
 }
+
 export type TooltipComponent<X, T> = React.ComponentType<TooltipProps<X, T>>
 export const TooltipContainer = (props: {
+  setElem: (e: HTMLElement | null) => void
   pos: TooltipPosition
   className?: string
   children: React.ReactNode
 }) => {
-  const { pos, className, children } = props
+  const { setElem, pos, className, children } = props
   return (
     <div
+      ref={setElem}
       className={clsx(
         className,
         'pointer-events-none absolute z-10 whitespace-pre rounded border border-gray-200 bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
