@@ -5,7 +5,6 @@ import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Row } from './layout/row'
 
 export function AmountInput(props: {
@@ -36,8 +35,6 @@ export function AmountInput(props: {
     onChange(isInvalid ? undefined : amount)
   }
 
-  const isMobile = useIsMobile(768)
-
   return (
     <>
       <Col className={className}>
@@ -49,7 +46,7 @@ export function AmountInput(props: {
             className={clsx(
               'placeholder:text-greyscale-4 border-greyscale-2 rounded-md pl-9',
               error && 'input-error',
-              isMobile ? 'w-24' : '',
+              'w-24 md:w-auto',
               inputClassName
             )}
             ref={inputRef}
@@ -58,7 +55,6 @@ export function AmountInput(props: {
             inputMode="numeric"
             placeholder="0"
             maxLength={6}
-            autoFocus={!isMobile}
             value={amount ?? ''}
             disabled={disabled}
             onChange={(e) => onAmountChange(e.target.value)}
