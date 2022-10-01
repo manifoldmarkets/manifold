@@ -12,7 +12,6 @@ import { Dictionary, sortBy, sum } from 'lodash'
 
 import { Page } from 'web/components/page'
 import { Col } from 'web/components/layout/col'
-import { ContractSearch, SORTS } from 'web/components/contract-search'
 import { User } from 'common/user'
 import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
@@ -43,7 +42,12 @@ import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Title } from 'web/components/title'
 import { CPMMBinaryContract } from 'common/contract'
-import { useContractsByDailyScoreGroups } from 'web/hooks/use-contracts'
+import {
+  useContractsByDailyScoreNotBetOn,
+  useContractsByDailyScoreGroups,
+  useTrendingContracts,
+  useNewContracts,
+} from 'web/hooks/use-contracts'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 
@@ -71,11 +75,17 @@ export default function Home() {
     }
   }, [user, sections])
 
-  const groups = useMemberGroupsSubscription(user)
+  const trendingContracts = useTrendingContracts(6)
+  const newContracts = useNewContracts(6)
+  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
 
+  const groups = useMemberGroupsSubscription(user)
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug)
   )
+
+  const isLoading =
+    !user || !trendingContracts || !newContracts || !dailyTrendingContracts
 
   return (
     <Page>
@@ -90,11 +100,15 @@ export default function Home() {
           <DailyStats user={user} />
         </Row>
 
-        {!user ? (
+        {isLoading ? (
           <LoadingIndicator />
         ) : (
           <>
-            {sections.map((section) => renderSection(section, user))}
+            {renderSections(user, sections, {
+              score: trendingContracts,
+              newest: newContracts,
+              'daily-trending': dailyTrendingContracts,
+            })}
 
             <TrendingGroupsSection user={user} />
 
@@ -118,8 +132,8 @@ export default function Home() {
 }
 
 const HOME_SECTIONS = [
-  { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Daily trending', id: 'daily-trending' },
+  { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
 ]
@@ -128,11 +142,7 @@ export const getHomeItems = (sections: string[]) => {
   // Accommodate old home sections.
   if (!isArray(sections)) sections = []
 
-  const items: { id: string; label: string; group?: Group }[] = [
-    ...HOME_SECTIONS,
-  ]
-  const itemsById = keyBy(items, 'id')
-
+  const itemsById = keyBy(HOME_SECTIONS, 'id')
   const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
 
   // Add new home section items to the top.
@@ -140,7 +150,9 @@ export const getHomeItems = (sections: string[]) => {
     ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
   )
   // Add unmentioned items to the end.
-  sectionItems.push(...items.filter((item) => !sectionItems.includes(item)))
+  sectionItems.push(
+    ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
+  )
 
   return {
     sections: sectionItems,
@@ -148,28 +160,46 @@ export const getHomeItems = (sections: string[]) => {
   }
 }
 
-function renderSection(section: { id: string; label: string }, user: User) {
-  const { id, label } = section
-  if (id === 'daily-movers') {
-    return <DailyMoversSection key={id} userId={user.id} />
+function renderSections(
+  user: User,
+  sections: { id: string; label: string }[],
+  sectionContracts: {
+    'daily-trending': CPMMBinaryContract[]
+    newest: CPMMBinaryContract[]
+    score: CPMMBinaryContract[]
   }
-  if (id === 'daily-trending')
-    return (
-      <SearchSection
-        key={id}
-        label={label}
-        sort={'daily-score'}
-        pill="personal"
-        user={user}
-      />
-    )
-  const sort = SORTS.find((sort) => sort.value === id)
-  if (sort)
-    return (
-      <SearchSection key={id} label={label} sort={sort.value} user={user} />
-    )
-
-  return null
+) {
+  return (
+    <>
+      {sections.map((s) => {
+        const { id, label } = s
+        if (id === 'daily-movers') {
+          return <DailyMoversSection key={id} userId={user.id} />
+        }
+        if (id === 'daily-trending') {
+          return (
+            <ContractsSection
+              key={id}
+              label={label}
+              contracts={sectionContracts[id]}
+              sort="daily-score"
+              showProbChange
+            />
+          )
+        }
+        const contracts =
+          sectionContracts[s.id as keyof typeof sectionContracts]
+        return (
+          <ContractsSection
+            key={id}
+            label={label}
+            contracts={contracts}
+            sort={id === 'daily-trending' ? 'daily-score' : (id as Sort)}
+          />
+        )
+      })}
+    </>
+  )
 }
 
 function renderGroupSections(
@@ -237,13 +267,14 @@ function SectionHeader(props: {
   )
 }
 
-function SearchSection(props: {
+function ContractsSection(props: {
   label: string
-  user: User
+  contracts: CPMMBinaryContract[]
   sort: Sort
   pill?: string
+  showProbChange?: boolean
 }) {
-  const { label, user, sort, pill } = props
+  const { label, contracts, sort, pill, showProbChange } = props
 
   return (
     <Col>
@@ -251,14 +282,7 @@ function SearchSection(props: {
         label={label}
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
       />
-      <ContractSearch
-        user={user}
-        defaultSort={sort}
-        defaultPill={pill}
-        noControls
-        maxResults={6}
-        persistPrefix={`home-${sort}`}
-      />
+      <ContractsGrid contracts={contracts} cardUIOptions={{ showProbChange }} />
     </Col>
   )
 }
