@@ -47,7 +47,6 @@ import { Modal } from './layout/modal'
 import { Title } from './title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -179,12 +178,7 @@ export function BuyPanel(props: {
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const windowSize = useWindowSize()
-  const initialOutcome =
-    windowSize.width && windowSize.width >= 1280 ? 'YES' : undefined
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
-    initialOutcome
-  )
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>()
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
