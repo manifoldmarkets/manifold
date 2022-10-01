@@ -33,15 +33,15 @@ export function TipButton(props: {
         <Col className={'relative items-center sm:flex-row'}>
           <HeartIcon
             className={clsx(
-              'h-5 w-5 sm:h-6 sm:w-6',
+              'h-5 w-5 text-green-700 sm:h-6 sm:w-6',
               totalTipped > 0 ? 'mr-2' : '',
-              userTipped ? 'fill-red-500 text-red-500' : ''
+              userTipped ? 'fill-green-700 text-green-700' : ''
             )}
           />
           {totalTipped > 0 && (
             <div
               className={clsx(
-                'bg-greyscale-6 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
+                'bg-greyscale-5 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
                 totalTipped > 99
                   ? 'text-[0.4rem] sm:text-[0.5rem]'
                   : 'sm:text-2xs text-[0.5rem]'
