@@ -27,6 +27,9 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
+import { useUser } from 'web/hooks/use-user'
+import { QuickBet } from 'web/components/contract/quick-bet'
+import { contractMetrics } from 'common/contract-details'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -74,66 +77,86 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
     creatorId: contract.creatorId,
   })
 
+  const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
+  const { resolvedDate } = contractMetrics(contract)
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
-  const { setElem, height: graphHeight } = useMeasureSize()
+  const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
 
   const [betPanelOpen, setBetPanelOpen] = useState(false)
 
   const [probAfter, setProbAfter] = useState<number>()
 
-  return (
-    <Col className="border-greyscale-2 bg-greyscale-1 h-[100vh] w-full rounded-lg border-2 p-4">
-      <Row className="justify-between gap-4 px-2">
-        <div className="text-md text-lg text-indigo-700 md:text-xl">
-          <SiteLink href={href}>{question}</SiteLink>
-        </div>
-        {isBinary && (
-          <BinaryResolutionOrChance contract={contract} probAfter={probAfter} />
-        )}
-
-        {isPseudoNumeric && (
-          <PseudoNumericResolutionOrExpectation contract={contract} />
-        )}
-
-        {outcomeType === 'FREE_RESPONSE' && (
-          <FreeResponseResolutionOrChance contract={contract} truncate="long" />
-        )}
-
-        {outcomeType === 'NUMERIC' && (
-          <NumericResolutionOrExpectation contract={contract} />
-        )}
-      </Row>
-      <Spacer h={3} />
-      <Row className="items-center justify-between gap-4 px-2">
-        <MarketSubheader contract={contract} disabled />
-
-        {(isBinary || isPseudoNumeric) &&
-          tradingAllowed(contract) &&
-          !betPanelOpen && (
-            <Button color="gradient" onClick={() => setBetPanelOpen(true)}>
-              Predict
-            </Button>
-          )}
-      </Row>
-
-      <Spacer h={2} />
-
-      {(isBinary || isPseudoNumeric) && betPanelOpen && (
-        <BetInline
-          contract={contract as any}
-          setProbAfter={setProbAfter}
-          onClose={() => setBetPanelOpen(false)}
-          className="self-center"
+  const user = useUser()
+  if (user && (isBinary || isPseudoNumeric)) {
+    return (
+      <Row className="border-greyscale-2 bg-greyscale-1 h-full w-full justify-between overflow-hidden rounded-lg border-2 p-4">
+        <Col className="w-5/6">
+          <Col>
+            <div className="text-md text-indigo-700 md:text-xl">
+              <SiteLink href={href}>{question}</SiteLink>
+            </div>
+            <Row className="gap-4">
+              <div className="text-greyscale-4 text-xs">@{creatorUsername}</div>
+              <div className="text-greyscale-6 text-xs">{creatorUsername}</div>
+            </Row>
+          </Col>
+          <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
+            <ContractChart contract={contract} bets={bets} height={150} />
+          </div>
+        </Col>
+        <QuickBet
+          user={user}
+          contract={contract}
+          noProbBar={true}
+          className="-mr-5"
         />
-      )}
+      </Row>
+    )
+  } else
+    return (
+      <Col className="border-greyscale-2 bg-greyscale-1 h-full w-full justify-between overflow-hidden rounded-lg border-2 p-4">
+        <Row className="justify-between gap-4">
+          <Col>
+            <div className="text-md text-lg text-indigo-700 md:text-xl">
+              <SiteLink href={href}>{question}</SiteLink>
+            </div>
+            {/* <MarketSubheader contract={contract} disabled /> */}
+            <Row>
+              <div className="text-greyscale-4 text-xs">@{creatorUsername}</div>
+              <div className="text-greyscale-4 text-xs">@{creatorUsername}</div>
+            </Row>
+          </Col>
+          <Col>
+            {!user && isBinary && (
+              <BinaryResolutionOrChance
+                contract={contract}
+                probAfter={probAfter}
+              />
+            )}
 
-      <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
-        <ContractChart contract={contract} bets={bets} height={graphHeight} />
-      </div>
-    </Col>
-  )
+            {!user && isPseudoNumeric && (
+              <PseudoNumericResolutionOrExpectation contract={contract} />
+            )}
+
+            {outcomeType === 'FREE_RESPONSE' && (
+              <FreeResponseResolutionOrChance
+                contract={contract}
+                truncate="long"
+              />
+            )}
+            {outcomeType === 'NUMERIC' && (
+              <NumericResolutionOrExpectation contract={contract} />
+            )}
+            <Spacer h={3} />
+          </Col>
+        </Row>
+        <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
+          <ContractChart contract={contract} bets={bets} height={150} />
+        </div>
+      </Col>
+    )
 }

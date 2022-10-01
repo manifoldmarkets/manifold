@@ -92,7 +92,7 @@ export function AnswerItem(props: {
             <div
               className={clsx(
                 'text-2xl',
-                tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+                tradingAllowed(contract) ? 'text-teal-500' : 'text-gray-500'
               )}
             >
               {probPercent}

@@ -42,8 +42,9 @@ export function QuickBet(props: {
   contract: BinaryContract | PseudoNumericContract
   user: User
   className?: string
+  noProbBar?: boolean
 }) {
-  const { contract, user, className } = props
+  const { contract, user, className, noProbBar } = props
   const { mechanism, outcomeType } = contract
   const isCpmm = mechanism === 'cpmm-1'
 
@@ -162,20 +163,24 @@ export function QuickBet(props: {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? 'text-green-500' : 'text-gray-400'
+              upHover ? 'text-teal-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? 'text-green-500' : 'text-gray-200'
+              upHover ? 'text-teal-500' : 'text-gray-200'
             )}
           />
         )}
       </div>
 
-      <QuickOutcomeView contract={contract} previewProb={previewProb} />
+      <QuickOutcomeView
+        contract={contract}
+        previewProb={previewProb}
+        noProbBar={noProbBar}
+      />
 
       {/* Down bet triangle */}
       {outcomeType !== 'BINARY' && outcomeType !== 'PSEUDO_NUMERIC' ? (
@@ -266,8 +271,9 @@ function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
   caption?: 'chance' | 'expected'
+  noProbBar?: boolean
 }) {
-  const { contract, previewProb, caption } = props
+  const { contract, previewProb, caption, noProbBar } = props
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
@@ -305,7 +311,7 @@ function QuickOutcomeView(props: {
     <Col className={clsx('items-center text-3xl', textColor)}>
       {override ?? display}
       {caption && <div className="text-base">{caption}</div>}
-      <ProbBar contract={contract} previewProb={previewProb} />
+      {!noProbBar && <ProbBar contract={contract} previewProb={previewProb} />}
     </Col>
   )
 }
