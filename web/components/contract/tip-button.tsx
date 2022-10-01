@@ -13,7 +13,8 @@ export function TipButton(props: {
   isCompact?: boolean
   disabled?: boolean
 }) {
-  const { tipAmount, totalTipped, userTipped, isCompact, onClick, disabled } = props
+  const { tipAmount, totalTipped, userTipped, isCompact, onClick, disabled } =
+    props
 
   return (
     <Tooltip
