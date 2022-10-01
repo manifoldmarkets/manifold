@@ -74,11 +74,8 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
     me && saveTip(me, comment, localTip - savedTip + delta)
   }
 
-  if (me && comment.userId === me.id) {
-    return <></>
-  }
-
-  const canUp = me && me.balance >= localTip + LIKE_TIP_AMOUNT
+  const canUp =
+    me && comment.userId !== me.id && me.balance >= localTip + LIKE_TIP_AMOUNT
 
   return (
     <Row className="items-center gap-0.5">
