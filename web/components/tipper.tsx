@@ -1,4 +1,4 @@
-import { debounce } from 'lodash'
+import { debounce, sum } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 
 import { Comment } from 'common/comment'
@@ -28,6 +28,8 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
       initialized.current = true
     }
   }, [tips, myId])
+
+  const total = sum(Object.values(tips)) - savedTip + localTip
 
   // declare debounced function only on first render
   const [saveTip] = useState(() =>
@@ -82,7 +84,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
     <Row className="items-center gap-0.5">
       <TipButton
         tipAmount={LIKE_TIP_AMOUNT}
-        totalTipped={localTip}
+        totalTipped={total}
         onClick={() => addTip(+LIKE_TIP_AMOUNT)}
         userTipped={localTip > 0}
         disabled={!canUp}
