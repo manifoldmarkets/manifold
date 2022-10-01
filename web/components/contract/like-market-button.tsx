@@ -1,6 +1,6 @@
 import { HeartIcon } from '@heroicons/react/outline'
 import { Button } from 'web/components/button'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
@@ -20,20 +20,27 @@ export function LikeMarketButton(props: {
   user: User | null | undefined
 }) {
   const { contract, user } = props
+
   const tips = useMarketTipTxns(contract.id).filter(
     (txn) => txn.fromId === user?.id
   )
   const totalTipped = useMemo(() => {
     return sum(tips.map((tip) => tip.amount))
   }, [tips])
+
   const likes = useUserLikes(user?.id)
+
+  const [isLiking, setIsLiking] = useState(false)
+
   const userLikedContractIds = likes
     ?.filter((l) => l.type === 'contract')
     .map((l) => l.id)
 
   const onLike = async () => {
     if (!user) return firebaseLogin()
-    await likeContract(user, contract)
+
+    setIsLiking(true)
+    likeContract(user, contract).catch(() => setIsLiking(false))
     toast(`You tipped ${contract.creatorName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
   }
 
@@ -56,7 +63,8 @@ export function LikeMarketButton(props: {
               'h-5 w-5 sm:h-6 sm:w-6',
               totalTipped > 0 ? 'mr-2' : '',
               user &&
-                (userLikedContractIds?.includes(contract.id) ||
+                (isLiking ||
+                  userLikedContractIds?.includes(contract.id) ||
                   (!likes && contract.likedByUserIds?.includes(user.id)))
                 ? 'fill-red-500 text-red-500'
                 : ''
