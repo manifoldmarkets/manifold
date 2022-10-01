@@ -1,20 +1,14 @@
-import {
-  ChevronDoubleRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from '@heroicons/react/solid'
-import clsx from 'clsx'
+import { debounce } from 'lodash'
+import { useEffect, useRef, useState } from 'react'
+
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
-import { debounce, sum } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
 import { CommentTips } from 'web/hooks/use-tip-txns'
 import { useUser } from 'web/hooks/use-user'
 import { transact } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
+import { TipButton } from './contract/tip-button'
 import { Row } from './layout/row'
-import { Tooltip } from './tooltip'
 
 const TIP_SIZE = 10
 
@@ -26,6 +20,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const savedTip = tips[myId] ?? 0
 
   const [localTip, setLocalTip] = useState(savedTip)
+
   // listen for user being set
   const initialized = useRef(false)
   useEffect(() => {
@@ -34,8 +29,6 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
       initialized.current = true
     }
   }, [tips, myId])
-
-  const total = sum(Object.values(tips)) - savedTip + localTip
 
   // declare debounced function only on first render
   const [saveTip] = useState(() =>
@@ -80,69 +73,22 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
     me && saveTip(me, comment, localTip - savedTip + delta)
   }
 
-  const canDown = me && localTip > savedTip
-  const canUp = me && me.id !== comment.userId && me.balance >= localTip + 5
+  if (me && comment.userId === me.id) {
+    return <></>
+  }
+
+  const canUp = me && me.balance >= localTip + TIP_SIZE
+
   return (
     <Row className="items-center gap-0.5">
-      <DownTip onClick={canDown ? () => addTip(-TIP_SIZE) : undefined} />
-      <span className="font-bold">{Math.floor(total)}</span>
-      <UpTip
-        onClick={canUp ? () => addTip(+TIP_SIZE) : undefined}
-        value={localTip}
+      <TipButton
+        tipAmount={TIP_SIZE}
+        totalTipped={localTip}
+        onClick={() => addTip(+TIP_SIZE)}
+        userTipped={localTip > 0}
+        disabled={!canUp}
+        isCompact
       />
-      {localTip === 0 ? (
-        ''
-      ) : (
-        <span
-          className={clsx(
-            'ml-1 font-semibold',
-            localTip > 0 ? 'text-primary' : 'text-red-400'
-          )}
-        >
-          ({formatMoney(localTip)} tip)
-        </span>
-      )}
     </Row>
-  )
-}
-
-function DownTip(props: { onClick?: () => void }) {
-  const { onClick } = props
-  return (
-    <Tooltip
-      className="h-6 w-6"
-      placement="bottom"
-      text={onClick && `-${formatMoney(TIP_SIZE)}`}
-      noTap
-    >
-      <button
-        className="hover:text-red-600 disabled:text-gray-100"
-        disabled={!onClick}
-        onClick={onClick}
-      >
-        <ChevronLeftIcon className="h-6 w-6" />
-      </button>
-    </Tooltip>
-  )
-}
-
-function UpTip(props: { onClick?: () => void; value: number }) {
-  const { onClick, value } = props
-  const IconKind = value > TIP_SIZE ? ChevronDoubleRightIcon : ChevronRightIcon
-  return (
-    <Tooltip
-      className="h-6 w-6"
-      placement="bottom"
-      text={onClick && `Tip ${formatMoney(TIP_SIZE)}`}
-      noTap
-    >
-      <button
-        className="hover:text-primary disabled:text-gray-100"
-        disabled={!onClick}
-        onClick={onClick}
-      >
-        <IconKind className={clsx('h-6 w-6', value ? 'text-primary' : '')} />
-      </button>
-    </Tooltip>
   )
 }
