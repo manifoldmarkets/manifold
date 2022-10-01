@@ -17,9 +17,8 @@ export function LikeMarketButton(props: {
 }) {
   const { contract, user } = props
 
-  const tips = useMarketTipTxns(contract.id).filter(
-    (txn) => txn.fromId === user?.id
-  )
+  const tips = useMarketTipTxns(contract.id)
+
   const totalTipped = useMemo(() => {
     return sum(tips.map((tip) => tip.amount))
   }, [tips])
@@ -51,6 +50,7 @@ export function LikeMarketButton(props: {
           userLikedContractIds?.includes(contract.id) ||
           (!likes && !!contract.likedByUserIds?.includes(user.id)))
       }
+      disabled={contract.creatorId === user?.id}
     />
   )
 }
