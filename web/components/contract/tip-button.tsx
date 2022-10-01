@@ -18,14 +18,18 @@ export function TipButton(props: {
 
   return (
     <Tooltip
-      text={`Tip ${formatMoney(tipAmount)}`}
+      text={disabled ? 'Tips' : `Tip ${formatMoney(tipAmount)}`}
       placement="bottom"
       noTap
       noFade
     >
       <Button
         size={'sm'}
-        className={clsx('max-w-xs self-center', isCompact && 'px-0 py-0')}
+        className={clsx(
+          'max-w-xs self-center',
+          isCompact && 'px-0 py-0',
+          disabled && 'hover:bg-inherit'
+        )}
         color={'gray-white'}
         onClick={onClick}
         disabled={disabled}
