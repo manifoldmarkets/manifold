@@ -9,8 +9,7 @@ import { transact } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { TipButton } from './contract/tip-button'
 import { Row } from './layout/row'
-
-const TIP_SIZE = 10
+import { LIKE_TIP_AMOUNT } from 'common/like'
 
 export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const { comment, tips } = prop
@@ -77,14 +76,14 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
     return <></>
   }
 
-  const canUp = me && me.balance >= localTip + TIP_SIZE
+  const canUp = me && me.balance >= localTip + LIKE_TIP_AMOUNT
 
   return (
     <Row className="items-center gap-0.5">
       <TipButton
-        tipAmount={TIP_SIZE}
+        tipAmount={LIKE_TIP_AMOUNT}
         totalTipped={localTip}
-        onClick={() => addTip(+TIP_SIZE)}
+        onClick={() => addTip(+LIKE_TIP_AMOUNT)}
         userTipped={localTip > 0}
         disabled={!canUp}
         isCompact

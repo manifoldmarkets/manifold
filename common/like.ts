@@ -5,4 +5,4 @@ export type Like = {
   createdTime: number
   tipTxnId?: string // only holds most recent tip txn id
 }
-export const LIKE_TIP_AMOUNT = 5
+export const LIKE_TIP_AMOUNT = 10
