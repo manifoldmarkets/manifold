@@ -158,7 +158,6 @@ function getMoreDesktopNavigation(user?: User | null) {
     { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
-    { name: 'Send M$', href: '/links' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     { name: 'Help & About', href: 'https://help.manifold.markets/' },
     {
@@ -218,7 +217,6 @@ function getMoreMobileNav() {
     { name: 'Referrals', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
-    { name: 'Send M$', href: '/links' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     signOut
   )
