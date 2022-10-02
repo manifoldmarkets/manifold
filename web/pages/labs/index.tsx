@@ -1,44 +1,47 @@
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import Masonry from 'react-masonry-css'
+import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/page'
 import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
 
 export default function LabsPage() {
   return (
-    <Page className="px-4">
-      <Title text="Manifold Labs" />
+    <Page>
+      <Col className="px-4">
+        <Title className="sm:!mt-0" text="Manifold Labs" />
 
-      <Masonry
-        breakpointCols={{ default: 2, 768: 1 }}
-        className="-ml-4 flex w-auto"
-        columnClassName="pl-4 bg-clip-padding"
-      >
-        {CHALLENGES_ENABLED && (
+        <Masonry
+          breakpointCols={{ default: 2, 768: 1 }}
+          className="-ml-4 flex w-auto"
+          columnClassName="pl-4 bg-clip-padding"
+        >
+          {CHALLENGES_ENABLED && (
+            <LabCard
+              title="Challenges"
+              description="One-on-one bets between friends"
+              href="/challenges"
+            />
+          )}
+
           <LabCard
-            title="Challenges"
-            description="One-on-one bets between friends"
-            href="/challenges"
+            title="Dating docs"
+            description="Browse dating docs or create your own"
+            href="/date-docs"
           />
-        )}
-
-        <LabCard
-          title="Dating docs"
-          description="Browse dating docs or create your own"
-          href="/date-docs"
-        />
-        <LabCard
-          title="Senate race"
-          description="See the state-by-state breakdown of the US Senate midterm elections"
-          href="/midterms"
-        />
-        <LabCard
-          title="Magic the Guessering"
-          description="How well can you match these card names to their art?"
-          href="/mtg"
-        />
-        <LabCard title="Cowp" description="???" href="/cowp" />
-      </Masonry>
+          <LabCard
+            title="Senate race"
+            description="See the state-by-state breakdown of the US Senate midterm elections"
+            href="/midterms"
+          />
+          <LabCard
+            title="Magic the Guessering"
+            description="How well can you match these card names to their art?"
+            href="/mtg"
+          />
+          <LabCard title="Cowp" description="???" href="/cowp" />
+        </Masonry>
+      </Col>
     </Page>
   )
 }
