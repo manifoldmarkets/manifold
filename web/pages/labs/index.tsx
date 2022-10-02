@@ -5,7 +5,7 @@ import { Title } from 'web/components/title'
 
 export default function LabsPage() {
   return (
-    <Page>
+    <Page className="px-4">
       <Title text="Manifold Labs" />
 
       <Masonry
