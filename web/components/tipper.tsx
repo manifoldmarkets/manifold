@@ -1,5 +1,6 @@
-import { debounce, sum } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
+import { debounce, sum } from 'lodash'
 
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
@@ -10,6 +11,7 @@ import { track } from 'web/lib/service/analytics'
 import { TipButton } from './contract/tip-button'
 import { Row } from './layout/row'
 import { LIKE_TIP_AMOUNT } from 'common/like'
+import { formatMoney } from 'common/util/format'
 
 export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const { comment, tips } = prop
@@ -72,6 +74,7 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
   const addTip = (delta: number) => {
     setLocalTip(localTip + delta)
     me && saveTip(me, comment, localTip - savedTip + delta)
+    toast(`You tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
   }
 
   const canUp =
