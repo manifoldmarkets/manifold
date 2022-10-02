@@ -38,8 +38,8 @@ export function AmountInput(props: {
   return (
     <>
       <Col className={className}>
-        <label className="font-sm md:font-lg">
-          <span className={clsx('text-greyscale-4 absolute ml-2 mt-[9px]')}>
+        <label className="font-sm md:font-lg relative">
+          <span className="text-greyscale-4 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
           </span>
           <input
