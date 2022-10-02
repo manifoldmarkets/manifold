@@ -59,7 +59,7 @@ def generate_initial_special_query(category):
 
 def generate_initial_artist_query():
     string_query = 'https://api.scryfall.com/cards/search?q=' + artist_denylist + \
-        '-atag%3Auniverses-beyond+-art%3Aartist-signature+artists%3D1+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
+        '-security_stamp%3Atriangle+-art%3Aartist-signature+artists%3D1+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
     print("artistList")
     print(string_query)
     return string_query
