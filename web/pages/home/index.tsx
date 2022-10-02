@@ -40,7 +40,6 @@ import { filterDefined } from 'common/util/array'
 import { updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
-import { Title } from 'web/components/title'
 import { CPMMBinaryContract } from 'common/contract'
 import {
   useContractsByDailyScoreNotBetOn,
@@ -91,12 +90,15 @@ export default function Home() {
     <Page>
       <Toaster />
 
-      <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
+      <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
         <Row className={'mb-2 w-full items-center justify-between gap-8'}>
-          <Row className="items-center gap-2">
-            <Title className="!mt-0 !mb-0" text="Home" />
-            <CustomizeButton justIcon />
-          </Row>
+          <input
+            type="text"
+            placeholder={'Search'}
+            className="input input-bordered w-full sm:flex"
+            onClick={() => Router.push('/search')}
+          />
+          <CustomizeButton justIcon />
           <DailyStats user={user} />
         </Row>
 
@@ -362,7 +364,7 @@ function DailyStats(props: {
   }
 
   return (
-    <Row className={'gap-4'}>
+    <Row className={'flex-shrink-0 gap-4'}>
       <Col>
         <div className="text-gray-500">Daily profit</div>
         <Row className={clsx(className, 'items-center text-lg')}>
