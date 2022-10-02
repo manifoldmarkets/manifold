@@ -16,6 +16,12 @@ export default function LabsPage() {
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
+          <LabCard
+            title="US 2022 Midterms"
+            description="See Manifold's state-by-state breakdown of senate and governor races"
+            href="/midterms"
+          />
+
           {CHALLENGES_ENABLED && (
             <LabCard
               title="Challenges"
@@ -35,16 +41,13 @@ export default function LabsPage() {
             description="Browse dating docs or create your own"
             href="/date-docs"
           />
-          <LabCard
-            title="Senate race"
-            description="A state-by-state breakdown of the US Senate midterm elections"
-            href="/midterms"
-          />
+         
           <LabCard
             title="Magic the Guessering"
             description="Match MTG card names to their art"
             href="/mtg"
           />
+
           <LabCard title="Cowp" description="???" href="/cowp" />
         </Masonry>
       </Col>
