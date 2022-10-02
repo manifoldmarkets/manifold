@@ -53,7 +53,7 @@ export function ContractTabs(props: {
       title: 'Comments',
       content: <CommentsTabContent contract={contract} comments={comments} />,
     },
-    {
+    bets.length > 0 && {
       title: capitalize(PAST_BETS),
       content: <BetsTabContent contract={contract} bets={bets} />,
     },
@@ -150,25 +150,27 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       <>
         <ContractCommentInput className="mb-5" contract={contract} />
 
-        <Row className="mb-4 items-center">
-          <Button
-            size={'xs'}
-            color={'gray-white'}
-            onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
-          >
-            <Tooltip
-              text={
-                sort === 'Best'
-                  ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
-                  : ''
-              }
+        {comments.length > 0 && (
+          <Row className="mb-4 items-center">
+            <Button
+              size={'xs'}
+              color={'gray-white'}
+              onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
             >
-              Sorted by: {sort}
-            </Tooltip>
-          </Button>
+              <Tooltip
+                text={
+                  sort === 'Best'
+                    ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
+                    : ''
+                }
+              >
+                Sort by: {sort}
+              </Tooltip>
+            </Button>
 
-          <BountiedContractSmallBadge contract={contract} showAmount />
-        </Row>
+            <BountiedContractSmallBadge contract={contract} showAmount />
+          </Row>
+        )}
 
         {topLevelComments.map((parent) => (
           <FeedCommentThread
