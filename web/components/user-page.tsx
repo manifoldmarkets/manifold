@@ -8,13 +8,14 @@ import {
   PencilIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
+import toast from 'react-hot-toast'
 
 import { User } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './page'
-import { SiteLink } from './site-link'
+import { linkClass, SiteLink } from './site-link'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { Linkify } from './linkify'
@@ -35,6 +36,9 @@ import {
   hasCompletedStreakToday,
 } from 'web/components/profile/betting-streak-modal'
 import { LoansModal } from './profile/loans-modal'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { track } from 'web/lib/service/analytics'
+import { DOMAIN } from 'common/envs/constants'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -63,6 +67,7 @@ export function UserPage(props: { user: User }) {
   }, [])
 
   const profit = user.profitCached.allTime
+  const referralUrl = `https://${DOMAIN}?referrer=${user?.username}`
 
   return (
     <Page key={user.id}>
@@ -183,6 +188,30 @@ export function UserPage(props: { user: User }) {
                     </span>
                   </Row>
                 </SiteLink>
+              )}
+
+              {isCurrentUser && (
+                <div
+                  className={clsx(
+                    linkClass,
+                    'text-greyscale-4 cursor-pointer text-sm'
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    copyToClipboard(referralUrl)
+                    toast.success('Referral link copied!', {
+                      icon: (
+                        <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
+                      ),
+                    })
+                    track('copy referral link')
+                  }}
+                >
+                  <Row className="items-center gap-1">
+                    <LinkIcon className="h-4 w-4" />
+                    Earn M$250 per referral
+                  </Row>
+                </div>
               )}
             </Row>
           )}
