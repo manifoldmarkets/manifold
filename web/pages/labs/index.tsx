@@ -25,18 +25,24 @@ export default function LabsPage() {
           )}
 
           <LabCard
+            title="Manalinks"
+            description="Send M$ to anyone"
+            href="/links"
+          />
+
+          <LabCard
             title="Dating docs"
             description="Browse dating docs or create your own"
             href="/date-docs"
           />
           <LabCard
             title="Senate race"
-            description="See the state-by-state breakdown of the US Senate midterm elections"
+            description="A state-by-state breakdown of the US Senate midterm elections"
             href="/midterms"
           />
           <LabCard
             title="Magic the Guessering"
-            description="How well can you match these card names to their art?"
+            description="Match MTG card names to their art"
             href="/mtg"
           />
           <LabCard title="Cowp" description="???" href="/cowp" />
