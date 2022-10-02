@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLog, scaleLinear } from 'd3-scale'
+import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
 import { DAY_MS } from 'common/util/time'
@@ -97,6 +98,7 @@ export const PseudoNumericContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       data={data}
+      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={PseudoNumericChartTooltip}
       color={NUMERIC_GRAPH_COLOR}
