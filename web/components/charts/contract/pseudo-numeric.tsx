@@ -86,11 +86,11 @@ export const PseudoNumericContractChart = (props: {
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
-  const xScale = scaleTime(visibleRange, [0, width ?? 0 - MARGIN_X])
+  const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   // clamp log scale to make sure zeroes go to the bottom
   const yScale = isLogScale
-    ? scaleLog([Math.max(min, 1), max], [height ?? 0 - MARGIN_Y, 0]).clamp(true)
-    : scaleLinear([min, max], [height ?? 0 - MARGIN_Y, 0])
+    ? scaleLog([Math.max(min, 1), max], [height - MARGIN_Y, 0]).clamp(true)
+    : scaleLinear([min, max], [height - MARGIN_Y, 0])
   return (
     <SingleValueHistoryChart
       w={width}
