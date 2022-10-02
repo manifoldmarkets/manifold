@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { max } from 'lodash'
+import { min, max } from 'lodash'
 import dayjs from 'dayjs'
 
 import { formatPercent } from 'common/util/format'
@@ -52,6 +52,8 @@ export function DailyChart(props: {
     [startDate, dailyValues, excludeFirstDays]
   )
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const minDate = min(data.map((d) => d.x))!
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const maxDate = max(data.map((d) => d.x))!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const maxValue = max(data.map((d) => d.y))!
@@ -61,7 +63,7 @@ export function DailyChart(props: {
         <SingleValueHistoryChart
           w={width}
           h={height}
-          xScale={scaleTime([startDate, maxDate], [0, width - MARGIN_X])}
+          xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
           yScale={scaleLinear([0, maxValue], [height - MARGIN_Y, 0])}
           data={data}
           Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}
