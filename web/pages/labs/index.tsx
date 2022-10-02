@@ -1,3 +1,4 @@
+import { CHALLENGES_ENABLED } from 'common/challenge'
 import Masonry from 'react-masonry-css'
 import { Page } from 'web/components/page'
 import { SiteLink } from 'web/components/site-link'
@@ -13,6 +14,14 @@ export default function LabsPage() {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
+        {CHALLENGES_ENABLED && (
+          <LabCard
+            title="Challenges"
+            description="One-on-one bets between friends"
+            href="/challenges"
+          />
+        )}
+
         <LabCard
           title="Dating docs"
           description="Browse dating docs or create your own"

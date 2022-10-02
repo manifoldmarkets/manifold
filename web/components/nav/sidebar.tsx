@@ -20,7 +20,6 @@ import NotificationsIcon from 'web/components/notifications-icon'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { CreateQuestionButton } from 'web/components/create-question-button'
 import { withTracking } from 'web/lib/service/analytics'
-import { CHALLENGES_ENABLED } from 'common/challenge'
 import { buildArray } from 'common/util/array'
 import TrophyIcon from 'web/lib/icons/trophy-icon'
 import { SignInButton } from '../sign-in-button'
@@ -143,15 +142,12 @@ function getMoreDesktopNavigation(user?: User | null) {
     return buildArray(
       { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Groups', href: '/groups' },
-      CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
-      [
-        { name: 'Tournaments', href: '/tournaments' },
-        { name: 'Charity', href: '/charity' },
-        { name: 'Labs', href: '/labs' },
-        { name: 'Blog', href: 'https://news.manifold.markets' },
-        { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-        { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
-      ]
+      { name: 'Tournaments', href: '/tournaments' },
+      { name: 'Charity', href: '/charity' },
+      { name: 'Labs', href: '/labs' },
+      { name: 'Blog', href: 'https://news.manifold.markets' },
+      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+      { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' }
     )
   }
 
@@ -159,20 +155,17 @@ function getMoreDesktopNavigation(user?: User | null) {
   return buildArray(
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Groups', href: '/groups' },
-    CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
-    [
-      { name: 'Referrals', href: '/referrals' },
-      { name: 'Charity', href: '/charity' },
-      { name: 'Labs', href: '/labs' },
-      { name: 'Send M$', href: '/links' },
-      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-      { name: 'Help & About', href: 'https://help.manifold.markets/' },
-      {
-        name: 'Sign out',
-        href: '#',
-        onClick: logout,
-      },
-    ]
+    { name: 'Referrals', href: '/referrals' },
+    { name: 'Charity', href: '/charity' },
+    { name: 'Labs', href: '/labs' },
+    { name: 'Send M$', href: '/links' },
+    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    { name: 'Help & About', href: 'https://help.manifold.markets/' },
+    {
+      name: 'Sign out',
+      href: '#',
+      onClick: logout,
+    }
   )
 }
 
@@ -221,15 +214,12 @@ function getMoreMobileNav() {
   if (IS_PRIVATE_MANIFOLD) return [signOut]
 
   return buildArray<MenuItem>(
-    CHALLENGES_ENABLED && { name: 'Challenges', href: '/challenges' },
-    [
-      { name: 'Groups', href: '/groups' },
-      { name: 'Referrals', href: '/referrals' },
-      { name: 'Charity', href: '/charity' },
-      { name: 'Labs', href: '/labs' },
-      { name: 'Send M$', href: '/links' },
-      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    ],
+    { name: 'Groups', href: '/groups' },
+    { name: 'Referrals', href: '/referrals' },
+    { name: 'Charity', href: '/charity' },
+    { name: 'Labs', href: '/labs' },
+    { name: 'Send M$', href: '/links' },
+    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
     signOut
   )
 }
