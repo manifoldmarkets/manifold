@@ -50,6 +50,12 @@ export default function LabsPage() {
           />
 
           <LabCard
+            title="Stats"
+            description="Check up on Manifold's usage stats"
+            href="/stats"
+          />
+
+          <LabCard
             title="Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
