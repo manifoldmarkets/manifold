@@ -1,139 +1,77 @@
-import { Point, ResponsiveLine } from '@nivo/line'
-import clsx from 'clsx'
-import { formatPercent } from 'common/util/format'
+import { useMemo } from 'react'
+import { scaleTime, scaleLinear } from 'd3-scale'
+import { min, max } from 'lodash'
 import dayjs from 'dayjs'
-import { zip } from 'lodash'
-import { useWindowSize } from 'web/hooks/use-window-size'
-import { Col } from '../layout/col'
 
-export function DailyCountChart(props: {
-  startDate: number
-  dailyCounts: number[]
-  small?: boolean
-}) {
-  const { dailyCounts, startDate, small } = props
-  const { width } = useWindowSize()
+import { formatPercent } from 'common/util/format'
+import { Row } from '../layout/row'
+import {
+  HistoryPoint,
+  SingleValueHistoryChart,
+} from 'web/components/charts/generic-charts'
+import { TooltipProps, MARGIN_X, MARGIN_Y } from 'web/components/charts/helpers'
+import { SizedContainer } from 'web/components/sized-container'
 
-  const dates = dailyCounts.map((_, i) =>
-    dayjs(startDate).add(i, 'day').toDate()
-  )
-
-  const points = zip(dates, dailyCounts).map(([date, betCount]) => ({
-    x: date,
-    y: betCount,
+const getPoints = (startDate: number, dailyValues: number[]) => {
+  const startDateDayJs = dayjs(startDate)
+  return dailyValues.map((y, i) => ({
+    x: startDateDayJs.add(i, 'day').toDate(),
+    y: y,
   }))
-  const data = [{ id: 'Count', data: points, color: '#11b981' }]
+}
 
-  const bottomAxisTicks = width && width < 600 ? 6 : undefined
-
+const DailyCountTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
+  const { data, mouseX, xScale } = props
+  const d = xScale.invert(mouseX)
   return (
-    <div
-      className={clsx(
-        'h-[250px] w-full overflow-hidden',
-        !small && 'md:h-[400px]'
-      )}
-    >
-      <ResponsiveLine
-        data={data}
-        yScale={{ type: 'linear', stacked: false }}
-        xScale={{
-          type: 'time',
-        }}
-        axisBottom={{
-          tickValues: bottomAxisTicks,
-          format: (date) => dayjs(date).format('MMM DD'),
-        }}
-        colors={{ datum: 'color' }}
-        pointSize={0}
-        pointBorderWidth={1}
-        pointBorderColor="#fff"
-        enableSlices="x"
-        enableGridX={!!width && width >= 800}
-        enableArea
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
-        sliceTooltip={({ slice }) => {
-          const point = slice.points[0]
-          return <Tooltip point={point} />
-        }}
-      />
-    </div>
+    <Row className="items-center gap-2">
+      <span className="font-semibold">{dayjs(d).format('MMM DD')}</span>
+      <span className="text-greyscale-6">{data.y}</span>
+    </Row>
   )
 }
 
-export function DailyPercentChart(props: {
+const DailyPercentTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
+  const { data, mouseX, xScale } = props
+  const d = xScale.invert(mouseX)
+  return (
+    <Row className="items-center gap-2">
+      <span className="font-semibold">{dayjs(d).format('MMM DD')}</span>
+      <span className="text-greyscale-6">{formatPercent(data.y)}</span>
+    </Row>
+  )
+}
+
+export function DailyChart(props: {
   startDate: number
-  dailyPercent: number[]
-  small?: boolean
+  dailyValues: number[]
   excludeFirstDays?: number
+  pct?: boolean
 }) {
-  const { dailyPercent, startDate, small, excludeFirstDays } = props
-  const { width } = useWindowSize()
+  const { dailyValues, startDate, excludeFirstDays, pct } = props
 
-  const dates = dailyPercent.map((_, i) =>
-    dayjs(startDate).add(i, 'day').toDate()
+  const data = useMemo(
+    () => getPoints(startDate, dailyValues).slice(excludeFirstDays ?? 0),
+    [startDate, dailyValues, excludeFirstDays]
   )
-
-  const points = zip(dates, dailyPercent)
-    .map(([date, percent]) => ({
-      x: date,
-      y: percent,
-    }))
-    .slice(excludeFirstDays ?? 0)
-  const data = [{ id: 'Percent', data: points, color: '#11b981' }]
-
-  const bottomAxisTicks = width && width < 600 ? 6 : undefined
-
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const maxDate = max(data.map((d) => d.x))!
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const maxValue = max(data.map((d) => d.y))!
   return (
-    <div
-      className={clsx(
-        'h-[250px] w-full overflow-hidden',
-        !small && 'md:h-[400px]'
+    <SizedContainer fullHeight={250} mobileHeight={250}>
+      {(width, height) => (
+        <SingleValueHistoryChart
+          w={width}
+          h={height}
+          xScale={scaleTime([startDate, maxDate], [0, width - MARGIN_X])}
+          yScale={scaleLinear([0, maxValue], [height - MARGIN_Y, 0])}
+          data={data}
+          Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}
+          color="#11b981"
+          pct={pct}
+        />
       )}
-    >
-      <ResponsiveLine
-        data={data}
-        yScale={{ type: 'linear', stacked: false }}
-        xScale={{
-          type: 'time',
-        }}
-        axisLeft={{
-          format: formatPercent,
-        }}
-        axisBottom={{
-          tickValues: bottomAxisTicks,
-          format: (date) => dayjs(date).format('MMM DD'),
-        }}
-        colors={{ datum: 'color' }}
-        pointSize={0}
-        pointBorderWidth={1}
-        pointBorderColor="#fff"
-        enableSlices="x"
-        enableGridX={!!width && width >= 800}
-        enableArea
-        margin={{ top: 20, right: 28, bottom: 22, left: 40 }}
-        sliceTooltip={({ slice }) => {
-          const point = slice.points[0]
-          return <Tooltip point={point} isPercent />
-        }}
-      />
-    </div>
-  )
-}
-
-function Tooltip(props: { point: Point; isPercent?: boolean }) {
-  const { point, isPercent } = props
-  return (
-    <Col className="border border-gray-300 bg-white py-2 px-3">
-      <div
-        className="pb-1"
-        style={{
-          color: point.serieColor,
-        }}
-      >
-        <strong>{point.serieId}</strong>{' '}
-        {isPercent ? formatPercent(+point.data.y) : Math.round(+point.data.y)}
-      </div>
-      <div>{dayjs(point.data.x).format('MMM DD')}</div>
-    </Col>
+    </SizedContainer>
   )
 }
