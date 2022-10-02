@@ -200,9 +200,7 @@ export function UserPage(props: { user: User }) {
                     e.preventDefault()
                     copyToClipboard(referralUrl)
                     toast.success('Referral link copied!', {
-                      icon: (
-                        <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
-                      ),
+                      icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
                     })
                     track('copy referral link')
                   }}
