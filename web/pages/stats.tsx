@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DailyChart } from 'web/components/analytics/charts'
+import { DailyChart } from 'web/components/charts/stats'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
