@@ -1,4 +1,5 @@
 import { CHALLENGES_ENABLED } from 'common/challenge'
+import { DOMAIN } from 'common/envs/constants'
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/page'
@@ -51,7 +52,7 @@ export default function LabsPage() {
           <LabCard
             title="Magic the Guessering"
             description="Match MTG card names to their art"
-            href="/mtg"
+            href={`https://${DOMAIN}/mtg/index.html`}
           />
 
           <LabCard title="Cowp" description="???" href="/cowp" />
