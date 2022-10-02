@@ -22,7 +22,10 @@ export function BountiedContractSmallBadge(props: {
 
   return (
     <Tooltip
-      text={CommentBountiesTooltipText(openCommentBounties)}
+      text={CommentBountiesTooltipText(
+        contract.creatorName,
+        openCommentBounties
+      )}
       placement="bottom"
     >
       <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white">
@@ -33,8 +36,11 @@ export function BountiedContractSmallBadge(props: {
   )
 }
 
-export const CommentBountiesTooltipText = (openCommentBounties: number) =>
-  `The creator of this market may award ${formatMoney(
+export const CommentBountiesTooltipText = (
+  creator: string,
+  openCommentBounties: number
+) =>
+  `${creator} may award ${formatMoney(
     COMMENT_BOUNTY_AMOUNT
   )} for good comments. ${formatMoney(
     openCommentBounties
