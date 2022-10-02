@@ -24,44 +24,44 @@ export default function LabsPage() {
           columnClassName="pl-4 bg-clip-padding"
         >
           <LabCard
-            title="US 2022 Midterms"
+            title="🇺🇸 US 2022 Midterms"
             description="See Manifold's state-by-state breakdown of senate and governor races"
             href="/midterms"
           />
 
           {CHALLENGES_ENABLED && (
             <LabCard
-              title="Challenges"
+              title="💥 Challenges"
               description="One-on-one bets between friends"
               href="/challenges"
             />
           )}
 
           <LabCard
-            title="Manalinks"
+            title="💸 Manalinks"
             description="Send M$ to anyone"
             href="/links"
           />
 
           <LabCard
-            title="Dating docs"
+            title="💌 Dating docs"
             description="Browse dating docs or create your own"
             href="/date-docs"
           />
 
           <LabCard
-            title="Stats"
+            title="📈 Stats"
             description="Check up on Manifold's usage stats"
             href="/stats"
           />
 
           <LabCard
-            title="Magic the Guessering"
+            title="🎲 Magic the Guessering"
             description="Match MTG card names to their art"
             href={`https://${DOMAIN}/mtg/index.html`}
           />
 
-          <LabCard title="Cowp" description="???" href="/cowp" />
+          <LabCard title="🐮 Cowp" description="???" href="/cowp" />
         </Masonry>
       </Col>
     </Page>
