@@ -28,7 +28,6 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
-import { useWindowSize } from 'web/hooks/use-window-size'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -83,7 +82,12 @@ export function ContractEmbed(props: EmbedProps) {
   return (
     <>
       <div className="contents [@media(min-height:250px)]:hidden">
-        <ContractCard contract={contract} className="h-screen" />
+        <ContractCard
+          contract={contract}
+          className="h-screen"
+          noLinkAvatar
+          newTab
+        />
       </div>
       <div className="hidden [@media(min-height:250px)]:contents">
         <ContractSmolView {...props} />
