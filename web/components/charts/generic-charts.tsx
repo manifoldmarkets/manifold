@@ -4,11 +4,11 @@ import { axisBottom, axisLeft } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 import {
+  CurveFactory,
+  SeriesPoint,
   curveLinear,
-  curveStepAfter,
   stack,
   stackOrderReverse,
-  SeriesPoint,
 } from 'd3-shape'
 import { range } from 'lodash'
 
@@ -52,10 +52,11 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   color: string
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<number, P>
 }) => {
-  const { color, data, yScale, w, h, Tooltip } = props
+  const { color, data, yScale, w, h, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
@@ -100,7 +101,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
         px={px}
         py0={py0}
         py1={py1}
-        curve={curveLinear}
+        curve={curve ?? curveLinear}
       />
     </SVGChart>
   )
@@ -113,11 +114,12 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   colors: readonly string[]
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { colors, data, yScale, w, h, Tooltip, pct } = props
+  const { colors, data, yScale, w, h, curve, Tooltip, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -177,7 +179,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
           px={px}
           py0={py0}
           py1={py1}
-          curve={curveStepAfter}
+          curve={curve ?? curveLinear}
           fill={colors[i]}
         />
       ))}
@@ -192,11 +194,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   color: string
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { color, data, yScale, w, h, Tooltip, pct } = props
+  const { color, data, yScale, w, h, curve, Tooltip, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -246,7 +249,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         px={px}
         py0={py0}
         py1={py1}
-        curve={curveStepAfter}
+        curve={curve ?? curveLinear}
       />
     </SVGChart>
   )
