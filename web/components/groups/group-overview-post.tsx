@@ -13,7 +13,7 @@ import { deletePost, updatePost } from 'web/lib/firebase/posts'
 import { useState } from 'react'
 import { usePost } from 'web/hooks/use-post'
 
-export function GroupAboutPost(props: {
+export function GroupOverviewPost(props: {
   group: Group
   isEditable: boolean
   post: Post | null
