@@ -96,11 +96,13 @@ export default function Home() {
       <Toaster />
 
       <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
-        <Row className={'mb-2 w-full items-center justify-between gap-8'}>
+        <Row
+          className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
+        >
           <input
             type="text"
             placeholder={'Search'}
-            className="input input-bordered w-full sm:flex"
+            className="input input-bordered w-full"
             onClick={() => Router.push('/search')}
           />
           <CustomizeButton justIcon />
