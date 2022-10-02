@@ -75,7 +75,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
-  const [sort, setSort] = useState<'Newest' | 'Best'>('Best')
+  const [sort, setSort] = useState<'Newest' | 'Best'>('Newest')
   const me = useUser()
   if (comments == null) {
     return <LoadingIndicator />
