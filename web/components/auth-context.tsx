@@ -58,14 +58,9 @@ export function AuthProvider(props: {
   serverUser?: AuthUser
 }) {
   const { children, serverUser } = props
-  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
-
-  useEffect(() => {
-    if (serverUser === undefined) {
-      const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-      setAuthUser(cachedUser && JSON.parse(cachedUser))
-    }
-  }, [setAuthUser, serverUser])
+  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(
+    serverUser ?? getStoredUser()
+  )
 
   useEffect(() => {
     if (authUser != null) {
@@ -133,4 +128,11 @@ export function AuthProvider(props: {
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
   )
+}
+
+const getStoredUser = () => {
+  if (typeof window === 'undefined') return undefined
+
+  const json = localStorage.getItem(CACHED_USER_KEY)
+  return json ? JSON.parse(json) : undefined
 }
