@@ -2,12 +2,18 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
 import { SiteLink } from 'web/components/site-link'
 import { Title } from 'web/components/title'
 
 export default function LabsPage() {
   return (
     <Page>
+      <SEO
+        title="Manifold labs"
+        description="Cool experimental features for you to check out!"
+        url="/labs"
+      />
       <Col className="px-4">
         <Title className="sm:!mt-0" text="Manifold Labs" />
 
