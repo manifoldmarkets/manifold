@@ -74,6 +74,7 @@ export default function Home() {
     }
   }, [user, sections])
 
+  const dailyMovers = useProbChanges({ bettorId: user?.id })
   const trendingContracts = useTrendingContracts(6)
   const newContracts = useNewContracts(6)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
@@ -84,7 +85,11 @@ export default function Home() {
   )
 
   const isLoading =
-    !user || !trendingContracts || !newContracts || !dailyTrendingContracts
+    !user ||
+    !dailyMovers ||
+    !trendingContracts ||
+    !newContracts ||
+    !dailyTrendingContracts
 
   return (
     <Page>
@@ -110,6 +115,7 @@ export default function Home() {
               score: trendingContracts,
               newest: newContracts,
               'daily-trending': dailyTrendingContracts,
+              'daily-movers': dailyMovers,
             })}
 
             <TrendingGroupsSection user={user} />
@@ -166,6 +172,7 @@ function renderSections(
   user: User,
   sections: { id: string; label: string }[],
   sectionContracts: {
+    'daily-movers': CPMMBinaryContract[]
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
@@ -175,22 +182,23 @@ function renderSections(
     <>
       {sections.map((s) => {
         const { id, label } = s
+        const contracts =
+          sectionContracts[s.id as keyof typeof sectionContracts]
+
         if (id === 'daily-movers') {
-          return <DailyMoversSection key={id} userId={user.id} />
+          return <DailyMoversSection key={id} contracts={contracts} />
         }
         if (id === 'daily-trending') {
           return (
             <ContractsSection
               key={id}
               label={label}
-              contracts={sectionContracts[id]}
+              contracts={contracts}
               sort="daily-score"
               showProbChange
             />
           )
         }
-        const contracts =
-          sectionContracts[s.id as keyof typeof sectionContracts]
         return (
           <ContractsSection
             key={id}
@@ -325,13 +333,12 @@ function GroupSection(props: {
   )
 }
 
-function DailyMoversSection(props: { userId: string }) {
-  const { userId } = props
-  const changes = useProbChanges({ bettorId: userId })?.filter(
-    (c) => Math.abs(c.probChanges.day) >= 0.01
-  )
+function DailyMoversSection(props: { contracts: CPMMBinaryContract[] }) {
+  const { contracts } = props
 
-  if (changes && changes.length === 0) {
+  const changes = contracts.filter((c) => Math.abs(c.probChanges.day) >= 0.01)
+
+  if (changes.length === 0) {
     return null
   }
 
