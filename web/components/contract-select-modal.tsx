@@ -91,7 +91,7 @@ export function SelectMarketsModal(props: {
               noLinkAvatar: true,
             }}
             highlightOptions={{
-              contractIds: contracts.map((c) => c.id),
+              itemIds: contracts.map((c) => c.id),
               highlightClassName:
                 '!bg-indigo-100 outline outline-2 outline-indigo-300',
             }}
