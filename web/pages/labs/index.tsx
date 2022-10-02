@@ -18,6 +18,17 @@ export default function LabsPage() {
           description="Browse dating docs or create your own"
           href="/date-docs"
         />
+        <LabCard
+          title="Senate race"
+          description="See the state-by-state breakdown of the US Senate midterm elections"
+          href="/midterms"
+        />
+        <LabCard
+          title="Magic the Guessering"
+          description="How well can you match these card names to their art?"
+          href="/mtg"
+        />
+        <LabCard title="Cowp" description="???" href="/cowp" />
       </Masonry>
     </Page>
   )
@@ -32,12 +43,12 @@ const LabCard = (props: {
   return (
     <SiteLink
       href={href}
-      className="group flex h-full w-full flex-col rounded-lg bg-white p-4 shadow-md transition-shadow duration-200 hover:no-underline hover:shadow-lg"
+      className="group mb-4 flex flex-col gap-2 rounded-lg bg-white p-4 shadow-md transition-shadow duration-200 hover:no-underline hover:shadow-lg"
     >
       <h3 className="text-lg font-semibold group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2">
         {title}
       </h3>
-      <p className="mt-2 text-gray-600">{description}</p>
+      <p className="text-gray-600">{description}</p>
     </SiteLink>
   )
 }
