@@ -77,7 +77,7 @@ export function GroupOverview(props: {
         maxResults={MAX_TRENDING_POSTS}
         defaultFilter={'all'}
         additionalFilter={{ groupSlug: group.slug }}
-        persistPrefix={`group-${group.slug}`}
+        persistPrefix={`group-trending-${group.slug}`}
       />
       <GroupAbout
         group={group}
@@ -181,22 +181,14 @@ function GroupOverviewPinned(props: {
               {element}
 
               {editMode && (
-                <div>
-                  <button
-                    className=" text-gray-500 hover:text-gray-700"
-                    onClick={() => {
-                      console.log(group.pinnedItems)
-                      const newPinned = group.pinnedItems.filter((item) => {
-                        return item.itemId !== group.pinnedItems[index].itemId
-                      })
-                      updateGroup(group, { pinnedItems: newPinned })
-                    }}
-                  >
-                    <div className="absolute top-0 left-0 right-0 bottom-0 bg-gray-200 bg-opacity-50">
-                      <XCircleIcon className="h-12 w-12 text-gray-600" />
-                    </div>
-                  </button>
-                </div>
+                <CrossIcon
+                  onClick={() => {
+                    const newPinned = group.pinnedItems.filter((item) => {
+                      return item.itemId !== group.pinnedItems[index].itemId
+                    })
+                    updateGroup(group, { pinnedItems: newPinned })
+                  }}
+                />
               )}
             </div>
           ))}
@@ -368,5 +360,19 @@ export function GroupAbout(props: {
         )}
       </Col>
     </>
+  )
+}
+
+function CrossIcon(props: { onClick: () => void }) {
+  const { onClick } = props
+
+  return (
+    <div>
+      <button className=" text-gray-500 hover:text-gray-700" onClick={onClick}>
+        <div className="absolute top-0 left-0 right-0 bottom-0 bg-gray-200 bg-opacity-50">
+          <XCircleIcon className="h-12 w-12 text-gray-600" />
+        </div>
+      </button>
+    </div>
   )
 }
