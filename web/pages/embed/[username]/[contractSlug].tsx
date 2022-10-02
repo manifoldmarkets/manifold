@@ -79,12 +79,16 @@ export function ContractEmbed(props: EmbedProps) {
     creatorId: contract.creatorId,
   })
 
-  const { height = 0 } = useWindowSize()
-
-  return height < 250 ? (
-    <ContractCard contract={contract} className="h-screen" />
-  ) : (
-    <ContractSmolView {...props} />
+  // return (height < 250px) ? Card : SmolView
+  return (
+    <>
+      <div className="contents [@media(min-height:250px)]:hidden">
+        <ContractCard contract={contract} className="h-screen" />
+      </div>
+      <div className="hidden [@media(min-height:250px)]:contents">
+        <ContractSmolView {...props} />
+      </div>
+    </>
   )
 }
 
