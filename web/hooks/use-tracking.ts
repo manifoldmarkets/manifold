@@ -1,5 +1,5 @@
-import { track } from '@amplitude/analytics-browser'
 import { useEffect } from 'react'
+import { track } from 'web/lib/service/analytics'
 import { inIframe } from './use-is-iframe'
 
 export const useTracking = (
@@ -10,5 +10,5 @@ export const useTracking = (
   useEffect(() => {
     if (excludeIframe && inIframe()) return
     track(eventName, eventProperties)
-  }, [])
+  }, [eventName, eventProperties, excludeIframe])
 }
