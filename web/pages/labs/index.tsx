@@ -41,7 +41,7 @@ export default function LabsPage() {
             description="Browse dating docs or create your own"
             href="/date-docs"
           />
-         
+
           <LabCard
             title="Magic the Guessering"
             description="Match MTG card names to their art"
