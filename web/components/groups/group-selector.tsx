@@ -32,27 +32,27 @@ export function GroupSelector(props: {
   const openGroups = useOpenGroups()
   const memberGroups = useMemberGroups(creator?.id)
   const memberGroupIds = memberGroups?.map((g) => g.id) ?? []
-  const availableGroups = openGroups
-    .concat(
-      (memberGroups ?? []).filter(
-        (g) => !openGroups.map((og) => og.id).includes(g.id)
-      )
-    )
-    .filter((group) => !ignoreGroupIds?.includes(group.id))
-    .sort((a, b) => b.totalContracts - a.totalContracts)
-    // put the groups the user is a member of first
-    .sort((a, b) => {
-      if (memberGroupIds.includes(a.id)) {
-        return -1
-      }
-      if (memberGroupIds.includes(b.id)) {
-        return 1
-      }
-      return 0
-    })
 
-  const filteredGroups = availableGroups.filter((group) =>
-    searchInAny(query, group.name)
+  const sortGroups = (groups: Group[]) =>
+    groups.sort(
+      (a, b) =>
+        // weight group higher if user is a member
+        (memberGroupIds.includes(b.id) ? 5 : 1) * b.totalContracts -
+        (memberGroupIds.includes(a.id) ? 5 : 1) * a.totalContracts
+    )
+
+  const availableGroups = sortGroups(
+    openGroups
+      .concat(
+        (memberGroups ?? []).filter(
+          (g) => !openGroups.map((og) => og.id).includes(g.id)
+        )
+      )
+      .filter((group) => !ignoreGroupIds?.includes(group.id))
+  )
+
+  const filteredGroups = sortGroups(
+    availableGroups.filter((group) => searchInAny(query, group.name))
   )
 
   if (!showSelector || !creator) {

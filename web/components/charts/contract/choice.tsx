@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 
@@ -6,7 +6,6 @@ import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { getOutcomeProbability } from 'common/calculate'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { DAY_MS } from 'common/util/time'
 import {
   TooltipProps,
@@ -18,7 +17,6 @@ import {
   formatDateInRange,
 } from '../helpers'
 import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
-import { useElementWidth } from 'web/hooks/use-element-width'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 
@@ -114,7 +112,7 @@ const getBetPoints = (answers: Answer[], bets: Bet[]) => {
     points.push({
       x: new Date(bet.createdTime),
       y: answers.map((a) => sharesByOutcome[a.id] ** 2 / sharesSquared),
-      datum: bet,
+      obj: bet,
     })
   }
   return points
@@ -146,10 +144,11 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
 export const ChoiceContractChart = (props: {
   contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
-  height?: number
+  width: number
+  height: number
   onMouseOver?: (p: MultiPoint<Bet> | undefined) => void
 }) => {
-  const { contract, bets, onMouseOver } = props
+  const { contract, bets, width, height, onMouseOver } = props
   const [start, end] = getDateRange(contract)
   const answers = useMemo(
     () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
@@ -173,20 +172,16 @@ export const ChoiceContractChart = (props: {
     Date.now()
   )
   const visibleRange = [start, rightmostDate]
-  const isMobile = useIsMobile(800)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const width = useElementWidth(containerRef) ?? 0
-  const height = props.height ?? (isMobile ? 250 : 350)
   const xScale = scaleTime(visibleRange, [0, width - MARGIN_X])
   const yScale = scaleLinear([0, 1], [height - MARGIN_Y, 0])
 
   const ChoiceTooltip = useMemo(
-    () => (props: TooltipProps<MultiPoint<Bet>>) => {
-      const { p, xScale } = props
-      const { x, y, datum } = p
+    () => (props: TooltipProps<Date, MultiPoint<Bet>>) => {
+      const { data, mouseX, xScale } = props
       const [start, end] = xScale.domain()
+      const d = xScale.invert(mouseX)
       const legendItems = sortBy(
-        y.map((p, i) => ({
+        data.y.map((p, i) => ({
           color: CATEGORY_COLORS[i],
           label: answers[i].text,
           value: formatPct(p),
@@ -197,9 +192,11 @@ export const ChoiceContractChart = (props: {
       return (
         <>
           <Row className="items-center gap-2">
-            {datum && <Avatar size="xxs" avatarUrl={datum.userAvatarUrl} />}
+            {data.obj && (
+              <Avatar size="xxs" avatarUrl={data.obj.userAvatarUrl} />
+            )}
             <span className="text-semibold text-base">
-              {formatDateInRange(x, start, end)}
+              {formatDateInRange(d, start, end)}
             </span>
           </Row>
           <Legend className="max-w-xs" items={legendItems} />
@@ -210,20 +207,16 @@ export const ChoiceContractChart = (props: {
   )
 
   return (
-    <div ref={containerRef}>
-      {width > 0 && (
-        <MultiValueHistoryChart
-          w={width}
-          h={height}
-          xScale={xScale}
-          yScale={yScale}
-          data={data}
-          colors={CATEGORY_COLORS}
-          onMouseOver={onMouseOver}
-          Tooltip={ChoiceTooltip}
-          pct
-        />
-      )}
-    </div>
+    <MultiValueHistoryChart
+      w={width}
+      h={height}
+      xScale={xScale}
+      yScale={yScale}
+      data={data}
+      colors={CATEGORY_COLORS}
+      onMouseOver={onMouseOver}
+      Tooltip={ChoiceTooltip}
+      pct
+    />
   )
 }

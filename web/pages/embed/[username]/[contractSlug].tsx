@@ -1,7 +1,7 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BetInline } from 'web/components/bet-inline'
 import { Button } from 'web/components/button'
 import {
@@ -20,7 +20,6 @@ import { SiteLink } from 'web/components/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { useTracking } from 'web/hooks/use-tracking'
 import { listAllBets } from 'web/lib/firebase/bets'
 import {
   contractPath,
@@ -28,6 +27,7 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
+import { track } from 'web/lib/service/analytics'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -72,11 +72,14 @@ interface EmbedProps {
 
 export function ContractEmbed(props: EmbedProps) {
   const { contract } = props
-  useTracking('view market embed', {
-    slug: contract.slug,
-    contractId: contract.id,
-    creatorId: contract.creatorId,
-  })
+  useEffect(() => {
+    track('view market embed', {
+      slug: contract.slug,
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      hostname: window.location.hostname,
+    })
+  }, [contract.creatorId, contract.id, contract.slug])
 
   // return (height < 250px) ? Card : SmolView
   return (
@@ -104,7 +107,7 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
 
   const href = `https://${DOMAIN}${contractPath(contract)}`
 
-  const { setElem, height: graphHeight } = useMeasureSize()
+  const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
 
   const [betPanelOpen, setBetPanelOpen] = useState(false)
 
@@ -157,7 +160,14 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
       )}
 
       <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
-        <ContractChart contract={contract} bets={bets} height={graphHeight} />
+        {graphWidth != null && graphHeight != null && (
+          <ContractChart
+            contract={contract}
+            bets={bets}
+            width={graphWidth}
+            height={graphHeight}
+          />
+        )}
       </div>
     </Col>
   )

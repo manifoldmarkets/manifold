@@ -177,10 +177,6 @@ export function FeedComment(props: {
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          {tips && <Tipper comment={comment} tips={tips} />}
-          {(contract.openCommentBounties ?? 0) > 0 && (
-            <AwardBountyButton comment={comment} contract={contract} />
-          )}
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
@@ -188,6 +184,10 @@ export function FeedComment(props: {
             >
               Reply
             </button>
+          )}
+          {tips && <Tipper comment={comment} tips={tips} />}
+          {(contract.openCommentBounties ?? 0) > 0 && (
+            <AwardBountyButton comment={comment} contract={contract} />
           )}
         </Row>
       </div>

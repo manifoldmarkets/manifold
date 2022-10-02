@@ -75,7 +75,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
-  const [sort, setSort] = useState<'Newest' | 'Best'>('Best')
+  const [sort, setSort] = useState<'Newest' | 'Best'>('Newest')
   const me = useUser()
   if (comments == null) {
     return <LoadingIndicator />
@@ -159,7 +159,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
             <Tooltip
               text={
                 sort === 'Best'
-                  ? 'Comments with tips or bounties will be shown first. Your comments made within the last 10 minutes will temporarily appear (to you) first.'
+                  ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
                   : ''
               }
             >

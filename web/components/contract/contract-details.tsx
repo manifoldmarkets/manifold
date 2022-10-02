@@ -183,6 +183,7 @@ export function MarketSubheader(props: {
             contract={contract}
             resolvedDate={resolvedDate}
             isCreator={isCreator}
+            disabled={disabled}
           />
           {!isMobile && (
             <Row className={'gap-1'}>
@@ -200,8 +201,9 @@ export function CloseOrResolveTime(props: {
   contract: Contract
   resolvedDate: any
   isCreator: boolean
+  disabled?: boolean
 }) {
-  const { contract, resolvedDate, isCreator } = props
+  const { contract, resolvedDate, isCreator, disabled } = props
   const { resolutionTime, closeTime } = contract
   if (!!closeTime || !!resolvedDate) {
     return (
@@ -225,6 +227,7 @@ export function CloseOrResolveTime(props: {
               closeTime={closeTime}
               contract={contract}
               isCreator={isCreator ?? false}
+              disabled={disabled}
             />
           </Row>
         )}
@@ -245,7 +248,8 @@ export function MarketGroups(props: {
   return (
     <>
       <Row className="items-center gap-1">
-        <GroupDisplay groupToDisplay={groupToDisplay} />
+        <GroupDisplay groupToDisplay={groupToDisplay} disabled={disabled} />
+
         {!disabled && user && (
           <button
             className="text-greyscale-4 hover:text-greyscale-3"
@@ -330,14 +334,29 @@ export function ExtraMobileContractDetails(props: {
   )
 }
 
-export function GroupDisplay(props: { groupToDisplay?: GroupLink | null }) {
-  const { groupToDisplay } = props
+export function GroupDisplay(props: {
+  groupToDisplay?: GroupLink | null
+  disabled?: boolean
+}) {
+  const { groupToDisplay, disabled } = props
+
   if (groupToDisplay) {
-    return (
+    const groupSection = (
+      <a
+        className={clsx(
+          'bg-greyscale-4 max-w-[140px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
+          !disabled && 'hover:bg-greyscale-3 cursor-pointer'
+        )}
+      >
+        {groupToDisplay.name}
+      </a>
+    )
+
+    return disabled ? (
+      groupSection
+    ) : (
       <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]">
-          {groupToDisplay.name}
-        </a>
+        {groupSection}
       </Link>
     )
   } else
@@ -352,8 +371,9 @@ function EditableCloseDate(props: {
   closeTime: number
   contract: Contract
   isCreator: boolean
+  disabled?: boolean
 }) {
-  const { closeTime, contract, isCreator } = props
+  const { closeTime, contract, isCreator, disabled } = props
 
   const dayJsCloseTime = dayjs(closeTime)
   const dayJsNow = dayjs()
@@ -452,8 +472,8 @@ function EditableCloseDate(props: {
         time={closeTime}
       >
         <span
-          className={isCreator ? 'cursor-pointer' : ''}
-          onClick={() => isCreator && setIsEditingCloseTime(true)}
+          className={!disabled && isCreator ? 'cursor-pointer' : ''}
+          onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
           {isSameDay ? (
             <span className={'capitalize'}> {fromNow(closeTime)}</span>
