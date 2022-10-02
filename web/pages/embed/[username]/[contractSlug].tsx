@@ -1,7 +1,7 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BetInline } from 'web/components/bet-inline'
 import { Button } from 'web/components/button'
 import {
@@ -19,7 +19,6 @@ import { SiteLink } from 'web/components/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
-import { useTracking } from 'web/hooks/use-tracking'
 import { listAllBets } from 'web/lib/firebase/bets'
 import {
   contractPath,
@@ -27,6 +26,7 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
+import { track } from 'web/lib/service/analytics'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -68,11 +68,14 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   const { question, outcomeType } = contract
 
-  useTracking('view market embed', {
-    slug: contract.slug,
-    contractId: contract.id,
-    creatorId: contract.creatorId,
-  })
+  useEffect(() => {
+    track('view market embed', {
+      slug: contract.slug,
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      hostname: window.location.hostname,
+    })
+  }, [contract.creatorId, contract.id, contract.slug])
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
