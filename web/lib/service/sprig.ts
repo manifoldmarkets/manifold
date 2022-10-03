@@ -3,6 +3,7 @@
 // Integrate Sprig
 
 import { ENV_CONFIG } from 'common/envs/constants'
+import { PROD_CONFIG } from 'common/envs/prod'
 
 try {
   ;(function (l, e, a, p) {
@@ -18,7 +19,7 @@ try {
     a.async = 1
     a.src = e + '?id=' + S.appId
     p = l.getElementsByTagName('script')[0]
-    p.parentNode.insertBefore(a, p)
+    ENV_CONFIG.domain === PROD_CONFIG.domain && p.parentNode.insertBefore(a, p)
   })(document, 'https://cdn.sprig.com/shim.js', ENV_CONFIG.sprigEnvironmentId)
 } catch (error) {
   console.log('Error initializing Sprig, please complain to Barak', error)
