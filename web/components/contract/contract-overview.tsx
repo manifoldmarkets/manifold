@@ -24,6 +24,7 @@ import {
   BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
+import { ContractReportResolution } from './contract-report-resolution'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -114,7 +115,16 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
-          <BinaryResolutionOrChance contract={contract} large />
+          <Row>
+            <BinaryResolutionOrChance
+              className="flex items-end"
+              contract={contract}
+              large
+            />
+            {contract.isResolved && (
+              <ContractReportResolution contract={contract} />
+            )}
+          </Row>
         </Row>
       </Col>
       <SizedContractChart
@@ -144,7 +154,13 @@ const ChoiceOverview = (props: {
         <ContractDetails contract={contract} />
         <OverviewQuestion text={question} />
         {resolution && (
-          <FreeResponseResolutionOrChance contract={contract} truncate="none" />
+          <Row>
+            <FreeResponseResolutionOrChance
+              contract={contract}
+              truncate="none"
+            />
+            <ContractReportResolution contract={contract} />
+          </Row>
         )}
       </Col>
       <SizedContractChart

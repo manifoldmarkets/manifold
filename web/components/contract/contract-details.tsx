@@ -14,7 +14,7 @@ import { useState } from 'react'
 import NewContractBadge from '../new-contract-badge'
 import { MiniUserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { exhibitExts } from 'common/util/parse'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
@@ -28,7 +28,7 @@ import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
-import { PlusCircleIcon } from '@heroicons/react/solid'
+import { ExclamationIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -149,6 +149,8 @@ export function MarketSubheader(props: {
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
+  const correctResolutionPercentage =
+    useUserById(creatorId)?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
   return (
@@ -160,13 +162,14 @@ export function MarketSubheader(props: {
         size={9}
         className="mr-1.5"
       />
+
       {!disabled && (
         <div className="absolute mt-3 ml-[11px]">
           <MiniUserFollowButton userId={creatorId} />
         </div>
       )}
       <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-        <Row className="w-full justify-between ">
+        <Row className="w-full space-x-1 ">
           {disabled ? (
             creatorName
           ) : (
@@ -177,6 +180,12 @@ export function MarketSubheader(props: {
               short={isMobile}
             />
           )}
+          {correctResolutionPercentage != null &&
+            correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
+              <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
+                <ExclamationIcon className="h-6 w-6 text-yellow-500" />
+              </Tooltip>
+            )}
         </Row>
         <Row className="text-2xs text-greyscale-4 flex-wrap gap-2 sm:text-xs">
           <CloseOrResolveTime
@@ -487,3 +496,5 @@ function EditableCloseDate(props: {
     </>
   )
 }
+
+const BAD_CREATOR_THRESHOLD = 0.8

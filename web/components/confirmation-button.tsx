@@ -26,6 +26,7 @@ export function ConfirmationButton(props: {
   onSubmit?: () => void
   onOpenChanged?: (isOpen: boolean) => void
   onSubmitWithSuccess?: () => Promise<boolean>
+  disabled?: boolean
 }) {
   const {
     openModalBtn,
@@ -35,6 +36,7 @@ export function ConfirmationButton(props: {
     children,
     onOpenChanged,
     onSubmitWithSuccess,
+    disabled,
   } = props
 
   const [open, setOpen] = useState(false)
@@ -72,9 +74,15 @@ export function ConfirmationButton(props: {
           </Row>
         </Col>
       </Modal>
+
       <Button
-        className={clsx(openModalBtn.className)}
-        onClick={() => updateOpen(true)}
+        className={openModalBtn.className}
+        onClick={() => {
+          if (disabled) {
+            return
+          }
+          updateOpen(true)
+        }}
         disabled={openModalBtn.disabled}
         color={openModalBtn.color}
         size={openModalBtn.size}
