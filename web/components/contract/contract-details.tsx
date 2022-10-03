@@ -1,4 +1,5 @@
 import { ClockIcon } from '@heroicons/react/outline'
+import { ExclamationIcon, PencilIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
@@ -28,7 +29,6 @@ import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
-import { ExclamationIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -480,8 +480,8 @@ function EditableCloseDate(props: {
         text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
         time={closeTime}
       >
-        <span
-          className={!disabled && isCreator ? 'cursor-pointer' : ''}
+        <Row
+          className={clsx(!disabled && isCreator ? 'cursor-pointer' : '')}
           onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
           {isSameDay ? (
@@ -491,7 +491,8 @@ function EditableCloseDate(props: {
           ) : (
             dayJsCloseTime.format('MMM D, YYYY')
           )}
-        </span>
+          {isCreator && !disabled && <PencilIcon className="ml-1 h-4 w-4" />}
+        </Row>
       </DateTimeTooltip>
     </>
   )
