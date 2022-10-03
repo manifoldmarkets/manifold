@@ -31,6 +31,11 @@ import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/tooltip'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Row } from '../layout/row'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -75,7 +80,10 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
-  const [sort, setSort] = useState<'Newest' | 'Best'>('Newest')
+  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
+    key: `contract-${contract.id}-comments-sort`,
+    store: storageStore(safeLocalStorage()),
+  })
   const me = useUser()
   if (comments == null) {
     return <LoadingIndicator />
