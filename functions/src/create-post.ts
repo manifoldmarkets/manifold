@@ -7,6 +7,9 @@ import { Post, MAX_POST_TITLE_LENGTH } from '../../common/post'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
+import { removeUndefinedProps } from '../../common/util/object'
+import { createMarketHelper } from './create-market'
+import { DAY_MS } from '../../common/util/time'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -34,11 +37,21 @@ const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
 const postSchema = z.object({
   title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
   content: contentSchema,
+  groupId: z.string().optional(),
+
+  // Date doc fields:
+  bounty: z.number().optional(),
+  birthday: z.number().optional(),
+  type: z.string().optional(),
+  question: z.string().optional(),
 })
 
 export const createpost = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { title, content } = validate(postSchema, req.body)
+  const { title, content, groupId, question, ...otherProps } = validate(
+    postSchema,
+    req.body
+  )
 
   const creator = await getUser(auth.uid)
   if (!creator)
@@ -50,16 +63,50 @@ export const createpost = newEndpoint({}, async (req, auth) => {
 
   const postRef = firestore.collection('posts').doc()
 
-  const post: Post = {
+  // If this is a date doc, create a market for it.
+  let contractSlug
+  if (question) {
+    const closeTime = Date.now() + DAY_MS * 30 * 3
+
+    const result = await createMarketHelper(
+      {
+        question,
+        closeTime,
+        outcomeType: 'BINARY',
+        visibility: 'unlisted',
+        initialProb: 50,
+        // Dating group!
+        groupId: 'j3ZE8fkeqiKmRGumy3O1',
+      },
+      auth
+    )
+    contractSlug = result.slug
+  }
+
+  const post: Post = removeUndefinedProps({
+    ...otherProps,
     id: postRef.id,
     creatorId: creator.id,
     slug,
     title,
     createdTime: Date.now(),
     content: content,
-  }
+    contractSlug,
+  })
 
   await postRef.create(post)
+  if (groupId) {
+    const groupRef = firestore.collection('groups').doc(groupId)
+    const group = await groupRef.get()
+    if (group.exists) {
+      const groupData = group.data()
+      if (groupData) {
+        const postIds = groupData.postIds ?? []
+        postIds.push(postRef.id)
+        await groupRef.update({ postIds })
+      }
+    }
+  }
 
   return { status: 'success', post }
 })

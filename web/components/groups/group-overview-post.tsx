@@ -13,32 +13,29 @@ import { deletePost, updatePost } from 'web/lib/firebase/posts'
 import { useState } from 'react'
 import { usePost } from 'web/hooks/use-post'
 
-export function GroupAboutPost(props: {
+export function GroupOverviewPost(props: {
   group: Group
   isEditable: boolean
-  post: Post
+  post: Post | null
 }) {
   const { group, isEditable } = props
   const post = usePost(group.aboutPostId) ?? props.post
 
   return (
     <div className="rounded-md bg-white p-4 ">
-      {isEditable ? (
-        <RichEditGroupAboutPost group={group} post={post} />
-      ) : (
-        <Content content={post.content} />
-      )}
+      {isEditable && <RichEditGroupAboutPost group={group} post={post} />}
+      {!isEditable && post && <Content content={post.content} />}
     </div>
   )
 }
 
-function RichEditGroupAboutPost(props: { group: Group; post: Post }) {
+function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   const { group, post } = props
   const [editing, setEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { editor, upload } = useTextEditor({
-    defaultValue: post.content,
+    defaultValue: post?.content,
     disabled: isSubmitting,
   })
 
@@ -49,7 +46,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post }) {
       content: editor.getJSON(),
     }
 
-    if (group.aboutPostId == null) {
+    if (post == null) {
       const result = await createPost(newPost).catch((e) => {
         console.error(e)
         return e
@@ -65,6 +62,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post }) {
   }
 
   async function deleteGroupAboutPost() {
+    if (post == null) return
     await deletePost(post)
     await deleteFieldFromGroup(group, 'aboutPostId')
   }
@@ -91,7 +89,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post }) {
     </>
   ) : (
     <>
-      {group.aboutPostId == null ? (
+      {post == null ? (
         <div className="text-center text-gray-500">
           <p className="text-sm">
             No post has been added yet.

@@ -21,6 +21,25 @@ const computeInvestmentValue = (
   })
 }
 
+export const computeInvestmentValueCustomProb = (
+  bets: Bet[],
+  contract: Contract,
+  p: number
+) => {
+  return sumBy(bets, (bet) => {
+    if (!contract || contract.isResolved) return 0
+    if (bet.sale || bet.isSold) return 0
+    const { outcome, shares } = bet
+
+    const betP = outcome === 'YES' ? p : 1 - p
+
+    const payout = betP * shares
+    const value = payout - (bet.loanAmount ?? 0)
+    if (isNaN(value)) return 0
+    return value
+  })
+}
+
 const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
   const periodFilteredContracts = userContracts.filter(
     (contract) => contract.createdTime >= startTime

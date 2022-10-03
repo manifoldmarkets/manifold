@@ -1,3 +1,4 @@
+import { sortBy } from 'lodash'
 import clsx from 'clsx'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { CPMMContract } from 'common/contract'
@@ -6,24 +7,24 @@ import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
+import { useContractWithPreload } from 'web/hooks/use-contract'
 
 export function ProbChangeTable(props: {
-  changes:
-    | { positiveChanges: CPMMContract[]; negativeChanges: CPMMContract[] }
-    | undefined
+  changes: CPMMContract[] | undefined
   full?: boolean
 }) {
   const { changes, full } = props
 
   if (!changes) return <LoadingIndicator />
 
-  const { positiveChanges, negativeChanges } = changes
+  const descendingChanges = sortBy(changes, (c) => c.probChanges.day).reverse()
+  const ascendingChanges = sortBy(changes, (c) => c.probChanges.day)
 
   const threshold = 0.01
-  const positiveAboveThreshold = positiveChanges.filter(
+  const positiveAboveThreshold = descendingChanges.filter(
     (c) => c.probChanges.day > threshold
   )
-  const negativeAboveThreshold = negativeChanges.filter(
+  const negativeAboveThreshold = ascendingChanges.filter(
     (c) => c.probChanges.day < threshold
   )
   const maxRows = Math.min(
@@ -53,10 +54,20 @@ export function ProbChangeTable(props: {
   )
 }
 
-function ProbChangeRow(props: { contract: CPMMContract }) {
-  const { contract } = props
+export function ProbChangeRow(props: {
+  contract: CPMMContract
+  className?: string
+}) {
+  const { className } = props
+  const contract =
+    (useContractWithPreload(props.contract) as CPMMContract) ?? props.contract
   return (
-    <Row className="items-center justify-between gap-4 hover:bg-gray-100">
+    <Row
+      className={clsx(
+        'items-center justify-between gap-4 hover:bg-gray-100',
+        className
+      )}
+    >
       <SiteLink
         className="p-4 pr-0 font-semibold text-indigo-700"
         href={contractPath(contract)}

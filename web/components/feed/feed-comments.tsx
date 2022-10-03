@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { useRouter } from 'next/router'
@@ -19,6 +19,9 @@ import { Content } from '../editor'
 import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
+import { AwardBountyButton } from 'web/components/award-bounty-button'
+
+export type ReplyTo = { id: string; username: string }
 
 export function FeedCommentThread(props: {
   contract: Contract
@@ -27,13 +30,7 @@ export function FeedCommentThread(props: {
   parentComment: ContractComment
 }) {
   const { contract, threadComments, tips, parentComment } = props
-  const [showReply, setShowReply] = useState(false)
-  const [replyTo, setReplyTo] = useState<{ id: string; username: string }>()
-
-  function scrollAndOpenReplyInput(comment: ContractComment) {
-    setReplyTo({ id: comment.userId, username: comment.userUsername })
-    setShowReply(true)
-  }
+  const [replyTo, setReplyTo] = useState<ReplyTo>()
 
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
@@ -48,10 +45,12 @@ export function FeedCommentThread(props: {
           contract={contract}
           comment={comment}
           tips={tips[comment.id] ?? {}}
-          onReplyClick={scrollAndOpenReplyInput}
+          onReplyClick={() =>
+            setReplyTo({ id: comment.id, username: comment.userUsername })
+          }
         />
       ))}
-      {showReply && (
+      {replyTo && (
         <Col className="-pb-2 relative ml-6">
           <span
             className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
@@ -60,10 +59,8 @@ export function FeedCommentThread(props: {
           <ContractCommentInput
             contract={contract}
             parentCommentId={parentComment.id}
-            replyToUser={replyTo}
-            onSubmitComment={() => {
-              setShowReply(false)
-            }}
+            replyTo={replyTo}
+            onSubmitComment={() => setReplyTo(undefined)}
           />
         </Col>
       )}
@@ -76,7 +73,7 @@ export function FeedComment(props: {
   comment: ContractComment
   tips?: CommentTips
   indent?: boolean
-  onReplyClick?: (comment: ContractComment) => void
+  onReplyClick?: () => void
 }) {
   const { contract, comment, tips, indent, onReplyClick } = props
   const {
@@ -89,6 +86,7 @@ export function FeedComment(props: {
     commenterPositionShares,
     commenterPositionOutcome,
     createdTime,
+    bountiesAwarded,
   } = comment
   const betOutcome = comment.betOutcome
   let bought: string | undefined
@@ -97,17 +95,21 @@ export function FeedComment(props: {
     bought = comment.betAmount >= 0 ? 'bought' : 'sold'
     money = formatMoney(Math.abs(comment.betAmount))
   }
+  const totalAwarded = bountiesAwarded ?? 0
 
-  const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
+  const highlighted = router.asPath.endsWith(`#${comment.id}`)
+  const commentRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
-    if (router.asPath.endsWith(`#${comment.id}`)) {
-      setHighlighted(true)
+    if (highlighted && commentRef.current != null) {
+      commentRef.current.scrollIntoView(true)
     }
-  }, [comment.id, router.asPath])
+  }, [highlighted])
 
   return (
     <Row
+      ref={commentRef}
       id={comment.id}
       className={clsx(
         'relative',
@@ -163,6 +165,11 @@ export function FeedComment(props: {
             createdTime={createdTime}
             elementId={comment.id}
           />
+          {totalAwarded > 0 && (
+            <span className=" text-primary ml-2 text-sm">
+              +{formatMoney(totalAwarded)}
+            </span>
+          )}
         </div>
         <Content
           className="mt-2 text-[15px] text-gray-700"
@@ -170,14 +177,17 @@ export function FeedComment(props: {
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          {tips && <Tipper comment={comment} tips={tips} />}
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
-              onClick={() => onReplyClick(comment)}
+              onClick={onReplyClick}
             >
               Reply
             </button>
+          )}
+          {tips && <Tipper comment={comment} tips={tips} />}
+          {(contract.openCommentBounties ?? 0) > 0 && (
+            <AwardBountyButton comment={comment} contract={contract} />
           )}
         </Row>
       </div>
@@ -204,33 +214,37 @@ export function ContractCommentInput(props: {
   contract: Contract
   className?: string
   parentAnswerOutcome?: string | undefined
-  replyToUser?: { id: string; username: string }
+  replyTo?: ReplyTo
   parentCommentId?: string
   onSubmitComment?: () => void
 }) {
   const user = useUser()
+  const { contract, parentAnswerOutcome, parentCommentId, replyTo, className } =
+    props
+  const { openCommentBounties } = contract
   async function onSubmitComment(editor: Editor) {
     if (!user) {
       track('sign in to comment')
       return await firebaseLogin()
     }
     await createCommentOnContract(
-      props.contract.id,
+      contract.id,
       editor.getJSON(),
       user,
-      props.parentAnswerOutcome,
-      props.parentCommentId
+      !!openCommentBounties,
+      parentAnswerOutcome,
+      parentCommentId
     )
     props.onSubmitComment?.()
   }
 
   return (
     <CommentInput
-      replyToUser={props.replyToUser}
-      parentAnswerOutcome={props.parentAnswerOutcome}
-      parentCommentId={props.parentCommentId}
+      replyTo={replyTo}
+      parentAnswerOutcome={parentAnswerOutcome}
+      parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
-      className={props.className}
+      className={className}
     />
   )
 }

@@ -57,6 +57,7 @@ export type PrivateUser = {
 
   email?: string
   weeklyTrendingEmailSent?: boolean
+  weeklyPortfolioUpdateEmailSent?: boolean
   manaBonusEmailSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string

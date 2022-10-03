@@ -1,6 +1,4 @@
-import clsx from 'clsx'
 import { ShareIcon } from '@heroicons/react/outline'
-
 import { Row } from '../layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
 import React, { useState } from 'react'
@@ -10,7 +8,7 @@ import { ShareModal } from './share-modal'
 import { FollowMarketButton } from 'web/components/follow-market-button'
 import { LikeMarketButton } from 'web/components/contract/like-market-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
-import { Col } from 'web/components/layout/col'
+import { Tooltip } from '../tooltip'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -20,30 +18,24 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
   return (
     <Row>
       <FollowMarketButton contract={contract} user={user} />
-      {user?.id !== contract.creatorId && (
-        <LikeMarketButton contract={contract} user={user} />
-      )}
-      <Button
-        size="sm"
-        color="gray-white"
-        className={'flex'}
-        onClick={() => {
-          setShareOpen(true)
-        }}
-      >
-        <Row>
-          <ShareIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-        </Row>
-        <ShareModal
-          isOpen={isShareOpen}
-          setOpen={setShareOpen}
-          contract={contract}
-          user={user}
-        />
-      </Button>
-      <Col className={'justify-center'}>
-        <ContractInfoDialog contract={contract} />
-      </Col>
+      <LikeMarketButton contract={contract} user={user} />
+      <Tooltip text="Share" placement="bottom" noTap noFade>
+        <Button
+          size="sm"
+          color="gray-white"
+          className={'flex'}
+          onClick={() => setShareOpen(true)}
+        >
+          <ShareIcon className="h-5 w-5" aria-hidden />
+          <ShareModal
+            isOpen={isShareOpen}
+            setOpen={setShareOpen}
+            contract={contract}
+            user={user}
+          />
+        </Button>
+      </Tooltip>
+      <ContractInfoDialog contract={contract} />
     </Row>
   )
 }

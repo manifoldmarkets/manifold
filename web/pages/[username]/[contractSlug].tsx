@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { memo, useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
+import dayjs from 'dayjs'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -17,7 +18,6 @@ import {
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/page'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
-import { listAllComments } from 'web/lib/firebase/comments'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
@@ -32,8 +32,6 @@ import { CPMMBinaryContract } from 'common/contract'
 import { AlertBox } from 'web/components/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { User } from 'common/user'
-import { ContractComment } from 'common/comment'
 import { getOpenGraphProps } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import {
@@ -44,35 +42,28 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useAdmin } from 'web/hooks/use-admin'
-import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
-import BetButton from 'web/components/bet-button'
-
-import dayjs from 'dayjs'
+import { BetsSummary } from 'web/components/bet-summary'
+import { listAllComments } from 'web/lib/firebase/comments'
+import { ContractComment } from 'common/comment'
+import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
 }) {
-  const { username, contractSlug } = props.params
+  const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-
-  const [bets, comments] = await Promise.all([
-    contractId ? listAllBets(contractId) : [],
-    contractId ? listAllComments(contractId) : [],
-  ])
+  const bets = contractId ? await listAllBets(contractId) : []
+  const comments = contractId ? await listAllComments(contractId) : []
 
   return {
     props: {
       contract,
-      username,
-      slug: contractSlug,
-      // Limit the data sent to the client. Client will still load all bets and comments directly.
+      // Limit the data sent to the client. Client will still load all bets/comments directly.
       bets: bets.slice(0, 5000),
       comments: comments.slice(0, 1000),
     },
-
     revalidate: 5, // regenerate after five seconds
   }
 }
@@ -83,21 +74,16 @@ export async function getStaticPaths() {
 
 export default function ContractPage(props: {
   contract: Contract | null
-  username: string
   bets: Bet[]
   comments: ContractComment[]
-  slug: string
   backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
-    username: '',
-    comments: [],
     bets: [],
-    slug: '',
+    comments: [],
   }
 
-  const user = useUser()
   const inIframe = useIsIframe()
   if (inIframe) {
     return <ContractEmbedPage {...props} />
@@ -109,9 +95,7 @@ export default function ContractPage(props: {
     return <Custom404 />
   }
 
-  return (
-    <ContractPageContent key={contract.id} {...{ ...props, contract, user }} />
-  )
+  return <ContractPageContent key={contract.id} {...{ ...props, contract }} />
 }
 
 // requires an admin to resolve a week after market closes
@@ -119,12 +103,10 @@ export function needsAdminToResolve(contract: Contract) {
   return !contract.isResolved && dayjs().diff(contract.closeTime, 'day') > 7
 }
 
-export function ContractPageSidebar(props: {
-  user: User | null | undefined
-  contract: Contract
-}) {
-  const { contract, user } = props
+export function ContractPageSidebar(props: { contract: Contract }) {
+  const { contract } = props
   const { creatorId, isResolved, outcomeType } = contract
+  const user = useUser()
   const isCreator = user?.id === creatorId
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -173,11 +155,11 @@ export function ContractPageSidebar(props: {
 export function ContractPageContent(
   props: Parameters<typeof ContractPage>[0] & {
     contract: Contract
-    user?: User | null
   }
 ) {
-  const { backToHome, comments, user } = props
+  const { backToHome, comments } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
+  const user = useUser()
   usePrefetch(user?.id)
   useTracking(
     'view market',
@@ -194,6 +176,10 @@ export function ContractPageContent(
     () => bets.filter((b) => !b.challengeSlug),
     [bets]
   )
+
+  const userBets = user
+    ? bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
+    : []
 
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -217,22 +203,19 @@ export function ContractPageContent(
     contractId: contract.id,
   })
 
-  const rightSidebar = <ContractPageSidebar user={user} contract={contract} />
   return (
-    <Page rightSidebar={rightSidebar}>
+    <Page rightSidebar={<ContractPageSidebar contract={contract} />}>
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
-
       {ogCardProps && (
         <SEO
           title={question}
           description={ogCardProps.description}
-          url={`/${props.username}/${props.slug}`}
+          url={`/${contract.creatorUsername}/${contract.slug}`}
           ogCardProps={ogCardProps}
         />
       )}
-
       <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
@@ -271,62 +254,53 @@ export function ContractPageContent(
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
-              <ContractTopTrades
-                contract={contract}
-                bets={bets}
-                comments={comments}
-              />
+              <ContractTopTrades contract={contract} bets={bets} />
             </div>
             <Spacer h={12} />
           </>
         )}
 
+        <BetsSummary
+          className="mb-4 px-2"
+          contract={contract}
+          userBets={userBets}
+        />
+
         <ContractTabs
           contract={contract}
-          user={user}
           bets={bets}
+          userBets={userBets}
           comments={comments}
         />
-        {!user ? (
-          <Col className="mt-4 max-w-sm items-center xl:hidden">
-            <BetSignUpPrompt />
-            <PlayMoneyDisclaimer />
-          </Col>
-        ) : (
-          outcomeType === 'BINARY' &&
-          allowTrade && (
-            <BetButton
-              contract={contract as CPMMBinaryContract}
-              className="mb-2 !mt-0 xl:hidden"
-            />
-          )
-        )}
       </Col>
       <RecommendedContractsWidget contract={contract} />
+      <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
 }
 
-function RecommendedContractsWidget(props: { contract: Contract }) {
-  const { contract } = props
-  const user = useUser()
-  const [recommendations, setRecommendations] = useState<Contract[]>([])
-  useEffect(() => {
-    if (user) {
-      getRecommendedContracts(contract, user.id, 6).then(setRecommendations)
+const RecommendedContractsWidget = memo(
+  function RecommendedContractsWidget(props: { contract: Contract }) {
+    const { contract } = props
+    const user = useUser()
+    const [recommendations, setRecommendations] = useState<Contract[]>([])
+    useEffect(() => {
+      if (user) {
+        getRecommendedContracts(contract, user.id, 6).then(setRecommendations)
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contract.id, user?.id])
+    if (recommendations.length === 0) {
+      return null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contract.id, user?.id])
-  if (recommendations.length === 0) {
-    return null
+    return (
+      <Col className="mt-2 gap-2 px-2 sm:px-0">
+        <Title className="text-gray-700" text="Recommended" />
+        <ContractsGrid
+          contracts={recommendations}
+          trackingPostfix=" recommended"
+        />
+      </Col>
+    )
   }
-  return (
-    <Col className="mt-2 gap-2 px-2 sm:px-0">
-      <Title className="text-gray-700" text="Recommended" />
-      <ContractsGrid
-        contracts={recommendations}
-        trackingPostfix=" recommended"
-      />
-    </Col>
-  )
-}
+)

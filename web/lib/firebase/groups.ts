@@ -43,6 +43,7 @@ export function groupPath(
     | 'about'
     | typeof GROUP_CHAT_SLUG
     | 'leaderboards'
+    | 'posts'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }

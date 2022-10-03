@@ -10,15 +10,15 @@ import { XIcon } from '@heroicons/react/outline'
 import { unLikeContract } from 'web/lib/firebase/likes'
 import { contractPath } from 'web/lib/firebase/contracts'
 
-export function UserLikesButton(props: { user: User }) {
-  const { user } = props
+export function UserLikesButton(props: { user: User; className?: string }) {
+  const { user, className } = props
   const [isOpen, setIsOpen] = useState(false)
 
   const likedContracts = useUserLikedContracts(user.id)
 
   return (
     <>
-      <TextButton onClick={() => setIsOpen(true)}>
+      <TextButton onClick={() => setIsOpen(true)} className={className}>
         <span className="font-semibold">{likedContracts?.length ?? ''}</span>{' '}
         Likes
       </TextButton>

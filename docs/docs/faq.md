@@ -4,11 +4,7 @@
 
 ### Do I have to pay real money in order to participate?
 
-Nope! Each account starts with a free M$1000. If you invest it wisely, you can increase your total without ever needing to put any real money into the site.
-
-### What is the name for the currency Manifold uses, represented by M$?
-
-Manifold Dollars, or mana for short.
+Nope! Each account starts with a free 1000 mana (or M$1000 for short). If you invest it wisely, you can increase your total without ever needing to put any real money into the site.
 
 ### Can M$ be sold for real money?
 

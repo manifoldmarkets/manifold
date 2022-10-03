@@ -46,6 +46,14 @@ export function addLiquidity(params: any) {
   return call(getFunctionUrl('addliquidity'), 'POST', params)
 }
 
+export function addCommentBounty(params: any) {
+  return call(getFunctionUrl('addcommentbounty'), 'POST', params)
+}
+
+export function awardCommentBounty(params: any) {
+  return call(getFunctionUrl('awardcommentbounty'), 'POST', params)
+}
+
 export function withdrawLiquidity(params: any) {
   return call(getFunctionUrl('withdrawliquidity'), 'POST', params)
 }
@@ -90,6 +98,10 @@ export function getCurrentUser(params: any) {
   return call(getFunctionUrl('getcurrentuser'), 'GET', params)
 }
 
-export function createPost(params: { title: string; content: JSONContent }) {
+export function createPost(params: {
+  title: string
+  content: JSONContent
+  groupId?: string
+}) {
   return call(getFunctionUrl('createpost'), 'POST', params)
 }

@@ -1,4 +1,4 @@
-import { sortBy, partition, sum, uniq } from 'lodash'
+import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
@@ -11,7 +11,6 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
-import { User } from 'common/user'
 import { getOutcomeProbability } from 'common/calculate'
 import { Answer } from 'common/answer'
 import clsx from 'clsx'
@@ -56,6 +55,11 @@ export function AnswersPanel(props: {
     ),
   ]
 
+  const answerItems = sortBy(
+    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
+    (answer) => -getOutcomeProbability(contract, answer.id)
+  )
+
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
@@ -66,12 +70,6 @@ export function AnswersPanel(props: {
   }>({})
 
   const chosenTotal = sum(Object.values(chosenAnswers))
-
-  const answerItems = getAnswerItems(
-    contract,
-    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
-    user
-  )
 
   const onChoose = (answerId: string, prob: number) => {
     if (resolveOption === 'CHOOSE') {
@@ -123,28 +121,26 @@ export function AnswersPanel(props: {
         ))}
 
       {!resolveOption && (
-        <div className={clsx('flow-root pr-2 md:pr-0')}>
-          <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
-            {answerItems.map((item) => (
-              <div key={item.id} className={'relative pb-2'}>
-                <div className="relative flex items-start space-x-3">
-                  <OpenAnswer {...item} />
-                </div>
-              </div>
-            ))}
-            <Row className={'justify-end'}>
-              {hasZeroBetAnswers && !showAllAnswers && (
-                <Button
-                  color={'gray-white'}
-                  onClick={() => setShowAllAnswers(true)}
-                  size={'md'}
-                >
-                  Show More
-                </Button>
-              )}
-            </Row>
-          </div>
-        </div>
+        <Col
+          className={clsx(
+            'gap-2 pr-2 md:pr-0',
+            tradingAllowed(contract) ? '' : '-mb-6'
+          )}
+        >
+          {answerItems.map((item) => (
+            <OpenAnswer key={item.id} answer={item} contract={contract} />
+          ))}
+          {hasZeroBetAnswers && !showAllAnswers && (
+            <Button
+              className="self-end"
+              color="gray-white"
+              onClick={() => setShowAllAnswers(true)}
+              size="md"
+            >
+              Show More
+            </Button>
+          )}
+        </Col>
       )}
 
       {answers.length <= 1 && (
@@ -175,35 +171,9 @@ export function AnswersPanel(props: {
   )
 }
 
-function getAnswerItems(
-  contract: FreeResponseContract | MultipleChoiceContract,
-  answers: Answer[],
-  user: User | undefined | null
-) {
-  let outcomes = uniq(answers.map((answer) => answer.number.toString()))
-  outcomes = sortBy(outcomes, (outcome) =>
-    getOutcomeProbability(contract, outcome)
-  ).reverse()
-
-  return outcomes
-    .map((outcome) => {
-      const answer = answers.find((answer) => answer.id === outcome) as Answer
-      //unnecessary
-      return {
-        id: outcome,
-        type: 'answer' as const,
-        contract,
-        answer,
-        user,
-      }
-    })
-    .filter((group) => group.answer)
-}
-
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
-  type: string
 }) {
   const { answer, contract } = props
   const { username, avatarUrl, name, text } = answer
@@ -212,7 +182,7 @@ function OpenAnswer(props: {
   const [open, setOpen] = useState(false)
 
   return (
-    <Col className={'border-base-200 bg-base-200 flex-1 rounded-md px-2'}>
+    <Col className="border-base-200 bg-base-200 relative flex-1 rounded-md px-2">
       <Modal open={open} setOpen={setOpen} position="center">
         <AnswerBetPanel
           answer={answer}
@@ -229,37 +199,30 @@ function OpenAnswer(props: {
       />
 
       <Row className="my-4 gap-3">
-        <div className="px-1">
-          <Avatar username={username} avatarUrl={avatarUrl} />
-        </div>
+        <Avatar className="mx-1" username={username} avatarUrl={avatarUrl} />
         <Col className="min-w-0 flex-1 lg:gap-1">
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
           </div>
 
           <Col className="align-items justify-between gap-4 sm:flex-row">
-            <span className="whitespace-pre-line text-lg">
-              <Linkify text={text} />
-            </span>
-
-            <Row className="items-center justify-center gap-4">
-              <div className={'align-items flex w-full justify-end gap-4 '}>
-                <span
-                  className={clsx(
-                    'text-2xl',
-                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
-                  )}
-                >
-                  {probPercent}
-                </span>
-                <BuyButton
-                  className={clsx(
-                    'btn-sm flex-initial !px-6 sm:flex',
-                    tradingAllowed(contract) ? '' : '!hidden'
-                  )}
-                  onClick={() => setOpen(true)}
-                />
-              </div>
+            <Linkify className="whitespace-pre-line text-lg" text={text} />
+            <Row className="align-items items-center justify-end gap-4">
+              <span
+                className={clsx(
+                  'text-2xl',
+                  tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
+                )}
+              >
+                {probPercent}
+              </span>
+              <BuyButton
+                className={clsx(
+                  'btn-sm flex-initial !px-6 sm:flex',
+                  tradingAllowed(contract) ? '' : '!hidden'
+                )}
+                onClick={() => setOpen(true)}
+              />
             </Row>
           </Col>
         </Col>

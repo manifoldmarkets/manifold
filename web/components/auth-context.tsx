@@ -17,7 +17,7 @@ import { setCookie } from 'web/lib/util/cookie'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
-type AuthUser = undefined | null | UserAndPrivateUser
+export type AuthUser = undefined | null | UserAndPrivateUser
 
 const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'

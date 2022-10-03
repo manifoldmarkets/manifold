@@ -24,14 +24,14 @@ export default function AddFundsPage() {
   return (
     <Page>
       <SEO
-        title="Get Manifold Dollars"
-        description="Get Manifold Dollars"
+        title="Get Mana"
+        description="Buy mana to trade in your favorite markets on Manifold"
         url="/add-funds"
       />
 
       <Col className="items-center">
         <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-          <Title className="!mt-0" text="Get Manifold Dollars" />
+          <Title className="!mt-0" text="Get Mana" />
           <img
             className="mb-6 block -scale-x-100 self-center"
             src="/stylized-crane-black.png"
@@ -40,8 +40,8 @@ export default function AddFundsPage() {
           />
 
           <div className="mb-6 text-gray-500">
-            Purchase Manifold Dollars to trade in your favorite markets. <br />{' '}
-            (Not redeemable for cash.)
+            Buy mana (M$) to trade in your favorite markets. <br /> (Not
+            redeemable for cash.)
           </div>
 
           <div className="mb-2 text-sm text-gray-500">Amount</div>

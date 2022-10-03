@@ -4,59 +4,64 @@ import React from 'react'
 import { Row } from './layout/row'
 import { ConfirmationButton } from './confirmation-button'
 import { ExclamationIcon } from '@heroicons/react/solid'
+import { formatMoney } from 'common/util/format'
+import { Button, ColorType, SizeType } from './button'
 
 export function WarningConfirmationButton(props: {
+  amount: number | undefined
+  marketType: 'freeResponse' | 'binary'
   warning?: string
   onSubmit: () => void
-  disabled?: boolean
+  disabled: boolean
   isSubmitting: boolean
   openModalButtonClass?: string
-  submitButtonClassName?: string
+  color: ColorType
+  size: SizeType
 }) {
   const {
+    amount,
     onSubmit,
     warning,
     disabled,
     isSubmitting,
     openModalButtonClass,
-    submitButtonClassName,
+    size,
+    color,
   } = props
 
   if (!warning) {
     return (
-      <button
-        className={clsx(
-          openModalButtonClass,
-          isSubmitting ? 'loading' : '',
-          disabled && 'btn-disabled'
-        )}
+      <Button
+        size={size}
+        disabled={isSubmitting || disabled}
+        className={clsx(openModalButtonClass)}
         onClick={onSubmit}
-        disabled={disabled}
+        color={color}
       >
-        {isSubmitting ? 'Submitting...' : 'Submit'}
-      </button>
+        {isSubmitting
+          ? 'Submitting...'
+          : amount
+          ? `Wager ${formatMoney(amount)}`
+          : 'Wager'}
+      </Button>
     )
   }
 
   return (
     <ConfirmationButton
       openModalBtn={{
-        className: clsx(
-          openModalButtonClass,
-          isSubmitting && 'btn-disabled loading'
-        ),
-        label: 'Submit',
+        label: amount ? `Wager ${formatMoney(amount)}` : 'Wager',
+        size: size,
+        color: 'yellow',
+        disabled: isSubmitting,
       }}
       cancelBtn={{
         label: 'Cancel',
-        className: 'btn-warning',
+        className: 'btn btn-warning',
       }}
       submitBtn={{
         label: 'Submit',
-        className: clsx(
-          'border-none btn-sm btn-ghost self-center',
-          submitButtonClassName
-        ),
+        className: clsx('btn border-none btn-sm btn-ghost self-center'),
       }}
       onSubmit={onSubmit}
     >

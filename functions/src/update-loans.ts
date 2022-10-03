@@ -12,7 +12,7 @@ import { filterDefined } from '../../common/util/array'
 const firestore = admin.firestore()
 
 export const updateLoans = functions
-  .runWith({ memory: '2GB', timeoutSeconds: 540 })
+  .runWith({ memory: '8GB', timeoutSeconds: 540 })
   // Run every day at midnight.
   .pubsub.schedule('0 0 * * *')
   .timeZone('America/Los_Angeles')

@@ -7,6 +7,7 @@ import { getNewMultiBetInfo } from '../../common/new-bet'
 import { Answer, MAX_ANSWER_LENGTH } from '../../common/answer'
 import { getValues } from './utils'
 import { APIError, newEndpoint, validate } from './api'
+import { addUserToContractFollowers } from './follow-market'
 
 const bodySchema = z.object({
   contractId: z.string().max(MAX_ANSWER_LENGTH),
@@ -95,6 +96,8 @@ export const createanswer = newEndpoint(opts, async (req, auth) => {
 
     return answer
   })
+
+  await addUserToContractFollowers(contractId, auth.uid)
 
   return answer
 })

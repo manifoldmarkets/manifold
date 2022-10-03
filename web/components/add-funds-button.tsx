@@ -30,10 +30,10 @@ export function AddFundsButton(props: { className?: string }) {
 
       <div className="modal">
         <div className="modal-box">
-          <div className="mb-6 text-xl">Get Manifold Dollars</div>
+          <div className="mb-6 text-xl">Get Mana</div>
 
           <div className="mb-6 text-gray-500">
-            Use Manifold Dollars to trade in your favorite markets. <br /> (Not
+            Buy mana (M$) to trade in your favorite markets. <br /> (Not
             redeemable for cash.)
           </div>
 

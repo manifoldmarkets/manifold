@@ -17,38 +17,57 @@ import {
   computeVolume,
 } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
-import { Group } from 'common/group'
+import { Group } from '../../common/group'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
 export const updateMetrics = functions
-  .runWith({ memory: '4GB', timeoutSeconds: 540 })
+  .runWith({ memory: '8GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 15 minutes')
   .onRun(updateMetricsCore)
 
 export async function updateMetricsCore() {
-  const [users, contracts, bets, allPortfolioHistories, groups] =
-    await Promise.all([
-      getValues<User>(firestore.collection('users')),
-      getValues<Contract>(firestore.collection('contracts')),
-      getValues<Bet>(firestore.collectionGroup('bets')),
-      getValues<PortfolioMetrics>(
-        firestore
-          .collectionGroup('portfolioHistory')
-          .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
-      ),
-      getValues<Group>(firestore.collection('groups')),
-    ])
+  console.log('Loading users')
+  const users = await getValues<User>(firestore.collection('users'))
 
+  console.log('Loading contracts')
+  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+
+  console.log('Loading portfolio history')
+  const allPortfolioHistories = await getValues<PortfolioMetrics>(
+    firestore
+      .collectionGroup('portfolioHistory')
+      .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
+  )
+
+  console.log('Loading groups')
+  const groups = await getValues<Group>(firestore.collection('groups'))
+
+  console.log('Loading bets')
+  const contractBets = await batchedWaitAll(
+    contracts
+      .filter((c) => c.id)
+      .map(
+        (c) => () =>
+          getValues<Bet>(
+            firestore.collection('contracts').doc(c.id).collection('bets')
+          )
+      ),
+    100
+  )
+  const bets = contractBets.flat()
+
+  console.log('Loading group contracts')
   const contractsByGroup = await Promise.all(
-    groups.map((group) => {
-      return getValues(
+    groups.map((group) =>
+      getValues(
         firestore
           .collection('groups')
           .doc(group.id)
           .collection('groupContracts')
       )
-    })
+    )
   )
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
