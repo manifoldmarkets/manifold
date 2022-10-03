@@ -11,7 +11,7 @@ const App = () => {
         url="/cowp"
       />
       <Link href="https://www.youtube.com/watch?v=FavUpD_IjVY">
-        <img src="https://i.imgur.com/Lt54IiU.png" className="cursor-pointer" />
+        <img src="https://i.imgur.com/Lt54IiU.png" />
       </Link>
     </Page>
   )

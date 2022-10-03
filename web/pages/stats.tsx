@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { DailyChart } from 'web/components/charts/stats'
+import {
+  DailyCountChart,
+  DailyPercentChart,
+} from 'web/components/analytics/charts'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
@@ -93,36 +96,40 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'Daily',
             content: (
-              <DailyChart
-                dailyValues={dailyActiveUsers}
+              <DailyCountChart
+                dailyCounts={dailyActiveUsers}
                 startDate={startDate}
+                small
               />
             ),
           },
           {
             title: 'Daily (7d avg)',
             content: (
-              <DailyChart
-                dailyValues={dailyActiveUsersWeeklyAvg}
+              <DailyCountChart
+                dailyCounts={dailyActiveUsersWeeklyAvg}
                 startDate={startDate}
+                small
               />
             ),
           },
           {
             title: 'Weekly',
             content: (
-              <DailyChart
-                dailyValues={weeklyActiveUsers}
+              <DailyCountChart
+                dailyCounts={weeklyActiveUsers}
                 startDate={startDate}
+                small
               />
             ),
           },
           {
             title: 'Monthly',
             content: (
-              <DailyChart
-                dailyValues={monthlyActiveUsers}
+              <DailyCountChart
+                dailyCounts={monthlyActiveUsers}
                 startDate={startDate}
+                small
               />
             ),
           },
@@ -142,44 +149,44 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'D1',
             content: (
-              <DailyChart
-                dailyValues={d1}
+              <DailyPercentChart
+                dailyPercent={d1}
                 startDate={startDate}
+                small
                 excludeFirstDays={1}
-                pct
               />
             ),
           },
           {
             title: 'D1 (7d avg)',
             content: (
-              <DailyChart
-                dailyValues={d1WeeklyAvg}
+              <DailyPercentChart
+                dailyPercent={d1WeeklyAvg}
                 startDate={startDate}
+                small
                 excludeFirstDays={7}
-                pct
               />
             ),
           },
           {
             title: 'W1',
             content: (
-              <DailyChart
-                dailyValues={weekOnWeekRetention}
+              <DailyPercentChart
+                dailyPercent={weekOnWeekRetention}
                 startDate={startDate}
+                small
                 excludeFirstDays={14}
-                pct
               />
             ),
           },
           {
             title: 'M1',
             content: (
-              <DailyChart
-                dailyValues={monthlyRetention}
+              <DailyPercentChart
+                dailyPercent={monthlyRetention}
                 startDate={startDate}
+                small
                 excludeFirstDays={60}
-                pct
               />
             ),
           },
@@ -200,33 +207,33 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'ND1',
             content: (
-              <DailyChart
-                dailyValues={nd1}
+              <DailyPercentChart
+                dailyPercent={nd1}
                 startDate={startDate}
                 excludeFirstDays={1}
-                pct
+                small
               />
             ),
           },
           {
             title: 'ND1 (7d avg)',
             content: (
-              <DailyChart
-                dailyValues={nd1WeeklyAvg}
+              <DailyPercentChart
+                dailyPercent={nd1WeeklyAvg}
                 startDate={startDate}
                 excludeFirstDays={7}
-                pct
+                small
               />
             ),
           },
           {
             title: 'NW1',
             content: (
-              <DailyChart
-                dailyValues={nw1}
+              <DailyPercentChart
+                dailyPercent={nw1}
                 startDate={startDate}
                 excludeFirstDays={14}
-                pct
+                small
               />
             ),
           },
@@ -242,31 +249,41 @@ export function CustomAnalytics(props: Stats) {
           {
             title: capitalize(PAST_BETS),
             content: (
-              <DailyChart dailyValues={dailyBetCounts} startDate={startDate} />
+              <DailyCountChart
+                dailyCounts={dailyBetCounts}
+                startDate={startDate}
+                small
+              />
             ),
           },
           {
             title: 'Markets created',
             content: (
-              <DailyChart
-                dailyValues={dailyContractCounts}
+              <DailyCountChart
+                dailyCounts={dailyContractCounts}
                 startDate={startDate}
+                small
               />
             ),
           },
           {
             title: 'Comments',
             content: (
-              <DailyChart
-                dailyValues={dailyCommentCounts}
+              <DailyCountChart
+                dailyCounts={dailyCommentCounts}
                 startDate={startDate}
+                small
               />
             ),
           },
           {
             title: 'Signups',
             content: (
-              <DailyChart dailyValues={dailySignups} startDate={startDate} />
+              <DailyCountChart
+                dailyCounts={dailySignups}
+                startDate={startDate}
+                small
+              />
             ),
           },
         ]}
@@ -287,22 +304,22 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'Daily',
             content: (
-              <DailyChart
-                dailyValues={dailyActivationRate}
+              <DailyPercentChart
+                dailyPercent={dailyActivationRate}
                 startDate={startDate}
                 excludeFirstDays={1}
-                pct
+                small
               />
             ),
           },
           {
             title: 'Daily (7d avg)',
             content: (
-              <DailyChart
-                dailyValues={dailyActivationRateWeeklyAvg}
+              <DailyPercentChart
+                dailyPercent={dailyActivationRateWeeklyAvg}
                 startDate={startDate}
                 excludeFirstDays={7}
-                pct
+                small
               />
             ),
           },
@@ -318,33 +335,33 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'Daily / Weekly',
             content: (
-              <DailyChart
-                dailyValues={dailyDividedByWeekly}
+              <DailyPercentChart
+                dailyPercent={dailyDividedByWeekly}
                 startDate={startDate}
+                small
                 excludeFirstDays={7}
-                pct
               />
             ),
           },
           {
             title: 'Daily / Monthly',
             content: (
-              <DailyChart
-                dailyValues={dailyDividedByMonthly}
+              <DailyPercentChart
+                dailyPercent={dailyDividedByMonthly}
                 startDate={startDate}
+                small
                 excludeFirstDays={30}
-                pct
               />
             ),
           },
           {
             title: 'Weekly / Monthly',
             content: (
-              <DailyChart
-                dailyValues={weeklyDividedByMonthly}
+              <DailyPercentChart
+                dailyPercent={weeklyDividedByMonthly}
                 startDate={startDate}
+                small
                 excludeFirstDays={30}
-                pct
               />
             ),
           },
@@ -363,19 +380,31 @@ export function CustomAnalytics(props: Stats) {
           {
             title: 'Daily',
             content: (
-              <DailyChart dailyValues={manaBet.daily} startDate={startDate} />
+              <DailyCountChart
+                dailyCounts={manaBet.daily}
+                startDate={startDate}
+                small
+              />
             ),
           },
           {
             title: 'Weekly',
             content: (
-              <DailyChart dailyValues={manaBet.weekly} startDate={startDate} />
+              <DailyCountChart
+                dailyCounts={manaBet.weekly}
+                startDate={startDate}
+                small
+              />
             ),
           },
           {
             title: 'Monthly',
             content: (
-              <DailyChart dailyValues={manaBet.monthly} startDate={startDate} />
+              <DailyCountChart
+                dailyCounts={manaBet.monthly}
+                startDate={startDate}
+                small
+              />
             ),
           },
         ]}

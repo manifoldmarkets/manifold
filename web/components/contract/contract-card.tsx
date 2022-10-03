@@ -393,9 +393,7 @@ export function ContractCardProbChange(props: {
   noLinkAvatar?: boolean
   className?: string
 }) {
-  const { noLinkAvatar, className } = props
-  const contract = useContractWithPreload(props.contract) as CPMMBinaryContract
-
+  const { contract, noLinkAvatar, className } = props
   return (
     <Col
       className={clsx(
