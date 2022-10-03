@@ -765,6 +765,7 @@ function NotificationItem(props: {
         isChildOfGroup ?? false
       )}
       highlighted={highlighted}
+      isChildOfGroup={isChildOfGroup}
     >
       <div className={'mt-1 ml-1 md:text-base'}>
         <NotificationTextLabel notification={notification} />
