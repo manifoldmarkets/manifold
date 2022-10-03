@@ -218,17 +218,19 @@ export function BinaryResolutionOrChance(props: {
       className={clsx('items-end', large ? 'text-4xl' : 'text-3xl', className)}
     >
       {resolution ? (
-        <>
-          <div
-            className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
-          >
-            Resolved
+        <Row className="flex items-start">
+          <div>
+            <div
+              className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
+            >
+              Resolved
+            </div>
+            <BinaryContractOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+            />
           </div>
-          <BinaryContractOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-          />
-        </>
+        </Row>
       ) : (
         <>
           {probAfter && probChanged ? (
