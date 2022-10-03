@@ -12,7 +12,7 @@ import { track } from 'web/lib/service/analytics'
 export function embedContractCode(contract: Contract) {
   const title = contract.question
   const src = `https://${DOMAIN}/embed${contractPath(contract)}`
-  return `<iframe src="${src}" title="${title}" frameborder="0"></iframe>`
+  return `<iframe src="${src}" title="${title}"></iframe>`
 }
 
 export function embedContractGridCode(contracts: Contract[]) {

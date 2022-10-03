@@ -105,7 +105,7 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
           {question}
         </SiteLink>
         <Row>
-          <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
+          <div className="min-h-150 mx-1 mb-2 h-full flex-1" ref={setElem}>
             <ContractChart contract={contract} bets={bets} height={150} />
           </div>
           <QuickBet
