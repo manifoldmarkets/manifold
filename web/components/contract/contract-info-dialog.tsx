@@ -19,7 +19,7 @@ import { deleteField } from 'firebase/firestore'
 import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../copy-contract-button'
 import { Row } from '../layout/row'
-import { BETTORS } from 'common/user'
+import { BETTORS, User } from 'common/user'
 import { Button } from '../button'
 
 export const contractDetailsButtonClassName =
@@ -27,9 +27,10 @@ export const contractDetailsButtonClassName =
 
 export function ContractInfoDialog(props: {
   contract: Contract
+  user: User | null | undefined
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, user } = props
 
   const [open, setOpen] = useState(false)
   const [featured, setFeatured] = useState(
@@ -37,6 +38,10 @@ export function ContractInfoDialog(props: {
   )
   const isDev = useDev()
   const isAdmin = useAdmin()
+  const isCreator = user?.id === contract.creatorId
+  const isUnlisted = contract.visibility === 'unlisted'
+  const wasUnlistedByCreator =
+    contract.unlistedById && contract.unlistedById === contract.creatorId
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
@@ -175,21 +180,25 @@ export function ContractInfoDialog(props: {
                   </td>
                 </tr>
               )}
-              {isAdmin && (
-                <tr>
-                  <td>[ADMIN] Unlisted</td>
-                  <td>
-                    <ShortToggle
-                      enabled={contract.visibility === 'unlisted'}
-                      setEnabled={(b) =>
-                        updateContract(id, {
-                          visibility: b ? 'unlisted' : 'public',
-                        })
-                      }
-                    />
-                  </td>
-                </tr>
-              )}
+              {user &&
+                (isAdmin ||
+                  (isCreator &&
+                    (isUnlisted ? wasUnlistedByCreator : true))) && (
+                  <tr>
+                    <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
+                    <td>
+                      <ShortToggle
+                        enabled={contract.visibility === 'unlisted'}
+                        setEnabled={(b) =>
+                          updateContract(id, {
+                            visibility: b ? 'unlisted' : 'public',
+                            unlistedById: b ? user.id : '',
+                          })
+                        }
+                      />
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
 

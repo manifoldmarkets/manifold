@@ -35,7 +35,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           />
         </Button>
       </Tooltip>
-      <ContractInfoDialog contract={contract} />
+      <ContractInfoDialog contract={contract} user={user} />
     </Row>
   )
 }
