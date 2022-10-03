@@ -160,6 +160,7 @@ export function ContractPageContent(
   const { backToHome, comments } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const user = useUser()
+  const isCreator = user?.id === contract.creatorId
   usePrefetch(user?.id)
   useTracking(
     'view market',
@@ -204,7 +205,18 @@ export function ContractPageContent(
   })
 
   return (
-    <Page rightSidebar={<ContractPageSidebar contract={contract} />}>
+    <Page
+      rightSidebar={
+        <>
+          <ContractPageSidebar contract={contract} />
+          {isCreator && (
+            <Col className={'xl:hidden'}>
+              <RecommendedContractsWidget contract={contract} />
+            </Col>
+          )}
+        </>
+      }
+    >
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
@@ -273,7 +285,7 @@ export function ContractPageContent(
           comments={comments}
         />
       </Col>
-      <RecommendedContractsWidget contract={contract} />
+      {!isCreator && <RecommendedContractsWidget contract={contract} />}
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
@@ -294,7 +306,7 @@ const RecommendedContractsWidget = memo(
       return null
     }
     return (
-      <Col className="mt-2 gap-2 px-2 sm:px-0">
+      <Col className="mt-2 gap-2 px-2 sm:px-1">
         <Title className="text-gray-700" text="Recommended" />
         <ContractsGrid
           contracts={recommendations}
