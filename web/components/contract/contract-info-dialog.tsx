@@ -40,8 +40,9 @@ export function ContractInfoDialog(props: {
   const isAdmin = useAdmin()
   const isCreator = user?.id === contract.creatorId
   const isUnlisted = contract.visibility === 'unlisted'
-  const wasUnlistedByCreator =
-    contract.unlistedById && contract.unlistedById === contract.creatorId
+  const wasUnlistedByCreator = contract.unlistedById
+    ? contract.unlistedById === contract.creatorId
+    : true
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
@@ -173,32 +174,34 @@ export function ContractInfoDialog(props: {
                   <td>[ADMIN] Featured</td>
                   <td>
                     <ShortToggle
-                      enabled={featured}
-                      setEnabled={setFeatured}
+                      on={featured}
+                      setOn={setFeatured}
                       onChange={onFeaturedToggle}
                     />
                   </td>
                 </tr>
               )}
-              {user &&
-                (isAdmin ||
-                  (isCreator &&
-                    (isUnlisted ? wasUnlistedByCreator : true))) && (
-                  <tr>
-                    <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
-                    <td>
-                      <ShortToggle
-                        enabled={contract.visibility === 'unlisted'}
-                        setEnabled={(b) =>
-                          updateContract(id, {
-                            visibility: b ? 'unlisted' : 'public',
-                            unlistedById: b ? user.id : '',
-                          })
-                        }
-                      />
-                    </td>
-                  </tr>
-                )}
+              {user && (
+                <tr>
+                  <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
+                  <td>
+                    <ShortToggle
+                      disabled={
+                        isUnlisted
+                          ? !(isAdmin || (isCreator && wasUnlistedByCreator))
+                          : !(isCreator || isAdmin)
+                      }
+                      on={contract.visibility === 'unlisted'}
+                      setOn={(b) =>
+                        updateContract(id, {
+                          visibility: b ? 'unlisted' : 'public',
+                          unlistedById: b ? user.id : '',
+                        })
+                      }
+                    />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
