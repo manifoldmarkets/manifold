@@ -93,24 +93,56 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const tipsOrBountiesAwarded =
     Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
 
-  const sortedComments = sortBy(comments, (c) =>
-    sort === 'Newest'
-      ? c.createdTime
-      : // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-      tipsOrBountiesAwarded &&
-        c.createdTime > Date.now() - 10 * MINUTE_MS &&
-        c.userId === me?.id
-      ? -Infinity
-      : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
-  )
+  // replied to answers/comments are NOT newest, otherwise newest first
+  const shouldBeNewestFirst = (c: ContractComment) =>
+    c.replyToCommentId == undefined &&
+    (contract.outcomeType === 'FREE_RESPONSE'
+      ? c.betId === undefined && c.answerOutcome == undefined
+      : true)
+
+  // TODO: links to comments are broken because tips load after render and
+  //  comments will reorganize themselves if there are tips/bounties awarded
+  const sortedComments = sortBy(comments, [
+    sort === 'Best'
+      ? (c) =>
+          // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+          tipsOrBountiesAwarded &&
+          c.createdTime > Date.now() - 10 * MINUTE_MS &&
+          c.userId === me?.id &&
+          shouldBeNewestFirst(c)
+            ? -Infinity
+            : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
+      : (c) => c,
+    (c) => (!shouldBeNewestFirst(c) ? c.createdTime : -c.createdTime),
+  ])
 
   const commentsByParent = groupBy(
     sortedComments,
     (c) => c.replyToCommentId ?? '_'
   )
   const topLevelComments = commentsByParent['_'] ?? []
-  // Top level comments are reverse-chronological, while replies are chronological
-  if (sort === 'Newest') topLevelComments.reverse()
+
+  const sortRow = comments.length > 0 && (
+    <Row className="mb-4 items-center">
+      <Button
+        size={'xs'}
+        color={'gray-white'}
+        onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+      >
+        <Tooltip
+          text={
+            sort === 'Best'
+              ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
+              : ''
+          }
+        >
+          Sort by: {sort}
+        </Tooltip>
+      </Button>
+
+      <BountiedContractSmallBadge contract={contract} showAmount />
+    </Row>
+  )
 
   if (contract.outcomeType === 'FREE_RESPONSE') {
     const sortedAnswers = sortBy(
@@ -118,14 +150,16 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       (a) => -getOutcomeProbability(contract, a.id)
     )
     const commentsByOutcome = groupBy(
-      comments,
+      sortedComments,
       (c) => c.answerOutcome ?? c.betOutcome ?? '_'
     )
     const generalTopLevelComments = topLevelComments.filter(
       (c) => c.answerOutcome === undefined && c.betId === undefined
     )
+
     return (
       <>
+        {sortRow}
         {sortedAnswers.map((answer) => (
           <div key={answer.id} className="relative pb-4">
             <span
@@ -135,10 +169,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
             <FeedAnswerCommentGroup
               contract={contract}
               answer={answer}
-              answerComments={sortBy(
-                commentsByOutcome[answer.number.toString()] ?? [],
-                (c) => c.createdTime
-              )}
+              answerComments={commentsByOutcome[answer.number.toString()] ?? []}
               tips={tips}
             />
           </div>
@@ -146,6 +177,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
         <Col className="mt-8 flex w-full">
           <div className="text-md mt-8 mb-2 text-left">General Comments</div>
           <div className="mb-4 w-full border-b border-gray-200" />
+          {sortRow}
           <ContractCommentInput className="mb-5" contract={contract} />
           {generalTopLevelComments.map((comment) => (
             <FeedCommentThread
@@ -160,52 +192,10 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       </>
     )
   } else {
-    // TODO: links to comments are broken because tips load after render and
-    //  comments will reorganize themselves if there are tips/bounties awarded
-    const tipsOrBountiesAwarded =
-      Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
-
-    const commentsByParent = groupBy(
-      sortBy(comments, (c) =>
-        sort === 'Newest'
-          ? -c.createdTime
-          : // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
-          tipsOrBountiesAwarded &&
-            c.createdTime > Date.now() - 10 * MINUTE_MS &&
-            c.userId === me?.id
-          ? -Infinity
-          : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
-      ),
-      (c) => c.replyToCommentId ?? '_'
-    )
-
-    const topLevelComments = commentsByParent['_'] ?? []
     return (
       <>
+        {sortRow}
         <ContractCommentInput className="mb-5" contract={contract} />
-
-        {comments.length > 0 && (
-          <Row className="mb-4 items-center">
-            <Button
-              size={'xs'}
-              color={'gray-white'}
-              onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
-            >
-              <Tooltip
-                text={
-                  sort === 'Best'
-                    ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
-                    : ''
-                }
-              >
-                Sort by: {sort}
-              </Tooltip>
-            </Button>
-
-            <BountiedContractSmallBadge contract={contract} showAmount />
-          </Row>
-        )}
-
         {topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}
