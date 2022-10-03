@@ -65,10 +65,10 @@ export function DailyChart(props: {
           h={height}
           xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
           yScale={scaleLinear([0, maxValue], [height - MARGIN_Y, 0])}
+          yKind={pct ? 'percent' : 'amount'}
           data={data}
           Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}
           color="#11b981"
-          pct={pct}
         />
       )}
     </SizedContainer>

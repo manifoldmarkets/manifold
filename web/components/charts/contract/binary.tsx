@@ -75,12 +75,12 @@ export const BinaryContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      yKind="percent"
       data={data}
       color="#11b981"
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}
-      pct
     />
   )
 }

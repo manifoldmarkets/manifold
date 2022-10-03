@@ -22,10 +22,12 @@ import {
   formatPct,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
+import { formatMoney } from 'common/util/format'
 
 export type MultiPoint<T = unknown> = Point<Date, number[], T>
 export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
+export type ValueKind = 'm$' | 'percent' | 'amount'
 
 const getTickValues = (min: number, max: number, n: number) => {
   const step = (max - min) / (n - 1)
@@ -119,12 +121,12 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   colors: readonly string[]
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
-  pct?: boolean
 }) => {
-  const { colors, data, yScale, w, h, curve, Tooltip, pct } = props
+  const { colors, data, yScale, yKind, w, h, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -138,13 +140,16 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     const [min, max] = yScale.domain()
     const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
-    const yAxis = pct
-      ? axisLeft<number>(yScale)
-          .tickValues(pctTickValues)
-          .tickFormat((n) => formatPct(n))
-      : axisLeft<number>(yScale)
+    const yAxis =
+      yKind === 'percent'
+        ? axisLeft<number>(yScale)
+            .tickValues(pctTickValues)
+            .tickFormat((n) => formatPct(n))
+        : yKind === 'm$'
+        ? axisLeft<number>(yScale).tickFormat((n) => formatMoney(n))
+        : axisLeft<number>(yScale)
     return { xAxis, yAxis }
-  }, [w, h, pct, xScale, yScale])
+  }, [w, h, yKind, xScale, yScale])
 
   const series = useMemo(() => {
     const d3Stack = stack<P, number>()
@@ -204,12 +209,13 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   color: string
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { color, data, yScale, w, h, curve, Tooltip, pct } = props
+  const { color, data, yScale, yKind, w, h, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -222,13 +228,16 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     const [min, max] = yScale.domain()
     const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
-    const yAxis = pct
-      ? axisLeft<number>(yScale)
-          .tickValues(pctTickValues)
-          .tickFormat((n) => formatPct(n))
-      : axisLeft<number>(yScale)
+    const yAxis =
+      yKind === 'percent'
+        ? axisLeft<number>(yScale)
+            .tickValues(pctTickValues)
+            .tickFormat((n) => formatPct(n))
+        : yKind === 'm$'
+        ? axisLeft<number>(yScale).tickFormat((n) => formatMoney(n))
+        : axisLeft<number>(yScale)
     return { xAxis, yAxis }
-  }, [w, h, pct, xScale, yScale])
+  }, [w, h, yKind, xScale, yScale])
 
   const selector = betAtPointSelector(data, xScale)
   const onMouseOver = useEvent((mouseX: number) => {

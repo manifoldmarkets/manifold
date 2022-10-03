@@ -213,12 +213,12 @@ export const ChoiceContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      yKind="percent"
       data={data}
       colors={CATEGORY_COLORS}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={ChoiceTooltip}
-      pct
     />
   )
 }
