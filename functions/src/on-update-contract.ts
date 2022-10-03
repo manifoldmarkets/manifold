@@ -7,38 +7,47 @@ export const onUpdateContract = functions.firestore
   .document('contracts/{contractId}')
   .onUpdate(async (change, context) => {
     const contract = change.after.data() as Contract
+    const previousContract = change.before.data() as Contract
     const { eventId } = context
-
-    const contractUpdater = await getUser(contract.creatorId)
-    if (!contractUpdater) throw new Error('Could not find contract updater')
-
-    const previousValue = change.before.data() as Contract
-
-    // Resolution is handled in resolve-market.ts
-    if (!previousValue.isResolved && contract.isResolved) return
+    const { openCommentBounties, closeTime, question } = contract
 
     if (
-      previousValue.closeTime !== contract.closeTime ||
-      previousValue.question !== contract.question
+      !previousContract.isResolved &&
+      contract.isResolved &&
+      (openCommentBounties ?? 0) > 0
     ) {
-      let sourceText = ''
-      if (
-        previousValue.closeTime !== contract.closeTime &&
-        contract.closeTime
-      ) {
-        sourceText = contract.closeTime.toString()
-      } else if (previousValue.question !== contract.question) {
-        sourceText = contract.question
-      }
-
-      await createCommentOrAnswerOrUpdatedContractNotification(
-        contract.id,
-        'contract',
-        'updated',
-        contractUpdater,
-        eventId,
-        sourceText,
-        contract
-      )
+      // No need to notify users of resolution, that's handled in resolve-market
+      return
+    }
+    if (
+      previousContract.closeTime !== closeTime ||
+      previousContract.question !== question
+    ) {
+      await handleUpdatedCloseTime(previousContract, contract, eventId)
     }
   })
+
+async function handleUpdatedCloseTime(
+  previousContract: Contract,
+  contract: Contract,
+  eventId: string
+) {
+  const contractUpdater = await getUser(contract.creatorId)
+  if (!contractUpdater) throw new Error('Could not find contract updater')
+  let sourceText = ''
+  if (previousContract.closeTime !== contract.closeTime && contract.closeTime) {
+    sourceText = contract.closeTime.toString()
+  } else if (previousContract.question !== contract.question) {
+    sourceText = contract.question
+  }
+
+  await createCommentOrAnswerOrUpdatedContractNotification(
+    contract.id,
+    'contract',
+    'updated',
+    contractUpdater,
+    eventId,
+    sourceText,
+    contract
+  )
+}

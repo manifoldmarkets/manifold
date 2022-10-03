@@ -284,25 +284,27 @@ export function NewContract(props: {
       <label className="label">
         <span className="mb-1">Answer type</span>
       </label>
-      <ChoicesToggleGroup
-        currentChoice={outcomeType}
-        setChoice={(choice) => {
-          if (choice === 'FREE_RESPONSE')
-            setMarketInfoText(
-              'Users can submit their own answers to this market.'
-            )
-          else setMarketInfoText('')
-          setOutcomeType(choice as outcomeType)
-        }}
-        choicesMap={{
-          'Yes / No': 'BINARY',
-          // 'Multiple choice': 'MULTIPLE_CHOICE',
-          'Free response': 'FREE_RESPONSE',
-          // Numeric: 'PSEUDO_NUMERIC',
-        }}
-        isSubmitting={isSubmitting}
-        className={'col-span-4'}
-      />
+      <Row>
+        <ChoicesToggleGroup
+          currentChoice={outcomeType}
+          setChoice={(choice) => {
+            if (choice === 'FREE_RESPONSE')
+              setMarketInfoText(
+                'Users can submit their own answers to this market.'
+              )
+            else setMarketInfoText('')
+            setOutcomeType(choice as outcomeType)
+          }}
+          choicesMap={{
+            'Yes / No': 'BINARY',
+            // 'Multiple choice': 'MULTIPLE_CHOICE',
+            'Free response': 'FREE_RESPONSE',
+            // Numeric: 'PSEUDO_NUMERIC',
+          }}
+          isSubmitting={isSubmitting}
+          className={'col-span-4'}
+        />
+      </Row>
       {marketInfoText && (
         <div className="mt-3 ml-1 text-sm text-indigo-700">
           {marketInfoText}
@@ -394,23 +396,7 @@ export function NewContract(props: {
         </>
       )}
 
-      <div className="form-control mb-1 items-start gap-1">
-        <label className="label gap-2">
-          <span className="mb-1">Visibility</span>
-          <InfoTooltip text="Whether the market will be listed on the home page." />
-        </label>
-        <ChoicesToggleGroup
-          currentChoice={visibility}
-          setChoice={(choice) => setVisibility(choice as visibility)}
-          choicesMap={{
-            Public: 'public',
-            Unlisted: 'unlisted',
-          }}
-          isSubmitting={isSubmitting}
-        />
-      </div>
-
-      <Spacer h={6} />
+      <Spacer h={4} />
 
       <Row className={'items-end gap-x-2'}>
         <GroupSelector
@@ -425,6 +411,20 @@ export function NewContract(props: {
           </SiteLink>
         )}
       </Row>
+
+      <Row className="form-control my-2 items-center gap-2 text-sm">
+        <span>Display this market on homepage</span>
+        <input
+          type="checkbox"
+          checked={visibility === 'public'}
+          disabled={isSubmitting}
+          className="cursor-pointer"
+          onChange={(e) =>
+            setVisibility(e.target.checked ? 'public' : 'unlisted')
+          }
+        />
+      </Row>
+
       <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">

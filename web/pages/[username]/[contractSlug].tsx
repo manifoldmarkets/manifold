@@ -42,12 +42,10 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useAdmin } from 'web/hooks/use-admin'
-import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
-import BetButton from 'web/components/bet-button'
 import { BetsSummary } from 'web/components/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
+import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -162,6 +160,7 @@ export function ContractPageContent(
   const { backToHome, comments } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const user = useUser()
+  const isCreator = user?.id === contract.creatorId
   usePrefetch(user?.id)
   useTracking(
     'view market',
@@ -206,11 +205,21 @@ export function ContractPageContent(
   })
 
   return (
-    <Page rightSidebar={<ContractPageSidebar contract={contract} />}>
+    <Page
+      rightSidebar={
+        <>
+          <ContractPageSidebar contract={contract} />
+          {isCreator && (
+            <Col className={'xl:hidden'}>
+              <RecommendedContractsWidget contract={contract} />
+            </Col>
+          )}
+        </>
+      }
+    >
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
-
       {ogCardProps && (
         <SEO
           title={question}
@@ -219,7 +228,6 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-
       <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
@@ -276,23 +284,9 @@ export function ContractPageContent(
           userBets={userBets}
           comments={comments}
         />
-
-        {!user ? (
-          <Col className="mt-4 max-w-sm items-center xl:hidden">
-            <BetSignUpPrompt />
-            <PlayMoneyDisclaimer />
-          </Col>
-        ) : (
-          outcomeType === 'BINARY' &&
-          allowTrade && (
-            <BetButton
-              contract={contract as CPMMBinaryContract}
-              className="mb-2 !mt-0 xl:hidden"
-            />
-          )
-        )}
       </Col>
-      <RecommendedContractsWidget contract={contract} />
+      {!isCreator && <RecommendedContractsWidget contract={contract} />}
+      <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
 }
@@ -312,7 +306,7 @@ const RecommendedContractsWidget = memo(
       return null
     }
     return (
-      <Col className="mt-2 gap-2 px-2 sm:px-0">
+      <Col className="mt-2 gap-2 px-2 sm:px-1">
         <Title className="text-gray-700" text="Recommended" />
         <ContractsGrid
           contracts={recommendations}

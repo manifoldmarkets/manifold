@@ -8,7 +8,8 @@ import { NumericContractChart } from './numeric'
 export const ContractChart = (props: {
   contract: Contract
   bets: Bet[]
-  height?: number
+  width: number
+  height: number
 }) => {
   const { contract } = props
   switch (contract.outcomeType) {

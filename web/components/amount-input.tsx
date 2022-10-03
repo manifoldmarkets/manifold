@@ -4,7 +4,6 @@ import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { Row } from './layout/row'
 import { AddFundsModal } from './add-funds-modal'
 
@@ -36,23 +35,20 @@ export function AmountInput(props: {
     onChange(isInvalid ? undefined : amount)
   }
 
-  const { width } = useWindowSize()
-  const isMobile = (width ?? 0) < 768
-
   const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
 
   return (
     <>
       <Col className={className}>
-        <label className="font-sm md:font-lg">
-          <span className={clsx('text-greyscale-4 absolute ml-2 mt-[9px]')}>
+        <label className="font-sm md:font-lg relative">
+          <span className="text-greyscale-4 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
           </span>
           <input
             className={clsx(
               'placeholder:text-greyscale-4 border-greyscale-2 rounded-md pl-9',
               error && 'input-error',
-              isMobile ? 'w-24' : '',
+              'w-24 md:w-auto',
               inputClassName
             )}
             ref={inputRef}
@@ -61,7 +57,6 @@ export function AmountInput(props: {
             inputMode="numeric"
             placeholder="0"
             maxLength={6}
-            autoFocus={!isMobile}
             value={amount ?? ''}
             disabled={disabled}
             onChange={(e) => onAmountChange(e.target.value)}

@@ -8,7 +8,12 @@ const formatter = new Intl.NumberFormat('en-US', {
 })
 
 export function formatMoney(amount: number) {
-  const newAmount = Math.round(amount) === 0 ? 0 : Math.floor(amount) // handle -0 case
+  const newAmount =
+    // handle -0 case
+    Math.round(amount) === 0
+      ? 0
+      : // Handle 499.9999999999999 case
+        Math.floor(amount + 0.00000000001 * Math.sign(amount))
   return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
 }
 

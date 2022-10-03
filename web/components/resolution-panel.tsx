@@ -11,6 +11,8 @@ import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from 'common/calculate'
 import { BinaryContract, resolution } from 'common/contract'
 import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
+import { Row } from 'web/components/layout/row'
+import { capitalize } from 'lodash'
 
 export function ResolutionPanel(props: {
   isAdmin: boolean
@@ -57,17 +59,6 @@ export function ResolutionPanel(props: {
     setIsSubmitting(false)
   }
 
-  const submitButtonClass =
-    outcome === 'YES'
-      ? 'btn-primary'
-      : outcome === 'NO'
-      ? 'bg-red-400 hover:bg-red-500'
-      : outcome === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : outcome === 'MKT'
-      ? 'bg-blue-400 hover:bg-blue-500'
-      : 'btn-disabled'
-
   return (
     <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
       {isAdmin && !isCreator && (
@@ -76,18 +67,14 @@ export function ResolutionPanel(props: {
         </span>
       )}
       <div className="mb-6 whitespace-nowrap text-2xl">Resolve market</div>
-
       <div className="mb-3 text-sm text-gray-500">Outcome</div>
-
       <YesNoCancelSelector
         className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
         btnClassName={isSubmitting ? 'btn-disabled' : ''}
       />
-
       <Spacer h={4} />
-
       <div>
         {outcome === 'YES' ? (
           <>
@@ -109,9 +96,10 @@ export function ResolutionPanel(props: {
             withdrawn from your account
           </>
         ) : outcome === 'MKT' ? (
-          <Col className="gap-6">
+          <Col className="items-center gap-6">
             <div>
-              {PAST_BETS} will be paid out at the probability you specify:
+              {capitalize(PAST_BETS)} will be paid out at the probability you
+              specify:
             </div>
             <ProbabilitySelector
               probabilityInt={Math.round(prob)}
@@ -123,17 +111,26 @@ export function ResolutionPanel(props: {
           <>Resolving this market will immediately pay out {BETTORS}.</>
         )}
       </div>
-
       <Spacer h={4} />
-
       {!!error && <div className="text-red-500">{error}</div>}
-
-      <ResolveConfirmationButton
-        onResolve={resolve}
-        isSubmitting={isSubmitting}
-        openModalButtonClass={clsx('w-full mt-2', submitButtonClass)}
-        submitButtonClass={submitButtonClass}
-      />
+      <Row className={'justify-center'}>
+        <ResolveConfirmationButton
+          color={
+            outcome === 'YES'
+              ? 'green'
+              : outcome === 'NO'
+              ? 'red'
+              : outcome === 'CANCEL'
+              ? 'yellow'
+              : outcome === 'MKT'
+              ? 'blue'
+              : 'indigo'
+          }
+          disabled={!outcome}
+          onResolve={resolve}
+          isSubmitting={isSubmitting}
+        />
+      </Row>
     </Col>
   )
 }

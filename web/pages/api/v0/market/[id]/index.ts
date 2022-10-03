@@ -4,6 +4,7 @@ import { listAllComments } from 'web/lib/firebase/comments'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { applyCorsHeaders, CORS_UNRESTRICTED } from 'web/lib/api/cors'
 import { FullMarket, ApiError, toFullMarket } from '../../_types'
+import { marketCacheStrategy } from '../../markets'
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,6 +25,6 @@ export default async function handler(
     return
   }
 
-  res.setHeader('Cache-Control', 'max-age=0')
+  res.setHeader('Cache-Control', marketCacheStrategy)
   return res.status(200).json(toFullMarket(contract, comments, bets))
 }

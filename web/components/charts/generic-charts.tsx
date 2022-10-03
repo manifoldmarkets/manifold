@@ -4,15 +4,16 @@ import { axisBottom, axisLeft } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 import {
+  CurveFactory,
+  SeriesPoint,
   curveLinear,
-  curveStepAfter,
   stack,
   stackOrderReverse,
-  SeriesPoint,
 } from 'd3-shape'
 import { range } from 'lodash'
 
 import {
+  ContinuousScale,
   SVGChart,
   AreaPath,
   AreaWithTopStroke,
@@ -31,6 +32,19 @@ const getTickValues = (min: number, max: number, n: number) => {
   return [min, ...range(1, n - 1).map((i) => min + step * i), max]
 }
 
+const betAtPointSelector = <X, Y, P extends Point<X, Y>>(
+  data: P[],
+  xScale: ContinuousScale<X>
+) => {
+  const bisect = bisector((p: P) => p.x)
+  return (posX: number) => {
+    const x = xScale.invert(posX)
+    const item = data[bisect.left(data, x) - 1]
+    const result = item ? { ...item, x: posX } : undefined
+    return result
+  }
+}
+
 export const DistributionChart = <P extends DistributionPoint>(props: {
   data: P[]
   w: number
@@ -38,9 +52,11 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   color: string
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
-  Tooltip?: TooltipComponent<P>
+  curve?: CurveFactory
+  onMouseOver?: (p: P | undefined) => void
+  Tooltip?: TooltipComponent<number, P>
 }) => {
-  const { color, data, yScale, w, h, Tooltip } = props
+  const { color, data, yScale, w, h, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
@@ -49,13 +65,14 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
-  const xBisector = bisector((p: P) => p.x)
 
   const { xAxis, yAxis } = useMemo(() => {
     const xAxis = axisBottom<number>(xScale).ticks(w / 100)
     const yAxis = axisLeft<number>(yScale).tickFormat((n) => formatPct(n, 2))
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
+
+  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -66,17 +83,6 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     } else {
       setViewXScale(undefined)
     }
-  })
-
-  const onMouseOver = useEvent((mouseX: number) => {
-    const queryX = xScale.invert(mouseX)
-    const item = data[xBisector.left(data, queryX) - 1]
-    if (item == null) {
-      // this can happen if you are on the very left or right edge of the chart,
-      // so your queryX is out of bounds
-      return
-    }
-    return { ...item, x: queryX }
   })
 
   return (
@@ -95,7 +101,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
         px={px}
         py0={py0}
         py1={py1}
-        curve={curveLinear}
+        curve={curve ?? curveLinear}
       />
     </SVGChart>
   )
@@ -108,10 +114,12 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   colors: readonly string[]
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
-  Tooltip?: TooltipComponent<P>
+  curve?: CurveFactory
+  onMouseOver?: (p: P | undefined) => void
+  Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { colors, data, yScale, w, h, Tooltip, pct } = props
+  const { colors, data, yScale, w, h, curve, Tooltip, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -120,7 +128,6 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   const px = useCallback((p: SP) => xScale(p.data.x), [xScale])
   const py0 = useCallback((p: SP) => yScale(p[0]), [yScale])
   const py1 = useCallback((p: SP) => yScale(p[1]), [yScale])
-  const xBisector = bisector((p: P) => p.x)
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
@@ -142,6 +149,8 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     return d3Stack(data)
   }, [data])
 
+  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
@@ -151,17 +160,6 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     } else {
       setViewXScale(undefined)
     }
-  })
-
-  const onMouseOver = useEvent((mouseX: number) => {
-    const queryX = xScale.invert(mouseX)
-    const item = data[xBisector.left(data, queryX) - 1]
-    if (item == null) {
-      // this can happen if you are on the very left or right edge of the chart,
-      // so your queryX is out of bounds
-      return
-    }
-    return { ...item, x: queryX }
   })
 
   return (
@@ -181,7 +179,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
           px={px}
           py0={py0}
           py1={py1}
-          curve={curveStepAfter}
+          curve={curve ?? curveLinear}
           fill={colors[i]}
         />
       ))}
@@ -196,10 +194,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   color: string
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
-  Tooltip?: TooltipComponent<P>
+  curve?: CurveFactory
+  onMouseOver?: (p: P | undefined) => void
+  Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { color, data, pct, yScale, w, h, Tooltip } = props
+  const { color, data, yScale, w, h, curve, Tooltip, pct } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -207,7 +207,6 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
-  const xBisector = bisector((p: P) => p.x)
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
@@ -221,6 +220,8 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, pct, xScale, yScale])
 
+  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
@@ -230,17 +231,6 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     } else {
       setViewXScale(undefined)
     }
-  })
-
-  const onMouseOver = useEvent((mouseX: number) => {
-    const queryX = xScale.invert(mouseX)
-    const item = data[xBisector.left(data, queryX) - 1]
-    if (item == null) {
-      // this can happen if you are on the very left or right edge of the chart,
-      // so your queryX is out of bounds
-      return
-    }
-    return { ...item, x: queryX }
   })
 
   return (
@@ -259,7 +249,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         px={px}
         py0={py0}
         py1={py1}
-        curve={curveStepAfter}
+        curve={curve ?? curveLinear}
       />
     </SVGChart>
   )

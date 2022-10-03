@@ -96,6 +96,7 @@ type notification_descriptions = {
   [key in notification_preference]: {
     simple: string
     detailed: string
+    necessary?: boolean
   }
 }
 export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
@@ -116,8 +117,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: "Only answers by market creator on markets you're watching",
   },
   betting_streaks: {
-    simple: 'For predictions made over consecutive days',
-    detailed: 'Bonuses for predictions made over consecutive days',
+    simple: `For prediction streaks`,
+    detailed: `Bonuses for predictions made over consecutive days (Prediction streaks)})`,
   },
   comments_by_followed_users_on_watched_markets: {
     simple: 'Only comments by users you follow',
@@ -159,8 +160,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Large changes in probability on markets that you watch',
   },
   profit_loss_updates: {
-    simple: 'Weekly profit and loss updates',
-    detailed: 'Weekly profit and loss updates',
+    simple: 'Weekly portfolio updates',
+    detailed: 'Weekly portfolio updates',
   },
   referral_bonuses: {
     simple: 'For referring new users',
@@ -208,8 +209,9 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Bonuses for unique predictors on your markets',
   },
   your_contract_closed: {
-    simple: 'Your market has closed and you need to resolve it',
-    detailed: 'Your market has closed and you need to resolve it',
+    simple: 'Your market has closed and you need to resolve it (necessary)',
+    detailed: 'Your market has closed and you need to resolve it (necessary)',
+    necessary: true,
   },
   all_comments_on_watched_markets: {
     simple: 'All new comments',
@@ -234,6 +236,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   all_answers_on_contracts_with_shares_in_on_watched_markets: {
     simple: `Only on markets you're invested in`,
     detailed: `Answers on markets that you're watching and that you're invested in`,
+  },
+  opt_out_all: {
+    simple: 'Opt out of all notifications (excludes when your markets close)',
+    detailed:
+      'Opt out of all notifications excluding your own market closure notifications',
   },
 }
 

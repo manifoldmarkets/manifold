@@ -12,8 +12,8 @@ import { VisibilityObserver } from '../visibility-observer'
 import Masonry from 'react-masonry-css'
 import { CPMMBinaryContract } from 'common/contract'
 
-export type ContractHighlightOptions = {
-  contractIds?: string[]
+export type CardHighlightOptions = {
+  itemIds?: string[]
   highlightClassName?: string
 }
 
@@ -28,7 +28,7 @@ export function ContractsGrid(props: {
     noLinkAvatar?: boolean
     showProbChange?: boolean
   }
-  highlightOptions?: ContractHighlightOptions
+  highlightOptions?: CardHighlightOptions
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
 }) {
@@ -43,7 +43,7 @@ export function ContractsGrid(props: {
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar, showProbChange } =
     cardUIOptions || {}
-  const { contractIds, highlightClassName } = highlightOptions || {}
+  const { itemIds: contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
     (visible) => {
       if (visible && loadMore) {

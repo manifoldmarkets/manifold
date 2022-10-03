@@ -10,21 +10,28 @@ import {
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
-import { area, line, curveStepAfter, CurveFactory } from 'd3-shape'
+import { area, line, CurveFactory } from 'd3-shape'
 import { nanoid } from 'nanoid'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
-import { Row } from 'web/components/layout/row'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
 
-export type Point<X, Y, T = unknown> = { x: X; y: Y; datum?: T }
+export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
+
+export interface ContinuousScale<T> extends AxisScale<T> {
+  invert(n: number): T
+}
+
 export type XScale<P> = P extends Point<infer X, infer _> ? AxisScale<X> : never
 export type YScale<P> = P extends Point<infer _, infer Y> ? AxisScale<Y> : never
 
 export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 export const MARGIN_X = MARGIN.right + MARGIN.left
 export const MARGIN_Y = MARGIN.top + MARGIN.bottom
+const MARGIN_STYLE = `${MARGIN.top}px ${MARGIN.right}px ${MARGIN.bottom}px ${MARGIN.left}px`
+const MARGIN_XFORM = `translate(${MARGIN.left}, ${MARGIN.top})`
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
@@ -66,11 +73,11 @@ const LinePathInternal = <P,>(
     data: P[]
     px: number | ((p: P) => number)
     py: number | ((p: P) => number)
-    curve?: CurveFactory
+    curve: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
   const { data, px, py, curve, ...rest } = props
-  const d3Line = line<P>(px, py).curve(curve ?? curveStepAfter)
+  const d3Line = line<P>(px, py).curve(curve)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} fill="none" d={d3Line(data)!} />
 }
@@ -82,11 +89,11 @@ const AreaPathInternal = <P,>(
     px: number | ((p: P) => number)
     py0: number | ((p: P) => number)
     py1: number | ((p: P) => number)
-    curve?: CurveFactory
+    curve: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
   const { data, px, py0, py1, curve, ...rest } = props
-  const d3Area = area<P>(px, py0, py1).curve(curve ?? curveStepAfter)
+  const d3Area = area<P>(px, py0, py1).curve(curve)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} d={d3Area(data)!} />
 }
@@ -98,7 +105,7 @@ export const AreaWithTopStroke = <P,>(props: {
   px: number | ((p: P) => number)
   py0: number | ((p: P) => number)
   py1: number | ((p: P) => number)
-  curve?: CurveFactory
+  curve: CurveFactory
 }) => {
   const { color, data, px, py0, py1, curve } = props
   return (
@@ -110,25 +117,26 @@ export const AreaWithTopStroke = <P,>(props: {
         py1={py1}
         curve={curve}
         fill={color}
-        opacity={0.3}
+        opacity={0.2}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
     </g>
   )
 }
 
-export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
+export const SVGChart = <X, TT>(props: {
   children: ReactNode
   w: number
   h: number
   xAxis: Axis<X>
   yAxis: Axis<number>
   onSelect?: (ev: D3BrushEvent<any>) => void
-  onMouseOver?: (mouseX: number, mouseY: number) => P | undefined
-  Tooltip?: TooltipComponent<P>
+  onMouseOver?: (mouseX: number, mouseY: number) => TT | undefined
+  Tooltip?: TooltipComponent<X, TT>
 }) => {
   const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
-  const [mouseState, setMouseState] = useState<TooltipPosition & { p: P }>()
+  const [mouse, setMouse] = useState<{ x: number; y: number; data: TT }>()
+  const tooltipMeasure = useMeasureSize()
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - MARGIN_X
   const innerH = h - MARGIN_Y
@@ -147,7 +155,7 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
         if (!justSelected.current) {
           justSelected.current = true
           onSelect(ev)
-          setMouseState(undefined)
+          setMouse(undefined)
           if (overlayRef.current) {
             select(overlayRef.current).call(brush.clear)
           }
@@ -167,32 +175,47 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
 
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' && onMouseOver) {
-      const [mouseX, mouseY] = pointer(ev)
-      const p = onMouseOver(mouseX, mouseY)
-      if (p != null) {
-        setMouseState({ top: mouseY - 10, left: mouseX + 60, p })
+      const [x, y] = pointer(ev)
+      const data = onMouseOver(x, y)
+      if (data !== undefined) {
+        setMouse({ x, y, data })
       } else {
-        setMouseState(undefined)
+        setMouse(undefined)
       }
     }
   }
 
   const onPointerLeave = () => {
-    setMouseState(undefined)
+    setMouse(undefined)
   }
 
   return (
-    <div className="relative">
-      {mouseState && Tooltip && (
-        <TooltipContainer top={mouseState.top} left={mouseState.left}>
-          <Tooltip xScale={xAxis.scale()} p={mouseState.p} />
+    <div className="relative overflow-hidden">
+      {mouse && Tooltip && (
+        <TooltipContainer
+          setElem={tooltipMeasure.setElem}
+          pos={getTooltipPosition(
+            mouse.x,
+            mouse.y,
+            innerW,
+            innerH,
+            tooltipMeasure.width,
+            tooltipMeasure.height
+          )}
+        >
+          <Tooltip
+            xScale={xAxis.scale()}
+            mouseX={mouse.x}
+            mouseY={mouse.y}
+            data={mouse.data}
+          />
         </TooltipContainer>
       )}
-      <svg className="w-full" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
         <clipPath id={clipPathId}>
           <rect x={0} y={0} width={innerW} height={innerH} />
         </clipPath>
-        <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
+        <g transform={MARGIN_XFORM}>
           <XAxis axis={xAxis} w={innerW} h={innerH} />
           <YAxis axis={yAxis} w={innerW} h={innerH} />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
@@ -214,44 +237,59 @@ export const SVGChart = <X, Y, P extends Point<X, Y>>(props: {
   )
 }
 
-export type TooltipProps<P> = { p: P; xScale: XScale<P> }
-export type TooltipComponent<P> = React.ComponentType<TooltipProps<P>>
-export type TooltipPosition = { top: number; left: number }
-export const TooltipContainer = (
-  props: TooltipPosition & { className?: string; children: React.ReactNode }
+export type TooltipPosition = { left: number; bottom: number }
+
+export const getTooltipPosition = (
+  mouseX: number,
+  mouseY: number,
+  containerWidth: number,
+  containerHeight: number,
+  tooltipWidth?: number,
+  tooltipHeight?: number
 ) => {
-  const { top, left, className, children } = props
+  let left = mouseX + 12
+  let bottom = containerHeight - mouseY + 12
+  if (tooltipWidth != null) {
+    const overflow = left + tooltipWidth - containerWidth
+    if (overflow > 0) {
+      left -= overflow
+    }
+  }
+  if (tooltipHeight != null) {
+    const overflow = tooltipHeight - mouseY
+    if (overflow > 0) {
+      bottom -= overflow
+    }
+  }
+  return { left, bottom }
+}
+
+export type TooltipProps<X, T> = {
+  mouseX: number
+  mouseY: number
+  xScale: ContinuousScale<X>
+  data: T
+}
+
+export type TooltipComponent<X, T> = React.ComponentType<TooltipProps<X, T>>
+export const TooltipContainer = (props: {
+  setElem: (e: HTMLElement | null) => void
+  pos: TooltipPosition
+  className?: string
+  children: React.ReactNode
+}) => {
+  const { setElem, pos, className, children } = props
   return (
     <div
+      ref={setElem}
       className={clsx(
         className,
-        'pointer-events-none absolute z-10 whitespace-pre rounded border-2 border-black bg-white/90 p-2'
+        'pointer-events-none absolute z-10 whitespace-pre rounded border border-gray-200 bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
       )}
-      style={{ top, left }}
+      style={{ margin: MARGIN_STYLE, ...pos }}
     >
       {children}
     </div>
-  )
-}
-
-export type LegendItem = { color: string; label: string; value?: string }
-export const Legend = (props: { className?: string; items: LegendItem[] }) => {
-  const { items, className } = props
-  return (
-    <ol className={className}>
-      {items.map((item) => (
-        <li key={item.label} className="flex flex-row justify-between">
-          <Row className="mr-2 items-center overflow-hidden">
-            <span
-              className="mr-2 h-4 w-4 shrink-0"
-              style={{ backgroundColor: item.color }}
-            ></span>
-            <span className="overflow-hidden text-ellipsis">{item.label}</span>
-          </Row>
-          {item.value}
-        </li>
-      ))}
-    </ol>
   )
 }
 
@@ -259,19 +297,19 @@ export const getDateRange = (contract: Contract) => {
   const { createdTime, closeTime, resolutionTime } = contract
   const isClosed = !!closeTime && Date.now() > closeTime
   const endDate = resolutionTime ?? (isClosed ? closeTime : null)
-  return [new Date(createdTime), endDate ? new Date(endDate) : null] as const
+  return [createdTime, endDate ?? null] as const
 }
 
 export const getRightmostVisibleDate = (
-  contractEnd: Date | null | undefined,
-  lastActivity: Date | null | undefined,
-  now: Date
+  contractEnd: number | null | undefined,
+  lastActivity: number | null | undefined,
+  now: number
 ) => {
   if (contractEnd != null) {
     return contractEnd
   } else if (lastActivity != null) {
     // client-DB clock divergence may cause last activity to be later than now
-    return new Date(Math.max(lastActivity.getTime(), now.getTime()))
+    return Math.max(lastActivity, now)
   } else {
     return now
   }
