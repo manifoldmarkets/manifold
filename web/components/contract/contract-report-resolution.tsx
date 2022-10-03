@@ -6,7 +6,7 @@ import { Tooltip } from '../tooltip'
 import { ConfirmationButton } from '../confirmation-button'
 import { Row } from '../layout/row'
 import { FlagIcon } from '@heroicons/react/solid'
-import { buildArray } from 'common/lib/util/array'
+import { buildArray } from 'common/util/array'
 import { useState } from 'react'
 
 export function ContractReportResolution(props: { contract: Contract }) {
