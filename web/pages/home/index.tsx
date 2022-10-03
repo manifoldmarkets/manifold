@@ -233,13 +233,19 @@ function renderGroupSections(
     )
   ).reverse()
 
+  const previouslySeenContracts = new Set<string>()
+
   return (
     <>
       {orderedGroups.map((group) => {
         const contracts = groupContracts[group.slug].filter(
-          (c) => Math.abs(c.probChanges.day) >= 0.01
+          (c) =>
+            Math.abs(c.probChanges.day) >= 0.01 &&
+            !previouslySeenContracts.has(c.id)
         )
         if (contracts.length === 0) return null
+
+        contracts.forEach((c) => previouslySeenContracts.add(c.id))
 
         return (
           <GroupSection
