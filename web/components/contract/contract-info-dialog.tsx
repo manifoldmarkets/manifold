@@ -42,7 +42,7 @@ export function ContractInfoDialog(props: {
   const isUnlisted = contract.visibility === 'unlisted'
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
-    : true
+    : false
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
