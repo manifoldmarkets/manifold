@@ -23,6 +23,7 @@ export default function CreateDateDocPage() {
   })
 
   const title = `${user?.name}'s Date Doc`
+  const subtitle = 'Manifold dating docs'
   const [birthday, setBirthday] = useState<undefined | string>(undefined)
   const [question, setQuestion] = useState(
     'Will I find a partner in the next 3 months?'
@@ -46,6 +47,7 @@ export default function CreateDateDocPage() {
       'id' | 'creatorId' | 'createdTime' | 'slug' | 'contractSlug'
     > & { question: string } = {
       title,
+      subtitle,
       content: editor.getJSON(),
       bounty: 0,
       birthday: birthdayTime,

@@ -45,6 +45,9 @@ export function PostCard(props: {
             <span className="text-gray-500">{fromNow(post.createdTime)}</span>
           </div>
           <div className="text-lg font-medium text-gray-900">{post.title}</div>
+          <div className="font-small text-md text-gray-500">
+            {post.subtitle}
+          </div>
         </div>
       </Row>
       {onPostClick ? (
