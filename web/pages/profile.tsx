@@ -1,11 +1,9 @@
 import { RefreshIcon } from '@heroicons/react/outline'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import React, { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
-import { AddFundsButton } from 'web/components/add-funds-button'
 import { ConfirmationButton } from 'web/components/confirmation-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -196,14 +194,6 @@ export default function ProfilePage(props: {
             <div className="ml-1 text-gray-500">
               {privateUser.email ?? '\u00a0'}
             </div>
-          </div>
-
-          <div>
-            <label className="label">Balance</label>
-            <Row className="ml-1 items-start gap-4 text-gray-500">
-              {formatMoney(user.balance)}
-              <AddFundsButton />
-            </Row>
           </div>
 
           <div>
