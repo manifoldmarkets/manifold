@@ -7,23 +7,27 @@ import { ConfirmationButton } from '../confirmation-button'
 import { Row } from '../layout/row'
 import { FlagIcon } from '@heroicons/react/solid'
 import { buildArray } from 'common/lib/util/array'
+import { useState } from 'react'
 
 export function ContractReportResolution(props: { contract: Contract }) {
   const { contract } = props
   const user = useUser()
+  const [reporting, setReporting] = useState(false)
   if (!user) {
     return <></>
   }
   const userReported = contract.flaggedByUsernames?.includes(user.id)
 
   const onSubmit = async () => {
-    if (!user) {
+    if (!user || userReported) {
       return true
     }
+    setReporting(true)
 
     await updateContract(contract.id, {
       flaggedByUsernames: buildArray(contract.flaggedByUsernames, user.id),
     })
+    setReporting(false)
     return true
   }
 
@@ -33,12 +37,18 @@ export function ContractReportResolution(props: { contract: Contract }) {
   )
 
   return (
-    <Tooltip text="Flag this market as incorrectly resolved">
+    <Tooltip
+      text={
+        userReported
+          ? "You've reported this market as incorrectly resolved"
+          : 'Flag this market as incorrectly resolved '
+      }
+    >
       <ConfirmationButton
         openModalBtn={{
           label: '',
           icon: <FlagIcon className="h-5 w-5" />,
-          className: flagClass,
+          className: clsx(flagClass, reporting && 'btn-disabled loading'),
         }}
         cancelBtn={{
           label: 'Cancel',
@@ -49,10 +59,18 @@ export function ContractReportResolution(props: { contract: Contract }) {
           className: 'btn-secondary',
         }}
         onSubmitWithSuccess={onSubmit}
+        disabled={userReported}
       >
-        <Row className="items-center text-xl">
-          Flag this market as incorrectly resolved
-        </Row>
+        <div>
+          <Row className="items-center text-xl">
+            Flag this market as incorrectly resolved
+          </Row>
+          <Row className="text-sm text-gray-500">
+            Report that the market was not resolved according to its resolution
+            criteria. If a creator's markets get flagged too often, they'll be
+            marked as unreliable.
+          </Row>
+        </div>
       </ConfirmationButton>
     </Tooltip>
   )

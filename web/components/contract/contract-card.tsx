@@ -35,7 +35,6 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
 import { SiteLink } from '../site-link'
 import { ProbChange } from './prob-change-table'
-import { ContractReportResolution } from './contract-report-resolution'
 
 export function ContractCard(props: {
   contract: Contract
