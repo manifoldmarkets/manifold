@@ -14,6 +14,7 @@ import { range } from 'lodash'
 
 import {
   ContinuousScale,
+  Margin,
   SVGChart,
   AreaPath,
   AreaWithTopStroke,
@@ -52,13 +53,14 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   w: number
   h: number
   color: string
+  margin: Margin
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<number, P>
 }) => {
-  const { color, data, yScale, w, h, curve, Tooltip } = props
+  const { data, w, h, color, margin, yScale, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
@@ -96,6 +98,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     <SVGChart
       w={w}
       h={h}
+      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       onSelect={onSelect}
@@ -119,6 +122,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   w: number
   h: number
   colors: readonly string[]
+  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   yKind?: ValueKind
@@ -126,7 +130,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
 }) => {
-  const { colors, data, yScale, yKind, w, h, curve, Tooltip } = props
+  const { data, w, h, colors, margin, yScale, yKind, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -138,7 +142,8 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const nTicks = h < 200 ? 3 : 5
+    const pctTickValues = getTickValues(min, max, nTicks)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis =
       yKind === 'percent'
@@ -146,8 +151,10 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
             .tickValues(pctTickValues)
             .tickFormat((n) => formatPct(n))
         : yKind === 'm$'
-        ? axisLeft<number>(yScale).tickFormat((n) => formatMoney(n))
-        : axisLeft<number>(yScale)
+        ? axisLeft<number>(yScale)
+            .ticks(nTicks)
+            .tickFormat((n) => formatMoney(n))
+        : axisLeft<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
@@ -181,6 +188,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     <SVGChart
       w={w}
       h={h}
+      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       onSelect={onSelect}
@@ -207,6 +215,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   w: number
   h: number
   color: string
+  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   yKind?: ValueKind
@@ -215,7 +224,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { color, data, yScale, yKind, w, h, curve, Tooltip } = props
+  const { data, w, h, color, margin, yScale, yKind, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -226,7 +235,8 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const nTicks = h < 200 ? 3 : 5
+    const pctTickValues = getTickValues(min, max, nTicks)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis =
       yKind === 'percent'
@@ -234,8 +244,10 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
             .tickValues(pctTickValues)
             .tickFormat((n) => formatPct(n))
         : yKind === 'm$'
-        ? axisLeft<number>(yScale).tickFormat((n) => formatMoney(n))
-        : axisLeft<number>(yScale)
+        ? axisLeft<number>(yScale)
+            .ticks(nTicks)
+            .tickFormat((n) => formatMoney(n))
+        : axisLeft<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
@@ -261,6 +273,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     <SVGChart
       w={w}
       h={h}
+      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       onSelect={onSelect}

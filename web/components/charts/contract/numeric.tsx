@@ -6,8 +6,12 @@ import { formatLargeNumber } from 'common/util/format'
 import { getDpmOutcomeProbabilities } from 'common/calculate-dpm'
 import { NumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { TooltipProps, MARGIN_X, MARGIN_Y, formatPct } from '../helpers'
+import { TooltipProps, formatPct } from '../helpers'
 import { DistributionPoint, DistributionChart } from '../generic-charts'
+
+const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
+const MARGIN_X = MARGIN.left + MARGIN.right
+const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getNumericChartData = (contract: NumericContract) => {
   const { totalShares, bucketCount, min, max } = contract
@@ -48,6 +52,7 @@ export const NumericContractChart = (props: {
     <DistributionChart
       w={width}
       h={height}
+      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       data={data}

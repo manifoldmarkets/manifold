@@ -11,8 +11,6 @@ import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import {
   TooltipProps,
-  MARGIN_X,
-  MARGIN_Y,
   getDateRange,
   getRightmostVisibleDate,
   formatDateInRange,
@@ -20,6 +18,10 @@ import {
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
+
+const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
+const MARGIN_X = MARGIN.left + MARGIN.right
+const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
@@ -95,6 +97,7 @@ export const PseudoNumericContractChart = (props: {
     <SingleValueHistoryChart
       w={width}
       h={height}
+      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       data={data}

@@ -27,11 +27,12 @@ export interface ContinuousScale<T> extends AxisScale<T> {
 export type XScale<P> = P extends Point<infer X, infer _> ? AxisScale<X> : never
 export type YScale<P> = P extends Point<infer _, infer Y> ? AxisScale<Y> : never
 
-export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
-export const MARGIN_X = MARGIN.right + MARGIN.left
-export const MARGIN_Y = MARGIN.top + MARGIN.bottom
-const MARGIN_STYLE = `${MARGIN.top}px ${MARGIN.right}px ${MARGIN.bottom}px ${MARGIN.left}px`
-const MARGIN_XFORM = `translate(${MARGIN.left}, ${MARGIN.top})`
+export type Margin = {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
@@ -55,8 +56,6 @@ export const YAxis = <Y,>(props: { w: number; h: number; axis: Axis<Y> }) => {
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
-        .transition()
-        .duration(250)
         .call(axis)
         .call((g) =>
           g.selectAll('.tick line').attr('x2', w).attr('stroke-opacity', 0.1)
@@ -128,18 +127,29 @@ export const SVGChart = <X, TT>(props: {
   children: ReactNode
   w: number
   h: number
+  margin: Margin
   xAxis: Axis<X>
   yAxis: Axis<number>
   onSelect?: (ev: D3BrushEvent<any>) => void
   onMouseOver?: (mouseX: number, mouseY: number) => TT | undefined
   Tooltip?: TooltipComponent<X, TT>
 }) => {
-  const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
+  const {
+    children,
+    w,
+    h,
+    margin,
+    xAxis,
+    yAxis,
+    onMouseOver,
+    onSelect,
+    Tooltip,
+  } = props
   const [mouse, setMouse] = useState<{ x: number; y: number; data: TT }>()
   const tooltipMeasure = useMeasureSize()
   const overlayRef = useRef<SVGGElement>(null)
-  const innerW = w - MARGIN_X
-  const innerH = h - MARGIN_Y
+  const innerW = w - (margin.left + margin.right)
+  const innerH = h - (margin.top + margin.bottom)
   const clipPathId = useMemo(() => nanoid(), [])
 
   const justSelected = useRef(false)
@@ -194,6 +204,7 @@ export const SVGChart = <X, TT>(props: {
       {mouse && Tooltip && (
         <TooltipContainer
           setElem={tooltipMeasure.setElem}
+          margin={margin}
           pos={getTooltipPosition(
             mouse.x,
             mouse.y,
@@ -215,7 +226,7 @@ export const SVGChart = <X, TT>(props: {
         <clipPath id={clipPathId}>
           <rect x={0} y={0} width={innerW} height={innerH} />
         </clipPath>
-        <g transform={MARGIN_XFORM}>
+        <g transform={`translate(${margin.left}, ${margin.top})`}>
           <XAxis axis={xAxis} w={innerW} h={innerH} />
           <YAxis axis={yAxis} w={innerW} h={innerH} />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
@@ -275,10 +286,11 @@ export type TooltipComponent<X, T> = React.ComponentType<TooltipProps<X, T>>
 export const TooltipContainer = (props: {
   setElem: (e: HTMLElement | null) => void
   pos: TooltipPosition
+  margin: Margin
   className?: string
   children: React.ReactNode
 }) => {
-  const { setElem, pos, className, children } = props
+  const { setElem, pos, margin, className, children } = props
   return (
     <div
       ref={setElem}
@@ -286,7 +298,10 @@ export const TooltipContainer = (props: {
         className,
         'pointer-events-none absolute z-10 whitespace-pre rounded border border-gray-200 bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
       )}
-      style={{ margin: MARGIN_STYLE, ...pos }}
+      style={{
+        margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
+        ...pos,
+      }}
     >
       {children}
     </div>

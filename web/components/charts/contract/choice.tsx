@@ -10,8 +10,6 @@ import { getOutcomeProbability } from 'common/calculate'
 import { DAY_MS } from 'common/util/time'
 import {
   TooltipProps,
-  MARGIN_X,
-  MARGIN_Y,
   getDateRange,
   getRightmostVisibleDate,
   formatPct,
@@ -78,6 +76,10 @@ const CATEGORY_COLORS = [
   '#bcfd6f',
   '#70a560',
 ]
+
+const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
+const MARGIN_X = MARGIN.left + MARGIN.right
+const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getTrackedAnswers = (
   contract: FreeResponseContract | MultipleChoiceContract,
@@ -211,6 +213,7 @@ export const ChoiceContractChart = (props: {
     <MultiValueHistoryChart
       w={width}
       h={height}
+      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
       yKind="percent"
