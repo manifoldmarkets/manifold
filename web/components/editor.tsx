@@ -343,7 +343,7 @@ export function RichContent(props: {
       TiptapSpoiler.configure({
         spoilerOpenClass: 'rounded-sm bg-greyscale-2 cursor-text',
         spoilerCloseClass:
-          'rounded-sm bg-greyscale-6 text-greyscale-6 cursor-pointer select-none',
+          'rounded-sm bg-greyscale-6 text-transparent [&_*]:invisible cursor-pointer select-none',
       }),
     ],
     content,
