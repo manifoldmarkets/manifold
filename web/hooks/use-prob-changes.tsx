@@ -28,11 +28,11 @@ export const useProbChanges = (
   }
 
   const { data: positiveChanges } = useQuery(
-    ['prob-change-day', groupSlugs],
+    ['prob-change-day', groupSlugs, bettorId],
     () => probChangeDescendingIndex.search<CPMMBinaryContract>('', searchParams)
   )
   const { data: negativeChanges } = useQuery(
-    ['prob-change-day-ascending', groupSlugs],
+    ['prob-change-day-ascending', groupSlugs, bettorId],
     () => probChangeAscendingIndex.search<CPMMBinaryContract>('', searchParams)
   )
 
