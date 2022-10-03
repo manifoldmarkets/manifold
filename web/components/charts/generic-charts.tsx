@@ -72,7 +72,12 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
-  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+  const selector = betAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number) => {
+    const p = selector(mouseX)
+    props.onMouseOver?.(p)
+    return p
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -149,7 +154,12 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     return d3Stack(data)
   }, [data])
 
-  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+  const selector = betAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number) => {
+    const p = selector(mouseX)
+    props.onMouseOver?.(p)
+    return p
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -220,7 +230,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, pct, xScale, yScale])
 
-  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+  const selector = betAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number) => {
+    const p = selector(mouseX)
+    props.onMouseOver?.(p)
+    return p
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
