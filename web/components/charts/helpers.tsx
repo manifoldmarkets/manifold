@@ -99,14 +99,14 @@ const AreaPathInternal = <P,>(
 export const AreaPath = memo(AreaPathInternal) as typeof AreaPathInternal
 
 export const AreaWithTopStroke = <P,>(props: {
-  color: string
   data: P[]
+  color: string
   px: number | ((p: P) => number)
   py0: number | ((p: P) => number)
   py1: number | ((p: P) => number)
   curve: CurveFactory
 }) => {
-  const { color, data, px, py0, py1, curve } = props
+  const { data, color, px, py0, py1, curve } = props
   return (
     <g>
       <AreaPath
@@ -306,6 +306,33 @@ export const TooltipContainer = (props: {
       {children}
     </div>
   )
+}
+
+export const computeColorStops = <P,>(
+  data: P[],
+  pc: (p: P) => string,
+  px: (p: P) => number
+) => {
+  const segments: { x: number; color: string }[] = []
+  let currOffset = 0
+  let currColor = pc(data[0])
+  for (const p of data) {
+    const c = pc(p)
+    if (c !== currColor) {
+      segments.push({ x: currOffset, color: currColor })
+      currOffset = px(p)
+      currColor = c
+    }
+  }
+  segments.push({ x: currOffset, color: currColor })
+
+  const stops: { x: number; color: string }[] = []
+  stops.push({ x: segments[0].x, color: segments[0].color })
+  for (const s of segments.slice(1)) {
+    stops.push({ x: s.x, color: stops[stops.length - 1].color })
+    stops.push({ x: s.x, color: s.color })
+  }
+  return stops
 }
 
 export const getDateRange = (contract: Contract) => {

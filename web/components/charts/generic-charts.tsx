@@ -20,10 +20,12 @@ import {
   AreaWithTopStroke,
   Point,
   TooltipComponent,
+  computeColorStops,
   formatPct,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 import { formatMoney } from 'common/util/format'
+import { nanoid } from 'nanoid'
 
 export type MultiPoint<T = unknown> = Point<Date, number[], T>
 export type HistoryPoint<T = unknown> = Point<Date, number, T>
@@ -161,7 +163,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   const series = useMemo(() => {
     const d3Stack = stack<P, number>()
       .keys(range(0, Math.max(...data.map(({ y }) => y.length))))
-      .value(({ y }, o) => y[o])
+      .value(({ y }, k) => y[k])
       .order(stackOrderReverse)
     return d3Stack(data)
   }, [data])
@@ -214,7 +216,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   data: P[]
   w: number
   h: number
-  color: string
+  color: string | ((p: P) => string)
   margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
@@ -269,6 +271,13 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     }
   })
 
+  const gradientId = useMemo(() => nanoid(), [])
+  const stops = useMemo(
+    () =>
+      typeof color !== 'string' ? computeColorStops(data, color, px) : null,
+    [color, data, px]
+  )
+
   return (
     <SVGChart
       w={w}
@@ -280,8 +289,17 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       onMouseOver={onMouseOver}
       Tooltip={Tooltip}
     >
+      {stops && (
+        <defs>
+          <linearGradient gradientUnits="userSpaceOnUse" id={gradientId}>
+            {stops.map((s, i) => (
+              <stop key={i} offset={`${s.x / w}`} stopColor={s.color} />
+            ))}
+          </linearGradient>
+        </defs>
+      )}
       <AreaWithTopStroke
-        color={color}
+        color={typeof color === 'string' ? color : `url(#${gradientId})`}
         data={data}
         px={px}
         py0={py0}
