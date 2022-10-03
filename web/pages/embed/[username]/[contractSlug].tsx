@@ -30,6 +30,7 @@ import Custom404 from '../../404'
 import { useUser } from 'web/hooks/use-user'
 import { QuickBet } from 'web/components/contract/quick-bet'
 import { contractMetrics } from 'common/contract-details'
+import Image from 'next/future/image'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -93,42 +94,43 @@ export function ContractEmbed(props: { contract: Contract; bets: Bet[] }) {
   const user = useUser()
   if (user && (isBinary || isPseudoNumeric)) {
     return (
-      <Row className="border-greyscale-2 bg-greyscale-1 h-full w-full justify-between overflow-hidden rounded-lg border-2 p-4">
-        <Col className="w-5/6">
+      <Col className="border-greyscale-2 h-full w-full justify-between overflow-hidden rounded-lg border-2 bg-white p-4">
+        <Row className="mb-1 justify-between">
+          <MarketSubheader contract={contract} disabled />
+          <SiteLink href={href} className="mt-0">
+            <Image height={32} width={32} alt="Manifold logo" src="/logo.png" />
+          </SiteLink>
+        </Row>
+        <SiteLink href={href} className="text-md text-indigo-700 md:text-xl">
+          {question}
+        </SiteLink>
+        <Row>
+          <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
+            <ContractChart contract={contract} bets={bets} height={150} />
+          </div>
+          <QuickBet
+            user={user}
+            contract={contract}
+            noProbBar={true}
+            className="mx-auto -mr-5"
+          />
+        </Row>
+      </Col>
+    )
+  } else
+    return (
+      <Col className="border-greyscale-2 h-full w-full justify-between overflow-hidden rounded-lg border-2 bg-white p-4">
+        <Row className="mb-1 justify-between">
+          <MarketSubheader contract={contract} disabled />
+          <SiteLink href={href} className="mt-0">
+            <Image height={32} width={32} alt="Manifold logo" src="/logo.png" />
+          </SiteLink>
+        </Row>
+        <Row className="justify-between gap-4">
           <Col>
             <div className="text-md text-indigo-700 md:text-xl">
               <SiteLink href={href}>{question}</SiteLink>
             </div>
-            <Row className="gap-4">
-              <div className="text-greyscale-4 text-xs">@{creatorUsername}</div>
-              <div className="text-greyscale-6 text-xs">{creatorUsername}</div>
-            </Row>
-          </Col>
-          <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
-            <ContractChart contract={contract} bets={bets} height={150} />
-          </div>
-        </Col>
-        <QuickBet
-          user={user}
-          contract={contract}
-          noProbBar={true}
-          className="-mr-5"
-        />
-      </Row>
-    )
-  } else
-    return (
-      <Col className="border-greyscale-2 bg-greyscale-1 h-full w-full justify-between overflow-hidden rounded-lg border-2 p-4">
-        <Row className="justify-between gap-4">
-          <Col>
-            <div className="text-md text-lg text-indigo-700 md:text-xl">
-              <SiteLink href={href}>{question}</SiteLink>
-            </div>
-            {/* <MarketSubheader contract={contract} disabled /> */}
-            <Row>
-              <div className="text-greyscale-4 text-xs">@{creatorUsername}</div>
-              <div className="text-greyscale-4 text-xs">@{creatorUsername}</div>
-            </Row>
           </Col>
           <Col>
             {!user && isBinary && (
