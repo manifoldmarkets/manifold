@@ -56,7 +56,7 @@ async function main() {
   for (const market of markets) {
     if (!market.isResolved) {
       console.log(`Resolving market ${market.url} to NO`)
-      const resp = await resolveMarketById(market.id, 'NO')
+      await resolveMarketById(market.id, 'NO')
     }
   }
 }
