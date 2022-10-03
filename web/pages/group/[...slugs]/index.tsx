@@ -263,7 +263,7 @@ export default function GroupPage(props: {
         url={groupPath(group.slug)}
       />
       <TopGroupNavBar group={group} />
-      <div className={'relative p-2 pt-0 md:pt-2'}>
+      <div className={'relative p-1 pt-0 md:pt-2'}>
         {/* TODO: Switching tabs should also update the group path */}
         <Tabs className={'mb-2'} tabs={tabs} defaultIndex={tabIndex} />
       </div>
