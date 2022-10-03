@@ -119,13 +119,13 @@ export async function updateMetricsCore() {
     const contractRatios = userContracts
       .map((contract) => {
         if (
-          !contract.resolutionReports ||
-          contract.resolutionReports?.length === 0
+          !contract.flaggedByUsernames ||
+          contract.flaggedByUsernames?.length === 0
         ) {
           return 0
         }
         const contractRatio =
-          contract.resolutionReports.length / (contract.uniqueBettorCount ?? 1)
+          contract.flaggedByUsernames.length / (contract.uniqueBettorCount ?? 1)
 
         return contractRatio
       })
@@ -133,8 +133,11 @@ export async function updateMetricsCore() {
     const badResolutions = contractRatios.filter(
       (ratio) => ratio > BAD_RESOLUTION_THRESHOLD
     )
-    const newCorrectResolutionPercentage =
-      (userContracts.length - badResolutions.length) / userContracts.length
+    let newFractionResolvedCorrectly = 0
+    if (userContracts.length > 0) {
+      newFractionResolvedCorrectly =
+        (userContracts.length - badResolutions.length) / userContracts.length
+    }
 
     return {
       user,
@@ -142,7 +145,7 @@ export async function updateMetricsCore() {
       newPortfolio,
       newProfit,
       didPortfolioChange,
-      newCorrectResolutionPercentage,
+      newFractionResolvedCorrectly,
     }
   })
 
@@ -164,7 +167,7 @@ export async function updateMetricsCore() {
       newPortfolio,
       newProfit,
       didPortfolioChange,
-      newCorrectResolutionPercentage,
+      newFractionResolvedCorrectly,
     }) => {
       const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
       return {
@@ -174,7 +177,7 @@ export async function updateMetricsCore() {
             creatorVolumeCached: newCreatorVolume,
             profitCached: newProfit,
             nextLoanCached,
-            correctResolutionPercentageCached: newCorrectResolutionPercentage,
+            fractionResolvedCorrectly: newFractionResolvedCorrectly,
           },
         },
 

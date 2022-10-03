@@ -33,7 +33,7 @@ export type User = {
     allTime: number
   }
 
-  correctResolutionPercentageCached: number
+  fractionResolvedCorrectly: number
 
   nextLoanCached: number
   followerCountCached: number

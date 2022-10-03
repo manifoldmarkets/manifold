@@ -6,6 +6,7 @@ import { Tooltip } from '../tooltip'
 import { ConfirmationButton } from '../confirmation-button'
 import { Row } from '../layout/row'
 import { FlagIcon } from '@heroicons/react/solid'
+import { buildArray } from 'common/lib/util/array'
 
 export function ContractReportResolution(props: { contract: Contract }) {
   const { contract } = props
@@ -13,14 +14,15 @@ export function ContractReportResolution(props: { contract: Contract }) {
   if (!user) {
     return <></>
   }
-  const userReported = contract.resolutionReports?.includes(user.id)
+  const userReported = contract.flaggedByUsernames?.includes(user.id)
 
   const onSubmit = async () => {
     if (!user) {
       return true
     }
+
     await updateContract(contract.id, {
-      resolutionReports: [...(contract.resolutionReports || []), user.id],
+      flaggedByUsernames: buildArray(contract.flaggedByUsernames, user.id),
     })
     return true
   }

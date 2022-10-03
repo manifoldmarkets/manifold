@@ -26,6 +26,7 @@ import {
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
 import { NumericGraph } from './numeric-graph'
+import { ContractReportResolution } from './contract-report-resolution'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -76,11 +77,14 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
-          <BinaryResolutionOrChance
-            className="flex items-end"
-            contract={contract}
-            large
-          />
+          <Row>
+            <BinaryResolutionOrChance
+              className="flex items-end"
+              contract={contract}
+              large
+            />
+            <ContractReportResolution contract={contract} />
+          </Row>
         </Row>
       </Col>
       <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
@@ -105,7 +109,13 @@ const ChoiceOverview = (props: {
         <ContractDetails contract={contract} />
         <OverviewQuestion text={question} />
         {resolution && (
-          <FreeResponseResolutionOrChance contract={contract} truncate="none" />
+          <Row>
+            <FreeResponseResolutionOrChance
+              contract={contract}
+              truncate="none"
+            />
+            <ContractReportResolution contract={contract} />
+          </Row>
         )}
       </Col>
       <Col className={'mb-1 gap-y-2'}>

@@ -226,7 +226,6 @@ export function BinaryResolutionOrChance(props: {
               resolution={resolution}
             />
           </div>
-          <ContractReportResolution contract={contract} />
         </Row>
       ) : (
         <>
