@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { last, sum, sortBy, groupBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'
@@ -215,7 +214,6 @@ export const ChoiceContractChart = (props: {
       yScale={yScale}
       data={data}
       colors={CATEGORY_COLORS}
-      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={ChoiceTooltip}
       pct

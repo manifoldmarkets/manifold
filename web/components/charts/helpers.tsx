@@ -10,7 +10,7 @@ import {
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
-import { area, line, CurveFactory } from 'd3-shape'
+import { area, line, curveStepAfter, CurveFactory } from 'd3-shape'
 import { nanoid } from 'nanoid'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
@@ -73,11 +73,11 @@ const LinePathInternal = <P,>(
     data: P[]
     px: number | ((p: P) => number)
     py: number | ((p: P) => number)
-    curve: CurveFactory
+    curve?: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
   const { data, px, py, curve, ...rest } = props
-  const d3Line = line<P>(px, py).curve(curve)
+  const d3Line = line<P>(px, py).curve(curve ?? curveStepAfter)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} fill="none" d={d3Line(data)!} />
 }
@@ -89,11 +89,11 @@ const AreaPathInternal = <P,>(
     px: number | ((p: P) => number)
     py0: number | ((p: P) => number)
     py1: number | ((p: P) => number)
-    curve: CurveFactory
+    curve?: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
   const { data, px, py0, py1, curve, ...rest } = props
-  const d3Area = area<P>(px, py0, py1).curve(curve)
+  const d3Area = area<P>(px, py0, py1).curve(curve ?? curveStepAfter)
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return <path {...rest} d={d3Area(data)!} />
 }
@@ -105,7 +105,7 @@ export const AreaWithTopStroke = <P,>(props: {
   px: number | ((p: P) => number)
   py0: number | ((p: P) => number)
   py1: number | ((p: P) => number)
-  curve: CurveFactory
+  curve?: CurveFactory
 }) => {
   const { color, data, px, py0, py1, curve } = props
   return (
