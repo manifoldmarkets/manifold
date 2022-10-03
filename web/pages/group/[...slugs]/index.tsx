@@ -238,6 +238,10 @@ export default function GroupPage(props: {
 
   const tabs = [
     {
+      title: 'Overview',
+      content: overviewPage,
+    },
+    {
       title: 'Markets',
       content: questionsTab,
     },
@@ -248,10 +252,6 @@ export default function GroupPage(props: {
     {
       title: 'Posts',
       content: postsPage,
-    },
-    {
-      title: 'Overview',
-      content: overviewPage,
     },
   ]
 
