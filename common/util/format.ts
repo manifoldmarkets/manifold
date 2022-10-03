@@ -13,7 +13,9 @@ export function formatMoney(amount: number) {
     Math.round(amount) === 0
       ? 0
       : // Handle 499.9999999999999 case
-        Math.floor(amount + 0.00000000001 * Math.sign(amount))
+        (amount > 0 ? Math.floor : Math.ceil)(
+          amount + 0.00000000001 * Math.sign(amount)
+        )
   return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
 }
 
