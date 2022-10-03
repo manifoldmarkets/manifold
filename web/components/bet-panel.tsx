@@ -47,7 +47,6 @@ import { Modal } from './layout/modal'
 import { Title } from './title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import { useWindowSize } from 'web/hooks/use-window-size'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -179,12 +178,7 @@ export function BuyPanel(props: {
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const windowSize = useWindowSize()
-  const initialOutcome =
-    windowSize.width && windowSize.width >= 1280 ? 'YES' : undefined
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
-    initialOutcome
-  )
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>()
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -395,22 +389,16 @@ export function BuyPanel(props: {
           <WarningConfirmationButton
             marketType="binary"
             amount={betAmount}
-            outcome={outcome}
             warning={warning}
             onSubmit={submitBet}
             isSubmitting={isSubmitting}
-            openModalButtonClass={clsx(
-              'btn mb-2 flex-1',
-              betDisabled
-                ? 'btn-disabled bg-greyscale-2'
-                : outcome === 'NO'
-                ? 'border-none bg-red-400 hover:bg-red-500'
-                : 'border-none bg-teal-500 hover:bg-teal-600'
-            )}
+            disabled={!!betDisabled || outcome === undefined}
+            size="xl"
+            color={outcome === 'NO' ? 'red' : 'green'}
           />
         )}
         <button
-          className="text-greyscale-6 mx-auto select-none text-sm underline xl:hidden"
+          className="text-greyscale-6 mx-auto mt-3 select-none text-sm underline xl:hidden"
           onClick={() => setSeeLimit(true)}
         >
           Advanced
@@ -419,7 +407,7 @@ export function BuyPanel(props: {
           open={seeLimit}
           setOpen={setSeeLimit}
           position="center"
-          className="rounded-lg bg-white px-4 pb-8"
+          className="rounded-lg bg-white px-4 pb-4"
         >
           <Title text="Limit Order" />
           <LimitOrderPanel
@@ -427,6 +415,11 @@ export function BuyPanel(props: {
             contract={contract}
             user={user}
             unfilledBets={unfilledBets}
+          />
+          <LimitBets
+            contract={contract}
+            bets={unfilledBets as LimitBet[]}
+            className="mt-4"
           />
         </Modal>
       </Col>

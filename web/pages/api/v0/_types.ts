@@ -149,7 +149,8 @@ export function toFullMarket(
 ): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const answers =
-    contract.outcomeType === 'FREE_RESPONSE'
+    contract.outcomeType === 'FREE_RESPONSE' ||
+    contract.outcomeType === 'MULTIPLE_CHOICE'
       ? contract.answers.map((answer) =>
           augmentAnswerWithProbability(contract, answer)
         )

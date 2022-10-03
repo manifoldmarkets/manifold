@@ -1,27 +1,30 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
-import { CPMMContract } from 'common/contract'
+import { Contract, CPMMContract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
 import { addLiquidity, withdrawLiquidity } from 'web/lib/firebase/api'
-import { AmountInput } from './amount-input'
-import { Row } from './layout/row'
+import { AmountInput } from 'web/components/amount-input'
+import { Row } from 'web/components/layout/row'
 import { useUserLiquidity } from 'web/hooks/use-liquidity'
-import { Tabs } from './layout/tabs'
-import { NoLabel, YesLabel } from './outcome-label'
-import { Col } from './layout/col'
+import { Tabs } from 'web/components/layout/tabs'
+import { NoLabel, YesLabel } from 'web/components/outcome-label'
+import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
-import { InfoTooltip } from './info-tooltip'
+import { InfoTooltip } from 'web/components/info-tooltip'
 import { BETTORS, PRESENT_BET } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useAdmin } from 'web/hooks/use-admin'
+import { AddCommentBountyPanel } from 'web/components/contract/add-comment-bounty'
 
-export function LiquidityPanel(props: { contract: CPMMContract }) {
+export function LiquidityBountyPanel(props: { contract: Contract }) {
   const { contract } = props
 
+  const isCPMM = contract.mechanism === 'cpmm-1'
   const user = useUser()
-  const lpShares = useUserLiquidity(contract, user?.id ?? '')
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const lpShares = isCPMM && useUserLiquidity(contract, user?.id ?? '')
 
   const [showWithdrawal, setShowWithdrawal] = useState(false)
 
@@ -33,28 +36,34 @@ export function LiquidityPanel(props: { contract: CPMMContract }) {
   const isCreator = user?.id === contract.creatorId
   const isAdmin = useAdmin()
 
-  if (!showWithdrawal && !isAdmin && !isCreator) return <></>
-
   return (
     <Tabs
       tabs={buildArray(
-        (isCreator || isAdmin) && {
-          title: (isAdmin ? '[Admin] ' : '') + 'Subsidize',
-          content: <AddLiquidityPanel contract={contract} />,
-        },
-        showWithdrawal && {
-          title: 'Withdraw',
-          content: (
-            <WithdrawLiquidityPanel
-              contract={contract}
-              lpShares={lpShares as { YES: number; NO: number }}
-            />
-          ),
-        },
         {
-          title: 'Pool',
-          content: <ViewLiquidityPanel contract={contract} />,
-        }
+          title: 'Bounty Comments',
+          content: <AddCommentBountyPanel contract={contract} />,
+        },
+        (isCreator || isAdmin) &&
+          isCPMM && {
+            title: (isAdmin ? '[Admin] ' : '') + 'Subsidize',
+            content: <AddLiquidityPanel contract={contract} />,
+          },
+        showWithdrawal &&
+          isCPMM && {
+            title: 'Withdraw',
+            content: (
+              <WithdrawLiquidityPanel
+                contract={contract}
+                lpShares={lpShares as { YES: number; NO: number }}
+              />
+            ),
+          },
+
+        (isCreator || isAdmin) &&
+          isCPMM && {
+            title: 'Pool',
+            content: <ViewLiquidityPanel contract={contract} />,
+          }
       )}
     />
   )

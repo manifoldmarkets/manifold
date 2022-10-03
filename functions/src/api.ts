@@ -14,7 +14,7 @@ import {
 export { APIError } from '../../common/api'
 
 type Output = Record<string, unknown>
-type AuthedUser = {
+export type AuthedUser = {
   uid: string
   creds: JwtCredentials | (KeyCredentials & { privateUser: PrivateUser })
 }

@@ -1,5 +1,6 @@
 import React, { memo, useEffect, useMemo, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
+import dayjs from 'dayjs'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -41,11 +42,10 @@ import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useAdmin } from 'web/hooks/use-admin'
-import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
-import { PlayMoneyDisclaimer } from 'web/components/play-money-disclaimer'
-import BetButton from 'web/components/bet-button'
-
-import dayjs from 'dayjs'
+import { BetsSummary } from 'web/components/bet-summary'
+import { listAllComments } from 'web/lib/firebase/comments'
+import { ContractComment } from 'common/comment'
+import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -55,10 +55,15 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
   const bets = contractId ? await listAllBets(contractId) : []
+  const comments = contractId ? await listAllComments(contractId) : []
 
   return {
-    // Limit the data sent to the client. Client will still load all bets directly.
-    props: { contract, bets: bets.slice(0, 5000) },
+    props: {
+      contract,
+      // Limit the data sent to the client. Client will still load all bets/comments directly.
+      bets: bets.slice(0, 5000),
+      comments: comments.slice(0, 1000),
+    },
     revalidate: 5, // regenerate after five seconds
   }
 }
@@ -70,9 +75,14 @@ export async function getStaticPaths() {
 export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
+  comments: ContractComment[]
   backToHome?: () => void
 }) {
-  props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
+  props = usePropz(props, getStaticPropz) ?? {
+    contract: null,
+    bets: [],
+    comments: [],
+  }
 
   const inIframe = useIsIframe()
   if (inIframe) {
@@ -147,7 +157,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { backToHome } = props
+  const { backToHome, comments } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const user = useUser()
   usePrefetch(user?.id)
@@ -166,6 +176,10 @@ export function ContractPageContent(
     () => bets.filter((b) => !b.challengeSlug),
     [bets]
   )
+
+  const userBets = user
+    ? bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
+    : []
 
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -194,7 +208,6 @@ export function ContractPageContent(
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
-
       {ogCardProps && (
         <SEO
           title={question}
@@ -203,7 +216,6 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-
       <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
@@ -248,23 +260,21 @@ export function ContractPageContent(
           </>
         )}
 
-        <ContractTabs contract={contract} bets={bets} />
-        {!user ? (
-          <Col className="mt-4 max-w-sm items-center xl:hidden">
-            <BetSignUpPrompt />
-            <PlayMoneyDisclaimer />
-          </Col>
-        ) : (
-          outcomeType === 'BINARY' &&
-          allowTrade && (
-            <BetButton
-              contract={contract as CPMMBinaryContract}
-              className="mb-2 !mt-0 xl:hidden"
-            />
-          )
-        )}
+        <BetsSummary
+          className="mb-4 px-2"
+          contract={contract}
+          userBets={userBets}
+        />
+
+        <ContractTabs
+          contract={contract}
+          bets={bets}
+          userBets={userBets}
+          comments={comments}
+        />
       </Col>
       <RecommendedContractsWidget contract={contract} />
+      <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
 }

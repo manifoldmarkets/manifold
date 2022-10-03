@@ -3,13 +3,15 @@ import { useRouter, NextRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
 import { track } from '@amplitude/analytics-browser'
 import { Col } from './col'
+import { Tooltip } from 'web/components/tooltip'
+import { Row } from 'web/components/layout/row'
 
 type Tab = {
   title: string
-  tabIcon?: ReactNode
   content: ReactNode
-  // If set, show a badge with this content
-  badge?: string
+  stackedTabIcon?: ReactNode
+  inlineTabIcon?: ReactNode
+  tooltip?: string
 }
 
 type TabProps = {
@@ -56,12 +58,16 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             )}
             aria-current={activeIndex === i ? 'page' : undefined}
           >
-            {tab.badge ? (
-              <span className="px-0.5 font-bold">{tab.badge}</span>
-            ) : null}
             <Col>
-              {tab.tabIcon && <div className="mx-auto">{tab.tabIcon}</div>}
-              {tab.title}
+              <Tooltip text={tab.tooltip}>
+                {tab.stackedTabIcon && (
+                  <Row className="justify-center">{tab.stackedTabIcon}</Row>
+                )}
+                <Row className={'gap-1 '}>
+                  {tab.title}
+                  {tab.inlineTabIcon}
+                </Row>
+              </Tooltip>
             </Col>
           </a>
         ))}

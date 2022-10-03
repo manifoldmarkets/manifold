@@ -8,12 +8,12 @@ export function ProbabilitySelector(props: {
   const { probabilityInt, setProbabilityInt, isSubmitting } = props
 
   return (
-    <Row className="items-center gap-2">
-      <label className="input-group input-group-lg w-fit text-lg">
+    <Row className="items-center  gap-2">
+      <label className="input-group input-group-lg text-lg">
         <input
           type="number"
           value={probabilityInt}
-          className="input input-bordered input-md text-lg"
+          className="input input-bordered input-md w-28 text-lg"
           disabled={isSubmitting}
           min={1}
           max={99}
@@ -23,14 +23,6 @@ export function ProbabilitySelector(props: {
         />
         <span>%</span>
       </label>
-      <input
-        type="range"
-        className="range range-primary"
-        min={1}
-        max={99}
-        value={probabilityInt}
-        onChange={(e) => setProbabilityInt(parseInt(e.target.value))}
-      />
     </Row>
   )
 }

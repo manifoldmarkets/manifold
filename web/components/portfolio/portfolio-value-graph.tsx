@@ -105,7 +105,7 @@ export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
         sliceTooltip={({ slice }) => {
           handleGraphDisplayChange(slice.points[0].data.yFormatted)
           return (
-            <div className="rounded bg-white px-4 py-2 opacity-80">
+            <div className="rounded border border-gray-200 bg-white px-4 py-2 opacity-80">
               <div
                 key={slice.points[0].id}
                 className="text-xs font-semibold sm:text-sm"

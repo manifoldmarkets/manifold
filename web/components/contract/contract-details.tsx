@@ -32,6 +32,10 @@ import { ExclamationIcon, PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import {
+  BountiedContractBadge,
+  BountiedContractSmallBadge,
+} from 'web/components/contract/bountied-contract-badge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -63,6 +67,8 @@ export function MiscDetails(props: {
         </Row>
       ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
         <FeaturedContractBadge />
+      ) : (contract.openCommentBounties ?? 0) > 0 ? (
+        <BountiedContractBadge />
       ) : volume > 0 || !isNew ? (
         <Row className={'shrink-0'}>{formatMoney(volume)} bet</Row>
       ) : (
@@ -126,9 +132,10 @@ export function ContractDetails(props: {
       </Row>
       {/* GROUPS */}
       {isMobile && (
-        <div className="mt-2">
+        <Row className="mt-2 gap-1">
+          <BountiedContractSmallBadge contract={contract} />
           <MarketGroups contract={contract} disabled={disabled} />
-        </div>
+        </Row>
       )}
     </Col>
   )
@@ -180,14 +187,18 @@ export function MarketSubheader(props: {
               </Tooltip>
             )}
         </Row>
-        <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
+        <Row className="text-2xs text-greyscale-4 flex-wrap gap-2 sm:text-xs">
           <CloseOrResolveTime
             contract={contract}
             resolvedDate={resolvedDate}
             isCreator={isCreator}
+            disabled={disabled}
           />
           {!isMobile && (
-            <MarketGroups contract={contract} disabled={disabled} />
+            <Row className={'gap-1'}>
+              <BountiedContractSmallBadge contract={contract} />
+              <MarketGroups contract={contract} disabled={disabled} />
+            </Row>
           )}
         </Row>
       </Col>
@@ -199,8 +210,9 @@ export function CloseOrResolveTime(props: {
   contract: Contract
   resolvedDate: any
   isCreator: boolean
+  disabled?: boolean
 }) {
-  const { contract, resolvedDate, isCreator } = props
+  const { contract, resolvedDate, isCreator, disabled } = props
   const { resolutionTime, closeTime } = contract
   if (!!closeTime || !!resolvedDate) {
     return (
@@ -224,6 +236,7 @@ export function CloseOrResolveTime(props: {
               closeTime={closeTime}
               contract={contract}
               isCreator={isCreator ?? false}
+              disabled={disabled}
             />
           </Row>
         )}
@@ -244,7 +257,8 @@ export function MarketGroups(props: {
   return (
     <>
       <Row className="items-center gap-1">
-        <GroupDisplay groupToDisplay={groupToDisplay} />
+        <GroupDisplay groupToDisplay={groupToDisplay} disabled={disabled} />
+
         {!disabled && user && (
           <button
             className="text-greyscale-4 hover:text-greyscale-3"
@@ -329,19 +343,34 @@ export function ExtraMobileContractDetails(props: {
   )
 }
 
-export function GroupDisplay(props: { groupToDisplay?: GroupLink | null }) {
-  const { groupToDisplay } = props
+export function GroupDisplay(props: {
+  groupToDisplay?: GroupLink | null
+  disabled?: boolean
+}) {
+  const { groupToDisplay, disabled } = props
+
   if (groupToDisplay) {
-    return (
+    const groupSection = (
+      <a
+        className={clsx(
+          'bg-greyscale-4 max-w-[140px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
+          !disabled && 'hover:bg-greyscale-3 cursor-pointer'
+        )}
+      >
+        {groupToDisplay.name}
+      </a>
+    )
+
+    return disabled ? (
+      groupSection
+    ) : (
       <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a className="bg-greyscale-4 hover:bg-greyscale-3 max-w-[140px] truncate rounded-full px-2 text-xs text-white sm:max-w-[250px]">
-          {groupToDisplay.name}
-        </a>
+        {groupSection}
       </Link>
     )
   } else
     return (
-      <div className="bg-greyscale-4 truncate rounded-full px-2 text-xs text-white">
+      <div className="bg-greyscale-4 truncate rounded-full py-0.5 px-2 text-xs text-white">
         No Group
       </div>
     )
@@ -351,8 +380,9 @@ function EditableCloseDate(props: {
   closeTime: number
   contract: Contract
   isCreator: boolean
+  disabled?: boolean
 }) {
-  const { closeTime, contract, isCreator } = props
+  const { closeTime, contract, isCreator, disabled } = props
 
   const dayJsCloseTime = dayjs(closeTime)
   const dayJsNow = dayjs()
@@ -365,18 +395,22 @@ function EditableCloseDate(props: {
     closeTime && dayJsCloseTime.format('HH:mm')
   )
 
-  const newCloseTime = closeDate
-    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
-    : undefined
-
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
 
-  const onSave = () => {
+  let newCloseTime = closeDate
+    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
+    : undefined
+  function onSave(customTime?: number) {
+    if (customTime) {
+      newCloseTime = customTime
+      setCloseDate(dayjs(newCloseTime).format('YYYY-MM-DD'))
+      setCloseHoursMinutes(dayjs(newCloseTime).format('HH:mm'))
+    }
     if (!newCloseTime) return
 
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
-    else if (newCloseTime > Date.now()) {
+    else {
       const content = contract.description
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
@@ -425,12 +459,20 @@ function EditableCloseDate(props: {
             />
           </Row>
           <Button
-            className="mt-2"
+            className="mt-4"
             size={'xs'}
             color={'indigo'}
-            onClick={onSave}
+            onClick={() => onSave()}
           >
             Done
+          </Button>
+          <Button
+            className="mt-4"
+            size={'xs'}
+            color={'gray-white'}
+            onClick={() => onSave(Date.now())}
+          >
+            Close Now
           </Button>
         </Col>
       </Modal>
@@ -439,8 +481,8 @@ function EditableCloseDate(props: {
         time={closeTime}
       >
         <span
-          className={isCreator ? 'cursor-pointer' : ''}
-          onClick={() => isCreator && setIsEditingCloseTime(true)}
+          className={!disabled && isCreator ? 'cursor-pointer' : ''}
+          onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
           {isSameDay ? (
             <span className={'capitalize'}> {fromNow(closeTime)}</span>

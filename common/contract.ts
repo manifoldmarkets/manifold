@@ -63,6 +63,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   likedByUserIds?: string[]
   likedByUserCount?: number
   flaggedByUsernames?: string[]
+  openCommentBounties?: number
 } & T
 
 export type BinaryContract = Contract & Binary

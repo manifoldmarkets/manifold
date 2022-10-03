@@ -46,6 +46,7 @@ export function ContractCard(props: {
   hideGroupLink?: boolean
   trackingPostfix?: string
   noLinkAvatar?: boolean
+  newTab?: boolean
 }) {
   const {
     showTime,
@@ -56,6 +57,7 @@ export function ContractCard(props: {
     hideGroupLink,
     trackingPostfix,
     noLinkAvatar,
+    newTab,
   } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
@@ -189,6 +191,7 @@ export function ContractCard(props: {
               }
             )}
             className="absolute top-0 left-0 right-0 bottom-0"
+            target={newTab ? '_blank' : '_self'}
           />
         </Link>
       )}
@@ -211,7 +214,9 @@ export function BinaryResolutionOrChance(props: {
   const probChanged = before !== after
 
   return (
-    <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
+    <Col
+      className={clsx('items-end', large ? 'text-4xl' : 'text-3xl', className)}
+    >
       {resolution ? (
         <Row className="flex items-start">
           <div>
