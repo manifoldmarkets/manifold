@@ -1,4 +1,5 @@
 import { track } from '@amplitude/analytics-browser'
+import { DocumentIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Post } from 'common/post'
 import Link from 'next/link'
@@ -48,6 +49,12 @@ export function PostCard(props: {
           <div className="font-small text-md text-gray-500">
             {post.subtitle}
           </div>
+        </div>
+        <div>
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white">
+            <DocumentIcon className={'h3 w-3'} />
+            Post
+          </span>
         </div>
       </Row>
       {onPostClick ? (
