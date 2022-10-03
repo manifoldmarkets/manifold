@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { last, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
+import { curveStepAfter } from 'd3-shape'
 
 import { Bet } from 'common/bet'
 import { getProbability, getInitialProbability } from 'common/calculate'
@@ -76,6 +77,7 @@ export const BinaryContractChart = (props: {
       yScale={yScale}
       data={data}
       color="#11b981"
+      curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}
       pct
