@@ -409,7 +409,7 @@ export function TrendingGroupsSection(props: {
   const groups = useTrendingGroups().filter(
     (g) => !memberGroupIds.includes(g.id)
   )
-  const count = 7
+  const count = 20
   const chosenGroups = groups.slice(0, count)
 
   if (chosenGroups.length === 0) {
@@ -419,6 +419,9 @@ export function TrendingGroupsSection(props: {
   return (
     <Col className={className}>
       <SectionHeader label="Trending groups" href="/explore-groups" />
+      <div className="mb-4 text-gray-500">
+        Follow groups you are interested in.
+      </div>
       <Row className="flex-wrap gap-2">
         {chosenGroups.map((g) => (
           <PillButton
