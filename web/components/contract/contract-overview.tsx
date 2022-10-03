@@ -1,5 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react'
-
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { ContractChart } from 'web/components/charts/contract'
@@ -25,6 +23,7 @@ import {
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
 import { ContractReportResolution } from './contract-report-resolution'
+import { SizedContainer } from 'web/components/sized-container'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -50,32 +49,18 @@ const SizedContractChart = (props: {
   fullHeight: number
   mobileHeight: number
 }) => {
-  const { contract, bets, fullHeight, mobileHeight } = props
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [chartWidth, setChartWidth] = useState<number>()
-  const [chartHeight, setChartHeight] = useState<number>()
-  useEffect(() => {
-    const handleResize = () => {
-      setChartHeight(window.innerWidth < 800 ? mobileHeight : fullHeight)
-      setChartWidth(containerRef.current?.clientWidth)
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [fullHeight, mobileHeight])
+  const { fullHeight, mobileHeight, contract, bets } = props
   return (
-    <div ref={containerRef}>
-      {chartWidth != null && chartHeight != null && (
+    <SizedContainer fullHeight={fullHeight} mobileHeight={mobileHeight}>
+      {(width, height) => (
         <ContractChart
+          width={width}
+          height={height}
           contract={contract}
           bets={bets}
-          width={chartWidth}
-          height={chartHeight}
         />
       )}
-    </div>
+    </SizedContainer>
   )
 }
 

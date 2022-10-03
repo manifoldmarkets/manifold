@@ -85,13 +85,34 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     store: storageStore(safeLocalStorage()),
   })
   const me = useUser()
+
   if (comments == null) {
     return <LoadingIndicator />
   }
+
+  const tipsOrBountiesAwarded =
+    Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
+
+  const sortedComments = sortBy(comments, (c) =>
+    sort === 'Newest'
+      ? c.createdTime
+      : // Is this too magic? If there are tips/bounties, 'Best' shows your own comments made within the last 10 minutes first, then sorts by score
+      tipsOrBountiesAwarded &&
+        c.createdTime > Date.now() - 10 * MINUTE_MS &&
+        c.userId === me?.id
+      ? -Infinity
+      : -((c.bountiesAwarded ?? 0) + sum(Object.values(tips[c.id] ?? [])))
+  )
+
+  const commentsByParent = groupBy(
+    sortedComments,
+    (c) => c.replyToCommentId ?? '_'
+  )
+  const topLevelComments = commentsByParent['_'] ?? []
+  // Top level comments are reverse-chronological, while replies are chronological
+  if (sort === 'Newest') topLevelComments.reverse()
+
   if (contract.outcomeType === 'FREE_RESPONSE') {
-    const generalComments = comments.filter(
-      (c) => c.answerOutcome === undefined && c.betId === undefined
-    )
     const sortedAnswers = sortBy(
       contract.answers,
       (a) => -getOutcomeProbability(contract, a.id)
@@ -99,6 +120,9 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     const commentsByOutcome = groupBy(
       comments,
       (c) => c.answerOutcome ?? c.betOutcome ?? '_'
+    )
+    const generalTopLevelComments = topLevelComments.filter(
+      (c) => c.answerOutcome === undefined && c.betId === undefined
     )
     return (
       <>
@@ -123,12 +147,12 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           <div className="text-md mt-8 mb-2 text-left">General Comments</div>
           <div className="mb-4 w-full border-b border-gray-200" />
           <ContractCommentInput className="mb-5" contract={contract} />
-          {generalComments.map((comment) => (
+          {generalTopLevelComments.map((comment) => (
             <FeedCommentThread
               key={comment.id}
               contract={contract}
               parentComment={comment}
-              threadComments={[]}
+              threadComments={commentsByParent[comment.id] ?? []}
               tips={tips}
             />
           ))}
