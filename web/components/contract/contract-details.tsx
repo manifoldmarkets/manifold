@@ -143,7 +143,7 @@ export function MarketSubheader(props: {
   const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
   const correctResolutionPercentage =
-    useUserById(creatorId)?.correctResolutionPercentageCached
+    useUserById(creatorId)?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
   return (
