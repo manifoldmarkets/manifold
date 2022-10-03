@@ -90,3 +90,23 @@ export function PostCard(props: {
     </div>
   )
 }
+
+export function PostCardList(props: {
+  posts: Post[]
+  highlightOptions?: CardHighlightOptions
+  onPostClick?: (post: Post) => void
+}) {
+  const { posts, onPostClick, highlightOptions } = props
+  return (
+    <div className="w-full">
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          onPostClick={onPostClick}
+          highlightOptions={highlightOptions}
+        />
+      ))}
+    </div>
+  )
+}
