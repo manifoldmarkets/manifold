@@ -13,8 +13,6 @@ export function AddFundsModal(props: {
   const { open, setOpen } = props
 
   const user = useUser()
-  // in hook so not run in nextjs
-  const [location] = useState(window.location.href)
 
   const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
     2500
@@ -43,7 +41,11 @@ export function AddFundsModal(props: {
         </Button>
 
         <form
-          action={checkoutURL(user?.id || '', amountSelected, location)}
+          action={checkoutURL(
+            user?.id || '',
+            amountSelected,
+            window.location.href
+          )}
           method="POST"
         >
           <Button type="submit" color="gradient">
