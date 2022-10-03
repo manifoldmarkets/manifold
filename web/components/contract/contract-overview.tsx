@@ -121,7 +121,9 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
               contract={contract}
               large
             />
-            <ContractReportResolution contract={contract} />
+            {contract.isResolved && (
+              <ContractReportResolution contract={contract} />
+            )}
           </Row>
         </Row>
       </Col>

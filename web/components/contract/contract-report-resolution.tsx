@@ -32,8 +32,8 @@ export function ContractReportResolution(props: { contract: Contract }) {
   }
 
   const flagClass = clsx(
-    'mx-2 flex flex-col items-center gap-1  w-6 h-6 text-gray-500 rounded-md bg-gray-100 px-2 py-1 hover:bg-gray-300',
-    userReported && 'text-red-500'
+    'mx-2 flex flex-col items-center gap-1  w-6 h-6  rounded-md !bg-gray-100 px-2 py-1 hover:bg-gray-300',
+    userReported ? '!text-red-500' : '!text-gray-500'
   )
 
   return (
