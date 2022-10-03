@@ -1,5 +1,6 @@
 import { MouseEventHandler, ReactNode } from 'react'
 import clsx from 'clsx'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
@@ -21,6 +22,7 @@ export function Button(props: {
   color?: ColorType
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
+  loading?: boolean
 }) {
   const {
     children,
@@ -30,6 +32,7 @@ export function Button(props: {
     color = 'indigo',
     type = 'button',
     disabled = false,
+    loading,
   } = props
 
   const sizeClasses = {
@@ -68,9 +71,10 @@ export function Button(props: {
           'text-highlight-blue disabled:bg-greyscale-2 border-none shadow-none',
         className
       )}
-      disabled={disabled}
+      disabled={disabled || loading}
       onClick={onClick}
     >
+      {loading && <LoadingIndicator className={'mr-2 border-gray-500'} />}
       {children}
     </button>
   )

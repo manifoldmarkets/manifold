@@ -21,6 +21,7 @@ export function ConfirmationButton(props: {
   submitBtn?: {
     label?: string
     className?: string
+    isSubmitting?: boolean
   }
   children: ReactNode
   onSubmit?: () => void
@@ -58,7 +59,7 @@ export function ConfirmationButton(props: {
             >
               {cancelBtn?.label ?? 'Cancel'}
             </div>
-            <div
+            <Button
               className={clsx('btn', submitBtn?.className)}
               onClick={
                 onSubmitWithSuccess
@@ -68,9 +69,10 @@ export function ConfirmationButton(props: {
                       )
                   : onSubmit
               }
+              loading={submitBtn?.isSubmitting}
             >
               {submitBtn?.label ?? 'Submit'}
-            </div>
+            </Button>
           </Row>
         </Col>
       </Modal>
@@ -125,6 +127,7 @@ export function ResolveConfirmationButton(props: {
       submitBtn={{
         label: 'Resolve',
         className: clsx('border-none', submitButtonClass),
+        isSubmitting,
       }}
       onSubmit={onResolve}
     >
