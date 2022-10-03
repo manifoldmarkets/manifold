@@ -110,7 +110,7 @@ export const getDefaultNotificationPreferences = (
     loan_income: constructPref(true, false),
     betting_streaks: constructPref(true, false),
     referral_bonuses: constructPref(true, true),
-    unique_bettors_on_your_contract: constructPref(true, false),
+    unique_bettors_on_your_contract: constructPref(true, true),
     tipped_comments_on_watched_markets: constructPref(true, true),
     tips_on_your_markets: constructPref(true, true),
     limit_order_fills: constructPref(true, false),
