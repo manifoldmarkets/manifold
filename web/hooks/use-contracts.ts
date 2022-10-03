@@ -32,7 +32,7 @@ export const useContracts = () => {
 export const useTrendingContracts = (maxContracts: number) => {
   const { data } = useQuery(['trending-contracts', maxContracts], () =>
     trendingIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false'],
+      facetFilters: ['isResolved:false', 'visibility:public'],
       hitsPerPage: maxContracts,
     })
   )
@@ -43,7 +43,7 @@ export const useTrendingContracts = (maxContracts: number) => {
 export const useNewContracts = (maxContracts: number) => {
   const { data } = useQuery(['newest-contracts', maxContracts], () =>
     newIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false'],
+      facetFilters: ['isResolved:false', 'visibility:public'],
       hitsPerPage: maxContracts,
     })
   )
@@ -57,7 +57,11 @@ export const useContractsByDailyScoreNotBetOn = (
 ) => {
   const { data } = useQuery(['daily-score', userId, maxContracts], () =>
     dailyScoreIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false', `uniqueBettors:-${userId}`],
+      facetFilters: [
+        'isResolved:false',
+        'visibility:public',
+        `uniqueBettors:-${userId}`,
+      ],
       hitsPerPage: maxContracts,
     })
   )
