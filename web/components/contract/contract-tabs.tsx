@@ -136,6 +136,8 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       </>
     )
   } else {
+    // TODO: links to comments are broken because tips load after render and
+    //  comments will reorganize themselves if there are tips/bounties awarded
     const tipsOrBountiesAwarded =
       Object.keys(tips).length > 0 || comments.some((c) => c.bountiesAwarded)
 

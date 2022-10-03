@@ -118,7 +118,7 @@ export function NotificationSettings(props: {
   const yourMarkets: SectionData = {
     label: 'Markets You Created',
     subscriptionTypes: [
-      'your_contract_closed',
+      // 'your_contract_closed',
       'all_comments_on_my_markets',
       'all_answers_on_my_markets',
       'subsidized_your_market',
