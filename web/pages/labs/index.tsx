@@ -16,7 +16,7 @@ export default function LabsPage() {
         url="/labs"
       />
       <Col className="px-4">
-        <Title className="sm:!mt-0" text="Manifold Labs" />
+        <Title className="sm:!mt-0" text="🧪 Manifold Labs" />
 
         <Masonry
           breakpointCols={{ default: 2, 768: 1 }}
