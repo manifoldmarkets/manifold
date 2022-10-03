@@ -1,5 +1,9 @@
 import { ClockIcon } from '@heroicons/react/outline'
-import { ExclamationIcon, PencilIcon, PlusCircleIcon } from '@heroicons/react/solid'
+import {
+  ExclamationIcon,
+  PencilIcon,
+  PlusCircleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
