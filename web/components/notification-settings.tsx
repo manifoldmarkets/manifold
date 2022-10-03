@@ -10,6 +10,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CurrencyDollarIcon,
+  ExclamationIcon,
   InboxInIcon,
   InformationCircleIcon,
   LightBulbIcon,
@@ -63,6 +64,7 @@ export function NotificationSettings(props: {
     'contract_from_followed_user',
     'unique_bettors_on_your_contract',
     'profit_loss_updates',
+    'opt_out_all',
     // TODO: add these
     // biggest winner, here are the rest of your markets
 
@@ -157,19 +159,55 @@ export function NotificationSettings(props: {
     ],
   }
 
+  const optOut: SectionData = {
+    label: 'Opt Out',
+    subscriptionTypes: ['opt_out_all'],
+  }
+
   function NotificationSettingLine(props: {
     description: string
     subscriptionTypeKey: notification_preference
     destinations: notification_destination_types[]
+    optOutAll: notification_destination_types[]
   }) {
-    const { description, subscriptionTypeKey, destinations } = props
+    const { description, subscriptionTypeKey, destinations, optOutAll } = props
     const previousInAppValue = destinations.includes('browser')
     const previousEmailValue = destinations.includes('email')
     const [inAppEnabled, setInAppEnabled] = useState(previousInAppValue)
     const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
+    const [error, setError] = useState<string>('')
     const loading = 'Changing Notifications Settings'
     const success = 'Changed Notification Settings!'
     const highlight = navigateToSection === subscriptionTypeKey
+
+    const attemptToChangeSetting = (
+      setting: 'browser' | 'email',
+      newValue: boolean
+    ) => {
+      const necessaryError =
+        'This notification type is necessary. At least one destination must be enabled.'
+      const necessarySetting =
+        NOTIFICATION_DESCRIPTIONS[subscriptionTypeKey].necessary
+      if (
+        necessarySetting &&
+        setting === 'browser' &&
+        !emailEnabled &&
+        !newValue
+      ) {
+        setError(necessaryError)
+        return
+      } else if (
+        necessarySetting &&
+        setting === 'email' &&
+        !inAppEnabled &&
+        !newValue
+      ) {
+        setError(necessaryError)
+        return
+      }
+
+      changeSetting(setting, newValue)
+    }
 
     const changeSetting = (setting: 'browser' | 'email', newValue: boolean) => {
       toast
@@ -212,18 +250,21 @@ export function NotificationSettings(props: {
             {!browserDisabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={inAppEnabled}
-                onChange={(newVal) => changeSetting('browser', newVal)}
+                onChange={(newVal) => attemptToChangeSetting('browser', newVal)}
                 label={'Web'}
+                disabled={optOutAll.includes('browser')}
               />
             )}
             {emailsEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={emailEnabled}
-                onChange={(newVal) => changeSetting('email', newVal)}
+                onChange={(newVal) => attemptToChangeSetting('email', newVal)}
                 label={'Email'}
+                disabled={optOutAll.includes('email')}
               />
             )}
           </Row>
+          {error && <span className={'text-error'}>{error}</span>}
         </Col>
       </Row>
     )
@@ -283,6 +324,11 @@ export function NotificationSettings(props: {
                 subType as notification_preference
               )}
               description={NOTIFICATION_DESCRIPTIONS[subType].simple}
+              optOutAll={
+                subType === 'opt_out_all' || subType === 'your_contract_closed'
+                  ? []
+                  : getUsersSavedPreference('opt_out_all')
+              }
             />
           ))}
         </Col>
@@ -331,6 +377,10 @@ export function NotificationSettings(props: {
         <Section
           icon={<InboxInIcon className={'h-6 w-6'} />}
           data={generalOther}
+        />
+        <Section
+          icon={<ExclamationIcon className={'h-6 w-6'} />}
+          data={optOut}
         />
         <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
