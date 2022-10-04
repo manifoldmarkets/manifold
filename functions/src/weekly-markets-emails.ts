@@ -8,7 +8,7 @@ import { DAY_MS, HOUR_MS } from '../../common/util/time'
 import { filterDefined } from '../../common/util/array'
 import { Follow } from '../../common/follow'
 import { countBy, uniqBy } from 'lodash'
-import { sendInterestingMarketsEmail } from 'functions/src/emails'
+import { sendInterestingMarketsEmail } from './emails'
 
 export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
