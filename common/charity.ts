@@ -576,7 +576,7 @@ Work towards sustainable, systemic change.`,
 
 If you would like to support our work, you can do so by getting involved or by donating.`,
   },
-    {
+  {
     name: 'CaRLA',
     website: 'https://carlaef.org/',
     photo: 'https://i.imgur.com/IsNVTOY.png',
@@ -588,6 +588,14 @@ If you would like to support our work, you can do so by getting involved or by d
 CaRLA uses legal advocacy and education to ensure all cities comply with their own zoning and state housing laws and do their part to help solve the state’s housing shortage.
 
 In addition to housing impact litigation, we provide free legal aid, education and workshops, counseling and advocacy to advocates, homeowners, small developers, and city and state government officials.`,
+  },
+  {
+    name: 'Mriya',
+    website: 'https://mriya-ua.org/',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2Fci2h3hStFM.47?alt=media&token=0d2cdc3d-e4d8-4f5e-8f23-4a586b6ff637',
+    preview: 'Donate supplies to soldiers in Ukraine',
+    description: 'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
