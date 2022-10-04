@@ -14,11 +14,6 @@ export function getHtml(parsedReq: ParsedRequest) {
     numericValue,
     resolution,
   } = parsedReq
-  const MAX_QUESTION_CHARS = 100
-  const truncatedQuestion =
-    question.length > MAX_QUESTION_CHARS
-      ? question.slice(0, MAX_QUESTION_CHARS) + '...'
-      : question
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
 
   let resolutionColor = 'text-primary'
@@ -69,7 +64,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         <meta charset="utf-8">
         <title>Generated Image</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.tailwindcss.com?plugins=line-clamp"></script>
     </head>
     <style>
         ${getTemplateCss(theme, fontSize)}
@@ -109,8 +104,8 @@ export function getHtml(parsedReq: ParsedRequest) {
       </div>
 
       <div class="flex flex-row justify-between gap-12 pt-36">
-        <div class="text-indigo-700 text-6xl leading-tight">
-          ${truncatedQuestion}
+        <div class="text-indigo-700 text-6xl leading-tight line-clamp-4">
+          ${question}
         </div>
         <div class="flex flex-col">
                     ${
