@@ -24,7 +24,7 @@ import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
 import TiptapTweet from './tiptap-tweet-type'
 import { find } from 'linkifyjs'
-import { uniq } from 'lodash'
+import { cloneDeep, uniq } from 'lodash'
 import { TiptapSpoiler } from './tiptap-spoiler'
 
 /** get first url in text. like "notion.so " -> "http://notion.so"; "notion" -> null */
@@ -108,5 +108,18 @@ export const exhibitExts = [
 ]
 
 export function richTextToString(text?: JSONContent) {
-  return !text ? '' : generateText(text, exhibitExts)
+  if (!text) return ''
+  // remove spoiler tags.
+  const newText = cloneDeep(text)
+  dfs(newText, (current) => {
+    if (current.marks?.some((m) => m.type === TiptapSpoiler.name)) {
+      current.text = '[spoiler]'
+    }
+  })
+  return generateText(newText, exhibitExts)
+}
+
+const dfs = (data: JSONContent, f: (current: JSONContent) => any) => {
+  data.content?.forEach((d) => dfs(d, f))
+  f(data)
 }
