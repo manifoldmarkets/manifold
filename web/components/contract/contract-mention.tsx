@@ -1,7 +1,9 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
+import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
+import { fromNow } from 'web/lib/util/time'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getColor } from './quick-bet'
 
@@ -14,7 +16,7 @@ export function ContractMention(props: { contract: Contract }) {
     <Link href={contractPath(contract)}>
       <a
         className="group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50"
-        title={outcomeType}
+        title={tooltipLabel(contract)}
       >
         <span className="break-anywhere mr-0.5 whitespace-normal font-normal text-indigo-700">
           {contract.question}
@@ -40,4 +42,13 @@ export function ContractMention(props: { contract: Contract }) {
       </a>
     </Link>
   )
+}
+
+function tooltipLabel(contract: Contract) {
+  const { resolutionTime, creatorName, volume, closeTime = 0 } = contract
+  const dateFormat = resolutionTime
+    ? `Resolved ${fromNow(resolutionTime)}`
+    : `${closeTime < Date.now() ? 'Closed' : 'Closes'} ${fromNow(closeTime)}`
+
+  return `By ${creatorName}. ${formatMoney(volume)} bet. ${dateFormat}`
 }
