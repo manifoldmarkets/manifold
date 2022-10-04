@@ -18,7 +18,6 @@ export const PortfolioValueSection = memo(
       number | string | null
     >(null)
     const handleGraphDisplayChange = (p: { y: number } | undefined) => {
-      console.log(p)
       setGraphDisplayNumber(p != null ? formatMoney(p.y) : null)
     }
 
