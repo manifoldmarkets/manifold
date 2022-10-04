@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
 
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { exhibitExts, parseTags } from 'common/util/parse'
+import { exhibitExts } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
@@ -53,17 +53,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
 
   async function saveDescription() {
     if (!editor) return
-
-    const tags = parseTags(
-      `${editor.getText()} ${contract.tags.map((tag) => `#${tag}`).join(' ')}`
-    )
-    const lowercaseTags = tags.map((tag) => tag.toLowerCase())
-
-    await updateContract(contract.id, {
-      description: editor.getJSON(),
-      tags,
-      lowercaseTags,
-    })
+    await updateContract(contract.id, { description: editor.getJSON() })
   }
 
   return editing ? (
