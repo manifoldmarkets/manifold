@@ -124,10 +124,10 @@ export const SliceMarker = (props: {
   const { color, x, y0, y1 } = props
   return (
     <g>
-      <line stroke="white" strokeWidth={3} x1={x} x2={x} y1={y0} y2={y1} />
+      <line stroke="white" strokeWidth={1} x1={x} x2={x} y1={y0} y2={y1} />
       <circle
         stroke="white"
-        strokeWidth={3}
+        strokeWidth={1}
         fill={color}
         cx={x}
         cy={y1}
