@@ -34,17 +34,20 @@ export const unsubscribe: EndpointDefinition = {
     const previousDestinations =
       user.notificationPreferences[notificationSubscriptionType]
 
+    let newDestinations = previousDestinations
+    if (wantsToOptOutAll) newDestinations.push('email')
+    else
+      newDestinations = previousDestinations.filter(
+        (destination) => destination !== 'email'
+      )
+
     console.log(previousDestinations)
     const { email } = user
 
     const update: Partial<PrivateUser> = {
       notificationPreferences: {
         ...user.notificationPreferences,
-        [notificationSubscriptionType]: wantsToOptOutAll
-          ? previousDestinations.push('email')
-          : previousDestinations.filter(
-              (destination) => destination !== 'email'
-            ),
+        [notificationSubscriptionType]: newDestinations,
       },
     }
 
