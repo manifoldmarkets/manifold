@@ -209,35 +209,33 @@ function OpenAnswer(props: {
       <Col
         className={clsx(
           'bg-greyscale-1 relative w-full rounded-lg transition-all',
-          tradingAllowed(contract)
-            ? 'text-greyscale-7'
-            : 'text-greyscale-5 pointer-events-none'
+          tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
         )}
       >
         <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
-          <div>
-            <span>
-              <Avatar
-                className="mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
-                username={username}
-                avatarUrl={avatarUrl}
-              />
-            </span>
+          <Row>
+            <Avatar
+              className="mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
+              username={username}
+              avatarUrl={avatarUrl}
+            />
             <Linkify
               className="text-md cursor-pointer whitespace-pre-line"
               text={text}
             />
-          </div>
+          </Row>
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>
-            <Button
-              size="2xs"
-              color="gray-outline"
-              onClick={() => setOpen(true)}
-              className="my-auto"
-            >
-              BUY
-            </Button>
+            {tradingAllowed(contract) && (
+              <Button
+                size="2xs"
+                color="gray-outline"
+                onClick={() => setOpen(true)}
+                className="my-auto"
+              >
+                BUY
+              </Button>
+            )}
           </Row>
         </Row>
         <hr
