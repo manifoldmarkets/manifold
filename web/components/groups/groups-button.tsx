@@ -13,6 +13,7 @@ import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { GroupLinkItem } from 'web/pages/groups'
 import toast from 'react-hot-toast'
+import { Button } from '../button'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -92,23 +93,22 @@ export function JoinOrLeaveGroupButton(props: {
   group: Group
   isMember: boolean
   user: User | undefined | null
-  small?: boolean
   className?: string
 }) {
-  const { group, small, className, isMember, user } = props
-  const smallStyle =
-    'btn !btn-xs border-2 border-gray-500 bg-white normal-case text-gray-500 hover:border-gray-500 hover:bg-white hover:text-gray-500'
+  const { group, className, isMember, user } = props
 
   if (!user) {
     if (!group.anyoneCanJoin)
       return <div className={clsx(className, 'text-gray-500')}>Closed</div>
     return (
-      <button
+      <Button
+        size="xs"
+        color="blue"
         onClick={firebaseLogin}
-        className={clsx('btn btn-sm', small && smallStyle, className)}
+        className={className}
       >
         Login to follow
-      </button>
+      </Button>
     )
   }
   const onJoinGroup = () => {
@@ -124,27 +124,27 @@ export function JoinOrLeaveGroupButton(props: {
 
   if (isMember) {
     return (
-      <button
-        className={clsx(
-          'btn btn-outline btn-xs',
-          small && smallStyle,
-          className
-        )}
+      <Button
+        size="xs"
+        color="gray-white"
+        className={`${className}  border-greyscale-4 border !border-solid`}
         onClick={withTracking(onLeaveGroup, 'leave group')}
       >
         Unfollow
-      </button>
+      </Button>
     )
   }
 
   if (!group.anyoneCanJoin)
     return <div className={clsx(className, 'text-gray-500')}>Closed</div>
   return (
-    <button
-      className={clsx('btn btn-sm', small && smallStyle, className)}
+    <Button
+      size="xs"
+      color="blue"
+      className={className}
       onClick={withTracking(onJoinGroup, 'join group')}
     >
       Follow
-    </button>
+    </Button>
   )
 }
