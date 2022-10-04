@@ -38,6 +38,7 @@ import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
+  BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { groupBy, sum, uniqBy } from 'lodash'
@@ -440,7 +441,8 @@ function IncomeNotificationItem(props: {
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
-      if (sourceText && +sourceText === 50) reasonText = '(max) for your'
+      if (sourceText && +sourceText === BETTING_STREAK_BONUS_MAX)
+        reasonText = '(max) for your'
       else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested predictions returned as a`
