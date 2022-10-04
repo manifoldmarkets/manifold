@@ -198,7 +198,7 @@ function OpenAnswer(props: {
     colorIndex != undefined ? CATEGORY_COLORS[colorIndex] : '#B1B1C7'
 
   return (
-    <>
+    <Col className="my-1 px-2">
       <Modal open={open} setOpen={setOpen} position="center">
         <AnswerBetPanel
           answer={answer}
@@ -210,31 +210,26 @@ function OpenAnswer(props: {
       </Modal>
 
       <Col
-        className="hover:bg-greyscale-1.5 w-full rounded-lg py-1 px-4"
+        className="hover:bg-greyscale-1.5 bg-greyscale-1 relative w-full rounded-lg transition-colors"
         onClick={() => setOpen(true)}
       >
-        <Row className="-mb-1 pr-[60px]">
-          <Avatar
-            className="mt-1 mr-2 h-4 w-4"
-            username={username}
-            avatarUrl={avatarUrl}
-          />
-          <Linkify
-            className="text-md whitespace-pre-line md:text-lg"
-            text={text}
-          />
-        </Row>
-        <Row className="gap-2">
-          {/* <div className="relative h-3 w-[calc(100%-60px)]"> */}
-          {/* <hr className="border-greyscale-2 absolute z-0 mt-2 h-3 w-full rounded-full border bg-white" /> */}
-          <hr
-            color={color}
-            className="mt-1 h-3 w-full rounded-l-full border-none"
-            style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-          />
+        <Row className="z-20 -mb-1 justify-between py-2 px-3">
+          <div>
+            <span>
+              <Avatar
+                className="mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
+                username={username}
+                avatarUrl={avatarUrl}
+              />
+            </span>
+            <Linkify
+              className="text-md cursor-pointer whitespace-pre-line"
+              text={text}
+            />
+          </div>
           <div
             className={clsx(
-              'md:text-md my-auto text-sm'
+              'my-auto text-xl '
               // tradingAllowed(contract) ? 'text-greyscale-7' : 'text-gray-500'
             )}
             color={color}
@@ -242,6 +237,11 @@ function OpenAnswer(props: {
             {probPercent}
           </div>
         </Row>
+        <hr
+          color={color}
+          className="absolute z-0 h-full w-full rounded-l-lg border-none opacity-30"
+          style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
+        />
       </Col>
       {/* <Row className="align-items justify-end gap-4">
           <Button
@@ -253,6 +253,6 @@ function OpenAnswer(props: {
             Buy
           </Button>
         </Row> */}
-    </>
+    </Col>
   )
 }
