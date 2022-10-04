@@ -14,18 +14,23 @@ import { range } from 'lodash'
 
 import {
   ContinuousScale,
+  Margin,
   SVGChart,
   AreaPath,
   AreaWithTopStroke,
   Point,
   TooltipComponent,
+  computeColorStops,
   formatPct,
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
+import { formatMoney } from 'common/util/format'
+import { nanoid } from 'nanoid'
 
 export type MultiPoint<T = unknown> = Point<Date, number[], T>
 export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
+export type ValueKind = 'm$' | 'percent' | 'amount'
 
 const getTickValues = (min: number, max: number, n: number) => {
   const step = (max - min) / (n - 1)
@@ -50,13 +55,14 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
   w: number
   h: number
   color: string
+  margin: Margin
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<number, P>
 }) => {
-  const { color, data, yScale, w, h, curve, Tooltip } = props
+  const { data, w, h, color, margin, yScale, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
@@ -72,7 +78,12 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
-  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+  const selector = betAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number) => {
+    const p = selector(mouseX)
+    props.onMouseOver?.(p)
+    return p
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -89,6 +100,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     <SVGChart
       w={w}
       h={h}
+      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       onSelect={onSelect}
@@ -112,14 +124,15 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   w: number
   h: number
   colors: readonly string[]
+  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
-  pct?: boolean
 }) => {
-  const { colors, data, yScale, w, h, curve, Tooltip, pct } = props
+  const { data, w, h, colors, margin, yScale, yKind, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -131,25 +144,36 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const nTicks = h < 200 ? 3 : 5
+    const pctTickValues = getTickValues(min, max, nTicks)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
-    const yAxis = pct
-      ? axisLeft<number>(yScale)
-          .tickValues(pctTickValues)
-          .tickFormat((n) => formatPct(n))
-      : axisLeft<number>(yScale)
+    const yAxis =
+      yKind === 'percent'
+        ? axisLeft<number>(yScale)
+            .tickValues(pctTickValues)
+            .tickFormat((n) => formatPct(n))
+        : yKind === 'm$'
+        ? axisLeft<number>(yScale)
+            .ticks(nTicks)
+            .tickFormat((n) => formatMoney(n))
+        : axisLeft<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
-  }, [w, h, pct, xScale, yScale])
+  }, [w, h, yKind, xScale, yScale])
 
   const series = useMemo(() => {
     const d3Stack = stack<P, number>()
       .keys(range(0, Math.max(...data.map(({ y }) => y.length))))
-      .value(({ y }, o) => y[o])
+      .value(({ y }, k) => y[k])
       .order(stackOrderReverse)
     return d3Stack(data)
   }, [data])
 
-  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+  const selector = betAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number) => {
+    const p = selector(mouseX)
+    props.onMouseOver?.(p)
+    return p
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -166,6 +190,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     <SVGChart
       w={w}
       h={h}
+      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       onSelect={onSelect}
@@ -191,15 +216,17 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   data: P[]
   w: number
   h: number
-  color: string
+  color: string | ((p: P) => string)
+  margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { color, data, yScale, w, h, curve, Tooltip, pct } = props
+  const { data, w, h, color, margin, yScale, yKind, curve, Tooltip } = props
 
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -210,17 +237,28 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const pctTickValues = getTickValues(min, max, h < 200 ? 3 : 5)
+    const nTicks = h < 200 ? 3 : 5
+    const pctTickValues = getTickValues(min, max, nTicks)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
-    const yAxis = pct
-      ? axisLeft<number>(yScale)
-          .tickValues(pctTickValues)
-          .tickFormat((n) => formatPct(n))
-      : axisLeft<number>(yScale)
+    const yAxis =
+      yKind === 'percent'
+        ? axisLeft<number>(yScale)
+            .tickValues(pctTickValues)
+            .tickFormat((n) => formatPct(n))
+        : yKind === 'm$'
+        ? axisLeft<number>(yScale)
+            .ticks(nTicks)
+            .tickFormat((n) => formatMoney(n))
+        : axisLeft<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
-  }, [w, h, pct, xScale, yScale])
+  }, [w, h, yKind, xScale, yScale])
 
-  const onMouseOver = useEvent(betAtPointSelector(data, xScale))
+  const selector = betAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number) => {
+    const p = selector(mouseX)
+    props.onMouseOver?.(p)
+    return p
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -233,18 +271,35 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     }
   })
 
+  const gradientId = useMemo(() => nanoid(), [])
+  const stops = useMemo(
+    () =>
+      typeof color !== 'string' ? computeColorStops(data, color, px) : null,
+    [color, data, px]
+  )
+
   return (
     <SVGChart
       w={w}
       h={h}
+      margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
       onSelect={onSelect}
       onMouseOver={onMouseOver}
       Tooltip={Tooltip}
     >
+      {stops && (
+        <defs>
+          <linearGradient gradientUnits="userSpaceOnUse" id={gradientId}>
+            {stops.map((s, i) => (
+              <stop key={i} offset={`${s.x / w}`} stopColor={s.color} />
+            ))}
+          </linearGradient>
+        </defs>
+      )}
       <AreaWithTopStroke
-        color={color}
+        color={typeof color === 'string' ? color : `url(#${gradientId})`}
         data={data}
         px={px}
         py0={py0}
