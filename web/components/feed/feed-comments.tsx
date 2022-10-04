@@ -192,7 +192,7 @@ export const FeedComment = memo(function FeedComment(props: {
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
-              onClick={() => onReplyClick?.(comment)}
+              onClick={() => onReplyClick(comment)}
             >
               Reply
             </button>
