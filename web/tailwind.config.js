@@ -18,6 +18,7 @@ module.exports = {
       colors: {
         'red-25': '#FDF7F6',
         'greyscale-1': '#FBFBFF',
+        'greyscale-1.5': '#F4F4FB',
         'greyscale-2': '#E7E7F4',
         'greyscale-3': '#D8D8EB',
         'greyscale-4': '#B1B1C7',

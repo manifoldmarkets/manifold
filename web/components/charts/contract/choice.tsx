@@ -22,7 +22,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 
 // thanks to https://observablehq.com/@jonhelfman/optimal-orders-for-choosing-categorical-colors
-const CATEGORY_COLORS = [
+export const CATEGORY_COLORS = [
   '#00b8dd',
   '#eecafe',
   '#874c62',
@@ -142,6 +142,16 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
   )
 }
 
+export function getChartAnswers(
+  contract: FreeResponseContract | MultipleChoiceContract,
+  length: number
+) {
+  return useMemo(
+    () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
+    [contract]
+  )
+}
+
 export const ChoiceContractChart = (props: {
   contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
@@ -151,10 +161,11 @@ export const ChoiceContractChart = (props: {
 }) => {
   const { contract, bets, width, height, onMouseOver } = props
   const [start, end] = getDateRange(contract)
-  const answers = useMemo(
-    () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
-    [contract]
-  )
+  // const answers = useMemo(
+  //   () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
+  //   [contract]
+  // )
+  const answers = getChartAnswers(contract, CATEGORY_COLORS.length)
   const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
     () => [

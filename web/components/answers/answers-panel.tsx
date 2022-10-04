@@ -25,6 +25,8 @@ import { UserLink } from 'web/components/user-link'
 import { Button } from 'web/components/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
+import { CATEGORY_COLORS } from '../charts/contract/choice'
+import { getChartAnswers } from '../charts/contract/choice'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
@@ -38,6 +40,7 @@ export function AnswersPanel(props: {
   const answers = (useAnswers(contract.id) ?? contract.answers).filter(
     (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
   )
+
   const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] < 1)
 
   const [winningAnswers, losingAnswers] = partition(
@@ -104,6 +107,11 @@ export function AnswersPanel(props: {
     ? 'checkbox'
     : undefined
 
+  const colorSortedAnswer = getChartAnswers(
+    contract,
+    CATEGORY_COLORS.length
+  ).map((value, index) => value.text)
+
   return (
     <Col className="gap-3">
       {(resolveOption || resolution) &&
@@ -128,7 +136,12 @@ export function AnswersPanel(props: {
           )}
         >
           {answerItems.map((item) => (
-            <OpenAnswer key={item.id} answer={item} contract={contract} />
+            <OpenAnswer
+              key={item.id}
+              answer={item}
+              contract={contract}
+              colorIndex={colorSortedAnswer.indexOf(item.text)}
+            />
           ))}
           {hasZeroBetAnswers && !showAllAnswers && (
             <Button
@@ -174,12 +187,15 @@ export function AnswersPanel(props: {
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
+  colorIndex: number | undefined
 }) {
-  const { answer, contract } = props
+  const { answer, contract, colorIndex } = props
   const { username, avatarUrl, name, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
+  const color =
+    colorIndex != undefined ? CATEGORY_COLORS[colorIndex] : '#B1B1C7'
 
   return (
     <>
@@ -193,46 +209,50 @@ function OpenAnswer(props: {
         />
       </Modal>
 
-      <Row className="justify-between">
-        <Col className="w-4/5">
-          <Row>
-            <Avatar
-              className="my-auto mr-2 h-5 w-5"
-              username={username}
-              avatarUrl={avatarUrl}
-            />
-            <Linkify
-              className="text-md whitespace-pre-line md:text-lg"
-              text={text}
-            />
-          </Row>
-          <div className="relative h-3">
-            <hr className="bg-greyscale-2 absolute z-0 h-3 w-full rounded-full" />
-            <hr
-              className="absolute z-20 h-3 rounded-l-full bg-green-600 text-green-600"
-              style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-            />
-          </div>
-        </Col>
-        <Row className="align-items items-center justify-end gap-4">
-          <span
+      <Col
+        className="hover:bg-greyscale-1.5 w-full rounded-lg py-1 px-4"
+        onClick={() => setOpen(true)}
+      >
+        <Row className="-mb-1 pr-[60px]">
+          <Avatar
+            className="mt-1 mr-2 h-4 w-4"
+            username={username}
+            avatarUrl={avatarUrl}
+          />
+          <Linkify
+            className="text-md whitespace-pre-line md:text-lg"
+            text={text}
+          />
+        </Row>
+        <Row className="gap-2">
+          {/* <div className="relative h-3 w-[calc(100%-60px)]"> */}
+          {/* <hr className="border-greyscale-2 absolute z-0 mt-2 h-3 w-full rounded-full border bg-white" /> */}
+          <hr
+            color={color}
+            className="mt-1 h-3 w-full rounded-l-full border-none"
+            style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
+          />
+          <div
             className={clsx(
-              'text-2xl',
-              tradingAllowed(contract) ? 'text-greyscale-7' : 'text-gray-500'
+              'md:text-md my-auto text-sm'
+              // tradingAllowed(contract) ? 'text-greyscale-7' : 'text-gray-500'
             )}
+            color={color}
           >
             {probPercent}
-          </span>
+          </div>
+        </Row>
+      </Col>
+      {/* <Row className="align-items justify-end gap-4">
           <Button
             className={clsx(tradingAllowed(contract) ? '' : '!hidden')}
-            color="indigo"
+            color="gray"
             size="xs"
             onClick={() => setOpen(true)}
           >
             Buy
           </Button>
-        </Row>
-      </Row>
+        </Row> */}
     </>
   )
 }
