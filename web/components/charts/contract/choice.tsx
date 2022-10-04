@@ -180,9 +180,9 @@ export const ChoiceContractChart = (props: {
 
   const ChoiceTooltip = useMemo(
     () => (props: TooltipProps<Date, MultiPoint<Bet>>) => {
-      const { data, mouseX, xScale } = props
+      const { data, x, xScale } = props
       const [start, end] = xScale.domain()
-      const d = xScale.invert(mouseX)
+      const d = xScale.invert(x)
       const legendItems = sortBy(
         data.y.map((p, i) => ({
           color: CATEGORY_COLORS[i],

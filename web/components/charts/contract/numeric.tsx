@@ -26,11 +26,11 @@ const getNumericChartData = (contract: NumericContract) => {
 const NumericChartTooltip = (
   props: TooltipProps<number, DistributionPoint>
 ) => {
-  const { data, mouseX, xScale } = props
-  const x = xScale.invert(mouseX)
+  const { data, x, xScale } = props
+  const amount = xScale.invert(x)
   return (
     <>
-      <span className="text-semibold">{formatLargeNumber(x)}</span>
+      <span className="text-semibold">{formatLargeNumber(amount)}</span>
       <span className="text-greyscale-6">{formatPct(data.y, 2)}</span>
     </>
   )
