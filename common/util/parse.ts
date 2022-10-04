@@ -1,4 +1,3 @@
-import { MAX_TAG_LENGTH } from '../contract'
 import { generateText, JSONContent } from '@tiptap/core'
 // Tiptap starter extensions
 import { Blockquote } from '@tiptap/extension-blockquote'

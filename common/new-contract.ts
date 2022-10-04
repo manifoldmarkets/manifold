@@ -12,7 +12,6 @@ import {
   visibility,
 } from './contract'
 import { User } from './user'
-import { richTextToString } from './util/parse'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
 
