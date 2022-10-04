@@ -2,6 +2,7 @@ import { Answer } from 'common/answer'
 import { FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import React, { useEffect, useRef, useState } from 'react'
+import { sum } from 'lodash'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
@@ -14,6 +15,8 @@ import {
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
+import { useUser } from 'web/hooks/use-user'
+import { useEvent } from 'web/hooks/use-event'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { UserLink } from 'web/components/user-link'
 
@@ -27,10 +30,16 @@ export function FeedAnswerCommentGroup(props: {
   const { username, avatarUrl, name, text } = answer
 
   const [replyTo, setReplyTo] = useState<ReplyTo>()
+  const user = useUser()
   const router = useRouter()
   const answerElementId = `answer-${answer.id}`
   const highlighted = router.asPath.endsWith(`#${answerElementId}`)
   const answerRef = useRef<HTMLDivElement>(null)
+
+  const onSubmitComment = useEvent(() => setReplyTo(undefined))
+  const onReplyClick = useEvent((comment: ContractComment) => {
+    setReplyTo({ id: comment.id, username: comment.userUsername })
+  })
 
   useEffect(() => {
     if (highlighted && answerRef.current != null) {
@@ -95,10 +104,10 @@ export function FeedAnswerCommentGroup(props: {
             indent={true}
             contract={contract}
             comment={comment}
-            tips={tips[comment.id] ?? {}}
-            onReplyClick={() =>
-              setReplyTo({ id: comment.id, username: comment.userUsername })
-            }
+            myTip={user ? tips[comment.id]?.[user.id] : undefined}
+            totalTip={sum(Object.values(tips[comment.id] ?? {}))}
+            showTip={true}
+            onReplyClick={onReplyClick}
           />
         ))}
       </Col>
@@ -112,7 +121,7 @@ export function FeedAnswerCommentGroup(props: {
             contract={contract}
             parentAnswerOutcome={answer.number.toString()}
             replyTo={replyTo}
-            onSubmitComment={() => setReplyTo(undefined)}
+            onSubmitComment={onSubmitComment}
           />
         </div>
       )}
