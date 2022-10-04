@@ -22,8 +22,8 @@ const getPoints = (startDate: number, dailyValues: number[]) => {
 }
 
 const DailyCountTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
-  const { data, mouseX, xScale } = props
-  const d = xScale.invert(mouseX)
+  const { data, x, xScale } = props
+  const d = xScale.invert(x)
   return (
     <Row className="items-center gap-2">
       <span className="font-semibold">{dayjs(d).format('MMM DD')}</span>
@@ -33,8 +33,8 @@ const DailyCountTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
 }
 
 const DailyPercentTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
-  const { data, mouseX, xScale } = props
-  const d = xScale.invert(mouseX)
+  const { data, x, xScale } = props
+  const d = xScale.invert(x)
   return (
     <Row className="items-center gap-2">
       <span className="font-semibold">{dayjs(d).format('MMM DD')}</span>
