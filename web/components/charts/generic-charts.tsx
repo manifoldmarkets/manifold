@@ -7,6 +7,8 @@ import {
   CurveFactory,
   SeriesPoint,
   curveLinear,
+  curveStepBefore,
+  curveStepAfter,
   stack,
   stackOrderReverse,
 } from 'd3-shape'
@@ -19,6 +21,8 @@ import {
   AreaPath,
   AreaWithTopStroke,
   Point,
+  MouseProps,
+  SliceMarker,
   TooltipComponent,
   computeColorStops,
   formatPct,
@@ -32,21 +36,42 @@ export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'm$' | 'percent' | 'amount'
 
+type SliceExtent = { y0: number; y1: number }
+
+const interpolateY = (
+  curve: CurveFactory,
+  x: number,
+  x0: number,
+  x1: number,
+  y0: number,
+  y1: number
+) => {
+  if (curve === curveLinear) {
+    const p = (x - x0) / (x1 - x0)
+    return y0 * (1 - p) + y1 * p
+  } else if (curve === curveStepAfter) {
+    return y0
+  } else if (curve === curveStepBefore) {
+    return y1
+  }
+}
+
 const getTickValues = (min: number, max: number, n: number) => {
   const step = (max - min) / (n - 1)
   return [min, ...range(1, n - 1).map((i) => min + step * i), max]
 }
 
-const betAtPointSelector = <X, Y, P extends Point<X, Y>>(
+const dataAtPointSelector = <X, Y, P extends Point<X, Y>>(
   data: P[],
   xScale: ContinuousScale<X>
 ) => {
   const bisect = bisector((p: P) => p.x)
   return (posX: number) => {
     const x = xScale.invert(posX)
-    const item = data[bisect.left(data, x) - 1]
-    const result = item ? { ...item, x: posX } : undefined
-    return result
+    const i = bisect.left(data, x)
+    const prev = data[i - 1] as P | undefined
+    const next = data[i] as P | undefined
+    return { prev, next, x: posX }
   }
 }
 
@@ -64,6 +89,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
 }) => {
   const { data, w, h, color, margin, yScale, curve, Tooltip } = props
 
+  const [mouse, setMouse] = useState<MouseProps<P>>()
   const [viewXScale, setViewXScale] =
     useState<ScaleContinuousNumeric<number, number>>()
   const xScale = viewXScale ?? props.xScale
@@ -78,12 +104,18 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     return { xAxis, yAxis }
   }, [w, xScale, yScale])
 
-  const selector = betAtPointSelector(data, xScale)
-  const onMouseOver = useEvent((mouseX: number) => {
+  const selector = dataAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     const p = selector(mouseX)
-    props.onMouseOver?.(p)
-    return p
+    props.onMouseOver?.(p.prev)
+    if (p.prev) {
+      setMouse({ x: mouseX, y: mouseY, data: p.prev })
+    } else {
+      setMouse(undefined)
+    }
   })
+
+  const onMouseLeave = useEvent(() => setMouse(undefined))
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -103,8 +135,10 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
       margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
+      mouse={mouse}
       onSelect={onSelect}
       onMouseOver={onMouseOver}
+      onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
     >
       <AreaWithTopStroke
@@ -134,6 +168,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
 }) => {
   const { data, w, h, colors, margin, yScale, yKind, curve, Tooltip } = props
 
+  const [mouse, setMouse] = useState<MouseProps<P>>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
 
@@ -168,12 +203,18 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     return d3Stack(data)
   }, [data])
 
-  const selector = betAtPointSelector(data, xScale)
-  const onMouseOver = useEvent((mouseX: number) => {
+  const selector = dataAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     const p = selector(mouseX)
-    props.onMouseOver?.(p)
-    return p
+    props.onMouseOver?.(p.prev)
+    if (p.prev) {
+      setMouse({ x: mouseX, y: mouseY, data: p.prev })
+    } else {
+      setMouse(undefined)
+    }
   })
+
+  const onMouseLeave = useEvent(() => setMouse(undefined))
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -193,8 +234,10 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
       margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
+      mouse={mouse}
       onSelect={onSelect}
       onMouseOver={onMouseOver}
+      onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
     >
       {series.map((s, i) => (
@@ -226,8 +269,10 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { data, w, h, color, margin, yScale, yKind, curve, Tooltip } = props
+  const { data, w, h, color, margin, yScale, yKind, Tooltip } = props
+  const curve = props.curve ?? curveLinear
 
+  const [mouse, setMouse] = useState<MouseProps<P> & SliceExtent>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
   const xScale = viewXScale ?? props.xScale
 
@@ -253,12 +298,29 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
-  const selector = betAtPointSelector(data, xScale)
-  const onMouseOver = useEvent((mouseX: number) => {
+  const selector = dataAtPointSelector(data, xScale)
+  const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     const p = selector(mouseX)
-    props.onMouseOver?.(p)
-    return p
+    props.onMouseOver?.(p.prev)
+    const x0 = p.prev ? xScale(p.prev.x) : xScale.range()[0]
+    const x1 = p.next ? xScale(p.next.x) : xScale.range()[1]
+    const y0 = p.prev ? yScale(p.prev.y) : yScale.range()[0]
+    const y1 = p.next ? yScale(p.next.y) : yScale.range()[1]
+    const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
+    if (p.prev && markerY) {
+      setMouse({
+        x: mouseX,
+        y: mouseY,
+        y0: py0,
+        y1: markerY,
+        data: p.prev,
+      })
+    } else {
+      setMouse(undefined)
+    }
   })
+
+  const onMouseLeave = useEvent(() => setMouse(undefined))
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -285,8 +347,10 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
+      mouse={mouse}
       onSelect={onSelect}
       onMouseOver={onMouseOver}
+      onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
     >
       {stops && (
@@ -306,6 +370,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         py1={py1}
         curve={curve ?? curveLinear}
       />
+      {mouse && (
+        <SliceMarker color="#5BCEFF" x={mouse.x} y0={mouse.y0} y1={mouse.y1} />
+      )}
     </SVGChart>
   )
 }
