@@ -210,12 +210,11 @@ function OpenAnswer(props: {
         className={clsx(
           'bg-greyscale-1 relative w-full rounded-lg transition-all',
           tradingAllowed(contract)
-            ? 'text-greyscale-7 drop-shadow-sm hover:drop-shadow-md'
+            ? 'text-greyscale-7'
             : 'text-greyscale-5 pointer-events-none'
         )}
-        onClick={() => setOpen(true)}
       >
-        <Row className="z-20 -mb-1 justify-between py-2 px-3">
+        <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
           <div>
             <span>
               <Avatar
@@ -229,7 +228,17 @@ function OpenAnswer(props: {
               text={text}
             />
           </div>
-          <div className="my-auto text-xl">{probPercent}</div>
+          <Row className="gap-2">
+            <div className="my-auto text-xl">{probPercent}</div>
+            <Button
+              size="2xs"
+              color="gray-outline"
+              onClick={() => setOpen(true)}
+              className="my-auto"
+            >
+              BUY
+            </Button>
+          </Row>
         </Row>
         <hr
           color={color}
