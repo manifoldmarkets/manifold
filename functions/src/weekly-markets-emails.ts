@@ -283,19 +283,7 @@ const getSimilarBettorsMarkets = async (userId: string) => {
 
   // get the top 10 most similar bettors (excluding this user)
   const similarBettorIds = sortedBettorIds.slice(0, 10)
-  console.log('sortedBettorIds', sortedBettorIds)
-  // get their followed users' markets
-  const followedUsersMarkets = (
-    await Promise.all(
-      similarBettorIds.map(async (bettorId) =>
-        getUserUnBetOnFollowsMarkets(bettorId, userId)
-      )
-    )
-  ).flat()
-  console.log(
-    'top 10 followedUsersMarkets',
-    followedUsersMarkets.map((c) => [c.question, c.creatorId]).slice(0, 10)
-  )
+  console.log('top sortedBettorIds', similarBettorIds)
 
   // get contracts with unique bettor ids with this user
   const contractsSimilarBettorsHaveBetOn = (
@@ -305,15 +293,37 @@ const getSimilarBettorsMarkets = async (userId: string) => {
         .where(
           'uniqueBettorIds',
           'array-contains-any',
-          sortedBettorIds.slice(0, 10)
+          similarBettorIds.slice(0, 10)
         )
         .orderBy('popularityScore', 'desc')
         .limit(100)
     )
   ).filter((contract) => !contract.uniqueBettorIds?.includes(userId))
-  console.log(
-    'top 10 contractsSimilarBettorsHaveBetOn',
+
+  // sort the contracts by how many times similar bettor ids are in their unique bettor ids array
+  const sortedContractsToAppearancesInSimilarBettorsBets =
     contractsSimilarBettorsHaveBetOn
+      .map((contract) => {
+        const appearances = contract.uniqueBettorIds?.filter((bettorId) =>
+          similarBettorIds.includes(bettorId)
+        ).length
+        return [contract, appearances] as [Contract, number]
+      })
+      .sort((a, b) => b[1] - a[1])
+  console.log(
+    'sortedContractsToAppearancesInSimilarBettorsBets',
+    sortedContractsToAppearancesInSimilarBettorsBets.map((c) => [
+      c[0].question,
+      c[1],
+    ])
+  )
+
+  const topMostSimilarContracts =
+    sortedContractsToAppearancesInSimilarBettorsBets.map((entry) => entry[0])
+
+  console.log(
+    'top 10 sortedContractsToAppearancesInSimilarBettorsBets',
+    topMostSimilarContracts
       .map((c) => [
         c.question,
         c.uniqueBettorIds?.filter((bid) => similarBettorIds.includes(bid)),
@@ -321,9 +331,7 @@ const getSimilarBettorsMarkets = async (userId: string) => {
       .slice(0, 10)
   )
 
-  return [...followedUsersMarkets, ...contractsSimilarBettorsHaveBetOn].sort(
-    (a, b) => (b?.popularityScore ?? 0) - (a?.popularityScore ?? 0)
-  )
+  return topMostSimilarContracts
 }
 
 const fiveMinutes = 5 * 60 * 1000
