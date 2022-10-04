@@ -9,8 +9,6 @@ import { BinaryContract } from 'common/contract'
 import { DAY_MS } from 'common/util/time'
 import {
   TooltipProps,
-  MARGIN_X,
-  MARGIN_Y,
   getDateRange,
   getRightmostVisibleDate,
   formatDateInRange,
@@ -19,6 +17,10 @@ import {
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
+
+const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
+const MARGIN_X = MARGIN.left + MARGIN.right
+const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getBetPoints = (bets: Bet[]) => {
   return sortBy(bets, (b) => b.createdTime).map((b) => ({
@@ -73,14 +75,15 @@ export const BinaryContractChart = (props: {
     <SingleValueHistoryChart
       w={width}
       h={height}
+      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
+      yKind="percent"
       data={data}
       color="#11b981"
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={BinaryChartTooltip}
-      pct
     />
   )
 }

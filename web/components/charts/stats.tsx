@@ -6,8 +6,12 @@ import dayjs from 'dayjs'
 import { formatPercent } from 'common/util/format'
 import { Row } from '../layout/row'
 import { HistoryPoint, SingleValueHistoryChart } from './generic-charts'
-import { TooltipProps, MARGIN_X, MARGIN_Y } from './helpers'
+import { TooltipProps } from './helpers'
 import { SizedContainer } from 'web/components/sized-container'
+
+const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
+const MARGIN_X = MARGIN.left + MARGIN.right
+const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getPoints = (startDate: number, dailyValues: number[]) => {
   const startDateDayJs = dayjs(startDate)
@@ -63,12 +67,13 @@ export function DailyChart(props: {
         <SingleValueHistoryChart
           w={width}
           h={height}
+          margin={MARGIN}
           xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
           yScale={scaleLinear([0, maxValue], [height - MARGIN_Y, 0])}
+          yKind={pct ? 'percent' : 'amount'}
           data={data}
           Tooltip={pct ? DailyPercentTooltip : DailyCountTooltip}
           color="#11b981"
-          pct={pct}
         />
       )}
     </SizedContainer>
