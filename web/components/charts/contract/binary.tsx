@@ -31,9 +31,9 @@ const getBetPoints = (bets: Bet[]) => {
 }
 
 const BinaryChartTooltip = (props: TooltipProps<Date, HistoryPoint<Bet>>) => {
-  const { data, mouseX, xScale } = props
+  const { data, x, xScale } = props
   const [start, end] = xScale.domain()
-  const d = xScale.invert(mouseX)
+  const d = xScale.invert(x)
   return (
     <Row className="items-center gap-2">
       {data.obj && <Avatar size="xs" avatarUrl={data.obj.userAvatarUrl} />}

@@ -144,7 +144,7 @@ export const SVGChart = <X, TT>(props: {
   margin: Margin
   xAxis: Axis<X>
   yAxis: Axis<number>
-  mouse: MouseProps<TT> | undefined
+  ttParams: TooltipParams<TT> | undefined
   onSelect?: (ev: D3BrushEvent<any>) => void
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
@@ -157,7 +157,7 @@ export const SVGChart = <X, TT>(props: {
     margin,
     xAxis,
     yAxis,
-    mouse,
+    ttParams,
     onSelect,
     onMouseOver,
     onMouseLeave,
@@ -213,13 +213,13 @@ export const SVGChart = <X, TT>(props: {
 
   return (
     <div className="relative overflow-hidden">
-      {mouse && Tooltip && (
+      {ttParams && Tooltip && (
         <TooltipContainer
           setElem={tooltipMeasure.setElem}
           margin={margin}
           pos={getTooltipPosition(
-            mouse.x,
-            mouse.y,
+            ttParams.x,
+            ttParams.y,
             innerW,
             innerH,
             tooltipMeasure.width,
@@ -228,9 +228,9 @@ export const SVGChart = <X, TT>(props: {
         >
           <Tooltip
             xScale={xAxis.scale()}
-            mouseX={mouse.x}
-            mouseY={mouse.y}
-            data={mouse.data}
+            x={ttParams.x}
+            y={ttParams.y}
+            data={ttParams.data}
           />
         </TooltipContainer>
       )}
@@ -287,11 +287,9 @@ export const getTooltipPosition = (
   return { left, bottom }
 }
 
-export type TooltipProps<X, T> = {
-  mouseX: number
-  mouseY: number
+export type TooltipParams<T> = { x: number; y: number; data: T }
+export type TooltipProps<X, T> = TooltipParams<T> & {
   xScale: ContinuousScale<X>
-  data: T
 }
 
 export type TooltipComponent<X, T> = React.ComponentType<TooltipProps<X, T>>
@@ -319,8 +317,6 @@ export const TooltipContainer = (props: {
     </div>
   )
 }
-
-export type MouseProps<T> = { x: number; y: number; data: T }
 
 export const computeColorStops = <P,>(
   data: P[],
