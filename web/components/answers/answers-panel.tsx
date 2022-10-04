@@ -210,7 +210,7 @@ function OpenAnswer(props: {
       </Modal>
 
       <Col
-        className="hover:bg-greyscale-1.5 bg-greyscale-1 relative w-full rounded-lg transition-colors"
+        className="bg-greyscale-1 relative w-full rounded-lg drop-shadow-sm transition-all hover:drop-shadow-md"
         onClick={() => setOpen(true)}
       >
         <Row className="z-20 -mb-1 justify-between py-2 px-3">
@@ -223,16 +223,20 @@ function OpenAnswer(props: {
               />
             </span>
             <Linkify
-              className="text-md cursor-pointer whitespace-pre-line"
+              className={clsx(
+                'text-md cursor-pointer whitespace-pre-line',
+                tradingAllowed(contract)
+                  ? 'text-greyscale-7'
+                  : 'text-greyscale-6'
+              )}
               text={text}
             />
           </div>
           <div
             className={clsx(
-              'my-auto text-xl '
-              // tradingAllowed(contract) ? 'text-greyscale-7' : 'text-gray-500'
+              'my-auto text-xl ',
+              tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-6'
             )}
-            color={color}
           >
             {probPercent}
           </div>
@@ -243,16 +247,6 @@ function OpenAnswer(props: {
           style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
         />
       </Col>
-      {/* <Row className="align-items justify-end gap-4">
-          <Button
-            className={clsx(tradingAllowed(contract) ? '' : '!hidden')}
-            color="gray"
-            size="xs"
-            onClick={() => setOpen(true)}
-          >
-            Buy
-          </Button>
-        </Row> */}
     </Col>
   )
 }
