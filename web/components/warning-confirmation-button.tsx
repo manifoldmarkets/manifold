@@ -6,17 +6,19 @@ import { ConfirmationButton } from './confirmation-button'
 import { ExclamationIcon } from '@heroicons/react/solid'
 import { formatMoney } from 'common/util/format'
 import { Button, ColorType, SizeType } from './button'
+import { capitalize } from 'lodash'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
   marketType: 'freeResponse' | 'binary'
   warning?: string
-  onSubmit: () => void
+  onSubmit?: () => void
   disabled: boolean
   isSubmitting: boolean
   openModalButtonClass?: string
   color: ColorType
   size: SizeType
+  actionLabel?: string
 }) {
   const {
     amount,
@@ -27,7 +29,15 @@ export function WarningConfirmationButton(props: {
     openModalButtonClass,
     size,
     color,
+    actionLabel,
   } = props
+
+  const label = capitalize(actionLabel) ?? 'Wager'
+  const buttonText = isSubmitting
+    ? 'Submitting...'
+    : amount
+    ? `${label} ${formatMoney(amount)}`
+    : label
 
   if (!warning) {
     return (
@@ -38,11 +48,7 @@ export function WarningConfirmationButton(props: {
         onClick={onSubmit}
         color={color}
       >
-        {isSubmitting
-          ? 'Submitting...'
-          : amount
-          ? `Wager ${formatMoney(amount)}`
-          : 'Wager'}
+        {buttonText}
       </Button>
     )
   }
@@ -50,10 +56,10 @@ export function WarningConfirmationButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        label: amount ? `Wager ${formatMoney(amount)}` : 'Wager',
+        label: buttonText,
         size: size,
         color: 'yellow',
-        disabled: isSubmitting,
+        disabled: isSubmitting || disabled,
       }}
       cancelBtn={{
         label: 'Cancel',

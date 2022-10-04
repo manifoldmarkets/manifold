@@ -831,7 +831,7 @@ export function SellPanel(props: {
 
   const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  const betDisabled = isSubmitting || !amount || error
+  const betDisabled = isSubmitting || !amount || error !== undefined
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)
@@ -884,6 +884,19 @@ export function SellPanel(props: {
   )
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
+  const getValue = getMappedValue(contract)
+  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const displayedDifference =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? formatLargeNumber(rawDifference)
+      : formatPercent(rawDifference)
+  const probChange = Math.abs(resultProb - initialProb)
+
+  const warning =
+    probChange >= 0.3
+      ? `Are you sure you want to move the market by ${displayedDifference}?`
+      : undefined
+
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
   const [yesBets, noBets] = partition(
     openUserBets,
@@ -923,7 +936,7 @@ export function SellPanel(props: {
         label="Qty"
         error={error}
         disabled={isSubmitting}
-        inputClassName="w-full"
+        inputClassName="w-full ml-1"
       />
 
       <Col className="mt-3 w-full gap-3 text-sm">
@@ -945,20 +958,17 @@ export function SellPanel(props: {
 
       <Spacer h={8} />
 
-      <button
-        className={clsx(
-          'btn flex-1',
-          betDisabled
-            ? 'btn-disabled'
-            : sharesOutcome === 'YES'
-            ? 'btn-primary'
-            : 'border-none bg-red-400 hover:bg-red-500',
-          isSubmitting ? 'loading' : ''
-        )}
-        onClick={betDisabled ? undefined : submitSell}
-      >
-        {isSubmitting ? 'Submitting...' : 'Submit sell'}
-      </button>
+      <WarningConfirmationButton
+        marketType="binary"
+        amount={saleValue}
+        warning={warning}
+        isSubmitting={isSubmitting}
+        onSubmit={betDisabled ? undefined : submitSell}
+        disabled={!!betDisabled}
+        size="xl"
+        color="blue"
+        actionLabel="Sell"
+      />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
     </>
