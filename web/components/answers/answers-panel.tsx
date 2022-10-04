@@ -215,7 +215,7 @@ function OpenAnswer(props: {
         <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
           <Row>
             <Avatar
-              className="mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
+              className="mt-0.5 mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
               username={username}
               avatarUrl={avatarUrl}
             />
