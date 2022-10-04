@@ -12,7 +12,6 @@ import {
   visibility,
 } from './contract'
 import { User } from './user'
-import { parseTags, richTextToString } from './util/parse'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
 
@@ -38,15 +37,6 @@ export function getNewContract(
   answers: string[],
   visibility: visibility
 ) {
-  const tags = parseTags(
-    [
-      question,
-      richTextToString(description),
-      ...extraTags.map((tag) => `#${tag}`),
-    ].join(' ')
-  )
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
-
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
@@ -70,8 +60,8 @@ export function getNewContract(
 
     question: question.trim(),
     description,
-    tags,
-    lowercaseTags,
+    tags: [],
+    lowercaseTags: [],
     visibility,
     isResolved: false,
     createdTime: Date.now(),
