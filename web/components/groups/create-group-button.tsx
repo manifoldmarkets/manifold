@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { groupPath } from 'web/lib/firebase/groups'
@@ -87,10 +86,8 @@ export function CreateGroupButton(props: {
       }}
       submitBtn={{
         label: 'Create',
-        className: clsx(
-          'normal-case',
-          isSubmitting ? 'loading btn-disabled' : ' btn-primary'
-        ),
+        color: 'green',
+        isSubmitting,
       }}
       onSubmitWithSuccess={onSubmit}
       onOpenChanged={(isOpen) => {

@@ -16,11 +16,11 @@ export function ConfirmationButton(props: {
   }
   cancelBtn?: {
     label?: string
-    className?: string
+    color?: ColorType
   }
   submitBtn?: {
     label?: string
-    className?: string
+    color?: ColorType
     isSubmitting?: boolean
   }
   children: ReactNode
@@ -53,14 +53,14 @@ export function ConfirmationButton(props: {
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {children}
           <Row className="gap-4">
-            <div
-              className={clsx('btn', cancelBtn?.className)}
+            <Button
+              color={cancelBtn?.color ?? 'gray-white'}
               onClick={() => updateOpen(false)}
             >
               {cancelBtn?.label ?? 'Cancel'}
-            </div>
+            </Button>
             <Button
-              className={clsx('btn', submitBtn?.className)}
+              color={submitBtn?.color ?? 'blue'}
               onClick={
                 onSubmitWithSuccess
                   ? () =>
@@ -100,18 +100,11 @@ export function ResolveConfirmationButton(props: {
   onResolve: () => void
   isSubmitting: boolean
   openModalButtonClass?: string
-  submitButtonClass?: string
   color?: ColorType
   disabled?: boolean
 }) {
-  const {
-    onResolve,
-    isSubmitting,
-    openModalButtonClass,
-    submitButtonClass,
-    color,
-    disabled,
-  } = props
+  const { onResolve, isSubmitting, openModalButtonClass, color, disabled } =
+    props
   return (
     <ConfirmationButton
       openModalBtn={{
@@ -126,7 +119,7 @@ export function ResolveConfirmationButton(props: {
       }}
       submitBtn={{
         label: 'Resolve',
-        className: clsx('border-none', submitButtonClass),
+        color: color,
         isSubmitting,
       }}
       onSubmit={onResolve}

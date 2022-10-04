@@ -215,7 +215,6 @@ export default function ProfilePage(props: {
                 }}
                 submitBtn={{
                   label: 'Update key',
-                  className: 'btn-primary',
                 }}
                 onSubmitWithSuccess={async () => {
                   updateApiKey()

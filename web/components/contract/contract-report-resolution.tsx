@@ -50,14 +50,6 @@ export function ContractReportResolution(props: { contract: Contract }) {
           icon: <FlagIcon className="h-5 w-5" />,
           className: clsx(flagClass, reporting && 'btn-disabled loading'),
         }}
-        cancelBtn={{
-          label: 'Cancel',
-          className: 'border-none btn-sm btn-ghost self-center',
-        }}
-        submitBtn={{
-          label: 'Submit',
-          className: 'btn-secondary',
-        }}
         onSubmitWithSuccess={onSubmit}
         disabled={userReported}
       >

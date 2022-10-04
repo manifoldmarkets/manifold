@@ -57,11 +57,11 @@ export function WarningConfirmationButton(props: {
       }}
       cancelBtn={{
         label: 'Cancel',
-        className: 'btn btn-warning',
+        color: 'yellow',
       }}
       submitBtn={{
         label: 'Submit',
-        className: clsx('btn border-none btn-sm btn-ghost self-center'),
+        color: 'gray',
       }}
       onSubmit={onSubmit}
     >
