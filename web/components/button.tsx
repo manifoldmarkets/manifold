@@ -10,6 +10,7 @@ export type ColorType =
   | 'indigo'
   | 'yellow'
   | 'gray'
+  | 'gray-outline'
   | 'gradient'
   | 'gray-white'
   | 'highlight-blue'
@@ -63,6 +64,8 @@ export function Button(props: {
           'disabled:bg-greyscale-2 bg-indigo-500 text-white hover:bg-indigo-600',
         color === 'gray' &&
           'bg-greyscale-1 text-greyscale-6 hover:bg-greyscale-2 disabled:opacity-50',
+        color === 'gray-outline' &&
+          'border-greyscale-4 text-greyscale-4 hover:bg-greyscale-4 border-2 hover:text-white disabled:opacity-50',
         color === 'gradient' &&
           'disabled:bg-greyscale-2 border-none bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
         color === 'gray-white' &&
