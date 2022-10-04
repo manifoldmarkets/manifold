@@ -277,7 +277,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const xScale = viewXScale ?? props.xScale
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
-  const py0 = yScale(yScale.domain()[0])
+  const py0 = yScale(0)
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
 
   const { xAxis, yAxis } = useMemo(() => {
