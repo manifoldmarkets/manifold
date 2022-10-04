@@ -182,7 +182,7 @@ function OpenAnswer(props: {
   const [open, setOpen] = useState(false)
 
   return (
-    <Col className="border-base-200 bg-base-200 relative flex-1 rounded-md px-2">
+    <>
       <Modal open={open} setOpen={setOpen} position="center">
         <AnswerBetPanel
           answer={answer}
@@ -193,40 +193,46 @@ function OpenAnswer(props: {
         />
       </Modal>
 
-      <div
-        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
-        style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-      />
-
-      <Row className="my-4 gap-3">
-        <Avatar className="mx-1" username={username} avatarUrl={avatarUrl} />
-        <Col className="min-w-0 flex-1 lg:gap-1">
-          <div className="text-sm text-gray-500">
-            <UserLink username={username} name={name} /> answered
+      <Row className="justify-between">
+        <Col className="w-4/5">
+          <Row>
+            <Avatar
+              className="my-auto mr-2 h-5 w-5"
+              username={username}
+              avatarUrl={avatarUrl}
+            />
+            <Linkify
+              className="text-md whitespace-pre-line md:text-lg"
+              text={text}
+            />
+          </Row>
+          <div className="relative h-3">
+            <hr className="bg-greyscale-2 absolute z-0 h-3 w-full rounded-full" />
+            <hr
+              className="absolute z-20 h-3 rounded-l-full bg-green-600 text-green-600"
+              style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
+            />
           </div>
-
-          <Col className="align-items justify-between gap-4 sm:flex-row">
-            <Linkify className="whitespace-pre-line text-lg" text={text} />
-            <Row className="align-items items-center justify-end gap-4">
-              <span
-                className={clsx(
-                  'text-2xl',
-                  tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
-                )}
-              >
-                {probPercent}
-              </span>
-              <BuyButton
-                className={clsx(
-                  'btn-sm flex-initial !px-6 sm:flex',
-                  tradingAllowed(contract) ? '' : '!hidden'
-                )}
-                onClick={() => setOpen(true)}
-              />
-            </Row>
-          </Col>
         </Col>
+        <Row className="align-items items-center justify-end gap-4">
+          <span
+            className={clsx(
+              'text-2xl',
+              tradingAllowed(contract) ? 'text-greyscale-7' : 'text-gray-500'
+            )}
+          >
+            {probPercent}
+          </span>
+          <Button
+            className={clsx(tradingAllowed(contract) ? '' : '!hidden')}
+            color="indigo"
+            size="xs"
+            onClick={() => setOpen(true)}
+          >
+            Buy
+          </Button>
+        </Row>
       </Row>
-    </Col>
+    </>
   )
 }
