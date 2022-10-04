@@ -299,7 +299,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   }, [w, h, yKind, xScale, yScale])
 
   const selector = dataAtPointSelector(data, xScale)
-  const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
+  const onMouseOver = useEvent((mouseX: number) => {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
     const x0 = p.prev ? xScale(p.prev.x) : xScale.range()[0]
@@ -310,7 +310,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     if (p.prev && markerY) {
       setMouse({
         x: mouseX,
-        y: mouseY,
+        y: markerY,
         y0: py0,
         y1: markerY,
         data: p.prev,
