@@ -122,7 +122,7 @@ export function getHtml(parsedReq: ParsedRequest) {
 
       <!-- Metadata -->
       <div class="absolute bottom-16">
-        <div class="text-gray-500 text-3xl max-w-[80vw]">
+        <div class="text-gray-500 text-3xl max-w-[80vw] line-clamp-2">
           ${metadata}
         </div>
       </div>
