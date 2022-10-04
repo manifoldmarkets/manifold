@@ -207,7 +207,12 @@ function OpenAnswer(props: {
       </Modal>
 
       <Col
-        className="bg-greyscale-1 relative w-full rounded-lg drop-shadow-sm transition-all hover:drop-shadow-md"
+        className={clsx(
+          'bg-greyscale-1 relative w-full rounded-lg transition-all',
+          tradingAllowed(contract)
+            ? 'text-greyscale-7 drop-shadow-sm hover:drop-shadow-md'
+            : 'text-greyscale-5 pointer-events-none'
+        )}
         onClick={() => setOpen(true)}
       >
         <Row className="z-20 -mb-1 justify-between py-2 px-3">
@@ -220,23 +225,11 @@ function OpenAnswer(props: {
               />
             </span>
             <Linkify
-              className={clsx(
-                'text-md cursor-pointer whitespace-pre-line',
-                tradingAllowed(contract)
-                  ? 'text-greyscale-7'
-                  : 'text-greyscale-6'
-              )}
+              className="text-md cursor-pointer whitespace-pre-line"
               text={text}
             />
           </div>
-          <div
-            className={clsx(
-              'my-auto text-xl ',
-              tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-6'
-            )}
-          >
-            {probPercent}
-          </div>
+          <div className="my-auto text-xl">{probPercent}</div>
         </Row>
         <hr
           color={color}
