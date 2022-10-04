@@ -1,155 +1,84 @@
-import { ResponsiveLine } from '@nivo/line'
-import { PortfolioMetrics } from 'common/user'
-import { filterDefined } from 'common/util/array'
-import { formatMoney } from 'common/util/format'
+import { useMemo } from 'react'
+import { scaleTime, scaleLinear } from 'd3-scale'
+import { curveStepAfter } from 'd3-shape'
+import { min, max } from 'lodash'
 import dayjs from 'dayjs'
-import { last } from 'lodash'
-import { memo } from 'react'
-import { useWindowSize } from 'web/hooks/use-window-size'
+import { PortfolioMetrics } from 'common/user'
 import { Col } from '../layout/col'
+import { TooltipProps } from 'web/components/charts/helpers'
+import {
+  HistoryPoint,
+  SingleValueHistoryChart,
+} from 'web/components/charts/generic-charts'
 
-export const PortfolioValueGraph = memo(function PortfolioValueGraph(props: {
-  portfolioHistory: PortfolioMetrics[]
-  mode: 'value' | 'profit'
-  handleGraphDisplayChange: (arg0: string | number | null) => void
-  height?: number
-}) {
-  const { portfolioHistory, height, mode, handleGraphDisplayChange } = props
-  const { width } = useWindowSize()
+const MARGIN = { top: 20, right: 10, bottom: 20, left: 70 }
+const MARGIN_X = MARGIN.left + MARGIN.right
+const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
-  const valuePoints = getPoints('value', portfolioHistory)
-  const posProfitPoints = getPoints('posProfit', portfolioHistory)
-  const negProfitPoints = getPoints('negProfit', portfolioHistory)
+export type GraphMode = 'profit' | 'value'
 
-  const valuePointsY = valuePoints.map((p) => p.y)
-  const posProfitPointsY = posProfitPoints.map((p) => p.y)
-  const negProfitPointsY = negProfitPoints.map((p) => p.y)
+export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
+  const { mouseX, xScale } = props
+  const d = dayjs(xScale.invert(mouseX))
+  return (
+    <Col className="text-xs font-semibold sm:text-sm">
+      <div>{d.format('MMM/D/YY')}</div>
+      <div className="text-greyscale-6 text-2xs font-normal sm:text-xs">
+        {d.format('h:mm A')}
+      </div>
+    </Col>
+  )
+}
 
-  let data
+const getY = (mode: GraphMode, p: PortfolioMetrics) =>
+  p.balance + p.investmentValue - (mode === 'profit' ? p.totalDeposits : 0)
 
-  if (mode === 'value') {
-    data = [{ id: 'value', data: valuePoints, color: '#4f46e5' }]
-  } else {
-    data = [
-      {
-        id: 'negProfit',
-        data: negProfitPoints,
-        color: '#dc2626',
-      },
-      {
-        id: 'posProfit',
-        data: posProfitPoints,
-        color: '#14b8a6',
-      },
-    ]
-  }
-  const numYTickValues = 2
-  const endDate = last(data[0].data)?.x
+export function getPoints(mode: GraphMode, history: PortfolioMetrics[]) {
+  return history.map((p) => ({
+    x: new Date(p.timestamp),
+    y: getY(mode, p),
+    obj: p,
+  }))
+}
 
-  const yMin =
-    mode === 'value'
-      ? Math.min(...filterDefined(valuePointsY))
-      : Math.min(
-          ...filterDefined(negProfitPointsY),
-          ...filterDefined(posProfitPointsY)
-        )
-
-  const yMax =
-    mode === 'value'
-      ? Math.max(...filterDefined(valuePointsY))
-      : Math.max(
-          ...filterDefined(negProfitPointsY),
-          ...filterDefined(posProfitPointsY)
-        )
+export const PortfolioGraph = (props: {
+  mode: 'profit' | 'value'
+  history: PortfolioMetrics[]
+  width: number
+  height: number
+  onMouseOver?: (p: HistoryPoint<PortfolioMetrics> | undefined) => void
+}) => {
+  const { mode, history, onMouseOver, width, height } = props
+  const { data, minDate, maxDate, minValue, maxValue } = useMemo(() => {
+    const data = getPoints(mode, history)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const minDate = min(data.map((d) => d.x))!
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const maxDate = max(data.map((d) => d.x))!
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const minValue = min(data.map((d) => d.y))!
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const maxValue = max(data.map((d) => d.y))!
+    return { data, minDate, maxDate, minValue, maxValue }
+  }, [mode, history])
 
   return (
-    <div
-      className="w-full overflow-hidden"
-      style={{ height: height ?? (!width || width >= 800 ? 200 : 100) }}
-      onMouseLeave={() => handleGraphDisplayChange(null)}
-    >
-      <ResponsiveLine
-        margin={{ top: 10, right: 0, left: 40, bottom: 10 }}
-        data={data}
-        xScale={{
-          type: 'time',
-          min: valuePoints[0]?.x,
-          max: endDate,
-        }}
-        yScale={{
-          type: 'linear',
-          stacked: false,
-          min: yMin,
-          max: yMax,
-        }}
-        curve="stepAfter"
-        enablePoints={false}
-        colors={{ datum: 'color' }}
-        axisBottom={{
-          tickValues: 0,
-        }}
-        pointBorderColor="#fff"
-        pointSize={valuePoints.length > 100 ? 0 : 6}
-        axisLeft={{
-          tickValues: numYTickValues,
-          format: '.3s',
-        }}
-        enableGridX={false}
-        enableGridY={true}
-        gridYValues={numYTickValues}
-        enableSlices="x"
-        animate={false}
-        yFormat={(value) => formatMoney(+value)}
-        enableArea={true}
-        areaOpacity={0.1}
-        sliceTooltip={({ slice }) => {
-          handleGraphDisplayChange(slice.points[0].data.yFormatted)
-          return (
-            <div className="rounded bg-white px-4 py-2 opacity-80">
-              <div
-                key={slice.points[0].id}
-                className="text-xs font-semibold sm:text-sm"
-              >
-                <Col>
-                  <div>
-                    {dayjs(slice.points[0].data.xFormatted).format('MMM/D/YY')}
-                  </div>
-                  <div className="text-greyscale-6 text-2xs font-normal sm:text-xs">
-                    {dayjs(slice.points[0].data.xFormatted).format('h:mm A')}
-                  </div>
-                </Col>
-              </div>
-              {/* ))} */}
-            </div>
-          )
-        }}
-      ></ResponsiveLine>
-    </div>
+    <SingleValueHistoryChart
+      w={width}
+      h={height}
+      margin={MARGIN}
+      xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
+      yScale={scaleLinear([minValue, maxValue], [height - MARGIN_Y, 0])}
+      yKind="m$"
+      data={data}
+      curve={curveStepAfter}
+      Tooltip={PortfolioTooltip}
+      onMouseOver={onMouseOver}
+      color={
+        mode === 'value'
+          ? '#4f46e5'
+          : (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#f00')
+      }
+    />
   )
-})
-
-export function getPoints(
-  line: 'value' | 'posProfit' | 'negProfit',
-  portfolioHistory: PortfolioMetrics[]
-) {
-  const points = portfolioHistory.map((p) => {
-    const { timestamp, balance, investmentValue, totalDeposits } = p
-    const value = balance + investmentValue
-
-    const profit = value - totalDeposits
-    let posProfit = null
-    let negProfit = null
-    if (profit < 0) {
-      negProfit = profit
-    } else {
-      posProfit = profit
-    }
-
-    return {
-      x: new Date(timestamp),
-      y:
-        line === 'value' ? value : line === 'posProfit' ? posProfit : negProfit,
-    }
-  })
-  return points
 }

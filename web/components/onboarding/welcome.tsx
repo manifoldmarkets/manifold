@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ExclamationCircleIcon,
+} from '@heroicons/react/solid'
 
 import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
@@ -171,13 +175,17 @@ function Page2() {
         the play money you bet with. You can also turn it into a real donation
         to charity, at a 100:1 ratio.
       </p>
+      <Row className="bg-greyscale-1 border-greyscale-2 mt-4 gap-2 rounded border py-2 pl-2 pr-4 text-sm text-indigo-700">
+        <ExclamationCircleIcon className="h-5 w-5" />
+        Mana can not be traded in for real money.
+      </Row>
       <div className="mt-8 font-semibold">Example</div>
       <p className="mt-2">
         When you donate <span className="font-semibold">M$1000</span> to
         Givewell, Manifold sends them{' '}
         <span className="font-semibold">$10 USD</span>.
       </p>
-      <video loop autoPlay className="my-4 h-full w-full">
+      <video loop autoPlay className="z-0 h-full w-full">
         <source src="/welcome/charity.mp4" type="video/mp4" />
         Your browser does not support video
       </video>

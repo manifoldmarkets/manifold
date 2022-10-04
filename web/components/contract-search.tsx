@@ -3,10 +3,7 @@ import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { PAST_BETS, User } from 'common/user'
-import {
-  ContractHighlightOptions,
-  ContractsGrid,
-} from './contract/contracts-grid'
+import { CardHighlightOptions, ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
 import {
@@ -50,6 +47,7 @@ export const SORTS = [
   { label: 'Trending', value: 'score' },
   { label: 'Daily trending', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
+  { label: 'Most popular', value: 'most-popular' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
@@ -82,7 +80,7 @@ export function ContractSearch(props: {
   defaultFilter?: filter
   defaultPill?: string
   additionalFilter?: AdditionalFilter
-  highlightOptions?: ContractHighlightOptions
+  highlightOptions?: CardHighlightOptions
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
   cardUIOptions?: {

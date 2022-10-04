@@ -2,6 +2,8 @@ import { getDateDoc } from 'web/lib/firebase/posts'
 import { ArrowLeftIcon, LinkIcon } from '@heroicons/react/outline'
 import { Page } from 'web/components/page'
 import dayjs from 'dayjs'
+import toast from 'react-hot-toast'
+import clsx from 'clsx'
 
 import { DateDoc } from 'common/post'
 import { Content } from 'web/components/editor'
@@ -12,10 +14,8 @@ import { User } from 'web/lib/firebase/users'
 import { DOMAIN } from 'common/envs/constants'
 import Custom404 from '../404'
 import { ShareIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 import { Button } from 'web/components/button'
 import { track } from '@amplitude/analytics-browser'
-import toast from 'react-hot-toast'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { useUser } from 'web/hooks/use-user'
 import { PostCommentsActivity, RichEditPost } from '../post/[...slugs]'
@@ -85,7 +85,7 @@ export function DateDocPost(props: {
   link?: boolean
 }) {
   const { dateDoc, creator, link } = props
-  const { content, birthday, photoUrl, contractSlug } = dateDoc
+  const { content, birthday, contractSlug } = dateDoc
   const { name, username } = creator
 
   const user = useUser()
@@ -98,13 +98,13 @@ export function DateDocPost(props: {
   return (
     <Col className="gap-6 rounded-lg bg-white px-6 py-6">
       <SiteLink href={link ? `/date-docs/${creator.username}` : undefined}>
-        <Col className="gap-6 self-center">
-          <Row className="relative items-center justify-between gap-4 text-2xl">
+        <Col className="gap-6">
+          <Row className="relative justify-between gap-4 text-2xl">
             <div>
               {name}, {age}
             </div>
 
-            <Col className="absolute right-0 px-2">
+            <Col className={clsx(link && 'absolute', 'right-0 px-2')}>
               <Button
                 size="lg"
                 color="gray-white"
@@ -133,11 +133,6 @@ export function DateDocPost(props: {
               </Button>
             </Col>
           </Row>
-          <img
-            className="w-full max-w-lg rounded-lg object-cover"
-            src={photoUrl}
-            alt={name}
-          />
         </Col>
       </SiteLink>
       {user && user.id === creator.id ? (

@@ -1,11 +1,9 @@
 import { RefreshIcon } from '@heroicons/react/outline'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import React, { useState } from 'react'
 import Textarea from 'react-expanding-textarea'
-import { AddFundsButton } from 'web/components/add-funds-button'
 import { ConfirmationButton } from 'web/components/confirmation-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -199,14 +197,6 @@ export default function ProfilePage(props: {
           </div>
 
           <div>
-            <label className="label">Balance</label>
-            <Row className="ml-1 items-start gap-4 text-gray-500">
-              {formatMoney(user.balance)}
-              <AddFundsButton />
-            </Row>
-          </div>
-
-          <div>
             <label className="label">API key</label>
             <div className="input-group w-full">
               <input
@@ -218,9 +208,10 @@ export default function ProfilePage(props: {
               />
               <ConfirmationButton
                 openModalBtn={{
-                  className: 'btn btn-primary btn-square p-2',
+                  className: 'p-2',
                   label: '',
-                  icon: <RefreshIcon />,
+                  icon: <RefreshIcon className="h-5 w-5" />,
+                  color: 'indigo',
                 }}
                 submitBtn={{
                   label: 'Update key',

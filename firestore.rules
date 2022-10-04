@@ -102,7 +102,7 @@ service cloud.firestore {
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks']);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['description', 'closeTime', 'question'])
+                                                                 .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
           match /comments/{commentId} {
@@ -176,7 +176,7 @@ service cloud.firestore {
       allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
                         && request.resource.data.diff(resource.data)
                         .affectedKeys()
-                        .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId' ]);
+                        .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId', 'pinnedItems' ]);
       allow delete: if request.auth.uid == resource.data.creatorId;
 
       match /groupContracts/{contractId} {

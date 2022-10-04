@@ -18,9 +18,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
   return (
     <Row>
       <FollowMarketButton contract={contract} user={user} />
-      {user?.id !== contract.creatorId && (
-        <LikeMarketButton contract={contract} user={user} />
-      )}
+      <LikeMarketButton contract={contract} user={user} />
       <Tooltip text="Share" placement="bottom" noTap noFade>
         <Button
           size="sm"
@@ -37,7 +35,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           />
         </Button>
       </Tooltip>
-      <ContractInfoDialog contract={contract} />
+      <ContractInfoDialog contract={contract} user={user} />
     </Row>
   )
 }

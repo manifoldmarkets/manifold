@@ -1,5 +1,6 @@
 import { MouseEventHandler, ReactNode } from 'react'
 import clsx from 'clsx'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
@@ -21,6 +22,7 @@ export function Button(props: {
   color?: ColorType
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
+  loading?: boolean
 }) {
   const {
     children,
@@ -30,6 +32,7 @@ export function Button(props: {
     color = 'indigo',
     type = 'button',
     disabled = false,
+    loading,
   } = props
 
   const sizeClasses = {
@@ -46,25 +49,32 @@ export function Button(props: {
     <button
       type={type}
       className={clsx(
-        'font-md items-center justify-center rounded-md border border-transparent shadow-sm hover:transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+        'font-md items-center justify-center rounded-md border border-transparent shadow-sm transition-colors disabled:cursor-not-allowed',
         sizeClasses,
-        color === 'green' && 'btn-primary text-white',
-        color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
-        color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
-        color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
-        color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
-        color === 'gray' && 'bg-gray-50 text-gray-600 hover:bg-gray-200',
+        color === 'green' &&
+          'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-600',
+        color === 'red' &&
+          'disabled:bg-greyscale-2 bg-red-400 text-white hover:bg-red-500',
+        color === 'yellow' &&
+          'disabled:bg-greyscale-2 bg-yellow-400 text-white hover:bg-yellow-500',
+        color === 'blue' &&
+          'disabled:bg-greyscale-2 bg-blue-400 text-white hover:bg-blue-500',
+        color === 'indigo' &&
+          'disabled:bg-greyscale-2 bg-indigo-500 text-white hover:bg-indigo-600',
+        color === 'gray' &&
+          'bg-greyscale-1 text-greyscale-6 hover:bg-greyscale-2 disabled:opacity-50',
         color === 'gradient' &&
-          'border-none bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+          'disabled:bg-greyscale-2 border-none bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
         color === 'gray-white' &&
-          'text-greyscale-6 hover:bg-greyscale-2 border-none shadow-none',
+          'text-greyscale-6 hover:bg-greyscale-2 border-none shadow-none disabled:opacity-50',
         color === 'highlight-blue' &&
-          'text-highlight-blue border-none shadow-none',
+          'text-highlight-blue disabled:bg-greyscale-2 border-none shadow-none',
         className
       )}
-      disabled={disabled}
+      disabled={disabled || loading}
       onClick={onClick}
     >
+      {loading && <LoadingIndicator className={'mr-2 border-gray-500'} />}
       {children}
     </button>
   )

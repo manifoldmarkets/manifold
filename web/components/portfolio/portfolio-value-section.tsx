@@ -1,35 +1,28 @@
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import { memo, useRef, useState } from 'react'
+import { memo, useState } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { Period } from 'web/lib/firebase/users'
-import { PillButton } from '../buttons/pill-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { PortfolioValueGraph } from './portfolio-value-graph'
+import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
+import { SizedContainer } from 'web/components/sized-container'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
     const { userId } = props
 
-    const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
-    const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
-    const [graphMode, setGraphMode] = useState<'profit' | 'value'>('value')
+    const portfolioHistory = usePortfolioHistory(userId, 'allTime')
+    const [graphMode, setGraphMode] = useState<GraphMode>('profit')
     const [graphDisplayNumber, setGraphDisplayNumber] = useState<
       number | string | null
     >(null)
-    const handleGraphDisplayChange = (num: string | number | null) => {
-      setGraphDisplayNumber(num)
+    const handleGraphDisplayChange = (p: { y: number } | undefined) => {
+      setGraphDisplayNumber(p != null ? formatMoney(p.y) : null)
     }
 
-    // Remember the last defined portfolio history.
-    const portfolioRef = useRef(portfolioHistory)
-    if (portfolioHistory) portfolioRef.current = portfolioHistory
-    const currPortfolioHistory = portfolioRef.current
-
-    const lastPortfolioMetrics = last(currPortfolioHistory)
-    if (!currPortfolioHistory || !lastPortfolioMetrics) {
+    const lastPortfolioMetrics = last(portfolioHistory)
+    if (!portfolioHistory || !lastPortfolioMetrics) {
       return <></>
     }
 
@@ -43,29 +36,14 @@ export const PortfolioValueSection = memo(
             <Col
               className={clsx(
                 'cursor-pointer',
-                graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-              )}
-              onClick={() => setGraphMode('value')}
-            >
-              <div className="text-greyscale-6 text-xs sm:text-sm">
-                Portfolio value
-              </div>
-              <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
-                {graphMode === 'value'
-                  ? graphDisplayNumber
-                    ? graphDisplayNumber
-                    : formatMoney(totalValue)
-                  : formatMoney(totalValue)}
-              </div>
-            </Col>
-            <Col
-              className={clsx(
-                'cursor-pointer',
                 graphMode != 'profit'
                   ? 'cursor-pointer opacity-40 hover:opacity-80'
                   : ''
               )}
-              onClick={() => setGraphMode('profit')}
+              onClick={() => {
+                setGraphMode('profit')
+                setGraphDisplayNumber(null)
+              }}
             >
               <div className="text-greyscale-6 text-xs sm:text-sm">Profit</div>
               <div
@@ -91,89 +69,42 @@ export const PortfolioValueSection = memo(
                   : formatMoney(totalProfit)}
               </div>
             </Col>
+
+            <Col
+              className={clsx(
+                'cursor-pointer',
+                graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+              )}
+              onClick={() => {
+                setGraphMode('value')
+                setGraphDisplayNumber(null)
+              }}
+            >
+              <div className="text-greyscale-6 text-xs sm:text-sm">
+                Portfolio value
+              </div>
+              <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
+                {graphMode === 'value'
+                  ? graphDisplayNumber
+                    ? graphDisplayNumber
+                    : formatMoney(totalValue)
+                  : formatMoney(totalValue)}
+              </div>
+            </Col>
           </Row>
         </Row>
-        <PortfolioValueGraph
-          portfolioHistory={currPortfolioHistory}
-          mode={graphMode}
-          handleGraphDisplayChange={handleGraphDisplayChange}
-        />
-        <PortfolioPeriodSelection
-          portfolioPeriod={portfolioPeriod}
-          setPortfolioPeriod={setPortfolioPeriod}
-          className="border-greyscale-2 mt-2 gap-4 border-b"
-          selectClassName="text-indigo-600 text-bold border-b border-indigo-600"
-        />
+        <SizedContainer fullHeight={200} mobileHeight={100}>
+          {(width, height) => (
+            <PortfolioGraph
+              mode={graphMode}
+              history={portfolioHistory}
+              width={width}
+              height={height}
+              onMouseOver={handleGraphDisplayChange}
+            />
+          )}
+        </SizedContainer>
       </>
     )
   }
 )
-
-export function PortfolioPeriodSelection(props: {
-  setPortfolioPeriod: (string: any) => void
-  portfolioPeriod: string
-  className?: string
-  selectClassName?: string
-}) {
-  const { setPortfolioPeriod, portfolioPeriod, className, selectClassName } =
-    props
-  return (
-    <Row className={clsx(className, 'text-greyscale-4')}>
-      <button
-        className={clsx(portfolioPeriod === 'daily' ? selectClassName : '')}
-        onClick={() => setPortfolioPeriod('daily' as Period)}
-      >
-        1D
-      </button>
-      <button
-        className={clsx(portfolioPeriod === 'weekly' ? selectClassName : '')}
-        onClick={() => setPortfolioPeriod('weekly' as Period)}
-      >
-        1W
-      </button>
-      <button
-        className={clsx(portfolioPeriod === 'monthly' ? selectClassName : '')}
-        onClick={() => setPortfolioPeriod('monthly' as Period)}
-      >
-        1M
-      </button>
-      <button
-        className={clsx(portfolioPeriod === 'allTime' ? selectClassName : '')}
-        onClick={() => setPortfolioPeriod('allTime' as Period)}
-      >
-        ALL
-      </button>
-    </Row>
-  )
-}
-
-export function GraphToggle(props: {
-  setGraphMode: (mode: 'profit' | 'value') => void
-  graphMode: string
-}) {
-  const { setGraphMode, graphMode } = props
-  return (
-    <Row className="relative mt-1 ml-1 items-center gap-1.5 sm:ml-0 sm:gap-2">
-      <PillButton
-        selected={graphMode === 'value'}
-        onSelect={() => {
-          setGraphMode('value')
-        }}
-        xs={true}
-        className="z-50"
-      >
-        Value
-      </PillButton>
-      <PillButton
-        selected={graphMode === 'profit'}
-        onSelect={() => {
-          setGraphMode('profit')
-        }}
-        xs={true}
-        className="z-50"
-      >
-        Profit
-      </PillButton>
-    </Row>
-  )
-}

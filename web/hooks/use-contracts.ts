@@ -8,12 +8,14 @@ import {
   getUserBetContracts,
   getUserBetContractsQuery,
   listAllContracts,
-  trendingContractsQuery,
 } from 'web/lib/firebase/contracts'
 import { QueryClient, useQuery, useQueryClient } from 'react-query'
 import { MINUTE_MS, sleep } from 'common/util/time'
-import { query, limit } from 'firebase/firestore'
-import { dailyScoreIndex } from 'web/lib/service/algolia'
+import {
+  dailyScoreIndex,
+  newIndex,
+  trendingIndex,
+} from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
 import { zipObject } from 'lodash'
 
@@ -27,16 +29,54 @@ export const useContracts = () => {
   return contracts
 }
 
+export const useTrendingContracts = (maxContracts: number) => {
+  const { data } = useQuery(['trending-contracts', maxContracts], () =>
+    trendingIndex.search<CPMMBinaryContract>('', {
+      facetFilters: ['isResolved:false', 'visibility:public'],
+      hitsPerPage: maxContracts,
+    })
+  )
+  if (!data) return undefined
+  return data.hits
+}
+
+export const useNewContracts = (maxContracts: number) => {
+  const { data } = useQuery(['newest-contracts', maxContracts], () =>
+    newIndex.search<CPMMBinaryContract>('', {
+      facetFilters: ['isResolved:false', 'visibility:public'],
+      hitsPerPage: maxContracts,
+    })
+  )
+  if (!data) return undefined
+  return data.hits
+}
+
+export const useContractsByDailyScoreNotBetOn = (
+  userId: string | null | undefined,
+  maxContracts: number
+) => {
+  const { data } = useQuery(['daily-score', userId, maxContracts], () =>
+    dailyScoreIndex.search<CPMMBinaryContract>('', {
+      facetFilters: [
+        'isResolved:false',
+        'visibility:public',
+        `uniqueBettors:-${userId}`,
+      ],
+      hitsPerPage: maxContracts,
+    })
+  )
+  if (!userId || !data) return undefined
+  return data.hits.filter((c) => c.dailyScore)
+}
+
 export const useContractsByDailyScoreGroups = (
   groupSlugs: string[] | undefined
 ) => {
-  const facetFilters = ['isResolved:false']
-
   const { data } = useQuery(['daily-score', groupSlugs], () =>
     Promise.all(
       (groupSlugs ?? []).map((slug) =>
         dailyScoreIndex.search<CPMMBinaryContract>('', {
-          facetFilters: [...facetFilters, `groupLinks.slug:${slug}`],
+          facetFilters: ['isResolved:false', `groupLinks.slug:${slug}`],
         })
       )
     )
@@ -55,14 +95,6 @@ export const getCachedContracts = async () =>
   q.fetchQuery(['contracts'], () => listAllContracts(1000), {
     staleTime: Infinity,
   })
-
-export const useTrendingContracts = (maxContracts: number) => {
-  const result = useFirestoreQueryData(
-    ['trending-contracts', maxContracts],
-    query(trendingContractsQuery, limit(maxContracts))
-  )
-  return result.data
-}
 
 export const useInactiveContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()

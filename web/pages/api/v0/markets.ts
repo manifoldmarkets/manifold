@@ -6,6 +6,8 @@ import { toLiteMarket, ValidationError } from './_types'
 import { z } from 'zod'
 import { validate } from './_validate'
 
+export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
+
 const queryParams = z
   .object({
     limit: z
@@ -39,7 +41,7 @@ export default async function handler(
   try {
     const contracts = await listAllContracts(limit, before)
     // Serve from Vercel cache, then update. see https://vercel.com/docs/concepts/functions/edge-caching
-    res.setHeader('Cache-Control', 's-maxage=1, stale-while-revalidate')
+    res.setHeader('Cache-Control', marketCacheStrategy)
     res.status(200).json(contracts.map(toLiteMarket))
   } catch (e) {
     res.status(400).json({

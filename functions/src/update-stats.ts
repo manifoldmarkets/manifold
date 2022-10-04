@@ -18,7 +18,7 @@ import { average } from '../../common/util/math'
 
 const firestore = admin.firestore()
 
-const numberOfDays = 90
+const numberOfDays = 180
 
 const getBetsQuery = (startTime: number, endTime: number) =>
   firestore

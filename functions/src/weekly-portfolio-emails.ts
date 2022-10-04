@@ -20,8 +20,8 @@ import { sendWeeklyPortfolioUpdateEmail } from './emails'
 import { contractUrl } from './utils'
 import { Txn } from '../../common/txn'
 import { formatMoney } from '../../common/util/format'
+import { getContractBetMetrics } from '../../common/calculate'
 
-// TODO: reset weeklyPortfolioUpdateEmailSent to false for all users at the start of each week
 export const weeklyPortfolioUpdateEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
   // every minute on Friday for an hour at 12pm PT (UTC -07:00)
@@ -36,9 +36,9 @@ const firestore = admin.firestore()
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const privateUsers = isProd()
     ? // ian & stephen's ids
-      // ? filterDefined([
-      //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
-      //   await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
+      // filterDefined([
+      // await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
+      // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
       // ])
       await getAllPrivateUsers()
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
@@ -48,7 +48,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       return isProd()
         ? user.notificationPreferences.profit_loss_updates.includes('email') &&
             !user.weeklyPortfolioUpdateEmailSent
-        : true
+        : user.notificationPreferences.profit_loss_updates.includes('email')
     })
     // Send emails in batches
     .slice(0, 200)
@@ -117,7 +117,8 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
       const user = await getUser(privateUser.id)
-      if (!user) return
+      // Don't send to a user unless they're over 5 days old
+      if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
       const userBets = usersBets[privateUser.id] as Bet[]
       const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
         userBets.some((bet) => bet.contractId === contract.id)
@@ -165,28 +166,43 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
             const bets = userBets.filter(
               (bet) => bet.contractId === contract.id
             )
+            const previousBets = bets.filter(
+              (b) => b.createdTime < Date.now() - 7 * DAY_MS
+            )
+
+            const betsInLastWeek = bets.filter(
+              (b) => b.createdTime >= Date.now() - 7 * DAY_MS
+            )
 
             const marketProbabilityAWeekAgo =
               cpmmContract.prob - cpmmContract.probChanges.week
             const currentMarketProbability = cpmmContract.resolutionProbability
               ? cpmmContract.resolutionProbability
               : cpmmContract.prob
-            const betsValueAWeekAgo = computeInvestmentValueCustomProb(
-              bets.filter((b) => b.createdTime < Date.now() - 7 * DAY_MS),
+
+            // TODO: returns 0 for resolved markets - doesn't include them
+            const betsMadeAWeekAgoValue = computeInvestmentValueCustomProb(
+              previousBets,
               contract,
               marketProbabilityAWeekAgo
             )
-            const currentBetsValue = computeInvestmentValueCustomProb(
-              bets,
+            const currentBetsMadeAWeekAgoValue =
+              computeInvestmentValueCustomProb(
+                previousBets,
+                contract,
+                currentMarketProbability
+              )
+            const betsMadeInLastWeekProfit = getContractBetMetrics(
               contract,
-              currentMarketProbability
-            )
-            const marketChange =
-              currentMarketProbability - marketProbabilityAWeekAgo
+              betsInLastWeek
+            ).profit
+            const profit =
+              betsMadeInLastWeekProfit +
+              (currentBetsMadeAWeekAgoValue - betsMadeAWeekAgoValue)
             return {
-              currentValue: currentBetsValue,
-              pastValue: betsValueAWeekAgo,
-              difference: currentBetsValue - betsValueAWeekAgo,
+              currentValue: currentBetsMadeAWeekAgoValue,
+              pastValue: betsMadeAWeekAgoValue,
+              profit,
               contractSlug: contract.slug,
               marketProbAWeekAgo: marketProbabilityAWeekAgo,
               questionTitle: contract.question,
@@ -194,19 +210,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               questionProb: cpmmContract.resolution
                 ? cpmmContract.resolution
                 : Math.round(cpmmContract.prob * 100) + '%',
-              questionChange:
-                (marketChange > 0 ? '+' : '') +
-                Math.round(marketChange * 100) +
-                '%',
-              questionChangeStyle: `color: ${
-                currentMarketProbability > marketProbabilityAWeekAgo
-                  ? 'rgba(0,160,0,1)'
-                  : '#a80000'
+              profitStyle: `color: ${
+                profit > 0 ? 'rgba(0,160,0,1)' : '#a80000'
               };`,
             } as PerContractInvestmentsData
           })
         ),
-        (differences) => Math.abs(differences.difference)
+        (differences) => Math.abs(differences.profit)
       ).reverse()
 
       log(
@@ -218,12 +228,10 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
 
       const [winningInvestments, losingInvestments] = partition(
         investmentValueDifferences.filter(
-          (diff) =>
-            diff.pastValue > 0.01 &&
-            Math.abs(diff.difference / diff.pastValue) > 0.01 // difference is greater than 1%
+          (diff) => diff.pastValue > 0.01 && Math.abs(diff.profit) > 1
         ),
         (investmentsData: PerContractInvestmentsData) => {
-          return investmentsData.difference > 0
+          return investmentsData.profit > 0
         }
       )
       // pick 3 winning investments and 3 losing investments
@@ -236,7 +244,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         worstInvestments.length === 0 &&
         usersToContractsCreated[privateUser.id].length === 0
       ) {
-        log('No bets in last week, no market movers, no markets created')
+        log(
+          'No bets in last week, no market movers, no markets created. Not sending an email.'
+        )
         await firestore.collection('private-users').doc(privateUser.id).update({
           weeklyPortfolioUpdateEmailSent: true,
         })
@@ -253,7 +263,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       })
       log('Sent weekly portfolio update email to', privateUser.email)
       count++
-      log('sent out emails to user count:', count)
+      log('sent out emails to users:', count)
     })
   )
 }
@@ -262,11 +272,10 @@ export type PerContractInvestmentsData = {
   questionTitle: string
   questionUrl: string
   questionProb: string
-  questionChange: string
-  questionChangeStyle: string
+  profitStyle: string
   currentValue: number
   pastValue: number
-  difference: number
+  profit: number
 }
 
 export type OverallPerformanceData = {

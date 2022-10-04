@@ -8,13 +8,14 @@ export function Avatar(props: {
   username?: string
   avatarUrl?: string
   noLink?: boolean
-  size?: number | 'xs' | 'sm'
+  size?: number | 'xxs' | 'xs' | 'sm'
   className?: string
 }) {
   const { username, noLink, size, className } = props
   const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
   useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
-  const s = size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
+  const s =
+    size == 'xxs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
   const sizeInPx = s * 4
 
   const onClick =

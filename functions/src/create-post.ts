@@ -42,7 +42,6 @@ const postSchema = z.object({
   // Date doc fields:
   bounty: z.number().optional(),
   birthday: z.number().optional(),
-  photoUrl: z.string().optional(),
   type: z.string().optional(),
   question: z.string().optional(),
 })
@@ -76,6 +75,8 @@ export const createpost = newEndpoint({}, async (req, auth) => {
         outcomeType: 'BINARY',
         visibility: 'unlisted',
         initialProb: 50,
+        // Dating group!
+        groupId: 'j3ZE8fkeqiKmRGumy3O1',
       },
       auth
     )

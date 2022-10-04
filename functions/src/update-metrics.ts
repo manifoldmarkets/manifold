@@ -17,7 +17,8 @@ import {
   computeVolume,
 } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
-import { Group } from 'common/group'
+import { Group } from '../../common/group'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -27,28 +28,46 @@ export const updateMetrics = functions
   .onRun(updateMetricsCore)
 
 export async function updateMetricsCore() {
-  const [users, contracts, bets, allPortfolioHistories, groups] =
-    await Promise.all([
-      getValues<User>(firestore.collection('users')),
-      getValues<Contract>(firestore.collection('contracts')),
-      getValues<Bet>(firestore.collectionGroup('bets')),
-      getValues<PortfolioMetrics>(
-        firestore
-          .collectionGroup('portfolioHistory')
-          .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
-      ),
-      getValues<Group>(firestore.collection('groups')),
-    ])
+  console.log('Loading users')
+  const users = await getValues<User>(firestore.collection('users'))
 
+  console.log('Loading contracts')
+  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+
+  console.log('Loading portfolio history')
+  const allPortfolioHistories = await getValues<PortfolioMetrics>(
+    firestore
+      .collectionGroup('portfolioHistory')
+      .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
+  )
+
+  console.log('Loading groups')
+  const groups = await getValues<Group>(firestore.collection('groups'))
+
+  console.log('Loading bets')
+  const contractBets = await batchedWaitAll(
+    contracts
+      .filter((c) => c.id)
+      .map(
+        (c) => () =>
+          getValues<Bet>(
+            firestore.collection('contracts').doc(c.id).collection('bets')
+          )
+      ),
+    100
+  )
+  const bets = contractBets.flat()
+
+  console.log('Loading group contracts')
   const contractsByGroup = await Promise.all(
-    groups.map((group) => {
-      return getValues(
+    groups.map((group) =>
+      getValues(
         firestore
           .collection('groups')
           .doc(group.id)
           .collection('groupContracts')
       )
-    })
+    )
   )
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
@@ -116,6 +135,28 @@ export async function updateMetricsCore() {
       lastPortfolio.investmentValue !== newPortfolio.investmentValue
 
     const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+    const contractRatios = userContracts
+      .map((contract) => {
+        if (
+          !contract.flaggedByUsernames ||
+          contract.flaggedByUsernames?.length === 0
+        ) {
+          return 0
+        }
+        const contractRatio =
+          contract.flaggedByUsernames.length / (contract.uniqueBettorCount ?? 1)
+
+        return contractRatio
+      })
+      .filter((ratio) => ratio > 0)
+    const badResolutions = contractRatios.filter(
+      (ratio) => ratio > BAD_RESOLUTION_THRESHOLD
+    )
+    let newFractionResolvedCorrectly = 0
+    if (userContracts.length > 0) {
+      newFractionResolvedCorrectly =
+        (userContracts.length - badResolutions.length) / userContracts.length
+    }
 
     return {
       user,
@@ -123,6 +164,7 @@ export async function updateMetricsCore() {
       newPortfolio,
       newProfit,
       didPortfolioChange,
+      newFractionResolvedCorrectly,
     }
   })
 
@@ -144,6 +186,7 @@ export async function updateMetricsCore() {
       newPortfolio,
       newProfit,
       didPortfolioChange,
+      newFractionResolvedCorrectly,
     }) => {
       const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
       return {
@@ -153,6 +196,7 @@ export async function updateMetricsCore() {
             creatorVolumeCached: newCreatorVolume,
             profitCached: newProfit,
             nextLoanCached,
+            fractionResolvedCorrectly: newFractionResolvedCorrectly,
           },
         },
 
@@ -224,3 +268,5 @@ const topUserScores = (scores: { [userId: string]: number }) => {
 }
 
 type GroupContractDoc = { contractId: string; createdTime: number }
+
+const BAD_RESOLUTION_THRESHOLD = 0.1
