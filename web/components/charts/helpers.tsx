@@ -1,12 +1,4 @@
-import {
-  ReactNode,
-  SVGProps,
-  memo,
-  useRef,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { ReactNode, SVGProps, memo, useRef, useEffect, useMemo } from 'react'
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
@@ -123,6 +115,28 @@ export const AreaWithTopStroke = <P,>(props: {
   )
 }
 
+export const SliceMarker = (props: {
+  color: string
+  x: number
+  y0: number
+  y1: number
+}) => {
+  const { color, x, y0, y1 } = props
+  return (
+    <g>
+      <line stroke="white" strokeWidth={3} x1={x} x2={x} y1={y0} y2={y1} />
+      <circle
+        stroke="white"
+        strokeWidth={3}
+        fill={color}
+        cx={x}
+        cy={y1}
+        r={5}
+      />
+    </g>
+  )
+}
+
 export const SVGChart = <X, TT>(props: {
   children: ReactNode
   w: number
@@ -130,8 +144,10 @@ export const SVGChart = <X, TT>(props: {
   margin: Margin
   xAxis: Axis<X>
   yAxis: Axis<number>
+  mouse: MouseProps<TT> | undefined
   onSelect?: (ev: D3BrushEvent<any>) => void
-  onMouseOver?: (mouseX: number, mouseY: number) => TT | undefined
+  onMouseOver?: (mouseX: number, mouseY: number) => void
+  onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
 }) => {
   const {
@@ -141,11 +157,12 @@ export const SVGChart = <X, TT>(props: {
     margin,
     xAxis,
     yAxis,
-    onMouseOver,
+    mouse,
     onSelect,
+    onMouseOver,
+    onMouseLeave,
     Tooltip,
   } = props
-  const [mouse, setMouse] = useState<{ x: number; y: number; data: TT }>()
   const tooltipMeasure = useMeasureSize()
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - (margin.left + margin.right)
@@ -165,7 +182,7 @@ export const SVGChart = <X, TT>(props: {
         if (!justSelected.current) {
           justSelected.current = true
           onSelect(ev)
-          setMouse(undefined)
+          onMouseLeave?.()
           if (overlayRef.current) {
             select(overlayRef.current).call(brush.clear)
           }
@@ -181,22 +198,17 @@ export const SVGChart = <X, TT>(props: {
         .select('.selection')
         .attr('shape-rendering', 'null')
     }
-  }, [innerW, innerH, onSelect])
+  }, [innerW, innerH, onSelect, onMouseLeave])
 
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' && onMouseOver) {
       const [x, y] = pointer(ev)
-      const data = onMouseOver(x, y)
-      if (data !== undefined) {
-        setMouse({ x, y, data })
-      } else {
-        setMouse(undefined)
-      }
+      onMouseOver(x, y)
     }
   }
 
   const onPointerLeave = () => {
-    setMouse(undefined)
+    onMouseLeave?.()
   }
 
   return (
@@ -307,6 +319,8 @@ export const TooltipContainer = (props: {
     </div>
   )
 }
+
+export type MouseProps<T> = { x: number; y: number; data: T }
 
 export const computeColorStops = <P,>(
   data: P[],
