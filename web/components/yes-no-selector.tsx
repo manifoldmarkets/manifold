@@ -244,7 +244,7 @@ function Button(props: {
       type="button"
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'bg-teal-500 bg-teal-600 text-white',
+        color === 'green' && 'bg-teal-500 text-white hover:bg-teal-600',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
