@@ -48,7 +48,8 @@ export function ContractReportResolution(props: { contract: Contract }) {
         openModalBtn={{
           label: '',
           icon: <FlagIcon className="h-5 w-5" />,
-          className: clsx(flagClass, reporting && 'btn-disabled loading'),
+          disabled: reporting,
+          className: clsx(flagClass),
         }}
         onSubmitWithSuccess={onSubmit}
         disabled={userReported}
