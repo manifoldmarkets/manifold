@@ -63,7 +63,7 @@ export const unsubscribe: EndpointDefinition = {
       xmlns:o="urn:schemas-microsoft-com:office:office">
 
 <head>
-  <title>Manifold Markets 7th Day Anniversary Gift!</title>
+  <title>Unsubscribe from Manifold Markets emails</title>
   <!--[if !mso]><!-->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <!--<![endif]-->
@@ -216,7 +216,7 @@ export const unsubscribe: EndpointDefinition = {
       xmlns:o="urn:schemas-microsoft-com:office:office">
 
 <head>
-    <title>Manifold Markets 7th Day Anniversary Gift!</title>
+  <title>Unsubscribe from Manifold Markets emails</title>
     <!--[if !mso]><!-->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!--<![endif]-->

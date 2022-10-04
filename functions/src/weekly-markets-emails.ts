@@ -17,8 +17,9 @@ import { filterDefined } from '../../common/util/array'
 
 export const weeklyMarketsEmails = functions
   .runWith({ secrets: ['MAILGUN_KEY'], memory: '4GB' })
-  // every minute on Monday for an hour at 12pm PT (UTC -07:00)
-  .pubsub.schedule('* 19 * * 1')
+  // TODO change back to Monday after the rest of the emails go out
+  // every minute on Tuesday for 2 hours starting at 12pm PT (UTC -07:00)
+  .pubsub.schedule('* 19-20 * * 2')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendTrendingMarketsEmailsToAllUsers()
@@ -53,7 +54,7 @@ async function sendTrendingMarketsEmailsToAllUsers() {
         !user.weeklyTrendingEmailSent
       )
     })
-    .slice(150) // Send the emails out in batches
+    .slice(125) // Send the emails out in batches
   log(
     'Sending weekly trending emails to',
     privateUsersToSendEmailsTo.length,
