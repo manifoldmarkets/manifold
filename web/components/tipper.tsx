@@ -20,9 +20,8 @@ export function Tipper(prop: {
   const { comment, myTip, totalTip } = prop
 
   const me = useUser()
-  const savedTip = myTip
 
-  const [localTip, setLocalTip] = useState(savedTip)
+  const [localTip, setLocalTip] = useState(myTip)
 
   // listen for user being set
   const initialized = useRef(false)
@@ -33,7 +32,7 @@ export function Tipper(prop: {
     }
   }, [myTip])
 
-  const total = totalTip - savedTip + localTip
+  const total = totalTip - myTip + localTip
 
   // declare debounced function only on first render
   const [saveTip] = useState(() =>
@@ -75,7 +74,7 @@ export function Tipper(prop: {
 
   const addTip = (delta: number) => {
     setLocalTip(localTip + delta)
-    me && saveTip(me, comment, localTip - savedTip + delta)
+    me && saveTip(me, comment, localTip - myTip + delta)
     toast(`You tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
   }
 
