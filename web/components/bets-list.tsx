@@ -612,7 +612,7 @@ function SellButton(props: {
         label: 'Sell',
         disabled: isSubmitting,
       }}
-      submitBtn={{ className: 'btn-primary', label: 'Sell' }}
+      submitBtn={{ label: 'Sell', color: 'green' }}
       onSubmit={async () => {
         setIsSubmitting(true)
         await sellBet({ contractId: contract.id, betId: bet.id })
