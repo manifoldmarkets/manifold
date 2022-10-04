@@ -357,7 +357,7 @@ export function GroupDisplay(props: {
     const groupSection = (
       <a
         className={clsx(
-          'bg-greyscale-4 max-w-[140px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
+          'bg-greyscale-4 max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
           !disabled && 'hover:bg-greyscale-3 cursor-pointer'
         )}
       >
