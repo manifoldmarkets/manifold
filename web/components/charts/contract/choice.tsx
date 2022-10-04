@@ -142,9 +142,8 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
   )
 }
 
-export function getChartAnswers(
-  contract: FreeResponseContract | MultipleChoiceContract,
-  length: number
+export function useChartAnswers(
+  contract: FreeResponseContract | MultipleChoiceContract
 ) {
   return useMemo(
     () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
@@ -161,11 +160,7 @@ export const ChoiceContractChart = (props: {
 }) => {
   const { contract, bets, width, height, onMouseOver } = props
   const [start, end] = getDateRange(contract)
-  // const answers = useMemo(
-  //   () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
-  //   [contract]
-  // )
-  const answers = getChartAnswers(contract, CATEGORY_COLORS.length)
+  const answers = useChartAnswers(contract)
   const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
     () => [

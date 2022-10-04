@@ -20,13 +20,11 @@ import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import { Linkify } from 'web/components/linkify'
-import { BuyButton } from 'web/components/yes-no-selector'
-import { UserLink } from 'web/components/user-link'
 import { Button } from 'web/components/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 import { CATEGORY_COLORS } from '../charts/contract/choice'
-import { getChartAnswers } from '../charts/contract/choice'
+import { useChartAnswers } from '../charts/contract/choice'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
@@ -107,10 +105,9 @@ export function AnswersPanel(props: {
     ? 'checkbox'
     : undefined
 
-  const colorSortedAnswer = getChartAnswers(
-    contract,
-    CATEGORY_COLORS.length
-  ).map((value, index) => value.text)
+  const colorSortedAnswer = useChartAnswers(contract).map(
+    (value, _index) => value.text
+  )
 
   return (
     <Col className="gap-3">
@@ -190,7 +187,7 @@ function OpenAnswer(props: {
   colorIndex: number | undefined
 }) {
   const { answer, contract, colorIndex } = props
-  const { username, avatarUrl, name, text } = answer
+  const { username, avatarUrl, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
