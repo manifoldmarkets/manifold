@@ -838,6 +838,11 @@ export function SellPanel(props: {
 
   const sellQuantity = isSellingAllShares ? shares : amount
 
+  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+  const soldShares = Math.min(sellQuantity ?? 0, shares)
+  const saleFrac = soldShares / shares
+  const loanPaid = saleFrac * loanAmount
+
   async function submitSell() {
     if (!user || !amount) return
 
@@ -882,6 +887,7 @@ export function SellPanel(props: {
     sharesOutcome,
     unfilledBets
   )
+  const netProceeds = saleValue - loanPaid
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   const getValue = getMappedValue(contract)
@@ -941,9 +947,21 @@ export function SellPanel(props: {
 
       <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="items-center justify-between gap-2 text-gray-500">
-          Sale proceeds
+          Sale amount
           <span className="text-neutral">{formatMoney(saleValue)}</span>
         </Row>
+        {loanPaid !== 0 && (
+          <>
+            <Row className="items-center justify-between gap-2 text-gray-500">
+              Loan repaid
+              <span className="text-neutral">{formatMoney(-loanPaid)}</span>
+            </Row>
+            <Row className="items-center justify-between gap-2 text-gray-500">
+              Net proceeds
+              <span className="text-neutral">{formatMoney(netProceeds)}</span>
+            </Row>
+          </>
+        )}
         <Row className="items-center justify-between">
           <div className="text-gray-500">
             {isPseudoNumeric ? 'Estimated value' : 'Probability'}
@@ -960,7 +978,7 @@ export function SellPanel(props: {
 
       <WarningConfirmationButton
         marketType="binary"
-        amount={saleValue}
+        amount={netProceeds}
         warning={warning}
         isSubmitting={isSubmitting}
         onSubmit={betDisabled ? undefined : submitSell}
