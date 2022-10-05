@@ -1,5 +1,4 @@
 import { CPMMBinaryContract } from 'common/contract'
-import { useEffect } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
@@ -198,7 +197,6 @@ const App = (props: {
   senateContracts: CPMMBinaryContract[]
   governorContracts: CPMMBinaryContract[]
 }) => {
-  useSetIframeBackbroundColor()
   const { senateContracts, governorContracts } = props
 
   return (
@@ -268,15 +266,6 @@ const App = (props: {
       </Col>
     </Page>
   )
-}
-
-const useSetIframeBackbroundColor = () => {
-  useEffect(() => {
-    if (window.location.host !== 'manifold.markets') return
-    for (let i = 0; i < self.frames.length; i++) {
-      self.frames[i].document.body.style.backgroundColor = '#f9fafb'
-    }
-  }, [])
 }
 
 export default App
