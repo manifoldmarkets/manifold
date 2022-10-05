@@ -1,3 +1,4 @@
+import { CPMMBinaryContract } from 'common/contract'
 import { useEffect } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
@@ -7,6 +8,7 @@ import {
   StateElectionMarket,
   StateElectionMap,
 } from 'web/components/usa-map/state-election-map'
+import { getContractFromSlug } from 'web/lib/firebase/contracts'
 
 const senateMidterms: StateElectionMarket[] = [
   {
@@ -176,29 +178,57 @@ const governorMidterms: StateElectionMarket[] = [
   },
 ]
 
-const App = () => {
+export async function getStaticProps() {
+  const senateContracts = await Promise.all(
+    senateMidterms.map((m) => getContractFromSlug(m.slug))
+  )
+
+  const governorContracts = await Promise.all(
+    governorMidterms.map((m) => getContractFromSlug(m.slug))
+  )
+
+  return {
+    props: { senateContracts, governorContracts },
+    revalidate: 60, // regenerate after a minute
+  }
+}
+
+const App = (props: {
+  senateContracts: CPMMBinaryContract[]
+  governorContracts: CPMMBinaryContract[]
+}) => {
   useSetIframeBackbroundColor()
+  const { senateContracts, governorContracts } = props
 
   return (
     <Page className="">
       <Col className="items-center justify-center">
         <Title text="2022 US Midterm Elections" className="mt-2" />
+
         <div className="mt-2 text-2xl">Senate</div>
-        <StateElectionMap markets={senateMidterms} />
+        <StateElectionMap
+          markets={senateMidterms}
+          contracts={senateContracts}
+        />
         <iframe
           src="https://manifold.markets/TomShlomi/will-the-gop-control-the-us-senate"
           frameBorder="0"
           className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
+
         <div className="mt-8 text-2xl">Governors</div>
-        <StateElectionMap markets={governorMidterms} />
+        <StateElectionMap
+          markets={governorMidterms}
+          contracts={governorContracts}
+        />
         <iframe
           src="https://manifold.markets/ManifoldMarkets/democrats-go-down-at-least-one-gove"
           frameBorder="0"
           className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
+
         <div className="mt-8 text-2xl">House</div>
         <iframe
           src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of"
@@ -206,6 +236,7 @@ const App = () => {
           className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
+
         <div className="mt-8 text-2xl">Related markets</div>
         <iframe
           src="https://manifold.markets/BoltonBailey/balance-of-power-in-us-congress-aft"

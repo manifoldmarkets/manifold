@@ -3,12 +3,9 @@ import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
 import { getProbability } from 'common/calculate'
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract } from 'common/contract'
 import { Customize, USAMap } from './usa-map'
-import {
-  getContractFromSlug,
-  listenForContract,
-} from 'web/lib/firebase/contracts'
+import { listenForContract } from 'web/lib/firebase/contracts'
 import { interpolateColor } from 'common/util/color'
 
 export interface StateElectionMarket {
@@ -18,10 +15,14 @@ export interface StateElectionMarket {
   state: string
 }
 
-export function StateElectionMap(props: { markets: StateElectionMarket[] }) {
+export function StateElectionMap(props: {
+  markets: StateElectionMarket[]
+  contracts: CPMMBinaryContract[]
+}) {
   const { markets } = props
+  const [contracts, setContracts] = useState(props.contracts)
+  useUpdateContracts(contracts, setContracts)
 
-  const contracts = useContracts(markets.map((m) => m.slug))
   const probs = contracts.map((c) =>
     c ? getProbability(c as CPMMBinaryContract) : 0.5
   )
@@ -50,29 +51,23 @@ const probToColor = (prob: number, isWinRepublican: boolean) => {
   return interpolateColor('#ebe4ec', color, Math.abs(p - 0.5) * 2)
 }
 
-const useContracts = (slugs: string[]) => {
-  const [contracts, setContracts] = useState<(Contract | undefined)[]>(
-    slugs.map(() => undefined)
-  )
-
-  useEffect(() => {
-    Promise.all(slugs.map((slug) => getContractFromSlug(slug))).then(
-      (contracts) => setContracts(contracts)
-    )
-  }, [slugs])
-
+const useUpdateContracts = (
+  contracts: CPMMBinaryContract[],
+  setContracts: (newContracts: CPMMBinaryContract[]) => void
+) => {
   useEffect(() => {
     if (contracts.some((c) => c === undefined)) return
 
     // listen to contract updates
-    const unsubs = (contracts as Contract[]).map((c, i) =>
+    const unsubs = contracts.map((c, i) =>
       listenForContract(
         c.id,
-        (newC) => newC && setContracts(setAt(contracts, i, newC))
+        (newC) =>
+          newC && setContracts(setAt(contracts, i, newC as CPMMBinaryContract))
       )
     )
     return () => unsubs.forEach((u) => u())
-  }, [contracts])
+  }, [contracts, setContracts])
 
   return contracts
 }
