@@ -207,25 +207,20 @@ export function RichEditPost(props: { post: Post }) {
       </Row>
     </>
   ) : (
-    <>
-      <div className="relative">
-        <div className="absolute top-0 right-0 z-10 space-x-2">
-          <Button
-            color="gray"
-            size="xs"
-            onClick={() => {
-              setEditing(true)
-              editor?.commands.focus('end')
-            }}
-          >
-            <PencilIcon className="inline h-4 w-4" />
-            Edit
-          </Button>
-        </div>
-
-        <Content content={post.content} />
-        <Spacer h={2} />
-      </div>
-    </>
+    <Col>
+      <Content content={post.content} />
+      <Row className="place-content-end">
+        <Button
+          color="gray-white"
+          size="xs"
+          onClick={() => {
+            setEditing(true)
+            editor?.commands.focus('end')
+          }}
+        >
+          <PencilIcon className="inline h-4 w-4" />
+        </Button>
+      </Row>
+    </Col>
   )
 }
