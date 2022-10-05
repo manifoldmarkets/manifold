@@ -42,6 +42,7 @@ import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
+import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -149,6 +150,9 @@ export function useTextEditor(props: {
   useEffect(() => {
     editor?.setEditable(!disabled)
   }, [editor, disabled])
+
+  const isEditorFilled = editor != null && !editor.isEmpty
+  useWarnUnsavedChanges(isEditorFilled)
 
   return { editor, upload }
 }
