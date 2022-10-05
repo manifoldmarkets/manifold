@@ -20,7 +20,7 @@ export function Button(props: {
   onClick?: MouseEventHandler<any> | undefined
   children?: ReactNode
   size?: SizeType
-  color?: ColorType
+  color?: ColorType | 'override'
   type?: 'button' | 'reset' | 'submit'
   disabled?: boolean
   loading?: boolean
@@ -50,7 +50,7 @@ export function Button(props: {
     <button
       type={type}
       className={clsx(
-        'font-md items-center justify-center rounded-md border border-transparent shadow-sm transition-colors disabled:cursor-not-allowed',
+        'font-md inline-flex items-center justify-center rounded-md border border-transparent shadow-sm transition-colors disabled:cursor-not-allowed',
         sizeClasses,
         color === 'green' &&
           'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-600',
