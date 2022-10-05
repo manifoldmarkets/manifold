@@ -233,8 +233,9 @@ export const SVGChart = <X, TT>(props: {
             ttParams.y,
             innerW,
             innerH,
-            tooltipMeasure.width,
-            tooltipMeasure.height
+            tooltipMeasure.width ?? 140,
+            tooltipMeasure.height ?? 35,
+            isMobile ?? false
           )}
         >
           <Tooltip
@@ -290,23 +291,28 @@ export const getTooltipPosition = (
   mouseY: number,
   containerWidth: number,
   containerHeight: number,
-  tooltipWidth?: number,
-  tooltipHeight?: number
+  tooltipWidth: number,
+  tooltipHeight: number,
+  isMobile: boolean
 ) => {
   let left = mouseX + 12
-  let bottom = containerHeight - mouseY + 12
+  let bottom = !isMobile
+    ? containerHeight - mouseY + 12
+    : containerHeight - tooltipHeight + 12
   if (tooltipWidth != null) {
     const overflow = left + tooltipWidth - containerWidth
     if (overflow > 0) {
       left -= overflow
     }
   }
+
   if (tooltipHeight != null) {
     const overflow = tooltipHeight - mouseY
     if (overflow > 0) {
       bottom -= overflow
     }
   }
+
   return { left, bottom }
 }
 
