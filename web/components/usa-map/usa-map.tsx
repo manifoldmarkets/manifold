@@ -1,6 +1,7 @@
 // https://github.com/jb-1980/usa-map-react
 // MIT License
 
+import clsx from 'clsx'
 import { DATA } from './data'
 import { USAState } from './usa-state'
 
@@ -65,40 +66,38 @@ export const USAMap = ({
   const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
 
   return (
-    <div className="flex w-full">
-      <svg
-        className={className}
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 959 593"
-      >
-        <title>{title}</title>
-        <g className="outlines">
-          {States({
-            hideStateTitle,
-            fillStateColor,
-            stateClickHandler,
-          })}
-          <g className="DC state">
-            <path
-              className="DC1"
-              fill={fillStateColor('DC1')}
-              d="M801.8,253.8 l-1.1-1.6 -1-0.8 1.1-1.6 2.2,1.5z"
-            />
-            <circle
-              className="DC2"
-              onClick={onClick}
-              data-name={'DC'}
-              fill={fillStateColor('DC2')}
-              stroke="#FFFFFF"
-              strokeWidth="1.5"
-              cx="801.3"
-              cy="251.8"
-              r="5"
-              opacity="1"
-            />
-          </g>
+    <svg
+      className={clsx('flex h-96 w-full sm:h-full', className)}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 959 593"
+    >
+      <title>{title}</title>
+      <g className="outlines">
+        {States({
+          hideStateTitle,
+          fillStateColor,
+          stateClickHandler,
+        })}
+        <g className="DC state">
+          <path
+            className="DC1"
+            fill={fillStateColor('DC1')}
+            d="M801.8,253.8 l-1.1-1.6 -1-0.8 1.1-1.6 2.2,1.5z"
+          />
+          <circle
+            className="DC2"
+            onClick={onClick}
+            data-name={'DC'}
+            fill={fillStateColor('DC2')}
+            stroke="#FFFFFF"
+            strokeWidth="1.5"
+            cx="801.3"
+            cy="251.8"
+            r="5"
+            opacity="1"
+          />
         </g>
-      </svg>
-    </div>
+      </g>
+    </svg>
   )
 }
