@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import {
   StateElectionMarket,
@@ -204,7 +205,10 @@ const App = (props: {
     <Page className="">
       <Col className="items-center justify-center">
         <Title text="2022 US Midterm Elections" className="mt-2" />
-
+        <SEO
+          title="2022 US Midterm Elections"
+          description="Bet on the midterm elections using prediction markets. See Manifold's state-by-state breakdown of senate and governor races."
+        />
         <div className="mt-2 text-2xl">Senate</div>
         <StateElectionMap
           markets={senateMidterms}
