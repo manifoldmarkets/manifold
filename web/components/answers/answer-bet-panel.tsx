@@ -192,6 +192,7 @@ export function AnswerBetPanel(props: {
           isSubmitting={isSubmitting}
           disabled={!!betDisabled}
           color={'indigo'}
+          actionLabel="buy"
         />
       ) : (
         <BetSignUpPrompt />
