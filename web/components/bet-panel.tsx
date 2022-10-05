@@ -972,7 +972,7 @@ export function SellPanel(props: {
         {loanPaid !== 0 && (
           <>
             <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
-              Loan repaid
+              Loan payment
               <span className="text-neutral">{formatMoney(-loanPaid)}</span>
             </Row>
             <Row className="items-center justify-between gap-2 text-gray-500">
