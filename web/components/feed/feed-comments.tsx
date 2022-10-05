@@ -1,11 +1,14 @@
+import React, { memo, useEffect, useRef, useState } from 'react'
+import { Editor } from '@tiptap/react'
+import { useRouter } from 'next/router'
+import { sum } from 'lodash'
+import clsx from 'clsx'
+
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import React, { useEffect, useRef, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import { useRouter } from 'next/router'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
@@ -14,9 +17,9 @@ import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { Tipper } from '../tipper'
-import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../editor'
-import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
@@ -32,6 +35,12 @@ export function FeedCommentThread(props: {
   const { contract, threadComments, tips, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
 
+  const user = useUser()
+  const onSubmitComment = useEvent(() => setReplyTo(undefined))
+  const onReplyClick = useEvent((comment: ContractComment) => {
+    setReplyTo({ id: comment.id, username: comment.userUsername })
+  })
+
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
       <span
@@ -44,10 +53,10 @@ export function FeedCommentThread(props: {
           indent={commentIdx != 0}
           contract={contract}
           comment={comment}
-          tips={tips[comment.id] ?? {}}
-          onReplyClick={() =>
-            setReplyTo({ id: comment.id, username: comment.userUsername })
-          }
+          myTip={user ? tips[comment.id]?.[user.id] : undefined}
+          totalTip={sum(Object.values(tips[comment.id] ?? {}))}
+          showTip={true}
+          onReplyClick={onReplyClick}
         />
       ))}
       {replyTo && (
@@ -60,7 +69,7 @@ export function FeedCommentThread(props: {
             contract={contract}
             parentCommentId={parentComment.id}
             replyTo={replyTo}
-            onSubmitComment={() => setReplyTo(undefined)}
+            onSubmitComment={onSubmitComment}
           />
         </Col>
       )}
@@ -68,14 +77,17 @@ export function FeedCommentThread(props: {
   )
 }
 
-export function FeedComment(props: {
+export const FeedComment = memo(function FeedComment(props: {
   contract: Contract
   comment: ContractComment
-  tips?: CommentTips
+  showTip?: boolean
+  myTip?: number
+  totalTip?: number
   indent?: boolean
-  onReplyClick?: () => void
+  onReplyClick?: (comment: ContractComment) => void
 }) {
-  const { contract, comment, tips, indent, onReplyClick } = props
+  const { contract, comment, myTip, totalTip, showTip, indent, onReplyClick } =
+    props
   const {
     text,
     content,
@@ -180,12 +192,18 @@ export function FeedComment(props: {
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
-              onClick={onReplyClick}
+              onClick={() => onReplyClick(comment)}
             >
               Reply
             </button>
           )}
-          {tips && <Tipper comment={comment} tips={tips} />}
+          {showTip && (
+            <Tipper
+              comment={comment}
+              myTip={myTip ?? 0}
+              totalTip={totalTip ?? 0}
+            />
+          )}
           {(contract.openCommentBounties ?? 0) > 0 && (
             <AwardBountyButton comment={comment} contract={contract} />
           )}
@@ -193,7 +211,7 @@ export function FeedComment(props: {
       </div>
     </Row>
   )
-}
+})
 
 function CommentStatus(props: {
   contract: Contract
