@@ -2,7 +2,6 @@ import { Modal } from './layout/modal'
 import { Col } from './layout/col'
 import { Title } from './title'
 import { TweetButton } from './tweet-button'
-import { Row } from './layout/row'
 import { CopyLinkButton } from './copy-link-button'
 
 export function SharePostModal(props: {
@@ -17,10 +16,9 @@ export function SharePostModal(props: {
       <Col className="gap-4 rounded bg-white p-4">
         <Title className="!mt-0 !mb-2" text="Share this post" />
         <CopyLinkButton url={shareUrl} tracking="copy share post link" />
-
-        <Row className="z-0 justify-start gap-4 self-center">
-          <TweetButton className="self-start" tweetText={shareUrl} />
-        </Row>
+        <div className="self-center">
+          <TweetButton tweetText={shareUrl} />
+        </div>
       </Col>
     </Modal>
   )
