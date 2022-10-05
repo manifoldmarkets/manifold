@@ -29,7 +29,14 @@ export const SizedContainer = (props: {
   }, [threshold, fullHeight, mobileHeight])
   return (
     <div ref={containerRef}>
-      {width != null && height != null && children(width, height)}
+      {width != null && height != null ? (
+        children(width, height)
+      ) : (
+        <>
+          <div className="sm:hidden" style={{ height: mobileHeight }} />
+          <div className="hidden sm:flex" style={{ height: fullHeight }} />
+        </>
+      )}
     </div>
   )
 }
