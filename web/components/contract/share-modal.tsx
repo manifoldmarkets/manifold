@@ -22,6 +22,7 @@ import { useState } from 'react'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
 import { QRCode } from '../qr-code'
+import { CopyLinkButton } from '../copy-link-button'
 
 export function ShareModal(props: {
   contract: Contract
@@ -61,20 +62,7 @@ export function ShareModal(props: {
           width={150}
           height={150}
         />
-        <Button
-          size="2xl"
-          color="indigo"
-          className={'mb-2 flex max-w-xs self-center'}
-          onClick={() => {
-            copyToClipboard(shareUrl)
-            toast.success('Link copied!', {
-              icon: linkIcon,
-            })
-            track('copy share link')
-          }}
-        >
-          {linkIcon} Copy link
-        </Button>
+        <CopyLinkButton url={shareUrl} tracking="copy share link" />
 
         <Row className="z-0 flex-wrap justify-center gap-4 self-center">
           <TweetButton
