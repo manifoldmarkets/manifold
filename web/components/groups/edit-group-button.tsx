@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
 
 import { Group } from 'common/group'
-import { deleteGroup, joinGroup } from 'web/lib/firebase/groups'
+import { deleteGroup, joinGroup, updateGroup } from 'web/lib/firebase/groups'
 import { Spacer } from '../layout/spacer'
 import { useRouter } from 'next/router'
 import { Modal } from 'web/components/layout/modal'
@@ -31,6 +31,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
     setIsSubmitting(true)
 
     await Promise.all(addMemberUsers.map((user) => joinGroup(group, user.id)))
+    await updateGroup(group, { name })
 
     setIsSubmitting(false)
     updateOpen(false)
