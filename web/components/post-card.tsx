@@ -28,7 +28,7 @@ export function PostCard(props: {
     <div className="relative py-1">
       <Row
         className={clsx(
-          ' relative gap-3 rounded-lg bg-white py-2 shadow-md hover:cursor-pointer hover:bg-gray-100',
+          'relative  gap-3  rounded-lg bg-white py-2 px-3 shadow-md hover:cursor-pointer hover:bg-gray-100',
           itemIds?.includes(post.id) && highlightClassName
         )}
       >
@@ -45,8 +45,10 @@ export function PostCard(props: {
             <span className="mx-1">•</span>
             <span className="text-gray-500">{fromNow(post.createdTime)}</span>
           </div>
-          <div className="text-lg font-medium text-gray-900">{post.title}</div>
-          <div className="font-small text-md text-gray-500">
+          <div className=" break-words text-lg font-medium  text-gray-900">
+            {post.title}
+          </div>
+          <div className="font-small  text-md  break-words text-gray-500">
             {post.subtitle}
           </div>
         </div>
