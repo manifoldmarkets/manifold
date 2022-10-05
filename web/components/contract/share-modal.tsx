@@ -1,5 +1,3 @@
-import { LinkIcon } from '@heroicons/react/outline'
-
 import { Contract } from 'common/contract'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -32,7 +30,6 @@ export function ShareModal(props: {
 
   const [openCreateChallengeModal, setOpenCreateChallengeModal] =
     useState(false)
-  const linkIcon = <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />
   const showChallenge =
     user && outcomeType === 'BINARY' && !resolution && CHALLENGES_ENABLED
 
