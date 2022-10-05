@@ -6,12 +6,13 @@ import { Spacer } from '../layout/spacer'
 import { Group } from 'common/group'
 import { deleteFieldFromGroup, updateGroup } from 'web/lib/firebase/groups'
 import PencilIcon from '@heroicons/react/solid/PencilIcon'
-import { DocumentRemoveIcon } from '@heroicons/react/solid'
+import { TrashIcon } from '@heroicons/react/solid'
 import { createPost } from 'web/lib/firebase/api'
 import { Post } from 'common/post'
 import { deletePost, updatePost } from 'web/lib/firebase/posts'
 import { useState } from 'react'
 import { usePost } from 'web/hooks/use-post'
+import { Col } from '../layout/col'
 
 export function GroupOverviewPost(props: {
   group: Group
@@ -99,35 +100,31 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
           </p>
         </div>
       ) : (
-        <div className="relative">
-          <div className="absolute top-0 right-0 z-10 space-x-2">
+        <Col>
+          <Content content={post.content} />
+          <Row className="place-content-end">
             <Button
-              color="gray"
-              size="xs"
+              color="gray-white"
+              size="2xs"
               onClick={() => {
                 setEditing(true)
                 editor?.commands.focus('end')
               }}
             >
-              <PencilIcon className="inline h-4 w-4" />
-              Edit
+              <PencilIcon className="inline h-5 w-5" />
             </Button>
 
             <Button
-              color="gray"
-              size="xs"
+              color="gray-white"
+              size="2xs"
               onClick={() => {
                 deleteGroupAboutPost()
               }}
             >
-              <DocumentRemoveIcon className="inline h-4 w-4" />
-              Delete
+              <TrashIcon className="inline h-5 w-5" />
             </Button>
-          </div>
-
-          <Content content={post.content} />
-          <Spacer h={2} />
-        </div>
+          </Row>
+        </Col>
       )}
     </>
   )
