@@ -42,7 +42,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         `}
       </Script>
       <Head>
-        <title>Manifold Markets — A market for every question</title>
+        <title>{'Manifold Markets — A market for every question'}</title>
 
         <meta
           property="og:title"
