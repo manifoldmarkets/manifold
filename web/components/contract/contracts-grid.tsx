@@ -45,7 +45,7 @@ export function ContractsGrid(props: {
     cardUIOptions || {}
   const { itemIds: contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
-    (visible) => {
+    (visible: boolean) => {
       if (visible && loadMore) {
         loadMore()
       }
