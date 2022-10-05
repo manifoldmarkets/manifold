@@ -4,7 +4,7 @@ import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
 import { listAllContracts } from 'web/lib/firebase/contracts'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const contracts = await listAllContracts(1000, undefined, 'popularityScore')
+  const contracts = await listAllContracts(5000, undefined, 'popularityScore')
 
   const score = (popularity: number) => Math.tanh(Math.log10(popularity + 1))
 
