@@ -395,6 +395,7 @@ export function BuyPanel(props: {
             disabled={!!betDisabled || outcome === undefined}
             size="xl"
             color={outcome === 'NO' ? 'red' : 'green'}
+            actionLabel="Wager"
           />
         )}
         <button
