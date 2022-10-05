@@ -1,3 +1,4 @@
+import React, { memo, useEffect } from 'react'
 import dayjs from 'dayjs'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -8,7 +9,6 @@ import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import React, { useEffect } from 'react'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { SiteLink } from 'web/components/site-link'
 import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
@@ -16,7 +16,10 @@ import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/user-link'
 import { BETTOR } from 'common/user'
 
-export function FeedBet(props: { contract: Contract; bet: Bet }) {
+export const FeedBet = memo(function FeedBet(props: {
+  contract: Contract
+  bet: Bet
+}) {
   const { contract, bet } = props
   const { userAvatarUrl, userUsername, createdTime } = bet
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
@@ -36,7 +39,7 @@ export function FeedBet(props: { contract: Contract; bet: Bet }) {
       />
     </Row>
   )
-}
+})
 
 export function BetStatusText(props: {
   contract: Contract
