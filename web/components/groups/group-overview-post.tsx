@@ -121,7 +121,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
                 deleteGroupAboutPost()
               }}
             >
-              <TrashIcon className="inline h-5 w-5" />
+              <TrashIcon className="inline h-5 w-5 text-red-500" />
             </Button>
           </Row>
         </Col>
