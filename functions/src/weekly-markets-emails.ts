@@ -2,12 +2,20 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from '../../common/contract'
-import { getGroup, getPrivateUser, getUser, getValues, log } from './utils'
+import {
+  getAllPrivateUsers,
+  getGroup,
+  getPrivateUser,
+  getUser,
+  getValues,
+  isProd,
+  log,
+} from './utils'
 import { createRNG, shuffle } from '../../common/util/random'
 import { DAY_MS, HOUR_MS } from '../../common/util/time'
 import { filterDefined } from '../../common/util/array'
 import { Follow } from '../../common/follow'
-import { countBy, uniqBy } from 'lodash'
+import { countBy, uniq, uniqBy } from 'lodash'
 import { sendInterestingMarketsEmail } from './emails'
 
 export const weeklyMarketsEmails = functions
@@ -37,27 +45,28 @@ export async function getTrendingContracts() {
 
 export async function sendTrendingMarketsEmailsToAllUsers() {
   const numContractsToSend = 6
-  // const privateUsers =
-  //   isProd()
-  //   ? await getAllPrivateUsers()
-  //   filterDefined([
-  //     await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'), // dev Ian
-  //     ])
-  const privateUsersToSendEmailsTo =
-    // get all users that haven't unsubscribed from weekly emails
-    // isProd()
-    // ? privateUsers
-    //     .filter((user) => {
-    //       user.notificationPreferences.trending_markets.includes('email') &&
-    //         !user.weeklyTrendingEmailSent
-    //     })
-    //     .slice(125) // Send the emails out in batches
-    // :
-    // privateUsers
-    filterDefined([
-      await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'), // prod Ian
-      await getPrivateUser('FptiiMZZ6dQivihLI8MYFQ6ypSw1'),
-    ])
+  const privateUsers = isProd()
+    ? await getAllPrivateUsers()
+    : filterDefined([
+        await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'), // dev Ian
+      ])
+  const privateUsersToSendEmailsTo = isProd()
+    ? privateUsers
+        .filter((user) => {
+          // get all users that haven't unsubscribed from weekly emails
+          user.notificationPreferences.trending_markets.includes('email') &&
+            !user.weeklyTrendingEmailSent
+        })
+        .slice(100) // Send the emails out in batches
+    : privateUsers
+
+  // For testing different users on prod: (only send ian an email though)
+  // filterDefined([
+  //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'), // prod Ian
+  // isProd()
+  //   ? await getPrivateUser('FptiiMZZ6dQivihLI8MYFQ6ypSw1') // prod Mik
+  //   : await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'), // dev Ian
+  // ])
 
   log(
     'Sending weekly trending emails to',
@@ -75,11 +84,13 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
         !contract.groupSlugs?.includes('manifold-features') &&
         !contract.groupSlugs?.includes('manifold-6748e065087e')
     )
-    .slice(0, 20)
-  // log(
-  //   `Found ${trendingContracts.length} trending contracts:\n`,
-  //   trendingContracts.map((c) => c.question).join('\n ')
-  // )
+    .slice(0, 50)
+
+  const uniqueTrendingContracts = removeSimilarQuestions(
+    trendingContracts,
+    trendingContracts,
+    true
+  ).slice(0, 20)
 
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
@@ -87,25 +98,45 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
         log(`No email for ${privateUser.username}`)
         return
       }
+
+      const unbetOnFollowedMarkets = await getUserUnBetOnFollowsMarkets(
+        privateUser.id
+      )
+      const unBetOnGroupMarkets = await getUserUnBetOnGroupsMarkets(
+        privateUser.id,
+        unbetOnFollowedMarkets
+      )
+      const similarBettorsMarkets = await getSimilarBettorsMarkets(
+        privateUser.id,
+        unBetOnGroupMarkets
+      )
+
       const marketsAvailableToSend = uniqBy(
         [
-          ...(await getUserUnBetOnFollowsMarkets(
-            privateUser.id,
-            privateUser.id
-          )),
-          ...(await getUserUnBetOnGroupsMarkets(privateUser.id)),
-          ...(await getSimilarBettorsMarkets(privateUser.id)),
+          ...chooseRandomSubset(unbetOnFollowedMarkets, 2),
+          // // Most people will belong to groups but may not follow other users,
+          // so choose more from the other subsets if the followed markets is sparse
+          ...chooseRandomSubset(
+            unBetOnGroupMarkets,
+            unbetOnFollowedMarkets.length === 0 ? 3 : 2
+          ),
+          ...chooseRandomSubset(
+            similarBettorsMarkets,
+            unbetOnFollowedMarkets.length === 0 ? 3 : 2
+          ),
         ],
         (contract) => contract.id
       )
-      // at least send them trending contracts if nothing else
+      // // at least send them trending contracts if nothing else
       if (marketsAvailableToSend.length < numContractsToSend)
         marketsAvailableToSend.push(
-          ...trendingContracts
+          ...removeSimilarQuestions(
+            uniqueTrendingContracts,
+            marketsAvailableToSend,
+            false
+          )
             .filter(
-              (contract) =>
-                !contract.uniqueBettorIds?.includes(privateUser.id) &&
-                !marketsAvailableToSend.map((c) => c.id).includes(contract.id)
+              (contract) => !contract.uniqueBettorIds?.includes(privateUser.id)
             )
             .slice(0, numContractsToSend - marketsAvailableToSend.length)
         )
@@ -129,17 +160,13 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
       const user = await getUser(privateUser.id)
       if (!user) return
 
-      console.log(
+      log(
         'sending contracts:',
-        contractsToSend.map((c) => [c.question, c.popularityScore])
+        contractsToSend.map((c) => c.question + ' ' + c.popularityScore)
       )
       // if they don't have enough markets, find user bets and get the other bettor ids who most overlap on those markets, then do the same thing as above for them
       // await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
-      await sendInterestingMarketsEmail(
-        user,
-        privateUsersToSendEmailsTo[0],
-        contractsToSend
-      )
+      await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
       await firestore.collection('private-users').doc(user.id).update({
         weeklyTrendingEmailSent: true,
       })
@@ -147,19 +174,11 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
   )
 }
 
-// TODO: figure out a good minimum popularity score to filter by
 const MINIMUM_POPULARITY_SCORE = 2
 
-const getUserUnBetOnFollowsMarkets = async (
-  userId: string,
-  unBetOnByUserId: string
-) => {
+const getUserUnBetOnFollowsMarkets = async (userId: string) => {
   const follows = await getValues<Follow>(
     firestore.collection('users').doc(userId).collection('follows')
-  )
-  console.log(
-    'follows',
-    follows.map((f) => f.userId)
   )
 
   const unBetOnContractsFromFollows = await Promise.all(
@@ -181,7 +200,7 @@ const getUserUnBetOnFollowsMarkets = async (
       )
 
       return openContracts.filter(
-        (contract) => !contract.uniqueBettorIds?.includes(unBetOnByUserId)
+        (contract) => !contract.uniqueBettorIds?.includes(userId)
       )
     })
   )
@@ -194,16 +213,25 @@ const getUserUnBetOnFollowsMarkets = async (
         contract.popularityScore > MINIMUM_POPULARITY_SCORE
     )
     .sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
-  console.log(
-    'sorted top 10 follow Markets',
-    sortedMarkets
-      .slice(0, 10)
-      .map((c) => [c.question, c.popularityScore, c.creatorId])
+
+  const uniqueSortedMarkets = removeSimilarQuestions(
+    sortedMarkets,
+    sortedMarkets,
+    true
   )
-  return sortedMarkets
+
+  const topSortedMarkets = uniqueSortedMarkets.slice(0, 10)
+  log(
+    'top 10 sorted markets by followed users',
+    topSortedMarkets.map((c) => c.question + ' ' + c.popularityScore)
+  )
+  return topSortedMarkets
 }
 
-const getUserUnBetOnGroupsMarkets = async (userId: string) => {
+const getUserUnBetOnGroupsMarkets = async (
+  userId: string,
+  differentThanTheseContracts: Contract[]
+) => {
   const snap = await firestore
     .collectionGroup('groupMembers')
     .where('userId', '==', userId)
@@ -214,10 +242,6 @@ const getUserUnBetOnGroupsMarkets = async (userId: string) => {
   )
   const groups = filterDefined(
     await Promise.all(groupIds.map(async (groupId) => await getGroup(groupId)))
-  )
-  console.log(
-    'groups',
-    groups.map((g) => g.name)
   )
   const unBetOnContractsFromGroups = await Promise.all(
     groups.map(async (group) => {
@@ -242,6 +266,7 @@ const getUserUnBetOnGroupsMarkets = async (userId: string) => {
       )
     })
   )
+
   const sortedMarkets = unBetOnContractsFromGroups
     .flat()
     .filter(
@@ -250,17 +275,30 @@ const getUserUnBetOnGroupsMarkets = async (userId: string) => {
         contract.popularityScore > MINIMUM_POPULARITY_SCORE
     )
     .sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
-  console.log(
-    'top 10 sorted group Markets',
-    sortedMarkets
-      .slice(0, 10)
-      .map((c) => [c.question, c.popularityScore, c.groupSlugs])
+
+  const uniqueSortedMarkets = removeSimilarQuestions(
+    sortedMarkets,
+    sortedMarkets,
+    true
   )
-  return sortedMarkets
+  const topSortedMarkets = removeSimilarQuestions(
+    uniqueSortedMarkets,
+    differentThanTheseContracts,
+    false
+  ).slice(0, 10)
+
+  log(
+    'top 10 sorted group markets',
+    topSortedMarkets.map((c) => c.question + ' ' + c.popularityScore)
+  )
+  return topSortedMarkets
 }
 
 // Gets markets followed by similar bettors and bet on by similar bettors
-const getSimilarBettorsMarkets = async (userId: string) => {
+const getSimilarBettorsMarkets = async (
+  userId: string,
+  differentThanTheseContracts: Contract[]
+) => {
   // get contracts with unique bettor ids with this user
   const contractsUserHasBetOn = await getValues<Contract>(
     firestore
@@ -272,7 +310,6 @@ const getSimilarBettorsMarkets = async (userId: string) => {
     contractsUserHasBetOn.map((contract) => contract.uniqueBettorIds).flat(),
     (bettorId) => bettorId
   )
-  console.log('bettorIdCounts', bettorIdsToCounts)
 
   // sort by number of times they appear with at least 2 appearances
   const sortedBettorIds = Object.entries(bettorIdsToCounts)
@@ -283,7 +320,6 @@ const getSimilarBettorsMarkets = async (userId: string) => {
 
   // get the top 10 most similar bettors (excluding this user)
   const similarBettorIds = sortedBettorIds.slice(0, 10)
-  console.log('top sortedBettorIds', similarBettorIds)
 
   // get contracts with unique bettor ids with this user
   const contractsSimilarBettorsHaveBetOn = (
@@ -296,42 +332,87 @@ const getSimilarBettorsMarkets = async (userId: string) => {
           similarBettorIds.slice(0, 10)
         )
         .orderBy('popularityScore', 'desc')
-        .limit(100)
+        .limit(200)
     )
   ).filter((contract) => !contract.uniqueBettorIds?.includes(userId))
 
   // sort the contracts by how many times similar bettor ids are in their unique bettor ids array
-  const sortedContractsToAppearancesInSimilarBettorsBets =
-    contractsSimilarBettorsHaveBetOn
-      .map((contract) => {
-        const appearances = contract.uniqueBettorIds?.filter((bettorId) =>
-          similarBettorIds.includes(bettorId)
-        ).length
-        return [contract, appearances] as [Contract, number]
-      })
-      .sort((a, b) => b[1] - a[1])
-  console.log(
-    'sortedContractsToAppearancesInSimilarBettorsBets',
-    sortedContractsToAppearancesInSimilarBettorsBets.map((c) => [
-      c[0].question,
-      c[1],
-    ])
+  const sortedContractsInSimilarBettorsBets = contractsSimilarBettorsHaveBetOn
+    .map((contract) => {
+      const appearances = contract.uniqueBettorIds?.filter((bettorId) =>
+        similarBettorIds.includes(bettorId)
+      ).length
+      return [contract, appearances] as [Contract, number]
+    })
+    .sort((a, b) => b[1] - a[1])
+    .map((entry) => entry[0])
+
+  const uniqueSortedContractsInSimilarBettorsBets = removeSimilarQuestions(
+    sortedContractsInSimilarBettorsBets,
+    sortedContractsInSimilarBettorsBets,
+    true
   )
 
-  const topMostSimilarContracts =
-    sortedContractsToAppearancesInSimilarBettorsBets.map((entry) => entry[0])
+  const topMostSimilarContracts = removeSimilarQuestions(
+    uniqueSortedContractsInSimilarBettorsBets,
+    differentThanTheseContracts,
+    false
+  ).slice(0, 10)
 
-  console.log(
-    'top 10 sortedContractsToAppearancesInSimilarBettorsBets',
-    topMostSimilarContracts
-      .map((c) => [
-        c.question,
-        c.uniqueBettorIds?.filter((bid) => similarBettorIds.includes(bid)),
-      ])
-      .slice(0, 10)
+  log(
+    'top 10 sorted contracts other similar bettors have bet on',
+    topMostSimilarContracts.map((c) => c.question)
   )
 
   return topMostSimilarContracts
+}
+
+// search contract array by question and remove contracts with 3 matching words in the question
+const removeSimilarQuestions = (
+  contractsToFilter: Contract[],
+  byContracts: Contract[],
+  allowExactSameContracts: boolean
+) => {
+  // log(
+  //   'contracts to filter by',
+  //   byContracts.map((c) => c.question + ' ' + c.popularityScore)
+  // )
+  let contractsToRemove: Contract[] = []
+  byContracts.length > 0 &&
+    byContracts.forEach((contract) => {
+      const contractQuestion = stripNonAlphaChars(contract.question)
+      // Don't lowercase so we match the proper nouns, which are the ones we're really looking for
+      const contractQuestionWords = uniq(contractQuestion.split(' ')).filter(
+        (w) => !IGNORE_WORDS.includes(w.toLowerCase())
+      )
+      contractsToRemove = contractsToRemove.concat(
+        contractsToFilter.filter(
+          // Remove contracts with more than 3 matching words and a lower popularity score
+          (c2) => {
+            const significantOverlap =
+              uniq(stripNonAlphaChars(c2.question).split(' ')).filter((word) =>
+                contractQuestionWords.includes(word)
+              ).length > 3
+            const lessPopular =
+              (c2.popularityScore ?? 0) < (contract.popularityScore ?? 0)
+            return (
+              (significantOverlap && lessPopular) ||
+              (allowExactSameContracts ? false : c2.id === contract.id)
+            )
+          }
+        )
+      )
+    })
+  // log(
+  //   'contracts to filter out',
+  //   contractsToRemove.map((c) => c.question)
+  // )
+
+  const returnContracts = contractsToFilter.filter(
+    (cf) => !contractsToRemove.map((c) => c.id).includes(cf.id)
+  )
+
+  return returnContracts
 }
 
 const fiveMinutes = 5 * 60 * 1000
@@ -342,3 +423,40 @@ function chooseRandomSubset(contracts: Contract[], count: number) {
   shuffle(contracts, rng)
   return contracts.slice(0, count)
 }
+
+function stripNonAlphaChars(str: string) {
+  return str.replace(/[^\w\s']|_/g, '').replace(/\s+/g, ' ')
+}
+
+const IGNORE_WORDS = [
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'of',
+  'to',
+  'in',
+  'on',
+  'will',
+  'be',
+  'is',
+  'are',
+  'for',
+  'by',
+  'at',
+  'from',
+  'what',
+  'when',
+  'which',
+  'that',
+  'it',
+  'as',
+  'if',
+  'then',
+  'than',
+  'but',
+  'have',
+  'has',
+  'had',
+]
