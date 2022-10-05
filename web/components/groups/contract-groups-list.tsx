@@ -53,30 +53,30 @@ export function ContractGroupsList(props: {
           />
         </Col>
       )}
-      {groups.length === 0 && (
-        <Col className="ml-2 h-full justify-center text-gray-500">
-          No groups yet...
-        </Col>
-      )}
-      {groups.map((group) => (
-        <Row
-          key={group.id}
-          className={clsx('items-center justify-between gap-2 p-2')}
-        >
-          <Row className="line-clamp-1 items-center gap-2">
-            <GroupLinkItem group={group} />
+      <Col className="h-96 overflow-auto">
+        {groups.length === 0 && (
+          <Col className="text-greyscale-4">No groups yet...</Col>
+        )}
+        {groups.map((group) => (
+          <Row
+            key={group.id}
+            className={clsx('items-center justify-between gap-2 p-2')}
+          >
+            <Row className="line-clamp-1 items-center gap-2">
+              <GroupLinkItem group={group} />
+            </Row>
+            {user && canModifyGroupContracts(group, user.id) && (
+              <Button
+                color={'gray-white'}
+                size={'xs'}
+                onClick={() => removeContractFromGroup(group, contract)}
+              >
+                <XIcon className="text-greyscale-4 h-4 w-4" />
+              </Button>
+            )}
           </Row>
-          {user && canModifyGroupContracts(group, user.id) && (
-            <Button
-              color={'gray-white'}
-              size={'xs'}
-              onClick={() => removeContractFromGroup(group, contract)}
-            >
-              <XIcon className="h-4 w-4 text-gray-500" />
-            </Button>
-          )}
-        </Row>
-      ))}
+        ))}
+      </Col>
     </Col>
   )
 }
