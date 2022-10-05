@@ -71,6 +71,7 @@ async function upload(buffer: Buffer) {
   const storageRef = ref(storage, `dream/${filename}`)
   const uploadTask = uploadBytesResumable(storageRef, buffer, {
     cacheControl: `public, max-age=${ONE_YEAR_SECS}`,
+    contentType: 'image/png',
   })
 
   let resolvePromise: (url: string) => void
