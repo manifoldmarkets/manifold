@@ -36,8 +36,11 @@ import { CopyLinkButton } from '../copy-link-button'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import toast from 'react-hot-toast'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { PostCard } from '../post-card'
+import { PostCard, PostCardList } from '../post-card'
 import { LoadingIndicator } from '../loading-indicator'
+import { useUser } from 'web/hooks/use-user'
+import { CreatePost } from '../create-post'
+import { Modal } from '../layout/modal'
 
 const MAX_TRENDING_POSTS = 6
 
@@ -59,7 +62,6 @@ export function GroupOverview(props: {
         posts={posts}
         isEditable={isEditable}
       />
-
       {(group.aboutPostId != null || isEditable) && (
         <>
           <SectionHeader label={'About'} href={'/post/' + group.slug} />
@@ -87,8 +89,53 @@ export function GroupOverview(props: {
         user={user}
         memberIds={memberIds}
       />
+
+      <GroupPosts group={group} posts={posts} />
     </Col>
   )
+}
+
+export function GroupPosts(props: { posts: Post[]; group: Group }) {
+  const { posts, group } = props
+  const [showCreatePost, setShowCreatePost] = useState(false)
+  const user = useUser()
+
+  const createPost = (
+    <Modal size="xl" open={showCreatePost} setOpen={setShowCreatePost}>
+      <div className="w-full bg-white py-10">
+        <CreatePost group={group} />
+      </div>
+    </Modal>
+  )
+
+  const postList = (
+    <div className=" align-start w-full items-start">
+      <Row className="flex justify-between">
+        <Col>
+          <SectionHeader label={'Latest Posts'} />
+        </Col>
+        <Col>
+          {user && (
+            <Button
+              className="btn-md"
+              onClick={() => setShowCreatePost(!showCreatePost)}
+            >
+              Add a Post
+            </Button>
+          )}
+        </Col>
+      </Row>
+
+      <div className="mt-2">
+        <PostCardList posts={posts} />
+        {posts.length === 0 && (
+          <div className="text-center text-gray-500">No posts yet</div>
+        )}
+      </div>
+    </div>
+  )
+
+  return showCreatePost ? createPost : postList
 }
 
 function GroupOverviewPinned(props: {
