@@ -9,6 +9,7 @@ import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 
@@ -168,6 +169,7 @@ export const SVGChart = <X, TT>(props: {
   const innerW = w - (margin.left + margin.right)
   const innerH = h - (margin.top + margin.bottom)
   const clipPathId = useMemo(() => nanoid(), [])
+  const isMobile = useIsMobile()
 
   const justSelected = useRef(false)
   useEffect(() => {
@@ -207,6 +209,15 @@ export const SVGChart = <X, TT>(props: {
     }
   }
 
+  const onTouchMove = (ev: React.TouchEvent) => {
+    if (onMouseOver) {
+      const touch = ev.touches[0]
+      const x = touch.pageX - ev.currentTarget.getBoundingClientRect().left
+      const y = touch.pageY - ev.currentTarget.getBoundingClientRect().top
+      onMouseOver(x, y)
+    }
+  }
+
   const onPointerLeave = () => {
     onMouseLeave?.()
   }
@@ -242,18 +253,30 @@ export const SVGChart = <X, TT>(props: {
           <XAxis axis={xAxis} w={innerW} h={innerH} />
           <YAxis axis={yAxis} w={innerW} h={innerH} />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
-          <g
-            ref={overlayRef}
-            x="0"
-            y="0"
-            width={innerW}
-            height={innerH}
-            fill="none"
-            pointerEvents="all"
-            onPointerEnter={onPointerMove}
-            onPointerMove={onPointerMove}
-            onPointerLeave={onPointerLeave}
-          />
+          {!isMobile ? (
+            <g
+              ref={overlayRef}
+              x="0"
+              y="0"
+              width={innerW}
+              height={innerH}
+              fill="none"
+              pointerEvents="all"
+              onPointerEnter={onPointerMove}
+              onPointerMove={onPointerMove}
+              onPointerLeave={onPointerLeave}
+            />
+          ) : (
+            <rect
+              x="0"
+              y="0"
+              width={innerW}
+              height={innerH}
+              fill="transparent"
+              onTouchMove={onTouchMove}
+              onTouchEnd={onPointerLeave}
+            />
+          )}
         </g>
       </svg>
     </div>
