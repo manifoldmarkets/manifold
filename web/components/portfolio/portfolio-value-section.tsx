@@ -32,10 +32,10 @@ export const PortfolioValueSection = memo(
     return (
       <>
         <Row className="mb-2 justify-between">
-          <Row className="gap-4 sm:gap-8">
+          <Row className="gap-2">
             <Col
               className={clsx(
-                'cursor-pointer',
+                'w-24 cursor-pointer sm:w-28 ',
                 graphMode != 'profit'
                   ? 'cursor-pointer opacity-40 hover:opacity-80'
                   : ''
@@ -72,7 +72,7 @@ export const PortfolioValueSection = memo(
 
             <Col
               className={clsx(
-                'cursor-pointer',
+                'w-24 cursor-pointer sm:w-28',
                 graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
               )}
               onClick={() => {
