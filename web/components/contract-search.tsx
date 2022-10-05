@@ -446,7 +446,7 @@ function ContractSearchControls(props: {
           className="input input-bordered w-full"
           autoFocus={autoFocus}
         />
-        {!isMobile && (
+        {!isMobile && !query && (
           <SearchFilters
             filter={filter}
             selectFilter={selectFilter}
@@ -457,7 +457,7 @@ function ContractSearchControls(props: {
             includeProbSorts={includeProbSorts}
           />
         )}
-        {isMobile && (
+        {isMobile && !query && (
           <>
             <MobileSearchBar
               children={
