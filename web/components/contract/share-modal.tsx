@@ -60,10 +60,7 @@ export function ShareModal(props: {
         <CopyLinkButton url={shareUrl} tracking="copy share link" />
 
         <Row className="z-0 flex-wrap justify-center gap-4 self-center">
-          <TweetButton
-            className="self-start"
-            tweetText={getTweetText(contract, shareUrl)}
-          />
+          <TweetButton tweetText={getTweetText(contract, shareUrl)} />
 
           <ShareEmbedButton contract={contract} />
 

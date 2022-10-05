@@ -1,22 +1,23 @@
 import clsx from 'clsx'
+import TwitterLogo from 'web/lib/icons/twitter-logo'
 import { trackCallback } from 'web/lib/service/analytics'
+import { buttonClass } from './button'
 
-export function TweetButton(props: { className?: string; tweetText: string }) {
-  const { tweetText, className } = props
+export function TweetButton(props: { tweetText: string }) {
+  const { tweetText } = props
 
   return (
     <a
-      className={clsx('btn btn-xs flex-nowrap normal-case', className)}
-      style={{
-        backgroundColor: 'white',
-        border: '2px solid #1da1f2',
-        color: '#1da1f2',
-      }}
+      // #1da1f2 is twitter blue
+      className={clsx(
+        buttonClass('2xs', 'override'),
+        'gap-1 border-2 border-[#1da1f2] text-[#1da1f2] hover:bg-[#1da1f2] hover:text-white'
+      )}
       href={getTweetHref(tweetText)}
       onClick={trackCallback('share tweet')}
       target="_blank"
     >
-      <img className="mr-2" src={'/twitter-logo.svg'} width={15} height={15} />
+      <TwitterLogo width={15} height={15} />
       <div>Tweet</div>
     </a>
   )
