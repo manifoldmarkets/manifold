@@ -210,7 +210,6 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     }
   }
 
-  const netPayout = payout - loan
   const profit = payout + saleValue + redeemed - totalInvested
   const profitPercent = (profit / totalInvested) * 100
 
@@ -221,8 +220,8 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
 
   return {
     invested,
+    loan,
     payout,
-    netPayout,
     profit,
     profitPercent,
     totalShares,
@@ -233,8 +232,8 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
 export function getContractBetNullMetrics() {
   return {
     invested: 0,
+    loan: 0,
     payout: 0,
-    netPayout: 0,
     profit: 0,
     profitPercent: 0,
     totalShares: {} as { [outcome: string]: number },

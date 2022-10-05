@@ -160,26 +160,31 @@ export function BetsList(props: { user: User }) {
     unsettled,
     (c) => contractsMetrics[c.id].payout
   )
-  const currentNetInvestment = sumBy(
-    unsettled,
-    (c) => contractsMetrics[c.id].netPayout
-  )
+  const currentLoan = sumBy(unsettled, (c) => contractsMetrics[c.id].loan)
 
   const investedProfitPercent =
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
     <Col>
-      <Row className="justify-between gap-4 sm:flex-row">
-        <Col>
-          <div className="text-greyscale-6 text-xs sm:text-sm">
-            Investment value
-          </div>
-          <div className="text-lg">
-            {formatMoney(currentNetInvestment)}{' '}
-            <ProfitBadge profitPercent={investedProfitPercent} />
-          </div>
-        </Col>
+      <Col className="justify-between gap-4 sm:flex-row">
+        <Row className="gap-4">
+          <Col>
+            <div className="text-greyscale-6 text-xs sm:text-sm">
+              Investment value
+            </div>
+            <div className="text-lg">
+              {formatMoney(currentBetsValue)}{' '}
+              <ProfitBadge profitPercent={investedProfitPercent} />
+            </div>
+          </Col>
+          <Col>
+            <div className="text-greyscale-6 text-xs sm:text-sm">
+              Total loans
+            </div>
+            <div className="text-lg">{formatMoney(currentLoan)}</div>
+          </Col>
+        </Row>
 
         <Row className="gap-2">
           <select
@@ -206,7 +211,7 @@ export function BetsList(props: { user: User }) {
             <option value="closeTime">Close date</option>
           </select>
         </Row>
-      </Row>
+      </Col>
 
       <Col className="mt-6 divide-y">
         {displayedContracts.length === 0 ? (
