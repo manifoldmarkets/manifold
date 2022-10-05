@@ -108,7 +108,6 @@ export const tournamentContractsByGroupSlugQuery = (slug: string) =>
   query(
     contracts,
     where('groupSlugs', 'array-contains', slug),
-    where('isResolved', '==', false),
     orderBy('popularityScore', 'desc')
   )
 
