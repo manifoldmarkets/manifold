@@ -50,22 +50,21 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
     : filterDefined([
         await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'), // dev Ian
       ])
-  const privateUsersToSendEmailsTo = isProd()
-    ? privateUsers
-        .filter((user) => {
-          // get all users that haven't unsubscribed from weekly emails
-          user.notificationPreferences.trending_markets.includes('email') &&
-            !user.weeklyTrendingEmailSent
-        })
-        .slice(100) // Send the emails out in batches
-    : privateUsers
+  const privateUsersToSendEmailsTo = privateUsers
+    // Get all users that haven't unsubscribed from weekly emails
+    .filter(
+      (user) =>
+        user.notificationPreferences.trending_markets.includes('email') &&
+        !user.weeklyTrendingEmailSent
+    )
+    .slice(0, 90) // Send the emails out in batches
 
   // For testing different users on prod: (only send ian an email though)
-  // filterDefined([
+  // const privateUsersToSendEmailsTo = filterDefined([
   //   await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'), // prod Ian
-  // isProd()
-  //   ? await getPrivateUser('FptiiMZZ6dQivihLI8MYFQ6ypSw1') // prod Mik
-  //   : await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'), // dev Ian
+  //   // isProd()
+  //   await getPrivateUser('FptiiMZZ6dQivihLI8MYFQ6ypSw1'), // prod Mik
+  //   //   : await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'), // dev Ian
   // ])
 
   log(
@@ -118,17 +117,22 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
           // so choose more from the other subsets if the followed markets is sparse
           ...chooseRandomSubset(
             unBetOnGroupMarkets,
-            unbetOnFollowedMarkets.length === 0 ? 3 : 2
+            unbetOnFollowedMarkets.length < 2 ? 3 : 2
           ),
           ...chooseRandomSubset(
             similarBettorsMarkets,
-            unbetOnFollowedMarkets.length === 0 ? 3 : 2
+            unbetOnFollowedMarkets.length < 2 ? 3 : 2
           ),
         ],
         (contract) => contract.id
       )
       // // at least send them trending contracts if nothing else
-      if (marketsAvailableToSend.length < numContractsToSend)
+      if (marketsAvailableToSend.length < numContractsToSend) {
+        const trendingMarketsToSend =
+          numContractsToSend - marketsAvailableToSend.length
+        log(
+          `not enough personalized markets, sending ${trendingMarketsToSend} trending`
+        )
         marketsAvailableToSend.push(
           ...removeSimilarQuestions(
             uniqueTrendingContracts,
@@ -138,8 +142,9 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
             .filter(
               (contract) => !contract.uniqueBettorIds?.includes(privateUser.id)
             )
-            .slice(0, numContractsToSend - marketsAvailableToSend.length)
+            .slice(0, trendingMarketsToSend)
         )
+      }
 
       if (marketsAvailableToSend.length < numContractsToSend) {
         log(
@@ -165,7 +170,6 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
         contractsToSend.map((c) => c.question + ' ' + c.popularityScore)
       )
       // if they don't have enough markets, find user bets and get the other bettor ids who most overlap on those markets, then do the same thing as above for them
-      // await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
       await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
       await firestore.collection('private-users').doc(user.id).update({
         weeklyTrendingEmailSent: true,
@@ -174,7 +178,7 @@ export async function sendTrendingMarketsEmailsToAllUsers() {
   )
 }
 
-const MINIMUM_POPULARITY_SCORE = 2
+const MINIMUM_POPULARITY_SCORE = 10
 
 const getUserUnBetOnFollowsMarkets = async (userId: string) => {
   const follows = await getValues<Follow>(
@@ -205,8 +209,10 @@ const getUserUnBetOnFollowsMarkets = async (userId: string) => {
     })
   )
 
-  const sortedMarkets = unBetOnContractsFromFollows
-    .flat()
+  const sortedMarkets = uniqBy(
+    unBetOnContractsFromFollows.flat(),
+    (contract) => contract.id
+  )
     .filter(
       (contract) =>
         contract.popularityScore !== undefined &&
@@ -243,6 +249,8 @@ const getUserUnBetOnGroupsMarkets = async (
   const groups = filterDefined(
     await Promise.all(groupIds.map(async (groupId) => await getGroup(groupId)))
   )
+  if (groups.length === 0) return []
+
   const unBetOnContractsFromGroups = await Promise.all(
     groups.map(async (group) => {
       const unresolvedContracts = await getValues<Contract>(
@@ -267,8 +275,10 @@ const getUserUnBetOnGroupsMarkets = async (
     })
   )
 
-  const sortedMarkets = unBetOnContractsFromGroups
-    .flat()
+  const sortedMarkets = uniqBy(
+    unBetOnContractsFromGroups.flat(),
+    (contract) => contract.id
+  )
     .filter(
       (contract) =>
         contract.popularityScore !== undefined &&
@@ -305,6 +315,7 @@ const getSimilarBettorsMarkets = async (
       .collection('contracts')
       .where('uniqueBettorIds', 'array-contains', userId)
   )
+  if (contractsUserHasBetOn.length === 0) return []
   // count the number of times each unique bettor id appears on those contracts
   const bettorIdsToCounts = countBy(
     contractsUserHasBetOn.map((contract) => contract.uniqueBettorIds).flat(),
@@ -320,21 +331,29 @@ const getSimilarBettorsMarkets = async (
 
   // get the top 10 most similar bettors (excluding this user)
   const similarBettorIds = sortedBettorIds.slice(0, 10)
+  if (similarBettorIds.length === 0) return []
 
   // get contracts with unique bettor ids with this user
-  const contractsSimilarBettorsHaveBetOn = (
-    await getValues<Contract>(
-      firestore
-        .collection('contracts')
-        .where(
-          'uniqueBettorIds',
-          'array-contains-any',
-          similarBettorIds.slice(0, 10)
-        )
-        .orderBy('popularityScore', 'desc')
-        .limit(200)
-    )
-  ).filter((contract) => !contract.uniqueBettorIds?.includes(userId))
+  const contractsSimilarBettorsHaveBetOn = uniqBy(
+    (
+      await getValues<Contract>(
+        firestore
+          .collection('contracts')
+          .where(
+            'uniqueBettorIds',
+            'array-contains-any',
+            similarBettorIds.slice(0, 10)
+          )
+          .orderBy('popularityScore', 'desc')
+          .limit(200)
+      )
+    ).filter(
+      (contract) =>
+        !contract.uniqueBettorIds?.includes(userId) &&
+        (contract.popularityScore ?? 0) > MINIMUM_POPULARITY_SCORE
+    ),
+    (contract) => contract.id
+  )
 
   // sort the contracts by how many times similar bettor ids are in their unique bettor ids array
   const sortedContractsInSimilarBettorsBets = contractsSimilarBettorsHaveBetOn
@@ -380,19 +399,22 @@ const removeSimilarQuestions = (
   let contractsToRemove: Contract[] = []
   byContracts.length > 0 &&
     byContracts.forEach((contract) => {
-      const contractQuestion = stripNonAlphaChars(contract.question)
-      // Don't lowercase so we match the proper nouns, which are the ones we're really looking for
+      const contractQuestion = stripNonAlphaChars(
+        contract.question.toLowerCase()
+      )
       const contractQuestionWords = uniq(contractQuestion.split(' ')).filter(
-        (w) => !IGNORE_WORDS.includes(w.toLowerCase())
+        (w) => !IGNORE_WORDS.includes(w)
       )
       contractsToRemove = contractsToRemove.concat(
         contractsToFilter.filter(
-          // Remove contracts with more than 3 matching words and a lower popularity score
+          // Remove contracts with more than 2 matching (uncommon) words and a lower popularity score
           (c2) => {
             const significantOverlap =
-              uniq(stripNonAlphaChars(c2.question).split(' ')).filter((word) =>
-                contractQuestionWords.includes(word)
-              ).length > 3
+              // TODO: we should probably use a library for comparing strings/sentiments
+              uniq(
+                stripNonAlphaChars(c2.question.toLowerCase()).split(' ')
+              ).filter((word) => contractQuestionWords.includes(word)).length >
+              2
             const lessPopular =
               (c2.popularityScore ?? 0) < (contract.popularityScore ?? 0)
             return (
