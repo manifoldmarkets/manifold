@@ -172,10 +172,10 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
             if (answerComments.length > 0) {
               return (
                 <div key={answer.id} className="relative pb-4">
-                  <span
+                  {/* <span
                     className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
                     aria-hidden="true"
-                  />
+                  /> */}
                   <FeedAnswerCommentGroup
                     contract={contract}
                     answer={answer}

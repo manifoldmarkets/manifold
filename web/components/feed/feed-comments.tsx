@@ -112,7 +112,7 @@ export function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'relative',
+        'relative gap-1',
         indent ? 'ml-6' : '',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
@@ -120,45 +120,43 @@ export function FeedComment(props: {
       {/*draw a gray line from the comment to the left:*/}
       {indent ? (
         <span
-          className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
+          className="bg-greyscale-2 absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90"
           aria-hidden="true"
         />
       ) : null}
-      <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
-      <div className="ml-1.5 min-w-0 flex-1 pl-0.5 sm:ml-3">
-        <div className="mt-0.5 text-sm text-gray-500">
-          <UserLink
-            className="text-gray-500"
-            username={userUsername}
-            name={userName}
-          />{' '}
-          {comment.betId == null &&
-            commenterPositionProb != null &&
-            commenterPositionOutcome != null &&
-            commenterPositionShares != null &&
-            commenterPositionShares > 0 &&
-            contract.outcomeType !== 'NUMERIC' && (
+      <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
+      <div>
+        <div className="text-greyscale-6 mt-0.5 text-xs">
+          <UserLink username={userUsername} name={userName} />{' '}
+          <span className="text-greyscale-4">
+            {comment.betId == null &&
+              commenterPositionProb != null &&
+              commenterPositionOutcome != null &&
+              commenterPositionShares != null &&
+              commenterPositionShares > 0 &&
+              contract.outcomeType !== 'NUMERIC' && (
+                <>
+                  {'is '}
+                  <CommentStatus
+                    prob={commenterPositionProb}
+                    outcome={commenterPositionOutcome}
+                    contract={contract}
+                  />
+                </>
+              )}
+            {bought} {money}
+            {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
               <>
-                {'is '}
-                <CommentStatus
-                  prob={commenterPositionProb}
-                  outcome={commenterPositionOutcome}
+                {' '}
+                of{' '}
+                <OutcomeLabel
+                  outcome={betOutcome ? betOutcome : ''}
                   contract={contract}
+                  truncate="short"
                 />
               </>
             )}
-          {bought} {money}
-          {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
-            <>
-              {' '}
-              of{' '}
-              <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                contract={contract}
-                truncate="short"
-              />
-            </>
-          )}
+          </span>
           <CopyLinkDateTimeComponent
             prefix={contract.creatorUsername}
             slug={contract.slug}
@@ -172,7 +170,7 @@ export function FeedComment(props: {
           )}
         </div>
         <Content
-          className="mt-2 text-[15px] text-gray-700"
+          className="text-greyscale-7"
           content={content || text}
           smallImage
         />

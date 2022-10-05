@@ -45,15 +45,23 @@ export function FeedAnswerCommentGroup(props: {
     <Col className="relative flex-1 items-stretch gap-3">
       <Row
         className={clsx(
-          'gap-3 space-x-3 pt-4 transition-all duration-1000',
+          'gap- space-x-3 pt-4 transition-all duration-1000',
           highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
         ref={answerRef}
         id={answerElementId}
       >
-        <Avatar username={username} avatarUrl={avatarUrl} />
-        <Col className="min-w-0 flex-1 lg:gap-1">
-          <div className="text-sm text-gray-500">
+        <Col>
+          <Avatar username={username} avatarUrl={avatarUrl} size="xs" />
+          {seeReplies && (
+            <span
+              className="mx-auto h-full w-0.5 bg-gray-200"
+              aria-hidden="true"
+            />
+          )}
+        </Col>
+        <Col className="min-w-0 flex-1">
+          <div className="text-greyscale-6 text-xs">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
               prefix={contract.creatorUsername}
@@ -63,7 +71,7 @@ export function FeedAnswerCommentGroup(props: {
             />
           </div>
           <Row className="align-items justify-between gap-2 sm:flex-row">
-            <span className="whitespace-pre-line text-lg">
+            <span className="text-md whitespace-pre-line">
               <Linkify text={text} />
             </span>
             <div>
@@ -103,7 +111,7 @@ export function FeedAnswerCommentGroup(props: {
       {replyTo && (
         <div className="relative ml-7">
           <span
-            className="absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
+            className="bg-greyscale-2 absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90"
             aria-hidden="true"
           />
           <ContractCommentInput
