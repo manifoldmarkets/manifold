@@ -227,10 +227,10 @@ const getUserUnBetOnFollowsMarkets = async (userId: string) => {
   )
 
   const topSortedMarkets = uniqueSortedMarkets.slice(0, 10)
-  log(
-    'top 10 sorted markets by followed users',
-    topSortedMarkets.map((c) => c.question + ' ' + c.popularityScore)
-  )
+  // log(
+  //   'top 10 sorted markets by followed users',
+  //   topSortedMarkets.map((c) => c.question + ' ' + c.popularityScore)
+  // )
   return topSortedMarkets
 }
 
@@ -297,10 +297,10 @@ const getUserUnBetOnGroupsMarkets = async (
     false
   ).slice(0, 10)
 
-  log(
-    'top 10 sorted group markets',
-    topSortedMarkets.map((c) => c.question + ' ' + c.popularityScore)
-  )
+  // log(
+  //   'top 10 sorted group markets',
+  //   topSortedMarkets.map((c) => c.question + ' ' + c.popularityScore)
+  // )
   return topSortedMarkets
 }
 
@@ -378,10 +378,10 @@ const getSimilarBettorsMarkets = async (
     false
   ).slice(0, 10)
 
-  log(
-    'top 10 sorted contracts other similar bettors have bet on',
-    topMostSimilarContracts.map((c) => c.question)
-  )
+  // log(
+  //   'top 10 sorted contracts other similar bettors have bet on',
+  //   topMostSimilarContracts.map((c) => c.question)
+  // )
 
   return topMostSimilarContracts
 }
