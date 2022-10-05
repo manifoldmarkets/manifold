@@ -207,14 +207,18 @@ export function ContractPageContent(
   return (
     <Page
       rightSidebar={
-        <>
-          <ContractPageSidebar contract={contract} />
-          {isCreator && (
-            <Col className={'xl:hidden'}>
-              <RecommendedContractsWidget contract={contract} />
-            </Col>
-          )}
-        </>
+        user || user === null ? (
+          <>
+            <ContractPageSidebar contract={contract} />
+            {isCreator && (
+              <Col className={'xl:hidden'}>
+                <RecommendedContractsWidget contract={contract} />
+              </Col>
+            )}
+          </>
+        ) : (
+          <div />
+        )
       }
     >
       {showConfetti && (
