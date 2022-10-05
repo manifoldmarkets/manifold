@@ -9,6 +9,7 @@ import {
   getContractFromSlug,
   listenForContract,
 } from 'web/lib/firebase/contracts'
+import { interpolateColor } from 'common/util/color'
 
 export interface StateElectionMarket {
   creatorUsername: string
@@ -45,10 +46,8 @@ export function StateElectionMap(props: { markets: StateElectionMarket[] }) {
 
 const probToColor = (prob: number, isWinRepublican: boolean) => {
   const p = isWinRepublican ? prob : 1 - prob
-  const hue = p > 0.5 ? 350 : 240
-  const saturation = 100
-  const lightness = 100 - 50 * Math.abs(p - 0.5)
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+  const color = p > 0.5 ? '#e4534b' : '#5f6eb0'
+  return interpolateColor('#ebe4ec', color, Math.abs(p - 0.5) * 2)
 }
 
 const useContracts = (slugs: string[]) => {
