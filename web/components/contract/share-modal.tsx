@@ -18,6 +18,7 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
 import { QRCode } from '../qr-code'
 import { CopyLinkButton } from '../copy-link-button'
+import { Button } from '../button'
 
 export function ShareModal(props: {
   contract: Contract
@@ -59,24 +60,21 @@ export function ShareModal(props: {
         <CopyLinkButton url={shareUrl} tracking="copy share link" />
 
         <Row className="z-0 flex-wrap justify-center gap-4 self-center">
-          <TweetButton
-            className="self-start"
-            tweetText={getTweetText(contract, shareUrl)}
-          />
+          <TweetButton tweetText={getTweetText(contract, shareUrl)} />
 
           <ShareEmbedButton contract={contract} />
 
           {showChallenge && (
-            <button
-              className={
-                'btn btn-xs flex-nowrap border-2 !border-indigo-500 !bg-white normal-case text-indigo-500'
-              }
+            <Button
+              size="2xs"
+              color="override"
+              className="gap-1 border-2  border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white"
               onClick={withTracking(
                 () => setOpenCreateChallengeModal(true),
                 'click challenge button'
               )}
             >
-              ️<ChallengeIcon className="mr-1 h-4 w-4" /> Challenge
+              <ChallengeIcon className="h-4 w-4" /> Challenge
               <CreateChallengeModal
                 isOpen={openCreateChallengeModal}
                 setOpen={(open) => {
@@ -88,7 +86,7 @@ export function ShareModal(props: {
                 user={user}
                 contract={contract}
               />
-            </button>
+            </Button>
           )}
         </Row>
       </Col>
