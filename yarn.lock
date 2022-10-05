@@ -10220,14 +10220,14 @@ react-error-overlay@^6.0.11:
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-6.0.11.tgz#92835de5841c5cf08ba00ddd2d677b6d17ff9adb"
   integrity sha512-/6UZ2qgEyH2aqzYZgQPxEnz33NJ2gNsnHA2o5+o4wW9bLM/JYQitNP9xPhsXwC08hMMovfGe/8retsdDsczPRg==
 
-react-expanding-textarea@2.3.5:
-  version "2.3.5"
-  resolved "https://registry.yarnpkg.com/react-expanding-textarea/-/react-expanding-textarea-2.3.5.tgz#310c28ab242c724e042589ac3ea400dd68ad1488"
-  integrity sha512-mPdtg3CxSgZFcsRLf80jueBWy1Zlh9AKy76S7dGXUKinvo4EypMavZa2iC0hEnLxY0tcwWR+n/K8B21TkttpUw==
+react-expanding-textarea@2.3.6:
+  version "2.3.6"
+  resolved "https://registry.yarnpkg.com/react-expanding-textarea/-/react-expanding-textarea-2.3.6.tgz#daa50e5110dd71ca79e1df8e056b0b2eb0e8a84a"
+  integrity sha512-LjkyZv1LilMlt+6/yYn9F1FlcK8iQU96myeq6PwU/a7IaQMkSwndSB1SAhMKgxSrUR71VbqsqnAHQ741WbAU/Q==
   dependencies:
     fast-shallow-equal "^1.0.0"
-    react-with-forwarded-ref "^0.3.3"
-    tslib "^2.0.3"
+    react-with-forwarded-ref "^0.3.5"
+    tslib "^2.4.0"
 
 react-fast-compare@^3.2.0:
   version "3.2.0"
@@ -10381,10 +10381,10 @@ react-twitter-embed@4.0.4:
   dependencies:
     scriptjs "^2.5.9"
 
-react-with-forwarded-ref@^0.3.3:
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/react-with-forwarded-ref/-/react-with-forwarded-ref-0.3.4.tgz#b1e884ea081ec3c5dd578f37889159797454c0a5"
-  integrity sha512-SRq/uTdTh+02JDwYzEEhY2aNNWl/CP2EKP2nQtXzhJw06w6PgYnJt2ObrebvFJu6+wGzX3vDHU3H/ux9hxyZUQ==
+react-with-forwarded-ref@^0.3.5:
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/react-with-forwarded-ref/-/react-with-forwarded-ref-0.3.5.tgz#7d0bae2a9996fc91493f40ab179b8c54d29cfab9"
+  integrity sha512-BJK4q0Nvqg4AFwc+LV+PZZb2nxS1ZqQlS9hY14TdIyg7Lapzirk/V/TtbYjPFSsm/fGm0wC4tsgI1IDhxSVVSQ==
   dependencies:
     tslib "^2.0.3"
 
