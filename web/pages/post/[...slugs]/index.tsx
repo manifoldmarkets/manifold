@@ -25,6 +25,7 @@ import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
+import { Subtitle } from 'web/components/subtitle'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -75,7 +76,11 @@ export default function PostPage(props: {
         url={'/post/' + post.slug}
       />
       <div className="mx-auto w-full max-w-3xl ">
-        <Title className="!mt-0 py-4 px-2" text={post.title} />
+        <div>
+          <Title className="!my-0 px-2 pt-4" text={post.title} />
+          <br />
+          <Subtitle className="!mt-2 px-2 pb-4" text={post.subtitle} />
+        </div>
         <Row>
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>

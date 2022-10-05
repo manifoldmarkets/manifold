@@ -43,6 +43,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
     if (!editor) return
     const newPost = {
       title: group.name,
+      subtitle: 'About post for the group',
       content: editor.getJSON(),
     }
 

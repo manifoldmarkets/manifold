@@ -1,4 +1,5 @@
 import { track } from '@amplitude/analytics-browser'
+import { DocumentIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Post } from 'common/post'
 import Link from 'next/link'
@@ -27,7 +28,7 @@ export function PostCard(props: {
     <div className="relative py-1">
       <Row
         className={clsx(
-          ' relative gap-3 rounded-lg bg-white py-2 shadow-md hover:cursor-pointer hover:bg-gray-100',
+          'relative  gap-3  rounded-lg bg-white py-2 px-3 shadow-md hover:cursor-pointer hover:bg-gray-100',
           itemIds?.includes(post.id) && highlightClassName
         )}
       >
@@ -44,7 +45,18 @@ export function PostCard(props: {
             <span className="mx-1">•</span>
             <span className="text-gray-500">{fromNow(post.createdTime)}</span>
           </div>
-          <div className="text-lg font-medium text-gray-900">{post.title}</div>
+          <div className=" break-words text-lg font-medium  text-gray-900">
+            {post.title}
+          </div>
+          <div className="font-small  text-md  break-words text-gray-500">
+            {post.subtitle}
+          </div>
+        </div>
+        <div>
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white">
+            <DocumentIcon className={'h3 w-3'} />
+            Post
+          </span>
         </div>
       </Row>
       {onPostClick ? (
@@ -77,6 +89,26 @@ export function PostCard(props: {
           />
         </Link>
       )}
+    </div>
+  )
+}
+
+export function PostCardList(props: {
+  posts: Post[]
+  highlightOptions?: CardHighlightOptions
+  onPostClick?: (post: Post) => void
+}) {
+  const { posts, onPostClick, highlightOptions } = props
+  return (
+    <div className="w-full">
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          onPostClick={onPostClick}
+          highlightOptions={highlightOptions}
+        />
+      ))}
     </div>
   )
 }

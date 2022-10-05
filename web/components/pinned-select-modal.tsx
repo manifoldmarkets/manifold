@@ -2,7 +2,6 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { useState } from 'react'
-import { PostCardList } from 'web/pages/group/[...slugs]'
 import { Button } from './button'
 import { PillButton } from './buttons/pill-button'
 import { ContractSearch } from './contract-search'
@@ -10,6 +9,7 @@ import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
+import { PostCardList } from './post-card'
 
 export function PinnedSelectModal(props: {
   title: string
