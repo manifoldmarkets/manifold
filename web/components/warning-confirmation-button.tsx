@@ -18,7 +18,7 @@ export function WarningConfirmationButton(props: {
   openModalButtonClass?: string
   color: ColorType
   size: SizeType
-  actionLabel?: string
+  actionLabel: string
 }) {
   const {
     amount,
@@ -32,12 +32,11 @@ export function WarningConfirmationButton(props: {
     actionLabel,
   } = props
 
-  const label = capitalize(actionLabel) ?? 'Wager'
   const buttonText = isSubmitting
     ? 'Submitting...'
     : amount
-    ? `${label} ${formatMoney(amount)}`
-    : label
+    ? `${actionLabel} ${formatMoney(amount)}`
+    : actionLabel
 
   if (!warning) {
     return (
