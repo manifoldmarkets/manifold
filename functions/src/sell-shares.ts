@@ -1,6 +1,7 @@
 import { mapValues, groupBy, sumBy, uniq } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { FieldValue } from 'firebase-admin/firestore'
 
 import { APIError, newEndpoint, validate } from './api'
 import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
@@ -11,7 +12,6 @@ import { log } from './utils'
 import { Bet } from '../../common/bet'
 import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
-import { FieldValue } from 'firebase-admin/firestore'
 import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from './follow-market'
 

@@ -23,7 +23,7 @@ import { floatingEqual } from '../../common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
 import { addUserToContractFollowers } from './follow-market'
-import { filterDefined } from 'common/util/array'
+import { filterDefined } from '../../common/util/array'
 
 const bodySchema = z.object({
   contractId: z.string(),
