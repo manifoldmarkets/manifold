@@ -219,6 +219,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
+
       setViewXScale(() =>
         xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
       )
@@ -325,11 +326,26 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
-      setViewXScale(() =>
-        xScale.copy().domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
-      )
+      const newViewXScale = xScale
+        .copy()
+        .domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
+      setViewXScale(() => newViewXScale)
+
+      const dataInView = data.filter((p) => {
+        const x = newViewXScale(p.x)
+        return x >= 0 && x <= w
+      })
+      const yMin = Math.min(...dataInView.map((p) => p.y))
+      const yMax = Math.max(...dataInView.map((p) => p.y))
+
+      // Prevents very small selections from being too zoomed in
+      if (yMax - yMin > 0.05) {
+        // adds a little padding to the top and bottom of the selection
+        yScale.domain([yMin - (yMax - yMin) * 0.1, yMax + (yMax - yMin) * 0.1])
+      }
     } else {
       setViewXScale(undefined)
+      yScale.domain([0, 1])
     }
   })
 
