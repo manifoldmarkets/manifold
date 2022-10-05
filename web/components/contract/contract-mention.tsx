@@ -25,7 +25,7 @@ export function ContractMention(props: { contract: Contract }) {
           <span
             className={clsx(
               probTextColor,
-              'rounded-full  px-1 font-semibold ring-1 ring-inset ring-indigo-100 group-hover:ring-0'
+              'rounded-full px-2 font-semibold ring-1 ring-inset ring-indigo-100 group-hover:ring-indigo-200'
             )}
           >
             {resolution ? (
