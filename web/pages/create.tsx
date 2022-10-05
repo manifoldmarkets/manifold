@@ -38,6 +38,7 @@ import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { SiteLink } from 'web/components/site-link'
 import { Button } from 'web/components/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
+import ShortToggle from 'web/components/widgets/short-toggle'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -50,6 +51,7 @@ type NewQuestionParams = {
   description: string
   closeTime: string
   outcomeType: string
+  visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
   min?: string
   max?: string
@@ -136,7 +138,9 @@ export function NewContract(props: {
   const [maxString, setMaxString] = useState(params?.max ?? '')
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
-
+  const [visibility, setVisibility] = useState<visibility>(
+    (params?.visibility as visibility) ?? 'public'
+  )
   // for multiple choice, init to 3 empty answers
   const [answers, setAnswers] = useState(['', '', ''])
 
@@ -168,7 +172,6 @@ export function NewContract(props: {
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
-  const [visibility, setVisibility] = useState<visibility>('public')
 
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
@@ -414,14 +417,9 @@ export function NewContract(props: {
 
       <Row className="form-control my-2 items-center gap-2 text-sm">
         <span>Display this market on homepage</span>
-        <input
-          type="checkbox"
-          checked={visibility === 'public'}
-          disabled={isSubmitting}
-          className="cursor-pointer"
-          onChange={(e) =>
-            setVisibility(e.target.checked ? 'public' : 'unlisted')
-          }
+        <ShortToggle
+          on={visibility === 'public'}
+          setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
         />
       </Row>
 
