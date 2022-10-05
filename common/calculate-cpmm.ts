@@ -147,7 +147,8 @@ function calculateAmountToBuyShares(
   state: CpmmState,
   shares: number,
   outcome: 'YES' | 'NO',
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) {
   // Search for amount between bounds (0, shares).
   // Min share price is M$0, and max is M$1 each.
@@ -157,7 +158,8 @@ function calculateAmountToBuyShares(
       amount,
       state,
       undefined,
-      unfilledBets
+      unfilledBets,
+      balanceByUserId
     )
 
     const totalShares = sumBy(takers, (taker) => taker.shares)
@@ -169,7 +171,8 @@ export function calculateCpmmSale(
   state: CpmmState,
   shares: number,
   outcome: 'YES' | 'NO',
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) {
   if (Math.round(shares) < 0) {
     throw new Error('Cannot sell non-positive shares')
@@ -180,15 +183,17 @@ export function calculateCpmmSale(
     state,
     shares,
     oppositeOutcome,
-    unfilledBets
+    unfilledBets,
+    balanceByUserId
   )
 
-  const { cpmmState, makers, takers, totalFees } = computeFills(
+  const { cpmmState, makers, takers, totalFees, ordersToCancel } = computeFills(
     oppositeOutcome,
     buyAmount,
     state,
     undefined,
-    unfilledBets
+    unfilledBets,
+    balanceByUserId
   )
 
   // Transform buys of opposite outcome into sells.
@@ -211,6 +216,7 @@ export function calculateCpmmSale(
     fees: totalFees,
     makers,
     takers: saleTakers,
+    ordersToCancel,
   }
 }
 
@@ -218,9 +224,16 @@ export function getCpmmProbabilityAfterSale(
   state: CpmmState,
   shares: number,
   outcome: 'YES' | 'NO',
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) {
-  const { cpmmState } = calculateCpmmSale(state, shares, outcome, unfilledBets)
+  const { cpmmState } = calculateCpmmSale(
+    state,
+    shares,
+    outcome,
+    unfilledBets,
+    balanceByUserId
+  )
   return getCpmmProbability(cpmmState.pool, cpmmState.p)
 }
 

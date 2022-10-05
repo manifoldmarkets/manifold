@@ -144,7 +144,8 @@ export const computeFills = (
   betAmount: number,
   state: CpmmState,
   limitProb: number | undefined,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) => {
   if (isNaN(betAmount)) {
     throw new Error('Invalid bet amount: ${betAmount}')
@@ -166,6 +167,7 @@ export const computeFills = (
     shares: number
     timestamp: number
   }[] = []
+  const ordersToCancel: LimitBet[] = []
 
   let amount = betAmount
   let cpmmState = { pool: state.pool, p: state.p }
@@ -186,9 +188,20 @@ export const computeFills = (
       takers.push(taker)
     } else {
       // Matched against bet.
-      takers.push(taker)
-      makers.push(maker)
       i++
+      const { userId } = maker.bet
+      const makerBalance = balanceByUserId[userId]
+
+      if (floatingGreaterEqual(makerBalance, maker.amount)) {
+        balanceByUserId[userId] = makerBalance - maker.amount
+      } else {
+        // Insufficient balance. Cancel maker bet.
+        ordersToCancel.push(maker.bet)
+        continue
+      }
+
+      if (userId) takers.push(taker)
+      makers.push(maker)
     }
 
     amount -= taker.amount
@@ -196,7 +209,7 @@ export const computeFills = (
     if (floatingEqual(amount, 0)) break
   }
 
-  return { takers, makers, totalFees, cpmmState }
+  return { takers, makers, totalFees, cpmmState, ordersToCancel }
 }
 
 export const getBinaryCpmmBetInfo = (
@@ -204,15 +217,17 @@ export const getBinaryCpmmBetInfo = (
   betAmount: number,
   contract: CPMMBinaryContract | PseudoNumericContract,
   limitProb: number | undefined,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) => {
   const { pool, p } = contract
-  const { takers, makers, cpmmState, totalFees } = computeFills(
+  const { takers, makers, cpmmState, totalFees, ordersToCancel } = computeFills(
     outcome,
     betAmount,
     { pool, p },
     limitProb,
-    unfilledBets
+    unfilledBets,
+    balanceByUserId
   )
   const probBefore = getCpmmProbability(contract.pool, contract.p)
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -247,6 +262,7 @@ export const getBinaryCpmmBetInfo = (
     newP: cpmmState.p,
     newTotalLiquidity,
     makers,
+    ordersToCancel,
   }
 }
 
@@ -255,14 +271,16 @@ export const getBinaryBetStats = (
   betAmount: number,
   contract: CPMMBinaryContract | PseudoNumericContract,
   limitProb: number,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
 ) => {
   const { newBet } = getBinaryCpmmBetInfo(
     outcome,
     betAmount ?? 0,
     contract,
     limitProb,
-    unfilledBets as LimitBet[]
+    unfilledBets as LimitBet[],
+    balanceByUserId,
   )
   const remainingMatched =
     ((newBet.orderAmount ?? 0) - newBet.amount) /
