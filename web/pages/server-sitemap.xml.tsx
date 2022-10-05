@@ -14,7 +14,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       loc: `https://manifold.markets/${market.creatorUsername}/${market.slug}`,
       changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
       priority: score(market.popularityScore ?? 0),
-      lastmod: market.lastUpdatedTime,
+      lastmod: new Date(market.lastUpdatedTime ?? 0).toISOString(),
     })) as ISitemapField[]
 
   return await getServerSideSitemap(ctx, fields)
