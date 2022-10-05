@@ -311,12 +311,12 @@ const useUploadMutation = (editor: Editor | null) =>
     {
       onSuccess(urls) {
         if (!editor) return
-        let trans = editor.view.state.tr
-        urls.forEach((src: any) => {
-          const node = editor.view.state.schema.nodes.image.create({ src })
-          trans = trans.insert(editor.view.state.selection.to, node)
+        let trans = editor.chain().focus()
+        urls.forEach((src) => {
+          trans = trans.createParagraphNear()
+          trans = trans.setImage({ src })
         })
-        editor.view.dispatch(trans)
+        trans.run()
       },
     }
   )
