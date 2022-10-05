@@ -112,7 +112,7 @@ export function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'relative gap-1',
+        'relative',
         indent ? 'ml-6' : '',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
@@ -170,7 +170,7 @@ export function FeedComment(props: {
           )}
         </div>
         <Content
-          className="text-greyscale-7"
+          className="mt-2 text-[12px] text-gray-700"
           content={content || text}
           smallImage
         />
