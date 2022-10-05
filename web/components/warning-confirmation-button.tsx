@@ -6,7 +6,6 @@ import { ConfirmationButton } from './confirmation-button'
 import { ExclamationIcon } from '@heroicons/react/solid'
 import { formatMoney } from 'common/util/format'
 import { Button, ColorType, SizeType } from './button'
-import { capitalize } from 'lodash'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
