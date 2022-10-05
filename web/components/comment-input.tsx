@@ -138,16 +138,6 @@ export function CommentInputTextArea(props: {
           <LoadingIndicator spinnerClassName="border-gray-500" />
         )}
       </TextEditor>
-      <Row>
-        {!user && (
-          <button
-            className="btn btn-outline btn-sm mt-2 normal-case"
-            onClick={submitComment}
-          >
-            Add my comment
-          </button>
-        )}
-      </Row>
     </>
   )
 }

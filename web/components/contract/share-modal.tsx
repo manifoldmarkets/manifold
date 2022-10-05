@@ -1,5 +1,4 @@
 import { LinkIcon } from '@heroicons/react/outline'
-import toast from 'react-hot-toast'
 
 import { Contract } from 'common/contract'
 import { contractPath } from 'web/lib/firebase/contracts'
@@ -9,9 +8,7 @@ import { Row } from '../layout/row'
 import { ShareEmbedButton } from '../share-embed-button'
 import { Title } from '../title'
 import { TweetButton } from '../tweet-button'
-import { Button } from '../button'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { withTracking } from 'web/lib/service/analytics'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { User } from 'common/user'
 import { SiteLink } from '../site-link'
@@ -22,6 +19,7 @@ import { useState } from 'react'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
 import { QRCode } from '../qr-code'
+import { CopyLinkButton } from '../copy-link-button'
 
 export function ShareModal(props: {
   contract: Contract
@@ -61,20 +59,7 @@ export function ShareModal(props: {
           width={150}
           height={150}
         />
-        <Button
-          size="2xl"
-          color="indigo"
-          className={'mb-2 flex max-w-xs self-center'}
-          onClick={() => {
-            copyToClipboard(shareUrl)
-            toast.success('Link copied!', {
-              icon: linkIcon,
-            })
-            track('copy share link')
-          }}
-        >
-          {linkIcon} Copy link
-        </Button>
+        <CopyLinkButton url={shareUrl} tracking="copy share link" />
 
         <Row className="z-0 flex-wrap justify-center gap-4 self-center">
           <TweetButton
