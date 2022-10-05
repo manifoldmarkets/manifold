@@ -184,67 +184,48 @@ const App = () => {
         <StateElectionMap markets={senateMidterms} />
         <iframe
           src="https://manifold.markets/TomShlomi/will-the-gop-control-the-us-senate"
-          title="Will the Democrats control the Senate after the Midterms?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
         <div className="mt-8 text-2xl">Governors</div>
         <StateElectionMap markets={governorMidterms} />
         <iframe
           src="https://manifold.markets/ManifoldMarkets/democrats-go-down-at-least-one-gove"
-          title="Democrats go down at least one governor on net in 2022"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
         <div className="mt-8 text-2xl">House</div>
         <iframe
           src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of"
-          title="Will the Democrats control the House after the Midterms?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
         <div className="mt-8 text-2xl">Related markets</div>
         <iframe
           src="https://manifold.markets/BoltonBailey/balance-of-power-in-us-congress-aft"
-          title="Balance of Power in US Congress after 2022 Midterms"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <iframe
           src="https://manifold.markets/SG/will-a-democrat-win-the-2024-us-pre"
-          title="Will a Democrat win the 2024 US presidential election?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <iframe
           src="https://manifold.markets/Ibozz91/will-the-2022-alaska-house-general"
           title="Will the 2022 Alaska House General Nonspecial Election result in a Condorcet failure?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
 
         <iframe
           src="https://manifold.markets/NathanpmYoung/how-many-supreme-court-justices-wil-1e597c3853ad"
           title="Will the 2022 Alaska House General Nonspecial Election result in a Condorcet failure?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
       </Col>
     </Page>
