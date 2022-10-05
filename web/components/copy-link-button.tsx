@@ -21,10 +21,11 @@ export function CopyLinkButton(props: {
   return (
     <Row className="w-full">
       <input
-        className="input input-bordered flex-1 rounded-r-none text-gray-500"
+        className="block w-full rounded-none rounded-l-md border-gray-300 text-gray-400 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         readOnly
         type="text"
         value={displayUrl ?? url}
+        onFocus={(e) => e.target.select()}
       />
 
       <Menu
@@ -37,7 +38,7 @@ export function CopyLinkButton(props: {
       >
         <Menu.Button
           className={clsx(
-            'btn btn-xs border-2 border-green-600 bg-white normal-case text-green-600 hover:border-green-600 hover:bg-white',
+            'relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500',
             buttonClassName
           )}
         >
