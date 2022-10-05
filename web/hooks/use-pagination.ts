@@ -91,9 +91,15 @@ export const usePagination = <T>(opts: PaginationOptions<T>) => {
       const nextQ = lastDoc
         ? query(state.baseQ, startAfter(lastDoc), limit(state.pageSize))
         : query(state.baseQ, limit(state.pageSize))
-      return onSnapshot(nextQ, (snapshot) => {
-        dispatch({ type: 'LOAD', snapshot })
-      })
+      return onSnapshot(
+        nextQ,
+        (snapshot) => {
+          dispatch({ type: 'LOAD', snapshot })
+        },
+        (error) => {
+          console.error('error', error)
+        }
+      )
     }
   }, [state.isLoading, state.baseQ, state.docs, state.pageSize])
 
