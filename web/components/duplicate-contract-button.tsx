@@ -40,6 +40,7 @@ function duplicateContractHref(contract: Contract) {
     closeTime,
     description: descriptionString,
     outcomeType: contract.outcomeType,
+    visibility: contract.visibility,
   } as Record<string, any>
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
