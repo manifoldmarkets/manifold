@@ -65,6 +65,7 @@ export default function AddFundsPage() {
             className="mt-8"
           >
             <Button
+              type="submit"
               color="gradient"
               size="xl"
               className="w-full"
