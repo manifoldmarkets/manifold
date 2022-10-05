@@ -16,6 +16,8 @@ import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-ti
 import { useRouter } from 'next/router'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { UserLink } from 'web/components/user-link'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import { ReplyToggle } from '../comments/comments'
 
 export function FeedAnswerCommentGroup(props: {
   contract: FreeResponseContract
@@ -25,6 +27,8 @@ export function FeedAnswerCommentGroup(props: {
 }) {
   const { answer, contract, answerComments, tips } = props
   const { username, avatarUrl, name, text } = answer
+
+  const [seeReplies, setSeeReplies] = useState(false)
 
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const router = useRouter()
@@ -37,7 +41,6 @@ export function FeedAnswerCommentGroup(props: {
       answerRef.current.scrollIntoView(true)
     }
   }, [highlighted])
-
   return (
     <Col className="relative flex-1 items-stretch gap-3">
       <Row
@@ -49,7 +52,6 @@ export function FeedAnswerCommentGroup(props: {
         id={answerElementId}
       >
         <Avatar username={username} avatarUrl={avatarUrl} />
-
         <Col className="min-w-0 flex-1 lg:gap-1">
           <div className="text-sm text-gray-500">
             <UserLink username={username} name={name} /> answered
@@ -60,12 +62,11 @@ export function FeedAnswerCommentGroup(props: {
               elementId={answerElementId}
             />
           </div>
-
-          <Col className="align-items justify-between gap-2 sm:flex-row">
+          <Row className="align-items justify-between gap-2 sm:flex-row">
             <span className="whitespace-pre-line text-lg">
               <Linkify text={text} />
             </span>
-            <div className="sm:hidden">
+            <div>
               <button
                 className="text-xs font-bold text-gray-500 hover:underline"
                 onClick={() =>
@@ -75,33 +76,30 @@ export function FeedAnswerCommentGroup(props: {
                 Reply
               </button>
             </div>
-          </Col>
-          <div className="justify-initial hidden sm:block">
-            <button
-              className="text-xs font-bold text-gray-500 hover:underline"
-              onClick={() =>
-                setReplyTo({ id: answer.id, username: answer.username })
-              }
-            >
-              Reply
-            </button>
-          </div>
+          </Row>
+          <ReplyToggle
+            seeReplies={seeReplies}
+            numComments={answerComments.length}
+            onClick={() => setSeeReplies(!seeReplies)}
+          />
         </Col>
       </Row>
-      <Col className="gap-3 pl-1">
-        {answerComments.map((comment) => (
-          <FeedComment
-            key={comment.id}
-            indent={true}
-            contract={contract}
-            comment={comment}
-            tips={tips[comment.id] ?? {}}
-            onReplyClick={() =>
-              setReplyTo({ id: comment.id, username: comment.userUsername })
-            }
-          />
-        ))}
-      </Col>
+      {seeReplies && (
+        <Col className="gap-3 pl-1">
+          {answerComments.map((comment) => (
+            <FeedComment
+              key={comment.id}
+              indent={true}
+              contract={contract}
+              comment={comment}
+              tips={tips[comment.id] ?? {}}
+              onReplyClick={() =>
+                setReplyTo({ id: comment.id, username: comment.userUsername })
+              }
+            />
+          ))}
+        </Col>
+      )}
       {replyTo && (
         <div className="relative ml-7">
           <span

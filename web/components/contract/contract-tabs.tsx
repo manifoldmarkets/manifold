@@ -36,6 +36,7 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -123,24 +124,28 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const topLevelComments = commentsByParent['_'] ?? []
 
   const sortRow = comments.length > 0 && (
-    <Row className="mb-4 items-center">
-      <Button
-        size={'xs'}
-        color={'gray-white'}
-        onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
-      >
-        <Tooltip
-          text={
-            sort === 'Best'
-              ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
-              : ''
-          }
-        >
-          Sort by: {sort}
-        </Tooltip>
-      </Button>
-
+    <Row className="mb-4 items-center justify-end gap-4">
       <BountiedContractSmallBadge contract={contract} showAmount />
+      <Row className="items-center gap-1">
+        <div className="text-greyscale-4 text-sm">Sort by:</div>
+        <button
+          className="text-greyscale-6 w-20 text-sm"
+          onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+        >
+          <Tooltip
+            text={
+              sort === 'Best'
+                ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
+                : ''
+            }
+          >
+            <Row className="items-center gap-1">
+              {sort}
+              <TriangleDownFillIcon className=" h-2 w-2" />
+            </Row>
+          </Tooltip>
+        </button>
+      </Row>
     </Row>
   )
 
@@ -159,24 +164,32 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 
     return (
       <>
-        {sortRow}
-        {sortedAnswers.map((answer) => (
-          <div key={answer.id} className="relative pb-4">
-            <span
-              className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-              aria-hidden="true"
-            />
-            <FeedAnswerCommentGroup
-              contract={contract}
-              answer={answer}
-              answerComments={commentsByOutcome[answer.number.toString()] ?? []}
-              tips={tips}
-            />
-          </div>
-        ))}
-        <Col className="mt-8 flex w-full">
-          <div className="text-md mt-8 mb-2 text-left">General Comments</div>
-          <div className="mb-4 w-full border-b border-gray-200" />
+        <Col className="flex w-full">
+          <div className="mb-4 w-full border-gray-200" />
+          {sortedAnswers.map((answer) => {
+            const answerComments =
+              commentsByOutcome[answer.number.toString()] ?? []
+            if (answerComments.length > 0) {
+              return (
+                <div key={answer.id} className="relative pb-4">
+                  <span
+                    className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
+                    aria-hidden="true"
+                  />
+                  <FeedAnswerCommentGroup
+                    contract={contract}
+                    answer={answer}
+                    answerComments={
+                      commentsByOutcome[answer.number.toString()] ?? []
+                    }
+                    tips={tips}
+                  />
+                </div>
+              )
+            } else {
+              return <></>
+            }
+          })}
           {sortRow}
           <ContractCommentInput className="mb-5" contract={contract} />
           {generalTopLevelComments.map((comment) => (
