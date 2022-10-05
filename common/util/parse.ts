@@ -85,6 +85,15 @@ export function richTextToString(text?: JSONContent) {
   dfs(newText, (current) => {
     if (current.marks?.some((m) => m.type === TiptapSpoiler.name)) {
       current.text = '[spoiler]'
+    } else if (current.type === 'image') {
+      current.text = '[Image]'
+      // This is a hack, I've no idea how to change a tiptap extenstion's schema
+      current.type = 'text'
+    } else if (current.type === 'iframe') {
+      const src = current.attrs?.['src'] ? current.attrs['src'] : ''
+      current.text = '[Iframe]' + (src ? ` url:${src}` : '')
+      // This is a hack, I've no idea how to change a tiptap extenstion's schema
+      current.type = 'text'
     }
   })
   return generateText(newText, exhibitExts)
