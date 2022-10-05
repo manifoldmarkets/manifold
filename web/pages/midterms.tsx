@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
@@ -176,6 +177,8 @@ const governorMidterms: StateElectionMarket[] = [
 ]
 
 const App = () => {
+  useSetIframeBackbroundColor()
+
   return (
     <Page className="">
       <Col className="items-center justify-center">
@@ -230,6 +233,15 @@ const App = () => {
       </Col>
     </Page>
   )
+}
+
+const useSetIframeBackbroundColor = () => {
+  useEffect(() => {
+    if (window.location.host !== 'manifold.markets') return
+    for (let i = 0; i < self.frames.length; i++) {
+      self.frames[i].document.body.style.backgroundColor = '#f9fafb'
+    }
+  }, [])
 }
 
 export default App
