@@ -25,7 +25,7 @@ import {
   NoLabel,
   YesLabel,
 } from './outcome-label'
-import { getProbability } from 'common/calculate'
+import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
@@ -843,6 +843,9 @@ export function SellPanel(props: {
   const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
 
+  const { invested } = getContractBetMetrics(contract, userBets)
+  const costBasis = invested * saleFrac
+
   async function submitSell() {
     if (!user || !amount) return
 
@@ -888,6 +891,7 @@ export function SellPanel(props: {
     unfilledBets
   )
   const netProceeds = saleValue - loanPaid
+  const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
   const getValue = getMappedValue(contract)
@@ -950,18 +954,10 @@ export function SellPanel(props: {
           Sale amount
           <span className="text-neutral">{formatMoney(saleValue)}</span>
         </Row>
-        {loanPaid !== 0 && (
-          <>
-            <Row className="items-center justify-between gap-2 text-gray-500">
-              Loan repaid
-              <span className="text-neutral">{formatMoney(-loanPaid)}</span>
-            </Row>
-            <Row className="items-center justify-between gap-2 text-gray-500">
-              Net proceeds
-              <span className="text-neutral">{formatMoney(netProceeds)}</span>
-            </Row>
-          </>
-        )}
+        <Row className="items-center justify-between gap-2 text-gray-500">
+          Profit
+          <span className="text-neutral">{formatMoney(profit)}</span>
+        </Row>
         <Row className="items-center justify-between">
           <div className="text-gray-500">
             {isPseudoNumeric ? 'Estimated value' : 'Probability'}
@@ -972,20 +968,32 @@ export function SellPanel(props: {
             {format(resultProb)}
           </div>
         </Row>
+        {loanPaid !== 0 && (
+          <>
+            <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
+              Loan repaid
+              <span className="text-neutral">{formatMoney(-loanPaid)}</span>
+            </Row>
+            <Row className="items-center justify-between gap-2 text-gray-500">
+              Net proceeds
+              <span className="text-neutral">{formatMoney(netProceeds)}</span>
+            </Row>
+          </>
+        )}
       </Col>
 
       <Spacer h={8} />
 
       <WarningConfirmationButton
         marketType="binary"
-        amount={netProceeds}
+        amount={undefined}
         warning={warning}
         isSubmitting={isSubmitting}
         onSubmit={betDisabled ? undefined : submitSell}
         disabled={!!betDisabled}
         size="xl"
         color="blue"
-        actionLabel="Sell"
+        actionLabel={`Sell ${Math.floor(soldShares)} shares`}
       />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
