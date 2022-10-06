@@ -15,7 +15,7 @@ import {
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser, getContract, isProd } from './utils'
+import { isProd } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 
 import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from '../../common/economy'
@@ -36,7 +36,7 @@ import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Transaction } from 'firebase-admin/firestore'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -107,229 +107,242 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     visibility = 'public',
   } = validate(bodySchema, body)
 
-  let min, max, initialProb, isLogScale, answers
+  return await firestore.runTransaction(async (trans) => {
+    let min, max, initialProb, isLogScale, answers
 
-  if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
-    let initialValue
-    ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
-    if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
-      throw new APIError(400, 'Invalid range.')
+    if (outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMERIC') {
+      let initialValue
+      ;({ min, max, initialValue, isLogScale } = validate(numericSchema, body))
+      if (max - min <= 0.01 || initialValue <= min || initialValue >= max)
+        throw new APIError(400, 'Invalid range.')
 
-    initialProb = getPseudoProbability(initialValue, min, max, isLogScale) * 100
+      initialProb =
+        getPseudoProbability(initialValue, min, max, isLogScale) * 100
 
-    if (initialProb < 1 || initialProb > 99)
-      if (outcomeType === 'PSEUDO_NUMERIC')
+      if (initialProb < 1 || initialProb > 99)
+        if (outcomeType === 'PSEUDO_NUMERIC')
+          throw new APIError(
+            400,
+            `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
+          )
+        else throw new APIError(400, 'Invalid initial probability.')
+    }
+
+    if (outcomeType === 'BINARY') {
+      ;({ initialProb } = validate(binarySchema, body))
+    }
+
+    if (outcomeType === 'MULTIPLE_CHOICE') {
+      ;({ answers } = validate(multipleChoiceSchema, body))
+    }
+
+    const userDoc = await trans.get(firestore.collection('users').doc(auth.uid))
+    if (!userDoc.exists) {
+      throw new APIError(400, 'No user exists with the authenticated user ID.')
+    }
+    const user = userDoc.data() as User
+
+    const ante = FIXED_ANTE
+    const deservesFreeMarket =
+      (user?.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
+    // TODO: this is broken because it's not in a transaction
+    if (ante > user.balance && !deservesFreeMarket)
+      throw new APIError(400, `Balance must be at least ${ante}.`)
+
+    let group: Group | null = null
+    if (groupId) {
+      const groupDocRef = firestore.collection('groups').doc(groupId)
+      const groupDoc = await trans.get(groupDocRef)
+      if (!groupDoc.exists) {
+        throw new APIError(400, 'No group exists with the given group ID.')
+      }
+
+      group = groupDoc.data() as Group
+      const groupMembersSnap = await trans.get(
+        firestore.collection(`groups/${groupId}/groupMembers`)
+      )
+      const groupMemberDocs = groupMembersSnap.docs.map(
+        (doc) => doc.data() as { userId: string; createdTime: number }
+      )
+      if (
+        !groupMemberDocs.map((m) => m.userId).includes(user.id) &&
+        !group.anyoneCanJoin &&
+        group.creatorId !== user.id
+      ) {
         throw new APIError(
           400,
-          `Initial value is too ${initialProb < 1 ? 'low' : 'high'}`
+          'User must be a member/creator of the group or group must be open to add markets to it.'
         )
-      else throw new APIError(400, 'Invalid initial probability.')
-  }
+      }
+    }
+    const slug = await getSlug(trans, question)
+    const contractRef = firestore.collection('contracts').doc()
 
-  if (outcomeType === 'BINARY') {
-    ;({ initialProb } = validate(binarySchema, body))
-  }
+    console.log(
+      'creating contract for',
+      user.username,
+      'on',
+      question,
+      'ante:',
+      ante || 0
+    )
 
-  if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers } = validate(multipleChoiceSchema, body))
-  }
+    // convert string descriptions into JSONContent
+    const newDescription =
+      !description || typeof description === 'string'
+        ? {
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: description || ' ' }],
+              },
+            ],
+          }
+        : description
 
-  const userDoc = await firestore.collection('users').doc(auth.uid).get()
-  if (!userDoc.exists) {
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
-  }
-  const user = userDoc.data() as User
+    const contract = getNewContract(
+      contractRef.id,
+      slug,
+      user,
+      question,
+      outcomeType,
+      newDescription,
+      initialProb ?? 0,
+      ante,
+      closeTime.getTime(),
+      tags ?? [],
+      NUMERIC_BUCKET_COUNT,
+      min ?? 0,
+      max ?? 0,
+      isLogScale ?? false,
+      answers ?? [],
+      visibility
+    )
 
-  const ante = FIXED_ANTE
-  const deservesFreeMarket =
-    (user?.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
-  // TODO: this is broken because it's not in a transaction
-  if (ante > user.balance && !deservesFreeMarket)
-    throw new APIError(400, `Balance must be at least ${ante}.`)
+    const providerId = deservesFreeMarket
+      ? isProd()
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+      : user.id
 
-  let group: Group | null = null
-  if (groupId) {
-    const groupDocRef = firestore.collection('groups').doc(groupId)
-    const groupDoc = await groupDocRef.get()
-    if (!groupDoc.exists) {
-      throw new APIError(400, 'No group exists with the given group ID.')
+    if (ante) {
+      const delta = FieldValue.increment(-ante)
+      const providerDoc = firestore.collection('users').doc(providerId)
+      await trans.update(providerDoc, { balance: delta, totalDeposits: delta })
     }
 
-    group = groupDoc.data() as Group
-    const groupMembersSnap = await firestore
-      .collection(`groups/${groupId}/groupMembers`)
-      .get()
-    const groupMemberDocs = groupMembersSnap.docs.map(
-      (doc) => doc.data() as { userId: string; createdTime: number }
-    )
-    if (
-      !groupMemberDocs.map((m) => m.userId).includes(user.id) &&
-      !group.anyoneCanJoin &&
-      group.creatorId !== user.id
-    ) {
-      throw new APIError(
-        400,
-        'User must be a member/creator of the group or group must be open to add markets to it.'
-      )
-    }
-  }
-  const slug = await getSlug(question)
-  const contractRef = firestore.collection('contracts').doc()
-
-  console.log(
-    'creating contract for',
-    user.username,
-    'on',
-    question,
-    'ante:',
-    ante || 0
-  )
-
-  // convert string descriptions into JSONContent
-  const newDescription =
-    !description || typeof description === 'string'
-      ? {
-          type: 'doc',
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: description || ' ' }],
-            },
-          ],
-        }
-      : description
-
-  const contract = getNewContract(
-    contractRef.id,
-    slug,
-    user,
-    question,
-    outcomeType,
-    newDescription,
-    initialProb ?? 0,
-    ante,
-    closeTime.getTime(),
-    tags ?? [],
-    NUMERIC_BUCKET_COUNT,
-    min ?? 0,
-    max ?? 0,
-    isLogScale ?? false,
-    answers ?? [],
-    visibility
-  )
-
-  const providerId = deservesFreeMarket
-    ? isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    : user.id
-
-  if (ante) await chargeUser(providerId, ante, true)
-  if (deservesFreeMarket)
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({ freeMarketsCreated: FieldValue.increment(1) })
-
-  await contractRef.create(contract)
-
-  if (group != null) {
-    const groupContractsSnap = await firestore
-      .collection(`groups/${groupId}/groupContracts`)
-      .get()
-    const groupContracts = groupContractsSnap.docs.map(
-      (doc) => doc.data() as { contractId: string; createdTime: number }
-    )
-    if (!groupContracts.map((c) => c.contractId).includes(contractRef.id)) {
-      await createGroupLinks(group, [contractRef.id], auth.uid)
-      const groupContractRef = firestore
-        .collection(`groups/${groupId}/groupContracts`)
-        .doc(contract.id)
-      await groupContractRef.set({
-        contractId: contract.id,
-        createdTime: Date.now(),
+    if (deservesFreeMarket) {
+      await trans.update(firestore.collection('users').doc(user.id), {
+        freeMarketsCreated: FieldValue.increment(1),
       })
     }
-  }
 
-  if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
-    const liquidityDoc = firestore
-      .collection(`contracts/${contract.id}/liquidity`)
-      .doc()
+    await contractRef.create(contract)
 
-    const lp = getCpmmInitialLiquidity(
-      providerId,
-      contract as CPMMBinaryContract,
-      liquidityDoc.id,
-      ante
-    )
-
-    await liquidityDoc.set(lp)
-  } else if (outcomeType === 'MULTIPLE_CHOICE') {
-    const betCol = firestore.collection(`contracts/${contract.id}/bets`)
-    const betDocs = (answers ?? []).map(() => betCol.doc())
-
-    const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
-    const answerDocs = (answers ?? []).map((_, i) =>
-      answerCol.doc(i.toString())
-    )
-
-    const { bets, answerObjects } = getMultipleChoiceAntes(
-      user,
-      contract as MultipleChoiceContract,
-      answers ?? [],
-      betDocs.map((bd) => bd.id)
-    )
-
-    await Promise.all(
-      zip(bets, betDocs).map(([bet, doc]) => doc?.create(bet as Bet))
-    )
-    await Promise.all(
-      zip(answerObjects, answerDocs).map(([answer, doc]) =>
-        doc?.create(answer as Answer)
+    if (group != null) {
+      const groupContractsSnap = await trans.get(
+        firestore.collection(`groups/${groupId}/groupContracts`)
       )
-    )
-    await contractRef.update({ answers: answerObjects })
-  } else if (outcomeType === 'FREE_RESPONSE') {
-    const noneAnswerDoc = firestore
-      .collection(`contracts/${contract.id}/answers`)
-      .doc('0')
+      const groupContracts = groupContractsSnap.docs.map(
+        (doc) => doc.data() as { contractId: string; createdTime: number }
+      )
 
-    const noneAnswer = getNoneAnswer(contract.id, user)
-    await noneAnswerDoc.set(noneAnswer)
+      if (!groupContracts.map((c) => c.contractId).includes(contractRef.id)) {
+        await createGroupLinks(trans, group, [contractRef.id], auth.uid)
 
-    const anteBetDoc = firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .doc()
+        const groupContractRef = firestore
+          .collection(`groups/${groupId}/groupContracts`)
+          .doc(contract.id)
 
-    const anteBet = getFreeAnswerAnte(
-      providerId,
-      contract as FreeResponseContract,
-      anteBetDoc.id
-    )
-    await anteBetDoc.set(anteBet)
-  } else if (outcomeType === 'NUMERIC') {
-    const anteBetDoc = firestore
-      .collection(`contracts/${contract.id}/bets`)
-      .doc()
+        await trans.set(groupContractRef, {
+          contractId: contract.id,
+          createdTime: Date.now(),
+        })
+      }
+    }
 
-    const anteBet = getNumericAnte(
-      providerId,
-      contract as NumericContract,
-      ante,
-      anteBetDoc.id
-    )
+    if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
+      const liquidityDoc = firestore
+        .collection(`contracts/${contract.id}/liquidity`)
+        .doc()
 
-    await anteBetDoc.set(anteBet)
-  }
+      const lp = getCpmmInitialLiquidity(
+        providerId,
+        contract as CPMMBinaryContract,
+        liquidityDoc.id,
+        ante
+      )
 
-  return contract
+      await trans.set(liquidityDoc, lp)
+    } else if (outcomeType === 'MULTIPLE_CHOICE') {
+      const betCol = firestore.collection(`contracts/${contract.id}/bets`)
+      const betDocs = (answers ?? []).map(() => betCol.doc())
+
+      const answerCol = firestore.collection(`contracts/${contract.id}/answers`)
+      const answerDocs = (answers ?? []).map((_, i) =>
+        answerCol.doc(i.toString())
+      )
+
+      const { bets, answerObjects } = getMultipleChoiceAntes(
+        user,
+        contract as MultipleChoiceContract,
+        answers ?? [],
+        betDocs.map((bd) => bd.id)
+      )
+
+      await Promise.all(
+        zip(bets, betDocs).map(([bet, doc]) =>
+          doc ? trans.create(doc, bet as Bet) : undefined
+        )
+      )
+      await Promise.all(
+        zip(answerObjects, answerDocs).map(([answer, doc]) =>
+          doc ? trans.create(doc, answer as Answer) : undefined
+        )
+      )
+      await trans.update(contractRef, { answers: answerObjects })
+    } else if (outcomeType === 'FREE_RESPONSE') {
+      const noneAnswerDoc = firestore
+        .collection(`contracts/${contract.id}/answers`)
+        .doc('0')
+
+      const noneAnswer = getNoneAnswer(contract.id, user)
+      await trans.set(noneAnswerDoc, noneAnswer)
+
+      const anteBetDoc = firestore
+        .collection(`contracts/${contract.id}/bets`)
+        .doc()
+
+      const anteBet = getFreeAnswerAnte(
+        providerId,
+        contract as FreeResponseContract,
+        anteBetDoc.id
+      )
+      await trans.set(anteBetDoc, anteBet)
+    } else if (outcomeType === 'NUMERIC') {
+      const anteBetDoc = firestore
+        .collection(`contracts/${contract.id}/bets`)
+        .doc()
+
+      const anteBet = getNumericAnte(
+        providerId,
+        contract as NumericContract,
+        ante,
+        anteBetDoc.id
+      )
+
+      await trans.set(anteBetDoc, anteBet)
+    }
+
+    return contract
+  })
 }
 
-const getSlug = async (question: string) => {
+const getSlug = async (trans: Transaction, question: string) => {
   const proposedSlug = slugify(question)
 
-  const preexistingContract = await getContractFromSlug(proposedSlug)
+  const preexistingContract = await getContractFromSlug(trans, proposedSlug)
 
   return preexistingContract
     ? proposedSlug + '-' + randomString()
@@ -338,46 +351,42 @@ const getSlug = async (question: string) => {
 
 const firestore = admin.firestore()
 
-export async function getContractFromSlug(slug: string) {
-  const snap = await firestore
-    .collection('contracts')
-    .where('slug', '==', slug)
-    .get()
+async function getContractFromSlug(trans: Transaction, slug: string) {
+  const snap = await trans.get(
+    firestore.collection('contracts').where('slug', '==', slug)
+  )
 
   return snap.empty ? undefined : (snap.docs[0].data() as Contract)
 }
 
 async function createGroupLinks(
+  trans: Transaction,
   group: Group,
   contractIds: string[],
   userId: string
 ) {
   for (const contractId of contractIds) {
-    const contract = await getContract(contractId)
+    const contractRef = firestore.collection('contracts').doc(contractId)
+    const contract = (await trans.get(contractRef)).data() as Contract
+
     if (!contract?.groupSlugs?.includes(group.slug)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
-        })
+      await trans.update(contractRef, {
+        groupSlugs: uniq([group.slug, ...(contract?.groupSlugs ?? [])]),
+      })
     }
     if (!contract?.groupLinks?.map((gl) => gl.groupId).includes(group.id)) {
-      await firestore
-        .collection('contracts')
-        .doc(contractId)
-        .update({
-          groupLinks: [
-            {
-              groupId: group.id,
-              name: group.name,
-              slug: group.slug,
-              userId,
-              createdTime: Date.now(),
-            } as GroupLink,
-            ...(contract?.groupLinks ?? []),
-          ],
-        })
+      await trans.update(contractRef, {
+        groupLinks: [
+          {
+            groupId: group.id,
+            name: group.name,
+            slug: group.slug,
+            userId,
+            createdTime: Date.now(),
+          } as GroupLink,
+          ...(contract?.groupLinks ?? []),
+        ],
+      })
     }
   }
 }
