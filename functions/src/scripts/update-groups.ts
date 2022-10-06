@@ -89,17 +89,20 @@ const getGroups = async () => {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function updateTotalContractsAndMembers() {
   const groups = await getGroups()
-  for (const group of groups) {
-    log('updating group total contracts and members', group.slug)
-    const groupRef = admin.firestore().collection('groups').doc(group.id)
-    const totalMembers = (await groupRef.collection('groupMembers').get()).size
-    const totalContracts = (await groupRef.collection('groupContracts').get())
-      .size
-    await groupRef.update({
-      totalMembers,
-      totalContracts,
+  await Promise.all(
+    groups.map(async (group) => {
+      log('updating group total contracts and members', group.slug)
+      const groupRef = admin.firestore().collection('groups').doc(group.id)
+      const totalMembers = (await groupRef.collection('groupMembers').get())
+        .size
+      const totalContracts = (await groupRef.collection('groupContracts').get())
+        .size
+      await groupRef.update({
+        totalMembers,
+        totalContracts,
+      })
     })
-  }
+  )
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function removeUnusedMemberAndContractFields() {
@@ -117,6 +120,6 @@ async function removeUnusedMemberAndContractFields() {
 if (require.main === module) {
   initAdmin()
   // convertGroupFieldsToGroupDocuments()
-  // updateTotalContractsAndMembers()
-  removeUnusedMemberAndContractFields()
+  updateTotalContractsAndMembers()
+  // removeUnusedMemberAndContractFields()
 }
