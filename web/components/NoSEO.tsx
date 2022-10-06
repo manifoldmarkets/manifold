@@ -1,10 +1,10 @@
-import Head from "next/head";
+import Head from 'next/head'
 
 /** Exclude page from search results */
 export function NoSEO() {
   return (
     <Head>
-      <meta name="robots" content="noindex,follow"/>
+      <meta name="robots" content="noindex,follow" />
     </Head>
   )
 }
