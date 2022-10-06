@@ -13,6 +13,8 @@ import { Group } from 'common/group'
 
 export function CreatePost(props: { group?: Group }) {
   const [title, setTitle] = useState('')
+  const [subtitle, setSubtitle] = useState('')
+
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -22,12 +24,17 @@ export function CreatePost(props: { group?: Group }) {
     disabled: isSubmitting,
   })
 
-  const isValid = editor && title.length > 0 && editor.isEmpty === false
+  const isValid =
+    editor &&
+    title.length > 0 &&
+    subtitle.length > 0 &&
+    editor.isEmpty === false
 
   async function savePost(title: string) {
     if (!editor) return
     const newPost = {
       title: title,
+      subtitle: subtitle,
       content: editor.getJSON(),
       groupId: group?.id,
     }
@@ -60,6 +67,20 @@ export function CreatePost(props: { group?: Group }) {
               maxLength={MAX_POST_TITLE_LENGTH}
               value={title}
               onChange={(e) => setTitle(e.target.value || '')}
+            />
+            <Spacer h={6} />
+            <label className="label">
+              <span className="mb-1">
+                Subtitle<span className={'text-red-700'}> *</span>
+              </span>
+            </label>
+            <Textarea
+              placeholder="e.g. How Elon Musk is getting everyone's attention"
+              className="input input-bordered resize-none"
+              autoFocus
+              maxLength={MAX_POST_TITLE_LENGTH}
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value || '')}
             />
             <Spacer h={6} />
             <label className="label">

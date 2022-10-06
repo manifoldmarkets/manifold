@@ -4,7 +4,7 @@ import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
 import { listAllContracts } from 'web/lib/firebase/contracts'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const contracts = await listAllContracts(1000, undefined, 'popularityScore')
+  const contracts = await listAllContracts(5000, undefined, 'popularityScore')
 
   const score = (popularity: number) => Math.tanh(Math.log10(popularity + 1))
 
@@ -14,7 +14,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       loc: `https://manifold.markets/${market.creatorUsername}/${market.slug}`,
       changefreq: market.volume24Hours > 10 ? 'hourly' : 'daily',
       priority: score(market.popularityScore ?? 0),
-      lastmod: market.lastUpdatedTime,
+      lastmod: new Date(market.lastUpdatedTime ?? 0).toISOString(),
     })) as ISitemapField[]
 
   return await getServerSideSitemap(ctx, fields)

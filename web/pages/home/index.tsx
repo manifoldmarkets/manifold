@@ -21,7 +21,6 @@ import { Group } from 'common/group'
 import { SiteLink } from 'web/components/site-link'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
-  useMemberGroupIds,
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
@@ -80,6 +79,7 @@ export default function Home() {
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
 
   const groups = useMemberGroupsSubscription(user)
+  const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug)
   )
@@ -113,16 +113,26 @@ export default function Home() {
           <LoadingIndicator />
         ) : (
           <>
-            {renderSections(user, sections, {
+            {renderSections(sections, {
               score: trendingContracts,
               newest: newContracts,
               'daily-trending': dailyTrendingContracts,
               'daily-movers': dailyMovers,
             })}
 
-            <TrendingGroupsSection user={user} />
-
-            {renderGroupSections(user, groups, groupContracts)}
+            {groups && groupContracts && trendingGroups.length > 0 ? (
+              <>
+                <TrendingGroupsSection
+                  className="mb-4"
+                  user={user}
+                  myGroups={groups}
+                  trendingGroups={trendingGroups}
+                />
+                {renderGroupSections(user, groups, groupContracts)}
+              </>
+            ) : (
+              <LoadingIndicator />
+            )}
           </>
         )}
       </Col>
@@ -171,7 +181,6 @@ export const getHomeItems = (sections: string[]) => {
 }
 
 function renderSections(
-  user: User,
   sections: { id: string; label: string }[],
   sectionContracts: {
     'daily-movers': CPMMBinaryContract[]
@@ -192,7 +201,7 @@ function renderSections(
         }
         if (id === 'daily-trending') {
           return (
-            <ContractsSection
+            <SearchSection
               key={id}
               label={label}
               contracts={contracts}
@@ -202,11 +211,11 @@ function renderSections(
           )
         }
         return (
-          <ContractsSection
+          <SearchSection
             key={id}
             label={label}
             contracts={contracts}
-            sort={id === 'daily-trending' ? 'daily-score' : (id as Sort)}
+            sort={id as Sort}
           />
         )
       })}
@@ -216,13 +225,9 @@ function renderSections(
 
 function renderGroupSections(
   user: User,
-  groups: Group[] | undefined,
-  groupContracts: Dictionary<CPMMBinaryContract[]> | undefined
+  groups: Group[],
+  groupContracts: Dictionary<CPMMBinaryContract[]>
 ) {
-  if (!groups || !groupContracts) {
-    return <LoadingIndicator />
-  }
-
   const filteredGroups = groups.filter((g) => groupContracts[g.slug])
   const orderedGroups = sortBy(filteredGroups, (g) =>
     // Sort by sum of top two daily scores.
@@ -285,7 +290,7 @@ function SectionHeader(props: {
   )
 }
 
-function ContractsSection(props: {
+function SearchSection(props: {
   label: string
   contracts: CPMMBinaryContract[]
   sort: Sort
@@ -406,15 +411,16 @@ function DailyStats(props: {
 }
 
 export function TrendingGroupsSection(props: {
-  user: User | null | undefined
+  user: User
+  myGroups: Group[]
+  trendingGroups: Group[]
   className?: string
 }) {
-  const { user, className } = props
-  const memberGroupIds = useMemberGroupIds(user) || []
+  const { user, myGroups, trendingGroups, className } = props
 
-  const groups = useTrendingGroups().filter(
-    (g) => !memberGroupIds.includes(g.id)
-  )
+  const myGroupIds = new Set(myGroups.map((g) => g.id))
+
+  const groups = trendingGroups.filter((g) => !myGroupIds.has(g.id))
   const count = 20
   const chosenGroups = groups.slice(0, count)
 
@@ -433,10 +439,9 @@ export function TrendingGroupsSection(props: {
           <PillButton
             className="flex flex-row items-center gap-1"
             key={g.id}
-            selected={memberGroupIds.includes(g.id)}
+            selected={myGroupIds.has(g.id)}
             onSelect={() => {
-              if (!user) return
-              if (memberGroupIds.includes(g.id)) leaveGroup(g, user?.id)
+              if (myGroupIds.has(g.id)) leaveGroup(g, user.id)
               else {
                 const homeSections = (user.homeSections ?? [])
                   .filter((id) => id !== g.id)

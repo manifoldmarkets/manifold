@@ -18,8 +18,8 @@ const MARGIN_Y = MARGIN.top + MARGIN.bottom
 export type GraphMode = 'profit' | 'value'
 
 export const PortfolioTooltip = (props: TooltipProps<Date, HistoryPoint>) => {
-  const { mouseX, xScale } = props
-  const d = dayjs(xScale.invert(mouseX))
+  const { x, xScale } = props
+  const d = dayjs(xScale.invert(x))
   return (
     <Col className="text-xs font-semibold sm:text-sm">
       <div>{d.format('MMM/D/YY')}</div>

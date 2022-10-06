@@ -3,7 +3,11 @@ import * as admin from 'firebase-admin'
 import { getUser } from './utils'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-import { Post, MAX_POST_TITLE_LENGTH } from '../../common/post'
+import {
+  Post,
+  MAX_POST_TITLE_LENGTH,
+  MAX_POST_SUBTITLE_LENGTH,
+} from '../../common/post'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
@@ -36,6 +40,7 @@ const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
 
 const postSchema = z.object({
   title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
+  subtitle: z.string().min(1).max(MAX_POST_SUBTITLE_LENGTH),
   content: contentSchema,
   groupId: z.string().optional(),
 
@@ -48,10 +53,8 @@ const postSchema = z.object({
 
 export const createpost = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { title, content, groupId, question, ...otherProps } = validate(
-    postSchema,
-    req.body
-  )
+  const { title, subtitle, content, groupId, question, ...otherProps } =
+    validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
   if (!creator)
@@ -89,6 +92,7 @@ export const createpost = newEndpoint({}, async (req, auth) => {
     creatorId: creator.id,
     slug,
     title,
+    subtitle,
     createdTime: Date.now(),
     content: content,
     contractSlug,

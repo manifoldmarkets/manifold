@@ -63,7 +63,8 @@ export default function Sidebar(props: {
       )}
       <Spacer h={6} />
 
-      {!user && <SignInButton className="mb-4" />}
+      {user === undefined && <div className="h-[178px]" />}
+      {user === null && <SignInButton className="mb-4" />}
 
       {user && <ProfileSummary user={user} />}
 

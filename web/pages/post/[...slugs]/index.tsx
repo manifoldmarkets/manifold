@@ -25,6 +25,7 @@ import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
+import { Subtitle } from 'web/components/subtitle'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -75,7 +76,11 @@ export default function PostPage(props: {
         url={'/post/' + post.slug}
       />
       <div className="mx-auto w-full max-w-3xl ">
-        <Title className="!mt-0 py-4 px-2" text={post.title} />
+        <div>
+          <Title className="!my-0 px-2 pt-4" text={post.title} />
+          <br />
+          <Subtitle className="!mt-2 px-2 pb-4" text={post.subtitle} />
+        </div>
         <Row>
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
@@ -202,25 +207,20 @@ export function RichEditPost(props: { post: Post }) {
       </Row>
     </>
   ) : (
-    <>
-      <div className="relative">
-        <div className="absolute top-0 right-0 z-10 space-x-2">
-          <Button
-            color="gray"
-            size="xs"
-            onClick={() => {
-              setEditing(true)
-              editor?.commands.focus('end')
-            }}
-          >
-            <PencilIcon className="inline h-4 w-4" />
-            Edit
-          </Button>
-        </div>
-
-        <Content content={post.content} />
-        <Spacer h={2} />
-      </div>
-    </>
+    <Col>
+      <Content content={post.content} />
+      <Row className="place-content-end">
+        <Button
+          color="gray-white"
+          size="xs"
+          onClick={() => {
+            setEditing(true)
+            editor?.commands.focus('end')
+          }}
+        >
+          <PencilIcon className="inline h-4 w-4" />
+        </Button>
+      </Row>
+    </Col>
   )
 }

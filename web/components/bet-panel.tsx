@@ -25,7 +25,7 @@ import {
   NoLabel,
   YesLabel,
 } from './outcome-label'
-import { getProbability } from 'common/calculate'
+import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
@@ -395,6 +395,7 @@ export function BuyPanel(props: {
             disabled={!!betDisabled || outcome === undefined}
             size="xl"
             color={outcome === 'NO' ? 'red' : 'green'}
+            actionLabel="Wager"
           />
         )}
         <button
@@ -831,12 +832,20 @@ export function SellPanel(props: {
 
   const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  const betDisabled = isSubmitting || !amount || error
+  const betDisabled = isSubmitting || !amount || error !== undefined
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)
 
   const sellQuantity = isSellingAllShares ? shares : amount
+
+  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+  const soldShares = Math.min(sellQuantity ?? 0, shares)
+  const saleFrac = soldShares / shares
+  const loanPaid = saleFrac * loanAmount
+
+  const { invested } = getContractBetMetrics(contract, userBets)
+  const costBasis = invested * saleFrac
 
   async function submitSell() {
     if (!user || !amount) return
@@ -882,7 +891,22 @@ export function SellPanel(props: {
     sharesOutcome,
     unfilledBets
   )
+  const netProceeds = saleValue - loanPaid
+  const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+  const getValue = getMappedValue(contract)
+  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const displayedDifference =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? formatLargeNumber(rawDifference)
+      : formatPercent(rawDifference)
+  const probChange = Math.abs(resultProb - initialProb)
+
+  const warning =
+    probChange >= 0.3
+      ? `Are you sure you want to move the market by ${displayedDifference}?`
+      : undefined
 
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
   const [yesBets, noBets] = partition(
@@ -923,13 +947,17 @@ export function SellPanel(props: {
         label="Qty"
         error={error}
         disabled={isSubmitting}
-        inputClassName="w-full"
+        inputClassName="w-full ml-1"
       />
 
       <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="items-center justify-between gap-2 text-gray-500">
-          Sale proceeds
+          Sale amount
           <span className="text-neutral">{formatMoney(saleValue)}</span>
+        </Row>
+        <Row className="items-center justify-between gap-2 text-gray-500">
+          Profit
+          <span className="text-neutral">{formatMoney(profit)}</span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-gray-500">
@@ -941,24 +969,33 @@ export function SellPanel(props: {
             {format(resultProb)}
           </div>
         </Row>
+        {loanPaid !== 0 && (
+          <>
+            <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
+              Loan payment
+              <span className="text-neutral">{formatMoney(-loanPaid)}</span>
+            </Row>
+            <Row className="items-center justify-between gap-2 text-gray-500">
+              Net proceeds
+              <span className="text-neutral">{formatMoney(netProceeds)}</span>
+            </Row>
+          </>
+        )}
       </Col>
 
       <Spacer h={8} />
 
-      <button
-        className={clsx(
-          'btn flex-1',
-          betDisabled
-            ? 'btn-disabled'
-            : sharesOutcome === 'YES'
-            ? 'btn-primary'
-            : 'border-none bg-red-400 hover:bg-red-500',
-          isSubmitting ? 'loading' : ''
-        )}
-        onClick={betDisabled ? undefined : submitSell}
-      >
-        {isSubmitting ? 'Submitting...' : 'Submit sell'}
-      </button>
+      <WarningConfirmationButton
+        marketType="binary"
+        amount={undefined}
+        warning={warning}
+        isSubmitting={isSubmitting}
+        onSubmit={betDisabled ? undefined : submitSell}
+        disabled={!!betDisabled}
+        size="xl"
+        color="blue"
+        actionLabel={`Sell ${Math.floor(soldShares)} shares`}
+      />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
     </>

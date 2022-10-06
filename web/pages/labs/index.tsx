@@ -44,8 +44,8 @@ export default function LabsPage() {
           />
 
           <LabCard
-            title="💌 Dating docs"
-            description="Browse dating docs or create your own"
+            title="💌 Dating"
+            description="Browse dating profiles and bet on relationships"
             href="/date-docs"
           />
 

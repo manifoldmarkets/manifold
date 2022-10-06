@@ -357,7 +357,7 @@ export function GroupDisplay(props: {
     const groupSection = (
       <a
         className={clsx(
-          'bg-greyscale-4 max-w-[140px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
+          'bg-greyscale-4 max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
           !disabled && 'hover:bg-greyscale-3 cursor-pointer'
         )}
       >
@@ -437,14 +437,14 @@ function EditableCloseDate(props: {
   return (
     <>
       <Modal
-        size="sm"
+        size="md"
         open={isEditingCloseTime}
         setOpen={setIsEditingCloseTime}
         position="top"
       >
         <Col className="rounded bg-white px-8 pb-8">
-          <Subtitle text="Edit Close Date" />
-          <Row className="z-10 mr-2 w-full shrink-0 flex-wrap items-center gap-2">
+          <Subtitle text="Edit market close time" />
+          <Row className="z-10 mr-2 mt-4 w-full shrink-0 flex-wrap items-center gap-2">
             <input
               type="date"
               className="input input-bordered w-full shrink-0 sm:w-fit"
@@ -461,22 +461,18 @@ function EditableCloseDate(props: {
               min="00:00"
               value={closeHoursMinutes}
             />
+            <Button size={'xs'} color={'indigo'} onClick={() => onSave()}>
+              Set
+            </Button>
           </Row>
+
           <Button
-            className="mt-4"
+            className="mt-8"
             size={'xs'}
-            color={'indigo'}
-            onClick={() => onSave()}
-          >
-            Done
-          </Button>
-          <Button
-            className="mt-4"
-            size={'xs'}
-            color={'gray-white'}
+            color="red"
             onClick={() => onSave(Date.now())}
           >
-            Close Now
+            Close market now
           </Button>
         </Col>
       </Modal>

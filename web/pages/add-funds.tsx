@@ -9,6 +9,7 @@ import { Page } from 'web/components/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { Button } from 'web/components/button'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -33,15 +34,15 @@ export default function AddFundsPage() {
         <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
           <Title className="!mt-0" text="Get Mana" />
           <img
-            className="mb-6 block -scale-x-100 self-center"
-            src="/stylized-crane-black.png"
+            className="mb-6 block self-center"
+            src="/welcome/manipurple.png"
             width={200}
             height={200}
           />
 
           <div className="mb-6 text-gray-500">
-            Buy mana (M$) to trade in your favorite markets. <br /> (Not
-            redeemable for cash.)
+            Buy mana (M$) to trade in your favorite markets. <br />{' '}
+            <i>Not redeemable for cash.</i>
           </div>
 
           <div className="mb-2 text-sm text-gray-500">Amount</div>
@@ -63,13 +64,15 @@ export default function AddFundsPage() {
             method="POST"
             className="mt-8"
           >
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary w-full bg-gradient-to-r from-indigo-500 to-blue-500 font-medium hover:from-indigo-600 hover:to-blue-600"
+              color="gradient"
+              size="xl"
+              className="w-full"
               onClick={trackCallback('checkout', { amount: amountSelected })}
             >
               Checkout
-            </button>
+            </Button>
           </form>
         </Col>
       </Col>
