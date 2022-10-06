@@ -48,6 +48,7 @@ export const SORTS = [
   { label: 'Daily trending', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Most popular', value: 'most-popular' },
+  { label: 'Liquidity', value: 'liquidity' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
