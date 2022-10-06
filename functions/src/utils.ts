@@ -47,7 +47,7 @@ export const writeAsync = async (
     const batch = db.batch()
     for (const { doc, fields } of chunks[i]) {
       if (operationType === 'update') {
-        batch.update(doc, fields)
+        batch.update(doc, fields as any)
       } else {
         batch.set(doc, fields)
       }
