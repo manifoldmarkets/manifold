@@ -142,15 +142,17 @@ export function DateDocPost(props: {
       ) : (
         <Content content={content} />
       )}
-      <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">
-        <iframe
-          height="405"
-          src={marketUrl}
-          title=""
-          frameBorder="0"
-          className="w-full rounded-xl bg-white p-10"
-        ></iframe>
-      </div>
+      {contractSlug && (
+        <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">
+          <iframe
+            height="405"
+            src={marketUrl}
+            title=""
+            frameBorder="0"
+            className="w-full rounded-xl bg-white p-10"
+          ></iframe>
+        </div>
+      )}
     </Col>
   )
 }

@@ -71,19 +71,23 @@ export const createpost = newEndpoint({}, async (req, auth) => {
   if (question) {
     const closeTime = Date.now() + DAY_MS * 30 * 3
 
-    const result = await createMarketHelper(
-      {
-        question,
-        closeTime,
-        outcomeType: 'BINARY',
-        visibility: 'unlisted',
-        initialProb: 50,
-        // Dating group!
-        groupId: 'j3ZE8fkeqiKmRGumy3O1',
-      },
-      auth
-    )
-    contractSlug = result.slug
+    try {
+      const result = await createMarketHelper(
+        {
+          question,
+          closeTime,
+          outcomeType: 'BINARY',
+          visibility: 'unlisted',
+          initialProb: 50,
+          // Dating group!
+          groupId: 'j3ZE8fkeqiKmRGumy3O1',
+        },
+        auth
+      )
+      contractSlug = result.slug
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const post: Post = removeUndefinedProps({
