@@ -14,6 +14,7 @@ import dayjs from 'dayjs'
 import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
+import { NoSEO } from 'web/components/NoSEO'
 
 export default function CreateDateDocPage() {
   const user = useUser()
@@ -64,6 +65,7 @@ export default function CreateDateDocPage() {
 
   return (
     <Page>
+      <NoSEO />
       <div className="mx-auto w-full max-w-3xl">
         <div className="rounded-lg px-6 py-4 pb-4 sm:py-0">
           <Row className="mb-8 items-center justify-between">
