@@ -98,7 +98,8 @@ export type PortfolioMetrics = {
   userId: string
 }
 
-export const MANIFOLD_USERNAME = 'ManifoldMarkets'
+export const MANIFOLD_USER_USERNAME = 'ManifoldMarkets'
+export const MANIFOLD_USER_NAME = 'ManifoldMarkets'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'
 
 export const BETTOR = ENV_CONFIG.bettor ?? 'bettor' // aka predictor

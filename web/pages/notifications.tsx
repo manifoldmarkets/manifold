@@ -15,7 +15,7 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import {
   MANIFOLD_AVATAR_URL,
-  MANIFOLD_USERNAME,
+  MANIFOLD_USER_USERNAME,
   PrivateUser,
 } from 'common/user'
 import clsx from 'clsx'
@@ -857,7 +857,9 @@ function NotificationFrame(props: {
             size={'sm'}
             className={'z-10 mr-2'}
             username={
-              questionNeedsResolution ? MANIFOLD_USERNAME : sourceUserUsername
+              questionNeedsResolution
+                ? MANIFOLD_USER_USERNAME
+                : sourceUserUsername
             }
           />
           <div className={'flex w-full flex-row pl-1 sm:pl-0'}>

@@ -53,6 +53,7 @@ export type notification_preferences = {
   profit_loss_updates: notification_destination_types[]
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
+  badges_awarded: notification_destination_types[]
 }
 
 export const getDefaultNotificationPreferences = (
