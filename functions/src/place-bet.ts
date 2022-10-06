@@ -218,9 +218,12 @@ export const getUnfilledBetsAndUserBalances = async (
 
   // Get balance of all users with open limit orders.
   const userIds = uniqBy(unfilledBets, (bet) => bet.userId)
-  const userDocs = await trans.getAll(
-    ...userIds.map((userId) => firestore.doc(`users/${userId}`))
-  )
+  const userDocs =
+    userIds.length === 0
+      ? []
+      : await trans.getAll(
+          ...userIds.map((userId) => firestore.doc(`users/${userId}`))
+        )
   const users = filterDefined(userDocs.map((doc) => doc.data() as User))
   const balanceByUserId = Object.fromEntries(
     users.map((user) => [user.id, user.balance])

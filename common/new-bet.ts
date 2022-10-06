@@ -172,6 +172,7 @@ export const computeFills = (
   let amount = betAmount
   let cpmmState = { pool: state.pool, p: state.p }
   let totalFees = noFees
+  const makerBalanceByUserId = { ...balanceByUserId }
 
   let i = 0
   while (true) {
@@ -190,10 +191,10 @@ export const computeFills = (
       // Matched against bet.
       i++
       const { userId } = maker.bet
-      const makerBalance = balanceByUserId[userId]
+      const makerBalance = makerBalanceByUserId[userId]
 
       if (floatingGreaterEqual(makerBalance, maker.amount)) {
-        balanceByUserId[userId] = makerBalance - maker.amount
+        makerBalanceByUserId[userId] = makerBalance - maker.amount
       } else {
         // Insufficient balance. Cancel maker bet.
         ordersToCancel.push(maker.bet)
@@ -272,7 +273,7 @@ export const getBinaryBetStats = (
   contract: CPMMBinaryContract | PseudoNumericContract,
   limitProb: number,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number },
+  balanceByUserId: { [userId: string]: number }
 ) => {
   const { newBet } = getBinaryCpmmBetInfo(
     outcome,
@@ -280,7 +281,7 @@ export const getBinaryBetStats = (
     contract,
     limitProb,
     unfilledBets as LimitBet[],
-    balanceByUserId,
+    balanceByUserId
   )
   const remainingMatched =
     ((newBet.orderAmount ?? 0) - newBet.amount) /
