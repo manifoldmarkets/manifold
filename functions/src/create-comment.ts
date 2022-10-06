@@ -5,7 +5,7 @@ import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from '../../common/util/object'
-import { htmlToRichText } from 'common/util/parse'
+import { htmlToRichText } from '../../common/util/parse'
 import { micromark } from 'micromark'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
