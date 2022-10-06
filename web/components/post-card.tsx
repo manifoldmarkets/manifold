@@ -7,8 +7,8 @@ import { useUserById } from 'web/hooks/use-user'
 import { postPath } from 'web/lib/firebase/posts'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from './avatar'
+import { Card } from './card'
 import { CardHighlightOptions } from './contract/contracts-grid'
-import { Row } from './layout/row'
 import { UserLink } from './user-link'
 
 export function PostCard(props: {
@@ -26,9 +26,9 @@ export function PostCard(props: {
 
   return (
     <div className="relative py-1">
-      <Row
+      <Card
         className={clsx(
-          'relative  gap-3  rounded-lg bg-white py-2 px-3 shadow-md hover:cursor-pointer hover:bg-gray-100',
+          'relative flex gap-3 py-2 px-3',
           itemIds?.includes(post.id) && highlightClassName
         )}
       >
@@ -58,7 +58,7 @@ export function PostCard(props: {
             Post
           </span>
         </div>
-      </Row>
+      </Card>
       {onPostClick ? (
         <a
           className="absolute top-0 left-0 right-0 bottom-0"
