@@ -1,11 +1,7 @@
 import { last, sortBy, sum, sumBy } from 'lodash'
 import { calculatePayout } from './calculate'
 import { Bet, LimitBet } from './bet'
-import {
-  Contract,
-  CPMMContract,
-  DPMContract,
-} from './contract'
+import { Contract, CPMMContract, DPMContract } from './contract'
 import { PortfolioMetrics, User } from './user'
 import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
@@ -61,7 +57,7 @@ export const computeElasticity = (
 export const computeBinaryCpmmElasticity = (
   bets: Bet[],
   contract: CPMMContract,
-  betAmount = 50
+  betAmount: number
 ) => {
   const limitBets = bets
     .filter(
@@ -91,8 +87,11 @@ export const computeBinaryCpmmElasticity = (
   return resultYes - resultNo
 }
 
-export const computeDpmElasticity = (contract: DPMContract, betAmount = 50) => {
-  return getNewMultiBetInfo('', betAmount, contract).newBet.probAfter
+export const computeDpmElasticity = (
+  contract: DPMContract,
+  betAmount: number
+) => {
+  return getNewMultiBetInfo('', 2 * betAmount, contract).newBet.probAfter
 }
 
 const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
