@@ -1,10 +1,5 @@
 import { User } from './user'
 
-export type Achievement = {
-  totalBadges: number
-  badges: Badge[]
-}
-
 export type Badge = {
   type: BadgeTypes
   createdTime: number
@@ -42,6 +37,7 @@ export type ProvenCorrectBadge = Badge & ProvenCorrectBadgeData
 export type StreakerBadge = Badge & StreakerBadgeData
 export type MarketCreatorBadge = Badge & MarketCreatorBadgeData
 
+export const MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE = 5
 export const provenCorrectRarityThresholds = [1, 1000, 10000]
 const calculateProvenCorrectBadgeRarity = (badge: ProvenCorrectBadge) => {
   const { betAmount } = badge.data

@@ -6,7 +6,10 @@ import { Bet } from '../../common/bet'
 import * as admin from 'firebase-admin'
 import { ContractComment } from '../../common/comment'
 import { scoreCommentorsAndBettors } from '../../common/scoring'
-import { ProvenCorrectBadge } from '../../common/badge'
+import {
+  MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE,
+  ProvenCorrectBadge,
+} from '../../common/badge'
 
 export const onUpdateContract = functions.firestore
   .document('contracts/{contractId}')
@@ -51,6 +54,12 @@ export const onUpdateContract = functions.firestore
 const firestore = admin.firestore()
 
 async function handleResolvedContract(contract: Contract) {
+  if (
+    (contract.uniqueBettorCount ?? 0) <
+    MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE
+  )
+    return
+
   // get all bets on this contract
   const bets = await getValues<Bet>(
     firestore.collection(`contracts/${contract.id}/bets`)

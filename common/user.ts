@@ -1,6 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { Achievement } from './badge'
+import { MarketCreatorBadge, ProvenCorrectBadge, StreakerBadge } from './badge'
 
 export type User = {
   id: string
@@ -52,9 +52,18 @@ export type User = {
   isBannedFromPosting?: boolean
 
   achievements?: {
-    provenCorrect?: Achievement
-    marketCreator?: Achievement
-    streaker?: Achievement
+    provenCorrect?: {
+      totalBadges: number
+      badges: ProvenCorrectBadge[]
+    }
+    marketCreator?: {
+      totalBadges: number
+      badges: MarketCreatorBadge[]
+    }
+    streaker?: {
+      totalBadges: number
+      badges: StreakerBadge[]
+    }
   }
 }
 
