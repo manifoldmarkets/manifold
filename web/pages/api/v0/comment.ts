@@ -13,12 +13,6 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],
     methods: 'POST',
   })
-
-  const { id } = req.query
-  const contractId = id as string
-
-  if (req.body) req.body.contractId = contractId
-
   try {
     const backendRes = await fetchBackend(req, 'createcomment')
     await forwardResponse(res, backendRes)
