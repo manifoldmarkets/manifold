@@ -14,6 +14,7 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateProbChanges,
+  computeElasticity,
   computeVolume,
 } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
@@ -103,6 +104,7 @@ export async function updateMetricsCore() {
         fields: {
           volume24Hours: computeVolume(contractBets, now - DAY_MS),
           volume7Days: computeVolume(contractBets, now - DAY_MS * 7),
+          elasticity: computeElasticity(contractBets, contract),
           ...cpmmFields,
         },
       }

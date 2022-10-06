@@ -49,6 +49,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   volume: number
   volume24Hours: number
   volume7Days: number
+  elasticity: number
 
   collectedFees: Fees
 
