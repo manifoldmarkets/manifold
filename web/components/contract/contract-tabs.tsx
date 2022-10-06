@@ -80,8 +80,8 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
-  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
-    key: `contract-${contract.id}-comments-sort`,
+  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Best', {
+    key: `contract-comments-sort`,
     store: storageStore(safeLocalStorage()),
   })
   const me = useUser()

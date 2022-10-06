@@ -1,3 +1,6 @@
+import { useEffect } from 'react'
+import Router from 'next/router'
+
 import { Contract, getTrendingContracts } from 'web/lib/firebase/contracts'
 import { Page } from 'web/components/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
@@ -6,6 +9,7 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { SEO } from 'web/components/SEO'
+import { useUser } from 'web/hooks/use-user'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const hotContracts = await getTrendingContracts()
@@ -16,6 +20,7 @@ export default function Home(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
 
   useSaveReferral()
+  useRedirectAfterLogin()
 
   return (
     <Page>
@@ -34,4 +39,14 @@ export default function Home(props: { hotContracts: Contract[] }) {
       </Col>
     </Page>
   )
+}
+
+const useRedirectAfterLogin = () => {
+  const user = useUser()
+
+  useEffect(() => {
+    if (user) {
+      Router.replace('/home')
+    }
+  }, [user])
 }
