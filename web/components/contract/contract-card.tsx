@@ -8,6 +8,7 @@ import {
   BinaryContract,
   Contract,
   CPMMBinaryContract,
+  CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
@@ -35,6 +36,7 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
 import { SiteLink } from '../site-link'
 import { ProbChange } from './prob-change-table'
+import { Card } from '../card'
 
 export function ContractCard(props: {
   contract: Contract
@@ -75,12 +77,7 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <Row
-      className={clsx(
-        'group  relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
-        className
-      )}
-    >
+    <Card className={clsx('group relative flex gap-3', className)}>
       <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
@@ -195,7 +192,7 @@ export function ContractCard(props: {
           />
         </Link>
       )}
-    </Row>
+    </Card>
   )
 }
 
@@ -391,7 +388,7 @@ export function PseudoNumericResolutionOrExpectation(props: {
 }
 
 export function ContractCardProbChange(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMContract
   noLinkAvatar?: boolean
   className?: string
 }) {
@@ -399,12 +396,7 @@ export function ContractCardProbChange(props: {
   const contract = useContractWithPreload(props.contract) as CPMMBinaryContract
 
   return (
-    <Col
-      className={clsx(
-        className,
-        'mb-4 rounded-lg bg-white shadow hover:bg-gray-100 hover:shadow-lg'
-      )}
-    >
+    <Card className={clsx(className, 'mb-4')}>
       <AvatarDetails
         contract={contract}
         className={'px-6 pt-4'}
@@ -419,6 +411,6 @@ export function ContractCardProbChange(props: {
         </SiteLink>
         <ProbChange className="py-2 pr-4" contract={contract} />
       </Row>
-    </Col>
+    </Card>
   )
 }
