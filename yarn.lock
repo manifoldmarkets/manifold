@@ -2868,7 +2868,7 @@
     prosemirror-transform "1.6.0"
     prosemirror-view "1.26.2"
 
-"@tiptap/core@^2.0.0-beta.199":
+"@tiptap/core@2.0.0-beta.199", "@tiptap/core@^2.0.0-beta.199":
   version "2.0.0-beta.199"
   resolved "https://registry.yarnpkg.com/@tiptap/core/-/core-2.0.0-beta.199.tgz#77c3d8df10a4594cf5860b8a73d5007b0a020d01"
   integrity sha512-34GaXcBEmNFjW1R7nf1LSmOHo3Q81YjKqvLAXjDLLG7MTx+YTrQ4yWwUvMsZtmi4o/FchUzrs1NVCfr571Zxzg==
