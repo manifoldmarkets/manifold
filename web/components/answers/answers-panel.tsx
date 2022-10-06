@@ -157,11 +157,9 @@ export function AnswersPanel(props: {
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
-      {outcomeType === 'FREE_RESPONSE' &&
-        tradingAllowed(contract) &&
-        (!resolveOption || resolveOption === 'CANCEL') && (
-          <CreateAnswerPanel contract={contract} />
-        )}
+      {outcomeType === 'FREE_RESPONSE' && tradingAllowed(contract) && (
+        <CreateAnswerPanel contract={contract} />
+      )}
 
       {(user?.id === creatorId || (isAdmin && needsAdminToResolve(contract))) &&
         !resolution && (
