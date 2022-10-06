@@ -12,6 +12,7 @@ import { Button } from 'web/components/button'
 import { SiteLink } from 'web/components/site-link'
 import { getUser, User } from 'web/lib/firebase/users'
 import { DateDocPost } from './[username]'
+import { NoSEO } from 'web/components/NoSEO'
 
 export async function getStaticProps() {
   const dateDocs = await getDateDocs()
@@ -40,6 +41,7 @@ export default function DatePage(props: {
 
   return (
     <Page>
+      <NoSEO />
       <div className="mx-auto w-full max-w-xl">
         <Row className="items-center justify-between p-4 sm:p-0">
           <Title className="!my-0 px-2 text-blue-500" text="Date docs" />
