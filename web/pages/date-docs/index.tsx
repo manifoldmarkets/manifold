@@ -13,6 +13,7 @@ import { SiteLink } from 'web/components/site-link'
 import { getUser, User } from 'web/lib/firebase/users'
 import { DateDocPost } from './[username]'
 import { NoSEO } from 'web/components/NoSEO'
+import { useDateDocs } from 'web/hooks/use-post'
 
 export async function getStaticProps() {
   const dateDocs = await getDateDocs()
@@ -34,9 +35,10 @@ export default function DatePage(props: {
   dateDocs: DateDoc[]
   docCreators: User[]
 }) {
-  const { dateDocs, docCreators } = props
+  const { docCreators } = props
   const user = useUser()
 
+  const dateDocs = useDateDocs() ?? props.dateDocs
   const hasDoc = dateDocs.some((d) => d.creatorId === user?.id)
 
   return (
