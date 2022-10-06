@@ -69,36 +69,22 @@ const ONE_YEAR_SECS = 60 * 60 * 24 * 365
 async function upload(buffer: Buffer) {
   const filename = `${nanoid(10)}.png`
   const storageRef = ref(storage, `dream/${filename}`)
-  const uploadTask = uploadBytesResumable(storageRef, buffer, {
+
+  function promisifiedUploadBytes(...args: any[]) {
+    return new Promise((resolve, reject) => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const task = uploadBytesResumable(...args)
+      task.on(
+        'state_changed',
+        null,
+        (e: Error) => reject(e),
+        () => getDownloadURL(task.snapshot.ref).then(resolve)
+      )
+    })
+  }
+  return promisifiedUploadBytes(storageRef, buffer, {
     cacheControl: `public, max-age=${ONE_YEAR_SECS}`,
     contentType: 'image/png',
   })
-
-  let resolvePromise: (url: string) => void
-  let rejectPromise: (reason?: any) => void
-
-  const promise = new Promise<string>((resolve, reject) => {
-    resolvePromise = resolve
-    rejectPromise = reject
-  })
-
-  const unsubscribe = uploadTask.on(
-    'state_changed',
-    (_snapshot) => {},
-    (error) => {
-      // A full list of error codes is available at
-      // https://firebase.google.com/docs/storage/web/handle-errors
-      rejectPromise(error)
-      unsubscribe()
-    },
-    () => {
-      getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-        resolvePromise(downloadURL)
-      })
-
-      unsubscribe()
-    }
-  )
-
-  return await promise
 }
