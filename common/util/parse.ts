@@ -1,4 +1,5 @@
 import { generateText, JSONContent } from '@tiptap/core'
+import { generateJSON } from '@tiptap/html'
 // Tiptap starter extensions
 import { Blockquote } from '@tiptap/extension-blockquote'
 import { Bold } from '@tiptap/extension-bold'
@@ -93,4 +94,10 @@ export function richTextToString(text?: JSONContent) {
 const dfs = (data: JSONContent, f: (current: JSONContent) => any) => {
   data.content?.forEach((d) => dfs(d, f))
   f(data)
+}
+
+export function htmlToRichText(html: string) {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  return generateJSON(html, exhibitExts)
 }

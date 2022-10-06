@@ -66,6 +66,7 @@ import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
 import { addliquidity } from './add-liquidity'
+import { createcomment } from './create-comment'
 import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
 import { withdrawliquidity } from './withdraw-liquidity'
 import { creategroup } from './create-group'
@@ -94,6 +95,7 @@ const claimManalinkFunction = toCloudFunction(claimmanalink)
 const createMarketFunction = toCloudFunction(createmarket)
 const addLiquidityFunction = toCloudFunction(addliquidity)
 const addCommentBounty = toCloudFunction(addcommentbounty)
+const createCommentFunction = toCloudFunction(createcomment)
 const awardCommentBounty = toCloudFunction(awardcommentbounty)
 const withdrawLiquidityFunction = toCloudFunction(withdrawliquidity)
 const createGroupFunction = toCloudFunction(creategroup)
@@ -131,6 +133,7 @@ export {
   acceptChallenge as acceptchallenge,
   createPostFunction as createpost,
   saveTwitchCredentials as savetwitchcredentials,
+  createCommentFunction as createcomment,
   addCommentBounty as addcommentbounty,
   awardCommentBounty as awardcommentbounty,
 }
