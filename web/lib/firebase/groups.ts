@@ -6,6 +6,7 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
   query,
   setDoc,
   updateDoc,
@@ -42,6 +43,7 @@ export function groupPath(
     | 'about'
     | typeof GROUP_CHAT_SLUG
     | 'leaderboards'
+    | 'posts'
 ) {
   return `/group/${groupSlug}${subpath ? `/${subpath}` : ''}`
 }
@@ -189,6 +191,7 @@ export async function leaveGroup(group: Group, userId: string): Promise<void> {
   return await deleteDoc(memberDoc)
 }
 
+// TODO: This doesn't check if the user has permission to do this
 export async function addContractToGroup(
   group: Group,
   contract: Contract,
@@ -209,15 +212,9 @@ export async function addContractToGroup(
     groupSlugs: uniq([...(contract.groupSlugs ?? []), group.slug]),
     groupLinks: newGroupLinks,
   })
-
-  // create new contract document in groupContracts collection
-  const contractDoc = doc(groupContracts(group.id), contract.id)
-  await setDoc(contractDoc, {
-    contractId: contract.id,
-    createdTime: Date.now(),
-  })
 }
 
+// TODO: This doesn't check if the user has permission to do this
 export async function removeContractFromGroup(
   group: Group,
   contract: Contract
@@ -232,10 +229,6 @@ export async function removeContractFromGroup(
       groupLinks: newGroupLinks ?? [],
     })
   }
-
-  // delete the contract document in groupContracts collection
-  const contractDoc = doc(groupContracts(group.id), contract.id)
-  await deleteDoc(contractDoc)
 }
 
 export function getGroupLinkToDisplay(contract: Contract) {
@@ -256,3 +249,9 @@ export async function listMemberIds(group: Group) {
   const members = await getValues<GroupMemberDoc>(groupMembers(group.id))
   return members.map((m) => m.userId)
 }
+
+export const topFollowedGroupsQuery = query(
+  groups,
+  where('anyoneCanJoin', '==', true),
+  orderBy('totalMembers', 'desc')
+)

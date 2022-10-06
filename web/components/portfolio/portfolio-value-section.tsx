@@ -1,69 +1,109 @@
+import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
-import { memo, useRef, useState } from 'react'
+import { memo, useState } from 'react'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { Period } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
-import { PortfolioValueGraph } from './portfolio-value-graph'
+import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
+import { SizedContainer } from 'web/components/sized-container'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
     const { userId } = props
 
-    const [portfolioPeriod, setPortfolioPeriod] = useState<Period>('weekly')
-    const portfolioHistory = usePortfolioHistory(userId, portfolioPeriod)
+    const portfolioHistory = usePortfolioHistory(userId, 'allTime')
+    const [graphMode, setGraphMode] = useState<GraphMode>('profit')
+    const [graphDisplayNumber, setGraphDisplayNumber] = useState<
+      number | string | null
+    >(null)
+    const handleGraphDisplayChange = (p: { y: number } | undefined) => {
+      setGraphDisplayNumber(p != null ? formatMoney(p.y) : null)
+    }
 
-    // Remember the last defined portfolio history.
-    const portfolioRef = useRef(portfolioHistory)
-    if (portfolioHistory) portfolioRef.current = portfolioHistory
-    const currPortfolioHistory = portfolioRef.current
-
-    const lastPortfolioMetrics = last(currPortfolioHistory)
-    if (!currPortfolioHistory || !lastPortfolioMetrics) {
+    const lastPortfolioMetrics = last(portfolioHistory)
+    if (!portfolioHistory || !lastPortfolioMetrics) {
       return <></>
     }
 
     const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
     const totalProfit = totalValue - totalDeposits
-
     return (
       <>
-        <Row className="gap-8">
-          <Col className="flex-1 justify-center">
-            <div className="text-sm text-gray-500">Profit</div>
-            <div className="text-lg">{formatMoney(totalProfit)}</div>
-          </Col>
-          <select
-            className="select select-bordered self-start"
-            value={portfolioPeriod}
-            onChange={(e) => {
-              setPortfolioPeriod(e.target.value as Period)
-            }}
-          >
-            <option value="allTime">All time</option>
-            <option value="monthly">Last Month</option>
-            <option value="weekly">Last 7d</option>
-            <option value="daily">Last 24h</option>
-          </select>
+        <Row className="mb-2 justify-between">
+          <Row className="gap-2">
+            <Col
+              className={clsx(
+                'w-24 cursor-pointer sm:w-28 ',
+                graphMode != 'profit'
+                  ? 'cursor-pointer opacity-40 hover:opacity-80'
+                  : ''
+              )}
+              onClick={() => {
+                setGraphMode('profit')
+                setGraphDisplayNumber(null)
+              }}
+            >
+              <div className="text-greyscale-6 text-xs sm:text-sm">Profit</div>
+              <div
+                className={clsx(
+                  graphMode === 'profit'
+                    ? graphDisplayNumber
+                      ? graphDisplayNumber.toString().includes('-')
+                        ? 'text-red-600'
+                        : 'text-teal-500'
+                      : totalProfit > 0
+                      ? 'text-teal-500'
+                      : 'text-red-600'
+                    : totalProfit > 0
+                    ? 'text-teal-500'
+                    : 'text-red-600',
+                  'text-lg sm:text-xl'
+                )}
+              >
+                {graphMode === 'profit'
+                  ? graphDisplayNumber
+                    ? graphDisplayNumber
+                    : formatMoney(totalProfit)
+                  : formatMoney(totalProfit)}
+              </div>
+            </Col>
+
+            <Col
+              className={clsx(
+                'w-24 cursor-pointer sm:w-28',
+                graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+              )}
+              onClick={() => {
+                setGraphMode('value')
+                setGraphDisplayNumber(null)
+              }}
+            >
+              <div className="text-greyscale-6 text-xs sm:text-sm">
+                Portfolio value
+              </div>
+              <div className={clsx('text-lg text-indigo-600 sm:text-xl')}>
+                {graphMode === 'value'
+                  ? graphDisplayNumber
+                    ? graphDisplayNumber
+                    : formatMoney(totalValue)
+                  : formatMoney(totalValue)}
+              </div>
+            </Col>
+          </Row>
         </Row>
-        <PortfolioValueGraph
-          portfolioHistory={currPortfolioHistory}
-          includeTime={portfolioPeriod == 'daily'}
-          mode="profit"
-        />
-        <Spacer h={8} />
-        <Col className="flex-1 justify-center">
-          <div className="text-sm text-gray-500">Portfolio value</div>
-          <div className="text-lg">{formatMoney(totalValue)}</div>
-        </Col>
-        <PortfolioValueGraph
-          portfolioHistory={currPortfolioHistory}
-          includeTime={portfolioPeriod == 'daily'}
-          mode="value"
-        />
+        <SizedContainer fullHeight={200} mobileHeight={100}>
+          {(width, height) => (
+            <PortfolioGraph
+              mode={graphMode}
+              history={portfolioHistory}
+              width={width}
+              height={height}
+              onMouseOver={handleGraphDisplayChange}
+            />
+          )}
+        </SizedContainer>
       </>
     )
   }

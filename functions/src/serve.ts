@@ -28,6 +28,8 @@ import { stripewebhook, createcheckoutsession } from './stripe'
 import { getcurrentuser } from './get-current-user'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
+import { testscheduledfunction } from './test-scheduled-function'
+import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
 
 type Middleware = (req: Request, res: Response, next: NextFunction) => void
 const app = express()
@@ -60,6 +62,8 @@ addJsonEndpointRoute('/sellshares', sellshares)
 addJsonEndpointRoute('/claimmanalink', claimmanalink)
 addJsonEndpointRoute('/createmarket', createmarket)
 addJsonEndpointRoute('/addliquidity', addliquidity)
+addJsonEndpointRoute('/addCommentBounty', addcommentbounty)
+addJsonEndpointRoute('/awardCommentBounty', awardcommentbounty)
 addJsonEndpointRoute('/withdrawliquidity', withdrawliquidity)
 addJsonEndpointRoute('/creategroup', creategroup)
 addJsonEndpointRoute('/resolvemarket', resolvemarket)
@@ -69,6 +73,7 @@ addJsonEndpointRoute('/getcurrentuser', getcurrentuser)
 addJsonEndpointRoute('/savetwitchcredentials', savetwitchcredentials)
 addEndpointRoute('/stripewebhook', stripewebhook, express.raw())
 addEndpointRoute('/createpost', createpost)
+addEndpointRoute('/testscheduledfunction', testscheduledfunction)
 
 app.listen(PORT)
 console.log(`Serving functions on port ${PORT}.`)

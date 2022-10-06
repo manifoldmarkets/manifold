@@ -106,7 +106,7 @@ export const OUTCOME_TO_COLOR = {
 }
 
 export function YesLabel() {
-  return <span className="text-primary">YES</span>
+  return <span className="text-teal-500">YES</span>
 }
 
 export function HigherLabel() {

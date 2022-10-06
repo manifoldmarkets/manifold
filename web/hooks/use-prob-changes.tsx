@@ -1,22 +1,47 @@
-import { useFirestoreQueryData } from '@react-query-firebase/firestore'
+import { CPMMBinaryContract } from 'common/contract'
+import { sortBy, uniqBy } from 'lodash'
+import { useQuery } from 'react-query'
 import {
-  getProbChangesNegative,
-  getProbChangesPositive,
-} from 'web/lib/firebase/contracts'
+  probChangeAscendingIndex,
+  probChangeDescendingIndex,
+} from 'web/lib/service/algolia'
 
-export const useProbChanges = (userId: string) => {
-  const { data: positiveChanges } = useFirestoreQueryData(
-    ['prob-changes-day-positive', userId],
-    getProbChangesPositive(userId)
-  )
-  const { data: negativeChanges } = useFirestoreQueryData(
-    ['prob-changes-day-negative', userId],
-    getProbChangesNegative(userId)
-  )
+export const useProbChanges = (
+  filters: { bettorId?: string; groupSlugs?: string[] } = {}
+) => {
+  const { bettorId, groupSlugs } = filters
 
-  if (!positiveChanges || !negativeChanges) {
-    return undefined
+  const bettorFilter = bettorId ? `uniqueBettorIds:${bettorId}` : ''
+  const groupFilters = groupSlugs
+    ? groupSlugs.map((slug) => `groupLinks.slug:${slug}`)
+    : []
+
+  const facetFilters = [
+    'isResolved:false',
+    'outcomeType:BINARY',
+    bettorFilter,
+    groupFilters,
+  ]
+  const searchParams = {
+    facetFilters,
+    hitsPerPage: 50,
   }
 
-  return { positiveChanges, negativeChanges }
+  const { data: positiveChanges } = useQuery(
+    ['prob-change-day', groupSlugs, bettorId],
+    () => probChangeDescendingIndex.search<CPMMBinaryContract>('', searchParams)
+  )
+  const { data: negativeChanges } = useQuery(
+    ['prob-change-day-ascending', groupSlugs, bettorId],
+    () => probChangeAscendingIndex.search<CPMMBinaryContract>('', searchParams)
+  )
+
+  if (!positiveChanges || !negativeChanges) return undefined
+
+  const hits = uniqBy(
+    [...positiveChanges.hits, ...negativeChanges.hits],
+    (c) => c.id
+  ).filter((c) => c.probChanges)
+
+  return sortBy(hits, (c) => Math.abs(c.probChanges.day)).reverse()
 }

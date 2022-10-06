@@ -18,6 +18,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   userName: string
   userUsername: string
   userAvatarUrl?: string
+  bountiesAwarded?: number
 } & T
 
 export type OnContract = {
@@ -33,6 +34,11 @@ export type OnContract = {
   // denormalized from bet
   betAmount?: number
   betOutcome?: string
+
+  // denormalized based on betting history
+  commenterPositionProb?: number // binary only
+  commenterPositionShares?: number
+  commenterPositionOutcome?: string
 }
 
 export type OnGroup = {

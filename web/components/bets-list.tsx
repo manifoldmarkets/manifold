@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { keyBy, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
-import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -22,7 +21,7 @@ import {
 import { Row } from './layout/row'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from './confirmation-button'
-import { OutcomeLabel, YesLabel, NoLabel } from './outcome-label'
+import { OutcomeLabel } from './outcome-label'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'
 import {
@@ -38,14 +37,19 @@ import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { useUserBets } from 'web/hooks/use-user-bets'
-import { SellSharesModal } from './sell-modal'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
-import { floatingEqual } from 'common/util/math'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
 import { UserLink } from 'web/components/user-link'
 import { useUserBetContracts } from 'web/hooks/use-contracts'
+import { BetsSummary } from './bet-summary'
+import { ProfitBadge } from './profit-badge'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -76,8 +80,14 @@ export function BetsList(props: { user: User }) {
     return contractList ? keyBy(contractList, 'id') : undefined
   }, [contractList])
 
-  const [sort, setSort] = useState<BetSort>('newest')
-  const [filter, setFilter] = useState<BetFilter>('open')
+  const [sort, setSort] = usePersistentState<BetSort>('newest', {
+    key: 'bets-list-sort',
+    store: storageStore(safeLocalStorage()),
+  })
+  const [filter, setFilter] = usePersistentState<BetFilter>('all', {
+    key: 'bets-list-filter',
+    store: storageStore(safeLocalStorage()),
+  })
   const [page, setPage] = useState(0)
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
@@ -150,39 +160,35 @@ export function BetsList(props: { user: User }) {
     unsettled,
     (c) => contractsMetrics[c.id].payout
   )
-  const currentNetInvestment = sumBy(
-    unsettled,
-    (c) => contractsMetrics[c.id].netPayout
-  )
+  const currentLoan = sumBy(unsettled, (c) => contractsMetrics[c.id].loan)
 
-  const totalPnl = user.profitCached.allTime
-  const totalProfitPercent = (totalPnl / user.totalDeposits) * 100
   const investedProfitPercent =
     ((currentBetsValue - currentInvested) / (currentInvested + 0.1)) * 100
 
   return (
     <Col>
-      <Col className="mx-4 gap-4 sm:flex-row sm:justify-between md:mx-0">
-        <Row className="gap-8">
+      <Col className="justify-between gap-4 sm:flex-row">
+        <Row className="gap-4">
           <Col>
-            <div className="text-sm text-gray-500">Investment value</div>
+            <div className="text-greyscale-6 text-xs sm:text-sm">
+              Investment value
+            </div>
             <div className="text-lg">
-              {formatMoney(currentNetInvestment)}{' '}
+              {formatMoney(currentBetsValue)}{' '}
               <ProfitBadge profitPercent={investedProfitPercent} />
             </div>
           </Col>
           <Col>
-            <div className="text-sm text-gray-500">Total profit</div>
-            <div className="text-lg">
-              {formatMoney(totalPnl)}{' '}
-              <ProfitBadge profitPercent={totalProfitPercent} />
+            <div className="text-greyscale-6 text-xs sm:text-sm">
+              Total loans
             </div>
+            <div className="text-lg">{formatMoney(currentLoan)}</div>
           </Col>
         </Row>
 
-        <Row className="gap-8">
+        <Row className="gap-2">
           <select
-            className="select select-bordered self-start"
+            className="border-greyscale-4 self-start overflow-hidden rounded border px-2 py-2 text-sm"
             value={filter}
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
@@ -195,7 +201,7 @@ export function BetsList(props: { user: User }) {
           </select>
 
           <select
-            className="select select-bordered self-start"
+            className="border-greyscale-4 self-start overflow-hidden rounded px-2 py-2 text-sm"
             value={sort}
             onChange={(e) => setSort(e.target.value as BetSort)}
           >
@@ -346,8 +352,7 @@ function ContractBets(props: {
           <BetsSummary
             className="mt-8 mr-5 flex-1 sm:mr-8"
             contract={contract}
-            bets={bets}
-            isYourBets={isYourBets}
+            userBets={bets}
           />
 
           {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
@@ -370,125 +375,6 @@ function ContractBets(props: {
         </div>
       )}
     </div>
-  )
-}
-
-export function BetsSummary(props: {
-  contract: Contract
-  bets: Bet[]
-  isYourBets: boolean
-  className?: string
-}) {
-  const { contract, isYourBets, className } = props
-  const { resolution, closeTime, outcomeType, mechanism } = contract
-  const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isCpmm = mechanism === 'cpmm-1'
-  const isClosed = closeTime && Date.now() > closeTime
-
-  const bets = props.bets.filter((b) => !b.isAnte)
-  const { hasShares, invested, profitPercent, payout, profit, totalShares } =
-    getContractBetMetrics(contract, bets)
-
-  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const yesWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'YES')
-  )
-  const noWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'NO')
-  )
-
-  const [showSellModal, setShowSellModal] = useState(false)
-  const user = useUser()
-
-  const sharesOutcome = floatingEqual(totalShares.YES ?? 0, 0)
-    ? floatingEqual(totalShares.NO ?? 0, 0)
-      ? undefined
-      : 'NO'
-    : 'YES'
-
-  const canSell =
-    isYourBets &&
-    isCpmm &&
-    (isBinary || isPseudoNumeric) &&
-    !isClosed &&
-    !resolution &&
-    hasShares &&
-    sharesOutcome &&
-    user
-
-  return (
-    <Col className={clsx(className, 'gap-4')}>
-      <Row className="flex-wrap gap-4 sm:flex-nowrap sm:gap-6">
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">
-            Invested
-          </div>
-          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
-        </Col>
-        <Col>
-          <div className="whitespace-nowrap text-sm text-gray-500">Profit</div>
-          <div className="whitespace-nowrap">
-            {formatMoney(profit)} <ProfitBadge profitPercent={profitPercent} />
-          </div>
-        </Col>
-        {canSell && (
-          <>
-            <button
-              className="btn btn-sm self-end"
-              onClick={() => setShowSellModal(true)}
-            >
-              Sell
-            </button>
-            {showSellModal && (
-              <SellSharesModal
-                contract={contract}
-                user={user}
-                userBets={bets}
-                shares={totalShares[sharesOutcome]}
-                sharesOutcome={sharesOutcome}
-                setOpen={setShowSellModal}
-              />
-            )}
-          </>
-        )}
-      </Row>
-      <Row className="flex-wrap-none gap-4">
-        {resolution ? (
-          <Col>
-            <div className="text-sm text-gray-500">Payout</div>
-            <div className="whitespace-nowrap">
-              {formatMoney(payout)}{' '}
-              <ProfitBadge profitPercent={profitPercent} />
-            </div>
-          </Col>
-        ) : isBinary ? (
-          <>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if <YesLabel />
-              </div>
-              <div className="whitespace-nowrap">
-                {formatMoney(yesWinnings)}
-              </div>
-            </Col>
-            <Col>
-              <div className="whitespace-nowrap text-sm text-gray-500">
-                Payout if <NoLabel />
-              </div>
-              <div className="whitespace-nowrap">{formatMoney(noWinnings)}</div>
-            </Col>
-          </>
-        ) : (
-          <Col>
-            <div className="whitespace-nowrap text-sm text-gray-500">
-              Expected value
-            </div>
-            <div className="whitespace-nowrap">{formatMoney(payout)}</div>
-          </Col>
-        )}
-      </Row>
-    </Col>
   )
 }
 
@@ -610,18 +496,24 @@ function BetRow(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
-  const saleAmount = saleBet?.sale?.amount
+  // calculateSaleAmount is very slow right now so that's why we memoized this
+  const payout = useMemo(() => {
+    const saleBetAmount = saleBet?.sale?.amount
+    if (saleBetAmount) {
+      return saleBetAmount
+    } else if (contract.isResolved) {
+      return resolvedPayout(contract, bet)
+    } else {
+      return calculateSaleAmount(contract, bet, unfilledBets)
+    }
+  }, [contract, bet, saleBet, unfilledBets])
 
   const saleDisplay = isAnte ? (
     'ANTE'
-  ) : saleAmount !== undefined ? (
-    <>{formatMoney(saleAmount)} (sold)</>
+  ) : saleBet ? (
+    <>{formatMoney(payout)} (sold)</>
   ) : (
-    formatMoney(
-      isResolved
-        ? resolvedPayout(contract, bet)
-        : calculateSaleAmount(contract, bet, unfilledBets)
-    )
+    formatMoney(payout)
   )
 
   const payoutIfChosenDisplay =
@@ -722,10 +614,10 @@ function SellButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        className: clsx('btn-sm', isSubmitting && 'btn-disabled loading'),
         label: 'Sell',
+        disabled: isSubmitting,
       }}
-      submitBtn={{ className: 'btn-primary', label: 'Sell' }}
+      submitBtn={{ label: 'Sell', color: 'green' }}
       onSubmit={async () => {
         setIsSubmitting(true)
         await sellBet({ contractId: contract.id, betId: bet.id })
@@ -751,29 +643,5 @@ function SellButton(props: {
         {formatPercent(outcomeProb)}
       </div>
     </ConfirmationButton>
-  )
-}
-
-export function ProfitBadge(props: {
-  profitPercent: number
-  className?: string
-}) {
-  const { profitPercent, className } = props
-  if (!profitPercent) return null
-  const colors =
-    profitPercent > 0
-      ? 'bg-green-100 text-green-800'
-      : 'bg-red-100 text-red-800'
-
-  return (
-    <span
-      className={clsx(
-        'ml-1 inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium',
-        colors,
-        className
-      )}
-    >
-      {(profitPercent > 0 ? '+' : '') + profitPercent.toFixed(1) + '%'}
-    </span>
   )
 }

@@ -4,7 +4,7 @@ import clsx from 'clsx'
 
 export type MenuItem = {
   name: string
-  href: string
+  href?: string
   onClick?: () => void
 }
 
@@ -38,11 +38,11 @@ export function MenuButton(props: {
               {({ active }) => (
                 <a
                   href={item.href}
-                  target={item.href.startsWith('http') ? '_blank' : undefined}
+                  target={item.href?.startsWith('http') ? '_blank' : undefined}
                   onClick={item.onClick}
                   className={clsx(
                     active ? 'bg-gray-100' : '',
-                    'line-clamp-3 block py-1.5 px-4 text-sm text-gray-700'
+                    'line-clamp-3 block cursor-pointer py-1.5 px-4 text-sm text-gray-700'
                   )}
                 >
                   {item.name}

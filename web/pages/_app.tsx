@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import Head from 'next/head'
 import Script from 'next/script'
 import { QueryClient, QueryClientProvider } from 'react-query'
-import { AuthProvider } from 'web/components/auth-context'
+import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import Welcome from 'web/components/onboarding/welcome'
 
 function firstLine(msg: string) {
@@ -24,7 +24,10 @@ function printBuildInfo() {
   }
 }
 
-function MyApp({ Component, pageProps }: AppProps) {
+// specially treated props that may be present in the server/static props
+type ManifoldPageProps = { auth?: AuthUser }
+
+function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
 
   return (
@@ -39,7 +42,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         `}
       </Script>
       <Head>
-        <title>Manifold Markets — A market for every question</title>
+        <title>{'Manifold Markets — A market for every question'}</title>
 
         <meta
           property="og:title"
@@ -78,7 +81,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
         <QueryClientProvider client={queryClient}>
-          <Welcome {...pageProps} />
+          <Welcome />
           <Component {...pageProps} />
         </QueryClientProvider>
       </AuthProvider>

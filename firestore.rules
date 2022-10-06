@@ -27,7 +27,7 @@ service cloud.firestore {
       allow read;
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal']);
+                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -78,7 +78,7 @@ service cloud.firestore {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['apiKey', 'unsubscribedFromResolutionEmails', 'unsubscribedFromCommentEmails', 'unsubscribedFromAnswerEmails', 'unsubscribedFromWeeklyTrendingEmails', 'notificationPreferences', 'twitchInfo']);
+                         .hasOnly(['apiKey', 'notificationPreferences', 'twitchInfo']);
     }
 
     match /private-users/{userId}/views/{viewId} {
@@ -102,7 +102,7 @@ service cloud.firestore {
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks']);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['description', 'closeTime', 'question'])
+                                                                 .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById'])
                        && resource.data.creatorId == request.auth.uid;
       allow update: if isAdmin();
           match /comments/{commentId} {
@@ -171,33 +171,32 @@ service cloud.firestore {
       allow read;
     }
 
-	    match /groups/{groupId} {
-          allow read;
-          allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
-                           && request.resource.data.diff(resource.data)
-                           .affectedKeys()
-                           .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId' ]);
-          allow delete: if request.auth.uid == resource.data.creatorId;
+    match /groups/{groupId} {
+      allow read;
+      allow update: if (request.auth.uid == resource.data.creatorId || isAdmin())
+                        && request.resource.data.diff(resource.data)
+                        .affectedKeys()
+                        .hasOnly(['name', 'about', 'anyoneCanJoin', 'aboutPostId', 'pinnedItems' ]);
+      allow delete: if request.auth.uid == resource.data.creatorId;
 
-          match /groupContracts/{contractId} {
-              allow write: if isGroupMember() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId
-            }
+      match /groupContracts/{contractId} {
+        allow write: if isGroupMember() || request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId
+      }
 
-          match /groupMembers/{memberId}{
-             allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin);
-              allow delete: if request.auth.uid == resource.data.userId;
-            }
+      match /groupMembers/{memberId}{
+        allow create: if request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId || (request.auth.uid == request.resource.data.userId && get(/databases/$(database)/documents/groups/$(groupId)).data.anyoneCanJoin);
+        allow delete: if request.auth.uid == resource.data.userId;
+      }
 
-          function isGroupMember() {
-            return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
-          }
+      function isGroupMember() {
+        return exists(/databases/$(database)/documents/groups/$(groupId)/groupMembers/$(request.auth.uid));
+      }
 
-          match /comments/{commentId} {
-          	allow read;
-            allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember();
-          }
-
-        }
+      match /comments/{commentId} {
+        allow read;
+        allow create: if request.auth != null && commentMatchesUser(request.auth.uid, request.resource.data) && isGroupMember();
+      }
+    }
 
       match /posts/{postId} {
         allow read;

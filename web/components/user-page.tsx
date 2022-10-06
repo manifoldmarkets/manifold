@@ -1,15 +1,21 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
+import { NextRouter, useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
-import { PencilIcon } from '@heroicons/react/outline'
+import {
+  ChatIcon,
+  FolderIcon,
+  PencilIcon,
+  ScaleIcon,
+} from '@heroicons/react/outline'
+import toast from 'react-hot-toast'
 
 import { User } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './page'
-import { SiteLink } from './site-link'
+import { linkClass, SiteLink } from './site-link'
 import { Avatar } from './avatar'
 import { Col } from './layout/col'
 import { Linkify } from './linkify'
@@ -24,20 +30,13 @@ import { FollowersButton, FollowingButton } from './following-button'
 import { UserFollowButton } from './follow-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
-import { ReferralsButton } from 'web/components/referrals-button'
 import { formatMoney } from 'common/util/format'
-import { ShareIconButton } from 'web/components/share-icon-button'
-import { ENV_CONFIG } from 'common/envs/constants'
-import {
-  BettingStreakModal,
-  hasCompletedStreakToday,
-} from 'web/components/profile/betting-streak-modal'
-import { REFERRAL_AMOUNT } from 'common/economy'
+
 import { LoansModal } from './profile/loans-modal'
-import { UserLikesButton } from 'web/components/profile/user-likes-button'
-import { PAST_BETS } from 'common/user'
-import { capitalize } from 'lodash'
 import { BadgesModal } from 'web/components/profile/badges-modal'
+import { copyToClipboard } from 'web/lib/util/copy'
+import { track } from 'web/lib/service/analytics'
+import { DOMAIN } from 'common/envs/constants'
 import { calculateTotalUsersBadges } from 'common/badge'
 
 export function UserPage(props: { user: User }) {
@@ -45,21 +44,11 @@ export function UserPage(props: { user: User }) {
   const router = useRouter()
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
-  const bannerUrl = user.bannerUrl ?? defaultBannerUrl(user.id)
   const [showConfetti, setShowConfetti] = useState(false)
-  const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
-  const [showBadgesModal, setShowBadgesModal] = useState(false)
-  const [showLoansModal, setShowLoansModal] = useState(false)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
-    const showBettingStreak = router.query['show'] === 'betting-streak'
-    setShowBettingStreakModal(showBettingStreak)
-    setShowConfetti(claimedMana || showBettingStreak)
-
-    const showLoansModel = router.query['show'] === 'loans'
-    setShowLoansModal(showLoansModel)
-
+    setShowConfetti(claimedMana)
     const query = { ...router.query }
     if (query.claimedMana || query.show) {
       delete query['claimed-mana']
@@ -77,6 +66,7 @@ export function UserPage(props: { user: User }) {
   }, [])
 
   const profit = user.profitCached.allTime
+  const referralUrl = `https://${DOMAIN}?referrer=${user?.username}`
 
   return (
     <Page key={user.id}>
@@ -88,227 +78,182 @@ export function UserPage(props: { user: User }) {
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
-      <BettingStreakModal
-        isOpen={showBettingStreakModal}
-        setOpen={setShowBettingStreakModal}
-        currentUser={currentUser}
-      />
-      <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
-      <BadgesModal
-        isOpen={showBadgesModal}
-        setOpen={setShowBadgesModal}
-        user={user}
-      />
-      {/* Banner image up top, with an circle avatar overlaid */}
-      <div
-        className="h-32 w-full bg-cover bg-center sm:h-40"
-        style={{
-          backgroundImage: `url(${bannerUrl})`,
-        }}
-      ></div>
-      <div className="relative mb-20">
-        <div className="absolute -top-10 left-4">
+
+      <Col className="relative">
+        <Row className="relative px-4 pt-4">
           <Avatar
             username={user.username}
             avatarUrl={user.avatarUrl}
             size={24}
-            className="bg-white ring-4 ring-white"
+            className="bg-white shadow-sm shadow-indigo-300"
           />
-        </div>
-
-        {/* Top right buttons (e.g. edit, follow) */}
-        <div className="absolute right-0 top-0 mt-2 mr-4">
-          {!isCurrentUser && <UserFollowButton userId={user.id} />}
           {isCurrentUser && (
-            <SiteLink className="btn-sm btn" href="/profile">
-              <PencilIcon className="h-5 w-5" />{' '}
-              <div className="ml-2">Edit</div>
-            </SiteLink>
+            <div className="absolute ml-16 mt-16 rounded-full bg-indigo-600 p-2 text-white shadow-sm shadow-indigo-300">
+              <SiteLink href="/profile">
+                <PencilIcon className="h-5" />{' '}
+              </SiteLink>
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* Profile details: name, username, bio, and link to twitter/discord */}
-      <Col className="mx-4 -mt-6">
-        <Row className={'flex-wrap justify-between gap-y-2'}>
-          <Col>
-            <span className="break-anywhere text-2xl font-bold">
-              {user.name}
-            </span>
-            <span className="text-gray-500">@{user.username}</span>
-          </Col>
-          <Col className={'justify-center'}>
-            <Row className={'gap-3'}>
-              <Col className={'items-center text-gray-500'}>
-                <span
-                  className={clsx(
-                    'text-md',
-                    profit >= 0 ? 'text-green-600' : 'text-red-400'
-                  )}
-                >
-                  {formatMoney(profit)}
+          <Col className="w-full gap-4 pl-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+              <Col>
+                <span className="break-anywhere text-lg font-bold sm:text-2xl">
+                  {user.name}
                 </span>
-                <span>profit</span>
-              </Col>
-              <Col
-                className={clsx(
-                  'cursor-pointer items-center text-gray-500',
-                  isCurrentUser && !hasCompletedStreakToday(user)
-                    ? 'grayscale'
-                    : 'grayscale-0'
-                )}
-                onClick={() => setShowBettingStreakModal(true)}
-              >
-                <span>🔥 {user.currentBettingStreak ?? 0}</span>
-                <span>streak</span>
-              </Col>
-              <Col
-                className={
-                  'flex-shrink-0 cursor-pointer items-center text-gray-500'
-                }
-                onClick={() => setShowLoansModal(true)}
-              >
-                <span className="text-green-600">
-                  🏦 {formatMoney(user.nextLoanCached ?? 0)}
+                <span className="sm:text-md text-greyscale-4 text-sm">
+                  @{user.username}
                 </span>
-                <span>next loan</span>
               </Col>
-              <Col
-                className={clsx('cursor-pointer items-center text-gray-500')}
-                onClick={() => setShowBadgesModal(true)}
-              >
-                <span>🏅 {calculateTotalUsersBadges(user)}</span>
-                <span>badges</span>
-              </Col>
-            </Row>
+              {isCurrentUser && (
+                <ProfilePrivateStats
+                  currentUser={currentUser}
+                  profit={profit}
+                  user={user}
+                  router={router}
+                />
+              )}
+              {!isCurrentUser && <UserFollowButton userId={user.id} />}
+            </div>
+            <ProfilePublicStats
+              className="sm:text-md text-greyscale-6 hidden text-sm md:inline"
+              user={user}
+            />
           </Col>
         </Row>
-        <Spacer h={4} />
-        {user.bio && (
-          <>
-            <div>
-              <Linkify text={user.bio}></Linkify>
-            </div>
-            <Spacer h={4} />
-          </>
-        )}
-        {(user.website || user.twitterHandle || user.discordHandle) && (
-          <Row className="mb-5 flex-wrap items-center gap-2 sm:gap-4">
-            {user.website && (
-              <SiteLink
-                href={
-                  'https://' +
-                  user.website.replace('http://', '').replace('https://', '')
-                }
-              >
-                <Row className="items-center gap-1">
-                  <LinkIcon className="h-4 w-4" />
-                  <span className="text-sm text-gray-500">{user.website}</span>
-                </Row>
-              </SiteLink>
-            )}
-
-            {user.twitterHandle && (
-              <SiteLink
-                href={`https://twitter.com/${user.twitterHandle
-                  .replace('https://www.twitter.com/', '')
-                  .replace('https://twitter.com/', '')
-                  .replace('www.twitter.com/', '')
-                  .replace('twitter.com/', '')}`}
-              >
-                <Row className="items-center gap-1">
-                  <img
-                    src="/twitter-logo.svg"
-                    className="h-4 w-4"
-                    alt="Twitter"
-                  />
-                  <span className="text-sm text-gray-500">
-                    {user.twitterHandle}
-                  </span>
-                </Row>
-              </SiteLink>
-            )}
-
-            {user.discordHandle && (
-              <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
-                <Row className="items-center gap-1">
-                  <img
-                    src="/discord-logo.svg"
-                    className="h-4 w-4"
-                    alt="Discord"
-                  />
-                  <span className="text-sm text-gray-500">
-                    {user.discordHandle}
-                  </span>
-                </Row>
-              </SiteLink>
-            )}
-          </Row>
-        )}
-        {currentUser?.id === user.id && REFERRAL_AMOUNT > 0 && (
-          <Row
-            className={
-              'mb-5 w-full items-center justify-center gap-2 rounded-md border-2 border-indigo-100 bg-indigo-50 p-2 text-indigo-600'
-            }
-          >
-            <span>
-              <SiteLink href="/referrals">
-                Earn {formatMoney(REFERRAL_AMOUNT)} when you refer a friend!
-              </SiteLink>{' '}
-              You've gotten{' '}
-              <ReferralsButton user={user} currentUser={currentUser} />
-            </span>
-            <ShareIconButton
-              copyPayload={`https://${ENV_CONFIG.domain}?referrer=${currentUser.username}`}
-              toastClassName={'sm:-left-40 -left-40 min-w-[250%]'}
-              buttonClassName={'h-10 w-10'}
-              iconClassName={'h-8 w-8 text-indigo-700'}
-            />
-          </Row>
-        )}
-        <QueryUncontrolledTabs
-          currentPageForAnalytics={'profile'}
-          labelClassName={'pb-2 pt-1 '}
-          tabs={[
-            {
-              title: 'Markets',
-              content: (
-                <CreatorContractsList user={currentUser} creator={user} />
-              ),
-            },
-            {
-              title: 'Comments',
-              content: (
-                <Col>
-                  <UserCommentsList user={user} />
-                </Col>
-              ),
-            },
-            {
-              title: capitalize(PAST_BETS),
-              content: (
-                <>
-                  <BetsList user={user} />
-                </>
-              ),
-            },
-            {
-              title: 'Stats',
-              content: (
-                <Col className="mb-8">
-                  <Row className={'mb-8 flex-wrap items-center gap-6'}>
-                    <FollowingButton user={user} />
-                    <FollowersButton user={user} />
-                    <ReferralsButton user={user} />
-                    <GroupsButton user={user} />
-                    <UserLikesButton user={user} />
+        <Col className="mx-4 mt-2">
+          <Spacer h={1} />
+          <ProfilePublicStats
+            className="text-greyscale-6 text-sm md:hidden"
+            user={user}
+          />
+          <Spacer h={1} />
+          {user.bio && (
+            <>
+              <div className="sm:text-md mt-2 text-sm sm:mt-0">
+                <Linkify text={user.bio}></Linkify>
+              </div>
+              <Spacer h={2} />
+            </>
+          )}
+          {(user.website || user.twitterHandle || user.discordHandle) && (
+            <Row className="mb-2 flex-wrap items-center gap-2 sm:gap-4">
+              {user.website && (
+                <SiteLink
+                  href={
+                    'https://' +
+                    user.website.replace('http://', '').replace('https://', '')
+                  }
+                >
+                  <Row className="items-center gap-1">
+                    <LinkIcon className="h-4 w-4" />
+                    <span className="text-greyscale-4 text-sm">
+                      {user.website}
+                    </span>
                   </Row>
-                  <PortfolioValueSection userId={user.id} />
-                </Col>
-              ),
-            },
-          ]}
-        />
+                </SiteLink>
+              )}
+
+              {user.twitterHandle && (
+                <SiteLink
+                  href={`https://twitter.com/${user.twitterHandle
+                    .replace('https://www.twitter.com/', '')
+                    .replace('https://twitter.com/', '')
+                    .replace('www.twitter.com/', '')
+                    .replace('twitter.com/', '')}`}
+                >
+                  <Row className="items-center gap-1">
+                    <img
+                      src="/twitter-logo.svg"
+                      className="h-4 w-4"
+                      alt="Twitter"
+                    />
+                    <span className="text-greyscale-4 text-sm">
+                      {user.twitterHandle}
+                    </span>
+                  </Row>
+                </SiteLink>
+              )}
+
+              {user.discordHandle && (
+                <SiteLink href="https://discord.com/invite/eHQBNBqXuh">
+                  <Row className="items-center gap-1">
+                    <img
+                      src="/discord-logo.svg"
+                      className="h-4 w-4"
+                      alt="Discord"
+                    />
+                    <span className="text-greyscale-4 text-sm">
+                      {user.discordHandle}
+                    </span>
+                  </Row>
+                </SiteLink>
+              )}
+
+              {isCurrentUser && (
+                <div
+                  className={clsx(
+                    linkClass,
+                    'text-greyscale-4 cursor-pointer text-sm'
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    copyToClipboard(referralUrl)
+                    toast.success('Referral link copied!', {
+                      icon: <LinkIcon className="h-6 w-6" aria-hidden="true" />,
+                    })
+                    track('copy referral link')
+                  }}
+                >
+                  <Row className="items-center gap-1">
+                    <LinkIcon className="h-4 w-4" />
+                    Earn M$250 per referral
+                  </Row>
+                </div>
+              )}
+            </Row>
+          )}
+          <QueryUncontrolledTabs
+            currentPageForAnalytics={'profile'}
+            labelClassName={'pb-2 pt-1 sm:pt-4 '}
+            tabs={[
+              {
+                title: 'Markets',
+                stackedTabIcon: <ScaleIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <CreatorContractsList user={currentUser} creator={user} />
+                  </>
+                ),
+              },
+              {
+                title: 'Portfolio',
+                stackedTabIcon: <FolderIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <PortfolioValueSection userId={user.id} />
+                    <Spacer h={4} />
+                    <BetsList user={user} />
+                  </>
+                ),
+              },
+              {
+                title: 'Comments',
+                stackedTabIcon: <ChatIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <Col>
+                      <UserCommentsList user={user} />
+                    </Col>
+                  </>
+                ),
+              },
+            ]}
+          />
+        </Col>
       </Col>
     </Page>
   )
@@ -325,4 +270,78 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
+}
+
+export function ProfilePrivateStats(props: {
+  currentUser: User | null | undefined
+  profit: number
+  user: User
+  router: NextRouter
+}) {
+  const { profit, user, router } = props
+  const [showLoansModal, setShowLoansModal] = useState(false)
+  const [showBadgesModal, setShowBadgesModal] = useState(false)
+
+  useEffect(() => {
+    const showBadgesModal = router.query['show'] === 'badges'
+    setShowBadgesModal(showBadgesModal)
+    const showLoansModel = router.query['show'] === 'loans'
+    setShowLoansModal(showLoansModel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return (
+    <>
+      <Row className={'justify-between gap-4 sm:justify-end'}>
+        <Col className={'text-greyscale-4 text-md sm:text-lg'}>
+          <span
+            className={clsx(profit >= 0 ? 'text-green-600' : 'text-red-400')}
+          >
+            {formatMoney(profit)}
+          </span>
+          <span className="mx-auto text-xs sm:text-sm">profit</span>
+        </Col>
+        <Col
+          className={
+            'text-greyscale-4 text-md flex-shrink-0 cursor-pointer sm:text-lg'
+          }
+          onClick={() => setShowBadgesModal(true)}
+        >
+          <span>🏅 {calculateTotalUsersBadges(user)}</span>
+          <span className={'mx-auto text-xs sm:text-sm'}>badges</span>
+        </Col>
+        <Col
+          className={
+            'text-greyscale-4 text-md flex-shrink-0 cursor-pointer sm:text-lg'
+          }
+          onClick={() => setShowLoansModal(true)}
+        >
+          <span className="text-green-600">
+            🏦 {formatMoney(user.nextLoanCached ?? 0)}
+          </span>
+          <span className="mx-auto text-xs sm:text-sm">next loan</span>
+        </Col>
+      </Row>
+      <BadgesModal
+        isOpen={showBadgesModal}
+        setOpen={setShowBadgesModal}
+        user={user}
+      />
+      {showLoansModal && (
+        <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
+      )}
+    </>
+  )
+}
+
+export function ProfilePublicStats(props: { user: User; className?: string }) {
+  const { user, className } = props
+  return (
+    <Row className={'flex-wrap items-center gap-3'}>
+      <FollowingButton user={user} className={className} />
+      <FollowersButton user={user} className={className} />
+      {/* <ReferralsButton user={user} className={className} /> */}
+      <GroupsButton user={user} className={className} />
+      {/* <UserLikesButton user={user} className={className} /> */}
+    </Row>
+  )
 }

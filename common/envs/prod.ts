@@ -2,6 +2,8 @@ export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey?: string
+  twitchBotEndpoint?: string
+  sprigEnvironmentId?: string
 
   // IDs for v2 cloud functions -- find these by deploying a cloud function and
   // examining the URL, https://[name]-[cloudRunId]-[cloudRunRegion].a.run.app
@@ -39,6 +41,7 @@ export type Economy = {
   BETTING_STREAK_BONUS_MAX?: number
   BETTING_STREAK_RESET_HOUR?: number
   FREE_MARKETS_PER_USER_MAX?: number
+  COMMENT_BOUNTY_AMOUNT?: number
 }
 
 type FirebaseConfig = {
@@ -55,6 +58,7 @@ type FirebaseConfig = {
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
+  sprigEnvironmentId: 'sQcrq9TDqkib',
 
   firebaseConfig: {
     apiKey: 'AIzaSyDp3J57vLeAZCzxLD-vcPaGIkAmBoGOSYw',
@@ -66,6 +70,7 @@ export const PROD_CONFIG: EnvConfig = {
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
   },
+  twitchBotEndpoint: 'https://twitch-bot-nggbo3neva-uc.a.run.app',
   cloudRunId: 'nggbo3neva',
   cloudRunRegion: 'uc',
   adminEmails: [
@@ -82,9 +87,9 @@ export const PROD_CONFIG: EnvConfig = {
   visibility: 'PUBLIC',
 
   moneyMoniker: 'M$',
-  bettor: 'predictor',
-  pastBet: 'prediction',
-  presentBet: 'predict',
+  bettor: 'trader',
+  pastBet: 'trade',
+  presentBet: 'trade',
   navbarLogoPath: '',
   faviconPath: '/favicon.ico',
   newQuestionPlaceholders: [

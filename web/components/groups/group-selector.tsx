@@ -32,27 +32,27 @@ export function GroupSelector(props: {
   const openGroups = useOpenGroups()
   const memberGroups = useMemberGroups(creator?.id)
   const memberGroupIds = memberGroups?.map((g) => g.id) ?? []
-  const availableGroups = openGroups
-    .concat(
-      (memberGroups ?? []).filter(
-        (g) => !openGroups.map((og) => og.id).includes(g.id)
-      )
-    )
-    .filter((group) => !ignoreGroupIds?.includes(group.id))
-    .sort((a, b) => b.totalContracts - a.totalContracts)
-    // put the groups the user is a member of first
-    .sort((a, b) => {
-      if (memberGroupIds.includes(a.id)) {
-        return -1
-      }
-      if (memberGroupIds.includes(b.id)) {
-        return 1
-      }
-      return 0
-    })
 
-  const filteredGroups = availableGroups.filter((group) =>
-    searchInAny(query, group.name)
+  const sortGroups = (groups: Group[]) =>
+    groups.sort(
+      (a, b) =>
+        // weight group higher if user is a member
+        (memberGroupIds.includes(b.id) ? 5 : 1) * b.totalContracts -
+        (memberGroupIds.includes(a.id) ? 5 : 1) * a.totalContracts
+    )
+
+  const availableGroups = sortGroups(
+    openGroups
+      .concat(
+        (memberGroups ?? []).filter(
+          (g) => !openGroups.map((og) => og.id).includes(g.id)
+        )
+      )
+      .filter((group) => !ignoreGroupIds?.includes(group.id))
+  )
+
+  const filteredGroups = sortGroups(
+    availableGroups.filter((group) => searchInAny(query, group.name))
   )
 
   if (!showSelector || !creator) {
@@ -131,7 +131,7 @@ export function GroupSelector(props: {
                         )}
                         <span
                           className={clsx(
-                            'ml-3 mt-1 block flex flex-row justify-between',
+                            'ml-3 mt-1 flex flex-row justify-between',
                             selected && 'font-semibold'
                           )}
                         >
@@ -163,10 +163,10 @@ export function GroupSelector(props: {
                   user={creator}
                   onOpenStateChange={setIsCreatingNewGroup}
                   className={
-                    'w-full justify-start rounded-none border-0 bg-white pl-2 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white'
+                    'flex w-full flex-row items-center justify-start rounded-none border-0 bg-white pl-2 font-normal text-gray-900 hover:bg-indigo-500 hover:text-white'
                   }
                   label={'Create a new Group'}
-                  goToGroupOnSubmit={false}
+                  addGroupIdParamOnSubmit
                   icon={
                     <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
                   }

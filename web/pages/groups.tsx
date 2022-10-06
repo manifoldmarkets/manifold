@@ -99,8 +99,35 @@ export default function Groups(props: {
           </div>
 
           <Tabs
+            className="mb-4"
             currentPageForAnalytics={'groups'}
             tabs={[
+              {
+                title: 'All',
+                content: (
+                  <Col>
+                    <input
+                      type="text"
+                      onChange={(e) => debouncedQuery(e.target.value)}
+                      placeholder="Search groups"
+                      value={query}
+                      className="input input-bordered mb-4 w-full"
+                    />
+
+                    <div className="flex flex-wrap justify-center gap-4">
+                      {matchesOrderedByMostContractAndMembers.map((group) => (
+                        <GroupCard
+                          key={group.id}
+                          group={group}
+                          creator={creatorsDict[group.creatorId]}
+                          user={user}
+                          isMember={memberGroupIds.includes(group.id)}
+                        />
+                      ))}
+                    </div>
+                  </Col>
+                ),
+              },
               ...(user
                 ? [
                     {
@@ -135,32 +162,6 @@ export default function Groups(props: {
                     },
                   ]
                 : []),
-              {
-                title: 'All',
-                content: (
-                  <Col>
-                    <input
-                      type="text"
-                      onChange={(e) => debouncedQuery(e.target.value)}
-                      placeholder="Search groups"
-                      value={query}
-                      className="input input-bordered mb-4 w-full"
-                    />
-
-                    <div className="flex flex-wrap justify-center gap-4">
-                      {matchesOrderedByMostContractAndMembers.map((group) => (
-                        <GroupCard
-                          key={group.id}
-                          group={group}
-                          creator={creatorsDict[group.creatorId]}
-                          user={user}
-                          isMember={memberGroupIds.includes(group.id)}
-                        />
-                      ))}
-                    </div>
-                  </Col>
-                ),
-              },
             ]}
           />
         </Col>
@@ -171,26 +172,34 @@ export default function Groups(props: {
 
 export function GroupCard(props: {
   group: Group
-  creator: User | undefined
+  creator: User | null | undefined
   user: User | undefined | null
   isMember: boolean
+  className?: string
 }) {
-  const { group, creator, user, isMember } = props
+  const { group, creator, user, isMember, className } = props
   const { totalContracts } = group
   return (
-    <Col className="relative min-w-[20rem]  max-w-xs gap-1 rounded-xl bg-white p-8 shadow-md hover:bg-gray-100">
+    <Col
+      className={clsx(
+        'relative min-w-[20rem] max-w-xs gap-1 rounded-xl bg-white p-6 shadow-md hover:bg-gray-100',
+        className
+      )}
+    >
       <Link href={groupPath(group.slug)}>
         <a className="absolute left-0 right-0 top-0 bottom-0 z-0" />
       </Link>
-      <div>
-        <Avatar
-          className={'absolute top-2 right-2 z-10'}
-          username={creator?.username}
-          avatarUrl={creator?.avatarUrl}
-          noLink={false}
-          size={12}
-        />
-      </div>
+      {creator !== null && (
+        <div>
+          <Avatar
+            className={'absolute top-2 right-2 z-10'}
+            username={creator?.username}
+            avatarUrl={creator?.avatarUrl}
+            noLink={false}
+            size={12}
+          />
+        </div>
+      )}
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
       </Row>

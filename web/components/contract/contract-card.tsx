@@ -7,6 +7,8 @@ import { Col } from '../layout/col'
 import {
   BinaryContract,
   Contract,
+  CPMMBinaryContract,
+  CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
@@ -32,6 +34,9 @@ import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
+import { SiteLink } from '../site-link'
+import { ProbChange } from './prob-change-table'
+import { Card } from '../card'
 
 export function ContractCard(props: {
   contract: Contract
@@ -43,6 +48,7 @@ export function ContractCard(props: {
   hideGroupLink?: boolean
   trackingPostfix?: string
   noLinkAvatar?: boolean
+  newTab?: boolean
 }) {
   const {
     showTime,
@@ -53,6 +59,7 @@ export function ContractCard(props: {
     hideGroupLink,
     trackingPostfix,
     noLinkAvatar,
+    newTab,
   } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const { question, outcomeType } = contract
@@ -70,12 +77,7 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <Row
-      className={clsx(
-        'group  relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
-        className
-      )}
-    >
+    <Card className={clsx('group relative flex gap-3', className)}>
       <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
@@ -186,10 +188,11 @@ export function ContractCard(props: {
               }
             )}
             className="absolute top-0 left-0 right-0 bottom-0"
+            target={newTab ? '_blank' : '_self'}
           />
         </Link>
       )}
-    </Row>
+    </Card>
   )
 }
 
@@ -208,19 +211,23 @@ export function BinaryResolutionOrChance(props: {
   const probChanged = before !== after
 
   return (
-    <Col className={clsx(large ? 'text-4xl' : 'text-3xl', className)}>
+    <Col
+      className={clsx('items-end', large ? 'text-4xl' : 'text-3xl', className)}
+    >
       {resolution ? (
-        <>
-          <div
-            className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
-          >
-            Resolved
+        <Row className="flex items-start">
+          <div>
+            <div
+              className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
+            >
+              Resolved
+            </div>
+            <BinaryContractOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+            />
           </div>
-          <BinaryContractOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-          />
-        </>
+        </Row>
       ) : (
         <>
           {probAfter && probChanged ? (
@@ -377,5 +384,33 @@ export function PseudoNumericResolutionOrExpectation(props: {
         </>
       )}
     </Col>
+  )
+}
+
+export function ContractCardProbChange(props: {
+  contract: CPMMContract
+  noLinkAvatar?: boolean
+  className?: string
+}) {
+  const { noLinkAvatar, className } = props
+  const contract = useContractWithPreload(props.contract) as CPMMBinaryContract
+
+  return (
+    <Card className={clsx(className, 'mb-4')}>
+      <AvatarDetails
+        contract={contract}
+        className={'px-6 pt-4'}
+        noLink={noLinkAvatar}
+      />
+      <Row className={clsx('items-start justify-between gap-4 ', className)}>
+        <SiteLink
+          className="pl-6 pr-0 pt-2 pb-4 font-semibold text-indigo-700"
+          href={contractPath(contract)}
+        >
+          <span className="line-clamp-3">{contract.question}</span>
+        </SiteLink>
+        <ProbChange className="py-2 pr-4" contract={contract} />
+      </Row>
+    </Card>
   )
 }

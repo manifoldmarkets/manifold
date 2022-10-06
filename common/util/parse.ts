@@ -1,4 +1,3 @@
-import { MAX_TAG_LENGTH } from '../contract'
 import { generateText, JSONContent } from '@tiptap/core'
 // Tiptap starter extensions
 import { Blockquote } from '@tiptap/extension-blockquote'
@@ -24,40 +23,13 @@ import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
 import TiptapTweet from './tiptap-tweet-type'
 import { find } from 'linkifyjs'
-import { uniq } from 'lodash'
+import { cloneDeep, uniq } from 'lodash'
+import { TiptapSpoiler } from './tiptap-spoiler'
 
 /** get first url in text. like "notion.so " -> "http://notion.so"; "notion" -> null */
 export function getUrl(text: string) {
   const results = find(text, 'url')
   return results.length ? results[0].href : null
-}
-
-export function parseTags(text: string) {
-  const regex = /(?:^|\s)(?:[#][a-z0-9_]+)/gi
-  const matches = (text.match(regex) || []).map((match) =>
-    match.trim().substring(1).substring(0, MAX_TAG_LENGTH)
-  )
-  const tagSet = new Set()
-  const uniqueTags: string[] = []
-  // Keep casing of last tag.
-  matches.reverse()
-  for (const tag of matches) {
-    const lowercase = tag.toLowerCase()
-    if (!tagSet.has(lowercase)) {
-      tagSet.add(lowercase)
-      uniqueTags.push(tag)
-    }
-  }
-  uniqueTags.reverse()
-  return uniqueTags
-}
-
-export function parseWordsAsTags(text: string) {
-  const taggedText = text
-    .split(/\s+/)
-    .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
-    .join(' ')
-  return parseTags(taggedText)
 }
 
 // TODO: fuzzy matching
@@ -103,8 +75,31 @@ export const exhibitExts = [
   Mention,
   Iframe,
   TiptapTweet,
+  TiptapSpoiler,
 ]
 
 export function richTextToString(text?: JSONContent) {
-  return !text ? '' : generateText(text, exhibitExts)
+  if (!text) return ''
+  // remove spoiler tags.
+  const newText = cloneDeep(text)
+  dfs(newText, (current) => {
+    if (current.marks?.some((m) => m.type === TiptapSpoiler.name)) {
+      current.text = '[spoiler]'
+    } else if (current.type === 'image') {
+      current.text = '[Image]'
+      // This is a hack, I've no idea how to change a tiptap extenstion's schema
+      current.type = 'text'
+    } else if (current.type === 'iframe') {
+      const src = current.attrs?.['src'] ? current.attrs['src'] : ''
+      current.text = '[Iframe]' + (src ? ` url:${src}` : '')
+      // This is a hack, I've no idea how to change a tiptap extenstion's schema
+      current.type = 'text'
+    }
+  })
+  return generateText(newText, exhibitExts)
+}
+
+const dfs = (data: JSONContent, f: (current: JSONContent) => any) => {
+  data.content?.forEach((d) => dfs(d, f))
+  f(data)
 }

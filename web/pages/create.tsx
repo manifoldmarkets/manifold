@@ -36,6 +36,9 @@ import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-an
 import { MINUTE_MS } from 'common/util/time'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { SiteLink } from 'web/components/site-link'
+import { Button } from 'web/components/button'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import ShortToggle from 'web/components/widgets/short-toggle'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -48,6 +51,7 @@ type NewQuestionParams = {
   description: string
   closeTime: string
   outcomeType: string
+  visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
   min?: string
   max?: string
@@ -134,7 +138,9 @@ export function NewContract(props: {
   const [maxString, setMaxString] = useState(params?.max ?? '')
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
-
+  const [visibility, setVisibility] = useState<visibility>(
+    (params?.visibility as visibility) ?? 'public'
+  )
   // for multiple choice, init to 3 empty answers
   const [answers, setAnswers] = useState(['', '', ''])
 
@@ -166,7 +172,8 @@ export function NewContract(props: {
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
-  const [visibility, setVisibility] = useState<visibility>('public')
+
+  const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -280,25 +287,27 @@ export function NewContract(props: {
       <label className="label">
         <span className="mb-1">Answer type</span>
       </label>
-      <ChoicesToggleGroup
-        currentChoice={outcomeType}
-        setChoice={(choice) => {
-          if (choice === 'FREE_RESPONSE')
-            setMarketInfoText(
-              'Users can submit their own answers to this market.'
-            )
-          else setMarketInfoText('')
-          setOutcomeType(choice as outcomeType)
-        }}
-        choicesMap={{
-          'Yes / No': 'BINARY',
-          // 'Multiple choice': 'MULTIPLE_CHOICE',
-          'Free response': 'FREE_RESPONSE',
-          // Numeric: 'PSEUDO_NUMERIC',
-        }}
-        isSubmitting={isSubmitting}
-        className={'col-span-4'}
-      />
+      <Row>
+        <ChoicesToggleGroup
+          currentChoice={outcomeType}
+          setChoice={(choice) => {
+            if (choice === 'FREE_RESPONSE')
+              setMarketInfoText(
+                'Users can submit their own answers to this market.'
+              )
+            else setMarketInfoText('')
+            setOutcomeType(choice as outcomeType)
+          }}
+          choicesMap={{
+            'Yes / No': 'BINARY',
+            // 'Multiple choice': 'MULTIPLE_CHOICE',
+            'Free response': 'FREE_RESPONSE',
+            // Numeric: 'PSEUDO_NUMERIC',
+          }}
+          isSubmitting={isSubmitting}
+          className={'col-span-4'}
+        />
+      </Row>
       {marketInfoText && (
         <div className="mt-3 ml-1 text-sm text-indigo-700">
           {marketInfoText}
@@ -390,23 +399,7 @@ export function NewContract(props: {
         </>
       )}
 
-      <div className="form-control mb-1 items-start gap-1">
-        <label className="label gap-2">
-          <span className="mb-1">Visibility</span>
-          <InfoTooltip text="Whether the market will be listed on the home page." />
-        </label>
-        <ChoicesToggleGroup
-          currentChoice={visibility}
-          setChoice={(choice) => setVisibility(choice as visibility)}
-          choicesMap={{
-            Public: 'public',
-            Unlisted: 'unlisted',
-          }}
-          isSubmitting={isSubmitting}
-        />
-      </div>
-
-      <Spacer h={6} />
+      <Spacer h={4} />
 
       <Row className={'items-end gap-x-2'}>
         <GroupSelector
@@ -421,6 +414,15 @@ export function NewContract(props: {
           </SiteLink>
         )}
       </Row>
+
+      <Row className="form-control my-2 items-center gap-2 text-sm">
+        <span>Display this market on homepage</span>
+        <ShortToggle
+          on={visibility === 'public'}
+          setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
+        />
+      </Row>
+
       <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
@@ -507,12 +509,17 @@ export function NewContract(props: {
           {ante > balance && !deservesFreeMarket && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
               <span className="mr-2 text-red-500">Insufficient balance</span>
-              <button
-                className="btn btn-xs btn-primary"
-                onClick={() => (window.location.href = '/add-funds')}
+              <Button
+                size="xs"
+                color="green"
+                onClick={() => setFundsModalOpen(true)}
               >
                 Get M$
-              </button>
+              </Button>
+              <AddFundsModal
+                open={fundsModalOpen}
+                setOpen={setFundsModalOpen}
+              />
             </div>
           )}
         </div>

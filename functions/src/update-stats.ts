@@ -1,17 +1,24 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { concat, countBy, sortBy, range, zip, uniq, sum, sumBy } from 'lodash'
+import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+import { range, zip, uniq, sum, sumBy } from 'lodash'
 import { getValues, log, logMemory } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { Comment } from '../../common/comment'
 import { User } from '../../common/user'
+import { Stats } from '../../common/stats'
 import { DAY_MS } from '../../common/util/time'
 import { average } from '../../common/util/math'
 
 const firestore = admin.firestore()
 
-const numberOfDays = 90
+const numberOfDays = 180
 
 const getBetsQuery = (startTime: number, endTime: number) =>
   firestore
@@ -103,7 +110,7 @@ export async function getDailyNewUsers(
 }
 
 export const updateStatsCore = async () => {
-  const today = Date.now()
+  const today = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
   const startDate = today - numberOfDays * DAY_MS
 
   log('Fetching data for stats update...')
@@ -139,73 +146,128 @@ export const updateStatsCore = async () => {
   )
 
   const dailyActiveUsers = dailyUserIds.map((userIds) => userIds.length)
+  const dailyActiveUsersWeeklyAvg = dailyUserIds.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(dailyActiveUsers.slice(start, end))
+  })
 
   const weeklyActiveUsers = dailyUserIds.map((_, i) => {
     const start = Math.max(0, i - 6)
-    const end = i
-    const uniques = new Set<string>()
-    for (let j = start; j <= end; j++)
-      dailyUserIds[j].forEach((userId) => uniques.add(userId))
+    const end = i + 1
+    const uniques = new Set<string>(dailyUserIds.slice(start, end).flat())
     return uniques.size
   })
 
   const monthlyActiveUsers = dailyUserIds.map((_, i) => {
     const start = Math.max(0, i - 29)
-    const end = i
-    const uniques = new Set<string>()
-    for (let j = start; j <= end; j++)
-      dailyUserIds[j].forEach((userId) => uniques.add(userId))
+    const end = i + 1
+    const uniques = new Set<string>(dailyUserIds.slice(start, end).flat())
     return uniques.size
+  })
+
+  const d1 = dailyUserIds.map((userIds, i) => {
+    if (i === 0) return 0
+
+    const uniques = new Set(userIds)
+    const yesterday = dailyUserIds[i - 1]
+
+    const retainedCount = sumBy(yesterday, (userId) =>
+      uniques.has(userId) ? 1 : 0
+    )
+    return retainedCount / uniques.size
+  })
+
+  const d1WeeklyAvg = d1.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(d1.slice(start, end))
+  })
+
+  const dailyNewUserIds = dailyNewUsers.map((users) => users.map((u) => u.id))
+  const nd1 = dailyUserIds.map((userIds, i) => {
+    if (i === 0) return 0
+
+    const uniques = new Set(userIds)
+    const yesterday = dailyNewUserIds[i - 1]
+
+    const retainedCount = sumBy(yesterday, (userId) =>
+      uniques.has(userId) ? 1 : 0
+    )
+    return retainedCount / uniques.size
+  })
+
+  const nd1WeeklyAvg = nd1.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(nd1.slice(start, end))
+  })
+  const nw1 = dailyNewUserIds.map((_userIds, i) => {
+    if (i < 13) return 0
+
+    const twoWeeksAgo = {
+      start: Math.max(0, i - 13),
+      end: Math.max(0, i - 6),
+    }
+    const lastWeek = {
+      start: Math.max(0, i - 6),
+      end: i + 1,
+    }
+    const newTwoWeeksAgo = new Set<string>(
+      dailyNewUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
+    )
+    const activeLastWeek = new Set<string>(
+      dailyUserIds.slice(lastWeek.start, lastWeek.end).flat()
+    )
+    const retainedCount = sumBy(Array.from(newTwoWeeksAgo), (userId) =>
+      activeLastWeek.has(userId) ? 1 : 0
+    )
+    return retainedCount / newTwoWeeksAgo.size
   })
 
   const weekOnWeekRetention = dailyUserIds.map((_userId, i) => {
     const twoWeeksAgo = {
       start: Math.max(0, i - 13),
-      end: Math.max(0, i - 7),
+      end: Math.max(0, i - 6),
     }
     const lastWeek = {
       start: Math.max(0, i - 6),
-      end: i,
+      end: i + 1,
     }
 
-    const activeTwoWeeksAgo = new Set<string>()
-    for (let j = twoWeeksAgo.start; j <= twoWeeksAgo.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeTwoWeeksAgo.add(userId))
-    }
-    const activeLastWeek = new Set<string>()
-    for (let j = lastWeek.start; j <= lastWeek.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeLastWeek.add(userId))
-    }
+    const activeTwoWeeksAgo = new Set<string>(
+      dailyUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
+    )
+    const activeLastWeek = new Set<string>(
+      dailyUserIds.slice(lastWeek.start, lastWeek.end).flat()
+    )
     const retainedCount = sumBy(Array.from(activeTwoWeeksAgo), (userId) =>
       activeLastWeek.has(userId) ? 1 : 0
     )
-    const retainedFrac = retainedCount / activeTwoWeeksAgo.size
-    return Math.round(retainedFrac * 100 * 100) / 100
+    return retainedCount / activeTwoWeeksAgo.size
   })
 
   const monthlyRetention = dailyUserIds.map((_userId, i) => {
     const twoMonthsAgo = {
-      start: Math.max(0, i - 60),
-      end: Math.max(0, i - 30),
+      start: Math.max(0, i - 59),
+      end: Math.max(0, i - 29),
     }
     const lastMonth = {
-      start: Math.max(0, i - 30),
-      end: i,
+      start: Math.max(0, i - 29),
+      end: i + 1,
     }
 
-    const activeTwoMonthsAgo = new Set<string>()
-    for (let j = twoMonthsAgo.start; j <= twoMonthsAgo.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeTwoMonthsAgo.add(userId))
-    }
-    const activeLastMonth = new Set<string>()
-    for (let j = lastMonth.start; j <= lastMonth.end; j++) {
-      dailyUserIds[j].forEach((userId) => activeLastMonth.add(userId))
-    }
+    const activeTwoMonthsAgo = new Set<string>(
+      dailyUserIds.slice(twoMonthsAgo.start, twoMonthsAgo.end).flat()
+    )
+    const activeLastMonth = new Set<string>(
+      dailyUserIds.slice(lastMonth.start, lastMonth.end).flat()
+    )
     const retainedCount = sumBy(Array.from(activeTwoMonthsAgo), (userId) =>
       activeLastMonth.has(userId) ? 1 : 0
     )
-    const retainedFrac = retainedCount / activeTwoMonthsAgo.size
-    return Math.round(retainedFrac * 100 * 100) / 100
+    if (activeTwoMonthsAgo.size === 0) return 0
+    return retainedCount / activeTwoMonthsAgo.size
   })
 
   const firstBetDict: { [userId: string]: number } = {}
@@ -216,52 +278,20 @@ export const updateStatsCore = async () => {
       firstBetDict[bet.userId] = i
     }
   }
-  const weeklyActivationRate = dailyNewUsers.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i
-    let activatedCount = 0
-    let newUsers = 0
-    for (let j = start; j <= end; j++) {
-      const userIds = dailyNewUsers[j].map((user) => user.id)
-      newUsers += userIds.length
-      for (const userId of userIds) {
-        const dayIndex = firstBetDict[userId]
-        if (dayIndex !== undefined && dayIndex <= end) {
-          activatedCount++
-        }
-      }
-    }
-    const frac = activatedCount / (newUsers || 1)
-    return Math.round(frac * 100 * 100) / 100
+  const dailyActivationRate = dailyNewUsers.map((newUsers, i) => {
+    const activedCount = sumBy(newUsers, (user) => {
+      const firstBet = firstBetDict[user.id]
+      return firstBet === i ? 1 : 0
+    })
+    return activedCount / newUsers.length
   })
-  const dailySignups = dailyNewUsers.map((users) => users.length)
+  const dailyActivationRateWeeklyAvg = dailyActivationRate.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(dailyActivationRate.slice(start, end))
+  })
 
-  const dailyTopTenthActions = zip(
-    dailyContracts,
-    dailyBets,
-    dailyComments
-  ).map(([contracts, bets, comments]) => {
-    const userIds = concat(
-      contracts?.map((c) => c.creatorId) ?? [],
-      bets?.map((b) => b.userId) ?? [],
-      comments?.map((c) => c.userId) ?? []
-    )
-    const counts = Object.values(countBy(userIds))
-    const sortedCounts = sortBy(counts, (count) => count).reverse()
-    if (sortedCounts.length === 0) return 0
-    const tenthPercentile = sortedCounts[Math.floor(sortedCounts.length * 0.1)]
-    return tenthPercentile
-  })
-  const weeklyTopTenthActions = dailyTopTenthActions.map((_, i) => {
-    const start = Math.max(0, i - 6)
-    const end = i
-    return average(dailyTopTenthActions.slice(start, end))
-  })
-  const monthlyTopTenthActions = dailyTopTenthActions.map((_, i) => {
-    const start = Math.max(0, i - 29)
-    const end = i
-    return average(dailyTopTenthActions.slice(start, end))
-  })
+  const dailySignups = dailyNewUsers.map((users) => users.length)
 
   // Total mana divided by 100.
   const dailyManaBet = dailyBets.map((bets) => {
@@ -269,37 +299,39 @@ export const updateStatsCore = async () => {
   })
   const weeklyManaBet = dailyManaBet.map((_, i) => {
     const start = Math.max(0, i - 6)
-    const end = i
+    const end = i + 1
     const total = sum(dailyManaBet.slice(start, end))
     if (end - start < 7) return (total * 7) / (end - start)
     return total
   })
   const monthlyManaBet = dailyManaBet.map((_, i) => {
     const start = Math.max(0, i - 29)
-    const end = i
+    const end = i + 1
     const total = sum(dailyManaBet.slice(start, end))
-    const range = end - start + 1
+    const range = end - start
     if (range < 30) return (total * 30) / range
     return total
   })
 
-  const statsData = {
+  const statsData: Stats = {
     startDate: startDate.valueOf(),
     dailyActiveUsers,
+    dailyActiveUsersWeeklyAvg,
     weeklyActiveUsers,
     monthlyActiveUsers,
+    d1,
+    d1WeeklyAvg,
+    nd1,
+    nd1WeeklyAvg,
+    nw1,
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,
     dailySignups,
     weekOnWeekRetention,
-    weeklyActivationRate,
+    dailyActivationRate,
+    dailyActivationRateWeeklyAvg,
     monthlyRetention,
-    topTenthActions: {
-      daily: dailyTopTenthActions,
-      weekly: weeklyTopTenthActions,
-      monthly: monthlyTopTenthActions,
-    },
     manaBet: {
       daily: dailyManaBet,
       weekly: weeklyManaBet,
@@ -311,6 +343,6 @@ export const updateStatsCore = async () => {
 }
 
 export const updateStats = functions
-  .runWith({ memory: '2GB', timeoutSeconds: 540 })
+  .runWith({ memory: '4GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 60 minutes')
   .onRun(updateStatsCore)

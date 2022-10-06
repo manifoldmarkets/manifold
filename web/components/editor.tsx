@@ -29,6 +29,7 @@ import { EmbedModal } from './editor/embed-modal'
 import {
   CheckIcon,
   CodeIcon,
+  EyeOffIcon,
   PhotographIcon,
   PresentationChartLineIcon,
   TrashIcon,
@@ -40,6 +41,7 @@ import BoldIcon from 'web/lib/icons/bold-icon'
 import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
+import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -107,6 +109,9 @@ export function useTextEditor(props: {
       }),
       Iframe,
       TiptapTweet,
+      TiptapSpoiler.configure({
+        spoilerOpenClass: 'rounded-sm bg-greyscale-2',
+      }),
     ],
     content: defaultValue,
   })
@@ -166,6 +171,7 @@ function FloatingMenu(props: { editor: Editor | null }) {
   const isBold = editor.isActive('bold')
   const isItalic = editor.isActive('italic')
   const isLink = editor.isActive('link')
+  const isSpoiler = editor.isActive('spoiler')
 
   const setLink = () => {
     const href = url && getUrl(url)
@@ -193,6 +199,11 @@ function FloatingMenu(props: { editor: Editor | null }) {
           </button>
           <button onClick={() => (isLink ? unsetLink() : setUrl(''))}>
             <LinkIcon className={clsx('h-5', isLink && 'text-indigo-200')} />
+          </button>
+          <button onClick={() => editor.chain().focus().toggleSpoiler().run()}>
+            <EyeOffIcon
+              className={clsx('h-5', isSpoiler && 'text-indigo-200')}
+            />
           </button>
         </>
       ) : (
@@ -300,12 +311,12 @@ const useUploadMutation = (editor: Editor | null) =>
     {
       onSuccess(urls) {
         if (!editor) return
-        let trans = editor.view.state.tr
-        urls.forEach((src: any) => {
-          const node = editor.view.state.schema.nodes.image.create({ src })
-          trans = trans.insert(editor.view.state.selection.to, node)
+        let trans = editor.chain().focus()
+        urls.forEach((src) => {
+          trans = trans.createParagraphNear()
+          trans = trans.setImage({ src })
         })
-        editor.view.dispatch(trans)
+        trans.run()
       },
     }
   )
@@ -329,6 +340,11 @@ export function RichContent(props: {
       }),
       Iframe,
       TiptapTweet,
+      TiptapSpoiler.configure({
+        spoilerOpenClass: 'rounded-sm bg-greyscale-2 cursor-text',
+        spoilerCloseClass:
+          'rounded-sm bg-greyscale-6 text-transparent [&_*]:invisible cursor-pointer select-none',
+      }),
     ],
     content,
     editable: false,

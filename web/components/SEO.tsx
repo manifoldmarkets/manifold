@@ -15,7 +15,7 @@ export function SEO(props: {
 
   return (
     <Head>
-      <title>{title} | Manifold Markets</title>
+      <title>{`${title} | Manifold Markets`}</title>
 
       <meta
         property="og:title"

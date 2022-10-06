@@ -16,8 +16,8 @@ import {
 import { partition, sortBy, sum, uniqBy } from 'lodash'
 
 import { coll, getValues, listenForValue, listenForValues } from './utils'
-import { BinaryContract, Contract, CPMMContract } from 'common/contract'
-import { createRNG, shuffle } from 'common/util/random'
+import { BinaryContract, Contract } from 'common/contract'
+import { chooseRandomSubset } from 'common/util/random'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
 import { Bet } from 'common/bet'
@@ -108,7 +108,6 @@ export const tournamentContractsByGroupSlugQuery = (slug: string) =>
   query(
     contracts,
     where('groupSlugs', 'array-contains', slug),
-    where('isResolved', '==', false),
     orderBy('popularityScore', 'desc')
   )
 
@@ -176,23 +175,6 @@ export function getUserBetContractsQuery(userId: string) {
   ) as Query<Contract>
 }
 
-const activeContractsQuery = query(
-  contracts,
-  where('isResolved', '==', false),
-  where('visibility', '==', 'public'),
-  where('volume7Days', '>', 0)
-)
-
-export function getActiveContracts() {
-  return getValues<Contract>(activeContractsQuery)
-}
-
-export function listenForActiveContracts(
-  setContracts: (contracts: Contract[]) => void
-) {
-  return listenForValues<Contract>(activeContractsQuery, setContracts)
-}
-
 const inactiveContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
@@ -255,13 +237,6 @@ export async function unFollowContract(contractId: string, userId: string) {
   await deleteDoc(followDoc)
 }
 
-function chooseRandomSubset(contracts: Contract[], count: number) {
-  const fiveMinutes = 5 * 60 * 1000
-  const seed = Math.round(Date.now() / fiveMinutes).toString()
-  shuffle(contracts, createRNG(seed))
-  return contracts.slice(0, count)
-}
-
 const hotContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
@@ -282,16 +257,17 @@ export function listenForHotContracts(
   })
 }
 
-const trendingContractsQuery = query(
+export const trendingContractsQuery = query(
   contracts,
   where('isResolved', '==', false),
   where('visibility', '==', 'public'),
-  orderBy('popularityScore', 'desc'),
-  limit(10)
+  orderBy('popularityScore', 'desc')
 )
 
-export async function getTrendingContracts() {
-  return await getValues<Contract>(trendingContractsQuery)
+export async function getTrendingContracts(maxContracts = 10) {
+  return await getValues<Contract>(
+    query(trendingContractsQuery, limit(maxContracts))
+  )
 }
 
 export async function getContractsBySlugs(slugs: string[]) {
@@ -403,21 +379,3 @@ export async function getRecentBetsAndComments(contract: Contract) {
     recentComments,
   }
 }
-
-export const getProbChangesPositive = (userId: string) =>
-  query(
-    contracts,
-    where('uniqueBettorIds', 'array-contains', userId),
-    where('probChanges.day', '>', 0),
-    orderBy('probChanges.day', 'desc'),
-    limit(10)
-  ) as Query<CPMMContract>
-
-export const getProbChangesNegative = (userId: string) =>
-  query(
-    contracts,
-    where('uniqueBettorIds', 'array-contains', userId),
-    where('probChanges.day', '<', 0),
-    orderBy('probChanges.day', 'asc'),
-    limit(10)
-  ) as Query<CPMMContract>

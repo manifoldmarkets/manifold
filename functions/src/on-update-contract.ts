@@ -10,48 +10,28 @@ import {
   MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE,
   ProvenCorrectBadge,
 } from '../../common/badge'
+import { GroupContractDoc } from '../../common/group'
 
 export const onUpdateContract = functions.firestore
   .document('contracts/{contractId}')
   .onUpdate(async (change, context) => {
     const contract = change.after.data() as Contract
+    const previousContract = change.before.data() as Contract
     const { eventId } = context
+    const { closeTime, question } = contract
 
-    const contractUpdater = await getUser(contract.creatorId)
-    if (!contractUpdater) throw new Error('Could not find contract updater')
-
-    const previousValue = change.before.data() as Contract
-
-    // Notifications for market resolution are also handled in resolve-market.ts
-    if (!previousValue.isResolved && contract.isResolved)
+    if (!previousContract.isResolved && contract.isResolved) {
+      // No need to notify users of resolution, that's handled in resolve-market
       return await handleResolvedContract(contract)
-
-    if (
-      previousValue.closeTime !== contract.closeTime ||
-      previousValue.question !== contract.question
+    } else if (previousContract.groupSlugs !== contract.groupSlugs) {
+      await handleContractGroupUpdated(previousContract, contract)
+    } else if (
+      previousContract.closeTime !== closeTime ||
+      previousContract.question !== question
     ) {
-      let sourceText = ''
-      if (
-        previousValue.closeTime !== contract.closeTime &&
-        contract.closeTime
-      ) {
-        sourceText = contract.closeTime.toString()
-      } else if (previousValue.question !== contract.question) {
-        sourceText = contract.question
-      }
-
-      await createCommentOrAnswerOrUpdatedContractNotification(
-        contract.id,
-        'contract',
-        'updated',
-        contractUpdater,
-        eventId,
-        sourceText,
-        contract
-      )
+      await handleUpdatedCloseTime(previousContract, contract, eventId)
     }
   })
-const firestore = admin.firestore()
 
 async function handleResolvedContract(contract: Contract) {
   if (
@@ -109,3 +89,68 @@ async function handleResolvedContract(contract: Contract) {
       })
   }
 }
+
+async function handleUpdatedCloseTime(
+  previousContract: Contract,
+  contract: Contract,
+  eventId: string
+) {
+  const contractUpdater = await getUser(contract.creatorId)
+  if (!contractUpdater) throw new Error('Could not find contract updater')
+  let sourceText = ''
+  if (previousContract.closeTime !== contract.closeTime && contract.closeTime) {
+    sourceText = contract.closeTime.toString()
+  } else if (previousContract.question !== contract.question) {
+    sourceText = contract.question
+  }
+
+  await createCommentOrAnswerOrUpdatedContractNotification(
+    contract.id,
+    'contract',
+    'updated',
+    contractUpdater,
+    eventId,
+    sourceText,
+    contract
+  )
+}
+
+async function handleContractGroupUpdated(
+  previousContract: Contract,
+  contract: Contract
+) {
+  const prevLength = previousContract.groupSlugs?.length ?? 0
+  const newLength = contract.groupSlugs?.length ?? 0
+  if (prevLength < newLength) {
+    // Contract was added to a new group
+    const groupId = contract.groupLinks?.find(
+      (link) =>
+        !previousContract.groupLinks
+          ?.map((l) => l.groupId)
+          .includes(link.groupId)
+    )?.groupId
+    if (!groupId) throw new Error('Could not find new group id')
+
+    await firestore
+      .collection(`groups/${groupId}/groupContracts`)
+      .doc(contract.id)
+      .set({
+        contractId: contract.id,
+        createdTime: Date.now(),
+      } as GroupContractDoc)
+  }
+  if (prevLength > newLength) {
+    // Contract was removed from a group
+    const groupId = previousContract.groupLinks?.find(
+      (link) =>
+        !contract.groupLinks?.map((l) => l.groupId).includes(link.groupId)
+    )?.groupId
+    if (!groupId) throw new Error('Could not find old group id')
+
+    await firestore
+      .collection(`groups/${groupId}/groupContracts`)
+      .doc(contract.id)
+      .delete()
+  }
+}
+const firestore = admin.firestore()

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Group } from 'common/group'
 import { User } from 'common/user'
 import {
+  getGroup,
   getMemberGroups,
   GroupMemberDoc,
   groupMembers,
@@ -11,13 +12,17 @@ import {
   listenForMemberGroupIds,
   listenForOpenGroups,
   listGroups,
+  topFollowedGroupsQuery,
 } from 'web/lib/firebase/groups'
 import { getUser } from 'web/lib/firebase/users'
 import { filterDefined } from 'common/util/array'
 import { Contract } from 'common/contract'
-import { uniq } from 'lodash'
+import { keyBy, uniq, uniqBy } from 'lodash'
 import { listenForValues } from 'web/lib/firebase/utils'
 import { useQuery } from 'react-query'
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
+import { limit, query } from 'firebase/firestore'
+import { useTrendingContracts } from './use-contracts'
 
 export const useGroup = (groupId: string | undefined) => {
   const [group, setGroup] = useState<Group | null | undefined>()
@@ -49,6 +54,30 @@ export const useOpenGroups = () => {
   return groups
 }
 
+export const useTopFollowedGroups = (count: number) => {
+  const result = useFirestoreQueryData(
+    ['top-followed-contracts', count],
+    query(topFollowedGroupsQuery, limit(count))
+  )
+  return result.data
+}
+
+export const useTrendingGroups = () => {
+  const topGroups = useTopFollowedGroups(200)
+  const groupsById = keyBy(topGroups, 'id')
+
+  const trendingContracts = useTrendingContracts(200)
+
+  const groupLinks = uniqBy(
+    (trendingContracts ?? []).map((c) => c.groupLinks ?? []).flat(),
+    (link) => link.groupId
+  )
+
+  return filterDefined(
+    groupLinks.map((link) => groupsById[link.groupId])
+  ).filter((group) => group.totalMembers >= 3)
+}
+
 export const useMemberGroups = (userId: string | null | undefined) => {
   const result = useQuery(['member-groups', userId ?? ''], () =>
     getMemberGroups(userId ?? '')
@@ -56,10 +85,11 @@ export const useMemberGroups = (userId: string | null | undefined) => {
   return result.data
 }
 
-// Note: We cache member group ids in localstorage to speed up the initial load
 export const useMemberGroupIds = (user: User | null | undefined) => {
+  const cachedGroups = useMemberGroups(user?.id)
+
   const [memberGroupIds, setMemberGroupIds] = useState<string[] | undefined>(
-    undefined
+    cachedGroups?.map((g) => g.id)
   )
 
   useEffect(() => {
@@ -71,6 +101,24 @@ export const useMemberGroupIds = (user: User | null | undefined) => {
   }, [user])
 
   return memberGroupIds
+}
+
+export function useMemberGroupsSubscription(user: User | null | undefined) {
+  const cachedGroups = useMemberGroups(user?.id)
+  const [groups, setGroups] = useState(cachedGroups)
+
+  const userId = user?.id
+  useEffect(() => {
+    if (userId) {
+      return listenForMemberGroupIds(userId, (groupIds) => {
+        Promise.all(groupIds.map((id) => getGroup(id))).then((groups) =>
+          setGroups(filterDefined(groups))
+        )
+      })
+    }
+  }, [userId])
+
+  return groups
 }
 
 export function useMembers(groupId: string | undefined) {

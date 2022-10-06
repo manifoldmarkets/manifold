@@ -34,6 +34,8 @@ export type User = {
     allTime: number
   }
 
+  fractionResolvedCorrectly: number
+
   nextLoanCached: number
   followerCountCached: number
 
@@ -72,12 +74,8 @@ export type PrivateUser = {
   username: string // denormalized from User
 
   email?: string
-  unsubscribedFromResolutionEmails?: boolean
-  unsubscribedFromCommentEmails?: boolean
-  unsubscribedFromAnswerEmails?: boolean
-  unsubscribedFromGenericEmails?: boolean
-  unsubscribedFromWeeklyTrendingEmails?: boolean
   weeklyTrendingEmailSent?: boolean
+  weeklyPortfolioUpdateEmailSent?: boolean
   manaBonusEmailSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
@@ -87,6 +85,7 @@ export type PrivateUser = {
     twitchName: string
     controlToken: string
     botEnabled?: boolean
+    needsRelinking?: boolean
   }
 }
 
@@ -102,9 +101,11 @@ export const MANIFOLD_USER_USERNAME = 'ManifoldMarkets'
 export const MANIFOLD_USER_NAME = 'ManifoldMarkets'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'
 
-export const BETTOR = ENV_CONFIG.bettor ?? 'bettor' // aka predictor
-export const BETTORS = ENV_CONFIG.bettor + 's' ?? 'bettors'
-export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'bet' // aka predict
-export const PRESENT_BETS = ENV_CONFIG.presentBet + 's' ?? 'bets'
-export const PAST_BET = ENV_CONFIG.pastBet ?? 'bet' // aka prediction
-export const PAST_BETS = ENV_CONFIG.pastBet + 's' ?? 'bets' // aka predictions
+// TODO: remove. Hardcoding the strings would be better.
+// Different views require different language.
+export const BETTOR = ENV_CONFIG.bettor ?? 'trader'
+export const BETTORS = ENV_CONFIG.bettor + 's' ?? 'traders'
+export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'trade'
+export const PRESENT_BETS = ENV_CONFIG.presentBet + 's' ?? 'trades'
+export const PAST_BET = ENV_CONFIG.pastBet ?? 'trade'
+export const PAST_BETS = ENV_CONFIG.pastBet + 's' ?? 'trades'

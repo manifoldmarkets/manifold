@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ReactNode } from 'react'
-import { BottomNavBar } from './nav/nav-bar'
+import { BottomNavBar } from './nav/bottom-nav-bar'
 import Sidebar from './nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 
@@ -9,8 +9,15 @@ export function Page(props: {
   className?: string
   rightSidebarClassName?: string
   children?: ReactNode
+  logoSubheading?: string
 }) {
-  const { children, rightSidebar, className, rightSidebarClassName } = props
+  const {
+    children,
+    rightSidebar,
+    className,
+    rightSidebarClassName,
+    logoSubheading,
+  } = props
 
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
   return (
@@ -23,7 +30,10 @@ export function Page(props: {
         )}
       >
         <Toaster />
-        <Sidebar className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex" />
+        <Sidebar
+          logoSubheading={logoSubheading}
+          className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex"
+        />
         <main
           className={clsx(
             'lg:col-span-8 lg:pt-6',

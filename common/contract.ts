@@ -57,10 +57,14 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   uniqueBettorIds?: string[]
   uniqueBettorCount?: number
   popularityScore?: number
+  dailyScore?: number
   followerCount?: number
   featuredOnHomeRank?: number
   likedByUserIds?: string[]
   likedByUserCount?: number
+  flaggedByUsernames?: string[]
+  openCommentBounties?: number
+  unlistedById?: string
 } & T
 
 export type BinaryContract = Contract & Binary
@@ -148,7 +152,7 @@ export const OUTCOME_TYPES = [
   'NUMERIC',
 ] as const
 
-export const MAX_QUESTION_LENGTH = 480
+export const MAX_QUESTION_LENGTH = 240
 export const MAX_DESCRIPTION_LENGTH = 16000
 export const MAX_TAG_LENGTH = 60
 

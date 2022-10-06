@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { sum } from 'lodash'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -9,6 +9,7 @@ import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
+import { BETTOR, PAST_BETS } from 'common/user'
 
 export function AnswerResolvePanel(props: {
   isAdmin: boolean
@@ -32,6 +33,18 @@ export function AnswerResolvePanel(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
+  const [warning, setWarning] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (resolveOption === 'CANCEL') {
+      setWarning(
+        `All ${PAST_BETS} will be returned. Unique ${BETTOR} bonuses will be
+            withdrawn from your account.`
+      )
+    } else {
+      setWarning(undefined)
+    }
+  }, [resolveOption])
 
   const onResolve = async () => {
     if (resolveOption === 'CHOOSE' && answers.length !== 1) return
@@ -72,17 +85,6 @@ export function AnswerResolvePanel(props: {
     setIsSubmitting(false)
   }
 
-  const resolutionButtonClass =
-    resolveOption === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : resolveOption === 'CHOOSE' && answers.length
-      ? 'btn-primary'
-      : resolveOption === 'CHOOSE_MULTIPLE' &&
-        answers.length > 1 &&
-        answers.every((answer) => chosenAnswers[answer] > 0)
-      ? 'bg-blue-400 hover:bg-blue-500'
-      : 'btn-disabled'
-
   return (
     <Col className="gap-4 rounded">
       <Row className="justify-between">
@@ -116,16 +118,34 @@ export function AnswerResolvePanel(props: {
               Clear
             </button>
           )}
+
           <ResolveConfirmationButton
+            color={
+              resolveOption === 'CANCEL'
+                ? 'yellow'
+                : resolveOption === 'CHOOSE' && answers.length
+                ? 'green'
+                : resolveOption === 'CHOOSE_MULTIPLE' &&
+                  answers.length > 1 &&
+                  answers.every((answer) => chosenAnswers[answer] > 0)
+                ? 'blue'
+                : 'indigo'
+            }
+            disabled={
+              !resolveOption ||
+              (resolveOption === 'CHOOSE' && !answers.length) ||
+              (resolveOption === 'CHOOSE_MULTIPLE' &&
+                (!(answers.length > 1) ||
+                  !answers.every((answer) => chosenAnswers[answer] > 0)))
+            }
             onResolve={onResolve}
             isSubmitting={isSubmitting}
-            openModalButtonClass={resolutionButtonClass}
-            submitButtonClass={resolutionButtonClass}
           />
         </Row>
       </Col>
 
       {!!error && <div className="text-red-500">{error}</div>}
+      {!!warning && <div className="text-warning">{warning}</div>}
     </Col>
   )
 }

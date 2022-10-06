@@ -9,7 +9,7 @@ import {
   RESOLUTIONS,
 } from '../../common/contract'
 import { Bet } from '../../common/bet'
-import { getUser, getValues, isProd, log, payUser } from './utils'
+import { getContractPath, getUser, getValues, isProd, log, payUser, revalidateStaticProps } from './utils'
 import {
   getLoanPayouts,
   getPayouts,
@@ -170,6 +170,8 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 
   await processPayouts([...payouts, ...loanPayouts])
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
+
+  await revalidateStaticProps(getContractPath(contract))
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
 

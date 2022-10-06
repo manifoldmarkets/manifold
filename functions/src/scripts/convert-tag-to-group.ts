@@ -41,6 +41,8 @@ const createGroup = async (
     anyoneCanJoin: true,
     totalContracts: contracts.length,
     totalMembers: 1,
+    postIds: [],
+    pinnedItems: [],
   }
   await groupRef.create(group)
   // create a GroupMemberDoc for the creator

@@ -1,9 +1,5 @@
-import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import {
-  DailyCountChart,
-  DailyPercentChart,
-} from 'web/components/analytics/charts'
+import { DailyChart } from 'web/components/charts/stats'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Tabs } from 'web/components/layout/tabs'
@@ -27,6 +23,7 @@ export default function Analytics() {
   return (
     <Page>
       <Tabs
+        className="mb-4"
         currentPageForAnalytics={'stats'}
         tabs={[
           {
@@ -47,65 +44,38 @@ export default function Analytics() {
   )
 }
 
-export function CustomAnalytics(props: {
-  startDate: number
-  dailyActiveUsers: number[]
-  weeklyActiveUsers: number[]
-  monthlyActiveUsers: number[]
-  dailyBetCounts: number[]
-  dailyContractCounts: number[]
-  dailyCommentCounts: number[]
-  dailySignups: number[]
-  weekOnWeekRetention: number[]
-  monthlyRetention: number[]
-  weeklyActivationRate: number[]
-  topTenthActions: {
-    daily: number[]
-    weekly: number[]
-    monthly: number[]
-  }
-  manaBet: {
-    daily: number[]
-    weekly: number[]
-    monthly: number[]
-  }
-}) {
+export function CustomAnalytics(props: Stats) {
   const {
+    startDate,
     dailyActiveUsers,
+    dailyActiveUsersWeeklyAvg,
+    weeklyActiveUsers,
+    monthlyActiveUsers,
+    d1,
+    d1WeeklyAvg,
+    nd1,
+    nd1WeeklyAvg,
+    nw1,
     dailyBetCounts,
     dailyContractCounts,
     dailyCommentCounts,
     dailySignups,
-    weeklyActiveUsers,
-    monthlyActiveUsers,
     weekOnWeekRetention,
     monthlyRetention,
-    weeklyActivationRate,
-    topTenthActions,
+    dailyActivationRate,
+    dailyActivationRateWeeklyAvg,
     manaBet,
   } = props
 
-  const startDate = dayjs(props.startDate).add(12, 'hours').valueOf()
-
-  const dailyDividedByWeekly = dailyActiveUsers
-    .map((dailyActive, i) =>
-      Math.round((100 * dailyActive) / weeklyActiveUsers[i])
-    )
-    .slice(7)
-
-  const dailyDividedByMonthly = dailyActiveUsers
-    .map((dailyActive, i) =>
-      Math.round((100 * dailyActive) / monthlyActiveUsers[i])
-    )
-    .slice(7)
-
-  const weeklyDividedByMonthly = weeklyActiveUsers
-    .map((weeklyActive, i) =>
-      Math.round((100 * weeklyActive) / monthlyActiveUsers[i])
-    )
-    .slice(7)
-
-  const oneWeekLaterDate = startDate + 7 * 24 * 60 * 60 * 1000
+  const dailyDividedByWeekly = dailyActiveUsers.map(
+    (dailyActive, i) => dailyActive / weeklyActiveUsers[i]
+  )
+  const dailyDividedByMonthly = dailyActiveUsers.map(
+    (dailyActive, i) => dailyActive / monthlyActiveUsers[i]
+  )
+  const weeklyDividedByMonthly = weeklyActiveUsers.map(
+    (weeklyActive, i) => weeklyActive / monthlyActiveUsers[i]
+  )
 
   return (
     <Col className="px-2 sm:px-0">
@@ -117,35 +87,146 @@ export function CustomAnalytics(props: {
       <Spacer h={4} />
 
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
             title: 'Daily',
             content: (
-              <DailyCountChart
-                dailyCounts={dailyActiveUsers}
+              <DailyChart
+                dailyValues={dailyActiveUsers}
                 startDate={startDate}
-                small
+              />
+            ),
+          },
+          {
+            title: 'Daily (7d avg)',
+            content: (
+              <DailyChart
+                dailyValues={dailyActiveUsersWeeklyAvg.map(Math.round)}
+                startDate={startDate}
               />
             ),
           },
           {
             title: 'Weekly',
             content: (
-              <DailyCountChart
-                dailyCounts={weeklyActiveUsers}
+              <DailyChart
+                dailyValues={weeklyActiveUsers}
                 startDate={startDate}
-                small
               />
             ),
           },
           {
             title: 'Monthly',
             content: (
-              <DailyCountChart
-                dailyCounts={monthlyActiveUsers}
+              <DailyChart
+                dailyValues={monthlyActiveUsers}
                 startDate={startDate}
-                small
+              />
+            ),
+          },
+        ]}
+      />
+      <Spacer h={8} />
+
+      <Title text="Retention" />
+      <p className="text-gray-500">
+        What fraction of active users are still active after the given time
+        period?
+      </p>
+      <Tabs
+        className="mb-4"
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'D1',
+            content: (
+              <DailyChart
+                dailyValues={d1}
+                startDate={startDate}
+                excludeFirstDays={1}
+                pct
+              />
+            ),
+          },
+          {
+            title: 'D1 (7d avg)',
+            content: (
+              <DailyChart
+                dailyValues={d1WeeklyAvg}
+                startDate={startDate}
+                excludeFirstDays={7}
+                pct
+              />
+            ),
+          },
+          {
+            title: 'W1',
+            content: (
+              <DailyChart
+                dailyValues={weekOnWeekRetention}
+                startDate={startDate}
+                excludeFirstDays={14}
+                pct
+              />
+            ),
+          },
+          {
+            title: 'M1',
+            content: (
+              <DailyChart
+                dailyValues={monthlyRetention}
+                startDate={startDate}
+                excludeFirstDays={60}
+                pct
+              />
+            ),
+          },
+        ]}
+      />
+
+      <Spacer h={8} />
+      <Title text="New user retention" />
+      <p className="text-gray-500">
+        What fraction of new users are still active after the given time period?
+      </p>
+      <Spacer h={4} />
+
+      <Tabs
+        className="mb-4"
+        defaultIndex={2}
+        tabs={[
+          {
+            title: 'ND1',
+            content: (
+              <DailyChart
+                dailyValues={nd1}
+                startDate={startDate}
+                excludeFirstDays={1}
+                pct
+              />
+            ),
+          },
+          {
+            title: 'ND1 (7d avg)',
+            content: (
+              <DailyChart
+                dailyValues={nd1WeeklyAvg}
+                startDate={startDate}
+                excludeFirstDays={7}
+                pct
+              />
+            ),
+          },
+          {
+            title: 'NW1',
+            content: (
+              <DailyChart
+                dailyValues={nw1}
+                startDate={startDate}
+                excludeFirstDays={14}
+                pct
               />
             ),
           },
@@ -155,46 +236,37 @@ export function CustomAnalytics(props: {
 
       <Title text="Daily activity" />
       <Tabs
+        className="mb-4"
         defaultIndex={0}
         tabs={[
           {
             title: capitalize(PAST_BETS),
             content: (
-              <DailyCountChart
-                dailyCounts={dailyBetCounts}
-                startDate={startDate}
-                small
-              />
+              <DailyChart dailyValues={dailyBetCounts} startDate={startDate} />
             ),
           },
           {
             title: 'Markets created',
             content: (
-              <DailyCountChart
-                dailyCounts={dailyContractCounts}
+              <DailyChart
+                dailyValues={dailyContractCounts}
                 startDate={startDate}
-                small
               />
             ),
           },
           {
             title: 'Comments',
             content: (
-              <DailyCountChart
-                dailyCounts={dailyCommentCounts}
+              <DailyChart
+                dailyValues={dailyCommentCounts}
                 startDate={startDate}
-                small
               />
             ),
           },
           {
             title: 'Signups',
             content: (
-              <DailyCountChart
-                dailyCounts={dailySignups}
-                startDate={startDate}
-                small
-              />
+              <DailyChart dailyValues={dailySignups} startDate={startDate} />
             ),
           },
         ]}
@@ -202,80 +274,77 @@ export function CustomAnalytics(props: {
 
       <Spacer h={8} />
 
-      <Title text="Retention" />
+      <Title text="Activation rate" />
       <p className="text-gray-500">
-        What fraction of active users are still active after the given time
-        period?
+        Out of all new users, how many placed at least one bet?
       </p>
+      <Spacer h={4} />
+
       <Tabs
-        defaultIndex={0}
+        className="mb-4"
+        defaultIndex={1}
         tabs={[
           {
-            title: 'Weekly',
+            title: 'Daily',
             content: (
-              <DailyPercentChart
-                dailyPercent={weekOnWeekRetention.slice(7)}
-                startDate={oneWeekLaterDate}
-                small
+              <DailyChart
+                dailyValues={dailyActivationRate}
+                startDate={startDate}
+                excludeFirstDays={1}
+                pct
               />
             ),
           },
           {
-            title: 'Monthly',
+            title: 'Daily (7d avg)',
             content: (
-              <DailyPercentChart
-                dailyPercent={monthlyRetention.slice(7)}
-                startDate={oneWeekLaterDate}
-                small
+              <DailyChart
+                dailyValues={dailyActivationRateWeeklyAvg}
+                startDate={startDate}
+                excludeFirstDays={7}
+                pct
               />
             ),
           },
         ]}
-      />
-      <Spacer h={8} />
-
-      <Title text="Weekly activation rate" />
-      <p className="text-gray-500">
-        Out of all new users this week, how many placed at least one bet?
-      </p>
-      <DailyPercentChart
-        dailyPercent={weeklyActivationRate.slice(7)}
-        startDate={oneWeekLaterDate}
-        small
       />
       <Spacer h={8} />
 
       <Title text="Ratio of Active Users" />
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
             title: 'Daily / Weekly',
             content: (
-              <DailyPercentChart
-                dailyPercent={dailyDividedByWeekly}
-                startDate={oneWeekLaterDate}
-                small
+              <DailyChart
+                dailyValues={dailyDividedByWeekly}
+                startDate={startDate}
+                excludeFirstDays={7}
+                pct
               />
             ),
           },
           {
             title: 'Daily / Monthly',
             content: (
-              <DailyPercentChart
-                dailyPercent={dailyDividedByMonthly}
-                startDate={oneWeekLaterDate}
-                small
+              <DailyChart
+                dailyValues={dailyDividedByMonthly}
+                startDate={startDate}
+                excludeFirstDays={30}
+                pct
               />
             ),
           },
           {
             title: 'Weekly / Monthly',
             content: (
-              <DailyPercentChart
-                dailyPercent={weeklyDividedByMonthly}
-                startDate={oneWeekLaterDate}
-                small
+              <DailyChart
+                dailyValues={weeklyDividedByMonthly}
+                startDate={startDate}
+                excludeFirstDays={30}
+                pct
               />
             ),
           },
@@ -283,86 +352,35 @@ export function CustomAnalytics(props: {
       />
       <Spacer h={8} />
 
-      <Title text="Action count of top tenth" />
-      <p className="text-gray-500">
-        Number of actions (bets, comments, markets created) taken by the tenth
-        percentile of top users.
-      </p>
-      <Tabs
-        defaultIndex={1}
-        tabs={[
-          {
-            title: 'Daily',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.daily}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Weekly',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.weekly}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-          {
-            title: 'Monthly',
-            content: (
-              <DailyCountChart
-                dailyCounts={topTenthActions.monthly}
-                startDate={startDate}
-                small
-              />
-            ),
-          },
-        ]}
-      />
-
       <Title text="Total mana bet" />
       <p className="text-gray-500">
         Sum of bet amounts. (Divided by 100 to be more readable.)
       </p>
       <Tabs
+        className="mb-4"
         defaultIndex={1}
         tabs={[
           {
             title: 'Daily',
             content: (
-              <DailyCountChart
-                dailyCounts={manaBet.daily}
-                startDate={startDate}
-                small
-              />
+              <DailyChart dailyValues={manaBet.daily} startDate={startDate} />
             ),
           },
           {
             title: 'Weekly',
             content: (
-              <DailyCountChart
-                dailyCounts={manaBet.weekly}
-                startDate={startDate}
-                small
-              />
+              <DailyChart dailyValues={manaBet.weekly} startDate={startDate} />
             ),
           },
           {
             title: 'Monthly',
             content: (
-              <DailyCountChart
-                dailyCounts={manaBet.monthly}
-                startDate={startDate}
-                small
-              />
+              <DailyChart dailyValues={manaBet.monthly} startDate={startDate} />
             ),
           },
         ]}
       />
+      <Spacer h={8} />
     </Col>
   )
 }

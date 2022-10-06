@@ -25,7 +25,7 @@ import {
   NoLabel,
   YesLabel,
 } from './outcome-label'
-import { getProbability } from 'common/calculate'
+import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
@@ -43,6 +43,10 @@ import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from './warning-confirmation-button'
 import { MarketIntroPanel } from './market-intro-panel'
+import { Modal } from './layout/modal'
+import { Title } from './title'
+import toast from 'react-hot-toast'
+import { CheckIcon } from '@heroicons/react/solid'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -105,11 +109,10 @@ export function BetPanel(props: {
 export function SimpleBetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   className?: string
-  selected?: 'YES' | 'NO'
   hasShares?: boolean
   onBetSuccess?: () => void
 }) {
-  const { contract, className, selected, hasShares, onBetSuccess } = props
+  const { contract, className, hasShares, onBetSuccess } = props
 
   const user = useUser()
   const [isLimitOrder, setIsLimitOrder] = useState(false)
@@ -139,7 +142,6 @@ export function SimpleBetPanel(props: {
           contract={contract}
           user={user}
           unfilledBets={unfilledBets}
-          selected={selected}
           onBuySuccess={onBetSuccess}
         />
         <LimitOrderPanel
@@ -162,38 +164,47 @@ export function SimpleBetPanel(props: {
   )
 }
 
-function BuyPanel(props: {
+export function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
   unfilledBets: Bet[]
   hidden: boolean
-  selected?: 'YES' | 'NO'
   onBuySuccess?: () => void
+  mobileView?: boolean
 }) {
-  const { contract, user, unfilledBets, hidden, selected, onBuySuccess } = props
+  const { contract, user, unfilledBets, hidden, onBuySuccess, mobileView } =
+    props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(selected)
-  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>()
+  const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const [inputRef, focusAmountInput] = useFocus()
 
   function onBetChoice(choice: 'YES' | 'NO') {
     setOutcome(choice)
-    setWasSubmitted(false)
 
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
     }
   }
 
+  function mobileOnBetChoice(choice: 'YES' | 'NO' | undefined) {
+    if (outcome === choice) {
+      setOutcome(undefined)
+    } else {
+      setOutcome(choice)
+    }
+    if (!isIOS() && !isAndroid()) {
+      focusAmountInput()
+    }
+  }
+
   function onBetChange(newAmount: number | undefined) {
-    setWasSubmitted(false)
     setBetAmount(newAmount)
     if (!outcome) {
       setOutcome('YES')
@@ -214,9 +225,13 @@ function BuyPanel(props: {
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
-        setWasSubmitted(true)
         setBetAmount(undefined)
         if (onBuySuccess) onBuySuccess()
+        else {
+          toast('Trade submitted!', {
+            icon: <CheckIcon className={'text-primary h-5 w-5'} />,
+          })
+        }
       })
       .catch((e) => {
         if (e instanceof APIError) {
@@ -249,6 +264,7 @@ function BuyPanel(props: {
     unfilledBets as LimitBet[]
   )
 
+  const [seeLimit, setSeeLimit] = useState(false)
   const resultProb = getCpmmProbability(newPool, newP)
   const probStayedSame =
     formatPercent(resultProb) === formatPercent(initialProb)
@@ -281,92 +297,133 @@ function BuyPanel(props: {
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
-      <div className="my-3 text-left text-sm text-gray-500">
-        {isPseudoNumeric ? 'Direction' : 'Outcome'}
-      </div>
       <YesNoSelector
         className="mb-4"
         btnClassName="flex-1"
         selected={outcome}
-        onSelect={(choice) => onBetChoice(choice)}
+        onSelect={(choice) => {
+          if (mobileView) {
+            mobileOnBetChoice(choice)
+          } else {
+            onBetChoice(choice)
+          }
+        }}
         isPseudoNumeric={isPseudoNumeric}
       />
 
-      <Row className="my-3 justify-between text-left text-sm text-gray-500">
-        Amount
-        <span className={'xl:hidden'}>
-          Balance: {formatMoney(user?.balance ?? 0)}
-        </span>
-      </Row>
-
-      <BuyAmountInput
-        inputClassName="w-full max-w-none"
-        amount={betAmount}
-        onChange={onBetChange}
-        error={error}
-        setError={setError}
-        disabled={isSubmitting}
-        inputRef={inputRef}
-        showSliderOnMobile
-      />
-
-      <Col className="mt-3 w-full gap-3">
-        <Row className="items-center justify-between text-sm">
-          <div className="text-gray-500">
-            {isPseudoNumeric ? 'Estimated value' : 'Probability'}
-          </div>
-          {probStayedSame ? (
-            <div>{format(initialProb)}</div>
-          ) : (
-            <div>
-              {format(initialProb)}
-              <span className="mx-2">→</span>
-              {format(resultProb)}
-            </div>
-          )}
-        </Row>
-
-        <Row className="items-center justify-between gap-2 text-sm">
-          <Row className="flex-nowrap items-center gap-2 whitespace-nowrap text-gray-500">
-            <div>
-              {isPseudoNumeric ? (
-                'Max payout'
-              ) : (
-                <>
-                  Payout if <BinaryOutcomeLabel outcome={outcome ?? 'YES'} />
-                </>
-              )}
-            </div>
-          </Row>
-          <div>
-            <span className="mr-2 whitespace-nowrap">
-              {formatMoney(currentPayout)}
-            </span>
-            (+{currentReturnPercent})
-          </div>
-        </Row>
-      </Col>
-
-      <Spacer h={8} />
-
-      {user && (
-        <WarningConfirmationButton
-          warning={warning}
-          onSubmit={submitBet}
-          isSubmitting={isSubmitting}
-          disabled={!!betDisabled}
-          openModalButtonClass={clsx(
-            'btn mb-2 flex-1',
-            betDisabled
-              ? 'btn-disabled'
+      <Col
+        className={clsx(
+          mobileView
+            ? outcome === 'NO'
+              ? 'bg-red-25'
               : outcome === 'YES'
-              ? 'btn-primary'
-              : 'border-none bg-red-400 hover:bg-red-500'
-          )}
-        />
-      )}
+              ? 'bg-teal-50'
+              : 'hidden'
+            : 'bg-white',
+          mobileView ? 'rounded-lg px-4 py-2' : 'px-0'
+        )}
+      >
+        <Row className="mt-3 w-full gap-3">
+          <Col className="w-1/2 text-sm">
+            <Col className="text-greyscale-4 flex-nowrap whitespace-nowrap text-xs">
+              <div>
+                {isPseudoNumeric ? (
+                  'Max payout'
+                ) : (
+                  <>Payout if {outcome ?? 'YES'}</>
+                )}
+              </div>
+            </Col>
+            <div>
+              <span className="whitespace-nowrap text-xl">
+                {formatMoney(currentPayout)}
+              </span>
+              <span className="text-greyscale-4 text-xs">
+                {' '}
+                +{currentReturnPercent}
+              </span>
+            </div>
+          </Col>
+          <Col className="w-1/2 text-sm">
+            <div className="text-greyscale-4 text-xs">
+              {isPseudoNumeric ? 'Estimated value' : 'New Probability'}
+            </div>
+            {probStayedSame ? (
+              <div className="text-xl">{format(initialProb)}</div>
+            ) : (
+              <div className="text-xl">
+                {format(resultProb)}
+                <span className={clsx('text-greyscale-4 text-xs')}>
+                  {isPseudoNumeric ? (
+                    <></>
+                  ) : (
+                    <>
+                      {' '}
+                      {outcome != 'NO' && '+'}
+                      {format(resultProb - initialProb)}
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+          </Col>
+        </Row>
+        <Row className="text-greyscale-4 mt-4 mb-1 justify-between text-left text-xs">
+          Amount
+        </Row>
 
-      {wasSubmitted && <div className="mt-4">Trade submitted!</div>}
+        <BuyAmountInput
+          inputClassName="w-full max-w-none"
+          amount={betAmount}
+          onChange={onBetChange}
+          error={error}
+          setError={setError}
+          disabled={isSubmitting}
+          inputRef={inputRef}
+          showSliderOnMobile
+        />
+
+        <Spacer h={8} />
+
+        {user && (
+          <WarningConfirmationButton
+            marketType="binary"
+            amount={betAmount}
+            warning={warning}
+            onSubmit={submitBet}
+            isSubmitting={isSubmitting}
+            disabled={!!betDisabled || outcome === undefined}
+            size="xl"
+            color={outcome === 'NO' ? 'red' : 'green'}
+            actionLabel="Wager"
+          />
+        )}
+        <button
+          className="text-greyscale-6 mx-auto mt-3 select-none text-sm underline xl:hidden"
+          onClick={() => setSeeLimit(true)}
+        >
+          Advanced
+        </button>
+        <Modal
+          open={seeLimit}
+          setOpen={setSeeLimit}
+          position="center"
+          className="rounded-lg bg-white px-4 pb-4"
+        >
+          <Title text="Limit Order" />
+          <LimitOrderPanel
+            hidden={!seeLimit}
+            contract={contract}
+            user={user}
+            unfilledBets={unfilledBets}
+          />
+          <LimitBets
+            contract={contract}
+            bets={unfilledBets as LimitBet[]}
+            className="mt-4"
+          />
+        </Modal>
+      </Col>
     </Col>
   )
 }
@@ -389,7 +446,6 @@ function LimitOrderPanel(props: {
   const betChoice = 'YES'
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const rangeError =
     lowLimitProb !== undefined &&
@@ -437,7 +493,6 @@ function LimitOrderPanel(props: {
   const noAmount = shares * (1 - (noLimitProb ?? 0))
 
   function onBetChange(newAmount: number | undefined) {
-    setWasSubmitted(false)
     setBetAmount(newAmount)
   }
 
@@ -482,7 +537,6 @@ function LimitOrderPanel(props: {
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
-        setWasSubmitted(true)
         setBetAmount(undefined)
         setLowLimitProb(undefined)
         setHighLimitProb(undefined)
@@ -718,8 +772,6 @@ function LimitOrderPanel(props: {
             : `Submit order${hasTwoBets ? 's' : ''}`}
         </button>
       )}
-
-      {wasSubmitted && <div className="mt-4">Order submitted!</div>}
     </Col>
   )
 }
@@ -780,12 +832,20 @@ export function SellPanel(props: {
 
   const unfilledBets = useUnfilledBets(contract.id) ?? []
 
-  const betDisabled = isSubmitting || !amount || error
+  const betDisabled = isSubmitting || !amount || error !== undefined
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)
 
   const sellQuantity = isSellingAllShares ? shares : amount
+
+  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+  const soldShares = Math.min(sellQuantity ?? 0, shares)
+  const saleFrac = soldShares / shares
+  const loanPaid = saleFrac * loanAmount
+
+  const { invested } = getContractBetMetrics(contract, userBets)
+  const costBasis = invested * saleFrac
 
   async function submitSell() {
     if (!user || !amount) return
@@ -831,7 +891,22 @@ export function SellPanel(props: {
     sharesOutcome,
     unfilledBets
   )
+  const netProceeds = saleValue - loanPaid
+  const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+  const getValue = getMappedValue(contract)
+  const rawDifference = Math.abs(getValue(resultProb) - getValue(initialProb))
+  const displayedDifference =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? formatLargeNumber(rawDifference)
+      : formatPercent(rawDifference)
+  const probChange = Math.abs(resultProb - initialProb)
+
+  const warning =
+    probChange >= 0.3
+      ? `Are you sure you want to move the market by ${displayedDifference}?`
+      : undefined
 
   const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
   const [yesBets, noBets] = partition(
@@ -866,23 +941,23 @@ export function SellPanel(props: {
     <>
       <AmountInput
         amount={
-          amount
-            ? Math.round(amount) === 0
-              ? 0
-              : Math.floor(amount)
-            : undefined
+          amount ? (Math.round(amount) === 0 ? 0 : Math.floor(amount)) : 0
         }
         onChange={onAmountChange}
         label="Qty"
         error={error}
         disabled={isSubmitting}
-        inputClassName="w-full"
+        inputClassName="w-full ml-1"
       />
 
       <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="items-center justify-between gap-2 text-gray-500">
-          Sale proceeds
+          Sale amount
           <span className="text-neutral">{formatMoney(saleValue)}</span>
+        </Row>
+        <Row className="items-center justify-between gap-2 text-gray-500">
+          Profit
+          <span className="text-neutral">{formatMoney(profit)}</span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-gray-500">
@@ -894,24 +969,33 @@ export function SellPanel(props: {
             {format(resultProb)}
           </div>
         </Row>
+        {loanPaid !== 0 && (
+          <>
+            <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
+              Loan payment
+              <span className="text-neutral">{formatMoney(-loanPaid)}</span>
+            </Row>
+            <Row className="items-center justify-between gap-2 text-gray-500">
+              Net proceeds
+              <span className="text-neutral">{formatMoney(netProceeds)}</span>
+            </Row>
+          </>
+        )}
       </Col>
 
       <Spacer h={8} />
 
-      <button
-        className={clsx(
-          'btn flex-1',
-          betDisabled
-            ? 'btn-disabled'
-            : sharesOutcome === 'YES'
-            ? 'btn-primary'
-            : 'border-none bg-red-400 hover:bg-red-500',
-          isSubmitting ? 'loading' : ''
-        )}
-        onClick={betDisabled ? undefined : submitSell}
-      >
-        {isSubmitting ? 'Submitting...' : 'Submit sell'}
-      </button>
+      <WarningConfirmationButton
+        marketType="binary"
+        amount={undefined}
+        warning={warning}
+        isSubmitting={isSubmitting}
+        onSubmit={betDisabled ? undefined : submitSell}
+        disabled={!!betDisabled}
+        size="xl"
+        color="blue"
+        actionLabel={`Sell ${Math.floor(soldShares)} shares`}
+      />
 
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
     </>

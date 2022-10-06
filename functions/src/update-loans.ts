@@ -7,11 +7,12 @@ import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { getLoanUpdates } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
 
 export const updateLoans = functions
-  .runWith({ memory: '2GB', timeoutSeconds: 540 })
+  .runWith({ memory: '8GB', timeoutSeconds: 540 })
   // Run every day at midnight.
   .pubsub.schedule('0 0 * * *')
   .timeZone('America/Los_Angeles')
@@ -30,16 +31,18 @@ async function updateLoansCore() {
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
   )
-  const userPortfolios = await Promise.all(
-    users.map(async (user) => {
-      const portfolio = await getValues<PortfolioMetrics>(
-        firestore
-          .collection(`users/${user.id}/portfolioHistory`)
-          .orderBy('timestamp', 'desc')
-          .limit(1)
-      )
-      return portfolio[0]
-    })
+  const userPortfolios = filterDefined(
+    await Promise.all(
+      users.map(async (user) => {
+        const portfolio = await getValues<PortfolioMetrics>(
+          firestore
+            .collection(`users/${user.id}/portfolioHistory`)
+            .orderBy('timestamp', 'desc')
+            .limit(1)
+        )
+        return portfolio[0]
+      })
+    )
   )
   log(`Loaded ${userPortfolios.length} portfolios`)
   const portfolioByUser = keyBy(userPortfolios, (portfolio) => portfolio.userId)

@@ -10,6 +10,7 @@ export type Group = {
   totalContracts: number
   totalMembers: number
   aboutPostId?: string
+  postIds: string[]
   chatDisabled?: boolean
   mostRecentContractAddedTime?: number
   cachedLeaderboard?: {
@@ -22,6 +23,7 @@ export type Group = {
       score: number
     }[]
   }
+  pinnedItems: { itemId: string; type: 'post' | 'contract' }[]
 }
 
 export const MAX_GROUP_NAME_LENGTH = 75
@@ -37,3 +39,4 @@ export type GroupLink = {
   createdTime: number
   userId?: string
 }
+export type GroupContractDoc = { contractId: string; createdTime: number }

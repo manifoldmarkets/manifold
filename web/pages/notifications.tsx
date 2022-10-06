@@ -38,6 +38,7 @@ import { formatMoney } from 'common/util/format'
 import { groupPath } from 'web/lib/firebase/groups'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
+  BETTING_STREAK_BONUS_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { groupBy, sum, uniqBy } from 'lodash'
@@ -435,12 +436,13 @@ function IncomeNotificationItem(props: {
       reasonText = !simple
         ? `Bonus for ${
             parseInt(sourceText) / UNIQUE_BETTOR_BONUS_AMOUNT
-          } new predictors on`
+          } new traders on`
         : 'bonus on'
     } else if (sourceType === 'tip') {
       reasonText = !simple ? `tipped you on` : `in tips on`
     } else if (sourceType === 'betting_streak_bonus') {
-      if (sourceText && +sourceText === 50) reasonText = '(max) for your'
+      if (sourceText && +sourceText === BETTING_STREAK_BONUS_MAX)
+        reasonText = '(max) for your'
       else reasonText = 'for your'
     } else if (sourceType === 'loan' && sourceText) {
       reasonText = `of your invested predictions returned as a`
@@ -556,7 +558,7 @@ function IncomeNotificationItem(props: {
           {(isTip || isUniqueBettorBonus) && (
             <MultiUserTransactionLink
               userInfos={userLinks}
-              modalLabel={isTip ? 'Who tipped you' : 'Unique predictors'}
+              modalLabel={isTip ? 'Who tipped you' : 'Unique traders'}
             />
           )}
           <Row className={'line-clamp-2 flex max-w-xl'}>
@@ -765,6 +767,7 @@ function NotificationItem(props: {
         isChildOfGroup ?? false
       )}
       highlighted={highlighted}
+      isChildOfGroup={isChildOfGroup}
     >
       <div className={'mt-1 ml-1 md:text-base'}>
         <NotificationTextLabel notification={notification} />
@@ -973,13 +976,22 @@ function ContractResolvedNotification(props: {
   const { sourceText, data } = notification
   const { userInvestment, userPayout } = (data as ContractResolutionData) ?? {}
   const subtitle = 'resolved the market'
+  const profitable = userPayout >= userInvestment
+  const ROI = (userPayout - userInvestment) / userInvestment
+
   const resolutionDescription = () => {
     if (!sourceText) return <div />
+
     if (sourceText === 'YES' || sourceText == 'NO') {
       return <BinaryOutcomeLabel outcome={sourceText as any} />
     }
+
     if (sourceText.includes('%'))
-      return <ProbPercentLabel prob={parseFloat(sourceText.replace('%', ''))} />
+      return (
+        <ProbPercentLabel
+          prob={parseFloat(sourceText.replace('%', '')) / 100}
+        />
+      )
     if (sourceText === 'CANCEL') return <CancelLabel />
     if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
 
@@ -997,25 +1009,23 @@ function ContractResolvedNotification(props: {
 
   const description =
     userInvestment && userPayout !== undefined ? (
-      <Row className={'gap-1 '}>
-        {resolutionDescription()}
-        Invested:
+      <>
+        Resolved: {resolutionDescription()} Invested:
         <span className={'text-primary'}>{formatMoney(userInvestment)} </span>
         Payout:
         <span
           className={clsx(
-            userPayout > 0 ? 'text-primary' : 'text-red-500',
-            'truncate'
+            profitable ? 'text-primary' : 'text-red-500',
+            'truncate text-ellipsis'
           )}
         >
           {formatMoney(userPayout)}
-          {` (${userPayout > 0 ? '+' : ''}${Math.round(
-            ((userPayout - userInvestment) / userInvestment) * 100
-          )}%)`}
+          {userPayout > 0 &&
+            ` (${profitable ? '+' : ''}${Math.round(ROI * 100)}%)`}
         </span>
-      </Row>
+      </>
     ) : (
-      <span>{resolutionDescription()}</span>
+      <span>Resolved {resolutionDescription()}</span>
     )
 
   if (justSummary) {
@@ -1033,9 +1043,7 @@ function ContractResolvedNotification(props: {
       highlighted={highlighted}
       subtitle={subtitle}
     >
-      <Row>
-        <span>{description}</span>
-      </Row>
+      <Row className={'line-clamp-2 space-x-1'}>{description}</Row>
     </NotificationFrame>
   )
 }

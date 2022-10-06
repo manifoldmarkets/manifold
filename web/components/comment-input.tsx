@@ -11,22 +11,16 @@ import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
 
 export function CommentInput(props: {
-  replyToUser?: { id: string; username: string }
+  replyTo?: { id: string; username: string }
   // Reply to a free response answer
   parentAnswerOutcome?: string
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment?: (editor: Editor, betId: string | undefined) => void
+  onSubmitComment?: (editor: Editor) => void
   className?: string
-  presetId?: string
 }) {
-  const {
-    parentAnswerOutcome,
-    parentCommentId,
-    replyToUser,
-    onSubmitComment,
-    presetId,
-  } = props
+  const { parentAnswerOutcome, parentCommentId, replyTo, onSubmitComment } =
+    props
   const user = useUser()
 
   const { editor, upload } = useTextEditor({
@@ -40,10 +34,10 @@ export function CommentInput(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function submitComment(betId: string | undefined) {
+  async function submitComment() {
     if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
-    onSubmitComment?.(editor, betId)
+    onSubmitComment?.(editor)
     setIsSubmitting(false)
   }
 
@@ -61,11 +55,10 @@ export function CommentInput(props: {
         <CommentInputTextArea
           editor={editor}
           upload={upload}
-          replyToUser={replyToUser}
+          replyTo={replyTo}
           user={user}
           submitComment={submitComment}
           isSubmitting={isSubmitting}
-          presetId={presetId}
         />
       </div>
     </Row>
@@ -74,28 +67,19 @@ export function CommentInput(props: {
 
 export function CommentInputTextArea(props: {
   user: User | undefined | null
-  replyToUser?: { id: string; username: string }
+  replyTo?: { id: string; username: string }
   editor: Editor | null
   upload: Parameters<typeof TextEditor>[0]['upload']
-  submitComment: (id?: string) => void
+  submitComment: () => void
   isSubmitting: boolean
-  presetId?: string
 }) {
-  const {
-    user,
-    editor,
-    upload,
-    submitComment,
-    presetId,
-    isSubmitting,
-    replyToUser,
-  } = props
+  const { user, editor, upload, submitComment, isSubmitting, replyTo } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
 
   const submit = () => {
-    submitComment(presetId)
+    submitComment()
     editor?.commands?.clearContent()
   }
 
@@ -123,12 +107,12 @@ export function CommentInputTextArea(props: {
       },
     })
     // insert at mention and focus
-    if (replyToUser) {
+    if (replyTo) {
       editor
         .chain()
         .setContent({
           type: 'mention',
-          attrs: { label: replyToUser.username, id: replyToUser.id },
+          attrs: { label: replyTo.username, id: replyTo.id },
         })
         .insertContent(' ')
         .focus()
@@ -142,7 +126,7 @@ export function CommentInputTextArea(props: {
       <TextEditor editor={editor} upload={upload}>
         {user && !isSubmitting && (
           <button
-            className="btn btn-ghost btn-sm px-2 disabled:bg-inherit disabled:text-gray-300"
+            className="px-2 text-gray-400 hover:text-gray-500 disabled:bg-inherit disabled:text-gray-300"
             disabled={!editor || editor.isEmpty}
             onClick={submit}
           >
@@ -151,19 +135,9 @@ export function CommentInputTextArea(props: {
         )}
 
         {isSubmitting && (
-          <LoadingIndicator spinnerClassName={'border-gray-500'} />
+          <LoadingIndicator spinnerClassName="border-gray-500" />
         )}
       </TextEditor>
-      <Row>
-        {!user && (
-          <button
-            className={'btn btn-outline btn-sm mt-2 normal-case'}
-            onClick={() => submitComment(presetId)}
-          >
-            Add my comment
-          </button>
-        )}
-      </Row>
     </>
   )
 }

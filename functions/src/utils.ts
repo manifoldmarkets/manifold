@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin'
+import fetch from 'node-fetch'
 
 import { chunk } from 'lodash'
 import { Contract } from '../../common/contract'
@@ -14,6 +15,18 @@ export const logMemory = () => {
   const used = process.memoryUsage()
   for (const [k, v] of Object.entries(used)) {
     log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
+  }
+}
+
+export const revalidateStaticProps = async (
+  // Path after domain: e.g. "/JamesGrugett/will-pete-buttigieg-ever-be-us-pres"
+  pathToRevalidate: string
+) => {
+  if (isProd()) {
+    const apiSecret = process.env.API_SECRET as string
+    const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
+    await fetch('https://manifold.markets/api/v0/revalidate' + queryStr)
+    console.log('Revalidated', pathToRevalidate)
   }
 }
 
@@ -152,4 +165,12 @@ export const chargeUser = (
     throw new Error('User charge is not positive: ' + charge)
 
   return updateUserBalance(userId, -charge, isAnte)
+}
+
+export const getContractPath = (contract: Contract) => {
+  return `/${contract.creatorUsername}/${contract.slug}`
+}
+
+export function contractUrl(contract: Contract) {
+  return `https://manifold.markets/${contract.creatorUsername}/${contract.slug}`
 }

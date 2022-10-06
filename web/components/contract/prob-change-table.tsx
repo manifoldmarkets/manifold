@@ -1,68 +1,50 @@
 import clsx from 'clsx'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
-import { SiteLink } from '../site-link'
+import { sortBy } from 'lodash'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
+import { ContractCardProbChange } from './contract-card'
 
 export function ProbChangeTable(props: {
-  changes:
-    | { positiveChanges: CPMMContract[]; negativeChanges: CPMMContract[] }
-    | undefined
+  changes: CPMMContract[] | undefined
+  full?: boolean
 }) {
-  const { changes } = props
+  const { changes, full } = props
 
   if (!changes) return <LoadingIndicator />
 
-  const { positiveChanges, negativeChanges } = changes
+  const descendingChanges = sortBy(changes, (c) => c.probChanges.day).reverse()
+  const ascendingChanges = sortBy(changes, (c) => c.probChanges.day)
 
-  const threshold = 0.075
-  const countOverThreshold = Math.max(
-    positiveChanges.findIndex((c) => c.probChanges.day < threshold) + 1,
-    negativeChanges.findIndex((c) => c.probChanges.day > -threshold) + 1
+  const threshold = 0.01
+  const positiveAboveThreshold = descendingChanges.filter(
+    (c) => c.probChanges.day > threshold
   )
-  const maxRows = Math.min(positiveChanges.length, negativeChanges.length)
-  const rows = Math.min(3, Math.min(maxRows, countOverThreshold))
+  const negativeAboveThreshold = ascendingChanges.filter(
+    (c) => c.probChanges.day < threshold
+  )
+  const maxRows = Math.min(
+    positiveAboveThreshold.length,
+    negativeAboveThreshold.length
+  )
+  const rows = full ? maxRows : Math.min(3, maxRows)
 
-  const filteredPositiveChanges = positiveChanges.slice(0, rows)
-  const filteredNegativeChanges = negativeChanges.slice(0, rows)
+  const filteredPositiveChanges = positiveAboveThreshold.slice(0, rows)
+  const filteredNegativeChanges = negativeAboveThreshold.slice(0, rows)
 
   if (rows === 0) return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col className="mb-4 w-full divide-x-2 divide-y rounded-lg bg-white shadow-md md:flex-row md:divide-y-0">
-      <Col className="flex-1 divide-y">
+    <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
+      <Col className="flex-1 gap-4">
         {filteredPositiveChanges.map((contract) => (
-          <Row className="items-center hover:bg-gray-100">
-            <ProbChange
-              className="p-4 text-right text-xl"
-              contract={contract}
-            />
-            <SiteLink
-              className="p-4 pl-2 font-semibold text-indigo-700"
-              href={contractPath(contract)}
-            >
-              <span className="line-clamp-2">{contract.question}</span>
-            </SiteLink>
-          </Row>
+          <ContractCardProbChange key={contract.id} contract={contract} />
         ))}
       </Col>
-      <Col className="flex-1 divide-y">
+      <Col className="flex-1 gap-4">
         {filteredNegativeChanges.map((contract) => (
-          <Row className="items-center hover:bg-gray-100">
-            <ProbChange
-              className="p-4 text-right text-xl"
-              contract={contract}
-            />
-            <SiteLink
-              className="p-4 pl-2 font-semibold text-indigo-700"
-              href={contractPath(contract)}
-            >
-              <span className="line-clamp-2">{contract.question}</span>
-            </SiteLink>
-          </Row>
+          <ContractCardProbChange key={contract.id} contract={contract} />
         ))}
       </Col>
     </Col>
@@ -75,19 +57,20 @@ export function ProbChange(props: {
 }) {
   const { contract, className } = props
   const {
+    prob,
     probChanges: { day: change },
   } = contract
 
-  const color =
-    change > 0
-      ? 'text-green-500'
-      : change < 0
-      ? 'text-red-500'
-      : 'text-gray-600'
+  const color = change >= 0 ? 'text-green-500' : 'text-red-500'
 
-  const str =
-    change === 0
-      ? '+0%'
-      : `${change > 0 ? '+' : '-'}${formatPercent(Math.abs(change))}`
-  return <div className={clsx(className, color)}>{str}</div>
+  return (
+    <Col className={clsx('flex flex-col items-end', className)}>
+      <div className="mb-0.5 mr-0.5 text-2xl">
+        {formatPercent(Math.round(100 * prob) / 100)}
+      </div>
+      <div className={clsx('text-base', color)}>
+        {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
+      </div>
+    </Col>
+  )
 }

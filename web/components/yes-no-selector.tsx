@@ -35,10 +35,11 @@ export function YesNoSelector(props: {
         <button
           className={clsx(
             commonClassNames,
-            'hover:bg-primary-focus border-primary hover:border-primary-focus hover:text-white',
             selected == 'YES'
-              ? 'bg-primary text-white'
-              : 'text-primary bg-white',
+              ? 'border-teal-500 bg-teal-500 text-white'
+              : selected == 'NO'
+              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-teal-500 hover:text-teal-500'
+              : 'border-teal-500 bg-white text-teal-500 hover:bg-teal-50',
             btnClassName
           )}
           onClick={() => onSelect('YES')}
@@ -52,10 +53,11 @@ export function YesNoSelector(props: {
         <button
           className={clsx(
             commonClassNames,
-            'border-red-400 hover:border-red-500 hover:bg-red-500 hover:text-white',
             selected == 'NO'
-              ? 'bg-red-400 text-white'
-              : 'bg-white text-red-400',
+              ? 'border-red-400 bg-red-400 text-white'
+              : selected == 'YES'
+              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-red-400 hover:text-red-400'
+              : 'border-red-400 bg-white text-red-400 hover:bg-red-50',
             btnClassName
           )}
           onClick={() => onSelect('NO')}
@@ -211,7 +213,7 @@ export function NumberCancelSelector(props: {
   return (
     <Col className={clsx('gap-2', className)}>
       <Button
-        color={selected === 'NUMBER' ? 'green' : 'gray'}
+        color={selected === 'NUMBER' ? 'indigo' : 'gray'}
         onClick={() => onSelect('NUMBER')}
         className={clsx('whitespace-nowrap', btnClassName)}
       >
@@ -242,7 +244,7 @@ function Button(props: {
       type="button"
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'btn-primary text-white',
+        color === 'green' && 'bg-teal-500 text-white hover:bg-teal-600',
         color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',

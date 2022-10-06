@@ -2,13 +2,16 @@ import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
 import { track } from '@amplitude/analytics-browser'
+import { Col } from './col'
+import { Tooltip } from 'web/components/tooltip'
+import { Row } from 'web/components/layout/row'
 
 type Tab = {
   title: string
-  tabIcon?: ReactNode
   content: ReactNode
-  // If set, show a badge with this content
-  badge?: string
+  stackedTabIcon?: ReactNode
+  inlineTabIcon?: ReactNode
+  tooltip?: string
 }
 
 type TabProps = {
@@ -31,7 +34,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   return (
     <>
       <nav
-        className={clsx('mb-4 space-x-8 border-b border-gray-200', className)}
+        className={clsx('space-x-8 border-b border-gray-200', className)}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (
@@ -55,11 +58,17 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             )}
             aria-current={activeIndex === i ? 'page' : undefined}
           >
-            {tab.tabIcon && <span>{tab.tabIcon}</span>}
-            {tab.badge ? (
-              <span className="px-0.5 font-bold">{tab.badge}</span>
-            ) : null}
-            {tab.title}
+            <Col>
+              <Tooltip text={tab.tooltip}>
+                {tab.stackedTabIcon && (
+                  <Row className="justify-center">{tab.stackedTabIcon}</Row>
+                )}
+                <Row className={'gap-1 '}>
+                  {tab.title}
+                  {tab.inlineTabIcon}
+                </Row>
+              </Tooltip>
+            </Col>
           </a>
         ))}
       </nav>

@@ -1,8 +1,8 @@
 import { Answer } from 'common/answer'
-import { Bet } from 'common/bet'
 import { FreeResponseContract } from 'common/contract'
 import { ContractComment } from 'common/comment'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { sum } from 'lodash'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
@@ -11,110 +11,50 @@ import clsx from 'clsx'
 import {
   ContractCommentInput,
   FeedComment,
-  getMostRecentCommentableBet,
+  ReplyTo,
 } from 'web/components/feed/feed-comments'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
-import { Dictionary } from 'lodash'
-import { User } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
 import { useEvent } from 'web/hooks/use-event'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { UserLink } from 'web/components/user-link'
 
 export function FeedAnswerCommentGroup(props: {
   contract: FreeResponseContract
-  user: User | undefined | null
   answer: Answer
   answerComments: ContractComment[]
   tips: CommentTipMap
-  betsByUserId: Dictionary<Bet[]>
-  commentsByUserId: Dictionary<ContractComment[]>
 }) {
-  const {
-    answer,
-    contract,
-    answerComments,
-    tips,
-    betsByUserId,
-    commentsByUserId,
-    user,
-  } = props
+  const { answer, contract, answerComments, tips } = props
   const { username, avatarUrl, name, text } = answer
 
-  const [replyToUser, setReplyToUser] =
-    useState<Pick<User, 'id' | 'username'>>()
-  const [showReply, setShowReply] = useState(false)
-  const [highlighted, setHighlighted] = useState(false)
+  const [replyTo, setReplyTo] = useState<ReplyTo>()
+  const user = useUser()
   const router = useRouter()
-
   const answerElementId = `answer-${answer.id}`
-  const betsByCurrentUser = (user && betsByUserId[user.id]) ?? []
-  const commentsByCurrentUser = (user && commentsByUserId[user.id]) ?? []
-  const isFreeResponseContractPage = !!commentsByCurrentUser
-  const mostRecentCommentableBet = getMostRecentCommentableBet(
-    betsByCurrentUser,
-    commentsByCurrentUser,
-    user,
-    answer.number.toString()
-  )
-  const [usersMostRecentBetTimeAtLoad, setUsersMostRecentBetTimeAtLoad] =
-    useState<number | undefined>(
-      !user ? undefined : mostRecentCommentableBet?.createdTime ?? 0
-    )
+  const highlighted = router.asPath.endsWith(`#${answerElementId}`)
+  const answerRef = useRef<HTMLDivElement>(null)
+
+  const onSubmitComment = useEvent(() => setReplyTo(undefined))
+  const onReplyClick = useEvent((comment: ContractComment) => {
+    setReplyTo({ id: comment.id, username: comment.userUsername })
+  })
 
   useEffect(() => {
-    if (user && usersMostRecentBetTimeAtLoad === undefined)
-      setUsersMostRecentBetTimeAtLoad(
-        mostRecentCommentableBet?.createdTime ?? 0
-      )
-  }, [
-    mostRecentCommentableBet?.createdTime,
-    user,
-    usersMostRecentBetTimeAtLoad,
-  ])
-
-  const scrollAndOpenReplyInput = useEvent(
-    (comment?: ContractComment, answer?: Answer) => {
-      setReplyToUser(
-        comment
-          ? { id: comment.userId, username: comment.userUsername }
-          : answer
-          ? { id: answer.userId, username: answer.username }
-          : undefined
-      )
-      setShowReply(true)
+    if (highlighted && answerRef.current != null) {
+      answerRef.current.scrollIntoView(true)
     }
-  )
-
-  useEffect(() => {
-    // Only show one comment input for a bet at a time
-    if (
-      betsByCurrentUser.length > 1 &&
-      // inputRef?.textContent?.length === 0 && //TODO: editor.isEmpty
-      betsByCurrentUser.sort((a, b) => b.createdTime - a.createdTime)[0]
-        ?.outcome !== answer.number.toString()
-    )
-      setShowReply(false)
-    // Even if we pass memoized bets this still runs on every render, which we don't want
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [betsByCurrentUser.length, user, answer.number])
-
-  useEffect(() => {
-    if (router.asPath.endsWith(`#${answerElementId}`)) {
-      setHighlighted(true)
-    }
-  }, [answerElementId, router.asPath])
+  }, [highlighted])
 
   return (
-    <Col
-      className={'relative flex-1 items-stretch gap-3'}
-      key={answer.id + 'comment'}
-    >
+    <Col className="relative flex-1 items-stretch gap-3">
       <Row
         className={clsx(
           'gap-3 space-x-3 pt-4 transition-all duration-1000',
           highlighted ? `-m-2 my-3 rounded bg-indigo-500/[0.2] p-2` : ''
         )}
+        ref={answerRef}
         id={answerElementId}
       >
         <Avatar username={username} avatarUrl={avatarUrl} />
@@ -134,28 +74,27 @@ export function FeedAnswerCommentGroup(props: {
             <span className="whitespace-pre-line text-lg">
               <Linkify text={text} />
             </span>
-
-            {isFreeResponseContractPage && (
-              <div className={'sm:hidden'}>
-                <button
-                  className={'text-xs font-bold text-gray-500 hover:underline'}
-                  onClick={() => scrollAndOpenReplyInput(undefined, answer)}
-                >
-                  Reply
-                </button>
-              </div>
-            )}
-          </Col>
-          {isFreeResponseContractPage && (
-            <div className={'justify-initial hidden sm:block'}>
+            <div className="sm:hidden">
               <button
-                className={'text-xs font-bold text-gray-500 hover:underline'}
-                onClick={() => scrollAndOpenReplyInput(undefined, answer)}
+                className="text-xs font-bold text-gray-500 hover:underline"
+                onClick={() =>
+                  setReplyTo({ id: answer.id, username: answer.username })
+                }
               >
                 Reply
               </button>
             </div>
-          )}
+          </Col>
+          <div className="justify-initial hidden sm:block">
+            <button
+              className="text-xs font-bold text-gray-500 hover:underline"
+              onClick={() =>
+                setReplyTo({ id: answer.id, username: answer.username })
+              }
+            >
+              Reply
+            </button>
+          </div>
         </Col>
       </Row>
       <Col className="gap-3 pl-1">
@@ -165,25 +104,24 @@ export function FeedAnswerCommentGroup(props: {
             indent={true}
             contract={contract}
             comment={comment}
-            tips={tips[comment.id]}
-            betsBySameUser={betsByUserId[comment.userId] ?? []}
-            onReplyClick={scrollAndOpenReplyInput}
+            myTip={user ? tips[comment.id]?.[user.id] : undefined}
+            totalTip={sum(Object.values(tips[comment.id] ?? {}))}
+            showTip={true}
+            onReplyClick={onReplyClick}
           />
         ))}
       </Col>
-      {showReply && (
-        <div className={'relative ml-7'}>
+      {replyTo && (
+        <div className="relative ml-7">
           <span
             className="absolute -left-1 -ml-[1px] mt-[1.25rem] h-2 w-0.5 rotate-90 bg-gray-200"
             aria-hidden="true"
           />
           <ContractCommentInput
             contract={contract}
-            betsByCurrentUser={betsByCurrentUser}
-            commentsByCurrentUser={commentsByCurrentUser}
             parentAnswerOutcome={answer.number.toString()}
-            replyToUser={replyToUser}
-            onSubmitComment={() => setShowReply(false)}
+            replyTo={replyTo}
+            onSubmitComment={onSubmitComment}
           />
         </div>
       )}

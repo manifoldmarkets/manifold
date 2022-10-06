@@ -54,6 +54,8 @@ export type notification_preferences = {
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
   badges_awarded: notification_destination_types[]
+  opt_out_all: notification_destination_types[]
+  // When adding a new notification preference, use add-new-notification-preference.ts to existing users
 }
 
 export const getDefaultNotificationPreferences = (
@@ -66,7 +68,7 @@ export const getDefaultNotificationPreferences = (
     const email = noEmails ? undefined : emailIf ? 'email' : undefined
     return filterDefined([browser, email]) as notification_destination_types[]
   }
-  return {
+  const defaults: notification_preferences = {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(true, false),
     all_answers_on_watched_markets: constructPref(true, false),
@@ -108,7 +110,7 @@ export const getDefaultNotificationPreferences = (
     loan_income: constructPref(true, false),
     betting_streaks: constructPref(true, false),
     referral_bonuses: constructPref(true, true),
-    unique_bettors_on_your_contract: constructPref(true, false),
+    unique_bettors_on_your_contract: constructPref(true, true),
     tipped_comments_on_watched_markets: constructPref(true, true),
     tips_on_your_markets: constructPref(true, true),
     limit_order_fills: constructPref(true, false),
@@ -122,7 +124,11 @@ export const getDefaultNotificationPreferences = (
     probability_updates_on_watched_markets: constructPref(true, false),
     thank_you_for_purchases: constructPref(false, false),
     onboarding_flow: constructPref(false, false),
-  } as notification_preferences
+
+    opt_out_all: [],
+    badges_awarded: constructPref(true, false),
+  }
+  return defaults
 }
 
 // Adding a new key:value here is optional, you can just use a key of notification_subscription_types
@@ -185,10 +191,18 @@ export const getNotificationDestinationsForUser = (
       ? notificationSettings[subscriptionType]
       : []
   }
+  const optOutOfAllSettings = notificationSettings['opt_out_all']
+  // Your market closure notifications are high priority, opt-out doesn't affect their delivery
+  const optedOutOfEmail =
+    optOutOfAllSettings.includes('email') &&
+    subscriptionType !== 'your_contract_closed'
+  const optedOutOfBrowser =
+    optOutOfAllSettings.includes('browser') &&
+    subscriptionType !== 'your_contract_closed'
   const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
   return {
-    sendToEmail: destinations.includes('email'),
-    sendToBrowser: destinations.includes('browser'),
+    sendToEmail: destinations.includes('email') && !optedOutOfEmail,
+    sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
     unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${subscriptionType}`,
     urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
   }

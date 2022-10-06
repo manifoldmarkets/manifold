@@ -2,7 +2,7 @@ import { Contract } from 'web/lib/firebase/contracts'
 import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../site-link'
-import { ContractCard } from './contract-card'
+import { ContractCard, ContractCardProbChange } from './contract-card'
 import { ShowTime } from './contract-details'
 import { ContractSearch } from '../contract-search'
 import { useCallback } from 'react'
@@ -10,9 +10,10 @@ import clsx from 'clsx'
 import { LoadingIndicator } from '../loading-indicator'
 import { VisibilityObserver } from '../visibility-observer'
 import Masonry from 'react-masonry-css'
+import { CPMMBinaryContract } from 'common/contract'
 
-export type ContractHighlightOptions = {
-  contractIds?: string[]
+export type CardHighlightOptions = {
+  itemIds?: string[]
   highlightClassName?: string
 }
 
@@ -25,8 +26,9 @@ export function ContractsGrid(props: {
     hideQuickBet?: boolean
     hideGroupLink?: boolean
     noLinkAvatar?: boolean
+    showProbChange?: boolean
   }
-  highlightOptions?: ContractHighlightOptions
+  highlightOptions?: CardHighlightOptions
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
 }) {
@@ -39,10 +41,11 @@ export function ContractsGrid(props: {
     highlightOptions,
     trackingPostfix,
   } = props
-  const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
-  const { contractIds, highlightClassName } = highlightOptions || {}
+  const { hideQuickBet, hideGroupLink, noLinkAvatar, showProbChange } =
+    cardUIOptions || {}
+  const { itemIds: contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
-    (visible) => {
+    (visible: boolean) => {
       if (visible && loadMore) {
         loadMore()
       }
@@ -73,24 +76,31 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {contracts.map((contract) => (
-          <ContractCard
-            contract={contract}
-            key={contract.id}
-            showTime={showTime}
-            onClick={
-              onContractClick ? () => onContractClick(contract) : undefined
-            }
-            noLinkAvatar={noLinkAvatar}
-            hideQuickBet={hideQuickBet}
-            hideGroupLink={hideGroupLink}
-            trackingPostfix={trackingPostfix}
-            className={clsx(
-              'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
-              contractIds?.includes(contract.id) && highlightClassName
-            )}
-          />
-        ))}
+        {contracts.map((contract) =>
+          showProbChange && contract.mechanism === 'cpmm-1' ? (
+            <ContractCardProbChange
+              key={contract.id}
+              contract={contract as CPMMBinaryContract}
+            />
+          ) : (
+            <ContractCard
+              contract={contract}
+              key={contract.id}
+              showTime={showTime}
+              onClick={
+                onContractClick ? () => onContractClick(contract) : undefined
+              }
+              noLinkAvatar={noLinkAvatar}
+              hideQuickBet={hideQuickBet}
+              hideGroupLink={hideGroupLink}
+              trackingPostfix={trackingPostfix}
+              className={clsx(
+                'mb-4 break-inside-avoid-column overflow-hidden', // prevent content from wrapping (needs overflow on firefox)
+                contractIds?.includes(contract.id) && highlightClassName
+              )}
+            />
+          )
+        )}
       </Masonry>
       {loadMore && (
         <VisibilityObserver
@@ -118,6 +128,7 @@ export function CreatorContractsList(props: {
         creatorId: creator.id,
       }}
       persistPrefix={`user-${creator.id}`}
+      profile={true}
     />
   )
 }

@@ -1,39 +1,38 @@
-import {
-  ChevronDoubleRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from '@heroicons/react/solid'
-import clsx from 'clsx'
+import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
+import { debounce } from 'lodash'
+
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
-import { debounce, sum } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
-import { CommentTips } from 'web/hooks/use-tip-txns'
 import { useUser } from 'web/hooks/use-user'
 import { transact } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
+import { TipButton } from './contract/tip-button'
 import { Row } from './layout/row'
-import { Tooltip } from './tooltip'
+import { LIKE_TIP_AMOUNT } from 'common/like'
+import { formatMoney } from 'common/util/format'
 
-export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
-  const { comment, tips } = prop
+export function Tipper(prop: {
+  comment: Comment
+  myTip: number
+  totalTip: number
+}) {
+  const { comment, myTip, totalTip } = prop
 
   const me = useUser()
-  const myId = me?.id ?? ''
-  const savedTip = tips[myId] ?? 0
 
-  const [localTip, setLocalTip] = useState(savedTip)
+  const [localTip, setLocalTip] = useState(myTip)
+
   // listen for user being set
   const initialized = useRef(false)
   useEffect(() => {
-    if (tips[myId] && !initialized.current) {
-      setLocalTip(tips[myId])
+    if (myTip && !initialized.current) {
+      setLocalTip(myTip)
       initialized.current = true
     }
-  }, [tips, myId])
+  }, [myTip])
 
-  const total = sum(Object.values(tips)) - savedTip + localTip
+  const total = totalTip - myTip + localTip
 
   // declare debounced function only on first render
   const [saveTip] = useState(() =>
@@ -75,69 +74,23 @@ export function Tipper(prop: { comment: Comment; tips: CommentTips }) {
 
   const addTip = (delta: number) => {
     setLocalTip(localTip + delta)
-    me && saveTip(me, comment, localTip - savedTip + delta)
+    me && saveTip(me, comment, localTip - myTip + delta)
+    toast(`You tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
   }
 
-  const canDown = me && localTip > savedTip
-  const canUp = me && me.id !== comment.userId && me.balance >= localTip + 5
+  const canUp =
+    me && comment.userId !== me.id && me.balance >= localTip + LIKE_TIP_AMOUNT
+
   return (
     <Row className="items-center gap-0.5">
-      <DownTip onClick={canDown ? () => addTip(-5) : undefined} />
-      <span className="font-bold">{Math.floor(total)}</span>
-      <UpTip onClick={canUp ? () => addTip(+5) : undefined} value={localTip} />
-      {localTip === 0 ? (
-        ''
-      ) : (
-        <span
-          className={clsx(
-            'ml-1 font-semibold',
-            localTip > 0 ? 'text-primary' : 'text-red-400'
-          )}
-        >
-          ({formatMoney(localTip)} tip)
-        </span>
-      )}
+      <TipButton
+        tipAmount={LIKE_TIP_AMOUNT}
+        totalTipped={total}
+        onClick={() => addTip(+LIKE_TIP_AMOUNT)}
+        userTipped={localTip > 0}
+        disabled={!canUp}
+        isCompact
+      />
     </Row>
-  )
-}
-
-function DownTip(props: { onClick?: () => void }) {
-  const { onClick } = props
-  return (
-    <Tooltip
-      className="h-6 w-6"
-      placement="bottom"
-      text={onClick && `-${formatMoney(5)}`}
-      noTap
-    >
-      <button
-        className="hover:text-red-600 disabled:text-gray-300"
-        disabled={!onClick}
-        onClick={onClick}
-      >
-        <ChevronLeftIcon className="h-6 w-6" />
-      </button>
-    </Tooltip>
-  )
-}
-
-function UpTip(props: { onClick?: () => void; value: number }) {
-  const { onClick, value } = props
-  const IconKind = value >= 10 ? ChevronDoubleRightIcon : ChevronRightIcon
-  return (
-    <Tooltip
-      className="h-6 w-6"
-      placement="bottom"
-      text={onClick && `Tip ${formatMoney(5)}`}
-      noTap
-    >
-      <button
-        className="hover:text-primary disabled:text-gray-300"
-        disabled={!onClick}
-        onClick={onClick}
-      >
-        <IconKind className={clsx('h-6 w-6', value ? 'text-primary' : '')} />
-      </button>
-    </Tooltip>
   )
 }

@@ -182,18 +182,17 @@ export function AnswerBetPanel(props: {
       </Col>
 
       <Spacer h={6} />
-
       {user ? (
         <WarningConfirmationButton
+          size="xl"
+          marketType="freeResponse"
+          amount={betAmount}
           warning={warning}
           onSubmit={submitBet}
           isSubmitting={isSubmitting}
           disabled={!!betDisabled}
-          openModalButtonClass={clsx(
-            'btn self-stretch',
-            betDisabled ? 'btn-disabled' : 'btn-primary',
-            isSubmitting ? 'loading' : ''
-          )}
+          color={'indigo'}
+          actionLabel="Buy"
         />
       ) : (
         <BetSignUpPrompt />

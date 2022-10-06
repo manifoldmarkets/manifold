@@ -1,12 +1,13 @@
 import { useEffect } from 'react'
 import { useStateCheckEquality } from './use-state-check-equality'
-import { NextRouter } from 'next/router'
+import { NextRouter, useRouter } from 'next/router'
 
 export type PersistenceOptions<T> = { key: string; store: PersistentStore<T> }
 
 export interface PersistentStore<T> {
   get: (k: string) => T | undefined
   set: (k: string, v: T | undefined) => void
+  readsUrl?: boolean
 }
 
 const withURLParam = (location: Location, k: string, v?: string) => {
@@ -61,6 +62,7 @@ export const urlParamStore = (router: NextRouter): PersistentStore<string> => ({
       window.history.replaceState(updatedState, '', url)
     }
   },
+  readsUrl: true,
 })
 
 export const historyStore = <T>(prefix = '__manifold'): PersistentStore<T> => ({
@@ -102,5 +104,20 @@ export const usePersistentState = <T>(
       store.set(key, state)
     }
   }, [key, state])
+
+  if (store?.readsUrl) {
+    // On page load, router isn't ready immediately, so set state once it is.
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const router = useRouter()
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      if (router.isReady) {
+        const savedValue = key != null ? store.get(key) : undefined
+        setState(savedValue ?? initial)
+      }
+    }, [router.isReady])
+  }
+
   return [state, setState] as const
 }

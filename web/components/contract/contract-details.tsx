@@ -1,4 +1,9 @@
 import { ClockIcon } from '@heroicons/react/outline'
+import {
+  ExclamationIcon,
+  PencilIcon,
+  PlusCircleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
@@ -14,7 +19,7 @@ import { useState } from 'react'
 import NewContractBadge from '../new-contract-badge'
 import { MiniUserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { exhibitExts } from 'common/util/parse'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
@@ -28,10 +33,13 @@ import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
-import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import {
+  BountiedContractBadge,
+  BountiedContractSmallBadge,
+} from 'web/components/contract/bountied-contract-badge'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -63,6 +71,8 @@ export function MiscDetails(props: {
         </Row>
       ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
         <FeaturedContractBadge />
+      ) : (contract.openCommentBounties ?? 0) > 0 ? (
+        <BountiedContractBadge />
       ) : volume > 0 || !isNew ? (
         <Row className={'shrink-0'}>{formatMoney(volume)} bet</Row>
       ) : (
@@ -126,13 +136,10 @@ export function ContractDetails(props: {
       </Row>
       {/* GROUPS */}
       {isMobile && (
-        <div className="mt-2">
-          <MarketGroups
-            contract={contract}
-            isMobile={isMobile}
-            disabled={disabled}
-          />
-        </div>
+        <Row className="mt-2 gap-1">
+          <BountiedContractSmallBadge contract={contract} />
+          <MarketGroups contract={contract} disabled={disabled} />
+        </Row>
       )}
     </Col>
   )
@@ -146,6 +153,8 @@ export function MarketSubheader(props: {
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
+  const correctResolutionPercentage =
+    useUserById(creatorId)?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
   return (
@@ -157,13 +166,14 @@ export function MarketSubheader(props: {
         size={9}
         className="mr-1.5"
       />
+
       {!disabled && (
         <div className="absolute mt-3 ml-[11px]">
           <MiniUserFollowButton userId={creatorId} />
         </div>
       )}
       <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-        <Row className="w-full justify-between ">
+        <Row className="w-full space-x-1 ">
           {disabled ? (
             creatorName
           ) : (
@@ -174,19 +184,25 @@ export function MarketSubheader(props: {
               short={isMobile}
             />
           )}
+          {correctResolutionPercentage != null &&
+            correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
+              <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
+                <ExclamationIcon className="h-6 w-6 text-yellow-500" />
+              </Tooltip>
+            )}
         </Row>
-        <Row className="text-2xs text-greyscale-4 gap-2 sm:text-xs">
+        <Row className="text-2xs text-greyscale-4 flex-wrap gap-2 sm:text-xs">
           <CloseOrResolveTime
             contract={contract}
             resolvedDate={resolvedDate}
             isCreator={isCreator}
+            disabled={disabled}
           />
           {!isMobile && (
-            <MarketGroups
-              contract={contract}
-              isMobile={isMobile}
-              disabled={disabled}
-            />
+            <Row className={'gap-1'}>
+              <BountiedContractSmallBadge contract={contract} />
+              <MarketGroups contract={contract} disabled={disabled} />
+            </Row>
           )}
         </Row>
       </Col>
@@ -198,8 +214,9 @@ export function CloseOrResolveTime(props: {
   contract: Contract
   resolvedDate: any
   isCreator: boolean
+  disabled?: boolean
 }) {
-  const { contract, resolvedDate, isCreator } = props
+  const { contract, resolvedDate, isCreator, disabled } = props
   const { resolutionTime, closeTime } = contract
   if (!!closeTime || !!resolvedDate) {
     return (
@@ -223,6 +240,7 @@ export function CloseOrResolveTime(props: {
               closeTime={closeTime}
               contract={contract}
               isCreator={isCreator ?? false}
+              disabled={disabled}
             />
           </Row>
         )}
@@ -233,29 +251,25 @@ export function CloseOrResolveTime(props: {
 
 export function MarketGroups(props: {
   contract: Contract
-  isMobile: boolean | undefined
-  disabled: boolean | undefined
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const { contract, isMobile, disabled } = props
+  const { contract, disabled } = props
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <>
-      <Row className="align-middle">
-        <GroupDisplay groupToDisplay={groupToDisplay} isMobile={isMobile} />
-        {!disabled && (
-          <Row>
-            {user && (
-              <button
-                className="text-greyscale-4 hover:text-greyscale-3"
-                onClick={() => setOpen(!open)}
-              >
-                <PlusCircleIcon className="mb-0.5 mr-0.5 inline h-4 w-4 shrink-0" />
-              </button>
-            )}
-          </Row>
+      <Row className="items-center gap-1">
+        <GroupDisplay groupToDisplay={groupToDisplay} disabled={disabled} />
+
+        {!disabled && user && (
+          <button
+            className="text-greyscale-4 hover:text-greyscale-3"
+            onClick={() => setOpen(true)}
+          >
+            <PlusCircleIcon className="h-[18px]" />
+          </button>
         )}
       </Row>
       <Modal open={open} setOpen={setOpen} size={'md'}>
@@ -322,7 +336,7 @@ export function ExtraMobileContractDetails(props: {
           <Tooltip
             text={`${formatMoney(
               volume
-            )} bet - ${uniqueBettors} unique predictors`}
+            )} bet - ${uniqueBettors} unique traders`}
           >
             {volumeTranslation}
           </Tooltip>
@@ -335,40 +349,34 @@ export function ExtraMobileContractDetails(props: {
 
 export function GroupDisplay(props: {
   groupToDisplay?: GroupLink | null
-  isMobile?: boolean
+  disabled?: boolean
 }) {
-  const { groupToDisplay, isMobile } = props
+  const { groupToDisplay, disabled } = props
+
   if (groupToDisplay) {
-    return (
+    const groupSection = (
+      <a
+        className={clsx(
+          'bg-greyscale-4 max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
+          !disabled && 'hover:bg-greyscale-3 cursor-pointer'
+        )}
+      >
+        {groupToDisplay.name}
+      </a>
+    )
+
+    return disabled ? (
+      groupSection
+    ) : (
       <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-        <a
-          className={clsx(
-            'flex flex-row items-center truncate pr-1',
-            isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-          )}
-        >
-          <div className="bg-greyscale-4 hover:bg-greyscale-3 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs">
-            {groupToDisplay.name}
-          </div>
-        </a>
+        {groupSection}
       </Link>
     )
   } else
     return (
-      <Row
-        className={clsx(
-          'cursor-default select-none items-center truncate pr-1',
-          isMobile ? 'max-w-[140px]' : 'max-w-[250px]'
-        )}
-      >
-        <div
-          className={clsx(
-            'bg-greyscale-4 text-2xs items-center truncate rounded-full px-2 text-white sm:text-xs'
-          )}
-        >
-          No Group
-        </div>
-      </Row>
+      <div className="bg-greyscale-4 truncate rounded-full py-0.5 px-2 text-xs text-white">
+        No Group
+      </div>
     )
 }
 
@@ -376,8 +384,9 @@ function EditableCloseDate(props: {
   closeTime: number
   contract: Contract
   isCreator: boolean
+  disabled?: boolean
 }) {
-  const { closeTime, contract, isCreator } = props
+  const { closeTime, contract, isCreator, disabled } = props
 
   const dayJsCloseTime = dayjs(closeTime)
   const dayJsNow = dayjs()
@@ -390,18 +399,22 @@ function EditableCloseDate(props: {
     closeTime && dayJsCloseTime.format('HH:mm')
   )
 
-  const newCloseTime = closeDate
-    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
-    : undefined
-
   const isSameYear = dayJsCloseTime.isSame(dayJsNow, 'year')
   const isSameDay = dayJsCloseTime.isSame(dayJsNow, 'day')
 
-  const onSave = () => {
+  let newCloseTime = closeDate
+    ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
+    : undefined
+  function onSave(customTime?: number) {
+    if (customTime) {
+      newCloseTime = customTime
+      setCloseDate(dayjs(newCloseTime).format('YYYY-MM-DD'))
+      setCloseHoursMinutes(dayjs(newCloseTime).format('HH:mm'))
+    }
     if (!newCloseTime) return
 
     if (newCloseTime === closeTime) setIsEditingCloseTime(false)
-    else if (newCloseTime > Date.now()) {
+    else {
       const content = contract.description
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
@@ -424,14 +437,14 @@ function EditableCloseDate(props: {
   return (
     <>
       <Modal
-        size="sm"
+        size="md"
         open={isEditingCloseTime}
         setOpen={setIsEditingCloseTime}
         position="top"
       >
         <Col className="rounded bg-white px-8 pb-8">
-          <Subtitle text="Edit Close Date" />
-          <Row className="z-10 mr-2 w-full shrink-0 flex-wrap items-center gap-2">
+          <Subtitle text="Edit market close time" />
+          <Row className="z-10 mr-2 mt-4 w-full shrink-0 flex-wrap items-center gap-2">
             <input
               type="date"
               className="input input-bordered w-full shrink-0 sm:w-fit"
@@ -448,14 +461,18 @@ function EditableCloseDate(props: {
               min="00:00"
               value={closeHoursMinutes}
             />
+            <Button size={'xs'} color={'indigo'} onClick={() => onSave()}>
+              Set
+            </Button>
           </Row>
+
           <Button
-            className="mt-2"
+            className="mt-8"
             size={'xs'}
-            color={'indigo'}
-            onClick={onSave}
+            color="red"
+            onClick={() => onSave(Date.now())}
           >
-            Done
+            Close market now
           </Button>
         </Col>
       </Modal>
@@ -463,9 +480,9 @@ function EditableCloseDate(props: {
         text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
         time={closeTime}
       >
-        <span
-          className={isCreator ? 'cursor-pointer' : ''}
-          onClick={() => isCreator && setIsEditingCloseTime(true)}
+        <Row
+          className={clsx(!disabled && isCreator ? 'cursor-pointer' : '')}
+          onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
           {isSameDay ? (
             <span className={'capitalize'}> {fromNow(closeTime)}</span>
@@ -474,8 +491,11 @@ function EditableCloseDate(props: {
           ) : (
             dayJsCloseTime.format('MMM D, YYYY')
           )}
-        </span>
+          {isCreator && !disabled && <PencilIcon className="ml-1 h-4 w-4" />}
+        </Row>
       </DateTimeTooltip>
     </>
   )
 }
+
+const BAD_CREATOR_THRESHOLD = 0.8

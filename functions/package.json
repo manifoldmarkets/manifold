@@ -39,14 +39,16 @@
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "module-alias": "2.2.2",
-    "react-masonry-css": "1.0.16",
+    "node-fetch": "2",
     "stripe": "8.194.0",
     "zod": "3.17.2"
   },
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
     "@types/module-alias": "2.0.1",
-    "firebase-functions-test": "0.3.3"
+    "@types/node-fetch": "2.6.2",
+    "firebase-functions-test": "0.3.3",
+    "puppeteer": "18.0.5"
   },
   "private": true
 }

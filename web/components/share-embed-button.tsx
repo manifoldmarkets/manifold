@@ -1,6 +1,5 @@
 import React from 'react'
 import { CodeIcon } from '@heroicons/react/outline'
-import { Menu } from '@headlessui/react'
 import toast from 'react-hot-toast'
 
 import { Contract } from 'common/contract'
@@ -8,6 +7,7 @@ import { contractPath } from 'web/lib/firebase/contracts'
 import { DOMAIN } from 'common/envs/constants'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
+import { Button } from './button'
 
 export function embedContractCode(contract: Contract) {
   const title = contract.question
@@ -15,6 +15,7 @@ export function embedContractCode(contract: Contract) {
   return `<iframe src="${src}" title="${title}" frameborder="0"></iframe>`
 }
 
+// TODO: move this function elsewhere
 export function embedContractGridCode(contracts: Contract[]) {
   const height = (contracts.length - (contracts.length % 2)) * 100 + 'px'
   const src = `https://${DOMAIN}/embed/grid/${contracts
@@ -26,31 +27,21 @@ export function embedContractGridCode(contracts: Contract[]) {
 export function ShareEmbedButton(props: { contract: Contract }) {
   const { contract } = props
 
-  const codeIcon = <CodeIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
+  const codeIcon = <CodeIcon className="h-4 w-4" aria-hidden />
 
   return (
-    <Menu
-      as="div"
-      className="relative z-10 flex-shrink-0"
-      onMouseUp={() => {
+    <Button
+      size="2xs"
+      color="gray-outline"
+      className="gap-1"
+      onClick={() => {
         copyToClipboard(embedContractCode(contract))
-        toast.success('Embed code copied!', {
-          icon: codeIcon,
-        })
+        toast.success('Embed code copied!', { icon: codeIcon })
         track('copy embed code')
       }}
     >
-      <Menu.Button
-        className="btn btn-xs normal-case"
-        style={{
-          backgroundColor: 'white',
-          border: '2px solid #9ca3af',
-          color: '#9ca3af', // text-gray-400
-        }}
-      >
-        {codeIcon}
-        Embed
-      </Menu.Button>
-    </Menu>
+      {codeIcon}
+      Embed
+    </Button>
   )
 }

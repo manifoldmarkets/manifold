@@ -35,17 +35,14 @@ export async function createCommentOnContract(
   contractId: string,
   content: JSONContent,
   user: User,
-  betId?: string,
+  onContractWithBounty: boolean,
   answerOutcome?: string,
   replyToCommentId?: string
 ) {
-  const ref = betId
-    ? doc(getCommentsCollection(contractId), betId)
-    : doc(getCommentsCollection(contractId))
+  const ref = doc(getCommentsCollection(contractId))
   const onContract = {
     commentType: 'contract',
     contractId,
-    betId,
     answerOutcome,
   } as OnContract
   return await createComment(
@@ -54,7 +51,8 @@ export async function createCommentOnContract(
     content,
     user,
     ref,
-    replyToCommentId
+    replyToCommentId,
+    onContractWithBounty
   )
 }
 export async function createCommentOnGroup(
@@ -99,7 +97,8 @@ async function createComment(
   content: JSONContent,
   user: User,
   ref: DocumentReference<DocumentData>,
-  replyToCommentId?: string
+  replyToCommentId?: string,
+  onContractWithBounty?: boolean
 ) {
   const comment = removeUndefinedProps({
     id: ref.id,
@@ -112,13 +111,19 @@ async function createComment(
     replyToCommentId: replyToCommentId,
     ...extraFields,
   })
-
-  track(`${extraFields.commentType} message`, {
-    user,
-    commentId: ref.id,
-    surfaceId,
-    replyToCommentId: replyToCommentId,
-  })
+  track(
+    `${extraFields.commentType} message`,
+    removeUndefinedProps({
+      user,
+      commentId: ref.id,
+      surfaceId,
+      replyToCommentId: replyToCommentId,
+      onContractWithBounty:
+        extraFields.commentType === 'contract'
+          ? onContractWithBounty
+          : undefined,
+    })
+  )
   return await setDoc(ref, comment)
 }
 
@@ -135,7 +140,7 @@ function getCommentsOnPostCollection(postId: string) {
 }
 
 export async function listAllComments(contractId: string) {
-  return await getValues<Comment>(
+  return await getValues<ContractComment>(
     query(getCommentsCollection(contractId), orderBy('createdTime', 'desc'))
   )
 }

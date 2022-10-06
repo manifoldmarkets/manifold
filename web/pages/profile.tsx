@@ -1,24 +1,25 @@
-import React, { useState } from 'react'
 import { RefreshIcon } from '@heroicons/react/outline'
-import { useRouter } from 'next/router'
-import { AddFundsButton } from 'web/components/add-funds-button'
-import { Page } from 'web/components/page'
-import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
-import { formatMoney } from 'common/util/format'
+import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { changeUserInfo } from 'web/lib/firebase/api'
-import { uploadImage } from 'web/lib/firebase/storage'
+import Link from 'next/link'
+import React, { useState } from 'react'
+import Textarea from 'react-expanding-textarea'
+import { ConfirmationButton } from 'web/components/confirmation-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { User, PrivateUser } from 'common/user'
-import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
-import { defaultBannerUrl } from 'web/components/user-page'
+import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
 import { SiteLink } from 'web/components/site-link'
-import Textarea from 'react-expanding-textarea'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { Title } from 'web/components/title'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { TwitchPanel } from 'web/components/profile/twitch-panel'
+import { changeUserInfo } from 'web/lib/firebase/api'
+import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
+import { uploadImage } from 'web/lib/firebase/storage'
+import {
+  getUserAndPrivateUser,
+  updatePrivateUser,
+  updateUser,
+} from 'web/lib/firebase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -64,7 +65,6 @@ function EditUserField(props: {
 export default function ProfilePage(props: {
   auth: { user: User; privateUser: PrivateUser }
 }) {
-  const router = useRouter()
   const { user, privateUser } = props.auth
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -94,10 +94,15 @@ export default function ProfilePage(props: {
     }
   }
 
-  const updateApiKey = async (e: React.MouseEvent) => {
+  const updateApiKey = async (e?: React.MouseEvent) => {
     const newApiKey = await generateNewApiKey(user.id)
     setApiKey(newApiKey ?? '')
-    e.preventDefault()
+    e?.preventDefault()
+
+    if (!privateUser.twitchInfo) return
+    await updatePrivateUser(privateUser.id, {
+      twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
+    })
   }
 
   const fileHandler = async (event: any) => {
@@ -168,27 +173,6 @@ export default function ProfilePage(props: {
               onBlur={updateUsername}
             />
           </div>
-
-          {/* TODO: Allow users with M$ 2000 of assets to set custom banners */}
-          {/* <EditUserField
-                user={user}
-                field="bannerUrl"
-                label="Banner Url"
-                isEditing={isEditing}
-              /> */}
-          <label className="label">
-            Banner image{' '}
-            <span className="text-sm text-gray-400">Not editable for now</span>
-          </label>
-          <div
-            className="h-32 w-full bg-cover bg-center sm:h-40"
-            style={{
-              backgroundImage: `url(${
-                user.bannerUrl || defaultBannerUrl(user.id)
-              })`,
-            }}
-          />
-
           {(
             [
               ['bio', 'Bio'],
@@ -213,14 +197,6 @@ export default function ProfilePage(props: {
           </div>
 
           <div>
-            <label className="label">Balance</label>
-            <Row className="ml-1 items-start gap-4 text-gray-500">
-              {formatMoney(user.balance)}
-              <AddFundsButton />
-            </Row>
-          </div>
-
-          <div>
             <label className="label">API key</label>
             <div className="input-group w-full">
               <input
@@ -230,15 +206,38 @@ export default function ProfilePage(props: {
                 value={apiKey}
                 readOnly
               />
-              <button
-                className="btn btn-primary btn-square p-2"
-                onClick={updateApiKey}
+              <ConfirmationButton
+                openModalBtn={{
+                  className: 'p-2',
+                  label: '',
+                  icon: <RefreshIcon className="h-5 w-5" />,
+                  color: 'indigo',
+                }}
+                submitBtn={{
+                  label: 'Update key',
+                }}
+                onSubmitWithSuccess={async () => {
+                  updateApiKey()
+                  return true
+                }}
               >
-                <RefreshIcon />
-              </button>
+                <Col>
+                  <Title text={'Are you sure?'} />
+                  <div>
+                    Updating your API key will break any existing applications
+                    connected to your account, <b>including the Twitch bot</b>.
+                    You will need to go to the{' '}
+                    <Link href="/twitch">
+                      <a className="underline focus:outline-none">
+                        Twitch page
+                      </a>
+                    </Link>{' '}
+                    to relink your account.
+                  </div>
+                </Col>
+              </ConfirmationButton>
             </div>
           </div>
-          {router.query.twitch && <TwitchPanel />}
         </Col>
       </Col>
     </Page>

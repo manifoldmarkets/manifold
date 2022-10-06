@@ -1,9 +1,9 @@
 import { track } from '@amplitude/analytics-browser'
 import { Editor } from '@tiptap/core'
+import { sum } from 'lodash'
 import clsx from 'clsx'
 import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
-import { User } from 'common/user'
 import { Dictionary } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -21,7 +21,6 @@ import { createCommentOnPost } from 'web/lib/firebase/comments'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
 export function PostCommentThread(props: {
-  user: User | null | undefined
   post: Post
   threadComments: PostComment[]
   tips: CommentTipMap
@@ -92,7 +91,7 @@ export function PostCommentInput(props: {
 
   return (
     <CommentInput
-      replyToUser={replyToUser}
+      replyTo={replyToUser}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
     />
@@ -111,6 +110,7 @@ export function PostComment(props: {
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
 
+  const me = useUser()
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   useEffect(() => {
@@ -156,7 +156,6 @@ export function PostComment(props: {
           smallImage
         />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          <Tipper comment={comment} tips={tips ?? {}} />
           {onReplyClick && (
             <button
               className="font-bold hover:underline"
@@ -165,6 +164,11 @@ export function PostComment(props: {
               Reply
             </button>
           )}
+          <Tipper
+            comment={comment}
+            myTip={me ? tips?.[me.id] ?? 0 : 0}
+            totalTip={sum(Object.values(tips ?? {}))}
+          />
         </Row>
       </div>
     </Row>

@@ -1,8 +1,6 @@
-import React from 'react'
-
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
-import { ContractProbGraph } from './contract-prob-graph'
+import { ContractChart } from 'web/components/charts/contract'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { Linkify } from '../linkify'
@@ -13,20 +11,19 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton from '../bet-button'
-import { AnswersGraph } from '../answers/answers-graph'
+import BetButton, { BinaryMobileBetting } from '../bet-button'
 import {
   Contract,
-  BinaryContract,
   CPMMContract,
-  CPMMBinaryContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
+  BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
-import { NumericGraph } from './numeric-graph'
+import { ContractReportResolution } from './contract-report-resolution'
+import { SizedContainer } from 'web/components/sized-container'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -46,8 +43,29 @@ const BetWidget = (props: { contract: CPMMContract }) => {
   )
 }
 
-const NumericOverview = (props: { contract: NumericContract }) => {
-  const { contract } = props
+const SizedContractChart = (props: {
+  contract: Contract
+  bets: Bet[]
+  fullHeight: number
+  mobileHeight: number
+}) => {
+  const { fullHeight, mobileHeight, contract, bets } = props
+  return (
+    <SizedContainer fullHeight={fullHeight} mobileHeight={mobileHeight}>
+      {(width, height) => (
+        <ContractChart
+          width={width}
+          height={height}
+          contract={contract}
+          bets={bets}
+        />
+      )}
+    </SizedContainer>
+  )
+}
+
+const NumericOverview = (props: { contract: NumericContract; bets: Bet[] }) => {
+  const { contract, bets } = props
   return (
     <Col className="gap-1 md:gap-2">
       <Col className="gap-3 px-2 sm:gap-4">
@@ -64,7 +82,12 @@ const NumericOverview = (props: { contract: NumericContract }) => {
           contract={contract}
         />
       </Col>
-      <NumericGraph contract={contract} />
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={250}
+        mobileHeight={150}
+      />
     </Col>
   )
 }
@@ -77,20 +100,29 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
-          <BinaryResolutionOrChance
-            className="hidden items-end xl:flex"
-            contract={contract}
-            large
-          />
-        </Row>
-        <Row className="items-center justify-between gap-4 xl:hidden">
-          <BinaryResolutionOrChance contract={contract} />
-          {tradingAllowed(contract) && (
-            <BetWidget contract={contract as CPMMBinaryContract} />
-          )}
+          <Row>
+            <BinaryResolutionOrChance
+              className="flex items-end"
+              contract={contract}
+              large
+            />
+            {contract.isResolved && (
+              <ContractReportResolution contract={contract} />
+            )}
+          </Row>
         </Row>
       </Col>
-      <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={250}
+        mobileHeight={150}
+      />
+      <Row className="items-center justify-between gap-4 xl:hidden">
+        {tradingAllowed(contract) && (
+          <BinaryMobileBetting contract={contract} />
+        )}
+      </Row>
     </Col>
   )
 }
@@ -107,12 +139,21 @@ const ChoiceOverview = (props: {
         <ContractDetails contract={contract} />
         <OverviewQuestion text={question} />
         {resolution && (
-          <FreeResponseResolutionOrChance contract={contract} truncate="none" />
+          <Row>
+            <FreeResponseResolutionOrChance
+              contract={contract}
+              truncate="none"
+            />
+            <ContractReportResolution contract={contract} />
+          </Row>
         )}
       </Col>
-      <Col className={'mb-1 gap-y-2'}>
-        <AnswersGraph contract={contract} bets={[...bets].reverse()} />
-      </Col>
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={350}
+        mobileHeight={250}
+      />
     </Col>
   )
 }
@@ -138,7 +179,12 @@ const PseudoNumericOverview = (props: {
           {tradingAllowed(contract) && <BetWidget contract={contract} />}
         </Row>
       </Col>
-      <ContractProbGraph contract={contract} bets={[...bets].reverse()} />
+      <SizedContractChart
+        contract={contract}
+        bets={bets}
+        fullHeight={250}
+        mobileHeight={150}
+      />
     </Col>
   )
 }
@@ -152,7 +198,7 @@ export const ContractOverview = (props: {
     case 'BINARY':
       return <BinaryOverview contract={contract} bets={bets} />
     case 'NUMERIC':
-      return <NumericOverview contract={contract} />
+      return <NumericOverview contract={contract} bets={bets} />
     case 'PSEUDO_NUMERIC':
       return <PseudoNumericOverview contract={contract} bets={bets} />
     case 'FREE_RESPONSE':

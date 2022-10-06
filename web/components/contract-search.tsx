@@ -1,25 +1,26 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import algoliasearch from 'algoliasearch/lite'
 import { SearchOptions } from '@algolia/client-search'
 import { useRouter } from 'next/router'
 import { Contract } from 'common/contract'
 import { PAST_BETS, User } from 'common/user'
-import {
-  ContractHighlightOptions,
-  ContractsGrid,
-} from './contract/contracts-grid'
+import { CardHighlightOptions, ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
-import { useEffect, useLayoutEffect, useRef, useMemo, ReactNode } from 'react'
-import { ENV, IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  ReactNode,
+  useState,
+} from 'react'
+import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
-  storageStore,
   historyStore,
   urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { track, trackCallback } from 'web/lib/service/analytics'
 import ContractSearchFirestore from 'web/pages/contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
@@ -29,30 +30,33 @@ import { debounce, isEqual, sortBy } from 'lodash'
 import { DEFAULT_CATEGORY_GROUPS } from 'common/categories'
 import { Col } from './layout/col'
 import clsx from 'clsx'
-
-const searchClient = algoliasearch(
-  'GJQPAYENIF',
-  '75c28fc084a80e1129d427d470cf41a3'
-)
-
-const indexPrefix = ENV === 'DEV' ? 'dev-' : ''
-const searchIndexName = ENV === 'DEV' ? 'dev-contracts' : 'contractsIndex'
+import { safeLocalStorage } from 'web/lib/util/local'
+import {
+  getIndexName,
+  searchClient,
+  searchIndexName,
+} from 'web/lib/service/algolia'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { AdjustmentsIcon } from '@heroicons/react/solid'
+import { Button } from './button'
+import { Modal } from './layout/modal'
+import { Title } from './title'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: `Most ${PAST_BETS}`, value: 'most-traded' },
+  { label: 'Daily trending', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
-  { label: '24h change', value: 'prob-change-day' },
+  { label: 'Most popular', value: 'most-popular' },
   { label: 'Last updated', value: 'last-updated' },
-  { label: 'Subsidy', value: 'liquidity' },
-  { label: 'Close date', value: 'close-date' },
+  { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
   { label: 'Highest %', value: 'prob-descending' },
   { label: 'Lowest %', value: 'prob-ascending' },
 ] as const
 
 export type Sort = typeof SORTS[number]['value']
+export const PROB_SORTS = ['prob-descending', 'prob-ascending']
 
 type filter = 'personal' | 'open' | 'closed' | 'resolved' | 'all'
 
@@ -68,38 +72,42 @@ type AdditionalFilter = {
   tag?: string
   excludeContractIds?: string[]
   groupSlug?: string
-  yourBets?: boolean
-  followed?: boolean
 }
 
 export function ContractSearch(props: {
   user?: User | null
   defaultSort?: Sort
   defaultFilter?: filter
+  defaultPill?: string
   additionalFilter?: AdditionalFilter
-  highlightOptions?: ContractHighlightOptions
+  highlightOptions?: CardHighlightOptions
   onContractClick?: (contract: Contract) => void
   hideOrderSelector?: boolean
   cardUIOptions?: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
     noLinkAvatar?: boolean
+    showProbChange?: boolean
   }
   headerClassName?: string
   persistPrefix?: string
   useQueryUrlParam?: boolean
   isWholePage?: boolean
+  includeProbSorts?: boolean
   noControls?: boolean
   maxResults?: number
   renderContracts?: (
     contracts: Contract[] | undefined,
     loadMore: () => void
   ) => ReactNode
+  autoFocus?: boolean
+  profile?: boolean | undefined
 }) {
   const {
     user,
     defaultSort,
     defaultFilter,
+    defaultPill,
     additionalFilter,
     onContractClick,
     hideOrderSelector,
@@ -108,10 +116,13 @@ export function ContractSearch(props: {
     headerClassName,
     persistPrefix,
     useQueryUrlParam,
+    includeProbSorts,
     isWholePage,
     noControls,
     maxResults,
     renderContracts,
+    autoFocus,
+    profile,
   } = props
 
   const [state, setState] = usePersistentState(
@@ -119,6 +130,7 @@ export function ContractSearch(props: {
       numPages: 1,
       pages: [] as Contract[][],
       showTime: null as ShowTime | null,
+      showProbChange: false,
     },
     !persistPrefix
       ? undefined
@@ -153,7 +165,7 @@ export function ContractSearch(props: {
     if (freshQuery || requestedPage < state.numPages) {
       const index = query
         ? searchIndex
-        : searchClient.initIndex(`${indexPrefix}contracts-${sort}`)
+        : searchClient.initIndex(getIndexName(sort))
       const numericFilters = query
         ? []
         : [
@@ -172,8 +184,9 @@ export function ContractSearch(props: {
         const newPage = results.hits as any as Contract[]
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
+        const showProbChange = sort === 'daily-score'
         const pages = freshQuery ? [newPage] : [...state.pages, newPage]
-        setState({ numPages: results.nbPages, pages, showTime })
+        setState({ numPages: results.nbPages, pages, showTime, showProbChange })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
@@ -191,6 +204,12 @@ export function ContractSearch(props: {
     }, 100)
   ).current
 
+  const updatedCardUIOptions = useMemo(() => {
+    if (cardUIOptions?.showProbChange === undefined && state.showProbChange)
+      return { ...cardUIOptions, showProbChange: true }
+    return cardUIOptions
+  }, [cardUIOptions, state.showProbChange])
+
   const contracts = state.pages
     .flat()
     .filter((c) => !additionalFilter?.excludeContractIds?.includes(c.id))
@@ -207,16 +226,23 @@ export function ContractSearch(props: {
         className={headerClassName}
         defaultSort={defaultSort}
         defaultFilter={defaultFilter}
+        defaultPill={defaultPill}
         additionalFilter={additionalFilter}
+        persistPrefix={persistPrefix}
         hideOrderSelector={hideOrderSelector}
-        persistPrefix={persistPrefix ? `${persistPrefix}-controls` : undefined}
         useQueryUrlParam={useQueryUrlParam}
+        includeProbSorts={includeProbSorts}
         user={user}
         onSearchParametersChanged={onSearchParametersChanged}
         noControls={noControls}
+        autoFocus={autoFocus}
       />
       {renderContracts ? (
         renderContracts(renderedContracts, performQuery)
+      ) : renderedContracts && renderedContracts.length === 0 && profile ? (
+        <p className="mx-2 text-gray-500">
+          This creator does not yet have any markets.
+        </p>
       ) : (
         <ContractsGrid
           contracts={renderedContracts}
@@ -224,7 +250,7 @@ export function ContractSearch(props: {
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightOptions={highlightOptions}
-          cardUIOptions={cardUIOptions}
+          cardUIOptions={updatedCardUIOptions}
         />
       )}
     </Col>
@@ -235,25 +261,31 @@ function ContractSearchControls(props: {
   className?: string
   defaultSort?: Sort
   defaultFilter?: filter
+  defaultPill?: string
   additionalFilter?: AdditionalFilter
-  hideOrderSelector?: boolean
-  onSearchParametersChanged: (params: SearchParameters) => void
   persistPrefix?: string
+  hideOrderSelector?: boolean
+  includeProbSorts?: boolean
+  onSearchParametersChanged: (params: SearchParameters) => void
   useQueryUrlParam?: boolean
   user?: User | null
   noControls?: boolean
+  autoFocus?: boolean
 }) {
   const {
     className,
     defaultSort,
     defaultFilter,
+    defaultPill,
     additionalFilter,
+    persistPrefix,
     hideOrderSelector,
     onSearchParametersChanged,
-    persistPrefix,
     useQueryUrlParam,
     user,
     noControls,
+    autoFocus,
+    includeProbSorts,
   } = props
 
   const router = useRouter()
@@ -267,19 +299,44 @@ function ContractSearchControls(props: {
         }
   )
 
-  const [state, setState] = usePersistentState(
-    {
-      sort: defaultSort ?? 'score',
-      filter: defaultFilter ?? 'open',
-      pillFilter: null as string | null,
-    },
-    !persistPrefix
+  const isMobile = useIsMobile()
+
+  const sortKey = `${persistPrefix}-search-sort`
+  const savedSort = safeLocalStorage()?.getItem(sortKey)
+
+  const [sort, setSort] = usePersistentState(
+    savedSort ?? defaultSort ?? 'score',
+    !useQueryUrlParam
       ? undefined
       : {
-          key: `${persistPrefix}-params`,
-          store: storageStore(safeLocalStorage()),
+          key: 's',
+          store: urlParamStore(router),
         }
   )
+  const [filter, setFilter] = usePersistentState(
+    defaultFilter ?? 'open',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'f',
+          store: urlParamStore(router),
+        }
+  )
+  const [pill, setPill] = usePersistentState(
+    defaultPill ?? '',
+    !useQueryUrlParam
+      ? undefined
+      : {
+          key: 'p',
+          store: urlParamStore(router),
+        }
+  )
+
+  useEffect(() => {
+    if (persistPrefix && sort) {
+      safeLocalStorage()?.setItem(sortKey, sort as string)
+    }
+  }, [persistPrefix, query, sort, sortKey])
 
   const follows = useFollows(user?.id)
   const memberGroups = (useMemberGroups(user?.id) ?? []).filter(
@@ -319,11 +376,6 @@ function ContractSearchControls(props: {
     additionalFilter?.groupSlug
       ? `groupLinks.slug:${additionalFilter.groupSlug}`
       : '',
-    additionalFilter?.yourBets && user
-      ? // Show contracts bet on by the user
-        `uniqueBettorIds:${user.id}`
-      : '',
-    ...(additionalFilter?.followed ? personalFilters : []),
   ]
   const facetFilters = query
     ? additionalFilters
@@ -331,31 +383,25 @@ function ContractSearchControls(props: {
         ...additionalFilters,
         additionalFilter ? '' : 'visibility:public',
 
-        state.filter === 'open' ? 'isResolved:false' : '',
-        state.filter === 'closed' ? 'isResolved:false' : '',
-        state.filter === 'resolved' ? 'isResolved:true' : '',
+        filter === 'open' ? 'isResolved:false' : '',
+        filter === 'closed' ? 'isResolved:false' : '',
+        filter === 'resolved' ? 'isResolved:true' : '',
 
-        state.pillFilter &&
-        state.pillFilter !== 'personal' &&
-        state.pillFilter !== 'your-bets'
-          ? `groupLinks.slug:${state.pillFilter}`
+        pill && pill !== 'personal' && pill !== 'your-bets'
+          ? `groupLinks.slug:${pill}`
           : '',
-        ...(state.pillFilter === 'personal' ? personalFilters : []),
-        state.pillFilter === 'your-bets' && user
+        ...(pill === 'personal' ? personalFilters : []),
+        pill === 'your-bets' && user
           ? // Show contracts bet on by the user
             `uniqueBettorIds:${user.id}`
           : '',
       ].filter((f) => f)
 
   const openClosedFilter =
-    state.filter === 'open'
-      ? 'open'
-      : state.filter === 'closed'
-      ? 'closed'
-      : undefined
+    filter === 'open' ? 'open' : filter === 'closed' ? 'closed' : undefined
 
   const selectPill = (pill: string | null) => () => {
-    setState({ ...state, pillFilter: pill })
+    setPill(pill ?? '')
     track('select search category', { category: pill ?? 'all' })
   }
 
@@ -364,25 +410,25 @@ function ContractSearchControls(props: {
   }
 
   const selectFilter = (newFilter: filter) => {
-    if (newFilter === state.filter) return
-    setState({ ...state, filter: newFilter })
+    if (newFilter === filter) return
+    setFilter(newFilter)
     track('select search filter', { filter: newFilter })
   }
 
   const selectSort = (newSort: Sort) => {
-    if (newSort === state.sort) return
-    setState({ ...state, sort: newSort })
+    if (newSort === sort) return
+    setSort(newSort)
     track('select search sort', { sort: newSort })
   }
 
   useEffect(() => {
     onSearchParametersChanged({
       query: query,
-      sort: state.sort,
+      sort: sort as Sort,
       openClosedFilter: openClosedFilter,
       facetFilters: facetFilters,
     })
-  }, [query, state.sort, openClosedFilter, JSON.stringify(facetFilters)])
+  }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
   if (noControls) {
     return <></>
@@ -398,46 +444,46 @@ function ContractSearchControls(props: {
           onBlur={trackCallback('search', { query: query })}
           placeholder={'Search'}
           className="input input-bordered w-full"
+          autoFocus={autoFocus}
         />
-        {!query && (
-          <select
-            className="select select-bordered"
-            value={state.filter}
-            onChange={(e) => selectFilter(e.target.value as filter)}
-          >
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-            <option value="all">All</option>
-          </select>
+        {!isMobile && !query && (
+          <SearchFilters
+            filter={filter}
+            selectFilter={selectFilter}
+            hideOrderSelector={hideOrderSelector}
+            selectSort={selectSort}
+            sort={sort}
+            className={'flex flex-row gap-2'}
+            includeProbSorts={includeProbSorts}
+          />
         )}
-        {!hideOrderSelector && !query && (
-          <select
-            className="select select-bordered"
-            value={state.sort}
-            onChange={(e) => selectSort(e.target.value as Sort)}
-          >
-            {SORTS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        {isMobile && !query && (
+          <>
+            <MobileSearchBar
+              children={
+                <SearchFilters
+                  filter={filter}
+                  selectFilter={selectFilter}
+                  hideOrderSelector={hideOrderSelector}
+                  selectSort={selectSort}
+                  sort={sort}
+                  className={'flex flex-col gap-4'}
+                  includeProbSorts={includeProbSorts}
+                />
+              }
+            />
+          </>
         )}
       </Row>
 
       {!additionalFilter && !query && (
         <Row className="scrollbar-hide items-start gap-2 overflow-x-auto">
-          <PillButton
-            key={'all'}
-            selected={state.pillFilter === undefined}
-            onSelect={selectPill(null)}
-          >
+          <PillButton key={'all'} selected={!pill} onSelect={selectPill(null)}>
             All
           </PillButton>
           <PillButton
             key={'personal'}
-            selected={state.pillFilter === 'personal'}
+            selected={pill === 'personal'}
             onSelect={selectPill('personal')}
           >
             {user ? 'For you' : 'Featured'}
@@ -446,7 +492,7 @@ function ContractSearchControls(props: {
           {user && (
             <PillButton
               key={'your-bets'}
-              selected={state.pillFilter === 'your-bets'}
+              selected={pill === 'your-bets'}
               onSelect={selectPill('your-bets')}
             >
               Your {PAST_BETS}
@@ -457,7 +503,7 @@ function ContractSearchControls(props: {
             return (
               <PillButton
                 key={slug}
-                selected={state.pillFilter === slug}
+                selected={pill === slug}
                 onSelect={selectPill(slug)}
               >
                 {name}
@@ -467,5 +513,80 @@ function ContractSearchControls(props: {
         </Row>
       )}
     </Col>
+  )
+}
+
+export function SearchFilters(props: {
+  filter: string
+  selectFilter: (newFilter: filter) => void
+  hideOrderSelector: boolean | undefined
+  selectSort: (newSort: Sort) => void
+  sort: string
+  className?: string
+  includeProbSorts?: boolean
+}) {
+  const {
+    filter,
+    selectFilter,
+    hideOrderSelector,
+    selectSort,
+    sort,
+    className,
+    includeProbSorts,
+  } = props
+
+  const sorts = includeProbSorts
+    ? SORTS
+    : SORTS.filter((sort) => !PROB_SORTS.includes(sort.value))
+
+  return (
+    <div className={className}>
+      <select
+        className="select select-bordered"
+        value={filter}
+        onChange={(e) => selectFilter(e.target.value as filter)}
+      >
+        <option value="open">Open</option>
+        <option value="closed">Closed</option>
+        <option value="resolved">Resolved</option>
+        <option value="all">All</option>
+      </select>
+      {!hideOrderSelector && (
+        <select
+          className="select select-bordered"
+          value={sort}
+          onChange={(e) => selectSort(e.target.value as Sort)}
+        >
+          {sorts.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  )
+}
+
+export function MobileSearchBar(props: { children: ReactNode }) {
+  const { children } = props
+  const [openFilters, setOpenFilters] = useState(false)
+  return (
+    <>
+      <Button color="gray-white" onClick={() => setOpenFilters(true)}>
+        <AdjustmentsIcon className="my-auto h-7" />
+      </Button>
+      <Modal
+        open={openFilters}
+        setOpen={setOpenFilters}
+        position="top"
+        className="rounded-lg bg-white px-4 pb-4"
+      >
+        <Col>
+          <Title text="Filter Markets" />
+          {children}
+        </Col>
+      </Modal>
+    </>
   )
 }

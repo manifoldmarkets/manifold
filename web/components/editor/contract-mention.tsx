@@ -6,7 +6,7 @@ import {
 } from '@tiptap/react'
 import clsx from 'clsx'
 import { useContract } from 'web/hooks/use-contract'
-import { ContractCard } from '../contract/contract-card'
+import { ContractMention } from '../contract/contract-mention'
 
 const name = 'contract-mention-component'
 
@@ -14,13 +14,8 @@ const ContractMentionComponent = (props: any) => {
   const contract = useContract(props.node.attrs.id)
 
   return (
-    <NodeViewWrapper className={clsx(name, 'not-prose')}>
-      {contract && (
-        <ContractCard
-          contract={contract}
-          className="my-2 w-full border border-gray-100"
-        />
-      )}
+    <NodeViewWrapper className={clsx(name, 'not-prose inline')}>
+      {contract && <ContractMention contract={contract} />}
     </NodeViewWrapper>
   )
 }
@@ -37,6 +32,5 @@ export const DisplayContractMention = Mention.extend({
   addNodeView: () =>
     ReactNodeViewRenderer(ContractMentionComponent, {
       // On desktop, render cards below half-width so you can stack two
-      className: 'inline-block sm:w-[calc(50%-1rem)] sm:mr-1',
     }),
 })

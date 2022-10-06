@@ -1,25 +1,27 @@
 import clsx from 'clsx'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { MenuIcon } from '@heroicons/react/solid'
+import { toast } from 'react-hot-toast'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Subtitle } from 'web/components/subtitle'
-import { useMemberGroups } from 'web/hooks/use-group'
-import { filterDefined } from 'common/util/array'
-import { isArray, keyBy } from 'lodash'
+import { keyBy } from 'lodash'
+import { XCircleIcon } from '@heroicons/react/outline'
+import { Button } from './button'
+import { updateUser } from 'web/lib/firebase/users'
+import { leaveGroup } from 'web/lib/firebase/groups'
 import { User } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
 import { Group } from 'common/group'
 
 export function ArrangeHome(props: {
-  user: User | null | undefined
-  homeSections: string[]
-  setHomeSections: (sections: string[]) => void
+  sections: { label: string; id: string; group?: Group }[]
+  setSectionIds: (sections: string[]) => void
 }) {
-  const { user, homeSections, setHomeSections } = props
+  const { sections, setSectionIds } = props
 
-  const groups = useMemberGroups(user?.id) ?? []
-  const { itemsById, sections } = getHomeItems(groups, homeSections)
+  const sectionsById = keyBy(sections, 'id')
 
   return (
     <DragDropContext
@@ -27,14 +29,14 @@ export function ArrangeHome(props: {
         const { destination, source, draggableId } = e
         if (!destination) return
 
-        const item = itemsById[draggableId]
+        const section = sectionsById[draggableId]
 
-        const newHomeSections = sections.map((section) => section.id)
+        const newSectionIds = sections.map((section) => section.id)
 
-        newHomeSections.splice(source.index, 1)
-        newHomeSections.splice(destination.index, 0, item.id)
+        newSectionIds.splice(source.index, 1)
+        newSectionIds.splice(destination.index, 0, section.id)
 
-        setHomeSections(newHomeSections)
+        setSectionIds(newSectionIds)
       }}
     >
       <Row className="relative max-w-md gap-4">
@@ -46,8 +48,9 @@ export function ArrangeHome(props: {
 
 function DraggableList(props: {
   title: string
-  items: { id: string; label: string }[]
+  items: { id: string; label: string; group?: Group }[]
 }) {
+  const user = useUser()
   const { title, items } = props
   return (
     <Droppable droppableId={title.toLowerCase()}>
@@ -72,6 +75,7 @@ function DraggableList(props: {
                       snapshot.isDragging && 'z-[9000] bg-gray-200'
                     )}
                     item={item}
+                    user={user}
                   />
                 </div>
               )}
@@ -85,49 +89,53 @@ function DraggableList(props: {
 }
 
 const SectionItem = (props: {
-  item: { id: string; label: string }
+  item: { id: string; label: string; group?: Group }
+  user: User | null | undefined
   className?: string
 }) => {
-  const { item, className } = props
+  const { item, user, className } = props
+  const { group } = item
 
   return (
-    <div
+    <Row
       className={clsx(
         className,
-        'flex flex-row items-center gap-4 rounded bg-gray-50 p-2'
+        'items-center justify-between gap-4 rounded bg-gray-50 p-2'
       )}
     >
-      <MenuIcon
-        className="h-5 w-5 flex-shrink-0 text-gray-500"
-        aria-hidden="true"
-      />{' '}
-      {item.label}
-    </div>
+      <Row className="items-center gap-4">
+        <MenuIcon
+          className="h-5 w-5 flex-shrink-0 text-gray-500"
+          aria-hidden="true"
+        />{' '}
+        {item.label}
+      </Row>
+
+      {group && (
+        <Button
+          className="pt-1 pb-1"
+          color="gray-white"
+          onClick={() => {
+            if (user) {
+              const homeSections = (user.homeSections ?? []).filter(
+                (id) => id !== group.id
+              )
+              updateUser(user.id, { homeSections })
+
+              toast.promise(leaveGroup(group, user.id), {
+                loading: 'Unfollowing group...',
+                success: `Unfollowed ${group.name}`,
+                error: "Couldn't unfollow group, try again?",
+              })
+            }
+          }}
+        >
+          <XCircleIcon
+            className={clsx('h-5 w-5 flex-shrink-0')}
+            aria-hidden="true"
+          />
+        </Button>
+      )}
+    </Row>
   )
-}
-
-export const getHomeItems = (groups: Group[], sections: string[]) => {
-  // Accommodate old home sections.
-  if (!isArray(sections)) sections = []
-
-  const items = [
-    { label: 'Trending', id: 'score' },
-    { label: 'New for you', id: 'newest' },
-    { label: 'Daily movers', id: 'daily-movers' },
-    ...groups.map((g) => ({
-      label: g.name,
-      id: g.id,
-    })),
-  ]
-  const itemsById = keyBy(items, 'id')
-
-  const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
-
-  // Add unmentioned items to the end.
-  sectionItems.push(...items.filter((item) => !sectionItems.includes(item)))
-
-  return {
-    sections: sectionItems,
-    itemsById,
-  }
 }

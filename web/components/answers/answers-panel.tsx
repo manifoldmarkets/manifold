@@ -1,4 +1,4 @@
-import { sortBy, partition, sum, uniq } from 'lodash'
+import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
@@ -11,7 +11,6 @@ import { AnswerItem } from './answer-item'
 import { CreateAnswerPanel } from './create-answer-panel'
 import { AnswerResolvePanel } from './answer-resolve-panel'
 import { Spacer } from '../layout/spacer'
-import { User } from 'common/user'
 import { getOutcomeProbability } from 'common/calculate'
 import { Answer } from 'common/answer'
 import clsx from 'clsx'
@@ -21,11 +20,11 @@ import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import { Linkify } from 'web/components/linkify'
-import { BuyButton } from 'web/components/yes-no-selector'
-import { UserLink } from 'web/components/user-link'
 import { Button } from 'web/components/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
+import { CATEGORY_COLORS } from '../charts/contract/choice'
+import { useChartAnswers } from '../charts/contract/choice'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
@@ -39,6 +38,7 @@ export function AnswersPanel(props: {
   const answers = (useAnswers(contract.id) ?? contract.answers).filter(
     (a) => a.number != 0 || contract.outcomeType === 'MULTIPLE_CHOICE'
   )
+
   const hasZeroBetAnswers = answers.some((answer) => totalBets[answer.id] < 1)
 
   const [winningAnswers, losingAnswers] = partition(
@@ -56,6 +56,11 @@ export function AnswersPanel(props: {
     ),
   ]
 
+  const answerItems = sortBy(
+    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
+    (answer) => -getOutcomeProbability(contract, answer.id)
+  )
+
   const user = useUser()
 
   const [resolveOption, setResolveOption] = useState<
@@ -66,12 +71,6 @@ export function AnswersPanel(props: {
   }>({})
 
   const chosenTotal = sum(Object.values(chosenAnswers))
-
-  const answerItems = getAnswerItems(
-    contract,
-    losingAnswers.length > 0 ? losingAnswers : sortedAnswers,
-    user
-  )
 
   const onChoose = (answerId: string, prob: number) => {
     if (resolveOption === 'CHOOSE') {
@@ -106,6 +105,10 @@ export function AnswersPanel(props: {
     ? 'checkbox'
     : undefined
 
+  const colorSortedAnswer = useChartAnswers(contract).map(
+    (value, _index) => value.text
+  )
+
   return (
     <Col className="gap-3">
       {(resolveOption || resolution) &&
@@ -123,28 +126,31 @@ export function AnswersPanel(props: {
         ))}
 
       {!resolveOption && (
-        <div className={clsx('flow-root pr-2 md:pr-0')}>
-          <div className={clsx(tradingAllowed(contract) ? '' : '-mb-6')}>
-            {answerItems.map((item) => (
-              <div key={item.id} className={'relative pb-2'}>
-                <div className="relative flex items-start space-x-3">
-                  <OpenAnswer {...item} />
-                </div>
-              </div>
-            ))}
-            <Row className={'justify-end'}>
-              {hasZeroBetAnswers && !showAllAnswers && (
-                <Button
-                  color={'gray-white'}
-                  onClick={() => setShowAllAnswers(true)}
-                  size={'md'}
-                >
-                  Show More
-                </Button>
-              )}
-            </Row>
-          </div>
-        </div>
+        <Col
+          className={clsx(
+            'gap-2 pr-2 md:pr-0',
+            tradingAllowed(contract) ? '' : '-mb-6'
+          )}
+        >
+          {answerItems.map((item) => (
+            <OpenAnswer
+              key={item.id}
+              answer={item}
+              contract={contract}
+              colorIndex={colorSortedAnswer.indexOf(item.text)}
+            />
+          ))}
+          {hasZeroBetAnswers && !showAllAnswers && (
+            <Button
+              className="self-end"
+              color="gray-white"
+              onClick={() => setShowAllAnswers(true)}
+              size="md"
+            >
+              Show More
+            </Button>
+          )}
+        </Col>
       )}
 
       {answers.length <= 1 && (
@@ -175,44 +181,21 @@ export function AnswersPanel(props: {
   )
 }
 
-function getAnswerItems(
-  contract: FreeResponseContract | MultipleChoiceContract,
-  answers: Answer[],
-  user: User | undefined | null
-) {
-  let outcomes = uniq(answers.map((answer) => answer.number.toString()))
-  outcomes = sortBy(outcomes, (outcome) =>
-    getOutcomeProbability(contract, outcome)
-  ).reverse()
-
-  return outcomes
-    .map((outcome) => {
-      const answer = answers.find((answer) => answer.id === outcome) as Answer
-      //unnecessary
-      return {
-        id: outcome,
-        type: 'answer' as const,
-        contract,
-        answer,
-        user,
-      }
-    })
-    .filter((group) => group.answer)
-}
-
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
-  type: string
+  colorIndex: number | undefined
 }) {
-  const { answer, contract } = props
-  const { username, avatarUrl, name, text } = answer
+  const { answer, contract, colorIndex } = props
+  const { username, avatarUrl, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
+  const color =
+    colorIndex != undefined ? CATEGORY_COLORS[colorIndex] : '#B1B1C7'
 
   return (
-    <Col className={'border-base-200 bg-base-200 flex-1 rounded-md px-2'}>
+    <Col className="my-1 px-2">
       <Modal open={open} setOpen={setOpen} position="center">
         <AnswerBetPanel
           answer={answer}
@@ -223,47 +206,44 @@ function OpenAnswer(props: {
         />
       </Modal>
 
-      <div
-        className="pointer-events-none absolute -mx-2 h-full rounded-tl-md bg-green-600 bg-opacity-10"
-        style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-      />
-
-      <Row className="my-4 gap-3">
-        <div className="px-1">
-          <Avatar username={username} avatarUrl={avatarUrl} />
-        </div>
-        <Col className="min-w-0 flex-1 lg:gap-1">
-          <div className="text-sm text-gray-500">
-            <UserLink username={username} name={name} /> answered
-          </div>
-
-          <Col className="align-items justify-between gap-4 sm:flex-row">
-            <span className="whitespace-pre-line text-lg">
-              <Linkify text={text} />
-            </span>
-
-            <Row className="items-center justify-center gap-4">
-              <div className={'align-items flex w-full justify-end gap-4 '}>
-                <span
-                  className={clsx(
-                    'text-2xl',
-                    tradingAllowed(contract) ? 'text-primary' : 'text-gray-500'
-                  )}
-                >
-                  {probPercent}
-                </span>
-                <BuyButton
-                  className={clsx(
-                    'btn-sm flex-initial !px-6 sm:flex',
-                    tradingAllowed(contract) ? '' : '!hidden'
-                  )}
-                  onClick={() => setOpen(true)}
-                />
-              </div>
-            </Row>
-          </Col>
-        </Col>
-      </Row>
+      <Col
+        className={clsx(
+          'bg-greyscale-1 relative w-full rounded-lg transition-all',
+          tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
+        )}
+      >
+        <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
+          <Row>
+            <Avatar
+              className="mt-0.5 mr-2 inline h-5 w-5 border border-transparent transition-transform hover:border-none"
+              username={username}
+              avatarUrl={avatarUrl}
+            />
+            <Linkify
+              className="text-md cursor-pointer whitespace-pre-line"
+              text={text}
+            />
+          </Row>
+          <Row className="gap-2">
+            <div className="my-auto text-xl">{probPercent}</div>
+            {tradingAllowed(contract) && (
+              <Button
+                size="2xs"
+                color="gray-outline"
+                onClick={() => setOpen(true)}
+                className="my-auto"
+              >
+                BUY
+              </Button>
+            )}
+          </Row>
+        </Row>
+        <hr
+          color={color}
+          className="absolute z-0 h-full w-full rounded-l-lg border-none opacity-30"
+          style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
+        />
+      </Col>
     </Col>
   )
 }
