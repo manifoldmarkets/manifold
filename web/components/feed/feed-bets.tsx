@@ -64,11 +64,11 @@ export function BetStatusText(props: {
   }, [challengeSlug, contract.id])
 
   const bought = amount >= 0 ? 'bought' : 'sold'
+  const money = formatMoney(Math.abs(amount))
   const outOfTotalAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined
-      ? ` / ${formatMoney(bet.orderAmount)}`
+      ? ` of ${bet.isCancelled ? money : formatMoney(bet.orderAmount)}`
       : ''
-  const money = formatMoney(Math.abs(amount))
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -105,7 +105,6 @@ export function BetStatusText(props: {
       {!hideOutcome && (
         <>
           {' '}
-          of{' '}
           <OutcomeLabel
             outcome={outcome}
             value={(bet as any).value}
