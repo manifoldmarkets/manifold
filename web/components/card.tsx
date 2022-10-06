@@ -5,7 +5,7 @@ export function Card(props: JSX.IntrinsicElements['div']) {
   return (
     <div
       className={clsx(
-        'cursor-pointer rounded-lg border-2 bg-white transition-shadow hover:shadow-md focus:shadow-md',
+        'cursor-pointer rounded-lg border bg-white transition-shadow hover:shadow-md focus:shadow-md',
         className
       )}
       {...rest}
