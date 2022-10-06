@@ -22,6 +22,7 @@ import { PostCommentsActivity, RichEditPost } from '../post/[...slugs]'
 import { usePost } from 'web/hooks/use-post'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
+import { NoSEO } from 'web/components/NoSEO'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
@@ -62,6 +63,7 @@ function DateDocPage(props: { creator: User; post: DateDoc }) {
 
   return (
     <Page>
+      <NoSEO />
       <Col className="mx-auto w-full max-w-xl gap-6 sm:mb-6">
         <SiteLink href="/date-docs">
           <Row className="items-center gap-2">
