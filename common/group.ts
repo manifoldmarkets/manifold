@@ -39,3 +39,4 @@ export type GroupLink = {
   createdTime: number
   userId?: string
 }
+export type GroupContractDoc = { contractId: string; createdTime: number }
