@@ -70,7 +70,7 @@ export function getNewContract(
     volume: 0,
     volume24Hours: 0,
     volume7Days: 0,
-    elasticity: propsByOutcomeType.mechanism === 'cpmm-1' ? 0.38 : 0.56,
+    elasticity: propsByOutcomeType.mechanism === 'cpmm-1' ? 0.38 : 0.75,
 
     collectedFees: {
       creatorFee: 0,
