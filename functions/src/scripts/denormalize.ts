@@ -3,7 +3,6 @@
 
 import { DocumentSnapshot, Transaction } from 'firebase-admin/firestore'
 import { isEqual, zip } from 'lodash'
-import { UpdateSpec } from '../utils'
 
 export type DocumentValue = {
   doc: DocumentSnapshot
@@ -54,7 +53,7 @@ export function getDiffUpdate(diff: DocumentDiff) {
   return {
     doc: diff.dest.doc.ref,
     fields: Object.fromEntries(zip(diff.dest.fields, diff.src.vals)),
-  } as UpdateSpec
+  }
 }
 
 export function applyDiff(transaction: Transaction, diff: DocumentDiff) {
