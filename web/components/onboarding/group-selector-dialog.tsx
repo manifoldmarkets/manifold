@@ -72,6 +72,7 @@ export default function GroupSelectorDialog(props: {
           ) : (
             displayedGroups.map((group) => (
               <PillButton
+                key={group.id}
                 selected={memberGroupIds.includes(group.id)}
                 onSelect={withTracking(
                   () =>
