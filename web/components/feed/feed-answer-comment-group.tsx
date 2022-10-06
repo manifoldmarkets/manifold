@@ -51,15 +51,7 @@ export function FeedAnswerCommentGroup(props: {
         ref={answerRef}
         id={answerElementId}
       >
-        <Col>
-          <Avatar username={username} avatarUrl={avatarUrl} size="xs" />
-          {seeReplies && (
-            <span
-              className="mx-auto h-full w-0.5 bg-gray-200"
-              aria-hidden="true"
-            />
-          )}
-        </Col>
+        <Avatar username={username} avatarUrl={avatarUrl} size="sm" />
         <Col className="min-w-0 flex-1">
           <div className="text-greyscale-6 text-xs">
             <UserLink username={username} name={name} /> answered
@@ -93,7 +85,7 @@ export function FeedAnswerCommentGroup(props: {
         </Col>
       </Row>
       {seeReplies && (
-        <Col className="gap-3 pl-1">
+        <Col className="w-full gap-3 pl-1">
           {answerComments.map((comment) => (
             <FeedComment
               key={comment.id}

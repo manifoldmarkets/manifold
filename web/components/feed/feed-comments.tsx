@@ -20,6 +20,8 @@ import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
+import { ReplyIcon } from '@heroicons/react/solid'
+import { Button } from '../button'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -34,10 +36,6 @@ export function FeedCommentThread(props: {
 
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
-      <span
-        className="absolute top-5 left-4 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-        aria-hidden="true"
-      />
       {[parentComment].concat(threadComments).map((comment, commentIdx) => (
         <FeedComment
           key={comment.id}
@@ -76,26 +74,7 @@ export function FeedComment(props: {
   onReplyClick?: () => void
 }) {
   const { contract, comment, tips, indent, onReplyClick } = props
-  const {
-    text,
-    content,
-    userUsername,
-    userName,
-    userAvatarUrl,
-    commenterPositionProb,
-    commenterPositionShares,
-    commenterPositionOutcome,
-    createdTime,
-    bountiesAwarded,
-  } = comment
-  const betOutcome = comment.betOutcome
-  let bought: string | undefined
-  let money: string | undefined
-  if (comment.betAmount != null) {
-    bought = comment.betAmount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(comment.betAmount))
-  }
-  const totalAwarded = bountiesAwarded ?? 0
+  const { text, content, userUsername, userAvatarUrl } = comment
 
   const router = useRouter()
   const highlighted = router.asPath.endsWith(`#${comment.id}`)
@@ -107,88 +86,64 @@ export function FeedComment(props: {
     }
   }, [highlighted])
 
+  const [showActions, setShowActions] = useState(false)
+
   return (
     <Row
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'relative',
-        indent ? 'ml-6' : '',
+        'hover:bg-greyscale-1 gap-2 transition-colors',
+        indent ? 'ml-8' : '',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
+      onMouseOver={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
     >
-      {/*draw a gray line from the comment to the left:*/}
-      {indent ? (
-        <span
-          className="bg-greyscale-2 absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90"
-          aria-hidden="true"
+      <Col className={clsx(indent ? '-ml-3' : '')}>
+        <Avatar
+          size={indent ? 'xs' : 'sm'}
+          username={userUsername}
+          avatarUrl={userAvatarUrl}
         />
-      ) : null}
-      <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-      <div>
-        <div className="text-greyscale-6 mt-0.5 text-xs">
-          <UserLink username={userUsername} name={userName} />{' '}
-          <span className="text-greyscale-4">
-            {comment.betId == null &&
-              commenterPositionProb != null &&
-              commenterPositionOutcome != null &&
-              commenterPositionShares != null &&
-              commenterPositionShares > 0 &&
-              contract.outcomeType !== 'NUMERIC' && (
-                <>
-                  {'is '}
-                  <CommentStatus
-                    prob={commenterPositionProb}
-                    outcome={commenterPositionOutcome}
-                    contract={contract}
-                  />
-                </>
-              )}
-            {bought} {money}
-            {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
-              <>
-                {' '}
-                of{' '}
-                <OutcomeLabel
-                  outcome={betOutcome ? betOutcome : ''}
-                  contract={contract}
-                  truncate="short"
-                />
-              </>
-            )}
-          </span>
-          <CopyLinkDateTimeComponent
-            prefix={contract.creatorUsername}
-            slug={contract.slug}
-            createdTime={createdTime}
-            elementId={comment.id}
+        {indent && (
+          <span
+            className="bg-greyscale-2 mx-auto h-full w-0.5"
+            aria-hidden="true"
           />
-          {totalAwarded > 0 && (
-            <span className=" text-primary ml-2 text-sm">
-              +{formatMoney(totalAwarded)}
-            </span>
-          )}
-        </div>
-        <Content
-          className="mt-2 text-[12px] text-gray-700"
-          content={content || text}
-          smallImage
-        />
-        <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
-          {onReplyClick && (
-            <button
-              className="font-bold hover:underline"
-              onClick={onReplyClick}
-            >
-              Reply
-            </button>
-          )}
-          {tips && <Tipper comment={comment} tips={tips} />}
-          {(contract.openCommentBounties ?? 0) > 0 && (
-            <AwardBountyButton comment={comment} contract={contract} />
-          )}
+        )}
+      </Col>
+      <Col className="w-full">
+        <FeedCommentHeader comment={comment} contract={contract} />
+        <Row>
+          <Content
+            className="text-greyscale-7 mt-2 grow text-[14px]"
+            content={content || text}
+            smallImage
+          />
+          <Row
+            className={clsx(
+              'ml-2 items-center gap-2 text-xs text-gray-500 transition-opacity',
+              showActions ? '' : 'opacity-0'
+            )}
+          >
+            {onReplyClick && (
+              <Button
+                className="font-bold hover:underline"
+                onClick={onReplyClick}
+                size="2xs"
+                color="gray-white"
+              >
+                <ReplyIcon className="h-5 w-5" />
+              </Button>
+            )}
+            {tips && <Tipper comment={comment} tips={tips} />}
+            {(contract.openCommentBounties ?? 0) > 0 && (
+              <AwardBountyButton comment={comment} contract={contract} />
+            )}
+          </Row>
         </Row>
-      </div>
+      </Col>
     </Row>
   )
 }
@@ -244,5 +199,76 @@ export function ContractCommentInput(props: {
       onSubmitComment={onSubmitComment}
       className={className}
     />
+  )
+}
+
+export function FeedCommentHeader(props: {
+  comment: ContractComment
+  contract: Contract
+}) {
+  const { comment, contract } = props
+  const {
+    userUsername,
+    userName,
+    commenterPositionProb,
+    commenterPositionShares,
+    commenterPositionOutcome,
+    createdTime,
+    bountiesAwarded,
+  } = comment
+  const betOutcome = comment.betOutcome
+  let bought: string | undefined
+  let money: string | undefined
+  if (comment.betAmount != null) {
+    bought = comment.betAmount >= 0 ? 'bought' : 'sold'
+    money = formatMoney(Math.abs(comment.betAmount))
+  }
+  const totalAwarded = bountiesAwarded ?? 0
+  return (
+    <Row>
+      <div className="text-greyscale-6 mt-0.5 text-xs">
+        <UserLink username={userUsername} name={userName} />{' '}
+        <span className="text-greyscale-4">
+          {comment.betId == null &&
+            commenterPositionProb != null &&
+            commenterPositionOutcome != null &&
+            commenterPositionShares != null &&
+            commenterPositionShares > 0 &&
+            contract.outcomeType !== 'NUMERIC' && (
+              <>
+                {'is '}
+                <CommentStatus
+                  prob={commenterPositionProb}
+                  outcome={commenterPositionOutcome}
+                  contract={contract}
+                />
+              </>
+            )}
+          {bought} {money}
+          {contract.outcomeType !== 'FREE_RESPONSE' && betOutcome && (
+            <>
+              {' '}
+              of{' '}
+              <OutcomeLabel
+                outcome={betOutcome ? betOutcome : ''}
+                contract={contract}
+                truncate="short"
+              />
+            </>
+          )}
+        </span>
+        <CopyLinkDateTimeComponent
+          prefix={contract.creatorUsername}
+          slug={contract.slug}
+          createdTime={createdTime}
+          elementId={comment.id}
+        />
+        {totalAwarded > 0 && (
+          <span className=" text-primary ml-2 text-sm">
+            +{formatMoney(totalAwarded)}
+          </span>
+        )}
+      </div>
+    </Row>
   )
 }
