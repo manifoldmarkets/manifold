@@ -106,7 +106,5 @@ const dfs = (data: JSONContent, f: (current: JSONContent) => any) => {
 }
 
 export function htmlToRichText(html: string) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
   return generateJSON(html, exhibitExts)
 }
