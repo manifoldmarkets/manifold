@@ -180,11 +180,15 @@ const governorMidterms: StateElectionMarket[] = [
 
 export async function getStaticProps() {
   const senateContracts = await Promise.all(
-    senateMidterms.map((m) => getContractFromSlug(m.slug))
+    senateMidterms.map((m) =>
+      getContractFromSlug(m.slug).then((c) => c ?? null)
+    )
   )
 
   const governorContracts = await Promise.all(
-    governorMidterms.map((m) => getContractFromSlug(m.slug))
+    governorMidterms.map((m) =>
+      getContractFromSlug(m.slug).then((c) => c ?? null)
+    )
   )
 
   return {

@@ -59,13 +59,16 @@ const useUpdateContracts = (
     if (contracts.some((c) => c === undefined)) return
 
     // listen to contract updates
-    const unsubs = contracts.map((c, i) =>
-      listenForContract(
-        c.id,
-        (newC) =>
-          newC && setContracts(setAt(contracts, i, newC as CPMMBinaryContract))
+    const unsubs = contracts
+      .filter((c) => !!c)
+      .map((c, i) =>
+        listenForContract(
+          c.id,
+          (newC) =>
+            newC &&
+            setContracts(setAt(contracts, i, newC as CPMMBinaryContract))
+        )
       )
-    )
     return () => unsubs.forEach((u) => u())
   }, [contracts, setContracts])
 
