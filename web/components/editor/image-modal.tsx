@@ -22,35 +22,32 @@ export function ImageModal(props: {
   const { upload, open, setOpen } = props
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="gap-2 rounded bg-white p-6">
-        <Tabs
-          tabs={[
-            {
-              title: 'Upload file',
-              content: (
-                <Col>
-                  <FileUploadButton
-                    onFiles={(files) => {
-                      setOpen(false)
-                      upload.mutate(files)
-                    }}
-                    className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
-                    <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <span className="mt-2 block text-sm font-medium text-gray-400">
-                      Upload an image file
-                    </span>
-                  </FileUploadButton>
-                </Col>
-              ),
-            },
-            {
-              title: 'Dream',
-              content: <DreamTab {...props} />,
-            },
-          ]}
-        />
-      </Col>
+      <Tabs
+        className="gap-2 rounded bg-white p-6"
+        tabs={[
+          {
+            title: 'Upload file',
+            content: (
+              <FileUploadButton
+                onFiles={(files) => {
+                  setOpen(false)
+                  upload.mutate(files)
+                }}
+                className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <span className="mt-2 block text-sm font-medium text-gray-400">
+                  Upload an image file
+                </span>
+              </FileUploadButton>
+            ),
+          },
+          {
+            title: 'Dream',
+            content: <DreamTab {...props} />,
+          },
+        ]}
+      />
     </Modal>
   )
 }
@@ -85,7 +82,7 @@ function DreamTab(props: {
       apiKey: API_KEY,
     }
     const headers = {
-      'api-key': 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K',
+      'Content-Type': 'application/json',
     }
     const response = await fetch(url, {
       method: 'POST',
@@ -128,7 +125,6 @@ function DreamTab(props: {
       {/* Show the current imageUrl */}
       {imageUrl && (
         <>
-          {' '}
           <img src={imageUrl} alt="Image" />
           <Row className="gap-2">
             <Button

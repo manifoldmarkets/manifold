@@ -18,13 +18,13 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
     methods: 'POST',
   })
 
-  const body = JSON.parse(req.body)
+  // const body = JSON.parse(req.body)
   // Check that prompt and apiKey are included in the body
-  if (!body.prompt) {
+  if (!req.body.prompt) {
     res.status(400).json({ message: 'Missing prompt' })
     return
   }
-  if (!body.apiKey) {
+  if (!req.body.apiKey) {
     res.status(400).json({ message: 'Missing apiKey' })
     return
   }
@@ -50,7 +50,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const { _dreamResponse, images } = await generateAsync({
-      ...body,
+      ...req.body,
       // Don't actually write to disk, because we're going to upload it to Firestore
       noStore: true,
     })
@@ -59,7 +59,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
     res.status(200).json({ url })
   } catch (e) {
-    res.status(501).json({ message: `Error running code: ${e}` })
+    res.status(500).json({ message: `Error running code: ${e}` })
   }
 }
 
