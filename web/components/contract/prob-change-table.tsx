@@ -37,12 +37,12 @@ export function ProbChangeTable(props: {
 
   return (
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
-      <Col className="flex-1 gap-4">
+      <Col className="flex-1">
         {filteredPositiveChanges.map((contract) => (
           <ContractCardProbChange key={contract.id} contract={contract} />
         ))}
       </Col>
-      <Col className="flex-1 gap-4">
+      <Col className="flex-1">
         {filteredNegativeChanges.map((contract) => (
           <ContractCardProbChange key={contract.id} contract={contract} />
         ))}
