@@ -15,6 +15,8 @@ import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { NoSEO } from 'web/components/NoSEO'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { removeUndefinedProps } from 'common/util/object'
 
 export default function CreateDateDocPage() {
   const user = useUser()
@@ -26,6 +28,7 @@ export default function CreateDateDocPage() {
   const title = `${user?.name}'s Date Doc`
   const subtitle = 'Manifold dating docs'
   const [birthday, setBirthday] = useState<undefined | string>(undefined)
+  const [createMarket, setCreateMarket] = useState(true)
   const [question, setQuestion] = useState(
     'Will I find a partner in the next 3 months?'
   )
@@ -38,7 +41,11 @@ export default function CreateDateDocPage() {
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
-    user && birthday && editor && editor.isEmpty === false && question
+    user &&
+    birthday &&
+    editor &&
+    editor.isEmpty === false &&
+    (question || !createMarket)
 
   async function saveDateDoc() {
     if (!user || !editor || !birthdayTime) return
@@ -46,15 +53,15 @@ export default function CreateDateDocPage() {
     const newPost: Omit<
       DateDoc,
       'id' | 'creatorId' | 'createdTime' | 'slug' | 'contractSlug'
-    > & { question: string } = {
+    > & { question?: string } = removeUndefinedProps({
       title,
       subtitle,
       content: editor.getJSON(),
       bounty: 0,
       birthday: birthdayTime,
       type: 'date-doc',
-      question,
-    }
+      question: createMarket ? question : undefined,
+    })
 
     const result = await createPost(newPost)
 
@@ -106,9 +113,13 @@ export default function CreateDateDocPage() {
             </Col>
 
             <Col className="gap-4">
-              <div className="">
-                Finally, we'll create an (unlisted) prediction market!
-              </div>
+              <Row className="items-center gap-4">
+                <ShortToggle
+                  on={createMarket}
+                  setOn={(on) => setCreateMarket(on)}
+                />
+                Create an (unlisted) prediction market attached to the date doc
+              </Row>
 
               <Col className="gap-2">
                 <Textarea
@@ -116,6 +127,7 @@ export default function CreateDateDocPage() {
                   maxLength={MAX_QUESTION_LENGTH}
                   value={question}
                   onChange={(e) => setQuestion(e.target.value || '')}
+                  disabled={!createMarket}
                 />
                 <div className="ml-2 text-gray-500">Cost: M$100</div>
               </Col>
