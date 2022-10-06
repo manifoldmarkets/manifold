@@ -5,6 +5,8 @@ import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from '../../common/util/object'
+import { htmlToRichText } from 'common/util/parse'
+import { micromark } from 'micromark'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -31,7 +33,9 @@ const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
 
 const postSchema = z.object({
   contractId: z.string(),
-  content: contentSchema,
+  content: contentSchema.optional(),
+  html: z.string().optional(),
+  markdown: z.string().optional(),
 })
 
 const MAX_COMMENT_JSON_LENGTH = 20000
@@ -40,7 +44,7 @@ const MAX_COMMENT_JSON_LENGTH = 20000
 // Replies, posts, chats are not supported yet.
 export const createcomment = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { contractId, content } = validate(postSchema, req.body)
+  const { contractId, content, html, markdown } = validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
   const contract = await getContract(contractId)
@@ -51,6 +55,20 @@ export const createcomment = newEndpoint({}, async (req, auth) => {
   if (!contract) {
     throw new APIError(400, 'No contract exists with the given ID.')
   }
+
+  let contentJson = null
+  if (content) {
+    contentJson = content
+  } else if (html && !content) {
+    contentJson = htmlToRichText(html)
+  } else if (markdown && !content) {
+    contentJson = htmlToRichText(micromark(markdown))
+  }
+
+  if (!contentJson) {
+    throw new APIError(400, 'No comment content provided.')
+  }
+
   if (JSON.stringify(content).length > MAX_COMMENT_JSON_LENGTH) {
     throw new APIError(
       400,
