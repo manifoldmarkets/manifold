@@ -1,13 +1,9 @@
-import { sortBy } from 'lodash'
 import clsx from 'clsx'
-import { contractPath } from 'web/lib/firebase/contracts'
 import { CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
-import { SiteLink } from '../site-link'
+import { sortBy } from 'lodash'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../loading-indicator'
-import { useContractWithPreload } from 'web/hooks/use-contract'
-import { Card } from '../card'
 import { ContractCardProbChange } from './contract-card'
 
 export function ProbChangeTable(props: {

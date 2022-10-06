@@ -19,7 +19,7 @@ export function CharityCard(props: { charity: Charity; match?: number }) {
   return (
     <Link href={`/charity/${slug}`}>
       <a className="flex-1">
-        <Card className='!rounded-2xl'>
+        <Card className="!rounded-2xl">
           <Row className="mt-6 mb-2">
             {tags?.includes('Featured') && <FeaturedBadge />}
           </Row>
