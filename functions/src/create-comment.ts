@@ -6,7 +6,6 @@ import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from '../../common/util/object'
 import { htmlToRichText } from '../../common/util/parse'
-import { micromark } from 'micromark'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -59,9 +58,11 @@ export const createcomment = newEndpoint({}, async (req, auth) => {
   let contentJson = null
   if (content) {
     contentJson = content
-  } else if (html && !content) {
+  } else if (html) {
     contentJson = htmlToRichText(html)
-  } else if (markdown && !content) {
+  } else if (markdown) {
+    // Dynamic import, since micromark doesn't support CommonJS require()
+    const { micromark } = await import('micromark')
     contentJson = htmlToRichText(micromark(markdown))
   }
 
