@@ -3,7 +3,7 @@ import { getOutcomeProbability } from 'common/calculate'
 import { Pagination } from 'web/components/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
-import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
+import { CommentsAnswer } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
@@ -157,59 +157,22 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 
   if (contract.outcomeType === 'FREE_RESPONSE') {
-    const sortedAnswers = sortBy(
-      contract.answers,
-      (a) => -getOutcomeProbability(contract, a.id)
-    )
-    const commentsByOutcome = groupBy(
-      sortedComments,
-      (c) => c.answerOutcome ?? c.betOutcome ?? '_'
-    )
-    // const generalTopLevelComments = topLevelComments.filter(
-    //   (c) => c.answerOutcome === undefined && c.betId === undefined
-    // )
-    // console.log('answer: ', sortedAnswers)
-    // console.log('comments by outcome:', commentsByOutcome)
     return (
       <>
         {sortRow}
         <ContractCommentInput className="mb-5" contract={contract} />
         {topLevelComments.map((parent) => {
           if (parent.answerOutcome != undefined) {
-            const answer = sortedAnswers.find(
+            const answer = contract.answers.find(
               (answer) => answer.id === parent.answerOutcome
             )
             if (answer === undefined) {
               console.error('Could not find answer that matches ID')
               return <></>
             } else {
-              const { username, avatarUrl, name, text } = answer
-              const answerElementId = `answer-${answer.id}`
               return (
                 <>
-                  <Row className="bg-greyscale-2 w-fit gap-1 rounded-t-xl rounded-bl-xl px-2 py-2">
-                    <div className="ml-2">
-                      <Avatar
-                        username={username}
-                        avatarUrl={avatarUrl}
-                        size="xxs"
-                      />
-                    </div>
-                    <Col>
-                      <Row className="gap-1">
-                        <div className="text-greyscale-6 text-xs">
-                          <UserLink username={username} name={name} /> answered
-                          <CopyLinkDateTimeComponent
-                            prefix={contract.creatorUsername}
-                            slug={contract.slug}
-                            createdTime={answer.createdTime}
-                            elementId={answerElementId}
-                          />
-                        </div>
-                      </Row>
-                      <div className="text-greyscale-7 text-sm">{text}</div>
-                    </Col>
-                  </Row>
+                  <CommentsAnswer answer={answer} contract={contract} />
                   <Row>
                     <div className="ml-2">
                       <Curve size={28} strokeWidth={1} color="#B1B1C7" />
