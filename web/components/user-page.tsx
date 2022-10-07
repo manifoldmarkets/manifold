@@ -301,13 +301,13 @@ export function ProfilePrivateStats(props: {
           <span className="mx-auto text-xs sm:text-sm">profit</span>
         </Col>
         <Col
-          className={
-            'text-greyscale-4 text-md flex-shrink-0 cursor-pointer sm:text-lg'
-          }
+          className={'text-md flex-shrink-0 cursor-pointer sm:text-lg'}
           onClick={() => setShowBadgesModal(true)}
         >
           <span>🏅 {calculateTotalUsersBadges(user)}</span>
-          <span className={'mx-auto text-xs sm:text-sm'}>badges</span>
+          <span className={'text-greyscale-4 mx-auto text-xs sm:text-sm'}>
+            badges
+          </span>
         </Col>
         <Col
           className={
