@@ -280,7 +280,7 @@ export const getBinaryBetStats = (
     betAmount ?? 0,
     contract,
     limitProb,
-    unfilledBets as LimitBet[],
+    unfilledBets,
     balanceByUserId
   )
   const remainingMatched =
