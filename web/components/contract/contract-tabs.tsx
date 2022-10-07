@@ -80,7 +80,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const { contract } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
-  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Best', {
+  const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
     key: `contract-comments-sort`,
     store: storageStore(safeLocalStorage()),
   })
@@ -123,7 +123,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const topLevelComments = commentsByParent['_'] ?? []
 
   const sortRow = comments.length > 0 && (
-    <Row className="mb-4 items-center">
+    <Row className="mb-2 items-center">
       <Button
         size={'xs'}
         color={'gray-white'}
@@ -177,8 +177,9 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
         <Col className="mt-8 flex w-full">
           <div className="text-md mt-8 mb-2 text-left">General Comments</div>
           <div className="mb-4 w-full border-b border-gray-200" />
-          {sortRow}
           <ContractCommentInput className="mb-5" contract={contract} />
+          {sortRow}
+
           {generalTopLevelComments.map((comment) => (
             <FeedCommentThread
               key={comment.id}
@@ -194,8 +195,9 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   } else {
     return (
       <>
-        {sortRow}
         <ContractCommentInput className="mb-5" contract={contract} />
+        {sortRow}
+
         {topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}
