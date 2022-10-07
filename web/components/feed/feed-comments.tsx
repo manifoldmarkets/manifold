@@ -109,12 +109,18 @@ export const FeedComment = memo(function FeedComment(props: {
   }
   const totalAwarded = bountiesAwarded ?? 0
 
-  const router = useRouter()
-  const highlighted = router.asPath.endsWith(`#${comment.id}`)
+  const { isReady, asPath } = useRouter()
+  const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (highlighted && commentRef.current != null) {
+    if (isReady && asPath.endsWith(`#${comment.id}`)) {
+      setHighlighted(true)
+    }
+  }, [isReady, asPath, comment.id])
+
+  useEffect(() => {
+    if (highlighted && commentRef.current) {
       commentRef.current.scrollIntoView(true)
     }
   }, [highlighted])
@@ -126,7 +132,7 @@ export const FeedComment = memo(function FeedComment(props: {
       className={clsx(
         'relative',
         indent ? 'ml-6' : '',
-        highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
+        highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] px-2 py-4` : ''
       )}
     >
       {/*draw a gray line from the comment to the left:*/}
