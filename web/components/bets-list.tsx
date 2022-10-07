@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
-import { Bet } from 'web/lib/firebase/bets'
+import { Bet, MAX_USER_BETS_LOADED } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
 import {
   formatMoney,
@@ -17,6 +17,7 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
+  MAX_USER_BET_CONTRACTS_LOADED,
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { sellBet } from 'web/lib/firebase/api'
@@ -50,6 +51,7 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { ExclamationIcon } from '@heroicons/react/outline'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -79,6 +81,10 @@ export function BetsList(props: { user: User }) {
   const contractsById = useMemo(() => {
     return contractList ? keyBy(contractList, 'id') : undefined
   }, [contractList])
+
+  const loadedPartialData =
+    userBets?.length === MAX_USER_BETS_LOADED ||
+    contractList?.length === MAX_USER_BET_CONTRACTS_LOADED
 
   const [sort, setSort] = usePersistentState<BetSort>('newest', {
     key: 'bets-list-sort',
@@ -167,6 +173,13 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col>
+      {loadedPartialData && (
+        <Row className="my-4 items-center gap-2 self-start rounded bg-yellow-50 p-4">
+          <ExclamationIcon className="h-5 w-5" />
+          <div>Partial trade data only</div>
+        </Row>
+      )}
+
       <Col className="justify-between gap-4 sm:flex-row">
         <Row className="gap-4">
           <Col>
