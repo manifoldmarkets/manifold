@@ -181,7 +181,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
                   </Row>
                   <Row>
                     <div className="ml-1">
-                      <Curve size={28} strokeWidth={1} color="#B1B1C7" />
+                      <Curve size={28} strokeWidth={1} color="#D8D8EB" />
                     </div>
                     <div className="w-full pt-1">
                       <FeedCommentThread

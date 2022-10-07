@@ -185,7 +185,7 @@ export function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'hover:bg-greyscale-1 ml-8 gap-2 transition-colors',
+        'hover:bg-greyscale-1 ml-10 gap-2 transition-colors',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
       onMouseOver={() => setShowActions(true)}
@@ -194,7 +194,7 @@ export function FeedComment(props: {
       <Col className="-ml-3">
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
         <span
-          className="bg-greyscale-4 mx-auto h-full w-[1.5px]"
+          className="bg-greyscale-3 mx-auto h-full w-[1.5px]"
           aria-hidden="true"
         />
       </Col>

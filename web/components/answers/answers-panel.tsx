@@ -25,6 +25,9 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 import { CATEGORY_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
+import { ChatAlt2Icon, ChatAltIcon } from '@heroicons/react/solid'
+import { ChatIcon } from '@heroicons/react/outline'
+import { ReplyTo } from '../feed/feed-comments'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
@@ -236,6 +239,16 @@ function OpenAnswer(props: {
                 BUY
               </Button>
             )}
+            {
+              <button
+                className="p-1"
+                //       onClick={() =>
+                //  //TODO: make replies
+                //       }
+              >
+                <ChatIcon className="text-greyscale-4 h-5 w-5" />
+              </button>
+            }
           </Row>
         </Row>
         <hr
