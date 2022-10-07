@@ -1,6 +1,7 @@
 import { mapValues, groupBy, sumBy, uniq } from 'lodash'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { FieldValue } from 'firebase-admin/firestore'
 
 import { APIError, newEndpoint, validate } from './api'
 import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
@@ -10,8 +11,7 @@ import { addObjects, removeUndefinedProps } from '../../common/util/object'
 import { log } from './utils'
 import { Bet } from '../../common/bet'
 import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
-import { getUnfilledBetsQuery, updateMakers } from './place-bet'
-import { FieldValue } from 'firebase-admin/firestore'
+import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from './follow-market'
 
@@ -29,16 +29,18 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
-    const [[contractSnap, userSnap], userBetsSnap, unfilledBetsSnap] =
-      await Promise.all([
-        transaction.getAll(contractDoc, userDoc),
-        transaction.get(betsQ),
-        transaction.get(getUnfilledBetsQuery(contractDoc)),
-      ])
+    const [
+      [contractSnap, userSnap],
+      userBetsSnap,
+      { unfilledBets, balanceByUserId },
+    ] = await Promise.all([
+      transaction.getAll(contractDoc, userDoc),
+      transaction.get(betsQ),
+      getUnfilledBetsAndUserBalances(transaction, contractDoc),
+    ])
     if (!contractSnap.exists) throw new APIError(400, 'Contract not found.')
     if (!userSnap.exists) throw new APIError(400, 'User not found.')
     const userBets = userBetsSnap.docs.map((doc) => doc.data() as Bet)
-    const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
@@ -86,13 +88,15 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
     let loanPaid = saleFrac * loanAmount
     if (!isFinite(loanPaid)) loanPaid = 0
 
-    const { newBet, newPool, newP, fees, makers } = getCpmmSellBetInfo(
-      soldShares,
-      chosenOutcome,
-      contract,
-      unfilledBets,
-      loanPaid
-    )
+    const { newBet, newPool, newP, fees, makers, ordersToCancel } =
+      getCpmmSellBetInfo(
+        soldShares,
+        chosenOutcome,
+        contract,
+        unfilledBets,
+        balanceByUserId,
+        loanPaid
+      )
 
     if (
       !newP ||
@@ -126,6 +130,12 @@ export const sellshares = newEndpoint({}, async (req, auth) => {
         volume: volume + Math.abs(newBet.amount),
       })
     )
+
+    for (const bet of ordersToCancel) {
+      transaction.update(contractDoc.collection('bets').doc(bet.id), {
+        isCancelled: true,
+      })
+    }
 
     return { newBet, makers, maxShares, soldShares }
   })

@@ -23,6 +23,7 @@ import { floatingEqual } from '../../common/util/math'
 import { redeemShares } from './redeem-shares'
 import { log } from './utils'
 import { addUserToContractFollowers } from './follow-market'
+import { filterDefined } from '../../common/util/array'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -73,9 +74,11 @@ export const placebet = newEndpoint({}, async (req, auth) => {
       newTotalLiquidity,
       newP,
       makers,
+      ordersToCancel,
     } = await (async (): Promise<
       BetInfo & {
         makers?: maker[]
+        ordersToCancel?: LimitBet[]
       }
     > => {
       if (
@@ -99,17 +102,16 @@ export const placebet = newEndpoint({}, async (req, auth) => {
           limitProb = Math.round(limitProb * 100) / 100
         }
 
-        const unfilledBetsSnap = await trans.get(
-          getUnfilledBetsQuery(contractDoc)
-        )
-        const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
+        const { unfilledBets, balanceByUserId } =
+          await getUnfilledBetsAndUserBalances(trans, contractDoc)
 
         return getBinaryCpmmBetInfo(
           outcome,
           amount,
           contract,
           limitProb,
-          unfilledBets
+          unfilledBets,
+          balanceByUserId
         )
       } else if (
         (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
@@ -152,6 +154,13 @@ export const placebet = newEndpoint({}, async (req, auth) => {
     if (makers) {
       updateMakers(makers, betDoc.id, contractDoc, trans)
     }
+    if (ordersToCancel) {
+      for (const bet of ordersToCancel) {
+        trans.update(contractDoc.collection('bets').doc(bet.id), {
+          isCancelled: true,
+        })
+      }
+    }
 
     if (newBet.amount !== 0) {
       trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
@@ -193,11 +202,34 @@ export const placebet = newEndpoint({}, async (req, auth) => {
 
 const firestore = admin.firestore()
 
-export const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {
+const getUnfilledBetsQuery = (contractDoc: DocumentReference) => {
   return contractDoc
     .collection('bets')
     .where('isFilled', '==', false)
     .where('isCancelled', '==', false) as Query<LimitBet>
+}
+
+export const getUnfilledBetsAndUserBalances = async (
+  trans: Transaction,
+  contractDoc: DocumentReference
+) => {
+  const unfilledBetsSnap = await trans.get(getUnfilledBetsQuery(contractDoc))
+  const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
+
+  // Get balance of all users with open limit orders.
+  const userIds = uniq(unfilledBets.map((bet) => bet.userId))
+  const userDocs =
+    userIds.length === 0
+      ? []
+      : await trans.getAll(
+          ...userIds.map((userId) => firestore.doc(`users/${userId}`))
+        )
+  const users = filterDefined(userDocs.map((doc) => doc.data() as User))
+  const balanceByUserId = Object.fromEntries(
+    users.map((user) => [user.id, user.balance])
+  )
+
+  return { unfilledBets, balanceByUserId }
 }
 
 type maker = {
