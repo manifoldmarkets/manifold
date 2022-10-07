@@ -35,7 +35,7 @@ import { useSaveBinaryShares } from './use-save-binary-shares'
 import { BetSignUpPrompt } from './sign-up-prompt'
 import { ProbabilityOrNumericInput } from './probability-input'
 import { track } from 'web/lib/service/analytics'
-import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
 import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
@@ -55,7 +55,9 @@ export function BetPanel(props: {
   const { contract, className } = props
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
   const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 
   const [isLimitOrder, setIsLimitOrder] = useState(false)
@@ -86,12 +88,14 @@ export function BetPanel(props: {
               contract={contract}
               user={user}
               unfilledBets={unfilledBets}
+              balanceByUserId={balanceByUserId}
             />
             <LimitOrderPanel
               hidden={!isLimitOrder}
               contract={contract}
               user={user}
               unfilledBets={unfilledBets}
+              balanceByUserId={balanceByUserId}
             />
           </>
         ) : (
@@ -117,7 +121,9 @@ export function SimpleBetPanel(props: {
   const user = useUser()
   const [isLimitOrder, setIsLimitOrder] = useState(false)
 
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
 
   return (
     <Col className={className}>
@@ -142,6 +148,7 @@ export function SimpleBetPanel(props: {
           contract={contract}
           user={user}
           unfilledBets={unfilledBets}
+          balanceByUserId={balanceByUserId}
           onBuySuccess={onBetSuccess}
         />
         <LimitOrderPanel
@@ -149,6 +156,7 @@ export function SimpleBetPanel(props: {
           contract={contract}
           user={user}
           unfilledBets={unfilledBets}
+          balanceByUserId={balanceByUserId}
           onBuySuccess={onBetSuccess}
         />
 
@@ -167,13 +175,21 @@ export function SimpleBetPanel(props: {
 export function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
-  unfilledBets: Bet[]
+  unfilledBets: LimitBet[]
+  balanceByUserId: { [userId: string]: number }
   hidden: boolean
   onBuySuccess?: () => void
   mobileView?: boolean
 }) {
-  const { contract, user, unfilledBets, hidden, onBuySuccess, mobileView } =
-    props
+  const {
+    contract,
+    user,
+    unfilledBets,
+    balanceByUserId,
+    hidden,
+    onBuySuccess,
+    mobileView,
+  } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -261,7 +277,8 @@ export function BuyPanel(props: {
     betAmount ?? 0,
     contract,
     undefined,
-    unfilledBets as LimitBet[]
+    unfilledBets,
+    balanceByUserId
   )
 
   const [seeLimit, setSeeLimit] = useState(false)
@@ -416,6 +433,7 @@ export function BuyPanel(props: {
             contract={contract}
             user={user}
             unfilledBets={unfilledBets}
+            balanceByUserId={balanceByUserId}
           />
           <LimitBets
             contract={contract}
@@ -431,11 +449,19 @@ export function BuyPanel(props: {
 function LimitOrderPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
-  unfilledBets: Bet[]
+  unfilledBets: LimitBet[]
+  balanceByUserId: { [userId: string]: number }
   hidden: boolean
   onBuySuccess?: () => void
 }) {
-  const { contract, user, unfilledBets, hidden, onBuySuccess } = props
+  const {
+    contract,
+    user,
+    unfilledBets,
+    balanceByUserId,
+    hidden,
+    onBuySuccess,
+  } = props
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -581,7 +607,8 @@ function LimitOrderPanel(props: {
     yesAmount,
     contract,
     yesLimitProb ?? initialProb,
-    unfilledBets as LimitBet[]
+    unfilledBets,
+    balanceByUserId
   )
   const yesReturnPercent = formatPercent(yesReturn)
 
@@ -595,7 +622,8 @@ function LimitOrderPanel(props: {
     noAmount,
     contract,
     noLimitProb ?? initialProb,
-    unfilledBets as LimitBet[]
+    unfilledBets,
+    balanceByUserId
   )
   const noReturnPercent = formatPercent(noReturn)
 
@@ -830,7 +858,9 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
 
   const betDisabled = isSubmitting || !amount || error !== undefined
 
@@ -889,7 +919,8 @@ export function SellPanel(props: {
     contract,
     sellQuantity ?? 0,
     sharesOutcome,
-    unfilledBets
+    unfilledBets,
+    balanceByUserId
   )
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis

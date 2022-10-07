@@ -8,6 +8,7 @@ import {
   withoutAnteBets,
 } from 'web/lib/firebase/bets'
 import { LimitBet } from 'common/bet'
+import { getUser } from 'web/lib/firebase/users'
 
 export const useBets = (
   contractId: string,
@@ -61,4 +62,32 @@ export const useUnfilledBets = (contractId: string) => {
     [contractId]
   )
   return unfilledBets
+}
+
+export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
+  const [data, setData] = useState<{
+    unfilledBets: LimitBet[]
+    balanceByUserId: { [userId: string]: number }
+  }>({ unfilledBets: [], balanceByUserId: {} })
+
+  useEffect(() => {
+    let requestCount = 0
+
+    return listenForUnfilledBets(contractId, (unfilledBets) => {
+      requestCount++
+      const count = requestCount
+
+      Promise.all(unfilledBets.map((bet) => getUser(bet.userId))).then(
+        (users) => {
+          if (count === requestCount) {
+            const balanceByUserId = Object.fromEntries(
+              users.map((user) => [user.id, user.balance])
+            )
+            setData({ unfilledBets, balanceByUserId })
+          }
+        }
+      )
+    })
+  }, [contractId])
+  return data
 }
