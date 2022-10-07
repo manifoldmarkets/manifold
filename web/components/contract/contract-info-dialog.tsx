@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { capitalize } from 'lodash'
 
 import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
 import { LiquidityBountyPanel } from 'web/components/contract/liquidity-bounty-panel'
 import { Col } from '../layout/col'
@@ -54,6 +54,7 @@ export function ContractInfoDialog(props: {
     mechanism,
     outcomeType,
     id,
+    elasticity,
   } = contract
 
   const typeDisplay =
@@ -142,13 +143,32 @@ export function ContractInfoDialog(props: {
               )}
 
               <tr>
-                <td>Volume</td>
+                <td>
+                  <span className="mr-1">Volume</span>
+                  <InfoTooltip text="Total amount bought or sold" />
+                </td>
                 <td>{formatMoney(contract.volume)}</td>
               </tr>
 
               <tr>
                 <td>{capitalize(BETTORS)}</td>
                 <td>{uniqueBettorCount ?? '0'}</td>
+              </tr>
+
+              <tr>
+                <td>
+                  <Row>
+                    <span className="mr-1">Elasticity</span>
+                    <InfoTooltip
+                      text={
+                        mechanism === 'cpmm-1'
+                          ? 'Probability change between a M$50 bet on YES and NO'
+                          : 'Probability change from a M$100 bet'
+                      }
+                    />
+                  </Row>
+                </td>
+                <td>{formatPercent(elasticity)}</td>
               </tr>
 
               <tr>
