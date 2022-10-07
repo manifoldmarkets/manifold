@@ -123,7 +123,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const topLevelComments = commentsByParent['_'] ?? []
 
   const sortRow = comments.length > 0 && (
-    <Row className="mb-2 items-center">
+    <Row className="mb-4 items-center">
       <Button
         size={'xs'}
         color={'gray-white'}
