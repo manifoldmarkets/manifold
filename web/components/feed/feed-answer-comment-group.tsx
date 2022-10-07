@@ -18,6 +18,7 @@ import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { UserLink } from 'web/components/user-link'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import { ReplyToggle } from '../comments/comments'
+import { ReplyIcon } from '@heroicons/react/solid'
 
 export function FeedAnswerCommentGroup(props: {
   contract: FreeResponseContract
@@ -62,11 +63,11 @@ export function FeedAnswerCommentGroup(props: {
               elementId={answerElementId}
             />
           </div>
-          <Row className="align-items justify-between gap-2 sm:flex-row">
-            <span className="text-md whitespace-pre-line">
-              <Linkify text={text} />
-            </span>
-            <div>
+          {/* <Row className="align-items justify-between gap-2 sm:flex-row"> */}
+          <span className="text-md whitespace-pre-line">
+            <Linkify text={text} />
+          </span>
+          {/* <div>
               <button
                 className="text-xs font-bold text-gray-500 hover:underline"
                 onClick={() =>
@@ -75,13 +76,25 @@ export function FeedAnswerCommentGroup(props: {
               >
                 Reply
               </button>
+            </div> */}
+          {/* </Row> */}
+          <Row className="w-full">
+            <ReplyToggle
+              seeReplies={seeReplies}
+              numComments={answerComments.length}
+              onClick={() => setSeeReplies(!seeReplies)}
+            />
+            <div className="justify-self-end">
+              <button
+                className="text-greyscale-5"
+                onClick={() =>
+                  setReplyTo({ id: answer.id, username: answer.username })
+                }
+              >
+                <ReplyIcon className="h-5 w-5" />
+              </button>
             </div>
           </Row>
-          <ReplyToggle
-            seeReplies={seeReplies}
-            numComments={answerComments.length}
-            onClick={() => setSeeReplies(!seeReplies)}
-          />
         </Col>
       </Row>
       {seeReplies && (

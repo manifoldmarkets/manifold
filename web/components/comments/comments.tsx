@@ -9,7 +9,13 @@ export function ReplyToggle(props: {
 }) {
   const { seeReplies, numComments, onClick } = props
   return (
-    <button className="text-left text-sm text-indigo-600" onClick={onClick}>
+    <button
+      className={clsx(
+        'text-left text-sm text-indigo-600',
+        numComments === 0 ? 'hidden' : ''
+      )}
+      onClick={onClick}
+    >
       <Row className="items-center gap-1">
         <div>
           {numComments} {numComments === 1 ? 'Reply' : 'Replies'}

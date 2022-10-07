@@ -37,6 +37,13 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import { connectStorageEmulator } from 'firebase/storage'
+import { Avatar } from '../avatar'
+import { UserLink } from '../user-link'
+import { CopyLinkDateTimeComponent } from '../feed/copy-link-date-time'
+import { Linkify } from '../linkify'
+import { ArrowRightIcon } from '@heroicons/react/solid'
+import Curve from 'web/public/custom-components/curve'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -149,77 +156,117 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     </Row>
   )
 
-  // if (contract.outcomeType === 'FREE_RESPONSE') {
-  //   const sortedAnswers = sortBy(
-  //     contract.answers,
-  //     (a) => -getOutcomeProbability(contract, a.id)
-  //   )
-  //   const commentsByOutcome = groupBy(
-  //     sortedComments,
-  //     (c) => c.answerOutcome ?? c.betOutcome ?? '_'
-  //   )
-  //   const generalTopLevelComments = topLevelComments.filter(
-  //     (c) => c.answerOutcome === undefined && c.betId === undefined
-  //   )
-
-  //   return (
-  //     <>
-  //       <Col className="flex w-full">
-  //         <div className="mb-4 w-full border-gray-200" />
-  //         {sortedAnswers.map((answer) => {
-  //           const answerComments =
-  //             commentsByOutcome[answer.number.toString()] ?? []
-  //           if (answerComments.length > 0) {
-  //             return (
-  //               <div key={answer.id} className="relative pb-4">
-  //                 <FeedAnswerCommentGroup
-  //                   contract={contract}
-  //                   answer={answer}
-  //                   answerComments={
-  //                     commentsByOutcome[answer.number.toString()] ?? []
-  //                   }
-  //                   tips={tips}
-  //                 />
-  //               </div>
-  //             )
-  //           } else {
-  //             return <></>
-  //           }
-  //         })}
-  //         <ContractCommentInput className="mb-5" contract={contract} />
-  //         {sortRow}
-  //         {generalTopLevelComments.map((comment) => (
-  //           <FeedCommentThread
-  //             key={comment.id}
-  //             contract={contract}
-  //             parentComment={comment}
-  //             threadComments={commentsByParent[comment.id] ?? []}
-  //             tips={tips}
-  //           />
-  //         ))}
-  //       </Col>
-  //     </>
-  //   )
-  // } else {
-  return (
-    <>
-      {sortRow}
-      <ContractCommentInput className="mb-5" contract={contract} />
-      {topLevelComments.map((parent) => (
-        <FeedCommentThread
-          key={parent.id}
-          contract={contract}
-          parentComment={parent}
-          threadComments={sortBy(
-            commentsByParent[parent.id] ?? [],
-            (c) => c.createdTime
-          )}
-          tips={tips}
-        />
-      ))}
-    </>
-  )
-  // }
+  if (contract.outcomeType === 'FREE_RESPONSE') {
+    const sortedAnswers = sortBy(
+      contract.answers,
+      (a) => -getOutcomeProbability(contract, a.id)
+    )
+    const commentsByOutcome = groupBy(
+      sortedComments,
+      (c) => c.answerOutcome ?? c.betOutcome ?? '_'
+    )
+    // const generalTopLevelComments = topLevelComments.filter(
+    //   (c) => c.answerOutcome === undefined && c.betId === undefined
+    // )
+    // console.log('answer: ', sortedAnswers)
+    // console.log('comments by outcome:', commentsByOutcome)
+    return (
+      <>
+        {sortRow}
+        <ContractCommentInput className="mb-5" contract={contract} />
+        {topLevelComments.map((parent) => {
+          if (parent.answerOutcome != undefined) {
+            const answer = sortedAnswers.find(
+              (answer) => answer.id === parent.answerOutcome
+            )
+            if (answer === undefined) {
+              console.error('Could not find answer that matches ID')
+              return <></>
+            } else {
+              const { username, avatarUrl, name, text } = answer
+              const answerElementId = `answer-${answer.id}`
+              return (
+                <>
+                  <Row className="bg-greyscale-2 w-fit gap-1 rounded-t-xl rounded-bl-xl px-2 py-2">
+                    <div className="ml-2">
+                      <Avatar
+                        username={username}
+                        avatarUrl={avatarUrl}
+                        size="xxs"
+                      />
+                    </div>
+                    <Col>
+                      <Row className="gap-1">
+                        <div className="text-greyscale-6 text-xs">
+                          <UserLink username={username} name={name} /> answered
+                          <CopyLinkDateTimeComponent
+                            prefix={contract.creatorUsername}
+                            slug={contract.slug}
+                            createdTime={answer.createdTime}
+                            elementId={answerElementId}
+                          />
+                        </div>
+                      </Row>
+                      <div className="text-greyscale-7 text-sm">{text}</div>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <div className="ml-2">
+                      <Curve size={28} strokeWidth={1} color="#B1B1C7" />
+                    </div>
+                    <div className="w-full pt-1">
+                      <FeedCommentThread
+                        key={parent.id}
+                        contract={contract}
+                        parentComment={parent}
+                        threadComments={sortBy(
+                          commentsByParent[parent.id] ?? [],
+                          (c) => c.createdTime
+                        )}
+                        tips={tips}
+                      />
+                    </div>
+                  </Row>
+                </>
+              )
+            }
+          } else {
+            return (
+              <FeedCommentThread
+                key={parent.id}
+                contract={contract}
+                parentComment={parent}
+                threadComments={sortBy(
+                  commentsByParent[parent.id] ?? [],
+                  (c) => c.createdTime
+                )}
+                tips={tips}
+              />
+            )
+          }
+        })}
+      </>
+    )
+  } else {
+    return (
+      <>
+        {sortRow}
+        <ContractCommentInput className="mb-5" contract={contract} />
+        {topLevelComments.map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            contract={contract}
+            parentComment={parent}
+            threadComments={sortBy(
+              commentsByParent[parent.id] ?? [],
+              (c) => c.createdTime
+            )}
+            tips={tips}
+          />
+        ))}
+      </>
+    )
+  }
 })
 
 const BetsTabContent = memo(function BetsTabContent(props: {

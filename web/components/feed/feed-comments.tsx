@@ -1,5 +1,5 @@
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { AnyContractType, Contract } from 'common/contract'
 import React, { useEffect, useRef, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
@@ -115,35 +115,53 @@ export function FeedComment(props: {
       </Col>
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Row>
-          <Content
-            className="text-greyscale-7 mt-2 grow text-[14px]"
-            content={content || text}
-            smallImage
-          />
-          <Row
-            className={clsx(
-              'ml-2 items-center gap-2 text-xs text-gray-500 transition-opacity',
-              showActions ? '' : 'opacity-0'
-            )}
-          >
-            {onReplyClick && (
-              <Button
-                className="font-bold hover:underline"
-                onClick={onReplyClick}
-                size="2xs"
-                color="gray-white"
-              >
-                <ReplyIcon className="h-5 w-5" />
-              </Button>
-            )}
-            {tips && <Tipper comment={comment} tips={tips} />}
-            {(contract.openCommentBounties ?? 0) > 0 && (
-              <AwardBountyButton comment={comment} contract={contract} />
-            )}
-          </Row>
-        </Row>
+        {/* TODO: bug where if this is iFrame, it does not scroll */}
+        <Content
+          className="text-greyscale-7 mt-2 grow text-[14px]"
+          content={content || text}
+          smallImage
+        />
+        <CommentActions
+          showActions={showActions}
+          onReplyClick={onReplyClick}
+          tips={tips}
+          comment={comment}
+          contract={contract}
+        />
       </Col>
+    </Row>
+  )
+}
+
+export function CommentActions(props: {
+  showActions: boolean
+  onReplyClick?: () => void
+  tips?: CommentTips | undefined
+  comment: ContractComment
+  contract: Contract<AnyContractType>
+}) {
+  const { showActions, onReplyClick, tips, comment, contract } = props
+  return (
+    <Row
+      className={clsx(
+        'ml-2 items-center justify-end gap-2 text-xs text-gray-500 transition-opacity',
+        showActions ? '' : 'md:opacity-0'
+      )}
+    >
+      {onReplyClick && (
+        <Button
+          className="font-bold hover:underline"
+          onClick={onReplyClick}
+          size="2xs"
+          color="gray-white"
+        >
+          <ReplyIcon className="h-5 w-5" />
+        </Button>
+      )}
+      {tips && <Tipper comment={comment} tips={tips} />}
+      {(contract.openCommentBounties ?? 0) > 0 && (
+        <AwardBountyButton comment={comment} contract={contract} />
+      )}
     </Row>
   )
 }
