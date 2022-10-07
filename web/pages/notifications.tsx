@@ -980,13 +980,14 @@ function BetFillNotification(props: {
     </NotificationFrame>
   )
 }
+
 function MarketClosedNotification(props: {
   notification: Notification
   highlighted: boolean
   justSummary: boolean
   isChildOfGroup?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  const { notification, isChildOfGroup, highlighted } = props
   notification.sourceUserAvatarUrl = MANIFOLD_AVATAR_URL
   return (
     <NotificationFrame
