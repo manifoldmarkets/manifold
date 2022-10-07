@@ -53,7 +53,7 @@ const calculateProvenCorrectBadgeRarity = (badge: ProvenCorrectBadge) => {
   return 1
 }
 
-export const streakerBadgeRarityThresholds = [1, 50, 125]
+export const streakerBadgeRarityThresholds = [1, 50, 200]
 const calculateStreakerBadgeRarity = (badge: StreakerBadge) => {
   const { totalBettingStreak } = badge.data
   const thresholdArray = streakerBadgeRarityThresholds
@@ -67,6 +67,7 @@ const calculateStreakerBadgeRarity = (badge: StreakerBadge) => {
   return 1
 }
 
+export const MINIMUM_UNIQUE_BETTORS_FOR_MARKET_MAKER_BADGE = 3
 export const marketMakerBadgeRarityThresholds = [1, 50, 200]
 const calculateMarketMakerBadgeRarity = (badge: MarketCreatorBadge) => {
   const { totalContractsCreated } = badge.data
