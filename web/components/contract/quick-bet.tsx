@@ -33,7 +33,7 @@ import { sellShares } from 'web/lib/firebase/api'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
-import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 
 const BET_SIZE = 10
@@ -48,7 +48,10 @@ export function QuickBet(props: {
   const isCpmm = mechanism === 'cpmm-1'
 
   const userBets = useUserContractBets(user.id, contract.id)
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  // TODO: Below hook fetches a decent amount of data. Maybe not worth it to show prob change on hover?
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
 
   const { hasYesShares, hasNoShares, yesShares, noShares } =
     useSaveBinaryShares(contract, userBets)
@@ -94,7 +97,8 @@ export function QuickBet(props: {
         contract,
         sharesSold,
         sellOutcome,
-        unfilledBets
+        unfilledBets,
+        balanceByUserId
       )
       saleAmount = saleValue
       previewProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
