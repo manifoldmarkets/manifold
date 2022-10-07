@@ -15,9 +15,9 @@
     "dev": "nodemon src/serve.ts",
     "localDbScript": "firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
     "serve": "firebase use dev && yarn build && firebase emulators:start --only functions,firestore,pubsub --import=./firestore_export",
-    "db:update-local-from-remote": "yarn db:backup-remote && gsutil rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
+    "db:update-local-from-remote": "yarn db:backup-remote && gsutil -m rsync -r gs://$npm_package_config_firestore/firestore_export ./firestore_export",
     "db:backup-local": "firebase emulators:export --force ./firestore_export",
-    "db:rename-remote-backup-folder": "gsutil mv gs://$npm_package_config_firestore/firestore_export gs://$npm_package_config_firestore/firestore_export_$(date +%d-%m-%Y-%H-%M)",
+    "db:rename-remote-backup-folder": "gsutil -m mv gs://$npm_package_config_firestore/firestore_export gs://$npm_package_config_firestore/firestore_export_$(date +%d-%m-%Y-%H-%M)",
     "db:backup-remote": "yarn db:rename-remote-backup-folder && gcloud firestore export gs://$npm_package_config_firestore/firestore_export/",
     "verify": "(cd .. && yarn verify)",
     "verify:dir": "npx eslint . --max-warnings 0; tsc -b -v --pretty"
