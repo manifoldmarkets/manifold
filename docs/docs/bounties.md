@@ -15,6 +15,21 @@ Our community is the beating heart of Manifold; your individual contributions ar
 
 ## Awarded bounties
 
+💥 *Awarded on 2022-10-07*
+
+**[Pepe](https://manifold.markets/Pepe): M$10,000**
+**[Jack](https://manifold.markets/jack): M$2,000**
+**[Martin](https://manifold.markets/MartinRandall): M$2,000**
+**[Yev](https://manifold.markets/Yev): M$2,000**
+**[Michael](https://manifold.markets/MichaelWheatley): M$2,000**
+
+- For discovering an infinite mana exploit using limit orders, and informing the Manifold team of it privately.
+
+**[Yev](https://manifold.markets/Yev): M$5,000**
+**[Adrian](https://manifold.markets/ahalekelly): M$5,000**
+
+- For discovering an AMM liquidity exploit and informing the Manifold team of it privately.
+
 🎈 *Awarded on 2022-06-14*
 
 **[Wasabipesto](https://manifold.markets/wasabipesto): M$20,000**
