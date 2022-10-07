@@ -1,6 +1,9 @@
 import * as functions from 'firebase-functions'
 import { getUser, getValues } from './utils'
-import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
+import {
+  createBadgeAwardedNotification,
+  createCommentOrAnswerOrUpdatedContractNotification,
+} from './create-notification'
 import { Contract } from '../../common/contract'
 import { Bet } from '../../common/bet'
 import * as admin from 'firebase-admin'
@@ -50,18 +53,19 @@ async function handleResolvedContract(contract: Contract) {
     firestore.collection(`contracts/${contract.id}/comments`)
   )
 
-  const { topCommentId, profitById, commentsById, betsById } =
+  const { topCommentId, profitById, commentsById, betsById, topCommentBetId } =
     scoreCommentorsAndBettors(contract, bets, comments)
-  if (topCommentId && profitById[topCommentId] > 0) {
+  if (topCommentBetId && profitById[topCommentBetId] > 0) {
     // award proven correct badge to user
     const comment = commentsById[topCommentId]
-    const bet = betsById[topCommentId]
+    const bet = betsById[topCommentBetId]
 
     const user = await getUser(comment.userId)
     if (!user) return
     const newProvenCorrectBadge = {
       createdTime: Date.now(),
       type: 'PROVEN_CORRECT',
+      name: 'Proven Correct',
       data: {
         contractSlug: contract.slug,
         contractCreatorUsername: contract.creatorUsername,
@@ -87,6 +91,7 @@ async function handleResolvedContract(contract: Contract) {
           },
         },
       })
+    await createBadgeAwardedNotification(user, newProvenCorrectBadge)
   }
 }
 

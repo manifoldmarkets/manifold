@@ -13,11 +13,7 @@ import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USER_USERNAME,
-  PrivateUser,
-} from 'common/user'
+import { MANIFOLD_AVATAR_URL, PAST_BETS, PrivateUser } from 'common/user'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Linkify } from 'web/components/linkify'
@@ -736,6 +732,24 @@ function NotificationItem(props: {
         justSummary={justSummary}
       />
     )
+  } else if (sourceType === 'badge') {
+    return (
+      <BadgeNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        justSummary={justSummary}
+      />
+    )
+  } else if (sourceType === 'contract' && sourceUpdateType === 'closed') {
+    return (
+      <MarketClosedNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        justSummary={justSummary}
+      />
+    )
   }
   // TODO Add new notification components here
 
@@ -809,9 +823,16 @@ function NotificationFrame(props: {
   subtitle: string
   children: React.ReactNode
   isChildOfGroup?: boolean
+  showUserName?: boolean
 }) {
-  const { notification, isChildOfGroup, highlighted, subtitle, children } =
-    props
+  const {
+    notification,
+    isChildOfGroup,
+    highlighted,
+    subtitle,
+    children,
+    showUserName,
+  } = props
   const {
     sourceType,
     sourceUserName,
@@ -822,7 +843,7 @@ function NotificationFrame(props: {
     sourceUserUsername,
     sourceText,
   } = notification
-  const questionNeedsResolution = sourceUpdateType == 'closed'
+
   const { width } = useWindowSize()
   const isMobile = (width ?? 0) < 600
   return (
@@ -852,18 +873,10 @@ function NotificationFrame(props: {
         />
         <Row className={'items-center text-gray-500 sm:justify-start'}>
           <Avatar
-            avatarUrl={
-              questionNeedsResolution
-                ? MANIFOLD_AVATAR_URL
-                : sourceUserAvatarUrl
-            }
+            avatarUrl={sourceUserAvatarUrl}
             size={'sm'}
             className={'z-10 mr-2'}
-            username={
-              questionNeedsResolution
-                ? MANIFOLD_USER_USERNAME
-                : sourceUserUsername
-            }
+            username={sourceUserUsername}
           />
           <div className={'flex w-full flex-row pl-1 sm:pl-0'}>
             <div
@@ -872,12 +885,14 @@ function NotificationFrame(props: {
               }
             >
               <div>
-                <UserLink
-                  name={sourceUserName || ''}
-                  username={sourceUserUsername || ''}
-                  className={'relative mr-1 flex-shrink-0'}
-                  short={isMobile}
-                />
+                {showUserName && (
+                  <UserLink
+                    name={sourceUserName || ''}
+                    username={sourceUserUsername || ''}
+                    className={'relative mr-1 flex-shrink-0'}
+                    short={isMobile}
+                  />
+                )}
                 {subtitle}
                 {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
@@ -961,6 +976,64 @@ function BetFillNotification(props: {
           <span className="text-primary mr-1">{amount}</span>
           {description}
         </span>
+      </Row>
+    </NotificationFrame>
+  )
+}
+function MarketClosedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  justSummary: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  notification.sourceUserAvatarUrl = MANIFOLD_AVATAR_URL
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      subtitle={'Please resolve'}
+    >
+      <Row>
+        <span>
+          {`Your market has closed. Please resolve it to pay out ${PAST_BETS}.`}
+        </span>
+      </Row>
+    </NotificationFrame>
+  )
+}
+
+function BadgeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  justSummary: boolean
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, justSummary } = props
+  const { sourceText } = notification
+  const subtitle = 'You earned a new badge!'
+  notification.sourceUserAvatarUrl = '/award.svg'
+  if (justSummary) {
+    return (
+      <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
+        <Row className={'line-clamp-1'}>
+          <span>{sourceText} 🎉</span>
+        </Row>
+      </NotificationSummaryFrame>
+    )
+  }
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      subtitle={subtitle}
+      showUserName={false}
+    >
+      <Row>
+        <span>{sourceText} 🎉</span>
       </Row>
     </NotificationFrame>
   )
@@ -1136,6 +1209,11 @@ function getSourceUrl(notification: Notification) {
       sourceId ?? '',
       sourceType
     )}`
+  else if (sourceSlug)
+    return `/${sourceSlug}#${getSourceIdForLinkComponent(
+      sourceId ?? '',
+      sourceType
+    )}`
 }
 
 function getSourceIdForLinkComponent(
@@ -1235,7 +1313,6 @@ function getReasonForShowingNotification(
           reasonText = justSummary ? 'asked the question' : 'asked'
         else if (sourceUpdateType === 'resolved')
           reasonText = justSummary ? `resolved the question` : `resolved`
-        else if (sourceUpdateType === 'closed') reasonText = `Please resolve`
         else reasonText = justSummary ? 'updated the question' : `updated`
         break
       case 'answer':

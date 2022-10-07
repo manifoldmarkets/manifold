@@ -79,6 +79,7 @@ export function scoreCommentorsAndBettors(
     comments,
     (c) => c.betId && -profitById[c.betId]
   )[0]?.id
+  const topCommentBetId = commentsById[topCommentId]?.betId
 
   return {
     topCommentId,
@@ -87,5 +88,6 @@ export function scoreCommentorsAndBettors(
     profitById,
     commentsById,
     betsById,
+    topCommentBetId,
   }
 }

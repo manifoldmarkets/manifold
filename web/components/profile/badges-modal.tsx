@@ -151,7 +151,7 @@ function StreakerBadgeItem(props: { badge: StreakerBadge; rarity: rarities }) {
   const { badge, rarity } = props
   const { totalBettingStreak } = badge.data
   return (
-    <Col className={'text-center'}>
+    <Col className={'cursor-default text-center'}>
       <Medal rarity={rarity} />
       <Tooltip
         text={`Make predictions ${totalBettingStreak} day
@@ -179,7 +179,7 @@ function MarketCreatorBadgeItem(props: {
   const { badge, rarity } = props
   const { totalContractsCreated } = badge.data
   return (
-    <Col className={'text-center'}>
+    <Col className={'cursor-default text-center'}>
       <Medal rarity={rarity} />
       <Tooltip
         text={`Make ${totalContractsCreated} market${

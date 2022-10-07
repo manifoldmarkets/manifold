@@ -1,7 +1,10 @@
 import * as functions from 'firebase-functions'
 
 import { getUser, getValues } from './utils'
-import { createNewContractNotification } from './create-notification'
+import {
+  createBadgeAwardedNotification,
+  createNewContractNotification,
+} from './create-notification'
 import { Contract } from '../../common/contract'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { JSONContent } from '@tiptap/core'
@@ -49,6 +52,7 @@ async function handleMarketCreatorBadgeAward(contractCreator: User) {
   if (contracts.length in marketMakerBadgeRarityThresholds) {
     const badge = {
       type: 'MARKET_CREATOR',
+      name: 'Market Maker',
       data: {
         totalContractsCreated: contracts.length,
       },
@@ -72,5 +76,6 @@ async function handleMarketCreatorBadgeAward(contractCreator: User) {
           },
         },
       })
+    await createBadgeAwardedNotification(contractCreator, badge)
   }
 }

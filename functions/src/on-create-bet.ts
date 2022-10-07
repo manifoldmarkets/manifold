@@ -12,6 +12,7 @@ import {
   revalidateStaticProps,
 } from './utils'
 import {
+  createBadgeAwardedNotification,
   createBetFillNotification,
   createBettingStreakBonusNotification,
   createUniqueBettorBonusNotification,
@@ -317,6 +318,7 @@ async function handleBettingStreakBadgeAward(
   if (newBettingStreak in streakerBadgeRarityThresholds) {
     const badge = {
       type: 'STREAKER',
+      name: 'Streaker',
       data: {
         totalBettingStreak: newBettingStreak,
       },
@@ -335,5 +337,6 @@ async function handleBettingStreakBadgeAward(
           },
         },
       })
+    await createBadgeAwardedNotification(user, badge)
   }
 }

@@ -4,13 +4,12 @@ export type Badge = {
   type: BadgeTypes
   createdTime: number
   data: { [key: string]: any }
-  name: string
+  name: 'Proven Correct' | 'Streaker' | 'Market Maker'
 }
 
 export type BadgeTypes = 'PROVEN_CORRECT' | 'STREAKER' | 'MARKET_CREATOR'
 
 export type ProvenCorrectBadgeData = {
-  name: 'Proven Correct'
   type: 'PROVEN_CORRECT'
   data: {
     contractSlug: string
@@ -22,7 +21,6 @@ export type ProvenCorrectBadgeData = {
 }
 
 export type MarketCreatorBadgeData = {
-  name: 'Market Maker'
   type: 'MARKET_CREATOR'
   data: {
     totalContractsCreated: number
@@ -30,7 +28,6 @@ export type MarketCreatorBadgeData = {
 }
 
 export type StreakerBadgeData = {
-  name: 'Streaker'
   type: 'STREAKER'
   data: {
     totalBettingStreak: number

@@ -17,7 +17,7 @@ async function main() {
         .update({
           notificationPreferences: {
             ...privateUser.notificationPreferences,
-            badges_awarded: [],
+            badges_awarded: ['browser'],
           },
         })
     })

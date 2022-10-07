@@ -3,8 +3,7 @@ import { resolvedPayout } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 
-import { groupBy, mapValues, sumBy, sortBy } from 'lodash'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { groupBy, mapValues, sumBy } from 'lodash'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedComment } from '../feed/feed-comments'
 import { Spacer } from '../layout/spacer'
@@ -57,29 +56,34 @@ export function ContractTopTrades(props: {
   contract: Contract
   bets: Bet[]
   comments: ContractComment[]
-  tips: CommentTipMap
 }) {
-  const { contract, bets, comments, tips } = props
-  const { topBetId, topBettor, profitById, betsById } =
-    scoreCommentorsAndBettors(contract, bets, comments)
-
-  // And also the comment with the highest profit
-  const topComment = sortBy(comments, (c) => c.betId && -profitById[c.betId])[0]
-
+  const { contract, bets, comments } = props
+  const {
+    topBetId,
+    topBettor,
+    profitById,
+    betsById,
+    topCommentId,
+    commentsById,
+    topCommentBetId,
+  } = scoreCommentorsAndBettors(contract, bets, comments)
   return (
     <div className="mt-12 max-w-sm">
-      {topComment && profitById[topComment.id] > 0 && (
+      {topCommentBetId && profitById[topCommentBetId] > 0 && (
         <>
           <Title text="💬 Proven correct" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
-            <FeedComment contract={contract} comment={topComment} />
+            <FeedComment
+              contract={contract}
+              comment={commentsById[topCommentId]}
+            />
           </div>
           <Spacer h={16} />
         </>
       )}
 
       {/* If they're the same, only show the comment; otherwise show both */}
-      {topBettor && topBetId !== topComment?.betId && profitById[topBetId] > 0 && (
+      {topBettor && topBetId !== topCommentId && profitById[topBetId] > 0 && (
         <>
           <Title text="💸 Best bet" className="!mt-0" />
           <div className="relative flex items-start space-x-3 rounded-md bg-gray-50 px-2 py-4">
