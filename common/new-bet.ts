@@ -172,7 +172,7 @@ export const computeFills = (
   let amount = betAmount
   let cpmmState = { pool: state.pool, p: state.p }
   let totalFees = noFees
-  const makerBalanceByUserId = { ...balanceByUserId }
+  const currentBalanceByUserId = { ...balanceByUserId }
 
   let i = 0
   while (true) {
@@ -191,17 +191,17 @@ export const computeFills = (
       // Matched against bet.
       i++
       const { userId } = maker.bet
-      const makerBalance = makerBalanceByUserId[userId]
+      const makerBalance = currentBalanceByUserId[userId]
 
       if (floatingGreaterEqual(makerBalance, maker.amount)) {
-        makerBalanceByUserId[userId] = makerBalance - maker.amount
+        currentBalanceByUserId[userId] = makerBalance - maker.amount
       } else {
         // Insufficient balance. Cancel maker bet.
         ordersToCancel.push(maker.bet)
         continue
       }
 
-      if (userId) takers.push(taker)
+      takers.push(taker)
       makers.push(maker)
     }
 

@@ -6,7 +6,7 @@ import {
   Query,
   Transaction,
 } from 'firebase-admin/firestore'
-import { groupBy, mapValues, sumBy, uniq, uniqBy } from 'lodash'
+import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
 import { APIError, newEndpoint, validate } from './api'
 import { Contract, CPMM_MIN_POOL_QTY } from '../../common/contract'
@@ -217,7 +217,7 @@ export const getUnfilledBetsAndUserBalances = async (
   const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
   // Get balance of all users with open limit orders.
-  const userIds = uniqBy(unfilledBets, (bet) => bet.userId)
+  const userIds = uniq(unfilledBets.map((bet) => bet.userId))
   const userDocs =
     userIds.length === 0
       ? []
