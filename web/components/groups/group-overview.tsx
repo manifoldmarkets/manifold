@@ -145,8 +145,6 @@ function GroupOverviewPinned(props: {
 }) {
   const { group, posts, isEditable } = props
   const [pinned, setPinned] = useState<JSX.Element[]>([])
-  const [open, setOpen] = useState(false)
-  const [editMode, setEditMode] = useState(false)
 
   useEffect(() => {
     async function getPinned() {
@@ -185,100 +183,127 @@ function GroupOverviewPinned(props: {
         ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
       ],
     })
-    setOpen(false)
+  }
+
+  function onDeleteClicked(index: number) {
+    const newPinned = group.pinnedItems.filter((item) => {
+      return item.itemId !== group.pinnedItems[index].itemId
+    })
+    updateGroup(group, { pinnedItems: newPinned })
   }
 
   return isEditable || (group.pinnedItems && group.pinnedItems.length > 0) ? (
-    pinned.length > 0 || isEditable ? (
-      <div>
-        <Row className="mb-3 items-center justify-between">
-          <SectionHeader label={'Pinned'} />
-          {isEditable && (
-            <Button
-              color="gray"
-              size="xs"
-              onClick={() => {
-                setEditMode(!editMode)
-              }}
-            >
-              {editMode ? (
-                'Done'
-              ) : (
-                <>
-                  <PencilIcon className="inline h-4 w-4" />
-                  Edit
-                </>
-              )}
-            </Button>
-          )}
-        </Row>
-        <div>
-          <Masonry
-            breakpointCols={{ default: 2, 768: 1 }}
-            className="-ml-4 flex w-auto"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {pinned.length == 0 && !editMode && (
-              <div className="flex flex-col items-center justify-center">
-                <p className="text-center text-gray-400">
-                  No pinned items yet. Click the edit button to add some!
-                </p>
-              </div>
-            )}
-            {pinned.map((element, index) => (
-              <div className="relative my-2">
-                {element}
+    <PinnedItems
+      posts={posts}
+      group={group}
+      isEditable={isEditable}
+      pinned={pinned}
+      onDeleteClicked={onDeleteClicked}
+      onSubmit={onSubmit}
+      modalMessage={'Pin posts or markets to the overview of this group.'}
+    />
+  ) : (
+    <LoadingIndicator />
+  )
+}
 
-                {editMode && (
-                  <CrossIcon
-                    onClick={() => {
-                      const newPinned = group.pinnedItems.filter((item) => {
-                        return item.itemId !== group.pinnedItems[index].itemId
-                      })
-                      updateGroup(group, { pinnedItems: newPinned })
-                    }}
-                  />
-                )}
-              </div>
-            ))}
-            {editMode && group.pinnedItems && pinned.length < 6 && (
-              <div className=" py-2">
-                <Row
-                  className={
-                    'relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer hover:bg-gray-100'
-                  }
-                >
-                  <button
-                    className="flex w-full justify-center"
-                    onClick={() => setOpen(true)}
-                  >
-                    <PlusCircleIcon
-                      className="h-12 w-12 text-gray-600"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </Row>
-              </div>
+export function PinnedItems(props: {
+  posts: Post[]
+  isEditable: boolean
+  pinned: JSX.Element[]
+  onDeleteClicked: (index: number) => void
+  onSubmit: (selectedItems: { itemId: string; type: string }[]) => void
+  group?: Group
+  modalMessage: string
+}) {
+  const {
+    isEditable,
+    pinned,
+    onDeleteClicked,
+    onSubmit,
+    posts,
+    group,
+    modalMessage,
+  } = props
+  const [editMode, setEditMode] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  return pinned.length > 0 || isEditable ? (
+    <div>
+      <Row className="mb-3 items-center justify-between">
+        <SectionHeader label={'Pinned'} />
+        {isEditable && (
+          <Button
+            color="gray"
+            size="xs"
+            onClick={() => {
+              setEditMode(!editMode)
+            }}
+          >
+            {editMode ? (
+              'Done'
+            ) : (
+              <>
+                <PencilIcon className="inline h-4 w-4" />
+                Edit
+              </>
             )}
-          </Masonry>
-        </div>
-        <PinnedSelectModal
-          open={open}
-          group={group}
-          posts={posts}
-          setOpen={setOpen}
-          title="Pin a post or market"
-          description={
-            <div className={'text-md my-4 text-gray-600'}>
-              Pin posts or markets to the overview of this group.
+          </Button>
+        )}
+      </Row>
+      <div>
+        <Masonry
+          breakpointCols={{ default: 2, 768: 1 }}
+          className="-ml-4 flex w-auto"
+          columnClassName="pl-4 bg-clip-padding"
+        >
+          {pinned.length == 0 && !editMode && (
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-center text-gray-400">
+                No pinned items yet. Click the edit button to add some!
+              </p>
             </div>
-          }
-          onSubmit={onSubmit}
-        />
+          )}
+          {pinned.map((element, index) => (
+            <div className="relative my-2">
+              {element}
+
+              {editMode && <CrossIcon onClick={() => onDeleteClicked(index)} />}
+            </div>
+          ))}
+          {editMode && pinned.length < 6 && (
+            <div className=" py-2">
+              <Row
+                className={
+                  'relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer hover:bg-gray-100'
+                }
+              >
+                <button
+                  className="flex w-full justify-center"
+                  onClick={() => setOpen(true)}
+                >
+                  <PlusCircleIcon
+                    className="h-12 w-12 text-gray-600"
+                    aria-hidden="true"
+                  />
+                </button>
+              </Row>
+            </div>
+          )}
+        </Masonry>
       </div>
-    ) : (
-      <LoadingIndicator />
-    )
+      <PinnedSelectModal
+        open={open}
+        group={group}
+        posts={posts}
+        setOpen={setOpen}
+        title="Pin a post or market"
+        description={
+          <div className={'text-md my-4 text-gray-600'}>{modalMessage}</div>
+        }
+        onSubmit={onSubmit}
+      />
+    </div>
   ) : (
     <></>
   )

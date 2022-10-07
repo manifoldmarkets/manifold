@@ -1,9 +1,11 @@
 import { last, sortBy, sum, sumBy } from 'lodash'
 import { calculatePayout } from './calculate'
-import { Bet } from './bet'
-import { Contract } from './contract'
+import { Bet, LimitBet } from './bet'
+import { Contract, CPMMContract, DPMContract } from './contract'
 import { PortfolioMetrics, User } from './user'
 import { DAY_MS } from './util/time'
+import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
+import { getCpmmProbability } from './calculate-cpmm'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -38,6 +40,58 @@ export const computeInvestmentValueCustomProb = (
     if (isNaN(value)) return 0
     return value
   })
+}
+
+export const computeElasticity = (
+  bets: Bet[],
+  contract: Contract,
+  betAmount = 50
+) => {
+  const { mechanism, outcomeType } = contract
+  return mechanism === 'cpmm-1' &&
+    (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC')
+    ? computeBinaryCpmmElasticity(bets, contract, betAmount)
+    : computeDpmElasticity(contract, betAmount)
+}
+
+export const computeBinaryCpmmElasticity = (
+  bets: Bet[],
+  contract: CPMMContract,
+  betAmount: number
+) => {
+  const limitBets = bets
+    .filter(
+      (b) =>
+        !b.isFilled && !b.isSold && !b.isRedemption && !b.sale && !b.isCancelled
+    )
+    .sort((a, b) => a.createdTime - b.createdTime)
+
+  const { newPool: poolY, newP: pY } = getBinaryCpmmBetInfo(
+    'YES',
+    betAmount,
+    contract,
+    undefined,
+    limitBets as LimitBet[]
+  )
+  const resultYes = getCpmmProbability(poolY, pY)
+
+  const { newPool: poolN, newP: pN } = getBinaryCpmmBetInfo(
+    'NO',
+    betAmount,
+    contract,
+    undefined,
+    limitBets as LimitBet[]
+  )
+  const resultNo = getCpmmProbability(poolN, pN)
+
+  return resultYes - resultNo
+}
+
+export const computeDpmElasticity = (
+  contract: DPMContract,
+  betAmount: number
+) => {
+  return getNewMultiBetInfo('', 2 * betAmount, contract).newBet.probAfter
 }
 
 const computeTotalPool = (userContracts: Contract[], startTime = 0) => {
