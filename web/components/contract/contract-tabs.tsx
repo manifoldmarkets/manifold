@@ -4,7 +4,11 @@ import { Pagination } from 'web/components/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { CommentsAnswer } from '../feed/feed-answer-comment-group'
-import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
+import {
+  FeedCommentThread,
+  ContractCommentInput,
+  CommentActions,
+} from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -42,7 +46,7 @@ import { Avatar } from '../avatar'
 import { UserLink } from '../user-link'
 import { CopyLinkDateTimeComponent } from '../feed/copy-link-date-time'
 import { Linkify } from '../linkify'
-import { ArrowRightIcon } from '@heroicons/react/solid'
+import { ArrowRightIcon, ReplyIcon } from '@heroicons/react/solid'
 import Curve from 'web/public/custom-components/curve'
 
 export function ContractTabs(props: {
@@ -172,9 +176,11 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
             } else {
               return (
                 <>
-                  <CommentsAnswer answer={answer} contract={contract} />
+                  <Row className="gap-2">
+                    <CommentsAnswer answer={answer} contract={contract} />
+                  </Row>
                   <Row>
-                    <div className="ml-2">
+                    <div className="ml-1">
                       <Curve size={28} strokeWidth={1} color="#B1B1C7" />
                     </div>
                     <div className="w-full pt-1">

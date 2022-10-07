@@ -22,6 +22,7 @@ import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
 import { Button } from '../button'
+import { ReplyToggle } from '../comments/comments'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -33,21 +34,39 @@ export function FeedCommentThread(props: {
 }) {
   const { contract, threadComments, tips, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
+  const [seeReplies, setSeeReplies] = useState(false)
 
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
-      {[parentComment].concat(threadComments).map((comment, commentIdx) => (
-        <FeedComment
-          key={comment.id}
-          indent={commentIdx != 0}
+      <Col>
+        <ParentFeedComment
+          key={parentComment.id}
           contract={contract}
-          comment={comment}
-          tips={tips[comment.id] ?? {}}
+          comment={parentComment}
+          tips={tips[parentComment.id] ?? {}}
+          seeReplies={seeReplies}
+          numComments={threadComments.length}
+          onSeeReplyClick={() => setSeeReplies(!seeReplies)}
           onReplyClick={() =>
-            setReplyTo({ id: comment.id, username: comment.userUsername })
+            setReplyTo({
+              id: parentComment.id,
+              username: parentComment.userUsername,
+            })
           }
         />
-      ))}
+      </Col>
+      {seeReplies &&
+        threadComments.map((comment, commentIdx) => (
+          <FeedComment
+            key={comment.id}
+            contract={contract}
+            comment={comment}
+            tips={tips[comment.id] ?? {}}
+            onReplyClick={() =>
+              setReplyTo({ id: comment.id, username: comment.userUsername })
+            }
+          />
+        ))}
       {replyTo && (
         <Col className="-pb-2 relative ml-6">
           <span
@@ -65,15 +84,24 @@ export function FeedCommentThread(props: {
     </Col>
   )
 }
-
-export function FeedComment(props: {
+export function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
   tips?: CommentTips
-  indent?: boolean
+  seeReplies: boolean
+  numComments: number
   onReplyClick?: () => void
+  onSeeReplyClick: () => void
 }) {
-  const { contract, comment, tips, indent, onReplyClick } = props
+  const {
+    contract,
+    comment,
+    tips,
+    onReplyClick,
+    onSeeReplyClick,
+    seeReplies,
+    numComments,
+  } = props
   const { text, content, userUsername, userAvatarUrl } = comment
 
   const router = useRouter()
@@ -93,25 +121,14 @@ export function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'hover:bg-greyscale-1 gap-2 transition-colors',
-        indent ? 'ml-8' : '',
+        'hover:bg-greyscale-1 ml-3 gap-2 transition-colors',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
       onMouseOver={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      <Col className={clsx(indent ? '-ml-3' : '')}>
-        <Avatar
-          size={indent ? 'xs' : 'sm'}
-          username={userUsername}
-          avatarUrl={userAvatarUrl}
-        />
-        {indent && (
-          <span
-            className="bg-greyscale-2 mx-auto h-full w-0.5"
-            aria-hidden="true"
-          />
-        )}
+      <Col className="-ml-3.5">
+        <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       </Col>
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
@@ -121,13 +138,83 @@ export function FeedComment(props: {
           content={content || text}
           smallImage
         />
-        <CommentActions
-          showActions={showActions}
-          onReplyClick={onReplyClick}
-          tips={tips}
-          comment={comment}
-          contract={contract}
+        <Row className="justify-between">
+          <ReplyToggle
+            seeReplies={seeReplies}
+            numComments={numComments}
+            onClick={onSeeReplyClick}
+          />
+          <Row className="grow justify-end">
+            <CommentActions
+              showActions={showActions}
+              onReplyClick={onReplyClick}
+              tips={tips}
+              comment={comment}
+              contract={contract}
+            />
+          </Row>
+        </Row>
+      </Col>
+    </Row>
+  )
+}
+
+export function FeedComment(props: {
+  contract: Contract
+  comment: ContractComment
+  tips?: CommentTips
+  onReplyClick?: () => void
+}) {
+  const { contract, comment, tips, onReplyClick } = props
+  const { text, content, userUsername, userAvatarUrl } = comment
+
+  const router = useRouter()
+  const highlighted = router.asPath.endsWith(`#${comment.id}`)
+  const commentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (highlighted && commentRef.current != null) {
+      commentRef.current.scrollIntoView(true)
+    }
+  }, [highlighted])
+
+  const [showActions, setShowActions] = useState(false)
+
+  return (
+    <Row
+      ref={commentRef}
+      id={comment.id}
+      className={clsx(
+        'hover:bg-greyscale-1 ml-8 gap-2 transition-colors',
+        highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
+      )}
+      onMouseOver={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      <Col className="-ml-3">
+        <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
+        <span
+          className="bg-greyscale-4 mx-auto h-full w-[1.5px]"
+          aria-hidden="true"
         />
+      </Col>
+      <Col className="w-full">
+        <FeedCommentHeader comment={comment} contract={contract} />
+        {/* TODO: bug where if this is iFrame, it does not scroll */}
+        <Content
+          className="text-greyscale-7 mt-2 grow text-[14px]"
+          content={content || text}
+          smallImage
+        />
+        <Row className="justify-end">
+          <CommentActions
+            showActions={showActions}
+            onReplyClick={onReplyClick}
+            tips={tips}
+            comment={comment}
+            contract={contract}
+          />
+        </Row>
       </Col>
     </Row>
   )
@@ -144,7 +231,7 @@ export function CommentActions(props: {
   return (
     <Row
       className={clsx(
-        'ml-2 items-center justify-end gap-2 text-xs text-gray-500 transition-opacity',
+        'ml-2 items-center gap-2 text-xs text-gray-500 transition-opacity',
         showActions ? '' : 'md:opacity-0'
       )}
     >
