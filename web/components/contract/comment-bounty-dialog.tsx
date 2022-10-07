@@ -8,9 +8,16 @@ import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 import { Button } from 'web/components/button'
+import { Title } from '../title'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
 
-export function AddCommentBountyPanel(props: { contract: Contract }) {
-  const { contract } = props
+export function CommentBountyDialog(props: {
+  contract: Contract
+  open: boolean
+  setOpen: (open: boolean) => void
+}) {
+  const { contract, open, setOpen } = props
   const { id: contractId, slug } = contract
 
   const user = useUser()
@@ -45,30 +52,34 @@ export function AddCommentBountyPanel(props: { contract: Contract }) {
   }
 
   return (
-    <>
-      <div className="mb-4 text-gray-500">
-        Add a {formatMoney(amount)} bounty for good comments that the creator
-        can award.{' '}
-        {totalAdded > 0 && `(${formatMoney(totalAdded)} currently added)`}
-      </div>
+    <Modal open={open} setOpen={setOpen}>
+      <Col className="gap-4 rounded bg-white p-6">
+        <Title className="!mt-0 !mb-0" text="Comment bounty" />
 
-      <Row className={'items-center gap-2'}>
-        <Button
-          className={clsx('ml-2', isLoading && 'btn-disabled')}
-          onClick={submit}
-          disabled={isLoading}
-          color={'blue'}
-        >
-          Add {formatMoney(amount)} bounty
-        </Button>
-        <span className={'text-error'}>{error}</span>
-      </Row>
+        <div className="mb-4 text-gray-500">
+          Add a {formatMoney(amount)} bounty for good comments that the creator
+          can award.{' '}
+          {totalAdded > 0 && `(${formatMoney(totalAdded)} currently added)`}
+        </div>
 
-      {isSuccess && amount && (
-        <div>Success! Added {formatMoney(amount)} in bounties.</div>
-      )}
+        <Row className={'items-center gap-2'}>
+          <Button
+            className={clsx('ml-2', isLoading && 'btn-disabled')}
+            onClick={submit}
+            disabled={isLoading}
+            color={'blue'}
+          >
+            Add {formatMoney(amount)} bounty
+          </Button>
+          <span className={'text-error'}>{error}</span>
+        </Row>
 
-      {isLoading && <div>Processing...</div>}
-    </>
+        {isSuccess && amount && (
+          <div>Success! Added {formatMoney(amount)} in bounties.</div>
+        )}
+
+        {isLoading && <div>Processing...</div>}
+      </Col>
+    </Modal>
   )
 }
