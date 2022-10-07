@@ -39,7 +39,7 @@ export function UserLink(props: {
   )
 }
 
-const BOT_USERNAMES = ['v']
+const BOT_USERNAMES = ['v', 'ArbitrageBot']
 
 function BotBadge() {
   return (
