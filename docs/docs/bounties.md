@@ -25,8 +25,9 @@ Our community is the beating heart of Manifold; your individual contributions ar
 
 - For discovering an infinite mana exploit using limit orders, and informing the Manifold team of it privately.
 
-**[Yev](https://manifold.markets/Yev): M$5,000**
+**[Matt](https://manifold.markets/MattP): M$5,000**
 **[Adrian](https://manifold.markets/ahalekelly): M$5,000**
+**[Yev](https://manifold.markets/Yev): M$5,000**
 
 - For discovering an AMM liquidity exploit and informing the Manifold team of it privately.
 
