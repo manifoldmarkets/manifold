@@ -35,9 +35,12 @@ export const updateMetrics = functions.pubsub
       },
       method: 'POST',
       body: JSON.stringify({}),
-    }).then((res) => res.json())
+    })
 
-    console.log(await response)
+    const json = await response.json()
+
+    if (response.ok) console.log(json)
+    else console.error(json)
   })
 
 export const updatemetrics = newEndpointNoAuth(
