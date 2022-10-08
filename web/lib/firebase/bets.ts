@@ -74,11 +74,13 @@ export async function getUserBets(userId: string) {
   return getValues<Bet>(getUserBetsQuery(userId))
 }
 
+export const MAX_USER_BETS_LOADED = 10000
 export function getUserBetsQuery(userId: string) {
   return query(
     collectionGroup(db, 'bets'),
     where('userId', '==', userId),
-    orderBy('createdTime', 'desc')
+    orderBy('createdTime', 'desc'),
+    limit(MAX_USER_BETS_LOADED)
   ) as Query<Bet>
 }
 

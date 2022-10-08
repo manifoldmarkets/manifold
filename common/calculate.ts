@@ -78,7 +78,8 @@ export function calculateShares(
 export function calculateSaleAmount(
   contract: Contract,
   bet: Bet,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) {
   return contract.mechanism === 'cpmm-1' &&
     (contract.outcomeType === 'BINARY' ||
@@ -87,7 +88,8 @@ export function calculateSaleAmount(
         contract,
         Math.abs(bet.shares),
         bet.outcome as 'YES' | 'NO',
-        unfilledBets
+        unfilledBets,
+        balanceByUserId
       ).saleValue
     : calculateDpmSaleAmount(contract, bet)
 }
@@ -102,14 +104,16 @@ export function getProbabilityAfterSale(
   contract: Contract,
   outcome: string,
   shares: number,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) {
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbabilityAfterSale(
         contract,
         shares,
         outcome as 'YES' | 'NO',
-        unfilledBets
+        unfilledBets,
+        balanceByUserId
       )
     : getDpmProbabilityAfterSale(contract.totalShares, outcome, shares)
 }

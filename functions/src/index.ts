@@ -9,7 +9,7 @@ export * from './on-create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-view'
-export * from './update-metrics'
+export { updateMetrics } from './update-metrics'
 export * from './update-stats'
 export * from './update-loans'
 export * from './backup-db'
@@ -78,6 +78,7 @@ import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
+import { updatemetrics } from './update-metrics'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -108,6 +109,7 @@ const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
+const updateMetricsFunction = toCloudFunction(updatemetrics)
 
 export {
   healthFunction as health,
@@ -136,4 +138,5 @@ export {
   createCommentFunction as createcomment,
   addCommentBounty as addcommentbounty,
   awardCommentBounty as awardcommentbounty,
+  updateMetricsFunction as updatemetrics,
 }

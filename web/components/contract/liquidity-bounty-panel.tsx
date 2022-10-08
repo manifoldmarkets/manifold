@@ -16,7 +16,6 @@ import { InfoTooltip } from 'web/components/info-tooltip'
 import { BETTORS, PRESENT_BET } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useAdmin } from 'web/hooks/use-admin'
-import { AddCommentBountyPanel } from 'web/components/contract/add-comment-bounty'
 
 export function LiquidityBountyPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -36,13 +35,11 @@ export function LiquidityBountyPanel(props: { contract: Contract }) {
   const isCreator = user?.id === contract.creatorId
   const isAdmin = useAdmin()
 
+  if (!isCreator && !isAdmin && !showWithdrawal) return <></>
+
   return (
     <Tabs
       tabs={buildArray(
-        {
-          title: 'Bounty Comments',
-          content: <AddCommentBountyPanel contract={contract} />,
-        },
         (isCreator || isAdmin) &&
           isCPMM && {
             title: (isAdmin ? '[Admin] ' : '') + 'Subsidize',

@@ -1,4 +1,4 @@
-import { last, sortBy, sum, sumBy } from 'lodash'
+import { last, sortBy, sum, sumBy, uniq } from 'lodash'
 import { calculatePayout } from './calculate'
 import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, DPMContract } from './contract'
@@ -62,16 +62,28 @@ export const computeBinaryCpmmElasticity = (
   const limitBets = bets
     .filter(
       (b) =>
-        !b.isFilled && !b.isSold && !b.isRedemption && !b.sale && !b.isCancelled
+        !b.isFilled &&
+        !b.isSold &&
+        !b.isRedemption &&
+        !b.sale &&
+        !b.isCancelled &&
+        b.limitProb !== undefined
     )
-    .sort((a, b) => a.createdTime - b.createdTime)
+    .sort((a, b) => a.createdTime - b.createdTime) as LimitBet[]
+
+  const userIds = uniq(limitBets.map((b) => b.userId))
+  // Assume all limit orders are good.
+  const userBalances = Object.fromEntries(
+    userIds.map((id) => [id, Number.MAX_SAFE_INTEGER])
+  )
 
   const { newPool: poolY, newP: pY } = getBinaryCpmmBetInfo(
     'YES',
     betAmount,
     contract,
     undefined,
-    limitBets as LimitBet[]
+    limitBets,
+    userBalances
   )
   const resultYes = getCpmmProbability(poolY, pY)
 
@@ -80,7 +92,8 @@ export const computeBinaryCpmmElasticity = (
     betAmount,
     contract,
     undefined,
-    limitBets as LimitBet[]
+    limitBets,
+    userBalances
   )
   const resultNo = getCpmmProbability(poolN, pN)
 

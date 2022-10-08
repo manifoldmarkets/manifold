@@ -16,7 +16,7 @@ import { Button } from 'web/components/button'
 import { BetSignUpPrompt } from './sign-up-prompt'
 import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
-import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 
 /** Button that opens BetPanel in a new modal */
@@ -100,7 +100,9 @@ export function SignedInBinaryMobileBetting(props: {
   user: User
 }) {
   const { contract, user } = props
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
 
   return (
     <>
@@ -111,6 +113,7 @@ export function SignedInBinaryMobileBetting(props: {
             contract={contract as CPMMBinaryContract}
             user={user}
             unfilledBets={unfilledBets}
+            balanceByUserId={balanceByUserId}
             mobileView={true}
           />
         </Col>
