@@ -13,7 +13,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
@@ -42,6 +42,12 @@ import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { debounce } from 'lodash'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -75,8 +81,20 @@ export function useTextEditor(props: {
   defaultValue?: Content
   disabled?: boolean
   simple?: boolean
+  key?: string // unique key for this text field for autosave
 }) {
-  const { placeholder, max, defaultValue = '', disabled, simple } = props
+  const { placeholder, max, defaultValue, disabled, simple, key } = props
+
+  const [content, saveContent] = usePersistentState<JSONContent | undefined>(
+    undefined,
+    {
+      key: `text ${key}`,
+      store: storageStore(safeLocalStorage()),
+    }
+  )
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
     proseClass,
@@ -88,6 +106,7 @@ export function useTextEditor(props: {
 
   const editor = useEditor({
     editorProps: { attributes: { class: editorClass, spellcheck: 'false' } },
+    onUpdate: key ? ({ editor }) => save(editor.getJSON()) : undefined,
     extensions: [
       StarterKit.configure({
         heading: simple ? false : { levels: [1, 2, 3] },
@@ -113,7 +132,7 @@ export function useTextEditor(props: {
         spoilerOpenClass: 'rounded-sm bg-greyscale-2',
       }),
     ],
-    content: defaultValue,
+    content: defaultValue ?? (key && content ? content : ''),
   })
 
   const upload = useUploadMutation(editor)

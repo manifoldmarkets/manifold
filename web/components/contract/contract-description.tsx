@@ -46,6 +46,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { editor, upload } = useTextEditor({
+    // key: `description ${contract.id}`,
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
     disabled: isSubmitting,

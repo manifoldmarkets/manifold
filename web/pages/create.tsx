@@ -23,7 +23,6 @@ import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { getGroup, groupPath } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
@@ -228,6 +227,7 @@ export function NewContract(props: {
       : `e.g. I will choose the answer according to...`
 
   const { editor, upload } = useTextEditor({
+    key: 'create market',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     disabled: isSubmitting,
@@ -235,9 +235,6 @@ export function NewContract(props: {
       ? JSON.parse(params.description)
       : undefined,
   })
-
-  const isEditorFilled = editor != null && !editor.isEmpty
-  useWarnUnsavedChanges(!isSubmitting && (Boolean(question) || isEditorFilled))
 
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')

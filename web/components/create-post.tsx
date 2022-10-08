@@ -21,6 +21,7 @@ export function CreatePost(props: { group?: Group }) {
   const { group } = props
 
   const { editor, upload } = useTextEditor({
+    key: `post ${group?.id || ''}`,
     disabled: isSubmitting,
   })
 

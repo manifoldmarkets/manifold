@@ -43,7 +43,7 @@ export function CreateChallengeModal(props: {
   const { user, contract, isOpen, setOpen } = props
   const [challengeSlug, setChallengeSlug] = useState('')
   const [loading, setLoading] = useState(false)
-  const { editor } = useTextEditor({ placeholder: '' })
+  const { editor } = useTextEditor({ key: 'challenge'})
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
