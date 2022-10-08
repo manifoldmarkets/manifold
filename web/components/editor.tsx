@@ -83,11 +83,11 @@ export function useTextEditor(props: {
     !simple && 'min-h-[6em]',
     'outline-none pt-2 px-4',
     'prose-img:select-auto',
-    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, emebeds
+    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, embeds
   )
 
   const editor = useEditor({
-    editorProps: { attributes: { class: editorClass } },
+    editorProps: { attributes: { class: editorClass, spellcheck: 'false' } },
     extensions: [
       StarterKit.configure({
         heading: simple ? false : { levels: [1, 2, 3] },
