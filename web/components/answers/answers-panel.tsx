@@ -1,7 +1,11 @@
 import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import {
+  Contract,
+  FreeResponseContract,
+  MultipleChoiceContract,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
@@ -29,11 +33,22 @@ import { ChatAlt2Icon, ChatAltIcon } from '@heroicons/react/solid'
 import { ChatIcon } from '@heroicons/react/outline'
 import { ReplyTo } from '../feed/feed-comments'
 
+// TODO: get a color
+// export function useAnswerColor(answer: Answer, contract:Contract) {
+//     const colorSortedAnswer = useChartAnswers(contract).map(
+//     (value, _index) => value.text
+//   )
+//   colorIndex={colorSortedAnswer.indexOf(answer.text)}
+//   const color =
+//     colorIndex != undefined ? CATEGORY_COLORS[colorIndex] : '#B1B1C7'
+// }
+
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
+  onAnswerCommentClick: (answer: Answer) => void
 }) {
   const isAdmin = useAdmin()
-  const { contract } = props
+  const { contract, onAnswerCommentClick } = props
   const { creatorId, resolution, resolutions, totalBets, outcomeType } =
     contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -141,6 +156,7 @@ export function AnswersPanel(props: {
               answer={item}
               contract={contract}
               colorIndex={colorSortedAnswer.indexOf(item.text)}
+              onAnswerCommentClick={onAnswerCommentClick}
             />
           ))}
           {hasZeroBetAnswers && !showAllAnswers && (
@@ -188,8 +204,9 @@ function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
   colorIndex: number | undefined
+  onAnswerCommentClick: (answer: Answer) => void
 }) {
-  const { answer, contract, colorIndex } = props
+  const { answer, contract, colorIndex, onAnswerCommentClick } = props
   const { username, avatarUrl, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
@@ -242,6 +259,7 @@ function OpenAnswer(props: {
             {
               <button
                 className="p-1"
+                onClick={() => onAnswerCommentClick(answer)}
                 //       onClick={() =>
                 //  //TODO: make replies
                 //       }

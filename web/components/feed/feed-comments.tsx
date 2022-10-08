@@ -20,9 +20,13 @@ import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
-import { ReplyIcon } from '@heroicons/react/solid'
+import { ReplyIcon, XIcon } from '@heroicons/react/solid'
 import { Button } from '../button'
 import { ReplyToggle } from '../comments/comments'
+import { CommentsAnswer } from './feed-answer-comment-group'
+import Curve from 'web/public/custom-components/curve'
+import { Answer } from 'common/answer'
+import { useEvent } from 'web/hooks/use-event'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -124,8 +128,6 @@ export function ParentFeedComment(props: {
         'hover:bg-greyscale-1 ml-3 gap-2 transition-colors',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
-      onMouseOver={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
     >
       <Col className="-ml-3.5">
         <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
@@ -146,7 +148,6 @@ export function ParentFeedComment(props: {
           />
           <Row className="grow justify-end">
             <CommentActions
-              showActions={showActions}
               onReplyClick={onReplyClick}
               tips={tips}
               comment={comment}
@@ -178,8 +179,6 @@ export function FeedComment(props: {
     }
   }, [highlighted])
 
-  const [showActions, setShowActions] = useState(false)
-
   return (
     <Row
       ref={commentRef}
@@ -188,8 +187,6 @@ export function FeedComment(props: {
         'hover:bg-greyscale-1 ml-10 gap-2 transition-colors',
         highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
       )}
-      onMouseOver={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
     >
       <Col className="-ml-3">
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
@@ -208,7 +205,6 @@ export function FeedComment(props: {
         />
         <Row className="justify-end">
           <CommentActions
-            showActions={showActions}
             onReplyClick={onReplyClick}
             tips={tips}
             comment={comment}
@@ -221,20 +217,14 @@ export function FeedComment(props: {
 }
 
 export function CommentActions(props: {
-  showActions: boolean
   onReplyClick?: () => void
   tips?: CommentTips | undefined
   comment: ContractComment
   contract: Contract<AnyContractType>
 }) {
-  const { showActions, onReplyClick, tips, comment, contract } = props
+  const { onReplyClick, tips, comment, contract } = props
   return (
-    <Row
-      className={clsx(
-        'ml-2 items-center gap-2 text-xs text-gray-500 transition-opacity',
-        showActions ? '' : 'md:opacity-0'
-      )}
-    >
+    <Row className={clsx('ml-2 items-center gap-2 text-xs text-gray-500')}>
       {onReplyClick && (
         <Button
           className="font-bold hover:underline"
@@ -375,5 +365,44 @@ export function FeedCommentHeader(props: {
         )}
       </div>
     </Row>
+  )
+}
+
+export function AnswerCommentInput(props: {
+  contract: Contract<AnyContractType>
+  answerResponse: Answer
+  onCancelAnswerResponse?: () => void
+}) {
+  const { contract, answerResponse, onCancelAnswerResponse } = props
+  const [replyTo, setReplyTo] = useState<ReplyTo | undefined>({
+    id: answerResponse.id,
+    username: answerResponse.username,
+  })
+  const onSubmitComment = useEvent(() => {
+    setReplyTo(undefined)
+    onCancelAnswerResponse
+  })
+  return (
+    <>
+      <Row className="gap-2">
+        <CommentsAnswer answer={answerResponse} contract={contract} />
+      </Row>
+      <Row>
+        <div className="ml-1">
+          <Curve size={28} strokeWidth={1} color="#D8D8EB" />
+        </div>
+        <div className="w-full pt-1">
+          <ContractCommentInput
+            contract={contract}
+            parentAnswerOutcome={answerResponse.number.toString()}
+            replyTo={replyTo}
+            onSubmitComment={onSubmitComment}
+          />
+        </div>
+        <button onClick={onCancelAnswerResponse}>
+          <XIcon className="h-5 w-5" />
+        </button>
+      </Row>
+    </>
   )
 }

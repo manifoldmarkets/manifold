@@ -8,6 +8,7 @@ import {
   FeedCommentThread,
   ContractCommentInput,
   CommentActions,
+  AnswerCommentInput,
 } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
@@ -46,16 +47,27 @@ import { Avatar } from '../avatar'
 import { UserLink } from '../user-link'
 import { CopyLinkDateTimeComponent } from '../feed/copy-link-date-time'
 import { Linkify } from '../linkify'
-import { ArrowRightIcon, ReplyIcon } from '@heroicons/react/solid'
+import { ArrowRightIcon, ReplyIcon, XIcon } from '@heroicons/react/solid'
 import Curve from 'web/public/custom-components/curve'
+import { Answer } from 'common/answer'
+import dayjs from 'dayjs'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
   comments: ContractComment[]
+  answerResponse?: Answer | undefined
+  onCancelAnswerResponse?: () => void
 }) {
-  const { contract, bets, userBets, comments } = props
+  const {
+    contract,
+    bets,
+    userBets,
+    comments,
+    answerResponse,
+    onCancelAnswerResponse,
+  } = props
 
   const yourTrades = (
     <div>
@@ -68,7 +80,14 @@ export function ContractTabs(props: {
   const tabs = buildArray(
     {
       title: 'Comments',
-      content: <CommentsTabContent contract={contract} comments={comments} />,
+      content: (
+        <CommentsTabContent
+          contract={contract}
+          comments={comments}
+          answerResponse={answerResponse}
+          onCancelAnswerResponse={onCancelAnswerResponse}
+        />
+      ),
     },
     bets.length > 0 && {
       title: capitalize(PAST_BETS),
@@ -88,8 +107,10 @@ export function ContractTabs(props: {
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
   comments: ContractComment[]
+  answerResponse?: Answer
+  onCancelAnswerResponse?: () => void
 }) {
-  const { contract } = props
+  const { contract, answerResponse, onCancelAnswerResponse } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
@@ -107,10 +128,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
-    c.replyToCommentId == undefined &&
-    (contract.outcomeType === 'FREE_RESPONSE'
-      ? c.betId === undefined && c.answerOutcome == undefined
-      : true)
+    c.replyToCommentId == undefined
 
   // TODO: links to comments are broken because tips load after render and
   //  comments will reorganize themselves if there are tips/bounties awarded
@@ -160,11 +178,28 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     </Row>
   )
 
+  // console.log('answer response:: ', answerResponse)
+  // sortedComments.map((comment, index) =>
+  //   console.log(
+  //     index,
+  //     ',',
+  //     comment.content.content[0].content[0].text,
+  //     ':',
+  //     dayjs(comment.createdTime).format('MM/DD/YY H:mm')
+  //   )
+  // )
   if (contract.outcomeType === 'FREE_RESPONSE') {
     return (
       <>
-        {sortRow}
         <ContractCommentInput className="mb-5" contract={contract} />
+        {sortRow}
+        {answerResponse && (
+          <AnswerCommentInput
+            contract={contract}
+            answerResponse={answerResponse}
+            onCancelAnswerResponse={onCancelAnswerResponse}
+          />
+        )}
         {topLevelComments.map((parent) => {
           if (parent.answerOutcome != undefined) {
             const answer = contract.answers.find(

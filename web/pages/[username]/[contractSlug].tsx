@@ -46,6 +46,8 @@ import { BetsSummary } from 'web/components/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
+import { Answer } from 'common/answer'
+import { useEvent } from 'web/hooks/use-event'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -204,6 +206,16 @@ export function ContractPageContent(
     contractId: contract.id,
   })
 
+  const [answerResponse, setAnswerResponse] = useState<Answer | undefined>(
+    undefined
+  )
+
+  const onAnswerCommentClick = useEvent((answer: Answer) => {
+    setAnswerResponse(answer)
+  })
+
+  const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
+
   return (
     <Page
       rightSidebar={
@@ -253,7 +265,10 @@ export function ContractPageContent(
           outcomeType === 'MULTIPLE_CHOICE') && (
           <>
             <Spacer h={4} />
-            <AnswersPanel contract={contract} />
+            <AnswersPanel
+              contract={contract}
+              onAnswerCommentClick={onAnswerCommentClick}
+            />
             <Spacer h={4} />
           </>
         )}
@@ -283,6 +298,8 @@ export function ContractPageContent(
           bets={bets}
           userBets={userBets}
           comments={comments}
+          answerResponse={answerResponse}
+          onCancelAnswerResponse={onCancelAnswerResponse}
         />
       </Col>
       {!isCreator && <RecommendedContractsWidget contract={contract} />}
