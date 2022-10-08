@@ -1,12 +1,18 @@
-import { PaperAirplaneIcon } from '@heroicons/react/solid'
+import { PaperAirplaneIcon, XIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
+import { Answer } from 'common/answer'
+import { AnyContractType, Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
+import { useEvent } from 'web/hooks/use-event'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
+import Curve from 'web/public/custom-components/curve'
 import { Avatar } from './avatar'
 import { TextEditor, useTextEditor } from './editor'
+import { CommentsAnswer } from './feed/feed-answer-comment-group'
+import { ContractCommentInput, ReplyTo } from './feed/feed-comments'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
 
@@ -147,6 +153,45 @@ export function CommentInputTextArea(props: {
             Add my comment
           </button>
         )}
+      </Row>
+    </>
+  )
+}
+
+export function AnswerCommentInput(props: {
+  contract: Contract<AnyContractType>
+  answerResponse: Answer
+  onCancelAnswerResponse?: () => void
+}) {
+  const { contract, answerResponse, onCancelAnswerResponse } = props
+  // const [replyTo, setReplyTo] = useState<ReplyTo | undefined>({
+  //   id: answerResponse.id,
+  //   username: answerResponse.username,
+  // })
+
+  return (
+    <>
+      <Row className="gap-2">
+        <CommentsAnswer answer={answerResponse} contract={contract} />
+      </Row>
+      <Row>
+        <div className="ml-1">
+          <Curve size={28} strokeWidth={1} color="#D8D8EB" />
+        </div>
+        <div className="w-full pt-1">
+          <ContractCommentInput
+            contract={contract}
+            parentAnswerOutcome={answerResponse.number.toString()}
+            replyTo={{
+              id: answerResponse.id,
+              username: answerResponse.username,
+            }}
+            onSubmitComment={onCancelAnswerResponse}
+          />
+        </div>
+        <button onClick={onCancelAnswerResponse}>
+          <XIcon className="h-5 w-5" />
+        </button>
       </Row>
     </>
   )

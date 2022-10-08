@@ -4,12 +4,7 @@ import { Pagination } from 'web/components/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { CommentsAnswer } from '../feed/feed-answer-comment-group'
-import {
-  FeedCommentThread,
-  ContractCommentInput,
-  CommentActions,
-  AnswerCommentInput,
-} from '../feed/feed-comments'
+import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -51,6 +46,7 @@ import { ArrowRightIcon, ReplyIcon, XIcon } from '@heroicons/react/solid'
 import Curve from 'web/public/custom-components/curve'
 import { Answer } from 'common/answer'
 import dayjs from 'dayjs'
+import { AnswerCommentInput } from '../comment-input'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -111,6 +107,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   onCancelAnswerResponse?: () => void
 }) {
   const { contract, answerResponse, onCancelAnswerResponse } = props
+  console.log(answerResponse)
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
