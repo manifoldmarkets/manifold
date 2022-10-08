@@ -81,7 +81,7 @@ export function useTextEditor(props: {
   defaultValue?: Content
   disabled?: boolean
   simple?: boolean
-  key?: string // unique key for this text field for autosave
+  key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
 }) {
   const { placeholder, max, defaultValue, disabled, simple, key } = props
 

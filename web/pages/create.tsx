@@ -269,6 +269,7 @@ export function NewContract(props: {
         selectedGroup: selectedGroup?.id,
         isFree: false,
       })
+      editor?.commands.clearContent(true)
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)

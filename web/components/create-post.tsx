@@ -46,6 +46,7 @@ export function CreatePost(props: { group?: Group }) {
       return e
     })
     if (result.post) {
+      editor.commands.clearContent(true)
       await Router.push(postPath(result.post.slug))
     }
   }

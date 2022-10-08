@@ -88,7 +88,7 @@ export function CommentInputTextArea(props: {
 
   const submit = () => {
     submitComment()
-    editor?.commands?.clearContent()
+    editor?.commands?.clearContent(true)
   }
 
   useEffect(() => {
