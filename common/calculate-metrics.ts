@@ -97,7 +97,11 @@ export const computeBinaryCpmmElasticity = (
   )
   const resultNo = getCpmmProbability(poolN, pN)
 
-  return resultYes - resultNo
+  // handle AMM overflow
+  const safeYes = Number.isFinite(resultYes) ? resultYes : 1
+  const safeNo = Number.isFinite(resultNo) ? resultNo : 0
+
+  return safeYes - safeNo
 }
 
 export const computeDpmElasticity = (
