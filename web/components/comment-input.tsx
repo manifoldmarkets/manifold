@@ -1,4 +1,5 @@
-import { PaperAirplaneIcon, XIcon } from '@heroicons/react/solid'
+import { PaperAirplaneIcon, XCircleIcon, XIcon } from '@heroicons/react/solid'
+import { scrollIntoView } from '@tiptap/core/dist/packages/core/src/commands'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
@@ -68,6 +69,42 @@ export function CommentInput(props: {
         />
       </div>
     </Row>
+  )
+}
+export function AnswerCommentInput(props: {
+  contract: Contract<AnyContractType>
+  answerResponse: Answer
+  onCancelAnswerResponse?: () => void
+}) {
+  const { contract, answerResponse, onCancelAnswerResponse } = props
+  const [replyTo, _setReplyTo] = useState<ReplyTo>({
+    id: answerResponse.id,
+    username: answerResponse.username,
+  })
+
+  return (
+    <>
+      <Row className="gap-2">
+        <CommentsAnswer answer={answerResponse} contract={contract} />
+      </Row>
+      <Row>
+        <div className="ml-1">
+          <Curve size={28} strokeWidth={1} color="#D8D8EB" />
+        </div>
+        <div className="relative w-full pt-1">
+          <ContractCommentInput
+            contract={contract}
+            parentAnswerOutcome={answerResponse.number.toString()}
+            replyTo={replyTo}
+            onSubmitComment={onCancelAnswerResponse}
+          />
+          <button onClick={onCancelAnswerResponse}>
+            <div className="absolute -top-1 -right-2 h-4 w-4 rounded-full bg-white" />
+            <XCircleIcon className="text-greyscale-5 hover:text-greyscale-6 absolute -top-1 -right-2 h-5 w-5" />
+          </button>
+        </div>
+      </Row>
+    </>
   )
 }
 
@@ -153,45 +190,6 @@ export function CommentInputTextArea(props: {
             Add my comment
           </button>
         )}
-      </Row>
-    </>
-  )
-}
-
-export function AnswerCommentInput(props: {
-  contract: Contract<AnyContractType>
-  answerResponse: Answer
-  onCancelAnswerResponse?: () => void
-}) {
-  const { contract, answerResponse, onCancelAnswerResponse } = props
-  // const [replyTo, setReplyTo] = useState<ReplyTo | undefined>({
-  //   id: answerResponse.id,
-  //   username: answerResponse.username,
-  // })
-
-  return (
-    <>
-      <Row className="gap-2">
-        <CommentsAnswer answer={answerResponse} contract={contract} />
-      </Row>
-      <Row>
-        <div className="ml-1">
-          <Curve size={28} strokeWidth={1} color="#D8D8EB" />
-        </div>
-        <div className="w-full pt-1">
-          <ContractCommentInput
-            contract={contract}
-            parentAnswerOutcome={answerResponse.number.toString()}
-            replyTo={{
-              id: answerResponse.id,
-              username: answerResponse.username,
-            }}
-            onSubmitComment={onCancelAnswerResponse}
-          />
-        </div>
-        <button onClick={onCancelAnswerResponse}>
-          <XIcon className="h-5 w-5" />
-        </button>
       </Row>
     </>
   )
