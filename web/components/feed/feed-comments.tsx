@@ -262,6 +262,7 @@ export function ContractCommentInput(props: {
       parentAnswerOutcome={parentAnswerOutcome}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
+      pageId={contract.id}
       className={className}
     />
   )

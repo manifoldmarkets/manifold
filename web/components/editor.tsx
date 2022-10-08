@@ -105,7 +105,9 @@ export function useTextEditor(props: {
   )
 
   const editor = useEditor({
-    editorProps: { attributes: { class: editorClass, spellcheck: 'false' } },
+    editorProps: {
+      attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
+    },
     onUpdate: key ? ({ editor }) => save(editor.getJSON()) : undefined,
     extensions: [
       StarterKit.configure({
