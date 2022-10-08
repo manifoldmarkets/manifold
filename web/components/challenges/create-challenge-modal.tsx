@@ -43,7 +43,6 @@ export function CreateChallengeModal(props: {
   const { user, contract, isOpen, setOpen } = props
   const [challengeSlug, setChallengeSlug] = useState('')
   const [loading, setLoading] = useState(false)
-  const { editor } = useTextEditor({ key: 'challenge'})
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
@@ -64,7 +63,6 @@ export function CreateChallengeModal(props: {
                         question: newChallenge.question,
                         outcomeType: 'BINARY',
                         initialProb: 50,
-                        description: editor?.getJSON(),
                         ante: FIXED_ANTE,
                         closeTime: dayjs().add(30, 'day').valueOf(),
                       })
