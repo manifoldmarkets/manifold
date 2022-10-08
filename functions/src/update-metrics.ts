@@ -169,7 +169,7 @@ export async function updateMetricsCore() {
           return 0
         }
         const contractRatio =
-          contract.flaggedByUsernames.length / (contract.uniqueBettorCount ?? 1)
+          contract.flaggedByUsernames.length / (contract.uniqueBettorCount || 1)
 
         return contractRatio
       })
