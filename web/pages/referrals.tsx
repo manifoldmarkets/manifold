@@ -10,6 +10,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { InfoBox } from 'web/components/info-box'
 import { QRCode } from 'web/components/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -23,15 +24,15 @@ export default function ReferralsPage() {
   return (
     <Page>
       <SEO
-        title="Referrals"
-        description={`Manifold's referral program. Invite new users to Manifold and get M${REFERRAL_AMOUNT} if they
+        title="Refer a friend"
+        description={`Invite new users to Manifold and get ${formatMoney(REFERRAL_AMOUNT)} if they
             sign up!`}
         url="/referrals"
       />
 
       <Col className="items-center">
         <Col className="h-full rounded bg-white p-4 py-8 sm:p-8 sm:shadow-md">
-          <Title className="!mt-0" text="Referrals" />
+          <Title className="!mt-0" text="Refer a friend" />
           <img
             className="mb-6 block -scale-x-100 self-center"
             src="/logo-flapping-with-money.gif"
@@ -40,7 +41,7 @@ export default function ReferralsPage() {
           />
 
           <div className={'mb-4'}>
-            Invite new users to Manifold and get M${REFERRAL_AMOUNT} if they
+            Invite new users to Manifold and get {formatMoney(REFERRAL_AMOUNT)} if they
             sign up!
           </div>
 
