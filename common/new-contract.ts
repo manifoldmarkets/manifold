@@ -111,6 +111,7 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
     totalLiquidity: ante,
+    subsidyPool: 0,
     initialProbability: p,
     p,
     pool: pool,
