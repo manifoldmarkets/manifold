@@ -8,6 +8,7 @@ import {
   StateElectionMarket,
   StateElectionMap,
 } from 'web/components/usa-map/state-election-map'
+import { useTracking } from 'web/hooks/use-tracking'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
 
 const senateMidterms: StateElectionMarket[] = [
@@ -202,6 +203,8 @@ const App = (props: {
   governorContracts: CPMMBinaryContract[]
 }) => {
   const { senateContracts, governorContracts } = props
+
+  useTracking('view midterms 2022')
 
   return (
     <Page className="">
