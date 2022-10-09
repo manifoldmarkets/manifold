@@ -25,7 +25,9 @@ export default function ReferralsPage() {
     <Page>
       <SEO
         title="Refer a friend"
-        description={`Invite new users to Manifold and get ${formatMoney(REFERRAL_AMOUNT)} if they
+        description={`Invite new users to Manifold and get ${formatMoney(
+          REFERRAL_AMOUNT
+        )} if they
             sign up!`}
         url="/referrals"
       />
@@ -41,8 +43,8 @@ export default function ReferralsPage() {
           />
 
           <div className={'mb-4'}>
-            Invite new users to Manifold and get {formatMoney(REFERRAL_AMOUNT)} if they
-            sign up!
+            Invite new users to Manifold and get {formatMoney(REFERRAL_AMOUNT)}{' '}
+            if they sign up!
           </div>
 
           <CopyLinkButton
