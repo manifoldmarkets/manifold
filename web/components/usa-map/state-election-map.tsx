@@ -7,6 +7,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { Customize, USAMap } from './usa-map'
 import { listenForContract } from 'web/lib/firebase/contracts'
 import { interpolateColor } from 'common/util/color'
+import { track } from 'web/lib/service/analytics'
 
 export interface StateElectionMarket {
   creatorUsername: string
@@ -35,8 +36,13 @@ export function StateElectionMap(props: {
     market.state,
     {
       fill: probToColor(prob, market.isWinRepublican),
-      clickHandler: () =>
-        Router.push(`/${market.creatorUsername}/${market.slug}`),
+      clickHandler: () => {
+        Router.push(`/${market.creatorUsername}/${market.slug}`)
+        track('state election map click', {
+          state: market.state,
+          slug: market.slug,
+        })
+      },
     },
   ])
 

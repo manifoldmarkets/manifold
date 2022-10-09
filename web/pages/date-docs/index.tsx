@@ -14,6 +14,7 @@ import { getUser, User } from 'web/lib/firebase/users'
 import { DateDocPost } from './[username]'
 import { NoSEO } from 'web/components/NoSEO'
 import { useDateDocs } from 'web/hooks/use-post'
+import { useTracking } from 'web/hooks/use-tracking'
 
 export async function getStaticProps() {
   const dateDocs = await getDateDocs()
@@ -40,6 +41,7 @@ export default function DatePage(props: {
 
   const dateDocs = useDateDocs() ?? props.dateDocs
   const hasDoc = dateDocs.some((d) => d.creatorId === user?.id)
+  useTracking('view date docs page')
 
   return (
     <Page>
