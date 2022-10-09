@@ -3,9 +3,9 @@ import { useState } from 'react'
 
 import { CurrencyDollarIcon } from '@heroicons/react/outline'
 import { Contract } from 'common/contract'
-import { Tooltip } from 'web/components/tooltip'
-import { formatMoney } from 'common/util/format'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
+import { formatMoney } from 'common/util/format'
+import { Tooltip } from 'web/components/tooltip'
 import { CommentBountyDialog } from './comment-bounty-dialog'
 
 export function BountiedContractBadge() {
@@ -30,13 +30,20 @@ export function BountiedContractSmallBadge(props: {
   const modal = (
     <CommentBountyDialog open={open} setOpen={setOpen} contract={contract} />
   )
-  if (!openCommentBounties)
+
+  const bountiesClosed =
+    contract.isResolved || (contract.closeTime ?? Infinity) < Date.now()
+
+  if (!openCommentBounties) {
+    if (bountiesClosed) return <></>
+
     return (
       <>
         {modal}
         <SmallBadge text="Add bounty" onClick={() => setOpen(true)} />
       </>
     )
+  }
 
   const tooltip = `${contract.creatorName} may award ${formatMoney(
     COMMENT_BOUNTY_AMOUNT
@@ -49,7 +56,7 @@ export function BountiedContractSmallBadge(props: {
       {modal}
       <SmallBadge
         text={`${formatMoney(openCommentBounties)} bounty`}
-        onClick={() => setOpen(true)}
+        onClick={bountiesClosed ? undefined : () => setOpen(true)}
       />
     </Tooltip>
   )
@@ -57,11 +64,13 @@ export function BountiedContractSmallBadge(props: {
 
 function SmallBadge(props: { text: string; onClick?: () => void }) {
   const { text, onClick } = props
+
   return (
     <button
       onClick={onClick}
       className={clsx(
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white'
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white',
+        !onClick && 'cursor-default'
       )}
     >
       <CurrencyDollarIcon className={'h4 w-4'} />
