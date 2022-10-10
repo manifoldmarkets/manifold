@@ -9,30 +9,37 @@ import { formatMoney } from '../../common/util/format'
 
 const firestore = admin.firestore()
 
-export const drizzleLiquidity = functions.pubsub
-  .schedule('every 2 minutes')
-  .onRun(async () => {
-    const snap = await firestore
-      .collection('contracts')
-      .where('subsidyPool', '>', 1e-7)
-      .get()
-    const contractIds = snap.docs.map((doc) => doc.id)
+export const drizzleLiquidity = async () => {
+  const snap = await firestore
+    .collection('contracts')
+    .where('subsidyPool', '>', 1e-7)
+    .get()
 
-    await batchedWaitAll(
-      contractIds.map((cid) => () => drizzleMarket(cid)),
-      10
-    )
-  })
+  const contractIds = snap.docs.map((doc) => doc.id)
+  console.log('found', contractIds.length, 'markets to drizzle')
+  console.log()
+
+  await batchedWaitAll(
+    contractIds.map((cid) => () => drizzleMarket(cid)),
+    10
+  )
+}
+
+export const drizzleLiquidityScheduler = functions.pubsub
+  .schedule('* * * * *') // every minute
+  .onRun(drizzleLiquidity)
 
 const drizzleMarket = async (contractId: string) => {
   await firestore.runTransaction(async (trans) => {
     const snap = await trans.get(firestore.doc(`contracts/${contractId}`))
     const contract = snap.data() as CPMMContract
-    const { subsidyPool, pool, p, slug,  } = contract
-    if (subsidyPool ?? 0 < 1e-7) return
+    const { subsidyPool, pool, p, slug, popularityScore } = contract
+    if ((subsidyPool ?? 0) < 1e-7) return
 
     const r = Math.random()
-    const amount = subsidyPool <= 1 ? subsidyPool : r * 0.02 * subsidyPool
+    const logPopularity = Math.log10((popularityScore ?? 0) + 1)
+    const v = Math.max(1, Math.min(4, logPopularity))
+    const amount = subsidyPool <= 1 ? subsidyPool : r * v * 0.02 * subsidyPool
 
     const { newPool, newP } = addCpmmLiquidity(pool, p, amount)
 
@@ -57,5 +64,6 @@ const drizzleMarket = async (contractId: string) => {
       'pool to',
       slug
     )
+    console.log()
   })
 }
