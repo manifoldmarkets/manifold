@@ -54,10 +54,6 @@ export function awardCommentBounty(params: any) {
   return call(getFunctionUrl('awardcommentbounty'), 'POST', params)
 }
 
-export function withdrawLiquidity(params: any) {
-  return call(getFunctionUrl('withdrawliquidity'), 'POST', params)
-}
-
 export function createMarket(params: any) {
   return call(getFunctionUrl('createmarket'), 'POST', params)
 }
