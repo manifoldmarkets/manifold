@@ -1,7 +1,8 @@
-import { HeartIcon } from '@heroicons/react/outline'
-import { Button } from 'web/components/button'
-import { formatMoney } from 'common/util/format'
 import clsx from 'clsx'
+import { HeartIcon } from '@heroicons/react/outline'
+
+import { Button } from 'web/components/button'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../tooltip'
 
@@ -51,7 +52,7 @@ export function TipButton(props: {
                   : 'sm:text-2xs text-[0.5rem]'
               )}
             >
-              {totalTipped}
+              {shortFormatNumber(totalTipped)}
             </div>
           )}
         </Col>
