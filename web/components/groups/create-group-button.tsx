@@ -8,6 +8,7 @@ import { Title } from '../title'
 import { User } from 'common/user'
 import { MAX_GROUP_NAME_LENGTH } from 'common/group'
 import { createGroup } from 'web/lib/firebase/api'
+import { Input } from '../input'
 
 export function CreateGroupButton(props: {
   user: User
@@ -104,9 +105,8 @@ export function CreateGroupButton(props: {
 
       <div className="form-control w-full">
         <label className="mb-2 ml-1 mt-0">Group name</label>
-        <input
+        <Input
           placeholder={'Your group name'}
-          className="input input-bordered resize-none"
           disabled={isSubmitting}
           value={name}
           maxLength={MAX_GROUP_NAME_LENGTH}
