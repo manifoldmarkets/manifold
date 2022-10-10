@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, keyBy, last, sortBy } from 'lodash'
+import { groupBy, keyBy, sortBy } from 'lodash'
 import fetch from 'node-fetch'
 
 import { getValues, log, logMemory, writeAsync } from './utils'
@@ -62,11 +62,7 @@ export async function updateMetricsCore() {
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
 
   console.log('Loading portfolio history')
-  const allPortfolioHistories = await getValues<PortfolioMetrics>(
-    firestore
-      .collectionGroup('portfolioHistory')
-      .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
-  )
+  const userPortfolioHistory = await loadPortfolioHistory(users)
 
   console.log('Loading groups')
   const groups = await getValues<Group>(firestore.collection('groups'))
@@ -143,11 +139,10 @@ export async function updateMetricsCore() {
   )
   const contractsByUser = groupBy(contracts, (contract) => contract.creatorId)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
-  const portfolioHistoryByUser = groupBy(allPortfolioHistories, (p) => p.userId)
 
   const userMetrics = users.map((user) => {
     const currentBets = betsByUser[user.id] ?? []
-    const portfolioHistory = portfolioHistoryByUser[user.id] ?? []
+    const portfolioHistory = userPortfolioHistory[user.id] ?? []
     const userContracts = contractsByUser[user.id] ?? []
     const newCreatorVolume = calculateCreatorVolume(userContracts)
     const newPortfolio = calculateNewPortfolioMetrics(
@@ -155,12 +150,12 @@ export async function updateMetricsCore() {
       contractsById,
       currentBets
     )
-    const lastPortfolio = last(portfolioHistory)
+    const currPortfolio = portfolioHistory.current
     const didPortfolioChange =
-      lastPortfolio === undefined ||
-      lastPortfolio.balance !== newPortfolio.balance ||
-      lastPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      lastPortfolio.investmentValue !== newPortfolio.investmentValue
+      currPortfolio === undefined ||
+      currPortfolio.balance !== newPortfolio.balance ||
+      currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currPortfolio.investmentValue !== newPortfolio.investmentValue
 
     const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
@@ -303,3 +298,44 @@ const topUserScores = (scores: { [userId: string]: number }) => {
 type GroupContractDoc = { contractId: string; createdTime: number }
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
+
+const loadPortfolioHistory = async (users: User[]) => {
+  const now = Date.now()
+  const userPortfolioHistory = await batchedWaitAll(
+    users.map((user) => async () => {
+      const query = firestore
+        .collection('users')
+        .doc(user.id)
+        .collection('portfolioHistory')
+        .orderBy('timestamp', 'desc')
+        .limit(1)
+
+      const portfolioMetrics = await Promise.all([
+        getValues<PortfolioMetrics>(query),
+        getValues<PortfolioMetrics>(
+          query.where('timestamp', '<', now - DAY_MS)
+        ),
+        getValues<PortfolioMetrics>(
+          query.where('timestamp', '<', now - 7 * DAY_MS)
+        ),
+        getValues<PortfolioMetrics>(
+          query.where('timestamp', '<', now - 30 * DAY_MS)
+        ),
+      ])
+      const [current, day, week, month] = portfolioMetrics.map(
+        (p) => p[0] as PortfolioMetrics | undefined
+      )
+
+      return {
+        userId: user.id,
+        current,
+        day,
+        week,
+        month,
+      }
+    }),
+    100
+  )
+
+  return keyBy(userPortfolioHistory, (p) => p.userId)
+}
