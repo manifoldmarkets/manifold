@@ -8,6 +8,7 @@ import { Avatar } from 'web/components/avatar'
 import { Row } from 'web/components/layout/row'
 import { searchInAny } from 'common/util/parse'
 import { UserLink } from 'web/components/user-link'
+import { Input } from './input'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void
@@ -50,13 +51,13 @@ export function FilterSelectUsers(props: {
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <UserIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
             </div>
-            <input
+            <Input
               type="text"
               name="user name"
               id="user name"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="input input-bordered block w-full pl-10 focus:border-gray-300 "
+              className="block w-full pl-10"
               placeholder="Austin Chen"
             />
           </div>
