@@ -131,6 +131,7 @@ export function NotificationSettings(props: {
       'betting_streaks',
       'referral_bonuses',
       'unique_bettors_on_your_contract',
+      'badges_awarded',
     ],
   }
   const otherBalances: SectionData = {
