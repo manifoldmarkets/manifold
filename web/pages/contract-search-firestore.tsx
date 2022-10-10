@@ -9,6 +9,7 @@ import {
   urlParamStore,
 } from 'web/hooks/use-persistent-state'
 import { PAST_BETS } from 'common/user'
+import { Input } from 'web/components/input'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -88,12 +89,12 @@ export default function ContractSearchFirestore(props: {
     <div>
       {/* Show a search input next to a sort dropdown */}
       <div className="mt-2 mb-8 flex justify-between gap-2">
-        <input
+        <Input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search markets"
-          className="input input-bordered w-full"
+          className="w-full"
         />
         <select
           className="select select-bordered"

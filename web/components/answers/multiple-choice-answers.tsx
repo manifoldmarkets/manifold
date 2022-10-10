@@ -1,8 +1,8 @@
 import { MAX_ANSWER_LENGTH } from 'common/answer'
-import Textarea from 'react-expanding-textarea'
 import { XIcon } from '@heroicons/react/solid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { ExpandingInput } from '../expanding-input'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
@@ -27,10 +27,10 @@ export function MultipleChoiceAnswers(props: {
       {answers.map((answer, i) => (
         <Row className="mb-2 items-center gap-2 align-middle">
           {i + 1}.{' '}
-          <Textarea
+          <ExpandingInput
             value={answer}
             onChange={(e) => setAnswer(i, e.target.value)}
-            className="textarea textarea-bordered ml-2 w-full resize-none"
+            className="ml-2 w-full"
             placeholder="Type your answer..."
             rows={1}
             maxLength={MAX_ANSWER_LENGTH}
