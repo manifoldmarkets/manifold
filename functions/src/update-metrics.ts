@@ -30,7 +30,9 @@ const firestore = admin.firestore()
 export const scheduleUpdateMetrics = functions.pubsub
   .schedule('every 15 minutes')
   .onRun(async () => {
-    const response = await fetch(getFunctionUrl('updatemetrics'), {
+    const url = getFunctionUrl('updatemetrics')
+    console.log('Scheduling update metrics', url)
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
