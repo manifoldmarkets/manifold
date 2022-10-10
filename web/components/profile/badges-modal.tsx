@@ -4,13 +4,10 @@ import { PAST_BETS, User } from 'common/user'
 import clsx from 'clsx'
 import {
   Badge,
-  bronzeClassName,
   calculateBadgeRarity,
-  goldClassName,
   MarketCreatorBadge,
   ProvenCorrectBadge,
   rarities,
-  silverClassName,
   StreakerBadge,
 } from 'common/badge'
 import { groupBy } from 'lodash'
@@ -18,6 +15,11 @@ import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/site-link'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
 import { Tooltip } from 'web/components/tooltip'
+import {
+  bronzeClassName,
+  goldClassName,
+  silverClassName,
+} from 'web/components/badge-display'
 
 export function BadgesModal(props: {
   isOpen: boolean

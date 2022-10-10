@@ -106,12 +106,13 @@ export const calculateBadgeRarity = (badge: Badge) => {
   }
 }
 
-export const getBadgesByRarity = (user: User) => {
+export const getBadgesByRarity = (user: User | null | undefined) => {
   const rarities: { [key in rarities]: number } = {
     bronze: 0,
     silver: 0,
     gold: 0,
   }
+  if (!user) return rarities
   Object.values(user.achievements).map((value) => {
     value.badges.map((badge) => {
       rarities[calculateBadgeRarity(badge)] =
@@ -120,7 +121,3 @@ export const getBadgesByRarity = (user: User) => {
   })
   return rarities
 }
-
-export const goldClassName = 'text-amber-400'
-export const silverClassName = 'text-gray-500'
-export const bronzeClassName = 'text-amber-900'

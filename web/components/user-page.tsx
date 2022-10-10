@@ -33,16 +33,10 @@ import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { formatMoney } from 'common/util/format'
 
 import { LoansModal } from './profile/loans-modal'
-import { BadgesModal } from 'web/components/profile/badges-modal'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { DOMAIN } from 'common/envs/constants'
-import {
-  bronzeClassName,
-  getBadgesByRarity,
-  goldClassName,
-  silverClassName,
-} from 'common/badge'
+import { BadgeDisplay } from 'web/components/badge-display'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -331,52 +325,6 @@ export function ProfilePublicStats(props: { user: User; className?: string }) {
       {/* <ReferralsButton user={user} className={className} /> */}
       <GroupsButton user={user} className={className} />
       {/* <UserLikesButton user={user} className={className} /> */}
-    </Row>
-  )
-}
-
-function BadgeDisplay(props: { user: User; router: NextRouter }) {
-  const { user, router } = props
-  const [showBadgesModal, setShowBadgesModal] = useState(false)
-
-  useEffect(() => {
-    const showBadgesModal = router.query['show'] === 'badges'
-    setShowBadgesModal(showBadgesModal)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  // get number of badges of each rarity type
-  const badgesByRarity = getBadgesByRarity(user)
-  const badgesByRarityItems = Object.entries(badgesByRarity).map(
-    ([rarity, numBadges]) => {
-      return (
-        <Row
-          key={rarity}
-          className={clsx(
-            'items-center gap-2',
-            rarity === 'bronze'
-              ? bronzeClassName
-              : rarity === 'silver'
-              ? silverClassName
-              : goldClassName
-          )}
-        >
-          <span className={clsx('-m-0.5 text-lg')}>•</span>
-          <span className="text-xs">{numBadges}</span>
-        </Row>
-      )
-    }
-  )
-  return (
-    <Row
-      className={'cursor-pointer gap-2'}
-      onClick={() => setShowBadgesModal(true)}
-    >
-      {badgesByRarityItems}
-      <BadgesModal
-        isOpen={showBadgesModal}
-        setOpen={setShowBadgesModal}
-        user={user}
-      />
     </Row>
   )
 }
