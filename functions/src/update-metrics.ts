@@ -25,10 +25,8 @@ import { newEndpointNoAuth } from './api'
 import { getFunctionUrl } from '../../common/api'
 
 const firestore = admin.firestore()
-const TIMEOUT_SECONDS = 2000
-export const scheduleUpdateMetrics = functions
-  .runWith({ timeoutSeconds: TIMEOUT_SECONDS })
-  .pubsub.schedule('every 15 minutes')
+export const scheduleUpdateMetrics = functions.pubsub
+  .schedule('every 15 minutes')
   .onRun(async () => {
     const response = await fetch(getFunctionUrl('updatemetrics'), {
       headers: {
@@ -45,7 +43,7 @@ export const scheduleUpdateMetrics = functions
   })
 
 export const updatemetrics = newEndpointNoAuth(
-  { timeoutSeconds: TIMEOUT_SECONDS, memory: '8GiB', minInstances: 0 },
+  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
   async (_req) => {
     await updateMetricsCore()
     return { success: true }
