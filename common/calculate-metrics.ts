@@ -1,13 +1,4 @@
-import {
-  Dictionary,
-  groupBy,
-  keyBy,
-  last,
-  sortBy,
-  sum,
-  sumBy,
-  uniq,
-} from 'lodash'
+import { Dictionary, groupBy, last, sortBy, sum, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -275,9 +266,13 @@ export const calculateMetricsByContract = (
 
     let periodMetrics
     if (c.mechanism === 'cpmm-1' && c.outcomeType === 'BINARY') {
-      periodMetrics = keyBy(['day', 'week', 'month'] as const, (period) => {
-        return calculatePeriodProfit(c, bets, period)
-      })
+      const periods = ['day', 'week', 'month'] as const
+      periodMetrics = Object.fromEntries(
+        periods.map((period) => [
+          period,
+          calculatePeriodProfit(c, bets, period),
+        ])
+      )
     }
 
     return {

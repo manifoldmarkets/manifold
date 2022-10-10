@@ -24,7 +24,7 @@ import { Group } from '../../common/group'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
 import { getFunctionUrl } from '../../common/api'
-import { filterDefined } from 'common/util/array'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
 export const scheduleUpdateMetrics = functions.pubsub
