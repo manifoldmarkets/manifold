@@ -1,4 +1,4 @@
-import { Dictionary, groupBy, last, sortBy, sum, sumBy, uniq } from 'lodash'
+import { Dictionary, groupBy, last, sum, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -199,14 +199,9 @@ export const calculateNewPortfolioMetrics = (
 }
 
 const calculateProfitForPeriod = (
-  startTime: number,
-  descendingPortfolio: PortfolioMetrics[],
+  startingPortfolio: PortfolioMetrics | undefined,
   currentProfit: number
 ) => {
-  const startingPortfolio = descendingPortfolio.find(
-    (p) => p.timestamp < startTime
-  )
-
   if (startingPortfolio === undefined) {
     return currentProfit
   }
@@ -221,31 +216,18 @@ export const calculatePortfolioProfit = (portfolio: PortfolioMetrics) => {
 }
 
 export const calculateNewProfit = (
-  portfolioHistory: PortfolioMetrics[],
+  portfolioHistory: Record<
+    'current' | 'day' | 'week' | 'month',
+    PortfolioMetrics | undefined
+  >,
   newPortfolio: PortfolioMetrics
 ) => {
   const allTimeProfit = calculatePortfolioProfit(newPortfolio)
-  const descendingPortfolio = sortBy(
-    portfolioHistory,
-    (p) => p.timestamp
-  ).reverse()
 
   const newProfit = {
-    daily: calculateProfitForPeriod(
-      Date.now() - 1 * DAY_MS,
-      descendingPortfolio,
-      allTimeProfit
-    ),
-    weekly: calculateProfitForPeriod(
-      Date.now() - 7 * DAY_MS,
-      descendingPortfolio,
-      allTimeProfit
-    ),
-    monthly: calculateProfitForPeriod(
-      Date.now() - 30 * DAY_MS,
-      descendingPortfolio,
-      allTimeProfit
-    ),
+    daily: calculateProfitForPeriod(portfolioHistory.day, allTimeProfit),
+    weekly: calculateProfitForPeriod(portfolioHistory.week, allTimeProfit),
+    monthly: calculateProfitForPeriod(portfolioHistory.month, allTimeProfit),
     allTime: allTimeProfit,
   }
 
