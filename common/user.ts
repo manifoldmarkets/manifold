@@ -53,17 +53,14 @@ export type User = {
   freeMarketsCreated?: number
   isBannedFromPosting?: boolean
 
-  achievements?: {
+  achievements: {
     provenCorrect?: {
-      totalBadges: number
       badges: ProvenCorrectBadge[]
     }
     marketCreator?: {
-      totalBadges: number
       badges: MarketCreatorBadge[]
     }
     streaker?: {
-      totalBadges: number
       badges: StreakerBadge[]
     }
   }

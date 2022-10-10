@@ -4,7 +4,7 @@ export type Badge = {
   type: BadgeTypes
   createdTime: number
   data: { [key: string]: any }
-  name: 'Proven Correct' | 'Streaker' | 'Market Maker'
+  name: 'Proven Correct' | 'Streaker' | 'Market Creator'
 }
 
 export type BadgeTypes = 'PROVEN_CORRECT' | 'STREAKER' | 'MARKET_CREATOR'
@@ -53,7 +53,7 @@ const calculateProvenCorrectBadgeRarity = (badge: ProvenCorrectBadge) => {
   return 1
 }
 
-export const streakerBadgeRarityThresholds = [1, 50, 200]
+export const streakerBadgeRarityThresholds = [1, 50, 250]
 const calculateStreakerBadgeRarity = (badge: StreakerBadge) => {
   const { totalBettingStreak } = badge.data
   const thresholdArray = streakerBadgeRarityThresholds
@@ -67,10 +67,10 @@ const calculateStreakerBadgeRarity = (badge: StreakerBadge) => {
   return 1
 }
 
-export const marketMakerBadgeRarityThresholds = [1, 50, 200]
-const calculateMarketMakerBadgeRarity = (badge: MarketCreatorBadge) => {
+export const marketCreatorBadgeRarityThresholds = [1, 75, 300]
+const calculateMarketCreatorBadgeRarity = (badge: MarketCreatorBadge) => {
   const { totalContractsCreated } = badge.data
-  const thresholdArray = marketMakerBadgeRarityThresholds
+  const thresholdArray = marketCreatorBadgeRarityThresholds
   let i = thresholdArray.length - 1
   while (i >= 0) {
     if (totalContractsCreated == thresholdArray[i]) {
@@ -81,10 +81,9 @@ const calculateMarketMakerBadgeRarity = (badge: MarketCreatorBadge) => {
   return 1
 }
 
-export type rarities = 'common' | 'bronze' | 'silver' | 'gold'
+export type rarities = 'bronze' | 'silver' | 'gold'
 
 const rarityRanks: { [key: number]: rarities } = {
-  0: 'common',
   1: 'bronze',
   2: 'silver',
   3: 'gold',
@@ -98,7 +97,7 @@ export const calculateBadgeRarity = (badge: Badge) => {
       ]
     case 'MARKET_CREATOR':
       return rarityRanks[
-        calculateMarketMakerBadgeRarity(badge as MarketCreatorBadge)
+        calculateMarketCreatorBadgeRarity(badge as MarketCreatorBadge)
       ]
     case 'STREAKER':
       return rarityRanks[calculateStreakerBadgeRarity(badge as StreakerBadge)]
@@ -107,12 +106,21 @@ export const calculateBadgeRarity = (badge: Badge) => {
   }
 }
 
-export const calculateTotalUsersBadges = (user: User) => {
-  const { achievements } = user
-  if (!achievements) return 0
-  return (
-    (achievements.marketCreator?.totalBadges ?? 0) +
-    (achievements.provenCorrect?.totalBadges ?? 0) +
-    (achievements.streaker?.totalBadges ?? 0)
-  )
+export const getBadgesByRarity = (user: User) => {
+  const rarities: { [key in rarities]: number } = {
+    bronze: 0,
+    silver: 0,
+    gold: 0,
+  }
+  Object.values(user.achievements).map((value) => {
+    value.badges.map((badge) => {
+      rarities[calculateBadgeRarity(badge)] =
+        (rarities[calculateBadgeRarity(badge)] ?? 0) + 1
+    })
+  })
+  return rarities
 }
+
+export const goldClassName = 'text-amber-400'
+export const silverClassName = 'text-gray-500'
+export const bronzeClassName = 'text-amber-900'

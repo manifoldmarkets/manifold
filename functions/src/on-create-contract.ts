@@ -13,7 +13,7 @@ import { User } from '../../common/user'
 import * as admin from 'firebase-admin'
 import {
   MarketCreatorBadge,
-  marketMakerBadgeRarityThresholds,
+  marketCreatorBadgeRarityThresholds,
 } from '../../common/badge'
 
 export const onCreateContract = functions
@@ -50,10 +50,10 @@ async function handleMarketCreatorBadgeAward(contractCreator: User) {
       .where('creatorId', '==', contractCreator.id)
       .where('resolution', '!=', 'CANCEL')
   )
-  if (contracts.length in marketMakerBadgeRarityThresholds) {
+  if (contracts.length in marketCreatorBadgeRarityThresholds) {
     const badge = {
       type: 'MARKET_CREATOR',
-      name: 'Market Maker',
+      name: 'Market Creator',
       data: {
         totalContractsCreated: contracts.length,
       },
@@ -67,9 +67,6 @@ async function handleMarketCreatorBadgeAward(contractCreator: User) {
         achievements: {
           ...contractCreator.achievements,
           marketCreator: {
-            totalBadges:
-              (contractCreator.achievements?.marketCreator?.totalBadges ?? 0) +
-              1,
             badges: [
               ...(contractCreator.achievements?.marketCreator?.badges ?? []),
               badge,

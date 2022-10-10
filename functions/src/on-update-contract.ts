@@ -82,8 +82,6 @@ async function handleResolvedContract(contract: Contract) {
         achievements: {
           ...user.achievements,
           provenCorrect: {
-            totalBadges:
-              (user.achievements?.provenCorrect?.totalBadges ?? 0) + 1,
             badges: [
               ...(user.achievements?.provenCorrect?.badges ?? []),
               newProvenCorrectBadge,

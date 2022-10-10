@@ -332,7 +332,6 @@ async function handleBettingStreakBadgeAward(
         achievements: {
           ...user.achievements,
           streaker: {
-            totalBadges: (user.achievements?.streaker?.totalBadges ?? 0) + 1,
             badges: [...(user.achievements?.streaker?.badges ?? []), badge],
           },
         },

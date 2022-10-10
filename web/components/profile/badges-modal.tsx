@@ -1,13 +1,16 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
+import { PAST_BETS, User } from 'common/user'
 import clsx from 'clsx'
 import {
   Badge,
+  bronzeClassName,
   calculateBadgeRarity,
+  goldClassName,
   MarketCreatorBadge,
   ProvenCorrectBadge,
   rarities,
+  silverClassName,
   StreakerBadge,
 } from 'common/badge'
 import { groupBy } from 'lodash'
@@ -15,9 +18,7 @@ import { Row } from 'web/components/layout/row'
 import { SiteLink } from 'web/components/site-link'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
 import { Tooltip } from 'web/components/tooltip'
-const goldClassName = 'text-amber-400'
-const silverClassName = 'text-gray-500'
-const bronzeClassName = 'text-amber-900'
+
 export function BadgesModal(props: {
   isOpen: boolean
   setOpen: (open: boolean) => void
@@ -154,8 +155,9 @@ function StreakerBadgeItem(props: { badge: StreakerBadge; rarity: rarities }) {
     <Col className={'cursor-default text-center'}>
       <Medal rarity={rarity} />
       <Tooltip
-        text={`Make predictions ${totalBettingStreak} day
-      ${totalBettingStreak > 1 ? 's' : ''} in a row`}
+        text={`Make ${PAST_BETS} ${totalBettingStreak} day${
+          totalBettingStreak > 1 ? 's' : ''
+        } in a row`}
       >
         <span
           className={
@@ -195,7 +197,7 @@ function MarketCreatorBadgeItem(props: {
               : bronzeClassName
           }
         >
-          Market Maker
+          Market Creator
         </span>
       </Tooltip>
     </Col>
