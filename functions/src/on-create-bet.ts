@@ -24,6 +24,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
   UNIQUE_BETTOR_BONUS_AMOUNT,
+  UNIQUE_BETTOR_LIQUIDITY,
 } from '../../common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -33,6 +34,7 @@ import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
+import { addHouseSubsidy } from './helpers/add-house-subsidy'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -103,7 +105,7 @@ const updateBettingStreak = async (
 
     const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
     // Otherwise, add 1 to their betting streak
-    await trans.update(userDoc, {
+    trans.update(userDoc, {
       currentBettingStreak: newBettingStreak,
       lastBetTime: bet.createdTime,
     })
@@ -191,7 +193,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
         log(`Got ${previousUniqueBettorIds} unique bettors`)
         isNewUniqueBettor && log(`And a new unique bettor ${bettor.id}`)
 
-        await trans.update(contractDoc, {
+        trans.update(contractDoc, {
           uniqueBettorIds: newUniqueBettorIds,
           uniqueBettorCount: newUniqueBettorIds.length,
         })
@@ -204,7 +206,12 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       return { newUniqueBettorIds }
     }
   )
+
   if (!newUniqueBettorIds) return
+
+  if (oldContract.mechanism === 'cpmm-1') {
+    await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
+  }
 
   const bonusTxnDetails = {
     contractId: oldContract.id,
@@ -215,7 +222,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
   const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
   if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
+
   const fromUser = fromSnap.data() as User
+
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
       fromId: fromUser.id,
@@ -228,7 +237,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
     } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
+
     const { status, message, txn } = await runTxn(trans, bonusTxn)
+
     return { status, newUniqueBettorIds, message, txn }
   })
 
