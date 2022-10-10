@@ -72,7 +72,6 @@ export const exhibitExts = [
 
   Image,
   Link,
-  Mention,
   Mention.extend({ name: 'contract-mention' }),
   Iframe,
   TiptapTweet,
