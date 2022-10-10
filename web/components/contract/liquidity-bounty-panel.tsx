@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Contract, CPMMContract } from 'common/contract'
 import { formatMoney } from 'common/util/format'
 import { useUser } from 'web/hooks/use-user'
-import { addLiquidity, withdrawLiquidity } from 'web/lib/firebase/api'
+import { addSubsidy, withdrawLiquidity } from 'web/lib/firebase/api'
 import { AmountInput } from 'web/components/amount-input'
 import { Row } from 'web/components/layout/row'
 import { useUserLiquidity } from 'web/hooks/use-liquidity'
@@ -99,7 +99,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
     setIsLoading(true)
     setIsSuccess(false)
 
-    addLiquidity({ amount, contractId })
+    addSubsidy({ amount, contractId })
       .then((_) => {
         setIsSuccess(true)
         setError(undefined)

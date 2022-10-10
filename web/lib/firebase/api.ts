@@ -42,8 +42,8 @@ export function changeUserInfo(params: any) {
   return call(getFunctionUrl('changeuserinfo'), 'POST', params)
 }
 
-export function addLiquidity(params: any) {
-  return call(getFunctionUrl('addliquidity'), 'POST', params)
+export function addSubsidy(params: any) {
+  return call(getFunctionUrl('addsubsidy'), 'POST', params)
 }
 
 export function addCommentBounty(params: any) {
