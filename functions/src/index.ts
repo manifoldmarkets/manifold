@@ -31,6 +31,7 @@ export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
 export * from './on-update-like'
 export * from './weekly-portfolio-emails'
+export * from './drizzle-liquidity'
 
 // v2
 export * from './health'
