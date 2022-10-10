@@ -14,7 +14,6 @@ import * as admin from 'firebase-admin'
 import {
   MarketCreatorBadge,
   marketMakerBadgeRarityThresholds,
-  MINIMUM_UNIQUE_BETTORS_FOR_MARKET_MAKER_BADGE,
 } from '../../common/badge'
 
 export const onCreateContract = functions
@@ -49,11 +48,7 @@ async function handleMarketCreatorBadgeAward(contractCreator: User) {
     firestore
       .collection(`contracts`)
       .where('creatorId', '==', contractCreator.id)
-      .where(
-        'uniqueBettorCount',
-        '>=',
-        MINIMUM_UNIQUE_BETTORS_FOR_MARKET_MAKER_BADGE
-      )
+      .where('resolution', '!=', 'CANCEL')
   )
   if (contracts.length in marketMakerBadgeRarityThresholds) {
     const badge = {

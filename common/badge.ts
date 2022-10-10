@@ -67,7 +67,6 @@ const calculateStreakerBadgeRarity = (badge: StreakerBadge) => {
   return 1
 }
 
-export const MINIMUM_UNIQUE_BETTORS_FOR_MARKET_MAKER_BADGE = 3
 export const marketMakerBadgeRarityThresholds = [1, 50, 200]
 const calculateMarketMakerBadgeRarity = (badge: MarketCreatorBadge) => {
   const { totalContractsCreated } = badge.data
