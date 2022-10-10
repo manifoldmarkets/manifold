@@ -11,6 +11,7 @@ import { PortfolioMetrics, User } from './user'
 import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
+import { removeUndefinedProps } from './util/object'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -275,11 +276,11 @@ export const calculateMetricsByContract = (
       )
     }
 
-    return {
+    return removeUndefinedProps({
       contractId: c.id,
       ...current,
       from: periodMetrics,
-    }
+    })
   })
 }
 
