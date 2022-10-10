@@ -20,17 +20,18 @@ async function main() {
   // const users = filterDefined([await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')]) // prod ian
   await Promise.all(
     users.map(async (user) => {
-      // console.log('Added achievements to user', user.id)
       if (!user.id) return
+      // Only backfill users without achievements
       if (user.achievements === undefined) {
         await firestore.collection('users').doc(user.id).update({
           achievements: {},
         })
         user.achievements = {}
+        user.achievements = await awardMarketCreatorBadges(user)
+        user.achievements = await awardBettingStreakBadges(user)
+        console.log('Added achievements to user', user.id)
+        // going to ignore backfilling the proven correct badges for now
       }
-      user.achievements = await awardMarketCreatorBadges(user)
-      user.achievements = await awardBettingStreakBadges(user)
-      // going to ignore backfilling the proven correct badges for now
     })
   )
 }
