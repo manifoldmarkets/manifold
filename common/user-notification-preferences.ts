@@ -178,31 +178,44 @@ export const getNotificationDestinationsForUser = (
   reason: notification_reason_types | notification_preference
 ) => {
   const notificationSettings = privateUser.notificationPreferences
-  let destinations
-  let subscriptionType: notification_preference | undefined
-  if (Object.keys(notificationSettings).includes(reason)) {
-    subscriptionType = reason as notification_preference
-    destinations = notificationSettings[subscriptionType]
-  } else {
-    const key = reason as notification_reason_types
-    subscriptionType = notificationReasonToSubscriptionType[key]
-    destinations = subscriptionType
-      ? notificationSettings[subscriptionType]
-      : []
-  }
-  const optOutOfAllSettings = notificationSettings['opt_out_all']
-  // Your market closure notifications are high priority, opt-out doesn't affect their delivery
-  const optedOutOfEmail =
-    optOutOfAllSettings.includes('email') &&
-    subscriptionType !== 'your_contract_closed'
-  const optedOutOfBrowser =
-    optOutOfAllSettings.includes('browser') &&
-    subscriptionType !== 'your_contract_closed'
   const unsubscribeEndpoint = getFunctionUrl('unsubscribe')
-  return {
-    sendToEmail: destinations.includes('email') && !optedOutOfEmail,
-    sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
-    unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${subscriptionType}`,
-    urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
+  try {
+    let destinations
+    let subscriptionType: notification_preference | undefined
+    if (Object.keys(notificationSettings).includes(reason)) {
+      subscriptionType = reason as notification_preference
+      destinations = notificationSettings[subscriptionType]
+    } else {
+      const key = reason as notification_reason_types
+      subscriptionType = notificationReasonToSubscriptionType[key]
+      destinations = subscriptionType
+        ? notificationSettings[subscriptionType]
+        : []
+    }
+    const optOutOfAllSettings = notificationSettings['opt_out_all']
+    // Your market closure notifications are high priority, opt-out doesn't affect their delivery
+    const optedOutOfEmail =
+      optOutOfAllSettings.includes('email') &&
+      subscriptionType !== 'your_contract_closed'
+    const optedOutOfBrowser =
+      optOutOfAllSettings.includes('browser') &&
+      subscriptionType !== 'your_contract_closed'
+    return {
+      sendToEmail: destinations.includes('email') && !optedOutOfEmail,
+      sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
+      unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${subscriptionType}`,
+      urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
+    }
+  } catch (e) {
+    // Fail safely
+    console.log(
+      `couldn't get notification destinations for type ${reason} for user ${privateUser.id}`
+    )
+    return {
+      sendToEmail: false,
+      sendToBrowser: false,
+      unsubscribeUrl: '',
+      urlToManageThisNotification: '',
+    }
   }
 }
