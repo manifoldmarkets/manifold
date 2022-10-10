@@ -826,7 +826,8 @@ function NotificationFrame(props: {
   subtitle: string
   children: React.ReactNode
   isChildOfGroup?: boolean
-  showUserName?: boolean
+  hideUserName?: boolean
+  hideLinkToGroupOrQuestion?: boolean
 }) {
   const {
     notification,
@@ -834,7 +835,8 @@ function NotificationFrame(props: {
     highlighted,
     subtitle,
     children,
-    showUserName,
+    hideUserName,
+    hideLinkToGroupOrQuestion,
   } = props
   const {
     sourceType,
@@ -888,7 +890,7 @@ function NotificationFrame(props: {
               }
             >
               <div>
-                {showUserName && (
+                {!hideUserName && (
                   <UserLink
                     name={sourceUserName || ''}
                     username={sourceUserUsername || ''}
@@ -900,7 +902,9 @@ function NotificationFrame(props: {
                 {isChildOfGroup ? (
                   <RelativeTimestamp time={notification.createdTime} />
                 ) : (
-                  <QuestionOrGroupLink notification={notification} />
+                  !hideLinkToGroupOrQuestion && (
+                    <QuestionOrGroupLink notification={notification} />
+                  )
                 )}
               </div>
             </div>
@@ -1034,7 +1038,8 @@ function BadgeNotification(props: {
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       subtitle={subtitle}
-      showUserName={false}
+      hideUserName={true}
+      hideLinkToGroupOrQuestion={true}
     >
       <Row>
         <span>{sourceText} 🎉</span>
