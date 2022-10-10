@@ -20,6 +20,7 @@ import { SEO } from 'web/components/SEO'
 import { GetServerSideProps } from 'next'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useUser } from 'web/hooks/use-user'
+import { Input } from 'web/components/input'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -106,12 +107,12 @@ export default function Groups(props: {
                 title: 'All',
                 content: (
                   <Col>
-                    <input
+                    <Input
                       type="text"
                       onChange={(e) => debouncedQuery(e.target.value)}
                       placeholder="Search groups"
                       value={query}
-                      className="input input-bordered mb-4 w-full"
+                      className="mb-4 w-full"
                     />
 
                     <div className="flex flex-wrap justify-center gap-4">
@@ -134,12 +135,12 @@ export default function Groups(props: {
                       title: 'My Groups',
                       content: (
                         <Col>
-                          <input
+                          <Input
                             type="text"
                             value={query}
                             onChange={(e) => debouncedQuery(e.target.value)}
                             placeholder="Search your groups"
-                            className="input input-bordered mb-4 w-full"
+                            className="mb-4 w-full"
                           />
 
                           <div className="flex flex-wrap justify-center gap-4">
