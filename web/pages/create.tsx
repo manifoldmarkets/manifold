@@ -39,6 +39,7 @@ import { SiteLink } from 'web/components/site-link'
 import { Button } from 'web/components/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { Input } from 'web/components/input'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -329,9 +330,9 @@ export function NewContract(props: {
             </label>
 
             <Row className="gap-2">
-              <input
+              <Input
                 type="number"
-                className="input input-bordered w-32"
+                className="w-32"
                 placeholder="LOW"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
@@ -340,9 +341,9 @@ export function NewContract(props: {
                 disabled={isSubmitting}
                 value={minString ?? ''}
               />
-              <input
+              <Input
                 type="number"
-                className="input input-bordered w-32"
+                className="w-32"
                 placeholder="HIGH"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
@@ -374,9 +375,8 @@ export function NewContract(props: {
             </label>
 
             <Row className="gap-2">
-              <input
+              <Input
                 type="number"
-                className="input input-bordered"
                 placeholder="Initial value"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setInitialValueString(e.target.value)}
@@ -446,19 +446,17 @@ export function NewContract(props: {
             className={'col-span-4 sm:col-span-2'}
           />
         </Row>
-        <Row>
-          <input
+        <Row className='mt-4 gap-2'>
+          <Input
             type={'date'}
-            className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseDate(e.target.value)}
             min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
             disabled={isSubmitting}
             value={closeDate}
           />
-          <input
+          <Input
             type={'time'}
-            className="input input-bordered mt-4 ml-2"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseHoursMinutes(e.target.value)}
             min={'00:00'}

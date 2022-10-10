@@ -17,6 +17,7 @@ import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { NoSEO } from 'web/components/NoSEO'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { removeUndefinedProps } from 'common/util/object'
+import { Input } from 'web/components/input'
 
 export default function CreateDateDocPage() {
   const user = useUser()
@@ -94,9 +95,8 @@ export default function CreateDateDocPage() {
           <Col className="gap-8">
             <Col className="max-w-[160px] justify-start gap-4">
               <div className="">Birthday</div>
-              <input
+              <Input
                 type={'date'}
-                className="input input-bordered"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setBirthday(e.target.value)}
                 max={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}

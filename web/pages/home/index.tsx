@@ -48,6 +48,7 @@ import {
 } from 'web/hooks/use-contracts'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import { Input } from 'web/components/input'
 
 export default function Home() {
   const user = useUser()
@@ -99,10 +100,10 @@ export default function Home() {
         <Row
           className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
         >
-          <input
+          <Input
             type="text"
             placeholder={'Search'}
-            className="input input-bordered w-full"
+            className="w-full"
             onClick={() => Router.push('/search')}
           />
           <CustomizeButton justIcon />
