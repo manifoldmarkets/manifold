@@ -12,7 +12,6 @@ export type User = {
 
   // For their user page
   bio?: string
-  bannerUrl?: string
   website?: string
   twitterHandle?: string
   discordHandle?: string
