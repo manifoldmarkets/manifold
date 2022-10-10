@@ -215,7 +215,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   }
 
   const profit = payout + saleValue + redeemed - totalInvested
-  const profitPercent = (profit / totalInvested) * 100
+  const profitPercent = totalInvested === 0 ? 0 : (profit / totalInvested) * 100
 
   const invested = isCpmm ? getCpmmInvested(yourBets) : getDpmInvested(yourBets)
   const hasShares = Object.values(totalShares).some(
