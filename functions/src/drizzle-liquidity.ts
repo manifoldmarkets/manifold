@@ -4,8 +4,8 @@ import * as admin from 'firebase-admin'
 import { CPMMContract } from '../../common/contract'
 import { batchedWaitAll } from '../../common/util/promise'
 import { APIError } from '../../common/api'
-import { addCpmmLiquidity } from 'common/calculate-cpmm'
-import { formatMoney } from 'common/util/format'
+import { addCpmmLiquidity } from '../../common/calculate-cpmm'
+import { formatMoney } from '../../common/util/format'
 
 const firestore = admin.firestore()
 
@@ -28,7 +28,7 @@ const drizzleMarket = async (contractId: string) => {
   await firestore.runTransaction(async (trans) => {
     const snap = await trans.get(firestore.doc(`contracts/${contractId}`))
     const contract = snap.data() as CPMMContract
-    const { subsidyPool, pool, p, slug } = contract
+    const { subsidyPool, pool, p, slug,  } = contract
     if (subsidyPool ?? 0 < 1e-7) return
 
     const r = Math.random()
