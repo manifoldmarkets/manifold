@@ -150,12 +150,12 @@ export async function updateMetricsCore() {
       contractsById,
       currentBets
     )
-    const lastPortfolio = portfolioHistory.current
+    const currPortfolio = portfolioHistory.current
     const didPortfolioChange =
-      lastPortfolio === undefined ||
-      lastPortfolio.balance !== newPortfolio.balance ||
-      lastPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      lastPortfolio.investmentValue !== newPortfolio.investmentValue
+      currPortfolio === undefined ||
+      currPortfolio.balance !== newPortfolio.balance ||
+      currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currPortfolio.investmentValue !== newPortfolio.investmentValue
 
     const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
