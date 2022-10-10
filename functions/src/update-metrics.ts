@@ -26,7 +26,7 @@ import { getFunctionUrl } from '../../common/api'
 
 const firestore = admin.firestore()
 
-export const updateMetrics = functions.pubsub
+export const scheduleUpdateMetrics = functions.pubsub
   .schedule('every 15 minutes')
   .onRun(async () => {
     const response = await fetch(getFunctionUrl('updatemetrics'), {
