@@ -65,9 +65,7 @@ import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
-import { addliquidity } from './add-liquidity'
 import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
-import { withdrawliquidity } from './withdraw-liquidity'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { closemarket } from './close-market'
@@ -78,6 +76,7 @@ import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { updatemetrics } from './update-metrics'
+import { addsubsidy } from './add-subsidy'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -93,10 +92,9 @@ const sellBetFunction = toCloudFunction(sellbet)
 const sellSharesFunction = toCloudFunction(sellshares)
 const claimManalinkFunction = toCloudFunction(claimmanalink)
 const createMarketFunction = toCloudFunction(createmarket)
-const addLiquidityFunction = toCloudFunction(addliquidity)
+const addSubsidyFunction = toCloudFunction(addsubsidy)
 const addCommentBounty = toCloudFunction(addcommentbounty)
 const awardCommentBounty = toCloudFunction(awardcommentbounty)
-const withdrawLiquidityFunction = toCloudFunction(withdrawliquidity)
 const createGroupFunction = toCloudFunction(creategroup)
 const resolveMarketFunction = toCloudFunction(resolvemarket)
 const closeMarketFunction = toCloudFunction(closemarket)
@@ -121,8 +119,7 @@ export {
   sellSharesFunction as sellshares,
   claimManalinkFunction as claimmanalink,
   createMarketFunction as createmarket,
-  addLiquidityFunction as addliquidity,
-  withdrawLiquidityFunction as withdrawliquidity,
+  addSubsidyFunction as addsubsidy,
   createGroupFunction as creategroup,
   resolveMarketFunction as resolvemarket,
   closeMarketFunction as closemarket,
