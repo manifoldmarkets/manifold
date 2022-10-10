@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
-import { getUser, getValues } from '../utils'
+import { getAllUsers, getValues } from '../utils'
 import { Contract } from 'common/contract'
 import {
   MarketCreatorBadge,
@@ -10,18 +10,17 @@ import {
   streakerBadgeRarityThresholds,
 } from 'common/badge'
 import { User } from 'common/user'
-import { filterDefined } from 'common/util/array'
 initAdmin()
 
 const firestore = admin.firestore()
 
 async function main() {
-  // const users = await getAllUsers()
-  // const users = filterDefined([await getUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
-  const users = filterDefined([await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')])
+  const users = await getAllUsers()
+  // const users = filterDefined([await getUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')]) // dev ian
+  // const users = filterDefined([await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')]) // prod ian
   await Promise.all(
     users.map(async (user) => {
-      console.log('Added achievements to user', user.id)
+      // console.log('Added achievements to user', user.id)
       if (!user.id) return
       if (user.achievements === undefined) {
         await firestore.collection('users').doc(user.id).update({
