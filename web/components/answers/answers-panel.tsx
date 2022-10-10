@@ -32,6 +32,8 @@ import { useChartAnswers } from '../charts/contract/choice'
 import { ChatAlt2Icon, ChatAltIcon } from '@heroicons/react/solid'
 import { ChatIcon } from '@heroicons/react/outline'
 import { ReplyTo } from '../feed/feed-comments'
+import { InfoTooltip } from '../info-tooltip'
+import { Tooltip } from '../tooltip'
 
 // TODO: get a color
 // export function useAnswerColor(answer: Answer, contract:Contract) {
@@ -260,11 +262,8 @@ function OpenAnswer(props: {
               <button
                 className="p-1"
                 onClick={() => onAnswerCommentClick(answer)}
-                //       onClick={() =>
-                //  //TODO: make replies
-                //       }
               >
-                <ChatIcon className="text-greyscale-4 h-5 w-5" />
+                <ChatIcon className="text-greyscale-4 hover:text-greyscale-6 h-5 w-5 transition-colors" />
               </button>
             }
           </Row>
