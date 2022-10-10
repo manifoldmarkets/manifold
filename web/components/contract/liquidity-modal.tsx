@@ -21,7 +21,7 @@ export function LiquidityModal(props: {
   const { totalLiquidity } = contract
 
   return (
-    <Modal open={isOpen} setOpen={setOpen} size="md">
+    <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="gap-2.5 rounded  bg-white p-4 pb-8 sm:gap-4">
         <Title className="!mt-0 !mb-2" text="💧 Add liquidity" />
 
@@ -80,7 +80,8 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
     <>
       <div className="mb-4 text-gray-500">
         Contribute your M$ to make this market more accurate by subsidizing
-        trader participation. <InfoTooltip text="Liquidity is how much money traders can make if they're right. The more traders can earn, the greater the incentive to find out what the correct probability is." />
+        trading.{' '}
+        <InfoTooltip text="Liquidity is how much money traders can make if they're right. The more traders can earn, the greater the incentive to find out the correct probability." />
       </div>
 
       <Row>
