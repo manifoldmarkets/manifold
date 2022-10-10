@@ -3,7 +3,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 
 export default function Document() {
   return (
-    <Html data-theme="mantic" className="min-h-screen">
+    <Html lang="en" data-theme="mantic" className="min-h-screen">
       <Head>
         <link rel="icon" href={ENV_CONFIG.faviconPath} />
         <link

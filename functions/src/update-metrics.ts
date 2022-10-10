@@ -1,10 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, isEmpty, keyBy, last, sortBy } from 'lodash'
+import fetch from 'node-fetch'
+
 import { getValues, log, logMemory, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract, CPMM } from '../../common/contract'
-
 import { PortfolioMetrics, User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { getLoanUpdates } from '../../common/loans'
@@ -14,18 +15,41 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateProbChanges,
+  computeElasticity,
   computeVolume,
 } from '../../common/calculate-metrics'
 import { getProbability } from '../../common/calculate'
 import { Group } from '../../common/group'
 import { batchedWaitAll } from '../../common/util/promise'
+import { newEndpointNoAuth } from './api'
+import { getFunctionUrl } from '../../common/api'
 
 const firestore = admin.firestore()
 
-export const updateMetrics = functions
-  .runWith({ memory: '8GB', timeoutSeconds: 540 })
-  .pubsub.schedule('every 15 minutes')
-  .onRun(updateMetricsCore)
+export const scheduleUpdateMetrics = functions.pubsub
+  .schedule('every 15 minutes')
+  .onRun(async () => {
+    const response = await fetch(getFunctionUrl('updatemetrics'), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+
+    const json = await response.json()
+
+    if (response.ok) console.log(json)
+    else console.error(json)
+  })
+
+export const updatemetrics = newEndpointNoAuth(
+  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
+  async (_req) => {
+    await updateMetricsCore()
+    return { success: true }
+  }
+)
 
 export async function updateMetricsCore() {
   console.log('Loading users')
@@ -103,6 +127,7 @@ export async function updateMetricsCore() {
         fields: {
           volume24Hours: computeVolume(contractBets, now - DAY_MS),
           volume7Days: computeVolume(contractBets, now - DAY_MS * 7),
+          elasticity: computeElasticity(contractBets, contract),
           ...cpmmFields,
         },
       }
@@ -144,7 +169,7 @@ export async function updateMetricsCore() {
           return 0
         }
         const contractRatio =
-          contract.flaggedByUsernames.length / (contract.uniqueBettorCount ?? 1)
+          contract.flaggedByUsernames.length / (contract.uniqueBettorCount || 1)
 
         return contractRatio
       })

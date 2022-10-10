@@ -465,8 +465,11 @@ function IncomeNotificationItem(props: {
           simple ? (
             <span className={'ml-1 font-bold'}>🏦 Loan</span>
           ) : (
-            <SiteLink className={'ml-1 font-bold'} href={'/loans'}>
-              🏦 Loan
+            <SiteLink
+              className={'relative ml-1 font-bold'}
+              href={`/${sourceUserUsername}/?show=loans`}
+            >
+              🏦 Loan <span className="font-normal">(learn more)</span>
             </SiteLink>
           )
         ) : sourceType === 'betting_streak_bonus' ? (
@@ -474,8 +477,8 @@ function IncomeNotificationItem(props: {
             <span className={'ml-1 font-bold'}>{bettingStreakText}</span>
           ) : (
             <SiteLink
-              className={'ml-1 font-bold'}
-              href={'/betting-streak-bonus'}
+              className={'relative ml-1 font-bold'}
+              href={`/${sourceUserUsername}/?show=betting-streak`}
             >
               {bettingStreakText}
             </SiteLink>

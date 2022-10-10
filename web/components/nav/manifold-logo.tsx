@@ -22,6 +22,7 @@ export function ManifoldLogo(props: {
           src={darkBackground ? '/logo-white.svg' : '/logo.svg'}
           width={45}
           height={45}
+          alt=""
         />
 
         {!hideText &&

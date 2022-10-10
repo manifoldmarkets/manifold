@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { useMemo, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
-import { Bet } from 'web/lib/firebase/bets'
+import { Bet, MAX_USER_BETS_LOADED } from 'web/lib/firebase/bets'
 import { User } from 'web/lib/firebase/users'
 import {
   formatMoney,
@@ -17,6 +17,7 @@ import {
   Contract,
   contractPath,
   getBinaryProbPercent,
+  MAX_USER_BET_CONTRACTS_LOADED,
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { sellBet } from 'web/lib/firebase/api'
@@ -37,7 +38,7 @@ import { NumericContract } from 'common/contract'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUser } from 'web/hooks/use-user'
 import { useUserBets } from 'web/hooks/use-user-bets'
-import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
 import { Pagination } from './pagination'
 import { LimitOrderTable } from './limit-bets'
@@ -50,6 +51,7 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { ExclamationIcon } from '@heroicons/react/outline'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -79,6 +81,10 @@ export function BetsList(props: { user: User }) {
   const contractsById = useMemo(() => {
     return contractList ? keyBy(contractList, 'id') : undefined
   }, [contractList])
+
+  const loadedPartialData =
+    userBets?.length === MAX_USER_BETS_LOADED ||
+    contractList?.length === MAX_USER_BET_CONTRACTS_LOADED
 
   const [sort, setSort] = usePersistentState<BetSort>('newest', {
     key: 'bets-list-sort',
@@ -167,6 +173,13 @@ export function BetsList(props: { user: User }) {
 
   return (
     <Col>
+      {loadedPartialData && (
+        <Row className="my-4 items-center gap-2 self-start rounded bg-yellow-50 p-4">
+          <ExclamationIcon className="h-5 w-5" />
+          <div>Partial trade data only</div>
+        </Row>
+      )}
+
       <Col className="justify-between gap-4 sm:flex-row">
         <Row className="gap-4">
           <Col>
@@ -412,7 +425,9 @@ export function ContractBetsTable(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
 
   return (
     <div className="overflow-x-auto">
@@ -461,6 +476,7 @@ export function ContractBetsTable(props: {
               contract={contract}
               isYourBet={isYourBets}
               unfilledBets={unfilledBets}
+              balanceByUserId={balanceByUserId}
             />
           ))}
         </tbody>
@@ -475,8 +491,10 @@ function BetRow(props: {
   saleBet?: Bet
   isYourBet: boolean
   unfilledBets: LimitBet[]
+  balanceByUserId: { [userId: string]: number }
 }) {
-  const { bet, saleBet, contract, isYourBet, unfilledBets } = props
+  const { bet, saleBet, contract, isYourBet, unfilledBets, balanceByUserId } =
+    props
   const {
     amount,
     outcome,
@@ -504,9 +522,9 @@ function BetRow(props: {
     } else if (contract.isResolved) {
       return resolvedPayout(contract, bet)
     } else {
-      return calculateSaleAmount(contract, bet, unfilledBets)
+      return calculateSaleAmount(contract, bet, unfilledBets, balanceByUserId)
     }
-  }, [contract, bet, saleBet, unfilledBets])
+  }, [contract, bet, saleBet, unfilledBets, balanceByUserId])
 
   const saleDisplay = isAnte ? (
     'ANTE'
@@ -545,6 +563,7 @@ function BetRow(props: {
               contract={contract}
               bet={bet}
               unfilledBets={unfilledBets}
+              balanceByUserId={balanceByUserId}
             />
           )}
       </td>
@@ -590,8 +609,9 @@ function SellButton(props: {
   contract: Contract
   bet: Bet
   unfilledBets: LimitBet[]
+  balanceByUserId: { [userId: string]: number }
 }) {
-  const { contract, bet, unfilledBets } = props
+  const { contract, bet, unfilledBets, balanceByUserId } = props
   const { outcome, shares, loanAmount } = bet
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -605,10 +625,16 @@ function SellButton(props: {
     contract,
     outcome,
     shares,
-    unfilledBets
+    unfilledBets,
+    balanceByUserId
   )
 
-  const saleAmount = calculateSaleAmount(contract, bet, unfilledBets)
+  const saleAmount = calculateSaleAmount(
+    contract,
+    bet,
+    unfilledBets,
+    balanceByUserId
+  )
   const profit = saleAmount - bet.amount
 
   return (

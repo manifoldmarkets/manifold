@@ -1,3 +1,4 @@
+import { Input } from './input'
 import { Row } from './layout/row'
 
 export function ProbabilitySelector(props: {
@@ -10,10 +11,10 @@ export function ProbabilitySelector(props: {
   return (
     <Row className="items-center  gap-2">
       <label className="input-group input-group-lg text-lg">
-        <input
+        <Input
           type="number"
           value={probabilityInt}
-          className="input input-bordered input-md w-28 text-lg"
+          className="input-md w-28 !text-lg"
           disabled={isSubmitting}
           min={1}
           max={99}

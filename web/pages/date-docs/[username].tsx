@@ -22,6 +22,7 @@ import { PostCommentsActivity, RichEditPost } from '../post/[...slugs]'
 import { usePost } from 'web/hooks/use-post'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
+import { NoSEO } from 'web/components/NoSEO'
 
 export async function getStaticProps(props: { params: { username: string } }) {
   const { username } = props.params
@@ -62,6 +63,7 @@ function DateDocPage(props: { creator: User; post: DateDoc }) {
 
   return (
     <Page>
+      <NoSEO />
       <Col className="mx-auto w-full max-w-xl gap-6 sm:mb-6">
         <SiteLink href="/date-docs">
           <Row className="items-center gap-2">
@@ -140,15 +142,17 @@ export function DateDocPost(props: {
       ) : (
         <Content content={content} />
       )}
-      <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">
-        <iframe
-          height="405"
-          src={marketUrl}
-          title=""
-          frameBorder="0"
-          className="w-full rounded-xl bg-white p-10"
-        ></iframe>
-      </div>
+      {contractSlug && (
+        <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">
+          <iframe
+            height="405"
+            src={marketUrl}
+            title=""
+            frameBorder="0"
+            className="w-full rounded-xl bg-white p-10"
+          ></iframe>
+        </div>
+      )}
     </Col>
   )
 }

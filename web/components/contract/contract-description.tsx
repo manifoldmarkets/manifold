@@ -1,8 +1,6 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import Textarea from 'react-expanding-textarea'
-
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { exhibitExts } from 'common/util/parse'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -15,6 +13,7 @@ import { Button } from '../button'
 import { Spacer } from '../layout/spacer'
 import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
+import { ExpandingInput } from '../expanding-input'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -138,8 +137,8 @@ function EditQuestion(props: {
 
   return editing ? (
     <div className="mt-4">
-      <Textarea
-        className="textarea textarea-bordered mb-1 h-24 w-full resize-none"
+      <ExpandingInput
+        className="mb-1 h-24 w-full"
         rows={2}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
