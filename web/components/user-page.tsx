@@ -50,8 +50,8 @@ export function UserPage(props: { user: User }) {
     setShowConfetti(claimedMana)
     const query = { ...router.query }
     if (query.claimedMana || query.show) {
-      delete query['claimed-mana']
-      delete query['show']
+      const queriesToDelete = ['claimed-mana', 'show', 'badge']
+      queriesToDelete.forEach((key) => delete query[key])
       router.replace(
         {
           pathname: router.pathname,
@@ -102,7 +102,7 @@ export function UserPage(props: { user: User }) {
                 </span>
                 <Row className="sm:text-md -mt-1 items-center gap-x-3 text-sm ">
                   <span className={' text-greyscale-4'}>@{user.username}</span>
-                  <BadgeDisplay user={user} router={router} />
+                  <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
               {isCurrentUser && (
