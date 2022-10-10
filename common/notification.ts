@@ -4,7 +4,7 @@ export type Notification = {
   id: string
   userId: string
   reasonText?: string
-  reason?: notification_reason_types
+  reason?: notification_reason_types | notification_preference
   createdTime: number
   viewTime?: number
   isSeen: boolean
@@ -46,6 +46,7 @@ export type notification_source_types =
   | 'loan'
   | 'like'
   | 'tip_and_like'
+  | 'badge'
 
 export type notification_source_update_types =
   | 'created'
@@ -236,6 +237,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   all_answers_on_contracts_with_shares_in_on_watched_markets: {
     simple: `Only on markets you're invested in`,
     detailed: `Answers on markets that you're watching and that you're invested in`,
+  },
+  badges_awarded: {
+    simple: 'New badges awarded',
+    detailed: 'New badges you have earned',
   },
   opt_out_all: {
     simple: 'Opt out of all notifications (excludes when your markets close)',

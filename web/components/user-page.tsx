@@ -31,14 +31,12 @@ import { UserFollowButton } from './follow-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { formatMoney } from 'common/util/format'
-import {
-  BettingStreakModal,
-  hasCompletedStreakToday,
-} from 'web/components/profile/betting-streak-modal'
+
 import { LoansModal } from './profile/loans-modal'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { DOMAIN } from 'common/envs/constants'
+import { BadgeDisplay } from 'web/components/badge-display'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -79,6 +77,7 @@ export function UserPage(props: { user: User }) {
       {showConfetti && (
         <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
+
       <Col className="relative">
         <Row className="relative px-4 pt-4">
           <Avatar
@@ -101,9 +100,10 @@ export function UserPage(props: { user: User }) {
                 <span className="break-anywhere text-lg font-bold sm:text-2xl">
                   {user.name}
                 </span>
-                <span className="sm:text-md text-greyscale-4 text-sm">
-                  @{user.username}
-                </span>
+                <Row className="sm:text-md -mt-1 items-center gap-x-3 text-sm ">
+                  <span className={' text-greyscale-4'}>@{user.username}</span>
+                  <BadgeDisplay user={user} router={router} />
+                </Row>
               </Col>
               {isCurrentUser && (
                 <ProfilePrivateStats
@@ -278,14 +278,10 @@ export function ProfilePrivateStats(props: {
   user: User
   router: NextRouter
 }) {
-  const { currentUser, profit, user, router } = props
-  const [showBettingStreakModal, setShowBettingStreakModal] = useState(false)
+  const { profit, user, router } = props
   const [showLoansModal, setShowLoansModal] = useState(false)
 
   useEffect(() => {
-    const showBettingStreak = router.query['show'] === 'betting-streak'
-    setShowBettingStreakModal(showBettingStreak)
-
     const showLoansModel = router.query['show'] === 'loans'
     setShowLoansModal(showLoansModel)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -302,23 +298,6 @@ export function ProfilePrivateStats(props: {
           <span className="mx-auto text-xs sm:text-sm">profit</span>
         </Col>
         <Col
-          className={clsx('text-,d cursor-pointer sm:text-lg ')}
-          onClick={() => setShowBettingStreakModal(true)}
-        >
-          <span
-            className={clsx(
-              !hasCompletedStreakToday(user)
-                ? 'opacity-50 grayscale'
-                : 'grayscale-0'
-            )}
-          >
-            🔥 {user.currentBettingStreak ?? 0}
-          </span>
-          <span className="text-greyscale-4 mx-auto text-xs sm:text-sm">
-            streak
-          </span>
-        </Col>
-        <Col
           className={
             'text-greyscale-4 text-md flex-shrink-0 cursor-pointer sm:text-lg'
           }
@@ -330,13 +309,6 @@ export function ProfilePrivateStats(props: {
           <span className="mx-auto text-xs sm:text-sm">next loan</span>
         </Col>
       </Row>
-      {BettingStreakModal && (
-        <BettingStreakModal
-          isOpen={showBettingStreakModal}
-          setOpen={setShowBettingStreakModal}
-          currentUser={currentUser}
-        />
-      )}
       {showLoansModal && (
         <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
       )}
