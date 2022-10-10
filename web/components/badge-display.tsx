@@ -1,10 +1,10 @@
 import { User } from 'common/user'
-import { NextRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { getBadgesByRarity } from 'common/badge'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { BadgesModal } from 'web/components/profile/badges-modal'
+import { ParsedUrlQuery } from 'querystring'
 
 export const goldClassName = 'text-amber-400'
 export const silverClassName = 'text-gray-500'
@@ -12,16 +12,16 @@ export const bronzeClassName = 'text-amber-900'
 
 export function BadgeDisplay(props: {
   user: User | undefined | null
-  router?: NextRouter
+  query: ParsedUrlQuery
 }) {
-  const { user, router } = props
+  const { user, query } = props
   const [showBadgesModal, setShowBadgesModal] = useState(false)
 
   useEffect(() => {
-    if (!router) return
-    const showBadgesModal = router.query['show'] === 'badges'
+    const showBadgesModal = query['show'] == 'badges'
     setShowBadgesModal(showBadgesModal)
-  }, [router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // get number of badges of each rarity type
   const badgesByRarity = getBadgesByRarity(user)
   const badgesByRarityItems = Object.entries(badgesByRarity).map(
