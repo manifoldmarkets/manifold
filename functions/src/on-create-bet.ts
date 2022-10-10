@@ -312,7 +312,7 @@ async function handleBettingStreakBadgeAward(
     user.achievements?.streaker?.badges.some(
       (badge) => badge.data.totalBettingStreak === 1
     )
-
+  // TODO: check if already awarded 50th streak as well
   if (newBettingStreak === 1 && alreadyHasBadgeForFirstStreak) return
 
   if (newBettingStreak in streakerBadgeRarityThresholds) {
