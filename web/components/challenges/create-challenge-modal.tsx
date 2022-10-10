@@ -20,11 +20,11 @@ import { getProbability } from 'common/calculate'
 import { createMarket } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
 import { FIXED_ANTE } from 'common/economy'
-import Textarea from 'react-expanding-textarea'
 import { useTextEditor } from 'web/components/editor'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 import { CopyLinkButton } from '../copy-link-button'
+import { ExpandingInput } from '../expanding-input'
 
 type challengeInfo = {
   amount: number
@@ -153,9 +153,9 @@ function CreateChallengeForm(props: {
             {contract ? (
               <span className="underline">{contract.question}</span>
             ) : (
-              <Textarea
+              <ExpandingInput
                 placeholder="e.g. Will a Democrat be the next president?"
-                className="input input-bordered mt-1 w-full resize-none"
+                className="mt-1 w-full"
                 autoFocus={true}
                 maxLength={MAX_QUESTION_LENGTH}
                 value={challengeInfo.question}

@@ -7,13 +7,13 @@ import { User } from 'common/user'
 import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
 import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
-import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
 import { Button } from '../button'
 import { getManalinkUrl } from 'web/pages/links'
 import { DuplicateIcon } from '@heroicons/react/outline'
 import { QRCode } from '../qr-code'
 import { Input } from '../input'
+import { ExpandingInput } from '../expanding-input'
 
 export function CreateLinksButton(props: {
   user: User
@@ -165,10 +165,9 @@ function CreateManalinkForm(props: {
             </div>
             <div className="form-control w-full">
               <label className="label">Message</label>
-              <Textarea
+              <ExpandingInput
                 placeholder={defaultMessage}
                 maxLength={200}
-                className="input input-bordered resize-none"
                 autoFocus
                 value={newManalink.message}
                 rows="3"

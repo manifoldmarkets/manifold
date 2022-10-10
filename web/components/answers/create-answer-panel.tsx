@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import React, { useState } from 'react'
-import Textarea from 'react-expanding-textarea'
 import { findBestMatch } from 'string-similarity'
 
 import { FreeResponseContract } from 'common/contract'
@@ -26,6 +25,7 @@ import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { lowerCase } from 'lodash'
 import { Button } from '../button'
+import { ExpandingInput } from '../expanding-input'
 
 export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props
@@ -122,10 +122,10 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
     <Col className="gap-4 rounded">
       <Col className="flex-1 gap-2 px-4 xl:px-0">
         <div className="mb-1">Add your answer</div>
-        <Textarea
+        <ExpandingInput
           value={text}
           onChange={(e) => changeAnswer(e.target.value)}
-          className="textarea textarea-bordered w-full resize-none"
+          className="w-full"
           placeholder="Type your answer..."
           rows={1}
           maxLength={MAX_ANSWER_LENGTH}

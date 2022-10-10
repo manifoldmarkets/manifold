@@ -3,8 +3,8 @@ import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
 import React, { useState } from 'react'
-import Textarea from 'react-expanding-textarea'
 import { ConfirmationButton } from 'web/components/confirmation-button'
+import { ExpandingInput } from 'web/components/expanding-input'
 import { Input } from 'web/components/input'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -44,8 +44,8 @@ function EditUserField(props: {
       <label className="label">{label}</label>
 
       {field === 'bio' ? (
-        <Textarea
-          className="textarea textarea-bordered w-full resize-none"
+        <ExpandingInput
+          className="w-full"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onBlur={updateField}

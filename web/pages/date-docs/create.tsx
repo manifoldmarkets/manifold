@@ -1,7 +1,5 @@
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
-import Textarea from 'react-expanding-textarea'
-
 import { DateDoc } from 'common/post'
 import { useTextEditor, TextEditor } from 'web/components/editor'
 import { Page } from 'web/components/page'
@@ -18,6 +16,7 @@ import { NoSEO } from 'web/components/NoSEO'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { removeUndefinedProps } from 'common/util/object'
 import { Input } from 'web/components/input'
+import { ExpandingInput } from 'web/components/expanding-input'
 
 export default function CreateDateDocPage() {
   const user = useUser()
@@ -122,8 +121,7 @@ export default function CreateDateDocPage() {
               </Row>
 
               <Col className="gap-2">
-                <Textarea
-                  className="input input-bordered resize-none"
+                <ExpandingInput
                   maxLength={MAX_QUESTION_LENGTH}
                   value={question}
                   onChange={(e) => setQuestion(e.target.value || '')}

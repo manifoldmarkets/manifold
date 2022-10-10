@@ -2,7 +2,6 @@ import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
@@ -40,6 +39,7 @@ import { Button } from 'web/components/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/input'
+import { ExpandingInput } from 'web/components/expanding-input'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -105,9 +105,8 @@ export default function Create(props: { auth: { user: User } }) {
                 </span>
               </label>
 
-              <Textarea
+              <ExpandingInput
                 placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-                className="input input-bordered resize-none"
                 autoFocus
                 maxLength={MAX_QUESTION_LENGTH}
                 value={question}
@@ -446,7 +445,7 @@ export function NewContract(props: {
             className={'col-span-4 sm:col-span-2'}
           />
         </Row>
-        <Row className='mt-4 gap-2'>
+        <Row className="mt-4 gap-2">
           <Input
             type={'date'}
             onClick={(e) => e.stopPropagation()}
