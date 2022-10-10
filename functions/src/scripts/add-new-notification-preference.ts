@@ -11,15 +11,18 @@ async function main() {
   await Promise.all(
     privateUsers.map((privateUser) => {
       if (!privateUser.id) return Promise.resolve()
-      return firestore
-        .collection('private-users')
-        .doc(privateUser.id)
-        .update({
-          notificationPreferences: {
-            ...privateUser.notificationPreferences,
-            opt_out_all: [],
-          },
-        })
+      if (privateUser.notificationPreferences.badges_awarded === undefined) {
+        return firestore
+          .collection('private-users')
+          .doc(privateUser.id)
+          .update({
+            notificationPreferences: {
+              ...privateUser.notificationPreferences,
+              badges_awarded: ['browser'],
+            },
+          })
+      }
+      return
     })
   )
 }

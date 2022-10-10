@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEmpty, keyBy, last, sortBy } from 'lodash'
+import { groupBy, keyBy, sortBy } from 'lodash'
 import fetch from 'node-fetch'
 
 import { getValues, log, logMemory, writeAsync } from './utils'
@@ -15,6 +15,7 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateProbChanges,
+  calculateMetricsByContract,
   computeElasticity,
   computeVolume,
 } from '../../common/calculate-metrics'
@@ -23,13 +24,15 @@ import { Group } from '../../common/group'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
 import { getFunctionUrl } from '../../common/api'
+import { filterDefined } from '../../common/util/array'
 
 const firestore = admin.firestore()
-
-export const updateMetrics = functions.pubsub
+export const scheduleUpdateMetrics = functions.pubsub
   .schedule('every 15 minutes')
   .onRun(async () => {
-    const response = await fetch(getFunctionUrl('updatemetrics'), {
+    const url = getFunctionUrl('updatemetrics')
+    console.log('Scheduling update metrics', url)
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -59,11 +62,7 @@ export async function updateMetricsCore() {
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
 
   console.log('Loading portfolio history')
-  const allPortfolioHistories = await getValues<PortfolioMetrics>(
-    firestore
-      .collectionGroup('portfolioHistory')
-      .where('timestamp', '>', Date.now() - 31 * DAY_MS) // so it includes just over a month ago
-  )
+  const userPortfolioHistory = await loadPortfolioHistory(users)
 
   console.log('Loading groups')
   const groups = await getValues<Group>(firestore.collection('groups'))
@@ -140,11 +139,10 @@ export async function updateMetricsCore() {
   )
   const contractsByUser = groupBy(contracts, (contract) => contract.creatorId)
   const betsByUser = groupBy(bets, (bet) => bet.userId)
-  const portfolioHistoryByUser = groupBy(allPortfolioHistories, (p) => p.userId)
 
   const userMetrics = users.map((user) => {
     const currentBets = betsByUser[user.id] ?? []
-    const portfolioHistory = portfolioHistoryByUser[user.id] ?? []
+    const portfolioHistory = userPortfolioHistory[user.id] ?? []
     const userContracts = contractsByUser[user.id] ?? []
     const newCreatorVolume = calculateCreatorVolume(userContracts)
     const newPortfolio = calculateNewPortfolioMetrics(
@@ -152,14 +150,20 @@ export async function updateMetricsCore() {
       contractsById,
       currentBets
     )
-    const lastPortfolio = last(portfolioHistory)
+    const currPortfolio = portfolioHistory.current
     const didPortfolioChange =
-      lastPortfolio === undefined ||
-      lastPortfolio.balance !== newPortfolio.balance ||
-      lastPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      lastPortfolio.investmentValue !== newPortfolio.investmentValue
+      currPortfolio === undefined ||
+      currPortfolio.balance !== newPortfolio.balance ||
+      currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currPortfolio.investmentValue !== newPortfolio.investmentValue
 
     const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+
+    const metricsByContract = calculateMetricsByContract(
+      currentBets,
+      contractsById
+    )
+
     const contractRatios = userContracts
       .map((contract) => {
         if (
@@ -190,6 +194,7 @@ export async function updateMetricsCore() {
       newProfit,
       didPortfolioChange,
       newFractionResolvedCorrectly,
+      metricsByContract,
     }
   })
 
@@ -205,63 +210,61 @@ export async function updateMetricsCore() {
   const nextLoanByUser = keyBy(userPayouts, (payout) => payout.user.id)
 
   const userUpdates = userMetrics.map(
-    ({
-      user,
-      newCreatorVolume,
-      newPortfolio,
-      newProfit,
-      didPortfolioChange,
-      newFractionResolvedCorrectly,
-    }) => {
+    ({ user, newCreatorVolume, newProfit, newFractionResolvedCorrectly }) => {
       const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
       return {
-        fieldUpdates: {
-          doc: firestore.collection('users').doc(user.id),
-          fields: {
-            creatorVolumeCached: newCreatorVolume,
-            profitCached: newProfit,
-            nextLoanCached,
-            fractionResolvedCorrectly: newFractionResolvedCorrectly,
-          },
-        },
-
-        subcollectionUpdates: {
-          doc: firestore
-            .collection('users')
-            .doc(user.id)
-            .collection('portfolioHistory')
-            .doc(),
-          fields: didPortfolioChange ? newPortfolio : {},
+        doc: firestore.collection('users').doc(user.id),
+        fields: {
+          creatorVolumeCached: newCreatorVolume,
+          profitCached: newProfit,
+          nextLoanCached,
+          fractionResolvedCorrectly: newFractionResolvedCorrectly,
         },
       }
     }
   )
-  await writeAsync(
-    firestore,
-    userUpdates.map((u) => u.fieldUpdates)
+  await writeAsync(firestore, userUpdates)
+
+  const portfolioHistoryUpdates = filterDefined(
+    userMetrics.map(({ user, newPortfolio, didPortfolioChange }) => {
+      return didPortfolioChange
+        ? {
+            doc: firestore
+              .collection('users')
+              .doc(user.id)
+              .collection('portfolioHistory')
+              .doc(),
+            fields: newPortfolio,
+          }
+        : null
+    })
   )
-  await writeAsync(
-    firestore,
-    userUpdates
-      .filter((u) => !isEmpty(u.subcollectionUpdates.fields))
-      .map((u) => u.subcollectionUpdates),
-    'set'
+  await writeAsync(firestore, portfolioHistoryUpdates, 'set')
+
+  const contractMetricsUpdates = userMetrics.flatMap(
+    ({ user, metricsByContract }) => {
+      const collection = firestore
+        .collection('users')
+        .doc(user.id)
+        .collection('contract-metrics')
+      return metricsByContract.map((metrics) => ({
+        doc: collection.doc(metrics.contractId),
+        fields: metrics,
+      }))
+    }
   )
+
+  await writeAsync(firestore, contractMetricsUpdates, 'set')
+
   log(`Updated metrics for ${users.length} users.`)
 
   try {
     const groupUpdates = groups.map((group, index) => {
       const groupContractIds = contractsByGroup[index] as GroupContractDoc[]
-      const groupContracts = groupContractIds
-        .map((e) => contractsById[e.contractId])
-        .filter((e) => e !== undefined) as Contract[]
-      const bets = groupContracts.map((e) => {
-        if (e != null && e.id in betsByContract) {
-          return betsByContract[e.id] ?? []
-        } else {
-          return []
-        }
-      })
+      const groupContracts = filterDefined(
+        groupContractIds.map((e) => contractsById[e.contractId])
+      )
+      const bets = groupContracts.map((e) => betsByContract[e.id] ?? [])
 
       const creatorScores = scoreCreators(groupContracts)
       const traderScores = scoreTraders(groupContracts, bets)
@@ -295,3 +298,44 @@ const topUserScores = (scores: { [userId: string]: number }) => {
 type GroupContractDoc = { contractId: string; createdTime: number }
 
 const BAD_RESOLUTION_THRESHOLD = 0.1
+
+const loadPortfolioHistory = async (users: User[]) => {
+  const now = Date.now()
+  const userPortfolioHistory = await batchedWaitAll(
+    users.map((user) => async () => {
+      const query = firestore
+        .collection('users')
+        .doc(user.id)
+        .collection('portfolioHistory')
+        .orderBy('timestamp', 'desc')
+        .limit(1)
+
+      const portfolioMetrics = await Promise.all([
+        getValues<PortfolioMetrics>(query),
+        getValues<PortfolioMetrics>(
+          query.where('timestamp', '<', now - DAY_MS)
+        ),
+        getValues<PortfolioMetrics>(
+          query.where('timestamp', '<', now - 7 * DAY_MS)
+        ),
+        getValues<PortfolioMetrics>(
+          query.where('timestamp', '<', now - 30 * DAY_MS)
+        ),
+      ])
+      const [current, day, week, month] = portfolioMetrics.map(
+        (p) => p[0] as PortfolioMetrics | undefined
+      )
+
+      return {
+        userId: user.id,
+        current,
+        day,
+        week,
+        month,
+      }
+    }),
+    100
+  )
+
+  return keyBy(userPortfolioHistory, (p) => p.userId)
+}

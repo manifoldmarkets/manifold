@@ -12,7 +12,7 @@ import { getValueFromBucket } from '../../common/calculate-dpm'
 import { formatNumericProbability } from '../../common/pseudo-numeric'
 
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { contractUrl, getUser } from './utils'
+import { contractUrl, getUser, log } from './utils'
 import { buildCardUrl, getOpenGraphProps } from '../../common/contract-details'
 import { notification_reason_types } from '../../common/notification'
 import { Dictionary } from 'lodash'
@@ -212,20 +212,16 @@ export const sendOneWeekBonusEmail = async (
   user: User,
   privateUser: PrivateUser
 ) => {
-  if (
-    !privateUser ||
-    !privateUser.email ||
-    !privateUser.notificationPreferences.onboarding_flow.includes('email')
-  )
-    return
+  if (!privateUser || !privateUser.email) return
 
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
     'onboarding_flow'
   )
+  if (!sendToEmail) return
 
   return await sendTemplateEmail(
     privateUser.email,
@@ -247,19 +243,15 @@ export const sendCreatorGuideEmail = async (
   privateUser: PrivateUser,
   sendTime: string
 ) => {
-  if (
-    !privateUser ||
-    !privateUser.email ||
-    !privateUser.notificationPreferences.onboarding_flow.includes('email')
-  )
-    return
+  if (!privateUser || !privateUser.email) return
 
   const { name } = user
   const firstName = name.split(' ')[0]
-  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
     'onboarding_flow'
   )
+  if (!sendToEmail) return
   return await sendTemplateEmail(
     privateUser.email,
     'Create your own prediction market',
@@ -279,22 +271,16 @@ export const sendThankYouEmail = async (
   user: User,
   privateUser: PrivateUser
 ) => {
-  if (
-    !privateUser ||
-    !privateUser.email ||
-    !privateUser.notificationPreferences.thank_you_for_purchases.includes(
-      'email'
-    )
-  )
-    return
+  if (!privateUser || !privateUser.email) return
 
   const { name } = user
   const firstName = name.split(' ')[0]
-  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
     'thank_you_for_purchases'
   )
 
+  if (!sendToEmail) return
   return await sendTemplateEmail(
     privateUser.email,
     'Thanks for your Manifold purchase',
@@ -466,17 +452,13 @@ export const sendInterestingMarketsEmail = async (
   contractsToSend: Contract[],
   deliveryTime?: string
 ) => {
-  if (
-    !privateUser ||
-    !privateUser.email ||
-    !privateUser.notificationPreferences.trending_markets.includes('email')
-  )
-    return
+  if (!privateUser || !privateUser.email) return
 
-  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
     'trending_markets'
   )
+  if (!sendToEmail) return
 
   const { name } = user
   const firstName = name.split(' ')[0]
@@ -620,17 +602,14 @@ export const sendWeeklyPortfolioUpdateEmail = async (
   investments: PerContractInvestmentsData[],
   overallPerformance: OverallPerformanceData
 ) => {
-  if (
-    !privateUser ||
-    !privateUser.email ||
-    !privateUser.notificationPreferences.profit_loss_updates.includes('email')
-  )
-    return
+  if (!privateUser || !privateUser.email) return
 
-  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
     'profit_loss_updates'
   )
+
+  if (!sendToEmail) return
 
   const { name } = user
   const firstName = name.split(' ')[0]
@@ -656,4 +635,5 @@ export const sendWeeklyPortfolioUpdateEmail = async (
       : 'portfolio-update',
     templateData
   )
+  log('Sent portfolio update email to', privateUser.email)
 }

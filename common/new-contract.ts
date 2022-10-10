@@ -63,6 +63,7 @@ export function getNewContract(
     tags: [],
     lowercaseTags: [],
     visibility,
+    unlistedById: visibility === 'unlisted' ? creator.id : undefined,
     isResolved: false,
     createdTime: Date.now(),
     closeTime,

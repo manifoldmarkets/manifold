@@ -139,6 +139,7 @@ export function NotificationSettings(props: {
       'loan_income',
       'limit_order_fills',
       'tips_on_your_comments',
+      'badges_awarded',
     ],
   }
   const userInteractions: SectionData = {

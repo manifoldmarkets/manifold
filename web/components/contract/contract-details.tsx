@@ -40,6 +40,7 @@ import {
   BountiedContractBadge,
   BountiedContractSmallBadge,
 } from 'web/components/contract/bountied-contract-badge'
+import { Input } from '../input'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -153,8 +154,8 @@ export function MarketSubheader(props: {
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
-  const correctResolutionPercentage =
-    useUserById(creatorId)?.fractionResolvedCorrectly
+  const creator = useUserById(creatorId)
+  const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
   return (
@@ -177,12 +178,14 @@ export function MarketSubheader(props: {
           {disabled ? (
             creatorName
           ) : (
-            <UserLink
-              className="my-auto whitespace-nowrap"
-              name={creatorName}
-              username={creatorUsername}
-              short={isMobile}
-            />
+            <Row className={'gap-2'}>
+              <UserLink
+                className="my-auto whitespace-nowrap"
+                name={creatorName}
+                username={creatorUsername}
+              />
+              {/*<BadgeDisplay user={creator} />*/}
+            </Row>
           )}
           {correctResolutionPercentage != null &&
             correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
@@ -445,17 +448,17 @@ function EditableCloseDate(props: {
         <Col className="rounded bg-white px-8 pb-8">
           <Subtitle text="Edit market close time" />
           <Row className="z-10 mr-2 mt-4 w-full shrink-0 flex-wrap items-center gap-2">
-            <input
+            <Input
               type="date"
-              className="input input-bordered w-full shrink-0 sm:w-fit"
+              className="w-full shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
               min={Date.now()}
               value={closeDate}
             />
-            <input
+            <Input
               type="time"
-              className="input input-bordered w-full shrink-0 sm:w-max"
+              className="w-full shrink-0 sm:w-max"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseHoursMinutes(e.target.value)}
               min="00:00"

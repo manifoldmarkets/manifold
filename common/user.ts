@@ -1,5 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from './envs/constants'
+import { MarketCreatorBadge, ProvenCorrectBadge, StreakerBadge } from './badge'
 
 export type User = {
   id: string
@@ -11,7 +12,6 @@ export type User = {
 
   // For their user page
   bio?: string
-  bannerUrl?: string
   website?: string
   twitterHandle?: string
   discordHandle?: string
@@ -51,6 +51,18 @@ export type User = {
   hasSeenContractFollowModal?: boolean
   freeMarketsCreated?: number
   isBannedFromPosting?: boolean
+
+  achievements: {
+    provenCorrect?: {
+      badges: ProvenCorrectBadge[]
+    }
+    marketCreator?: {
+      badges: MarketCreatorBadge[]
+    }
+    streaker?: {
+      badges: StreakerBadge[]
+    }
+  }
 }
 
 export type PrivateUser = {
@@ -81,7 +93,8 @@ export type PortfolioMetrics = {
   userId: string
 }
 
-export const MANIFOLD_USERNAME = 'ManifoldMarkets'
+export const MANIFOLD_USER_USERNAME = 'ManifoldMarkets'
+export const MANIFOLD_USER_NAME = 'ManifoldMarkets'
 export const MANIFOLD_AVATAR_URL = 'https://manifold.markets/logo-bg-white.png'
 
 // TODO: remove. Hardcoding the strings would be better.
