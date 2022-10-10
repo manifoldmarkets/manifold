@@ -154,8 +154,8 @@ export function MarketSubheader(props: {
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
-  const correctResolutionPercentage =
-    useUserById(creatorId)?.fractionResolvedCorrectly
+  const creator = useUserById(creatorId)
+  const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
   return (
@@ -178,12 +178,15 @@ export function MarketSubheader(props: {
           {disabled ? (
             creatorName
           ) : (
-            <UserLink
-              className="my-auto whitespace-nowrap"
-              name={creatorName}
-              username={creatorUsername}
-              short={isMobile}
-            />
+            <Row className={'gap-2'}>
+              <UserLink
+                className="my-auto whitespace-nowrap"
+                name={creatorName}
+                username={creatorUsername}
+                short={isMobile}
+              />
+              {/*<BadgeDisplay user={creator} />*/}
+            </Row>
           )}
           {correctResolutionPercentage != null &&
             correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
