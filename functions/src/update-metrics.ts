@@ -245,6 +245,21 @@ export async function updateMetricsCore() {
   )
   await writeAsync(firestore, portfolioHistoryUpdates, 'set')
 
+  const contractMetricsUpdates = userMetrics.flatMap(
+    ({ user, metricsByContract }) => {
+      const collection = firestore
+        .collection('users')
+        .doc(user.id)
+        .collection('contract-metrics')
+      return metricsByContract.map((metrics) => ({
+        doc: collection.doc(metrics.contractId),
+        fields: metrics,
+      }))
+    }
+  )
+
+  await writeAsync(firestore, contractMetricsUpdates, 'set')
+
   log(`Updated metrics for ${users.length} users.`)
 
   try {
