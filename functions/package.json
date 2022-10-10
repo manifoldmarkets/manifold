@@ -5,7 +5,7 @@
     "firestore": "dev-mantic-markets.appspot.com"
   },
   "scripts": {
-    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist && cp .env dist",
+    "build": "yarn compile && rm -rf dist && mkdir -p dist/functions && cp -R ../common/lib dist/common && cp -R lib/src dist/functions/src && cp ../yarn.lock dist && cp package.json dist && cp .env.prod dist && cp .env.dev dist",
     "compile": "tsc -b",
     "watch": "tsc -w",
     "shell": "yarn build && firebase functions:shell",
