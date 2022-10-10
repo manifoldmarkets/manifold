@@ -60,6 +60,16 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
   return `${numStr}${suffix[i] ?? ''}`
 }
 
+export function shortFormatNumber(num: number): string {
+  if (num < 1000) return showPrecision(num, 3)
+
+  const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
+  const i = Math.floor(Math.log10(num) / 3)
+
+  const numStr = showPrecision(num / Math.pow(10, 3 * i), 2)
+  return `${numStr}${suffix[i] ?? ''}`
+}
+
 export function toCamelCase(words: string) {
   const camelCase = words
     .split(' ')

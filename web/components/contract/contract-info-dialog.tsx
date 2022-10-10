@@ -7,7 +7,6 @@ import { capitalize } from 'lodash'
 import { Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
-import { LiquidityBountyPanel } from 'web/components/contract/liquidity-bounty-panel'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../title'
@@ -228,7 +227,6 @@ export function ContractInfoDialog(props: {
           <Row className="flex-wrap">
             <DuplicateContractButton contract={contract} />
           </Row>
-          {!contract.resolution && <LiquidityBountyPanel contract={contract} />}
         </Col>
       </Modal>
     </>
