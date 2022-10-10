@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, isEmpty, keyBy, last, sortBy } from 'lodash'
+import { groupBy, keyBy, last, sortBy } from 'lodash'
 import fetch from 'node-fetch'
 
 import { getValues, log, logMemory, writeAsync } from './utils'
@@ -15,6 +15,7 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateProbChanges,
+  calculateMetricsByContract,
   computeElasticity,
   computeVolume,
 } from '../../common/calculate-metrics'
@@ -23,6 +24,7 @@ import { Group } from '../../common/group'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
 import { getFunctionUrl } from '../../common/api'
+import { filterDefined } from 'common/util/array'
 
 const firestore = admin.firestore()
 
@@ -160,6 +162,12 @@ export async function updateMetricsCore() {
       lastPortfolio.investmentValue !== newPortfolio.investmentValue
 
     const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
+
+    const metricsByContract = calculateMetricsByContract(
+      currentBets,
+      contractsById
+    )
+
     const contractRatios = userContracts
       .map((contract) => {
         if (
@@ -190,6 +198,7 @@ export async function updateMetricsCore() {
       newProfit,
       didPortfolioChange,
       newFractionResolvedCorrectly,
+      metricsByContract,
     }
   })
 
@@ -205,48 +214,37 @@ export async function updateMetricsCore() {
   const nextLoanByUser = keyBy(userPayouts, (payout) => payout.user.id)
 
   const userUpdates = userMetrics.map(
-    ({
-      user,
-      newCreatorVolume,
-      newPortfolio,
-      newProfit,
-      didPortfolioChange,
-      newFractionResolvedCorrectly,
-    }) => {
+    ({ user, newCreatorVolume, newProfit, newFractionResolvedCorrectly }) => {
       const nextLoanCached = nextLoanByUser[user.id]?.payout ?? 0
       return {
-        fieldUpdates: {
-          doc: firestore.collection('users').doc(user.id),
-          fields: {
-            creatorVolumeCached: newCreatorVolume,
-            profitCached: newProfit,
-            nextLoanCached,
-            fractionResolvedCorrectly: newFractionResolvedCorrectly,
-          },
-        },
-
-        subcollectionUpdates: {
-          doc: firestore
-            .collection('users')
-            .doc(user.id)
-            .collection('portfolioHistory')
-            .doc(),
-          fields: didPortfolioChange ? newPortfolio : {},
+        doc: firestore.collection('users').doc(user.id),
+        fields: {
+          creatorVolumeCached: newCreatorVolume,
+          profitCached: newProfit,
+          nextLoanCached,
+          fractionResolvedCorrectly: newFractionResolvedCorrectly,
         },
       }
     }
   )
-  await writeAsync(
-    firestore,
-    userUpdates.map((u) => u.fieldUpdates)
+  await writeAsync(firestore, userUpdates)
+
+  const portfolioHistoryUpdates = filterDefined(
+    userMetrics.map(({ user, newPortfolio, didPortfolioChange }) => {
+      return didPortfolioChange
+        ? {
+            doc: firestore
+              .collection('users')
+              .doc(user.id)
+              .collection('portfolioHistory')
+              .doc(),
+            fields: newPortfolio,
+          }
+        : null
+    })
   )
-  await writeAsync(
-    firestore,
-    userUpdates
-      .filter((u) => !isEmpty(u.subcollectionUpdates.fields))
-      .map((u) => u.subcollectionUpdates),
-    'set'
-  )
+  await writeAsync(firestore, portfolioHistoryUpdates, 'set')
+
   log(`Updated metrics for ${users.length} users.`)
 
   try {
