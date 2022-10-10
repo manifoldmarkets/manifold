@@ -5,7 +5,7 @@ import { CPMMContract } from '../../common/contract'
 import { batchedWaitAll } from '../../common/util/promise'
 import { APIError } from '../../common/api'
 import { addCpmmLiquidity } from '../../common/calculate-cpmm'
-import { formatMoney } from '../../common/util/format'
+import { formatMoneyWithDecimals } from '../../common/util/format'
 
 const firestore = admin.firestore()
 
@@ -58,9 +58,9 @@ const drizzleMarket = async (contractId: string) => {
 
     console.log(
       'added subsidy',
-      formatMoney(amount),
+      formatMoneyWithDecimals(amount),
       'of',
-      formatMoney(subsidyPool),
+      formatMoneyWithDecimals(subsidyPool),
       'pool to',
       slug
     )
