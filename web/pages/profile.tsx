@@ -28,7 +28,7 @@ export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
 
 function EditUserField(props: {
   user: User
-  field: 'bio' | 'website' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
+  field: 'bio' | 'website' | 'twitterHandle' | 'discordHandle'
   label: string
 }) {
   const { user, field, label } = props
