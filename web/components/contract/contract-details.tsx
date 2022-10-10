@@ -183,7 +183,6 @@ export function MarketSubheader(props: {
                 className="my-auto whitespace-nowrap"
                 name={creatorName}
                 username={creatorUsername}
-                short={isMobile}
               />
               {/*<BadgeDisplay user={creator} />*/}
             </Row>
