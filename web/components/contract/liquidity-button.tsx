@@ -22,6 +22,9 @@ export function LiquidityButton(props: {
 
   const [open, setOpen] = useState(false)
 
+  const disabled =
+    contract.isResolved || (contract.closeTime ?? Infinity) < Date.now()
+
   return (
     <Tooltip
       text={`${formatMoney(total)} in liquidity subsidies`}
@@ -33,6 +36,7 @@ export function LiquidityButton(props: {
         total={total}
         userActive={userActive}
         onClick={() => setOpen(true)}
+        disabled={disabled}
       />
       <LiquidityModal contract={contract} isOpen={open} setOpen={setOpen} />
     </Tooltip>
