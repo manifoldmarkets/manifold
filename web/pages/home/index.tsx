@@ -19,19 +19,22 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { SiteLink } from 'web/components/site-link'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import {
+  usePrivateUser,
+  useUser,
+  useUserContractMetricsByProfit,
+} from 'web/hooks/use-user'
 import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
 import { Row } from 'web/components/layout/row'
-import { ProbChangeTable } from 'web/components/contract/prob-change-table'
+import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
-import { useProbChanges } from 'web/hooks/use-prob-changes'
-import { calculatePortfolioProfit } from 'common/calculate-metrics'
+import { ContractMetrics } from 'common/calculate-metrics'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -74,7 +77,11 @@ export default function Home() {
     }
   }, [user, sections])
 
-  const dailyMovers = useProbChanges({ bettorId: user?.id })
+  const contractMetricsByProfit = useUserContractMetricsByProfit(
+    user?.id ?? '_',
+    3
+  )
+
   const trendingContracts = useTrendingContracts(6)
   const newContracts = useNewContracts(6)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
@@ -87,7 +94,7 @@ export default function Home() {
 
   const isLoading =
     !user ||
-    !dailyMovers ||
+    !contractMetricsByProfit ||
     !trendingContracts ||
     !newContracts ||
     !dailyTrendingContracts
@@ -118,7 +125,7 @@ export default function Home() {
               score: trendingContracts,
               newest: newContracts,
               'daily-trending': dailyTrendingContracts,
-              'daily-movers': dailyMovers,
+              'daily-movers': contractMetricsByProfit,
             })}
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
@@ -184,7 +191,10 @@ export const getHomeItems = (sections: string[]) => {
 function renderSections(
   sections: { id: string; label: string }[],
   sectionContracts: {
-    'daily-movers': CPMMBinaryContract[]
+    'daily-movers': {
+      contracts: CPMMBinaryContract[]
+      metrics: ContractMetrics[]
+    }
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
@@ -193,13 +203,16 @@ function renderSections(
   return (
     <>
       {sections.map((s) => {
-        const { id, label } = s
-        const contracts =
-          sectionContracts[s.id as keyof typeof sectionContracts]
-
-        if (id === 'daily-movers') {
-          return <DailyMoversSection key={id} contracts={contracts} />
+        const { id, label } = s as {
+          id: keyof typeof sectionContracts
+          label: string
         }
+        if (id === 'daily-movers') {
+          return <DailyMoversSection key={id} {...sectionContracts[id]} />
+        }
+
+        const contracts = sectionContracts[id]
+
         if (id === 'daily-trending') {
           return (
             <SearchSection
@@ -347,58 +360,39 @@ function GroupSection(props: {
   )
 }
 
-function DailyMoversSection(props: { contracts: CPMMBinaryContract[] }) {
-  const { contracts } = props
+function DailyMoversSection(props: {
+  contracts: CPMMBinaryContract[]
+  metrics: ContractMetrics[]
+}) {
+  const { contracts, metrics } = props
 
-  const changes = contracts.filter((c) => Math.abs(c.probChanges.day) >= 0.01)
-
-  if (changes.length === 0) {
+  if (contracts.length === 0) {
     return null
   }
 
   return (
     <Col className="gap-2">
       <SectionHeader label="Daily movers" href="/daily-movers" />
-      <ProbChangeTable changes={changes} />
+      <ProfitChangeTable contracts={contracts} metrics={metrics} />
     </Col>
   )
 }
 
-function DailyStats(props: {
-  user: User | null | undefined
-  className?: string
-}) {
-  const { user, className } = props
-
-  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
-  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
+function DailyStats(props: { user: User | null | undefined }) {
+  const { user } = props
 
   const privateUser = usePrivateUser()
   const streaks = privateUser?.notificationPreferences?.betting_streaks ?? []
   const streaksHidden = streaks.length === 0
 
-  let profit = 0
-  let profitPercent = 0
-  if (first && last) {
-    profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-    profitPercent = profit / first.investmentValue
-  }
-
   return (
     <Row className={'flex-shrink-0 gap-4'}>
-      <Col>
-        <div className="text-gray-500">Daily profit</div>
-        <Row className={clsx(className, 'items-center text-lg')}>
-          <span>{formatMoney(profit)}</span>{' '}
-          <ProfitBadge profitPercent={profitPercent * 100} />
-        </Row>
-      </Col>
+      <DailyProfit user={user} />
       {!streaksHidden && (
         <Col>
           <div className="text-gray-500">Streak</div>
           <Row
             className={clsx(
-              className,
               'items-center text-lg',
               user && !hasCompletedStreakToday(user) && 'grayscale'
             )}
@@ -408,6 +402,39 @@ function DailyStats(props: {
         </Col>
       )}
     </Row>
+  )
+}
+
+export function DailyProfit(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  const contractMetricsByProfit = useUserContractMetricsByProfit(
+    user?.id ?? '_',
+    100
+  )
+  const profit = sum(
+    contractMetricsByProfit?.metrics.map((m) =>
+      m.from ? m.from.day.profit : 0
+    ) ?? []
+  )
+
+  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
+  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
+
+  let profitPercent = 0
+  if (first && last) {
+    // profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
+    profitPercent = profit / first.investmentValue
+  }
+
+  return (
+    <SiteLink className="flex flex-col" href="/daily-movers">
+      <div className="text-gray-500">Daily profit</div>
+      <Row className="items-center text-lg">
+        <span>{formatMoney(profit)}</span>{' '}
+        <ProfitBadge profitPercent={profitPercent * 100} />
+      </Row>
+    </SiteLink>
   )
 }
 

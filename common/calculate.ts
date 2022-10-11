@@ -178,6 +178,8 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
+export type ContractBetMetrics = ReturnType<typeof getContractBetMetrics>
+
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
   const isCpmm = contract.mechanism === 'cpmm-1'
