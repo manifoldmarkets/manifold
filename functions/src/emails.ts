@@ -301,12 +301,7 @@ export const sendMarketCloseEmail = async (
   privateUser: PrivateUser,
   contract: Contract
 ) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
-    privateUser,
-    reason
-  )
-
-  if (!privateUser.email || !sendToEmail) return
+  if (!privateUser.email) return
 
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
@@ -315,6 +310,7 @@ export const sendMarketCloseEmail = async (
 
   const url = `https://${DOMAIN}/${username}/${slug}`
 
+  // We ignore if they were able to unsubscribe from market close emails, this is a necessary email
   return await sendTemplateEmail(
     privateUser.email,
     'Your market has closed',
@@ -322,7 +318,7 @@ export const sendMarketCloseEmail = async (
     {
       question,
       url,
-      unsubscribeUrl,
+      unsubscribeUrl: '',
       userId,
       name: firstName,
       volume: formatMoney(volume),
