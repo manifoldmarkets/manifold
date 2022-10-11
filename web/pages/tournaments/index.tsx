@@ -78,7 +78,7 @@ const Salem = {
 
 const tourneys: Tourney[] = [
   {
-    title: 'CPC 20th National Party Congress',
+    title: 'CCP 20th National Party Congress',
     blurb:
       "Forecast the outcome of the Chinese Communist Party's 20th National Party Congress.",
     award: 'US$200',
