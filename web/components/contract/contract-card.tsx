@@ -21,7 +21,6 @@ import {
 import {
   AnswerLabel,
   BinaryContractOutcomeLabel,
-  BinaryOutcomeLabel,
   CancelLabel,
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
@@ -430,17 +429,16 @@ export function ContractCardProbChange(props: {
             'items-center justify-between gap-4 pl-6 pr-4 pb-2 text-sm'
           )}
         >
-          <Row className="gap-1">
+          <Row className="gap-1 text-gray-700">
             <div className="text-gray-500">Position</div>
-            {formatMoney(metrics.payout)}
-            <BinaryOutcomeLabel outcome={outcome} />
+            {formatMoney(metrics.payout)} {outcome}
           </Row>
 
           {dayMetrics && (
             <>
               <Row className="items-center">
                 <div className="mr-1 text-gray-500">Daily profit</div>
-                <ProfitBadgeMana amount={dayMetrics.profit} />
+                <ProfitBadgeMana amount={dayMetrics.profit} gray />
               </Row>
             </>
           )}
