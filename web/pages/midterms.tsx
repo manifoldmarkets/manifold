@@ -1,11 +1,15 @@
+import { CPMMBinaryContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/page'
+import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/title'
 import {
   StateElectionMarket,
   StateElectionMap,
 } from 'web/components/usa-map/state-election-map'
+import { useTracking } from 'web/hooks/use-tracking'
+import { getContractFromSlug } from 'web/lib/firebase/contracts'
 
 const senateMidterms: StateElectionMarket[] = [
   {
@@ -175,76 +179,96 @@ const governorMidterms: StateElectionMarket[] = [
   },
 ]
 
-const App = () => {
+export async function getStaticProps() {
+  const senateContracts = await Promise.all(
+    senateMidterms.map((m) =>
+      getContractFromSlug(m.slug).then((c) => c ?? null)
+    )
+  )
+
+  const governorContracts = await Promise.all(
+    governorMidterms.map((m) =>
+      getContractFromSlug(m.slug).then((c) => c ?? null)
+    )
+  )
+
+  return {
+    props: { senateContracts, governorContracts },
+    revalidate: 60, // regenerate after a minute
+  }
+}
+
+const App = (props: {
+  senateContracts: CPMMBinaryContract[]
+  governorContracts: CPMMBinaryContract[]
+}) => {
+  const { senateContracts, governorContracts } = props
+
+  useTracking('view midterms 2022')
+
   return (
     <Page className="">
       <Col className="items-center justify-center">
         <Title text="2022 US Midterm Elections" className="mt-2" />
+        <SEO
+          title="2022 US Midterm Elections"
+          description="Bet on the midterm elections using prediction markets. See Manifold's state-by-state breakdown of senate and governor races."
+        />
         <div className="mt-2 text-2xl">Senate</div>
-        <StateElectionMap markets={senateMidterms} />
+        <StateElectionMap
+          markets={senateMidterms}
+          contracts={senateContracts}
+        />
         <iframe
           src="https://manifold.markets/TomShlomi/will-the-gop-control-the-us-senate"
-          title="Will the Democrats control the Senate after the Midterms?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
+
         <div className="mt-8 text-2xl">Governors</div>
-        <StateElectionMap markets={governorMidterms} />
+        <StateElectionMap
+          markets={governorMidterms}
+          contracts={governorContracts}
+        />
         <iframe
           src="https://manifold.markets/ManifoldMarkets/democrats-go-down-at-least-one-gove"
-          title="Democrats go down at least one governor on net in 2022"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
+
         <div className="mt-8 text-2xl">House</div>
         <iframe
           src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of"
-          title="Will the Democrats control the House after the Midterms?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <Spacer h={8} />
+
         <div className="mt-8 text-2xl">Related markets</div>
         <iframe
           src="https://manifold.markets/BoltonBailey/balance-of-power-in-us-congress-aft"
-          title="Balance of Power in US Congress after 2022 Midterms"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <iframe
           src="https://manifold.markets/SG/will-a-democrat-win-the-2024-us-pre"
-          title="Will a Democrat win the 2024 US presidential election?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
         <iframe
           src="https://manifold.markets/Ibozz91/will-the-2022-alaska-house-general"
           title="Will the 2022 Alaska House General Nonspecial Election result in a Condorcet failure?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
 
         <iframe
           src="https://manifold.markets/NathanpmYoung/how-many-supreme-court-justices-wil-1e597c3853ad"
           title="Will the 2022 Alaska House General Nonspecial Election result in a Condorcet failure?"
           frameBorder="0"
-          width={800}
-          height={400}
-          className="mt-8"
+          className="mt-8 flex h-96 w-full"
         ></iframe>
       </Col>
     </Page>

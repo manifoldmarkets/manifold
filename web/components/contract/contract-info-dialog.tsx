@@ -5,9 +5,8 @@ import { useState } from 'react'
 import { capitalize } from 'lodash'
 
 import { Contract } from 'common/contract'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
-import { LiquidityBountyPanel } from 'web/components/contract/liquidity-bounty-panel'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../title'
@@ -17,9 +16,9 @@ import { SiteLink } from '../site-link'
 import { firestoreConsolePath } from 'common/envs/constants'
 import { deleteField } from 'firebase/firestore'
 import ShortToggle from '../widgets/short-toggle'
-import { DuplicateContractButton } from '../copy-contract-button'
+import { DuplicateContractButton } from '../duplicate-contract-button'
 import { Row } from '../layout/row'
-import { BETTORS } from 'common/user'
+import { BETTORS, User } from 'common/user'
 import { Button } from '../button'
 
 export const contractDetailsButtonClassName =
@@ -27,9 +26,10 @@ export const contractDetailsButtonClassName =
 
 export function ContractInfoDialog(props: {
   contract: Contract
+  user: User | null | undefined
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, className, user } = props
 
   const [open, setOpen] = useState(false)
   const [featured, setFeatured] = useState(
@@ -37,6 +37,11 @@ export function ContractInfoDialog(props: {
   )
   const isDev = useDev()
   const isAdmin = useAdmin()
+  const isCreator = user?.id === contract.creatorId
+  const isUnlisted = contract.visibility === 'unlisted'
+  const wasUnlistedByCreator = contract.unlistedById
+    ? contract.unlistedById === contract.creatorId
+    : false
 
   const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
@@ -48,6 +53,8 @@ export function ContractInfoDialog(props: {
     mechanism,
     outcomeType,
     id,
+    elasticity,
+    pool,
   } = contract
 
   const typeDisplay =
@@ -136,7 +143,10 @@ export function ContractInfoDialog(props: {
               )}
 
               <tr>
-                <td>Volume</td>
+                <td>
+                  <span className="mr-1">Volume</span>
+                  <InfoTooltip text="Total amount bought or sold" />
+                </td>
                 <td>{formatMoney(contract.volume)}</td>
               </tr>
 
@@ -147,9 +157,40 @@ export function ContractInfoDialog(props: {
 
               <tr>
                 <td>
-                  {mechanism === 'cpmm-1' ? 'Liquidity pool' : 'Betting pool'}
+                  <Row>
+                    <span className="mr-1">Elasticity</span>
+                    <InfoTooltip
+                      text={
+                        mechanism === 'cpmm-1'
+                          ? 'Probability change between a M$50 bet on YES and NO'
+                          : 'Probability change from a M$100 bet'
+                      }
+                    />
+                  </Row>
                 </td>
-                <td>{contractPool(contract)}</td>
+                <td>{formatPercent(elasticity)}</td>
+              </tr>
+
+              <tr>
+                <td>Liquidity subsidies</td>
+                <td>
+                  {mechanism === 'cpmm-1'
+                    ? formatMoney(contract.totalLiquidity)
+                    : formatMoney(100)}
+                </td>
+              </tr>
+
+              <tr>
+                <td>Pool</td>
+                <td>
+                  {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
+                    ? `${Math.round(pool.YES)} YES, ${Math.round(pool.NO)} NO`
+                    : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
+                    ? `${Math.round(pool.YES)} HIGHER, ${Math.round(
+                        pool.NO
+                      )} LOWER`
+                    : contractPool(contract)}
+                </td>
               </tr>
 
               {/* Show a path to Firebase if user is an admin, or we're on localhost */}
@@ -168,22 +209,28 @@ export function ContractInfoDialog(props: {
                   <td>[ADMIN] Featured</td>
                   <td>
                     <ShortToggle
-                      enabled={featured}
-                      setEnabled={setFeatured}
+                      on={featured}
+                      setOn={setFeatured}
                       onChange={onFeaturedToggle}
                     />
                   </td>
                 </tr>
               )}
-              {isAdmin && (
+              {user && (
                 <tr>
-                  <td>[ADMIN] Unlisted</td>
+                  <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
                   <td>
                     <ShortToggle
-                      enabled={contract.visibility === 'unlisted'}
-                      setEnabled={(b) =>
+                      disabled={
+                        isUnlisted
+                          ? !(isAdmin || (isCreator && wasUnlistedByCreator))
+                          : !(isCreator || isAdmin)
+                      }
+                      on={contract.visibility === 'unlisted'}
+                      setOn={(b) =>
                         updateContract(id, {
                           visibility: b ? 'unlisted' : 'public',
+                          unlistedById: b ? user.id : '',
                         })
                       }
                     />
@@ -196,7 +243,6 @@ export function ContractInfoDialog(props: {
           <Row className="flex-wrap">
             <DuplicateContractButton contract={contract} />
           </Row>
-          {!contract.resolution && <LiquidityBountyPanel contract={contract} />}
         </Col>
       </Modal>
     </>

@@ -12,7 +12,6 @@ import {
   visibility,
 } from './contract'
 import { User } from './user'
-import { parseTags, richTextToString } from './util/parse'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
 
@@ -38,15 +37,6 @@ export function getNewContract(
   answers: string[],
   visibility: visibility
 ) {
-  const tags = parseTags(
-    [
-      question,
-      richTextToString(description),
-      ...extraTags.map((tag) => `#${tag}`),
-    ].join(' ')
-  )
-  const lowercaseTags = tags.map((tag) => tag.toLowerCase())
-
   const propsByOutcomeType =
     outcomeType === 'BINARY'
       ? getBinaryCpmmProps(initialProb, ante) // getBinaryDpmProps(initialProb, ante)
@@ -70,9 +60,10 @@ export function getNewContract(
 
     question: question.trim(),
     description,
-    tags,
-    lowercaseTags,
+    tags: [],
+    lowercaseTags: [],
     visibility,
+    unlistedById: visibility === 'unlisted' ? creator.id : undefined,
     isResolved: false,
     createdTime: Date.now(),
     closeTime,
@@ -80,6 +71,7 @@ export function getNewContract(
     volume: 0,
     volume24Hours: 0,
     volume7Days: 0,
+    elasticity: propsByOutcomeType.mechanism === 'cpmm-1' ? 0.38 : 0.75,
 
     collectedFees: {
       creatorFee: 0,
@@ -120,6 +112,7 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
     mechanism: 'cpmm-1',
     outcomeType: 'BINARY',
     totalLiquidity: ante,
+    subsidyPool: 0,
     initialProbability: p,
     p,
     pool: pool,

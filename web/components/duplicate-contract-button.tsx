@@ -3,27 +3,22 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
+import { buttonClass } from './button'
 
-export function DuplicateContractButton(props: {
-  contract: Contract
-  className?: string
-}) {
-  const { contract, className } = props
+export function DuplicateContractButton(props: { contract: Contract }) {
+  const { contract } = props
 
   return (
     <a
-      className={clsx('btn btn-xs flex-nowrap normal-case', className)}
-      style={{
-        backgroundColor: 'white',
-        border: '2px solid #a78bfa',
-        // violet-400
-        color: '#a78bfa',
-      }}
+      className={clsx(
+        buttonClass('2xs', 'override'),
+        'gap-1 border-2 border-violet-400 text-violet-400 hover:bg-violet-400 hover:text-white'
+      )}
       href={duplicateContractHref(contract)}
       onClick={trackCallback('duplicate market')}
       target="_blank"
     >
-      <DuplicateIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
+      <DuplicateIcon className="h-4 w-4" aria-hidden="true" />
       <div>Duplicate</div>
     </a>
   )
@@ -40,6 +35,7 @@ function duplicateContractHref(contract: Contract) {
     closeTime,
     description: descriptionString,
     outcomeType: contract.outcomeType,
+    visibility: contract.visibility,
   } as Record<string, any>
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {

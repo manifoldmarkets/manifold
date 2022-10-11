@@ -11,12 +11,13 @@ export function WarningConfirmationButton(props: {
   amount: number | undefined
   marketType: 'freeResponse' | 'binary'
   warning?: string
-  onSubmit: () => void
+  onSubmit?: () => void
   disabled: boolean
   isSubmitting: boolean
   openModalButtonClass?: string
   color: ColorType
   size: SizeType
+  actionLabel: string
 }) {
   const {
     amount,
@@ -27,7 +28,14 @@ export function WarningConfirmationButton(props: {
     openModalButtonClass,
     size,
     color,
+    actionLabel,
   } = props
+
+  const buttonText = isSubmitting
+    ? 'Submitting...'
+    : amount
+    ? `${actionLabel} ${formatMoney(amount)}`
+    : actionLabel
 
   if (!warning) {
     return (
@@ -38,11 +46,7 @@ export function WarningConfirmationButton(props: {
         onClick={onSubmit}
         color={color}
       >
-        {isSubmitting
-          ? 'Submitting...'
-          : amount
-          ? `Wager ${formatMoney(amount)}`
-          : 'Wager'}
+        {buttonText}
       </Button>
     )
   }
@@ -50,18 +54,18 @@ export function WarningConfirmationButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        label: amount ? `Wager ${formatMoney(amount)}` : 'Wager',
+        label: buttonText,
         size: size,
         color: 'yellow',
-        disabled: isSubmitting,
+        disabled: isSubmitting || disabled,
       }}
       cancelBtn={{
         label: 'Cancel',
-        className: 'btn btn-warning',
+        color: 'yellow',
       }}
       submitBtn={{
         label: 'Submit',
-        className: clsx('btn border-none btn-sm btn-ghost self-center'),
+        color: 'gray',
       }}
       onSubmit={onSubmit}
     >

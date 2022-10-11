@@ -8,6 +8,7 @@ import {
   Content,
   Editor,
   mergeAttributes,
+  Extensions,
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
@@ -19,9 +20,7 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
-import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
-import { contractMentionSuggestion } from './editor/contract-mention-suggestion'
 import { DisplayContractMention } from './editor/contract-mention'
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
@@ -64,6 +63,22 @@ const DisplayLink = Link.extend({
   },
 })
 
+export const editorExtensions = (simple = false): Extensions => [
+  StarterKit.configure({
+    heading: simple ? false : { levels: [1, 2, 3] },
+    horizontalRule: simple ? false : {},
+  }),
+  simple ? DisplayImage : Image,
+  DisplayLink,
+  DisplayMention,
+  DisplayContractMention,
+  Iframe,
+  TiptapTweet,
+  TiptapSpoiler.configure({
+    spoilerOpenClass: 'rounded-sm bg-greyscale-2',
+  }),
+]
+
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
   'font-light prose-a:font-light prose-blockquote:font-light'
@@ -89,29 +104,13 @@ export function useTextEditor(props: {
   const editor = useEditor({
     editorProps: { attributes: { class: editorClass } },
     extensions: [
-      StarterKit.configure({
-        heading: simple ? false : { levels: [1, 2, 3] },
-        horizontalRule: simple ? false : {},
-      }),
+      ...editorExtensions(simple),
       Placeholder.configure({
         placeholder,
         emptyEditorClass:
           'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
       }),
       CharacterCount.configure({ limit: max }),
-      simple ? DisplayImage : Image,
-      DisplayLink,
-      DisplayMention.configure({
-        suggestion: mentionSuggestion,
-      }),
-      DisplayContractMention.configure({
-        suggestion: contractMentionSuggestion,
-      }),
-      Iframe,
-      TiptapTweet,
-      TiptapSpoiler.configure({
-        spoilerOpenClass: 'rounded-sm bg-greyscale-2',
-      }),
     ],
     content: defaultValue,
   })
@@ -311,12 +310,12 @@ const useUploadMutation = (editor: Editor | null) =>
     {
       onSuccess(urls) {
         if (!editor) return
-        let trans = editor.view.state.tr
-        urls.forEach((src: any) => {
-          const node = editor.view.state.schema.nodes.image.create({ src })
-          trans = trans.insert(editor.view.state.selection.to, node)
+        let trans = editor.chain().focus()
+        urls.forEach((src) => {
+          trans = trans.createParagraphNear()
+          trans = trans.setImage({ src })
         })
-        editor.view.dispatch(trans)
+        trans.run()
       },
     }
   )
@@ -334,16 +333,13 @@ export function RichContent(props: {
       smallImage ? DisplayImage : Image,
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
-      DisplayContractMention.configure({
-        // Needed to set a different PluginKey for Prosemirror
-        suggestion: contractMentionSuggestion,
-      }),
+      DisplayContractMention,
       Iframe,
       TiptapTweet,
       TiptapSpoiler.configure({
         spoilerOpenClass: 'rounded-sm bg-greyscale-2 cursor-text',
         spoilerCloseClass:
-          'rounded-sm bg-greyscale-6 text-greyscale-6 cursor-pointer select-none',
+          'rounded-sm bg-greyscale-6 text-transparent [&_*]:invisible cursor-pointer select-none',
       }),
     ],
     content,

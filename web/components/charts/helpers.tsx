@@ -1,12 +1,4 @@
-import {
-  ReactNode,
-  SVGProps,
-  memo,
-  useRef,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { ReactNode, SVGProps, memo, useRef, useEffect, useMemo } from 'react'
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
@@ -17,6 +9,7 @@ import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 
@@ -27,11 +20,12 @@ export interface ContinuousScale<T> extends AxisScale<T> {
 export type XScale<P> = P extends Point<infer X, infer _> ? AxisScale<X> : never
 export type YScale<P> = P extends Point<infer _, infer Y> ? AxisScale<Y> : never
 
-export const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
-export const MARGIN_X = MARGIN.right + MARGIN.left
-export const MARGIN_Y = MARGIN.top + MARGIN.bottom
-const MARGIN_STYLE = `${MARGIN.top}px ${MARGIN.right}px ${MARGIN.bottom}px ${MARGIN.left}px`
-const MARGIN_XFORM = `translate(${MARGIN.left}, ${MARGIN.top})`
+export type Margin = {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
@@ -55,8 +49,6 @@ export const YAxis = <Y,>(props: { w: number; h: number; axis: Axis<Y> }) => {
   useEffect(() => {
     if (axisRef.current != null) {
       select(axisRef.current)
-        .transition()
-        .duration(250)
         .call(axis)
         .call((g) =>
           g.selectAll('.tick line').attr('x2', w).attr('stroke-opacity', 0.1)
@@ -100,14 +92,14 @@ const AreaPathInternal = <P,>(
 export const AreaPath = memo(AreaPathInternal) as typeof AreaPathInternal
 
 export const AreaWithTopStroke = <P,>(props: {
-  color: string
   data: P[]
+  color: string
   px: number | ((p: P) => number)
   py0: number | ((p: P) => number)
   py1: number | ((p: P) => number)
   curve: CurveFactory
 }) => {
-  const { color, data, px, py0, py1, curve } = props
+  const { data, color, px, py0, py1, curve } = props
   return (
     <g>
       <AreaPath
@@ -124,23 +116,60 @@ export const AreaWithTopStroke = <P,>(props: {
   )
 }
 
+export const SliceMarker = (props: {
+  color: string
+  x: number
+  y0: number
+  y1: number
+}) => {
+  const { color, x, y0, y1 } = props
+  return (
+    <g>
+      <line stroke="white" strokeWidth={1} x1={x} x2={x} y1={y0} y2={y1} />
+      <circle
+        stroke="white"
+        strokeWidth={1}
+        fill={color}
+        cx={x}
+        cy={y1}
+        r={5}
+      />
+    </g>
+  )
+}
+
 export const SVGChart = <X, TT>(props: {
   children: ReactNode
   w: number
   h: number
+  margin: Margin
   xAxis: Axis<X>
   yAxis: Axis<number>
+  ttParams: TooltipParams<TT> | undefined
   onSelect?: (ev: D3BrushEvent<any>) => void
-  onMouseOver?: (mouseX: number, mouseY: number) => TT | undefined
+  onMouseOver?: (mouseX: number, mouseY: number) => void
+  onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
 }) => {
-  const { children, w, h, xAxis, yAxis, onMouseOver, onSelect, Tooltip } = props
-  const [mouse, setMouse] = useState<{ x: number; y: number; data: TT }>()
+  const {
+    children,
+    w,
+    h,
+    margin,
+    xAxis,
+    yAxis,
+    ttParams,
+    onSelect,
+    onMouseOver,
+    onMouseLeave,
+    Tooltip,
+  } = props
   const tooltipMeasure = useMeasureSize()
   const overlayRef = useRef<SVGGElement>(null)
-  const innerW = w - MARGIN_X
-  const innerH = h - MARGIN_Y
+  const innerW = w - (margin.left + margin.right)
+  const innerH = h - (margin.top + margin.bottom)
   const clipPathId = useMemo(() => nanoid(), [])
+  const isMobile = useIsMobile()
 
   const justSelected = useRef(false)
   useEffect(() => {
@@ -155,7 +184,7 @@ export const SVGChart = <X, TT>(props: {
         if (!justSelected.current) {
           justSelected.current = true
           onSelect(ev)
-          setMouse(undefined)
+          onMouseLeave?.()
           if (overlayRef.current) {
             select(overlayRef.current).call(brush.clear)
           }
@@ -171,43 +200,49 @@ export const SVGChart = <X, TT>(props: {
         .select('.selection')
         .attr('shape-rendering', 'null')
     }
-  }, [innerW, innerH, onSelect])
+  }, [innerW, innerH, onSelect, onMouseLeave])
 
   const onPointerMove = (ev: React.PointerEvent) => {
     if (ev.pointerType === 'mouse' && onMouseOver) {
       const [x, y] = pointer(ev)
-      const data = onMouseOver(x, y)
-      if (data !== undefined) {
-        setMouse({ x, y, data })
-      } else {
-        setMouse(undefined)
-      }
+      onMouseOver(x, y)
+    }
+  }
+
+  const onTouchMove = (ev: React.TouchEvent) => {
+    if (onMouseOver) {
+      const touch = ev.touches[0]
+      const x = touch.pageX - ev.currentTarget.getBoundingClientRect().left
+      const y = touch.pageY - ev.currentTarget.getBoundingClientRect().top
+      onMouseOver(x, y)
     }
   }
 
   const onPointerLeave = () => {
-    setMouse(undefined)
+    onMouseLeave?.()
   }
 
   return (
     <div className="relative overflow-hidden">
-      {mouse && Tooltip && (
+      {ttParams && Tooltip && (
         <TooltipContainer
           setElem={tooltipMeasure.setElem}
+          margin={margin}
           pos={getTooltipPosition(
-            mouse.x,
-            mouse.y,
+            ttParams.x,
+            ttParams.y,
             innerW,
             innerH,
-            tooltipMeasure.width,
-            tooltipMeasure.height
+            tooltipMeasure.width ?? 140,
+            tooltipMeasure.height ?? 35,
+            isMobile ?? false
           )}
         >
           <Tooltip
             xScale={xAxis.scale()}
-            mouseX={mouse.x}
-            mouseY={mouse.y}
-            data={mouse.data}
+            x={ttParams.x}
+            y={ttParams.y}
+            data={ttParams.data}
           />
         </TooltipContainer>
       )}
@@ -215,22 +250,34 @@ export const SVGChart = <X, TT>(props: {
         <clipPath id={clipPathId}>
           <rect x={0} y={0} width={innerW} height={innerH} />
         </clipPath>
-        <g transform={MARGIN_XFORM}>
+        <g transform={`translate(${margin.left}, ${margin.top})`}>
           <XAxis axis={xAxis} w={innerW} h={innerH} />
           <YAxis axis={yAxis} w={innerW} h={innerH} />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
-          <g
-            ref={overlayRef}
-            x="0"
-            y="0"
-            width={innerW}
-            height={innerH}
-            fill="none"
-            pointerEvents="all"
-            onPointerEnter={onPointerMove}
-            onPointerMove={onPointerMove}
-            onPointerLeave={onPointerLeave}
-          />
+          {!isMobile ? (
+            <g
+              ref={overlayRef}
+              x="0"
+              y="0"
+              width={innerW}
+              height={innerH}
+              fill="none"
+              pointerEvents="all"
+              onPointerEnter={onPointerMove}
+              onPointerMove={onPointerMove}
+              onPointerLeave={onPointerLeave}
+            />
+          ) : (
+            <rect
+              x="0"
+              y="0"
+              width={innerW}
+              height={innerH}
+              fill="transparent"
+              onTouchMove={onTouchMove}
+              onTouchEnd={onPointerLeave}
+            />
+          )}
         </g>
       </svg>
     </div>
@@ -244,41 +291,45 @@ export const getTooltipPosition = (
   mouseY: number,
   containerWidth: number,
   containerHeight: number,
-  tooltipWidth?: number,
-  tooltipHeight?: number
+  tooltipWidth: number,
+  tooltipHeight: number,
+  isMobile: boolean
 ) => {
   let left = mouseX + 12
-  let bottom = containerHeight - mouseY + 12
+  let bottom = !isMobile
+    ? containerHeight - mouseY + 12
+    : containerHeight - tooltipHeight + 12
   if (tooltipWidth != null) {
     const overflow = left + tooltipWidth - containerWidth
     if (overflow > 0) {
       left -= overflow
     }
   }
+
   if (tooltipHeight != null) {
     const overflow = tooltipHeight - mouseY
     if (overflow > 0) {
       bottom -= overflow
     }
   }
+
   return { left, bottom }
 }
 
-export type TooltipProps<X, T> = {
-  mouseX: number
-  mouseY: number
+export type TooltipParams<T> = { x: number; y: number; data: T }
+export type TooltipProps<X, T> = TooltipParams<T> & {
   xScale: ContinuousScale<X>
-  data: T
 }
 
 export type TooltipComponent<X, T> = React.ComponentType<TooltipProps<X, T>>
 export const TooltipContainer = (props: {
   setElem: (e: HTMLElement | null) => void
   pos: TooltipPosition
+  margin: Margin
   className?: string
   children: React.ReactNode
 }) => {
-  const { setElem, pos, className, children } = props
+  const { setElem, pos, margin, className, children } = props
   return (
     <div
       ref={setElem}
@@ -286,11 +337,41 @@ export const TooltipContainer = (props: {
         className,
         'pointer-events-none absolute z-10 whitespace-pre rounded border border-gray-200 bg-white/80 p-2 px-4 py-2 text-xs sm:text-sm'
       )}
-      style={{ margin: MARGIN_STYLE, ...pos }}
+      style={{
+        margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
+        ...pos,
+      }}
     >
       {children}
     </div>
   )
+}
+
+export const computeColorStops = <P,>(
+  data: P[],
+  pc: (p: P) => string,
+  px: (p: P) => number
+) => {
+  const segments: { x: number; color: string }[] = []
+  let currOffset = 0
+  let currColor = pc(data[0])
+  for (const p of data) {
+    const c = pc(p)
+    if (c !== currColor) {
+      segments.push({ x: currOffset, color: currColor })
+      currOffset = px(p)
+      currColor = c
+    }
+  }
+  segments.push({ x: currOffset, color: currColor })
+
+  const stops: { x: number; color: string }[] = []
+  stops.push({ x: segments[0].x, color: segments[0].color })
+  for (const s of segments.slice(1)) {
+    stops.push({ x: s.x, color: stops[stops.length - 1].color })
+    stops.push({ x: s.x, color: s.color })
+  }
+  return stops
 }
 
 export const getDateRange = (contract: Contract) => {

@@ -73,13 +73,6 @@ export function NumericResolutionPanel(props: {
     setIsSubmitting(false)
   }
 
-  const submitButtonClass =
-    outcomeMode === 'CANCEL'
-      ? 'bg-yellow-400 hover:bg-yellow-500'
-      : outcome !== undefined
-      ? 'btn-primary'
-      : 'btn-disabled'
-
   return (
     <Col
       className={clsx(
@@ -129,7 +122,6 @@ export function NumericResolutionPanel(props: {
         onResolve={resolve}
         isSubmitting={isSubmitting}
         openModalButtonClass={clsx('w-full mt-2')}
-        submitButtonClass={submitButtonClass}
         color={outcomeMode === 'CANCEL' ? 'yellow' : 'indigo'}
         disabled={outcomeMode === undefined}
       />

@@ -69,6 +69,8 @@ export const createuser = newEndpoint(opts, async (req, auth) => {
     followerCountCached: 0,
     followedCategories: DEFAULT_CATEGORIES,
     shouldShowWelcome: true,
+    fractionResolvedCorrectly: 1,
+    achievements: {},
   }
 
   await firestore.collection('users').doc(auth.uid).create(user)

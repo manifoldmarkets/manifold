@@ -10,7 +10,7 @@ import { BuyAmountInput } from './amount-input'
 import { Button } from './button'
 import { Row } from './layout/row'
 import { YesNoSelector } from './yes-no-selector'
-import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useUser } from 'web/hooks/use-user'
 import { BetSignUpPrompt } from './sign-up-prompt'
 import { getCpmmProbability } from 'common/calculate-cpmm'
@@ -34,14 +34,17 @@ export function BetInline(props: {
   const [error, setError] = useState<string>()
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const unfilledBets = useUnfilledBets(contract.id) ?? []
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
 
   const { newPool, newP } = getBinaryCpmmBetInfo(
     outcome ?? 'YES',
     amount ?? 0,
     contract,
     undefined,
-    unfilledBets
+    unfilledBets,
+    balanceByUserId
   )
   const resultProb = getCpmmProbability(newPool, newP)
   useEffect(() => setProbAfter(resultProb), [setProbAfter, resultProb])

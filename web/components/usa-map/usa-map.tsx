@@ -1,6 +1,7 @@
 // https://github.com/jb-1980/usa-map-react
 // MIT License
 
+import clsx from 'clsx'
 import { DATA } from './data'
 import { USAState } from './usa-state'
 
@@ -53,8 +54,6 @@ export const USAMap = ({
   onClick = (e) => {
     console.log(e.currentTarget.dataset.name)
   },
-  width = 959,
-  height = 593,
   title = 'US states map',
   defaultFill = '#d3d3d3',
   customize,
@@ -68,10 +67,8 @@ export const USAMap = ({
 
   return (
     <svg
-      className={className}
+      className={clsx('flex h-96 w-full sm:h-full', className)}
       xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
       viewBox="0 0 959 593"
     >
       <title>{title}</title>

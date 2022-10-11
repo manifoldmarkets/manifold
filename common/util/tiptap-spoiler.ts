@@ -39,7 +39,7 @@ export const TiptapSpoiler = Mark.create<SpoilerOptions>({
   exitable: true,
   content: 'inline*',
 
-  priority: 200, // higher priority than other formatting so they go inside
+  priority: 1001, // higher priority than other formatting so they go inside
 
   addOptions() {
     return {

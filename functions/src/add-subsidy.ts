@@ -3,24 +3,18 @@ import { z } from 'zod'
 
 import { Contract, CPMMContract } from '../../common/contract'
 import { User } from '../../common/user'
-import { removeUndefinedProps } from '../../common/util/object'
 import { getNewLiquidityProvision } from '../../common/add-liquidity'
 import { APIError, newEndpoint, validate } from './api'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from '../../common/antes'
-import { isProd } from './utils'
 
 const bodySchema = z.object({
   contractId: z.string(),
   amount: z.number().gt(0),
 })
 
-export const addliquidity = newEndpoint({}, async (req, auth) => {
+export const addsubsidy = newEndpoint({}, async (req, auth) => {
   const { amount, contractId } = validate(bodySchema, req.body)
 
-  if (!isFinite(amount)) throw new APIError(400, 'Invalid amount')
+  if (!isFinite(amount) || amount < 1) throw new APIError(400, 'Invalid amount')
 
   // run as transaction to prevent race conditions
   return await firestore.runTransaction(async (transaction) => {
@@ -50,7 +44,7 @@ export const addliquidity = newEndpoint({}, async (req, auth) => {
       .collection(`contracts/${contractId}/liquidity`)
       .doc()
 
-    const { newLiquidityProvision, newPool, newP, newTotalLiquidity } =
+    const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
       getNewLiquidityProvision(
         user.id,
         amount,
@@ -58,21 +52,10 @@ export const addliquidity = newEndpoint({}, async (req, auth) => {
         newLiquidityProvisionDoc.id
       )
 
-    if (newP !== undefined && !isFinite(newP)) {
-      return {
-        status: 'error',
-        message: 'Liquidity injection rejected due to overflow error.',
-      }
-    }
-
-    transaction.update(
-      contractDoc,
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        totalLiquidity: newTotalLiquidity,
-      })
-    )
+    transaction.update(contractDoc, {
+      subsidyPool: newSubsidyPool,
+      totalLiquidity: newTotalLiquidity,
+    } as Partial<CPMMContract>)
 
     const newBalance = user.balance - amount
     const newTotalDeposits = user.totalDeposits - amount
@@ -93,41 +76,3 @@ export const addliquidity = newEndpoint({}, async (req, auth) => {
 })
 
 const firestore = admin.firestore()
-
-export const addHouseLiquidity = (contract: CPMMContract, amount: number) => {
-  return firestore.runTransaction(async (transaction) => {
-    const newLiquidityProvisionDoc = firestore
-      .collection(`contracts/${contract.id}/liquidity`)
-      .doc()
-
-    const providerId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-
-    const { newLiquidityProvision, newPool, newP, newTotalLiquidity } =
-      getNewLiquidityProvision(
-        providerId,
-        amount,
-        contract,
-        newLiquidityProvisionDoc.id
-      )
-
-    if (newP !== undefined && !isFinite(newP)) {
-      throw new APIError(
-        500,
-        'Liquidity injection rejected due to overflow error.'
-      )
-    }
-
-    transaction.update(
-      firestore.doc(`contracts/${contract.id}`),
-      removeUndefinedProps({
-        pool: newPool,
-        p: newP,
-        totalLiquidity: newTotalLiquidity,
-      })
-    )
-
-    transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
-  })
-}

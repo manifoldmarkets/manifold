@@ -13,7 +13,9 @@ export function formatMoney(amount: number) {
     Math.round(amount) === 0
       ? 0
       : // Handle 499.9999999999999 case
-        Math.floor(amount + 0.00000000001 * Math.sign(amount))
+        (amount > 0 ? Math.floor : Math.ceil)(
+          amount + 0.00000000001 * Math.sign(amount)
+        )
   return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
 }
 
@@ -55,6 +57,16 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
   const i = Math.floor(Math.log10(absNum) / 3)
 
   const numStr = showPrecision(num / Math.pow(10, 3 * i), sigfigs)
+  return `${numStr}${suffix[i] ?? ''}`
+}
+
+export function shortFormatNumber(num: number): string {
+  if (num < 1000) return showPrecision(num, 3)
+
+  const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
+  const i = Math.floor(Math.log10(num) / 3)
+
+  const numStr = showPrecision(num / Math.pow(10, 3 * i), 2)
   return `${numStr}${suffix[i] ?? ''}`
 }
 

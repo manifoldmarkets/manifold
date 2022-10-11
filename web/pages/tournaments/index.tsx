@@ -24,6 +24,7 @@ import { SiteLink } from 'web/components/site-link'
 import { Carousel } from 'web/components/carousel'
 import { usePagination } from 'web/hooks/use-pagination'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import { Title } from 'web/components/title'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -48,7 +49,7 @@ const Salem = {
   title: 'CSPI/Salem Forecasting Tournament',
   blurb: 'Top 5 traders qualify for a UT Austin research fellowship.',
   url: 'https://salemcenter.manifold.markets/',
-  award: '$25,000',
+  award: 'US$25,000',
   endTime: toDate('Jul 31, 2023'),
   contractIds: [],
   images: [
@@ -77,34 +78,43 @@ const Salem = {
 
 const tourneys: Tourney[] = [
   {
-    title: 'Clearer Thinking Regrant Project',
-    blurb: 'Which projects will Clearer Thinking give a grant to?',
-    award: '$13,000',
-    endTime: toDate('Sep 30, 2022'),
-    groupId: 'fhksfIgqyWf7OxsV9nkM',
+    title: 'CCP 20th National Party Congress',
+    blurb:
+      "Forecast the outcome of the Chinese Communist Party's 20th National Party Congress.",
+    award: 'US$200',
+    endTime: toDate('Oct 20, 2022'),
+    groupId: 'YfcYoy7TWbZtUOs0GLfq',
   },
-  // {
-  //   title: 'Manifold F2P Tournament',
-  //   blurb:
-  //     'Who can amass the most mana starting from a free-to-play (F2P) account?',
-  //   award: 'Poem',
-  //   endTime: toDate('Sep 15, 2022'),
-  //   groupId: '6rrIja7tVW00lUVwtsYS',
-  // },
-  // {
-  //   title: 'Cause Exploration Prizes',
-  //   blurb:
-  //     'Which new charity ideas will Open Philanthropy find most promising?',
-  //   award: 'M$100k',
-  //   endTime: toDate('Sep 9, 2022'),
-  //   groupId: 'cMcpBQ2p452jEcJD2SFw',
-  // },
   {
     title: 'Fantasy Football Stock Exchange',
     blurb: 'How many points will each NFL player score this season?',
-    award: '$2,500',
+    award: 'US$2,500',
     endTime: toDate('Jan 6, 2023'),
     groupId: 'SxGRqXRpV3RAQKudbcNb',
+  },
+  {
+    title: 'Clearer Thinking Regrant Project',
+    blurb: 'Which projects will Clearer Thinking give a grant to?',
+    award: 'US$13,000',
+    endTime: toDate('Sep 30, 2022'),
+    groupId: 'fhksfIgqyWf7OxsV9nkM',
+  },
+
+  {
+    title: 'Cause Exploration Prizes',
+    blurb:
+      'Which new charity ideas will Open Philanthropy find most promising?',
+    award: 'M$100k',
+    endTime: toDate('Sep 9, 2022'),
+    groupId: 'cMcpBQ2p452jEcJD2SFw',
+  },
+  {
+    title: 'Manifold F2P Tournament',
+    blurb:
+      'Who can amass the most mana starting from a free-to-play (F2P) account?',
+    award: 'Poem',
+    endTime: toDate('Sep 15, 2022'),
+    groupId: '6rrIja7tVW00lUVwtsYS',
   },
 
   // Tournaments without awards get featured below
@@ -158,16 +168,21 @@ export async function getStaticProps() {
 export default function TournamentPage(props: { sections: SectionInfo[] }) {
   const { sections } = props
 
+  const description = `Win real prizes (including cash!) by participating in forecasting
+            tournaments on current events, sports, science, and more.`
   return (
     <Page>
-      <SEO
-        title="Tournaments"
-        description="Win money by predicting in forecasting tournaments on current events, sports, science, and more"
-      />
+      <SEO title="Tournaments" description={description} />
       <Col className="m-4 gap-10 sm:mx-10 sm:gap-24 xl:w-[125%]">
+        <Col>
+          <Title text="🏆 Manifold tournaments" />
+          <div>{description}</div>
+        </Col>
+
         {sections.map(
           ({ tourney, slug, numPeople }) =>
-            tourney.award && (
+            tourney.award &&
+            (tourney.endTime ?? 0) > Date.now() && (
               <div key={slug}>
                 <SectionHeader
                   url={groupPath(slug, 'about')}
@@ -181,6 +196,7 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
               </div>
             )
         )}
+        {/* Salem center */}
         <div>
           <SectionHeader
             url={Salem.url}
@@ -191,6 +207,39 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
           <span className="text-gray-500">{Salem.blurb}</span>
           <ImageCarousel url={Salem.url} images={Salem.images} />
         </div>
+
+        {/* Title break */}
+        <div className="relative">
+          <div
+            className="absolute inset-0 flex items-center"
+            aria-hidden="true"
+          >
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-gray-50 px-3 text-lg font-medium text-gray-900">
+              Past tournaments
+            </span>
+          </div>
+        </div>
+
+        {sections.map(
+          ({ tourney, slug, numPeople }) =>
+            tourney.award &&
+            (tourney.endTime ?? 0) <= Date.now() && (
+              <div key={slug}>
+                <SectionHeader
+                  url={groupPath(slug, 'about')}
+                  title={tourney.title}
+                  ppl={numPeople}
+                  award={tourney.award}
+                  endTime={tourney.endTime}
+                />
+                <span className="text-gray-500">{tourney.blurb}</span>
+                <MarketCarousel slug={slug} />
+              </div>
+            )
+        )}
 
         {/* Title break */}
         <div className="relative">

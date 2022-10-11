@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Post } from 'common/post'
-import { listenForPost } from 'web/lib/firebase/posts'
+import { DateDoc, Post } from 'common/post'
+import { listenForDateDocs, listenForPost } from 'web/lib/firebase/posts'
 
 export const usePost = (postId: string | undefined) => {
   const [post, setPost] = useState<Post | null | undefined>()
@@ -36,4 +36,14 @@ export const usePosts = (postIds: string[]) => {
       (post, index, self) => index === self.findIndex((t) => t.id === post.id)
     )
     .sort((a, b) => b.createdTime - a.createdTime)
+}
+
+export const useDateDocs = () => {
+  const [dateDocs, setDateDocs] = useState<DateDoc[]>()
+
+  useEffect(() => {
+    return listenForDateDocs(setDateDocs)
+  }, [])
+
+  return dateDocs
 }

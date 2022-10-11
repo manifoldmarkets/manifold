@@ -30,7 +30,7 @@ export function contractTextDetails(contract: Contract) {
   const { closeTime, groupLinks } = contract
   const { createdDate, resolvedDate, volumeLabel } = contractMetrics(contract)
 
-  const groupHashtags = groupLinks?.slice(0, 5).map((g) => `#${g.name}`)
+  const groupHashtags = groupLinks?.map((g) => `#${g.name.replace(/ /g, '')}`)
 
   return (
     `${resolvedDate ? `${createdDate} - ${resolvedDate}` : createdDate}` +

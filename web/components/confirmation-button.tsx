@@ -16,16 +16,18 @@ export function ConfirmationButton(props: {
   }
   cancelBtn?: {
     label?: string
-    className?: string
+    color?: ColorType
   }
   submitBtn?: {
     label?: string
-    className?: string
+    color?: ColorType
+    isSubmitting?: boolean
   }
   children: ReactNode
   onSubmit?: () => void
   onOpenChanged?: (isOpen: boolean) => void
   onSubmitWithSuccess?: () => Promise<boolean>
+  disabled?: boolean
 }) {
   const {
     openModalBtn,
@@ -35,6 +37,7 @@ export function ConfirmationButton(props: {
     children,
     onOpenChanged,
     onSubmitWithSuccess,
+    disabled,
   } = props
 
   const [open, setOpen] = useState(false)
@@ -50,14 +53,14 @@ export function ConfirmationButton(props: {
         <Col className="gap-4 rounded-md bg-white px-8 py-6">
           {children}
           <Row className="gap-4">
-            <div
-              className={clsx('btn', cancelBtn?.className)}
+            <Button
+              color={cancelBtn?.color ?? 'gray-white'}
               onClick={() => updateOpen(false)}
             >
               {cancelBtn?.label ?? 'Cancel'}
-            </div>
-            <div
-              className={clsx('btn', submitBtn?.className)}
+            </Button>
+            <Button
+              color={submitBtn?.color ?? 'blue'}
               onClick={
                 onSubmitWithSuccess
                   ? () =>
@@ -66,15 +69,22 @@ export function ConfirmationButton(props: {
                       )
                   : onSubmit
               }
+              loading={submitBtn?.isSubmitting}
             >
               {submitBtn?.label ?? 'Submit'}
-            </div>
+            </Button>
           </Row>
         </Col>
       </Modal>
+
       <Button
-        className={clsx(openModalBtn.className)}
-        onClick={() => updateOpen(true)}
+        className={openModalBtn.className}
+        onClick={() => {
+          if (disabled) {
+            return
+          }
+          updateOpen(true)
+        }}
         disabled={openModalBtn.disabled}
         color={openModalBtn.color}
         size={openModalBtn.size}
@@ -90,18 +100,11 @@ export function ResolveConfirmationButton(props: {
   onResolve: () => void
   isSubmitting: boolean
   openModalButtonClass?: string
-  submitButtonClass?: string
   color?: ColorType
   disabled?: boolean
 }) {
-  const {
-    onResolve,
-    isSubmitting,
-    openModalButtonClass,
-    submitButtonClass,
-    color,
-    disabled,
-  } = props
+  const { onResolve, isSubmitting, openModalButtonClass, color, disabled } =
+    props
   return (
     <ConfirmationButton
       openModalBtn={{
@@ -116,7 +119,8 @@ export function ResolveConfirmationButton(props: {
       }}
       submitBtn={{
         label: 'Resolve',
-        className: clsx('border-none', submitButtonClass),
+        color: color,
+        isSubmitting,
       }}
       onSubmit={onResolve}
     >

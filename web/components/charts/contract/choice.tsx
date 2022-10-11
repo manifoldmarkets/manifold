@@ -10,8 +10,6 @@ import { getOutcomeProbability } from 'common/calculate'
 import { DAY_MS } from 'common/util/time'
 import {
   TooltipProps,
-  MARGIN_X,
-  MARGIN_Y,
   getDateRange,
   getRightmostVisibleDate,
   formatPct,
@@ -21,63 +19,64 @@ import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 
-// thanks to https://observablehq.com/@jonhelfman/optimal-orders-for-choosing-categorical-colors
-const CATEGORY_COLORS = [
-  '#00b8dd',
-  '#eecafe',
-  '#874c62',
-  '#6457ca',
-  '#f773ba',
-  '#9c6bbc',
-  '#a87744',
-  '#af8a04',
-  '#bff9aa',
-  '#f3d89d',
-  '#c9a0f5',
-  '#ff00e5',
-  '#9dc6f7',
-  '#824475',
-  '#d973cc',
-  '#bc6808',
-  '#056e70',
-  '#677932',
-  '#00b287',
-  '#c8ab6c',
-  '#a2fb7a',
-  '#f8db68',
-  '#14675a',
-  '#8288f4',
-  '#fe1ca0',
-  '#ad6aff',
-  '#786306',
-  '#9bfbaf',
-  '#b00cf7',
-  '#2f7ec5',
-  '#4b998b',
-  '#42fa0e',
-  '#5b80a1',
-  '#962d9d',
-  '#3385ff',
-  '#48c5ab',
-  '#b2c873',
-  '#4cf9a4',
-  '#00ffff',
-  '#3cca73',
-  '#99ae17',
-  '#7af5cf',
-  '#52af45',
-  '#fbb80f',
-  '#29971b',
-  '#187c9a',
-  '#00d539',
-  '#bbfa1a',
-  '#61f55c',
-  '#cabc03',
-  '#ff9000',
-  '#779100',
-  '#bcfd6f',
-  '#70a560',
+export const CATEGORY_COLORS = [
+  '#7eb0d5',
+  '#fd7f6f',
+  '#b2e061',
+  '#bd7ebe',
+  '#ffb55a',
+  '#ffee65',
+  '#beb9db',
+  '#fdcce5',
+  '#8bd3c7',
+  '#bddfb7',
+  '#e2e3f3',
+  '#fafafa',
+  '#9fcdeb',
+  '#d3d3d3',
+  '#b1a296',
+  '#e1bdb6',
+  '#f2dbc0',
+  '#fae5d3',
+  '#c5e0ec',
+  '#e0f0ff',
+  '#ffddcd',
+  '#fbd5e2',
+  '#f2e7e5',
+  '#ffe7ba',
+  '#eed9c4',
+  '#ea9999',
+  '#f9cb9c',
+  '#ffe599',
+  '#b6d7a8',
+  '#a2c4c9',
+  '#9fc5e8',
+  '#b4a7d6',
+  '#d5a6bd',
+  '#e06666',
+  '#f6b26b',
+  '#ffd966',
+  '#93c47d',
+  '#76a5af',
+  '#6fa8dc',
+  '#8e7cc3',
+  '#c27ba0',
+  '#cc0000',
+  '#e69138',
+  '#f1c232',
+  '#6aa84f',
+  '#45818e',
+  '#3d85c6',
+  '#674ea7',
+  '#a64d79',
+  '#990000',
+  '#b45f06',
+  '#bf9000',
 ]
+
+const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
+const MARGIN_X = MARGIN.left + MARGIN.right
+const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getTrackedAnswers = (
   contract: FreeResponseContract | MultipleChoiceContract,
@@ -142,6 +141,15 @@ const Legend = (props: { className?: string; items: LegendItem[] }) => {
   )
 }
 
+export function useChartAnswers(
+  contract: FreeResponseContract | MultipleChoiceContract
+) {
+  return useMemo(
+    () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
+    [contract]
+  )
+}
+
 export const ChoiceContractChart = (props: {
   contract: FreeResponseContract | MultipleChoiceContract
   bets: Bet[]
@@ -151,10 +159,7 @@ export const ChoiceContractChart = (props: {
 }) => {
   const { contract, bets, width, height, onMouseOver } = props
   const [start, end] = getDateRange(contract)
-  const answers = useMemo(
-    () => getTrackedAnswers(contract, CATEGORY_COLORS.length),
-    [contract]
-  )
+  const answers = useChartAnswers(contract)
   const betPoints = useMemo(() => getBetPoints(answers, bets), [answers, bets])
   const data = useMemo(
     () => [
@@ -178,9 +183,9 @@ export const ChoiceContractChart = (props: {
 
   const ChoiceTooltip = useMemo(
     () => (props: TooltipProps<Date, MultiPoint<Bet>>) => {
-      const { data, mouseX, xScale } = props
+      const { data, x, xScale } = props
       const [start, end] = xScale.domain()
-      const d = xScale.invert(mouseX)
+      const d = xScale.invert(x)
       const legendItems = sortBy(
         data.y.map((p, i) => ({
           color: CATEGORY_COLORS[i],
@@ -211,14 +216,15 @@ export const ChoiceContractChart = (props: {
     <MultiValueHistoryChart
       w={width}
       h={height}
+      margin={MARGIN}
       xScale={xScale}
       yScale={yScale}
+      yKind="percent"
       data={data}
       colors={CATEGORY_COLORS}
       curve={curveStepAfter}
       onMouseOver={onMouseOver}
       Tooltip={ChoiceTooltip}
-      pct
     />
   )
 }

@@ -1,9 +1,13 @@
 import { ClockIcon } from '@heroicons/react/outline'
+import {
+  ExclamationIcon,
+  PencilIcon,
+  PlusCircleIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
@@ -14,8 +18,7 @@ import { useState } from 'react'
 import NewContractBadge from '../new-contract-badge'
 import { MiniUserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
-import { useUser } from 'web/hooks/use-user'
-import { exhibitExts } from 'common/util/parse'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -28,7 +31,6 @@ import { UserLink } from 'web/components/user-link'
 import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
-import { PlusCircleIcon } from '@heroicons/react/solid'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -36,6 +38,8 @@ import {
   BountiedContractBadge,
   BountiedContractSmallBadge,
 } from 'web/components/contract/bountied-contract-badge'
+import { Input } from '../input'
+import { editorExtensions } from '../editor'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -149,6 +153,8 @@ export function MarketSubheader(props: {
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
+  const creator = useUserById(creatorId)
+  const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
   return (
@@ -160,23 +166,32 @@ export function MarketSubheader(props: {
         size={9}
         className="mr-1.5"
       />
+
       {!disabled && (
         <div className="absolute mt-3 ml-[11px]">
           <MiniUserFollowButton userId={creatorId} />
         </div>
       )}
       <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-        <Row className="w-full justify-between ">
+        <Row className="w-full space-x-1 ">
           {disabled ? (
             creatorName
           ) : (
-            <UserLink
-              className="my-auto whitespace-nowrap"
-              name={creatorName}
-              username={creatorUsername}
-              short={isMobile}
-            />
+            <Row className={'gap-2'}>
+              <UserLink
+                className="my-auto whitespace-nowrap"
+                name={creatorName}
+                username={creatorUsername}
+              />
+              {/*<BadgeDisplay user={creator} />*/}
+            </Row>
           )}
+          {correctResolutionPercentage != null &&
+            correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
+              <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
+                <ExclamationIcon className="h-6 w-6 text-yellow-500" />
+              </Tooltip>
+            )}
         </Row>
         <Row className="text-2xs text-greyscale-4 flex-wrap gap-2 sm:text-xs">
           <CloseOrResolveTime
@@ -344,7 +359,7 @@ export function GroupDisplay(props: {
     const groupSection = (
       <a
         className={clsx(
-          'bg-greyscale-4 max-w-[140px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
+          'bg-greyscale-4 max-w-[200px] truncate whitespace-nowrap rounded-full py-0.5 px-2 text-xs text-white sm:max-w-[250px]',
           !disabled && 'hover:bg-greyscale-3 cursor-pointer'
         )}
       >
@@ -405,7 +420,7 @@ function EditableCloseDate(props: {
       const content = contract.description
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
-      const editor = new Editor({ content, extensions: exhibitExts })
+      const editor = new Editor({ content, extensions: editorExtensions() })
       editor.commands.focus('end')
       insertContent(
         editor,
@@ -424,46 +439,42 @@ function EditableCloseDate(props: {
   return (
     <>
       <Modal
-        size="sm"
+        size="md"
         open={isEditingCloseTime}
         setOpen={setIsEditingCloseTime}
         position="top"
       >
         <Col className="rounded bg-white px-8 pb-8">
-          <Subtitle text="Edit Close Date" />
-          <Row className="z-10 mr-2 w-full shrink-0 flex-wrap items-center gap-2">
-            <input
+          <Subtitle text="Edit market close time" />
+          <Row className="z-10 mr-2 mt-4 w-full shrink-0 flex-wrap items-center gap-2">
+            <Input
               type="date"
-              className="input input-bordered w-full shrink-0 sm:w-fit"
+              className="w-full shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
               min={Date.now()}
               value={closeDate}
             />
-            <input
+            <Input
               type="time"
-              className="input input-bordered w-full shrink-0 sm:w-max"
+              className="w-full shrink-0 sm:w-max"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseHoursMinutes(e.target.value)}
               min="00:00"
               value={closeHoursMinutes}
             />
+            <Button size={'xs'} color={'indigo'} onClick={() => onSave()}>
+              Set
+            </Button>
           </Row>
+
           <Button
-            className="mt-4"
+            className="mt-8"
             size={'xs'}
-            color={'indigo'}
-            onClick={() => onSave()}
-          >
-            Done
-          </Button>
-          <Button
-            className="mt-4"
-            size={'xs'}
-            color={'gray-white'}
+            color="red"
             onClick={() => onSave(Date.now())}
           >
-            Close Now
+            Close market now
           </Button>
         </Col>
       </Modal>
@@ -471,8 +482,8 @@ function EditableCloseDate(props: {
         text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
         time={closeTime}
       >
-        <span
-          className={!disabled && isCreator ? 'cursor-pointer' : ''}
+        <Row
+          className={clsx(!disabled && isCreator ? 'cursor-pointer' : '')}
           onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
           {isSameDay ? (
@@ -482,8 +493,11 @@ function EditableCloseDate(props: {
           ) : (
             dayJsCloseTime.format('MMM D, YYYY')
           )}
-        </span>
+          {isCreator && !disabled && <PencilIcon className="ml-1 h-4 w-4" />}
+        </Row>
       </DateTimeTooltip>
     </>
   )
 }
+
+const BAD_CREATOR_THRESHOLD = 0.8

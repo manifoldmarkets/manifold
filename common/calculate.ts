@@ -78,7 +78,8 @@ export function calculateShares(
 export function calculateSaleAmount(
   contract: Contract,
   bet: Bet,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) {
   return contract.mechanism === 'cpmm-1' &&
     (contract.outcomeType === 'BINARY' ||
@@ -87,7 +88,8 @@ export function calculateSaleAmount(
         contract,
         Math.abs(bet.shares),
         bet.outcome as 'YES' | 'NO',
-        unfilledBets
+        unfilledBets,
+        balanceByUserId
       ).saleValue
     : calculateDpmSaleAmount(contract, bet)
 }
@@ -102,14 +104,16 @@ export function getProbabilityAfterSale(
   contract: Contract,
   outcome: string,
   shares: number,
-  unfilledBets: LimitBet[]
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
 ) {
   return contract.mechanism === 'cpmm-1'
     ? getCpmmProbabilityAfterSale(
         contract,
         shares,
         outcome as 'YES' | 'NO',
-        unfilledBets
+        unfilledBets,
+        balanceByUserId
       )
     : getDpmProbabilityAfterSale(contract.totalShares, outcome, shares)
 }
@@ -174,6 +178,8 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
+export type ContractBetMetrics = ReturnType<typeof getContractBetMetrics>
+
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
   const isCpmm = contract.mechanism === 'cpmm-1'
@@ -210,9 +216,8 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     }
   }
 
-  const netPayout = payout - loan
   const profit = payout + saleValue + redeemed - totalInvested
-  const profitPercent = (profit / totalInvested) * 100
+  const profitPercent = totalInvested === 0 ? 0 : (profit / totalInvested) * 100
 
   const invested = isCpmm ? getCpmmInvested(yourBets) : getDpmInvested(yourBets)
   const hasShares = Object.values(totalShares).some(
@@ -221,8 +226,8 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
 
   return {
     invested,
+    loan,
     payout,
-    netPayout,
     profit,
     profitPercent,
     totalShares,
@@ -233,8 +238,8 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
 export function getContractBetNullMetrics() {
   return {
     invested: 0,
+    loan: 0,
     payout: 0,
-    netPayout: 0,
     profit: 0,
     profitPercent: 0,
     totalShares: {} as { [outcome: string]: number },

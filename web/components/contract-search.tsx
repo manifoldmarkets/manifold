@@ -41,12 +41,15 @@ import { AdjustmentsIcon } from '@heroicons/react/solid'
 import { Button } from './button'
 import { Modal } from './layout/modal'
 import { Title } from './title'
+import { Input } from './input'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
   { label: 'Daily trending', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
+  { label: 'Most popular', value: 'most-popular' },
+  { label: 'Liquidity', value: 'liquidity' },
   { label: 'Last updated', value: 'last-updated' },
   { label: 'Closing soon', value: 'close-date' },
   { label: 'Resolve date', value: 'resolve-date' },
@@ -436,16 +439,16 @@ function ContractSearchControls(props: {
   return (
     <Col className={clsx('bg-base-200 top-0 z-20 gap-3 pb-3', className)}>
       <Row className="gap-1 sm:gap-2">
-        <input
+        <Input
           type="text"
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
           onBlur={trackCallback('search', { query: query })}
-          placeholder={'Search'}
-          className="input input-bordered w-full"
+          placeholder="Search"
+          className="w-full"
           autoFocus={autoFocus}
         />
-        {!isMobile && (
+        {!isMobile && !query && (
           <SearchFilters
             filter={filter}
             selectFilter={selectFilter}
@@ -456,7 +459,7 @@ function ContractSearchControls(props: {
             includeProbSorts={includeProbSorts}
           />
         )}
-        {isMobile && (
+        {isMobile && !query && (
           <>
             <MobileSearchBar
               children={

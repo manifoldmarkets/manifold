@@ -24,6 +24,7 @@ import { getUser } from 'web/lib/firebase/users'
 import { SiteLink } from 'web/components/site-link'
 import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
+import { Input } from 'web/components/input'
 
 export async function getStaticProps() {
   let txns = await getAllCharityTxns()
@@ -171,11 +172,11 @@ export default function Charity(props: {
           />
           <Spacer h={10} />
 
-          <input
+          <Input
             type="text"
             onChange={(e) => debouncedQuery(e.target.value)}
             placeholder="Find a charity"
-            className="input input-bordered mb-6 w-full"
+            className="mb-6 w-full"
           />
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 self-center lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">

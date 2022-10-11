@@ -6,20 +6,28 @@ import {
 } from '@tiptap/react'
 import clsx from 'clsx'
 import { useContract } from 'web/hooks/use-contract'
-import { ContractCard } from '../contract/contract-card'
+import { ContractMention } from 'web/components/contract/contract-mention'
+import Link from 'next/link'
+import { contractMentionSuggestion } from './contract-mention-suggestion'
 
 const name = 'contract-mention-component'
 
 const ContractMentionComponent = (props: any) => {
-  const contract = useContract(props.node.attrs.id)
+  const { label, id } = props.node.attrs
+  const contract = useContract(id)
 
   return (
-    <NodeViewWrapper className={clsx(name, 'not-prose')}>
-      {contract && (
-        <ContractCard
-          contract={contract}
-          className="my-2 w-full border border-gray-100"
-        />
+    <NodeViewWrapper className={clsx(name, 'not-prose inline')}>
+      {contract ? (
+        <ContractMention contract={contract} />
+      ) : label ? (
+        <Link href={label}>
+          <a className="rounded-sm !text-indigo-700 hover:bg-indigo-50">
+            {label}
+          </a>
+        </Link>
+      ) : (
+        '[loading...]'
       )}
     </NodeViewWrapper>
   )
@@ -34,9 +42,5 @@ export const DisplayContractMention = Mention.extend({
   name: 'contract-mention',
   parseHTML: () => [{ tag: name }],
   renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
-  addNodeView: () =>
-    ReactNodeViewRenderer(ContractMentionComponent, {
-      // On desktop, render cards below half-width so you can stack two
-      className: 'inline-block sm:w-[calc(50%-1rem)] sm:mr-1',
-    }),
-})
+  addNodeView: () => ReactNodeViewRenderer(ContractMentionComponent),
+}).configure({ suggestion: contractMentionSuggestion })

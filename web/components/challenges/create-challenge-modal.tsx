@@ -1,8 +1,7 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import React, { useEffect, useState } from 'react'
-import { LinkIcon, SwitchVerticalIcon } from '@heroicons/react/outline'
-import toast from 'react-hot-toast'
+import { SwitchVerticalIcon } from '@heroicons/react/outline'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -16,16 +15,16 @@ import { SiteLink } from 'web/components/site-link'
 import { formatMoney } from 'common/util/format'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { QRCode } from '../qr-code'
-import { copyToClipboard } from 'web/lib/util/copy'
 import { AmountInput } from '../amount-input'
 import { getProbability } from 'common/calculate'
 import { createMarket } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
 import { FIXED_ANTE } from 'common/economy'
-import Textarea from 'react-expanding-textarea'
 import { useTextEditor } from 'web/components/editor'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { track } from 'web/lib/service/analytics'
+import { CopyLinkButton } from '../copy-link-button'
+import { ExpandingInput } from '../expanding-input'
 
 type challengeInfo = {
   amount: number
@@ -154,9 +153,9 @@ function CreateChallengeForm(props: {
             {contract ? (
               <span className="underline">{contract.question}</span>
             ) : (
-              <Textarea
+              <ExpandingInput
                 placeholder="e.g. Will a Democrat be the next president?"
-                className="input input-bordered mt-1 w-full resize-none"
+                className="mt-1 w-full"
                 autoFocus={true}
                 maxLength={MAX_QUESTION_LENGTH}
                 value={challengeInfo.question}
@@ -302,16 +301,7 @@ function CreateChallengeForm(props: {
           <Title className="!my-0" text="Challenge Created!" />
 
           <div>Share the challenge using the link.</div>
-          <button
-            onClick={() => {
-              copyToClipboard(challengeSlug)
-              toast('Link copied to clipboard!')
-            }}
-            className={'btn btn-outline mb-4 whitespace-nowrap normal-case'}
-          >
-            <LinkIcon className={'mr-2 h-5 w-5'} />
-            Copy link
-          </button>
+          <CopyLinkButton url={challengeSlug} />
 
           <QRCode url={challengeSlug} className="self-center" />
           <Row className={'gap-1 text-gray-500'}>

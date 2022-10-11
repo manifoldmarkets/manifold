@@ -1,13 +1,18 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
   BinaryContract,
   Contract,
   CPMMBinaryContract,
+  CPMMContract,
   FreeResponseContract,
   MultipleChoiceContract,
   NumericContract,
@@ -16,6 +21,7 @@ import {
 import {
   AnswerLabel,
   BinaryContractOutcomeLabel,
+  BinaryOutcomeLabel,
   CancelLabel,
   FreeResponseOutcomeLabel,
 } from '../outcome-label'
@@ -28,13 +34,15 @@ import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { getColor, ProbBar, QuickBet } from './quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserContractMetrics } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
 import { SiteLink } from '../site-link'
 import { ProbChange } from './prob-change-table'
+import { Card } from '../card'
+import { ProfitBadgeMana } from '../profit-badge'
 
 export function ContractCard(props: {
   contract: Contract
@@ -75,12 +83,7 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <Row
-      className={clsx(
-        'group  relative gap-3 rounded-lg bg-white shadow-md hover:cursor-pointer hover:bg-gray-100',
-        className
-      )}
-    >
+    <Card className={clsx('group relative flex gap-3', className)}>
       <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
@@ -195,7 +198,7 @@ export function ContractCard(props: {
           />
         </Link>
       )}
-    </Row>
+    </Card>
   )
 }
 
@@ -218,17 +221,19 @@ export function BinaryResolutionOrChance(props: {
       className={clsx('items-end', large ? 'text-4xl' : 'text-3xl', className)}
     >
       {resolution ? (
-        <>
-          <div
-            className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
-          >
-            Resolved
+        <Row className="flex items-start">
+          <div>
+            <div
+              className={clsx('text-gray-500', large ? 'text-xl' : 'text-base')}
+            >
+              Resolved
+            </div>
+            <BinaryContractOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+            />
           </div>
-          <BinaryContractOutcomeLabel
-            contract={contract}
-            resolution={resolution}
-          />
-        </>
+        </Row>
       ) : (
         <>
           {probAfter && probChanged ? (
@@ -389,18 +394,22 @@ export function PseudoNumericResolutionOrExpectation(props: {
 }
 
 export function ContractCardProbChange(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMContract
   noLinkAvatar?: boolean
+  showPosition?: boolean
   className?: string
 }) {
-  const { contract, noLinkAvatar, className } = props
+  const { noLinkAvatar, showPosition, className } = props
+  const contract = useContractWithPreload(props.contract) as CPMMBinaryContract
+
+  const user = useUser()
+  const metrics = useUserContractMetrics(user?.id, contract.id)
+  const dayMetrics = metrics && metrics.from && metrics.from.day
+  const outcome =
+    metrics && metrics.hasShares && metrics.totalShares.YES ? 'YES' : 'NO'
+
   return (
-    <Col
-      className={clsx(
-        className,
-        'mb-4 rounded-lg bg-white shadow hover:bg-gray-100 hover:shadow-lg'
-      )}
-    >
+    <Card className={clsx(className, 'mb-4')}>
       <AvatarDetails
         contract={contract}
         className={'px-6 pt-4'}
@@ -415,6 +424,28 @@ export function ContractCardProbChange(props: {
         </SiteLink>
         <ProbChange className="py-2 pr-4" contract={contract} />
       </Row>
-    </Col>
+      {showPosition && metrics && (
+        <Row
+          className={clsx(
+            'items-center justify-between gap-4 pl-6 pr-4 pb-2 text-sm'
+          )}
+        >
+          <Row className="gap-1">
+            <div className="text-gray-500">Position</div>
+            {formatMoney(metrics.payout)}
+            <BinaryOutcomeLabel outcome={outcome} />
+          </Row>
+
+          {dayMetrics && (
+            <>
+              <Row className="items-center">
+                <div className="mr-1 text-gray-500">Daily profit</div>
+                <ProfitBadgeMana amount={dayMetrics.profit} />
+              </Row>
+            </>
+          )}
+        </Row>
+      )}
+    </Card>
   )
 }

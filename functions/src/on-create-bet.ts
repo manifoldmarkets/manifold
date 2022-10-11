@@ -12,6 +12,7 @@ import {
   revalidateStaticProps,
 } from './utils'
 import {
+  createBadgeAwardedNotification,
   createBetFillNotification,
   createBettingStreakBonusNotification,
   createUniqueBettorBonusNotification,
@@ -24,6 +25,7 @@ import {
   BETTING_STREAK_BONUS_MAX,
   BETTING_STREAK_RESET_HOUR,
   UNIQUE_BETTOR_BONUS_AMOUNT,
+  UNIQUE_BETTOR_LIQUIDITY,
 } from '../../common/economy'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -33,6 +35,11 @@ import { APIError } from '../../common/api'
 import { User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
+import { addHouseSubsidy } from './helpers/add-house-subsidy'
+import {
+  StreakerBadge,
+  streakerBadgeRarityThresholds,
+} from '../../common/badge'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -103,7 +110,7 @@ const updateBettingStreak = async (
 
     const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
     // Otherwise, add 1 to their betting streak
-    await trans.update(userDoc, {
+    trans.update(userDoc, {
       currentBettingStreak: newBettingStreak,
       lastBetTime: bet.createdTime,
     })
@@ -143,7 +150,7 @@ const updateBettingStreak = async (
     log('message:', result.message)
     return
   }
-  if (result.txn)
+  if (result.txn) {
     await createBettingStreakBonusNotification(
       user,
       result.txn.id,
@@ -153,6 +160,8 @@ const updateBettingStreak = async (
       newBettingStreak,
       eventId
     )
+    await handleBettingStreakBadgeAward(user, newBettingStreak)
+  }
 }
 
 const updateUniqueBettorsAndGiveCreatorBonus = async (
@@ -191,7 +200,7 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
         log(`Got ${previousUniqueBettorIds} unique bettors`)
         isNewUniqueBettor && log(`And a new unique bettor ${bettor.id}`)
 
-        await trans.update(contractDoc, {
+        trans.update(contractDoc, {
           uniqueBettorIds: newUniqueBettorIds,
           uniqueBettorCount: newUniqueBettorIds.length,
         })
@@ -204,7 +213,12 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       return { newUniqueBettorIds }
     }
   )
+
   if (!newUniqueBettorIds) return
+
+  if (oldContract.mechanism === 'cpmm-1') {
+    await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
+  }
 
   const bonusTxnDetails = {
     contractId: oldContract.id,
@@ -215,7 +229,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
   const fromSnap = await firestore.doc(`users/${fromUserId}`).get()
   if (!fromSnap.exists) throw new APIError(400, 'From user not found.')
+
   const fromUser = fromSnap.data() as User
+
   const result = await firestore.runTransaction(async (trans) => {
     const bonusTxn: TxnData = {
       fromId: fromUser.id,
@@ -228,7 +244,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
       description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
     } as Omit<UniqueBettorBonusTxn, 'id' | 'createdTime'>
+
     const { status, message, txn } = await runTxn(trans, bonusTxn)
+
     return { status, newUniqueBettorIds, message, txn }
   })
 
@@ -295,4 +313,40 @@ const notifyFills = async (
 
 const currentDateBettingStreakResetTime = () => {
   return new Date().setUTCHours(BETTING_STREAK_RESET_HOUR, 0, 0, 0)
+}
+
+async function handleBettingStreakBadgeAward(
+  user: User,
+  newBettingStreak: number
+) {
+  const alreadyHasBadgeForFirstStreak =
+    user.achievements?.streaker?.badges.some(
+      (badge) => badge.data.totalBettingStreak === 1
+    )
+  // TODO: check if already awarded 50th streak as well
+  if (newBettingStreak === 1 && alreadyHasBadgeForFirstStreak) return
+
+  if (streakerBadgeRarityThresholds.includes(newBettingStreak)) {
+    const badge = {
+      type: 'STREAKER',
+      name: 'Streaker',
+      data: {
+        totalBettingStreak: newBettingStreak,
+      },
+      createdTime: Date.now(),
+    } as StreakerBadge
+    // update user
+    await firestore
+      .collection('users')
+      .doc(user.id)
+      .update({
+        achievements: {
+          ...user.achievements,
+          streaker: {
+            badges: [...(user.achievements?.streaker?.badges ?? []), badge],
+          },
+        },
+      })
+    await createBadgeAwardedNotification(user, badge)
+  }
 }

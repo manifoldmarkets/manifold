@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BucketInput } from './bucket-input'
+import { Input } from './input'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
 
@@ -30,11 +31,8 @@ export function ProbabilityInput(props: {
   return (
     <Col className={className}>
       <label className="input-group">
-        <input
-          className={clsx(
-            'input input-bordered max-w-[200px] text-lg placeholder:text-gray-400',
-            inputClassName
-          )}
+        <Input
+          className={clsx('max-w-[200px] !text-lg', inputClassName)}
           type="number"
           max={99}
           min={1}

@@ -22,6 +22,7 @@ import {
   BinaryContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
+import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
 
 const OverviewQuestion = (props: { text: string }) => (
@@ -99,11 +100,16 @@ const BinaryOverview = (props: { contract: BinaryContract; bets: Bet[] }) => {
         <ContractDetails contract={contract} />
         <Row className="justify-between gap-4">
           <OverviewQuestion text={contract.question} />
-          <BinaryResolutionOrChance
-            className="flex items-end"
-            contract={contract}
-            large
-          />
+          <Row>
+            <BinaryResolutionOrChance
+              className="flex items-end"
+              contract={contract}
+              large
+            />
+            {contract.isResolved && (
+              <ContractReportResolution contract={contract} />
+            )}
+          </Row>
         </Row>
       </Col>
       <SizedContractChart
@@ -133,7 +139,13 @@ const ChoiceOverview = (props: {
         <ContractDetails contract={contract} />
         <OverviewQuestion text={question} />
         {resolution && (
-          <FreeResponseResolutionOrChance contract={contract} truncate="none" />
+          <Row>
+            <FreeResponseResolutionOrChance
+              contract={contract}
+              truncate="none"
+            />
+            <ContractReportResolution contract={contract} />
+          </Row>
         )}
       </Col>
       <SizedContractChart

@@ -108,7 +108,6 @@ export const tournamentContractsByGroupSlugQuery = (slug: string) =>
   query(
     contracts,
     where('groupSlugs', 'array-contains', slug),
-    where('isResolved', '==', false),
     orderBy('popularityScore', 'desc')
   )
 
@@ -169,10 +168,12 @@ export function getUserBetContracts(userId: string) {
   return getValues<Contract>(getUserBetContractsQuery(userId))
 }
 
+export const MAX_USER_BET_CONTRACTS_LOADED = 1000
 export function getUserBetContractsQuery(userId: string) {
   return query(
     contracts,
-    where('uniqueBettorIds', 'array-contains', userId)
+    where('uniqueBettorIds', 'array-contains', userId),
+    limit(MAX_USER_BET_CONTRACTS_LOADED)
   ) as Query<Contract>
 }
 

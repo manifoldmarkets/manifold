@@ -1,12 +1,11 @@
 import { RefreshIcon } from '@heroicons/react/outline'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import React, { useState } from 'react'
-import Textarea from 'react-expanding-textarea'
-import { AddFundsButton } from 'web/components/add-funds-button'
 import { ConfirmationButton } from 'web/components/confirmation-button'
+import { ExpandingInput } from 'web/components/expanding-input'
+import { Input } from 'web/components/input'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/page'
@@ -29,7 +28,7 @@ export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
 
 function EditUserField(props: {
   user: User
-  field: 'bio' | 'website' | 'bannerUrl' | 'twitterHandle' | 'discordHandle'
+  field: 'bio' | 'website' | 'twitterHandle' | 'discordHandle'
   label: string
 }) {
   const { user, field, label } = props
@@ -45,16 +44,15 @@ function EditUserField(props: {
       <label className="label">{label}</label>
 
       {field === 'bio' ? (
-        <Textarea
-          className="textarea textarea-bordered w-full resize-none"
+        <ExpandingInput
+          className="w-full"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onBlur={updateField}
         />
       ) : (
-        <input
+        <Input
           type="text"
-          className="input input-bordered"
           value={value}
           onChange={(e) => setValue(e.target.value || '')}
           onBlur={updateField}
@@ -154,10 +152,9 @@ export default function ProfilePage(props: {
 
           <div>
             <label className="label">Display name</label>
-            <input
+            <Input
               type="text"
               placeholder="Display name"
-              className="input input-bordered"
               value={name}
               onChange={(e) => setName(e.target.value || '')}
               onBlur={updateDisplayName}
@@ -166,10 +163,9 @@ export default function ProfilePage(props: {
 
           <div>
             <label className="label">Username</label>
-            <input
+            <Input
               type="text"
               placeholder="Username"
-              className="input input-bordered"
               value={username}
               onChange={(e) => setUsername(e.target.value || '')}
               onBlur={updateUsername}
@@ -199,20 +195,11 @@ export default function ProfilePage(props: {
           </div>
 
           <div>
-            <label className="label">Balance</label>
-            <Row className="ml-1 items-start gap-4 text-gray-500">
-              {formatMoney(user.balance)}
-              <AddFundsButton />
-            </Row>
-          </div>
-
-          <div>
             <label className="label">API key</label>
             <div className="input-group w-full">
-              <input
+              <Input
                 type="text"
                 placeholder="Click refresh to generate key"
-                className="input input-bordered w-full"
                 value={apiKey}
                 readOnly
               />
@@ -225,7 +212,6 @@ export default function ProfilePage(props: {
                 }}
                 submitBtn={{
                   label: 'Update key',
-                  className: 'btn-primary',
                 }}
                 onSubmitWithSuccess={async () => {
                   updateApiKey()

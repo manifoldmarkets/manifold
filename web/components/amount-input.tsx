@@ -1,11 +1,12 @@
 import clsx from 'clsx'
-import React from 'react'
+import React, { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Col } from './layout/col'
-import { SiteLink } from './site-link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from './layout/row'
+import { AddFundsModal } from './add-funds-modal'
+import { Input } from './input'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -35,6 +36,8 @@ export function AmountInput(props: {
     onChange(isInvalid ? undefined : amount)
   }
 
+  const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
+
   return (
     <>
       <Col className={className}>
@@ -42,9 +45,9 @@ export function AmountInput(props: {
           <span className="text-greyscale-4 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
           </span>
-          <input
+          <Input
             className={clsx(
-              'placeholder:text-greyscale-4 border-greyscale-2 rounded-md pl-9',
+              'pl-9',
               error && 'input-error',
               'w-24 md:w-auto',
               inputClassName
@@ -66,9 +69,16 @@ export function AmountInput(props: {
             {error === 'Insufficient balance' ? (
               <>
                 Not enough funds.
-                <span className="ml-1 text-indigo-500">
-                  <SiteLink href="/add-funds">Buy more?</SiteLink>
-                </span>
+                <button
+                  className="ml-1 text-indigo-500 hover:underline hover:decoration-indigo-400"
+                  onClick={() => setAddFundsModalOpen(true)}
+                >
+                  Buy more?
+                </button>
+                <AddFundsModal
+                  open={addFundsModalOpen}
+                  setOpen={setAddFundsModalOpen}
+                />
               </>
             ) : (
               error

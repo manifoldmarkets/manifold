@@ -42,11 +42,7 @@ import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
 import { Page } from 'web/components/page'
 import { Tabs } from 'web/components/layout/tabs'
-import { Title } from 'web/components/title'
-import { CreatePost } from 'web/components/create-post'
 import { GroupOverview } from 'web/components/groups/group-overview'
-import { CardHighlightOptions } from 'web/components/contract/contracts-grid'
-import { PostCard } from 'web/components/post-card'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -183,16 +179,6 @@ export default function GroupPage(props: {
     </Col>
   )
 
-  const postsPage = (
-    <>
-      <Col>
-        <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
-          {posts && <GroupPosts posts={groupPosts} group={group} />}
-        </div>
-      </Col>
-    </>
-  )
-
   const overviewPage = (
     <>
       <GroupOverview
@@ -238,20 +224,16 @@ export default function GroupPage(props: {
 
   const tabs = [
     {
+      title: 'Overview',
+      content: overviewPage,
+    },
+    {
       title: 'Markets',
       content: questionsTab,
     },
     {
       title: 'Leaderboards',
       content: leaderboardTab,
-    },
-    {
-      title: 'Posts',
-      content: postsPage,
-    },
-    {
-      title: 'Overview',
-      content: overviewPage,
     },
   ]
 
@@ -263,7 +245,7 @@ export default function GroupPage(props: {
         url={groupPath(group.slug)}
       />
       <TopGroupNavBar group={group} />
-      <div className={'relative p-2 pt-0 md:pt-2'}>
+      <div className={'relative p-1 pt-0 md:pt-2'}>
         {/* TODO: Switching tabs should also update the group path */}
         <Tabs className={'mb-2'} tabs={tabs} defaultIndex={tabIndex} />
       </div>
@@ -333,63 +315,6 @@ function GroupLeaderboard(props: {
       ]}
       maxToShow={maxToShow}
     />
-  )
-}
-
-export function GroupPosts(props: { posts: Post[]; group: Group }) {
-  const { posts, group } = props
-  const [showCreatePost, setShowCreatePost] = useState(false)
-  const user = useUser()
-
-  const createPost = <CreatePost group={group} />
-
-  const postList = (
-    <div className=" align-start w-full items-start">
-      <Row className="flex justify-between">
-        <Col>
-          <Title text={'Posts'} className="!mt-0" />
-        </Col>
-        <Col>
-          {user && (
-            <Button
-              className="btn-md"
-              onClick={() => setShowCreatePost(!showCreatePost)}
-            >
-              Add a Post
-            </Button>
-          )}
-        </Col>
-      </Row>
-
-      <div className="mt-2">
-        <PostCardList posts={posts} />
-        {posts.length === 0 && (
-          <div className="text-center text-gray-500">No posts yet</div>
-        )}
-      </div>
-    </div>
-  )
-
-  return showCreatePost ? createPost : postList
-}
-
-export function PostCardList(props: {
-  posts: Post[]
-  highlightOptions?: CardHighlightOptions
-  onPostClick?: (post: Post) => void
-}) {
-  const { posts, onPostClick, highlightOptions } = props
-  return (
-    <div className="w-full">
-      {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          onPostClick={onPostClick}
-          highlightOptions={highlightOptions}
-        />
-      ))}
-    </div>
   )
 }
 

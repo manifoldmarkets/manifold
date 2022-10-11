@@ -2,7 +2,6 @@ import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
@@ -36,6 +35,11 @@ import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-an
 import { MINUTE_MS } from 'common/util/time'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { SiteLink } from 'web/components/site-link'
+import { Button } from 'web/components/button'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { Input } from 'web/components/input'
+import { ExpandingInput } from 'web/components/expanding-input'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -48,6 +52,7 @@ type NewQuestionParams = {
   description: string
   closeTime: string
   outcomeType: string
+  visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
   min?: string
   max?: string
@@ -100,9 +105,8 @@ export default function Create(props: { auth: { user: User } }) {
                 </span>
               </label>
 
-              <Textarea
+              <ExpandingInput
                 placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-                className="input input-bordered resize-none"
                 autoFocus
                 maxLength={MAX_QUESTION_LENGTH}
                 value={question}
@@ -134,7 +138,9 @@ export function NewContract(props: {
   const [maxString, setMaxString] = useState(params?.max ?? '')
   const [isLogScale, setIsLogScale] = useState<boolean>(!!params?.isLogScale)
   const [initialValueString, setInitialValueString] = useState(initValue)
-
+  const [visibility, setVisibility] = useState<visibility>(
+    (params?.visibility as visibility) ?? 'public'
+  )
   // for multiple choice, init to 3 empty answers
   const [answers, setAnswers] = useState(['', '', ''])
 
@@ -166,7 +172,8 @@ export function NewContract(props: {
     undefined
   )
   const [showGroupSelector, setShowGroupSelector] = useState(true)
-  const [visibility, setVisibility] = useState<visibility>('public')
+
+  const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -322,9 +329,9 @@ export function NewContract(props: {
             </label>
 
             <Row className="gap-2">
-              <input
+              <Input
                 type="number"
-                className="input input-bordered w-32"
+                className="w-32"
                 placeholder="LOW"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
@@ -333,9 +340,9 @@ export function NewContract(props: {
                 disabled={isSubmitting}
                 value={minString ?? ''}
               />
-              <input
+              <Input
                 type="number"
-                className="input input-bordered w-32"
+                className="w-32"
                 placeholder="HIGH"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
@@ -367,9 +374,8 @@ export function NewContract(props: {
             </label>
 
             <Row className="gap-2">
-              <input
+              <Input
                 type="number"
-                className="input input-bordered"
                 placeholder="Initial value"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setInitialValueString(e.target.value)}
@@ -410,14 +416,9 @@ export function NewContract(props: {
 
       <Row className="form-control my-2 items-center gap-2 text-sm">
         <span>Display this market on homepage</span>
-        <input
-          type="checkbox"
-          checked={visibility === 'public'}
-          disabled={isSubmitting}
-          className="cursor-pointer"
-          onChange={(e) =>
-            setVisibility(e.target.checked ? 'public' : 'unlisted')
-          }
+        <ShortToggle
+          on={visibility === 'public'}
+          setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
         />
       </Row>
 
@@ -444,19 +445,17 @@ export function NewContract(props: {
             className={'col-span-4 sm:col-span-2'}
           />
         </Row>
-        <Row>
-          <input
+        <Row className="mt-4 gap-2">
+          <Input
             type={'date'}
-            className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseDate(e.target.value)}
             min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
             disabled={isSubmitting}
             value={closeDate}
           />
-          <input
+          <Input
             type={'time'}
-            className="input input-bordered mt-4 ml-2"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseHoursMinutes(e.target.value)}
             min={'00:00'}
@@ -507,12 +506,17 @@ export function NewContract(props: {
           {ante > balance && !deservesFreeMarket && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
               <span className="mr-2 text-red-500">Insufficient balance</span>
-              <button
-                className="btn btn-xs btn-primary"
-                onClick={() => (window.location.href = '/add-funds')}
+              <Button
+                size="xs"
+                color="green"
+                onClick={() => setFundsModalOpen(true)}
               >
                 Get M$
-              </button>
+              </Button>
+              <AddFundsModal
+                open={fundsModalOpen}
+                setOpen={setFundsModalOpen}
+              />
             </div>
           )}
         </div>
