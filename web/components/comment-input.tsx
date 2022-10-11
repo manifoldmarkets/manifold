@@ -17,13 +17,21 @@ export function CommentInput(props: {
   // Reply to another comment
   parentCommentId?: string
   onSubmitComment?: (editor: Editor) => void
+  // unique id for autosave
+  pageId: string
   className?: string
 }) {
-  const { parentAnswerOutcome, parentCommentId, replyTo, onSubmitComment } =
-    props
+  const {
+    parentAnswerOutcome,
+    parentCommentId,
+    replyTo,
+    onSubmitComment,
+    pageId,
+  } = props
   const user = useUser()
 
   const { editor, upload } = useTextEditor({
+    key: `comment ${pageId} ${parentCommentId ?? parentAnswerOutcome ?? ''}`,
     simple: true,
     max: MAX_COMMENT_LENGTH,
     placeholder:
@@ -80,7 +88,7 @@ export function CommentInputTextArea(props: {
 
   const submit = () => {
     submitComment()
-    editor?.commands?.clearContent()
+    editor?.commands?.clearContent(true)
   }
 
   useEffect(() => {
@@ -107,7 +115,7 @@ export function CommentInputTextArea(props: {
       },
     })
     // insert at mention and focus
-    if (replyTo) {
+    if (replyTo && editor.isEmpty) {
       editor
         .chain()
         .setContent({
