@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import { getContract, getUser, log } from './utils'
-import { createNotification } from './create-notification'
+import { createFollowOrMarketSubsidizedNotification } from './create-notification'
 import { LiquidityProvision } from '../../common/liquidity-provision'
 import { addUserToContractFollowers } from './follow-market'
 import { FIXED_ANTE } from '../../common/economy'
@@ -36,7 +36,7 @@ export const onCreateLiquidityProvision = functions.firestore
     if (!liquidityProvider) throw new Error('Could not find liquidity provider')
     await addUserToContractFollowers(contract.id, liquidityProvider.id)
 
-    await createNotification(
+    await createFollowOrMarketSubsidizedNotification(
       contract.id,
       'liquidity',
       'created',
