@@ -181,7 +181,7 @@ export async function updateMetricsCore() {
     const badResolutions = contractRatios.filter(
       (ratio) => ratio > BAD_RESOLUTION_THRESHOLD
     )
-    let newFractionResolvedCorrectly = 0
+    let newFractionResolvedCorrectly = 1
     if (userContracts.length > 0) {
       newFractionResolvedCorrectly =
         (userContracts.length - badResolutions.length) / userContracts.length
