@@ -8,6 +8,7 @@ import {
   Content,
   Editor,
   mergeAttributes,
+  Extensions,
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
@@ -64,6 +65,22 @@ const DisplayLink = Link.extend({
   },
 })
 
+export const editorExtensions = (simple = false): Extensions => [
+  StarterKit.configure({
+    heading: simple ? false : { levels: [1, 2, 3] },
+    horizontalRule: simple ? false : {},
+  }),
+  simple ? DisplayImage : Image,
+  DisplayLink,
+  DisplayMention,
+  DisplayContractMention,
+  Iframe,
+  TiptapTweet,
+  TiptapSpoiler.configure({
+    spoilerOpenClass: 'rounded-sm bg-greyscale-2',
+  }),
+]
+
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
   'font-light prose-a:font-light prose-blockquote:font-light'
@@ -89,29 +106,13 @@ export function useTextEditor(props: {
   const editor = useEditor({
     editorProps: { attributes: { class: editorClass } },
     extensions: [
-      StarterKit.configure({
-        heading: simple ? false : { levels: [1, 2, 3] },
-        horizontalRule: simple ? false : {},
-      }),
+      ...editorExtensions(simple),
       Placeholder.configure({
         placeholder,
         emptyEditorClass:
           'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
       }),
       CharacterCount.configure({ limit: max }),
-      simple ? DisplayImage : Image,
-      DisplayLink,
-      DisplayMention.configure({
-        suggestion: mentionSuggestion,
-      }),
-      DisplayContractMention.configure({
-        suggestion: contractMentionSuggestion,
-      }),
-      Iframe,
-      TiptapTweet,
-      TiptapSpoiler.configure({
-        spoilerOpenClass: 'rounded-sm bg-greyscale-2',
-      }),
     ],
     content: defaultValue,
   })
@@ -334,10 +335,7 @@ export function RichContent(props: {
       smallImage ? DisplayImage : Image,
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
-      DisplayContractMention.configure({
-        // Needed to set a different PluginKey for Prosemirror
-        suggestion: contractMentionSuggestion,
-      }),
+      DisplayContractMention,
       Iframe,
       TiptapTweet,
       TiptapSpoiler.configure({
