@@ -99,10 +99,10 @@ export async function getStaticPaths() {
 const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
+  'overview',
   'markets',
   'leaderboards',
   'about',
-  'posts',
 ] as const
 
 export default function GroupPage(props: {
@@ -131,8 +131,8 @@ export default function GroupPage(props: {
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
-  const tabIndex = ['markets', 'leaderboard', 'about', 'posts'].indexOf(
-    page ?? 'markets'
+  const tabIndex = ['overview', 'markets', 'leaderboards'].indexOf(
+    page === 'about' ? 'overview' : page ?? 'markets'
   )
 
   const group = useGroup(props.group?.id) ?? props.group
