@@ -19,8 +19,6 @@ import { sellbet } from './sell-bet'
 import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
-import { addliquidity } from './add-liquidity'
-import { withdrawliquidity } from './withdraw-liquidity'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
@@ -61,10 +59,8 @@ addJsonEndpointRoute('/sellbet', sellbet)
 addJsonEndpointRoute('/sellshares', sellshares)
 addJsonEndpointRoute('/claimmanalink', claimmanalink)
 addJsonEndpointRoute('/createmarket', createmarket)
-addJsonEndpointRoute('/addliquidity', addliquidity)
 addJsonEndpointRoute('/addCommentBounty', addcommentbounty)
 addJsonEndpointRoute('/awardCommentBounty', awardcommentbounty)
-addJsonEndpointRoute('/withdrawliquidity', withdrawliquidity)
 addJsonEndpointRoute('/creategroup', creategroup)
 addJsonEndpointRoute('/resolvemarket', resolvemarket)
 addJsonEndpointRoute('/unsubscribe', unsubscribe)

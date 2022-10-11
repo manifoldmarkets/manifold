@@ -42,8 +42,8 @@ export function changeUserInfo(params: any) {
   return call(getFunctionUrl('changeuserinfo'), 'POST', params)
 }
 
-export function addLiquidity(params: any) {
-  return call(getFunctionUrl('addliquidity'), 'POST', params)
+export function addSubsidy(params: any) {
+  return call(getFunctionUrl('addsubsidy'), 'POST', params)
 }
 
 export function addCommentBounty(params: any) {
@@ -52,10 +52,6 @@ export function addCommentBounty(params: any) {
 
 export function awardCommentBounty(params: any) {
   return call(getFunctionUrl('awardcommentbounty'), 'POST', params)
-}
-
-export function withdrawLiquidity(params: any) {
-  return call(getFunctionUrl('withdrawliquidity'), 'POST', params)
 }
 
 export function createMarket(params: any) {
