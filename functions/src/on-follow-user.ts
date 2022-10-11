@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { getUser } from './utils'
-import { createNotification } from './create-notification'
+import { createFollowOrMarketSubsidizedNotification } from './create-notification'
 import { FieldValue } from 'firebase-admin/firestore'
 
 export const onFollowUser = functions.firestore
@@ -23,7 +23,7 @@ export const onFollowUser = functions.firestore
       followerCountCached: FieldValue.increment(1),
     })
 
-    await createNotification(
+    await createFollowOrMarketSubsidizedNotification(
       followingUser.id,
       'follow',
       'created',

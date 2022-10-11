@@ -1002,6 +1002,7 @@ function MarketClosedNotification(props: {
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       subtitle={'Please resolve'}
+      hideUserName={true}
     >
       <Row>
         <span>
