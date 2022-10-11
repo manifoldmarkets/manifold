@@ -9,7 +9,6 @@ import { FollowMarketButton } from 'web/components/follow-market-button'
 import { LikeMarketButton } from 'web/components/contract/like-market-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { Tooltip } from '../tooltip'
-import { LiquidityButton } from './liquidity-button'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -19,10 +18,9 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
   return (
     <Row>
       <FollowMarketButton contract={contract} user={user} />
-      {contract.mechanism === 'cpmm-1' && (
-        <LiquidityButton contract={contract} user={user} />
-      )}
+
       <LikeMarketButton contract={contract} user={user} />
+
       <Tooltip text="Share" placement="bottom" noTap noFade>
         <Button
           size="sm"
@@ -39,6 +37,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
           />
         </Button>
       </Tooltip>
+
       <ContractInfoDialog contract={contract} user={user} />
     </Row>
   )

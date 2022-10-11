@@ -23,7 +23,7 @@ export function LiquidityModal(props: {
   return (
     <Modal open={isOpen} setOpen={setOpen} size="sm">
       <Col className="gap-2.5 rounded  bg-white p-4 pb-8 sm:gap-4">
-        <Title className="!mt-0 !mb-2" text="💧 Add a subsidy" />
+        <Title className="!mt-0 !mb-2" text="💧 Add liquidity" />
 
         <div>Total liquidity subsidies: {formatMoney(totalLiquidity)}</div>
         <AddLiquidityPanel contract={contract as CPMMContract} />
@@ -91,7 +91,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
           label="M$"
           error={error}
           disabled={isLoading}
-          inputClassName="w-16 mr-4"
+          inputClassName="w-28 mr-4"
         />
         <Button size="md" color="blue" onClick={submit} disabled={isLoading}>
           Add

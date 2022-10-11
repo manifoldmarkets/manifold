@@ -20,6 +20,7 @@ import { DuplicateContractButton } from '../duplicate-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
 import { Button } from '../button'
+import { AddLiquidityButton } from './add-liquidity-button'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -241,6 +242,9 @@ export function ContractInfoDialog(props: {
           </table>
 
           <Row className="flex-wrap">
+            {mechanism === 'cpmm-1' && (
+              <AddLiquidityButton contract={contract} className="mr-2" />
+            )}
             <DuplicateContractButton contract={contract} />
           </Row>
         </Col>
