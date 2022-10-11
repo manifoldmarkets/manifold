@@ -1,4 +1,4 @@
-import { addCpmmLiquidity, getCpmmLiquidity } from './calculate-cpmm'
+import { getCpmmLiquidity } from './calculate-cpmm'
 import { CPMMContract } from './contract'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -8,25 +8,23 @@ export const getNewLiquidityProvision = (
   contract: CPMMContract,
   newLiquidityProvisionId: string
 ) => {
-  const { pool, p, totalLiquidity } = contract
+  const { pool, p, totalLiquidity, subsidyPool } = contract
 
-  const { newPool, newP } = addCpmmLiquidity(pool, p, amount)
-
-  const liquidity =
-    getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
+  const liquidity = getCpmmLiquidity(pool, p)
 
   const newLiquidityProvision: LiquidityProvision = {
     id: newLiquidityProvisionId,
     userId: userId,
     contractId: contract.id,
     amount,
-    pool: newPool,
-    p: newP,
+    pool,
+    p,
     liquidity,
     createdTime: Date.now(),
   }
 
   const newTotalLiquidity = (totalLiquidity ?? 0) + amount
+  const newSubsidyPool = (subsidyPool ?? 0) + amount
 
-  return { newLiquidityProvision, newPool, newP, newTotalLiquidity }
+  return { newLiquidityProvision, newTotalLiquidity, newSubsidyPool }
 }

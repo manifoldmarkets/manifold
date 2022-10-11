@@ -1,11 +1,10 @@
-import { sum, groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
 import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
-import { addObjects } from './util/object'
 
 export type CpmmState = {
   pool: { [outcome: string]: number }
@@ -267,48 +266,22 @@ export function addCpmmLiquidity(
   return { newPool, liquidity, newP }
 }
 
-const calculateLiquidityDelta = (p: number) => (l: LiquidityProvision) => {
-  const oldLiquidity = getCpmmLiquidity(l.pool, p)
+export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
+  const userAmounts = groupBy(liquidities, (w) => w.userId)
+  const totalAmount = sumBy(liquidities, (w) => w.amount)
 
-  const newPool = addObjects(l.pool, { YES: l.amount, NO: l.amount })
-  const newLiquidity = getCpmmLiquidity(newPool, p)
-
-  const liquidity = newLiquidity - oldLiquidity
-  return liquidity
-}
-
-export function getCpmmLiquidityPoolWeights(
-  state: CpmmState,
-  liquidities: LiquidityProvision[],
-  excludeAntes: boolean
-) {
-  const calcLiqudity = calculateLiquidityDelta(state.p)
-  const liquidityShares = liquidities.map(calcLiqudity)
-  const shareSum = sum(liquidityShares)
-
-  const weights = liquidityShares.map((shares, i) => ({
-    weight: shares / shareSum,
-    providerId: liquidities[i].userId,
-  }))
-
-  const includedWeights = excludeAntes
-    ? weights.filter((_, i) => !liquidities[i].isAnte)
-    : weights
-
-  const userWeights = groupBy(includedWeights, (w) => w.providerId)
-  const totalUserWeights = mapValues(userWeights, (userWeight) =>
-    sumBy(userWeight, (w) => w.weight)
+  return mapValues(
+    userAmounts,
+    (amounts) => sumBy(amounts, (w) => w.amount) / totalAmount
   )
-  return totalUserWeights
 }
 
 export function getUserLiquidityShares(
   userId: string,
   state: CpmmState,
-  liquidities: LiquidityProvision[],
-  excludeAntes: boolean
+  liquidities: LiquidityProvision[]
 ) {
-  const weights = getCpmmLiquidityPoolWeights(state, liquidities, excludeAntes)
+  const weights = getCpmmLiquidityPoolWeights(liquidities)
   const userWeight = weights[userId] ?? 0
 
   return mapValues(state.pool, (shares) => userWeight * shares)
