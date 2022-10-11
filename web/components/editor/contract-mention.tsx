@@ -8,6 +8,7 @@ import clsx from 'clsx'
 import { useContract } from 'web/hooks/use-contract'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import Link from 'next/link'
+import { contractMentionSuggestion } from './contract-mention-suggestion'
 
 const name = 'contract-mention-component'
 
@@ -42,4 +43,4 @@ export const DisplayContractMention = Mention.extend({
   parseHTML: () => [{ tag: name }],
   renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
   addNodeView: () => ReactNodeViewRenderer(ContractMentionComponent),
-})
+}).configure({ suggestion: contractMentionSuggestion })
