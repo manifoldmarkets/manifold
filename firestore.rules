@@ -44,6 +44,10 @@ service cloud.firestore {
       allow read;
     }
 
+    match /{somePath=**}/contract-metrics/{contractId} {
+      allow read;
+    }
+
     match /{somePath=**}/challenges/{challengeId}{
       allow read;
     }
