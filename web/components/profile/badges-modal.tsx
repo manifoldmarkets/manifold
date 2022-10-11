@@ -20,6 +20,7 @@ import {
   goldClassName,
   silverClassName,
 } from 'web/components/badge-display'
+import { formatMoney } from 'common/util/format'
 
 export function BadgesModal(props: {
   isOpen: boolean
@@ -132,7 +133,9 @@ function ProvenCorrectBadgeItem(props: {
       <Col className={'text-center'}>
         <Medal rarity={rarity} />
         <Tooltip
-          text={`Make a comment attached to a winning bet worth ${betAmount}`}
+          text={`Make a comment attached to a winning bet worth ${formatMoney(
+            betAmount
+          )}`}
         >
           <span
             className={
