@@ -20,7 +20,7 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 3. `$ firebase login` to authenticate the CLI tools to Firebase
 4. `$ firebase use dev` to choose the dev project
 
-### For local development
+#### (Installing) For local development
 
 0. [Install](https://cloud.google.com/sdk/docs/install) gcloud CLI
 1. If you don't have java (or see the error `Error: Process java -version has exited with code 1. Please make sure Java is installed and on your system PATH.`):
@@ -35,10 +35,10 @@ Adapted from https://firebase.google.com/docs/functions/get-started
 
 ## Developing locally
 
-0. `$ firebase use dev` if you haven't already
-1. `$ yarn serve` to spin up the emulators 0. The Emulator UI is at http://localhost:4000; the functions are hosted on :5001.
-   Note: You have to kill and restart emulators when you change code; no hot reload =(
-2. `$ yarn dev:emulate` in `/web` to connect to emulators with the frontend 0. Note: emulated database is cleared after every shutdown
+0. `$ ./dev.sh localdb` to start the local emulator and front end
+1. If you change db trigger code, you have to start (doesn't have to complete) the deploy of it to dev to cause a hard emulator code refresh `$ firebase deploy --only functions:dbTriggerNameHere`
+   - There's surely a better way to cause/react to a db trigger update but just adding this here for now as it works
+2. If you want to test a scheduled function replace your function in `test-scheduled-function.ts` and send a GET to `http://localhost:8088/testscheduledfunction` (Best user experience is via [Postman](https://www.postman.com/downloads/)!)
 
 ## Firestore Commands
 
