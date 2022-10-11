@@ -266,6 +266,8 @@ export const calculateMetricsByContract = (
   })
 }
 
+export type ContractMetrics = ReturnType<typeof calculateMetricsByContract>[number]
+
 const calculatePeriodProfit = (
   contract: CPMMBinaryContract,
   bets: Bet[],
