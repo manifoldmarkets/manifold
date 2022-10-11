@@ -9,7 +9,15 @@ import {
   RESOLUTIONS,
 } from '../../common/contract'
 import { Bet } from '../../common/bet'
-import { getContractPath, getUser, getValues, isProd, log, payUser, revalidateStaticProps } from './utils'
+import {
+  getContractPath,
+  getUser,
+  getValues,
+  isProd,
+  log,
+  payUser,
+  revalidateStaticProps,
+} from './utils'
 import {
   getLoanPayouts,
   getPayouts,
@@ -145,6 +153,7 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
       resolutions,
       collectedFees,
     }),
+    subsidyPool: 0,
   }
 
   await contractDoc.update(updatedContract)
