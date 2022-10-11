@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect } from 'react'
+import React, { ReactNode, useEffect, useState } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
@@ -42,7 +42,7 @@ import { filterDefined } from 'common/util/array'
 import { updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
-import { CPMMBinaryContract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import {
   useContractsByDailyScoreNotBetOn,
   useContractsByDailyScoreGroups,
@@ -52,6 +52,15 @@ import {
 import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Input } from 'web/components/input'
+import { PinnedItems } from 'web/components/groups/group-overview'
+import { getHomeConfig, updateHomeConfig } from 'web/lib/firebase/homeConfig'
+import { HomeConfig } from 'common/homeConfig'
+import { getAllPosts, getPost } from 'web/lib/firebase/posts'
+import { PostCard } from 'web/components/post-card'
+import { getContractFromId } from 'web/lib/firebase/contracts'
+import { ContractCard } from 'web/components/contract/contract-card'
+import { Post } from 'common/post'
+import { isAdmin } from 'common/envs/constants'
 
 export default function Home() {
   const user = useUser()
@@ -160,6 +169,7 @@ export default function Home() {
 }
 
 const HOME_SECTIONS = [
+  { label: 'Featured', id: 'featured' },
   { label: 'Daily trending', id: 'daily-trending' },
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
@@ -200,15 +210,28 @@ function renderSections(
     score: CPMMBinaryContract[]
   }
 ) {
+  type sectionTypes =
+    | 'daily-movers'
+    | 'daily-trending'
+    | 'newest'
+    | 'score'
+    | 'featured'
+
   return (
     <>
       {sections.map((s) => {
         const { id, label } = s as {
-          id: keyof typeof sectionContracts
+          id: sectionTypes
           label: string
         }
         if (id === 'daily-movers') {
           return <DailyMoversSection key={id} {...sectionContracts[id]} />
+        }
+
+        if (id === 'featured') {
+          // For now, only admins can see the featured section, until we all agree its ship-ready
+          if (!isAdmin) return <></>
+          return <FeaturedSection />
         }
 
         const contracts = sectionContracts[id]
@@ -320,6 +343,86 @@ function SearchSection(props: {
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
       />
       <ContractsGrid contracts={contracts} cardUIOptions={{ showProbChange }} />
+    </Col>
+  )
+}
+
+function FeaturedSection() {
+  const [pinned, setPinned] = useState<JSX.Element[]>([])
+  const [posts, setPosts] = useState<Post[]>([])
+  const [homeConfig, setHomeConfig] = useState<HomeConfig | undefined>(
+    undefined
+  )
+  useEffect(() => {
+    getHomeConfig().then(setHomeConfig)
+    getAllPosts().then(setPosts)
+  }, [])
+
+  useEffect(() => {
+    const pinnedItems = homeConfig?.pinnedItems
+
+    async function getPinned() {
+      if (pinnedItems == null) {
+        if (homeConfig != null) {
+          updateHomeConfig(homeConfig, { pinnedItems: [] })
+        }
+      } else {
+        const itemComponents = await Promise.all(
+          pinnedItems.map(async (element) => {
+            if (element.type === 'post') {
+              const post = await getPost(element.itemId)
+              if (post) {
+                return <PostCard post={post as Post} />
+              }
+            } else if (element.type === 'contract') {
+              const contract = await getContractFromId(element.itemId)
+              if (contract) {
+                return <ContractCard contract={contract as Contract} />
+              }
+            }
+          })
+        )
+        setPinned(
+          itemComponents.filter(
+            (element) => element != undefined
+          ) as JSX.Element[]
+        )
+      }
+    }
+    getPinned()
+  }, [homeConfig])
+
+  async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
+    if (homeConfig == null) return
+    await updateHomeConfig(homeConfig, {
+      pinnedItems: [
+        ...(homeConfig?.pinnedItems ?? []),
+        ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
+      ],
+    })
+    getHomeConfig().then(setHomeConfig)
+  }
+
+  function onDeleteClicked(index: number) {
+    if (homeConfig == null) return
+    const newPinned = homeConfig.pinnedItems.filter((item) => {
+      return item.itemId !== homeConfig.pinnedItems[index].itemId
+    })
+    updateHomeConfig(homeConfig, { pinnedItems: newPinned })
+    getHomeConfig().then(setHomeConfig)
+  }
+
+  return (
+    <Col>
+      <SectionHeader label={'Featured'} href={`#`} />
+      <PinnedItems
+        posts={posts}
+        isEditable={true}
+        pinned={pinned}
+        onDeleteClicked={onDeleteClicked}
+        onSubmit={onSubmit}
+        modalMessage={'Pin posts or markets to the overview of this group.'}
+      />
     </Col>
   )
 }

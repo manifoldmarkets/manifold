@@ -23,6 +23,12 @@ service cloud.firestore {
       allow read;
     }
 
+    match /homeConfig/homeConfig {
+      allow read;
+      allow update: if isAdmin()
+      allow create: if isAdmin()
+    }
+
     match /users/{userId} {
       allow read;
       allow update: if userId == request.auth.uid

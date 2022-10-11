@@ -231,7 +231,6 @@ export function PinnedItems(props: {
   return pinned.length > 0 || isEditable ? (
     <div>
       <Row className="mb-3 items-center justify-between">
-        <SectionHeader label={'Pinned'} />
         {isEditable && (
           <Button
             color="gray"
