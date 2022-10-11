@@ -6,6 +6,7 @@ import {
 } from '@tiptap/react'
 import clsx from 'clsx'
 import { Linkify } from '../linkify'
+import { mentionSuggestion } from './mention-suggestion'
 
 const name = 'mention-component'
 
@@ -27,4 +28,4 @@ export const DisplayMention = Mention.extend({
   renderHTML: ({ HTMLAttributes }) => [name, mergeAttributes(HTMLAttributes)],
   addNodeView: () =>
     ReactNodeViewRenderer(MentionComponent, { className: 'inline-block' }),
-})
+}).configure({ suggestion: mentionSuggestion })

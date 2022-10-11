@@ -8,7 +8,6 @@ import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
@@ -20,7 +19,6 @@ import NewContractBadge from '../new-contract-badge'
 import { MiniUserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
 import { useUser, useUserById } from 'web/hooks/use-user'
-import { exhibitExts } from 'common/util/parse'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -41,6 +39,7 @@ import {
   BountiedContractSmallBadge,
 } from 'web/components/contract/bountied-contract-badge'
 import { Input } from '../input'
+import { editorExtensions } from '../editor'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -421,7 +420,7 @@ function EditableCloseDate(props: {
       const content = contract.description
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
-      const editor = new Editor({ content, extensions: exhibitExts })
+      const editor = new Editor({ content, extensions: editorExtensions() })
       editor.commands.focus('end')
       insertContent(
         editor,
