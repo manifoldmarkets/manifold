@@ -17,6 +17,7 @@ const firestore = admin.firestore()
 async function main() {
   const users = await getAllUsers()
   // const users = filterDefined([await getUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')]) // dev ian
+  // const users = filterDefined([await getUser('uglwf3YKOZNGjjEXKc5HampOFRE2')]) // prod David
   // const users = filterDefined([await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')]) // prod ian
   await Promise.all(
     users.map(async (user) => {
@@ -37,6 +38,32 @@ async function main() {
 }
 
 if (require.main === module) main().then(() => process.exit())
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function removeErrorBadges(user: User) {
+  if (
+    user.achievements.streaker?.badges.some(
+      (b) => b.data.totalBettingStreak > 1
+    )
+  ) {
+    console.log(
+      `User ${
+        user.id
+      } has a streaker badge with streaks ${user.achievements.streaker?.badges.map(
+        (b) => b.data.totalBettingStreak
+      )}`
+    )
+    // delete non 1,50 streaks
+    user.achievements.streaker.badges =
+      user.achievements.streaker.badges.filter((b) =>
+        streakerBadgeRarityThresholds.includes(b.data.totalBettingStreak)
+      )
+    // update user
+    await firestore.collection('users').doc(user.id).update({
+      achievements: user.achievements,
+    })
+  }
+}
 
 async function awardMarketCreatorBadges(user: User) {
   // Award market maker badges
