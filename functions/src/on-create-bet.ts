@@ -326,7 +326,7 @@ async function handleBettingStreakBadgeAward(
   // TODO: check if already awarded 50th streak as well
   if (newBettingStreak === 1 && alreadyHasBadgeForFirstStreak) return
 
-  if (newBettingStreak in streakerBadgeRarityThresholds) {
+  if (streakerBadgeRarityThresholds.includes(newBettingStreak)) {
     const badge = {
       type: 'STREAKER',
       name: 'Streaker',

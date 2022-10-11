@@ -50,7 +50,7 @@ async function handleMarketCreatorBadgeAward(contractCreator: User) {
       .where('creatorId', '==', contractCreator.id)
       .where('resolution', '!=', 'CANCEL')
   )
-  if (contracts.length in marketCreatorBadgeRarityThresholds) {
+  if (marketCreatorBadgeRarityThresholds.includes(contracts.length)) {
     const badge = {
       type: 'MARKET_CREATOR',
       name: 'Market Creator',
