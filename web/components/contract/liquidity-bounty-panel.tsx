@@ -16,7 +16,8 @@ import { InfoTooltip } from 'web/components/info-tooltip'
 import { BETTORS, PRESENT_BET } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useAdmin } from 'web/hooks/use-admin'
-import { AddCommentBountyPanel } from 'web/components/contract/add-comment-bounty'
+import { AlertBox } from '../alert-box'
+import { Spacer } from '../layout/spacer'
 
 export function LiquidityBountyPanel(props: { contract: Contract }) {
   const { contract } = props
@@ -36,13 +37,11 @@ export function LiquidityBountyPanel(props: { contract: Contract }) {
   const isCreator = user?.id === contract.creatorId
   const isAdmin = useAdmin()
 
+  if (!isCreator && !isAdmin && !showWithdrawal) return <></>
+
   return (
     <Tabs
       tabs={buildArray(
-        {
-          title: 'Bounty Comments',
-          content: <AddCommentBountyPanel contract={contract} />,
-        },
         (isCreator || isAdmin) &&
           isCPMM && {
             title: (isAdmin ? '[Admin] ' : '') + 'Subsidize',
@@ -118,7 +117,7 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
       <div className="mb-4 text-gray-500">
         Contribute your M$ to make this market more accurate.{' '}
         <InfoTooltip
-          text={`More liquidity stabilizes the market, encouraging ${BETTORS} to ${PRESENT_BET}. You can withdraw your subsidy at any time.`}
+          text={`More liquidity stabilizes the market, encouraging ${BETTORS} to ${PRESENT_BET}.`}
         />
       </div>
 
@@ -145,6 +144,12 @@ function AddLiquidityPanel(props: { contract: CPMMContract }) {
       )}
 
       {isLoading && <div>Processing...</div>}
+
+      <Spacer h={2} />
+      <AlertBox
+        title="Withdrawals ending"
+        text="Manifold is moving to a new system for handling subsidization. As part of this process, liquidity withdrawals will be disabled shortly. Feel free to withdraw any outstanding liquidity you've added now."
+      />
     </>
   )
 }

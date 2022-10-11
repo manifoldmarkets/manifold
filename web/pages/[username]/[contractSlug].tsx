@@ -270,7 +270,11 @@ export function ContractPageContent(
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
-              <ContractTopTrades contract={contract} bets={bets} />
+              <ContractTopTrades
+                contract={contract}
+                bets={bets}
+                comments={comments}
+              />
             </div>
             <Spacer h={12} />
           </>

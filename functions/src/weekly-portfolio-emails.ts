@@ -112,13 +112,12 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       )
     )
   )
-  log('Found', contractsUsersBetOn.length, 'contracts')
-  let count = 0
   await Promise.all(
     privateUsersToSendEmailsTo.map(async (privateUser) => {
       const user = await getUser(privateUser.id)
       // Don't send to a user unless they're over 5 days old
-      if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
+      if (!user || user.createdTime > Date.now() - 5 * DAY_MS)
+        return await setEmailFlagAsSent(privateUser.id)
       const userBets = usersBets[privateUser.id] as Bet[]
       const contractsUserBetOn = contractsUsersBetOn.filter((contract) =>
         userBets.some((bet) => bet.contractId === contract.id)
@@ -219,13 +218,6 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         (differences) => Math.abs(differences.profit)
       ).reverse()
 
-      log(
-        'Found',
-        investmentValueDifferences.length,
-        'investment differences for user',
-        privateUser.id
-      )
-
       const [winningInvestments, losingInvestments] = partition(
         investmentValueDifferences.filter(
           (diff) => diff.pastValue > 0.01 && Math.abs(diff.profit) > 1
@@ -245,27 +237,26 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         usersToContractsCreated[privateUser.id].length === 0
       ) {
         log(
-          'No bets in last week, no market movers, no markets created. Not sending an email.'
+          `No bets in last week, no market movers, no markets created. Not sending an email to ${privateUser.email} .`
         )
-        await firestore.collection('private-users').doc(privateUser.id).update({
-          weeklyPortfolioUpdateEmailSent: true,
-        })
-        return
+        return await setEmailFlagAsSent(privateUser.id)
       }
+      // Set the flag beforehand just to be safe
+      await setEmailFlagAsSent(privateUser.id)
       await sendWeeklyPortfolioUpdateEmail(
         user,
         privateUser,
         topInvestments.concat(worstInvestments) as PerContractInvestmentsData[],
         performanceData
       )
-      await firestore.collection('private-users').doc(privateUser.id).update({
-        weeklyPortfolioUpdateEmailSent: true,
-      })
-      log('Sent weekly portfolio update email to', privateUser.email)
-      count++
-      log('sent out emails to users:', count)
     })
   )
+}
+
+async function setEmailFlagAsSent(privateUserId: string) {
+  await firestore.collection('private-users').doc(privateUserId).update({
+    weeklyPortfolioUpdateEmailSent: true,
+  })
 }
 
 export type PerContractInvestmentsData = {

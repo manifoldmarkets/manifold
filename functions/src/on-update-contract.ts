@@ -1,9 +1,19 @@
 import * as functions from 'firebase-functions'
-import { getUser } from './utils'
-import { createCommentOrAnswerOrUpdatedContractNotification } from './create-notification'
+import { getUser, getValues } from './utils'
+import {
+  createBadgeAwardedNotification,
+  createCommentOrAnswerOrUpdatedContractNotification,
+} from './create-notification'
 import { Contract } from '../../common/contract'
-import { GroupContractDoc } from '../../common/group'
+import { Bet } from '../../common/bet'
 import * as admin from 'firebase-admin'
+import { ContractComment } from '../../common/comment'
+import { scoreCommentorsAndBettors } from '../../common/scoring'
+import {
+  MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE,
+  ProvenCorrectBadge,
+} from '../../common/badge'
+import { GroupContractDoc } from '../../common/group'
 
 export const onUpdateContract = functions.firestore
   .document('contracts/{contractId}')
@@ -15,7 +25,7 @@ export const onUpdateContract = functions.firestore
 
     if (!previousContract.isResolved && contract.isResolved) {
       // No need to notify users of resolution, that's handled in resolve-market
-      return
+      return await handleResolvedContract(contract)
     } else if (previousContract.groupSlugs !== contract.groupSlugs) {
       await handleContractGroupUpdated(previousContract, contract)
     } else if (
@@ -25,6 +35,63 @@ export const onUpdateContract = functions.firestore
       await handleUpdatedCloseTime(previousContract, contract, eventId)
     }
   })
+
+async function handleResolvedContract(contract: Contract) {
+  if (
+    (contract.uniqueBettorCount ?? 0) <
+    MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE
+  )
+    return
+
+  // get all bets on this contract
+  const bets = await getValues<Bet>(
+    firestore.collection(`contracts/${contract.id}/bets`)
+  )
+
+  // get comments on this contract
+  const comments = await getValues<ContractComment>(
+    firestore.collection(`contracts/${contract.id}/comments`)
+  )
+
+  const { topCommentId, profitById, commentsById, betsById, topCommentBetId } =
+    scoreCommentorsAndBettors(contract, bets, comments)
+  if (topCommentBetId && profitById[topCommentBetId] > 0) {
+    // award proven correct badge to user
+    const comment = commentsById[topCommentId]
+    const bet = betsById[topCommentBetId]
+
+    const user = await getUser(comment.userId)
+    if (!user) return
+    const newProvenCorrectBadge = {
+      createdTime: Date.now(),
+      type: 'PROVEN_CORRECT',
+      name: 'Proven Correct',
+      data: {
+        contractSlug: contract.slug,
+        contractCreatorUsername: contract.creatorUsername,
+        commentId: comment.id,
+        betAmount: bet.amount,
+        contractTitle: contract.question,
+      },
+    } as ProvenCorrectBadge
+    // update user
+    await firestore
+      .collection('users')
+      .doc(user.id)
+      .update({
+        achievements: {
+          ...user.achievements,
+          provenCorrect: {
+            badges: [
+              ...(user.achievements?.provenCorrect?.badges ?? []),
+              newProvenCorrectBadge,
+            ],
+          },
+        },
+      })
+    await createBadgeAwardedNotification(user, newProvenCorrectBadge)
+  }
+}
 
 async function handleUpdatedCloseTime(
   previousContract: Contract,

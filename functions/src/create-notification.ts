@@ -6,7 +6,12 @@ import {
   Notification,
   notification_reason_types,
 } from '../../common/notification'
-import { User } from '../../common/user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+  User,
+} from '../../common/user'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
@@ -30,6 +35,7 @@ import {
 import { filterDefined } from '../../common/util/array'
 import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
+import { Badge } from 'common/badge'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
@@ -1087,6 +1093,43 @@ export const createBountyNotification = async (
     sourceTitle: contract.question,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
+}
 
-  // maybe TODO: send email notification to comment creator
+export const createBadgeAwardedNotification = async (
+  user: User,
+  badge: Badge
+) => {
+  const privateUser = await getPrivateUser(user.id)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'badges_awarded'
+  )
+  if (!sendToBrowser) return
+
+  const notificationRef = firestore
+    .collection(`/users/${user.id}/notifications`)
+    .doc()
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: user.id,
+    reason: 'badges_awarded',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: badge.type,
+    sourceType: 'badge',
+    sourceUpdateType: 'created',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: `You earned a new ${badge.name} badge!`,
+    sourceSlug: `/${user.username}?show=badges&badge=${badge.type}`,
+    sourceTitle: badge.name,
+    data: {
+      badge,
+    },
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+
+  // TODO send email notification
 }

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Spacer } from 'web/components/layout/spacer'
 import { Title } from 'web/components/title'
-import Textarea from 'react-expanding-textarea'
 
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { createPost } from 'web/lib/firebase/api'
@@ -10,6 +9,7 @@ import Router from 'next/router'
 import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { postPath } from 'web/lib/firebase/posts'
 import { Group } from 'common/group'
+import { ExpandingInput } from './expanding-input'
 
 export function CreatePost(props: { group?: Group }) {
   const [title, setTitle] = useState('')
@@ -62,9 +62,8 @@ export function CreatePost(props: { group?: Group }) {
                 Title<span className={'text-red-700'}> *</span>
               </span>
             </label>
-            <Textarea
+            <ExpandingInput
               placeholder="e.g. Elon Mania Post"
-              className="input input-bordered resize-none"
               autoFocus
               maxLength={MAX_POST_TITLE_LENGTH}
               value={title}
@@ -76,9 +75,8 @@ export function CreatePost(props: { group?: Group }) {
                 Subtitle<span className={'text-red-700'}> *</span>
               </span>
             </label>
-            <Textarea
+            <ExpandingInput
               placeholder="e.g. How Elon Musk is getting everyone's attention"
-              className="input input-bordered resize-none"
               autoFocus
               maxLength={MAX_POST_TITLE_LENGTH}
               value={subtitle}

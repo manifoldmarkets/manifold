@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import React from 'react'
 import { Col } from './layout/col'
 import { Spacer } from './layout/spacer'
+import { Input } from './input'
 
 export function NumberInput(props: {
   numberString: string
@@ -32,9 +33,9 @@ export function NumberInput(props: {
   return (
     <Col className={className}>
       <label className="input-group">
-        <input
+        <Input
           className={clsx(
-            'input input-bordered max-w-[200px] text-lg placeholder:text-gray-400',
+            'max-w-[200px] !text-lg',
             error && 'input-error',
             inputClassName
           )}
