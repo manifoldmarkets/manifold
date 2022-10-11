@@ -79,7 +79,7 @@ const Salem = {
 const tourneys: Tourney[] = [
   {
     title: 'Chinese Communist Party 20th National Party Congress',
-    blurb: "Forecast the outcome of the 20th National People's Congress.",
+    blurb: 'Forecast the outcome of the 20th National Party Congress.',
     award: 'US$200',
     endTime: toDate('Oct 20, 2022'),
     groupId: 'YfcYoy7TWbZtUOs0GLfq',
