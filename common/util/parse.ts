@@ -23,7 +23,7 @@ import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
 import TiptapTweet from './tiptap-tweet-type'
 import { find } from 'linkifyjs'
-import { cloneDeep, uniq } from 'lodash'
+import { uniq } from 'lodash'
 import { TiptapSpoiler } from './tiptap-spoiler'
 
 /** get first url in text. like "notion.so " -> "http://notion.so"; "notion" -> null */
