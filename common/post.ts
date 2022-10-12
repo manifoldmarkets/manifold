@@ -8,6 +8,10 @@ export type Post = {
   creatorId: string // User id
   createdTime: number
   slug: string
+
+  // denormalized user fields
+  creatorName: string
+  creatorUsername: string
 }
 
 export type DateDoc = Post & {

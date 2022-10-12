@@ -3,7 +3,6 @@ import { DocumentIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Post } from 'common/post'
 import Link from 'next/link'
-import { useUserById } from 'web/hooks/use-user'
 import { postPath } from 'web/lib/firebase/posts'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from './avatar'
@@ -17,12 +16,7 @@ export function PostCard(props: {
   highlightOptions?: CardHighlightOptions
 }) {
   const { post, onPostClick, highlightOptions } = props
-  const creatorId = post.creatorId
-
-  const user = useUserById(creatorId)
   const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
-
-  if (!user) return <> </>
 
   return (
     <div className="relative py-1">
@@ -33,14 +27,14 @@ export function PostCard(props: {
         )}
       >
         <div className="flex-shrink-0">
-          <Avatar className="h-12 w-12" username={user?.username} />
+          <Avatar className="h-12 w-12" username={post.creatorUsername} />
         </div>
         <div className="">
           <div className="text-sm text-gray-500">
             <UserLink
               className="text-neutral"
-              name={user?.name}
-              username={user?.username}
+              name={post.creatorName}
+              username={post.creatorUsername}
             />
             <span className="mx-1">•</span>
             <span className="text-gray-500">{fromNow(post.createdTime)}</span>
