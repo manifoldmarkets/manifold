@@ -12,6 +12,7 @@ export type Post = {
   // denormalized user fields
   creatorName: string
   creatorUsername: string
+  creatorAvatarUrl?: string
 }
 
 export type DateDoc = Post & {
