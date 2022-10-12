@@ -47,6 +47,7 @@ import { Modal } from './layout/modal'
 import { Title } from './title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
+import { Button } from './button'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -783,22 +784,18 @@ function LimitOrderPanel(props: {
       {(hasYesLimitBet || hasNoLimitBet) && <Spacer h={8} />}
 
       {user && (
-        <button
-          className={clsx(
-            'btn flex-1',
-            betDisabled
-              ? 'btn-disabled'
-              : betChoice === 'YES'
-              ? 'btn-primary'
-              : 'border-none bg-red-400 hover:bg-red-500',
-            isSubmitting ? 'loading' : ''
-          )}
+        <Button
+          size="xl"
+          disabled={betDisabled ? true : false}
+          color={'indigo'}
+          loading={isSubmitting}
+          className="flex-1"
           onClick={betDisabled ? undefined : submitBet}
         >
           {isSubmitting
             ? 'Submitting...'
             : `Submit order${hasTwoBets ? 's' : ''}`}
-        </button>
+        </Button>
       )}
     </Col>
   )
