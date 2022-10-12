@@ -56,7 +56,8 @@ export const getLiquidityPoolPayouts = (
   liquidities: LiquidityProvision[]
 ) => {
   const { pool, subsidyPool } = contract
-  const finalPool = pool[outcome] + subsidyPool
+  const finalPool = pool[outcome] + (subsidyPool ?? 0)
+  if (finalPool < 1e-3) return []
 
   const weights = getCpmmLiquidityPoolWeights(liquidities)
 
@@ -95,7 +96,8 @@ export const getLiquidityPoolProbPayouts = (
   liquidities: LiquidityProvision[]
 ) => {
   const { pool, subsidyPool } = contract
-  const finalPool = p * pool.YES + (1 - p) * pool.NO + subsidyPool
+  const finalPool = p * pool.YES + (1 - p) * pool.NO + (subsidyPool ?? 0)
+  if (finalPool < 1e-3) return []
 
   const weights = getCpmmLiquidityPoolWeights(liquidities)
 
