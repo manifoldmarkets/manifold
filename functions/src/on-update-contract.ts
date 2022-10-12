@@ -39,7 +39,8 @@ export const onUpdateContract = functions.firestore
 async function handleResolvedContract(contract: Contract) {
   if (
     (contract.uniqueBettorCount ?? 0) <
-    MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE
+      MINIMUM_UNIQUE_BETTORS_FOR_PROVEN_CORRECT_BADGE ||
+    contract.resolution === 'CANCEL'
   )
     return
 
