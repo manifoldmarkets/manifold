@@ -192,7 +192,6 @@ export type LiteUser = {
   avatarUrl?: string
 
   bio?: string
-  bannerUrl?: string
   website?: string
   twitterHandle?: string
   discordHandle?: string
@@ -223,7 +222,6 @@ export function toLiteUser(user: User): LiteUser {
     username,
     avatarUrl,
     bio,
-    bannerUrl,
     website,
     twitterHandle,
     discordHandle,
@@ -241,7 +239,6 @@ export function toLiteUser(user: User): LiteUser {
     url: `https://${ENV_CONFIG.domain}/${username}`,
     avatarUrl,
     bio,
-    bannerUrl,
     website,
     twitterHandle,
     discordHandle,

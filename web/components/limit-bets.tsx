@@ -140,12 +140,9 @@ function LimitBet(props: {
           {isCancelling ? (
             <LoadingIndicator />
           ) : (
-            <button
-              className="btn btn-xs btn-outline my-auto normal-case"
-              onClick={onCancel}
-            >
+            <Button size="2xs" color="gray-outline" onClick={onCancel}>
               Cancel
-            </button>
+            </Button>
           )}
         </td>
       )}

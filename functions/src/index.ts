@@ -9,7 +9,7 @@ export * from './on-create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-view'
-export { updateMetrics } from './update-metrics'
+export { scheduleUpdateMetrics } from './update-metrics'
 export * from './update-stats'
 export * from './update-loans'
 export * from './backup-db'
@@ -31,6 +31,7 @@ export * from './reset-weekly-emails-flags'
 export * from './on-update-contract-follow'
 export * from './on-update-like'
 export * from './weekly-portfolio-emails'
+export * from './drizzle-liquidity'
 
 // v2
 export * from './health'
@@ -44,8 +45,6 @@ export * from './sell-bet'
 export * from './sell-shares'
 export * from './claim-manalink'
 export * from './create-market'
-export * from './add-liquidity'
-export * from './withdraw-liquidity'
 export * from './create-group'
 export * from './resolve-market'
 export * from './unsubscribe'
@@ -53,6 +52,7 @@ export * from './stripe'
 export * from './mana-bonus-email'
 export * from './close-market'
 export * from './update-comment-bounty'
+export * from './add-subsidy'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -68,7 +68,6 @@ import { createmarket } from './create-market'
 import { addliquidity } from './add-liquidity'
 import { createcomment } from './create-comment'
 import { addcommentbounty, awardcommentbounty } from './update-comment-bounty'
-import { withdrawliquidity } from './withdraw-liquidity'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { closemarket } from './close-market'
@@ -79,6 +78,7 @@ import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { updatemetrics } from './update-metrics'
+import { addsubsidy } from './add-subsidy'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -94,11 +94,10 @@ const sellBetFunction = toCloudFunction(sellbet)
 const sellSharesFunction = toCloudFunction(sellshares)
 const claimManalinkFunction = toCloudFunction(claimmanalink)
 const createMarketFunction = toCloudFunction(createmarket)
-const addLiquidityFunction = toCloudFunction(addliquidity)
+const addSubsidyFunction = toCloudFunction(addsubsidy)
 const addCommentBounty = toCloudFunction(addcommentbounty)
 const createCommentFunction = toCloudFunction(createcomment)
 const awardCommentBounty = toCloudFunction(awardcommentbounty)
-const withdrawLiquidityFunction = toCloudFunction(withdrawliquidity)
 const createGroupFunction = toCloudFunction(creategroup)
 const resolveMarketFunction = toCloudFunction(resolvemarket)
 const closeMarketFunction = toCloudFunction(closemarket)
@@ -123,8 +122,7 @@ export {
   sellSharesFunction as sellshares,
   claimManalinkFunction as claimmanalink,
   createMarketFunction as createmarket,
-  addLiquidityFunction as addliquidity,
-  withdrawLiquidityFunction as withdrawliquidity,
+  addSubsidyFunction as addsubsidy,
   createGroupFunction as creategroup,
   resolveMarketFunction as resolvemarket,
   closeMarketFunction as closemarket,

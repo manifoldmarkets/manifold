@@ -10,6 +10,7 @@ import { formatPercent } from 'common/util/format'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
 import { Linkify } from '../linkify'
+import { Input } from '../input'
 
 export function AnswerItem(props: {
   answer: Answer
@@ -74,8 +75,8 @@ export function AnswerItem(props: {
       <Row className="items-center justify-end gap-4 self-end sm:self-start">
         {!wasResolvedTo &&
           (showChoice === 'checkbox' ? (
-            <input
-              className="input input-bordered w-24 justify-self-end text-2xl"
+            <Input
+              className="w-24 justify-self-end !text-2xl"
               type="number"
               placeholder={`${roundedProb}`}
               maxLength={9}
@@ -92,7 +93,7 @@ export function AnswerItem(props: {
             <div
               className={clsx(
                 'text-2xl',
-                tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+                tradingAllowed(contract) ? 'text-teal-500' : 'text-gray-500'
               )}
             >
               {probPercent}
@@ -143,7 +144,7 @@ export function AnswerItem(props: {
               <div
                 className={clsx(
                   'text-xl',
-                  resolution === 'MKT' ? 'text-blue-700' : 'text-green-700'
+                  resolution === 'MKT' ? 'text-blue-700' : 'text-teal-600'
                 )}
               >
                 Chosen{' '}

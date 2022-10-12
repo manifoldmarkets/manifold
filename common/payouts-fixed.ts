@@ -1,4 +1,3 @@
-
 import { Bet } from './bet'
 import { getProbability } from './calculate'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
@@ -56,10 +55,10 @@ export const getLiquidityPoolPayouts = (
   outcome: string,
   liquidities: LiquidityProvision[]
 ) => {
-  const { pool } = contract
-  const finalPool = pool[outcome]
+  const { pool, subsidyPool } = contract
+  const finalPool = pool[outcome] + subsidyPool
 
-  const weights = getCpmmLiquidityPoolWeights(contract, liquidities, false)
+  const weights = getCpmmLiquidityPoolWeights(liquidities)
 
   return Object.entries(weights).map(([providerId, weight]) => ({
     userId: providerId,
@@ -95,10 +94,10 @@ export const getLiquidityPoolProbPayouts = (
   p: number,
   liquidities: LiquidityProvision[]
 ) => {
-  const { pool } = contract
-  const finalPool = p * pool.YES + (1 - p) * pool.NO
+  const { pool, subsidyPool } = contract
+  const finalPool = p * pool.YES + (1 - p) * pool.NO + subsidyPool
 
-  const weights = getCpmmLiquidityPoolWeights(contract, liquidities, false)
+  const weights = getCpmmLiquidityPoolWeights(liquidities)
 
   return Object.entries(weights).map(([providerId, weight]) => ({
     userId: providerId,

@@ -7,7 +7,6 @@ import { capitalize } from 'lodash'
 import { Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
-import { LiquidityBountyPanel } from 'web/components/contract/liquidity-bounty-panel'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../title'
@@ -21,6 +20,7 @@ import { DuplicateContractButton } from '../duplicate-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
 import { Button } from '../button'
+import { AddLiquidityButton } from './add-liquidity-button'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -55,6 +55,7 @@ export function ContractInfoDialog(props: {
     outcomeType,
     id,
     elasticity,
+    pool,
   } = contract
 
   const typeDisplay =
@@ -172,10 +173,25 @@ export function ContractInfoDialog(props: {
               </tr>
 
               <tr>
+                <td>Liquidity subsidies</td>
                 <td>
-                  {mechanism === 'cpmm-1' ? 'Liquidity pool' : 'Betting pool'}
+                  {mechanism === 'cpmm-1'
+                    ? formatMoney(contract.totalLiquidity)
+                    : formatMoney(100)}
                 </td>
-                <td>{contractPool(contract)}</td>
+              </tr>
+
+              <tr>
+                <td>Pool</td>
+                <td>
+                  {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
+                    ? `${Math.round(pool.YES)} YES, ${Math.round(pool.NO)} NO`
+                    : mechanism === 'cpmm-1' && outcomeType === 'PSEUDO_NUMERIC'
+                    ? `${Math.round(pool.YES)} HIGHER, ${Math.round(
+                        pool.NO
+                      )} LOWER`
+                    : contractPool(contract)}
+                </td>
               </tr>
 
               {/* Show a path to Firebase if user is an admin, or we're on localhost */}
@@ -226,9 +242,11 @@ export function ContractInfoDialog(props: {
           </table>
 
           <Row className="flex-wrap">
+            {mechanism === 'cpmm-1' && (
+              <AddLiquidityButton contract={contract} className="mr-2" />
+            )}
             <DuplicateContractButton contract={contract} />
           </Row>
-          {!contract.resolution && <LiquidityBountyPanel contract={contract} />}
         </Col>
       </Modal>
     </>

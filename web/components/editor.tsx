@@ -8,20 +8,21 @@ import {
   Content,
   Editor,
   mergeAttributes,
+  Extensions,
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { linkClass } from './site-link'
-import { mentionSuggestion } from './editor/mention-suggestion'
 import { DisplayMention } from './editor/mention'
-import { contractMentionSuggestion } from './editor/contract-mention-suggestion'
 import { DisplayContractMention } from './editor/contract-mention'
+import GridComponent from './editor/tiptap-grid-cards'
+
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
 import { EmbedModal } from './editor/embed-modal'
@@ -42,6 +43,12 @@ import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 import { ImageModal } from './editor/image-modal'
+import {
+  storageStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { debounce } from 'lodash'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -64,6 +71,23 @@ const DisplayLink = Link.extend({
   },
 })
 
+export const editorExtensions = (simple = false): Extensions => [
+  StarterKit.configure({
+    heading: simple ? false : { levels: [1, 2, 3] },
+    horizontalRule: simple ? false : {},
+  }),
+  simple ? DisplayImage : Image,
+  DisplayLink,
+  DisplayMention,
+  DisplayContractMention,
+  GridComponent,
+  Iframe,
+  TiptapTweet,
+  TiptapSpoiler.configure({
+    spoilerOpenClass: 'rounded-sm bg-greyscale-2',
+  }),
+]
+
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
   'font-light prose-a:font-light prose-blockquote:font-light'
@@ -75,45 +99,44 @@ export function useTextEditor(props: {
   defaultValue?: Content
   disabled?: boolean
   simple?: boolean
+  key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
 }) {
-  const { placeholder, max, defaultValue = '', disabled, simple } = props
+  const { placeholder, max, defaultValue, disabled, simple, key } = props
+
+  const [content, saveContent] = usePersistentState<JSONContent | undefined>(
+    undefined,
+    {
+      key: `text ${key}`,
+      store: storageStore(safeLocalStorage()),
+    }
+  )
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
     proseClass,
     !simple && 'min-h-[6em]',
     'outline-none pt-2 px-4',
     'prose-img:select-auto',
-    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, emebeds
+    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, embeds
   )
 
   const editor = useEditor({
-    editorProps: { attributes: { class: editorClass } },
+    editorProps: {
+      attributes: { class: editorClass, spellcheck: simple ? 'true' : 'false' },
+    },
+    onUpdate: key ? ({ editor }) => save(editor.getJSON()) : undefined,
     extensions: [
-      StarterKit.configure({
-        heading: simple ? false : { levels: [1, 2, 3] },
-        horizontalRule: simple ? false : {},
-      }),
+      ...editorExtensions(simple),
       Placeholder.configure({
         placeholder,
         emptyEditorClass:
           'before:content-[attr(data-placeholder)] before:text-slate-500 before:float-left before:h-0 cursor-text',
       }),
       CharacterCount.configure({ limit: max }),
-      simple ? DisplayImage : Image,
-      DisplayLink,
-      DisplayMention.configure({
-        suggestion: mentionSuggestion,
-      }),
-      DisplayContractMention.configure({
-        suggestion: contractMentionSuggestion,
-      }),
-      Iframe,
-      TiptapTweet,
-      TiptapSpoiler.configure({
-        spoilerOpenClass: 'rounded-sm bg-greyscale-2',
-      }),
     ],
-    content: defaultValue,
+    content: defaultValue ?? (key && content ? content : ''),
   })
 
   const upload = useUploadMutation(editor)
@@ -342,10 +365,8 @@ export function RichContent(props: {
       smallImage ? DisplayImage : Image,
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
-      DisplayContractMention.configure({
-        // Needed to set a different PluginKey for Prosemirror
-        suggestion: contractMentionSuggestion,
-      }),
+      DisplayContractMention,
+      GridComponent,
       Iframe,
       TiptapTweet,
       TiptapSpoiler.configure({

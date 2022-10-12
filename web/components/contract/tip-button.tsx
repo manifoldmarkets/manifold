@@ -1,7 +1,8 @@
-import { HeartIcon } from '@heroicons/react/outline'
-import { Button } from 'web/components/button'
-import { formatMoney } from 'common/util/format'
 import clsx from 'clsx'
+import { HeartIcon } from '@heroicons/react/outline'
+
+import { Button } from 'web/components/button'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../tooltip'
 
@@ -16,9 +17,15 @@ export function TipButton(props: {
   const { tipAmount, totalTipped, userTipped, isCompact, onClick, disabled } =
     props
 
+  const tipDisplay = shortFormatNumber(Math.ceil(totalTipped / 10))
+
   return (
     <Tooltip
-      text={disabled ? 'Tips' : `Tip ${formatMoney(tipAmount)}`}
+      text={
+        disabled
+          ? `Tips (${formatMoney(totalTipped)})`
+          : `Tip ${formatMoney(tipAmount)}`
+      }
       placement="bottom"
       noTap
       noFade
@@ -39,19 +46,19 @@ export function TipButton(props: {
             className={clsx(
               'h-5 w-5 sm:h-6 sm:w-6',
               totalTipped > 0 ? 'mr-2' : '',
-              userTipped ? 'fill-green-700 text-green-700' : ''
+              userTipped ? 'fill-teal-500 text-teal-500' : ''
             )}
           />
           {totalTipped > 0 && (
             <div
               className={clsx(
                 'bg-greyscale-5 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
-                totalTipped > 99
+                tipDisplay.length > 2
                   ? 'text-[0.4rem] sm:text-[0.5rem]'
                   : 'sm:text-2xs text-[0.5rem]'
               )}
             >
-              {totalTipped}
+              {tipDisplay}
             </div>
           )}
         </Col>

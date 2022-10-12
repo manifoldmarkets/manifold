@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect } from 'react'
+import React, { ReactNode, useEffect, useState } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
@@ -19,19 +19,22 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { SiteLink } from 'web/components/site-link'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import {
+  usePrivateUser,
+  useUser,
+  useUserContractMetricsByProfit,
+} from 'web/hooks/use-user'
 import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
 import { Button } from 'web/components/button'
 import { Row } from 'web/components/layout/row'
-import { ProbChangeTable } from 'web/components/contract/prob-change-table'
+import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
-import { useProbChanges } from 'web/hooks/use-prob-changes'
-import { calculatePortfolioProfit } from 'common/calculate-metrics'
+import { ContractMetrics } from 'common/calculate-metrics'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -39,7 +42,7 @@ import { filterDefined } from 'common/util/array'
 import { updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
-import { CPMMBinaryContract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import {
   useContractsByDailyScoreNotBetOn,
   useContractsByDailyScoreGroups,
@@ -48,9 +51,23 @@ import {
 } from 'web/hooks/use-contracts'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
+import { Input } from 'web/components/input'
+import { PinnedItems } from 'web/components/groups/group-overview'
+import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
+import { getPost } from 'web/lib/firebase/posts'
+import { PostCard } from 'web/components/post-card'
+import { getContractFromId } from 'web/lib/firebase/contracts'
+import { ContractCard } from 'web/components/contract/contract-card'
+import { Post } from 'common/post'
+import { useAllPosts } from 'web/hooks/use-post'
+import { useGlobalConfig } from 'web/hooks/use-global-config'
+import { useAdmin } from 'web/hooks/use-admin'
+import { GlobalConfig } from 'common/globalConfig'
 
 export default function Home() {
   const user = useUser()
+  const isAdmin = useAdmin()
+  const globalConfig = useGlobalConfig()
 
   useTracking('view home')
 
@@ -73,7 +90,11 @@ export default function Home() {
     }
   }, [user, sections])
 
-  const dailyMovers = useProbChanges({ bettorId: user?.id })
+  const contractMetricsByProfit = useUserContractMetricsByProfit(
+    user?.id ?? '_',
+    3
+  )
+
   const trendingContracts = useTrendingContracts(6)
   const newContracts = useNewContracts(6)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
@@ -84,12 +105,50 @@ export default function Home() {
     groups?.map((g) => g.slug)
   )
 
+  const [pinned, setPinned] = useState<JSX.Element[] | null>(null)
+
+  useEffect(() => {
+    const pinnedItems = globalConfig?.pinnedItems
+
+    async function getPinned() {
+      if (pinnedItems == null) {
+        if (globalConfig != null) {
+          updateGlobalConfig(globalConfig, { pinnedItems: [] })
+        }
+      } else {
+        const itemComponents = await Promise.all(
+          pinnedItems.map(async (element) => {
+            if (element.type === 'post') {
+              const post = await getPost(element.itemId)
+              if (post) {
+                return <PostCard post={post as Post} />
+              }
+            } else if (element.type === 'contract') {
+              const contract = await getContractFromId(element.itemId)
+              if (contract) {
+                return <ContractCard contract={contract as Contract} />
+              }
+            }
+          })
+        )
+        setPinned(
+          itemComponents.filter(
+            (element) => element != undefined
+          ) as JSX.Element[]
+        )
+      }
+    }
+    getPinned()
+  }, [globalConfig])
+
   const isLoading =
     !user ||
-    !dailyMovers ||
+    !contractMetricsByProfit ||
     !trendingContracts ||
     !newContracts ||
-    !dailyTrendingContracts
+    !dailyTrendingContracts ||
+    !globalConfig ||
+    !pinned
 
   return (
     <Page>
@@ -99,10 +158,10 @@ export default function Home() {
         <Row
           className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
         >
-          <input
+          <Input
             type="text"
             placeholder={'Search'}
-            className="input input-bordered w-full"
+            className="w-full"
             onClick={() => Router.push('/search')}
           />
           <CustomizeButton justIcon />
@@ -113,12 +172,18 @@ export default function Home() {
           <LoadingIndicator />
         ) : (
           <>
-            {renderSections(sections, {
-              score: trendingContracts,
-              newest: newContracts,
-              'daily-trending': dailyTrendingContracts,
-              'daily-movers': dailyMovers,
-            })}
+            {renderSections(
+              sections,
+              {
+                score: trendingContracts,
+                newest: newContracts,
+                'daily-trending': dailyTrendingContracts,
+                'daily-movers': contractMetricsByProfit,
+              },
+              isAdmin,
+              globalConfig,
+              pinned
+            )}
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -152,11 +217,12 @@ export default function Home() {
 }
 
 const HOME_SECTIONS = [
+  { label: 'Featured', id: 'featured' },
   { label: 'Daily trending', id: 'daily-trending' },
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
-]
+] as const
 
 export const getHomeItems = (sections: string[]) => {
   // Accommodate old home sections.
@@ -183,22 +249,39 @@ export const getHomeItems = (sections: string[]) => {
 function renderSections(
   sections: { id: string; label: string }[],
   sectionContracts: {
-    'daily-movers': CPMMBinaryContract[]
+    'daily-movers': {
+      contracts: CPMMBinaryContract[]
+      metrics: ContractMetrics[]
+    }
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
-  }
+  },
+  isAdmin: boolean,
+  globalConfig: GlobalConfig,
+  pinned: JSX.Element[]
 ) {
+  type sectionTypes = typeof HOME_SECTIONS[number]['id']
+
   return (
     <>
       {sections.map((s) => {
-        const { id, label } = s
-        const contracts =
-          sectionContracts[s.id as keyof typeof sectionContracts]
-
-        if (id === 'daily-movers') {
-          return <DailyMoversSection key={id} contracts={contracts} />
+        const { id, label } = s as {
+          id: sectionTypes
+          label: string
         }
+        if (id === 'daily-movers') {
+          return <DailyMoversSection key={id} {...sectionContracts[id]} />
+        }
+
+        if (id === 'featured') {
+          // For now, only admins can see the featured section, until we all agree its ship-ready
+          if (!isAdmin) return <></>
+          return <FeaturedSection globalConfig={globalConfig} pinned={pinned} />
+        }
+
+        const contracts = sectionContracts[id]
+
         if (id === 'daily-trending') {
           return (
             <SearchSection
@@ -310,6 +393,45 @@ function SearchSection(props: {
   )
 }
 
+function FeaturedSection(props: {
+  globalConfig: GlobalConfig
+  pinned: JSX.Element[]
+}) {
+  const { globalConfig, pinned } = props
+  const posts = useAllPosts()
+
+  async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
+    if (globalConfig == null) return
+    await updateGlobalConfig(globalConfig, {
+      pinnedItems: [
+        ...(globalConfig?.pinnedItems ?? []),
+        ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
+      ],
+    })
+  }
+
+  function onDeleteClicked(index: number) {
+    if (globalConfig == null) return
+    const newPinned = globalConfig.pinnedItems.filter((item) => {
+      return item.itemId !== globalConfig.pinnedItems[index].itemId
+    })
+    updateGlobalConfig(globalConfig, { pinnedItems: newPinned })
+  }
+
+  return (
+    <Col>
+      <PinnedItems
+        posts={posts}
+        isEditable={true}
+        pinned={pinned}
+        onDeleteClicked={onDeleteClicked}
+        onSubmit={onSubmit}
+        modalMessage={'Pin posts or markets to the overview of this group.'}
+      />
+    </Col>
+  )
+}
+
 function GroupSection(props: {
   group: Group
   user: User
@@ -346,58 +468,39 @@ function GroupSection(props: {
   )
 }
 
-function DailyMoversSection(props: { contracts: CPMMBinaryContract[] }) {
-  const { contracts } = props
+function DailyMoversSection(props: {
+  contracts: CPMMBinaryContract[]
+  metrics: ContractMetrics[]
+}) {
+  const { contracts, metrics } = props
 
-  const changes = contracts.filter((c) => Math.abs(c.probChanges.day) >= 0.01)
-
-  if (changes.length === 0) {
+  if (contracts.length === 0) {
     return null
   }
 
   return (
     <Col className="gap-2">
       <SectionHeader label="Daily movers" href="/daily-movers" />
-      <ProbChangeTable changes={changes} />
+      <ProfitChangeTable contracts={contracts} metrics={metrics} />
     </Col>
   )
 }
 
-function DailyStats(props: {
-  user: User | null | undefined
-  className?: string
-}) {
-  const { user, className } = props
-
-  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
-  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
+function DailyStats(props: { user: User | null | undefined }) {
+  const { user } = props
 
   const privateUser = usePrivateUser()
   const streaks = privateUser?.notificationPreferences?.betting_streaks ?? []
   const streaksHidden = streaks.length === 0
 
-  let profit = 0
-  let profitPercent = 0
-  if (first && last) {
-    profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-    profitPercent = profit / first.investmentValue
-  }
-
   return (
     <Row className={'flex-shrink-0 gap-4'}>
-      <Col>
-        <div className="text-gray-500">Daily profit</div>
-        <Row className={clsx(className, 'items-center text-lg')}>
-          <span>{formatMoney(profit)}</span>{' '}
-          <ProfitBadge profitPercent={profitPercent * 100} />
-        </Row>
-      </Col>
+      <DailyProfit user={user} />
       {!streaksHidden && (
         <Col>
           <div className="text-gray-500">Streak</div>
           <Row
             className={clsx(
-              className,
               'items-center text-lg',
               user && !hasCompletedStreakToday(user) && 'grayscale'
             )}
@@ -407,6 +510,39 @@ function DailyStats(props: {
         </Col>
       )}
     </Row>
+  )
+}
+
+export function DailyProfit(props: { user: User | null | undefined }) {
+  const { user } = props
+
+  const contractMetricsByProfit = useUserContractMetricsByProfit(
+    user?.id ?? '_',
+    100
+  )
+  const profit = sum(
+    contractMetricsByProfit?.metrics.map((m) =>
+      m.from ? m.from.day.profit : 0
+    ) ?? []
+  )
+
+  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
+  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
+
+  let profitPercent = 0
+  if (first && last) {
+    // profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
+    profitPercent = profit / first.investmentValue
+  }
+
+  return (
+    <SiteLink className="flex flex-col" href="/daily-movers">
+      <div className="text-gray-500">Daily profit</div>
+      <Row className="items-center text-lg">
+        <span>{formatMoney(profit)}</span>{' '}
+        <ProfitBadge profitPercent={profitPercent * 100} />
+      </Row>
+    </SiteLink>
   )
 }
 

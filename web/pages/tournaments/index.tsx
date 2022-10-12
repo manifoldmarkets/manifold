@@ -78,6 +78,14 @@ const Salem = {
 
 const tourneys: Tourney[] = [
   {
+    title: 'CCP 20th National Party Congress',
+    blurb:
+      "Forecast the outcome of the Chinese Communist Party's 20th National Party Congress.",
+    award: 'US$200',
+    endTime: toDate('Oct 20, 2022'),
+    groupId: 'YfcYoy7TWbZtUOs0GLfq',
+  },
+  {
     title: 'Fantasy Football Stock Exchange',
     blurb: 'How many points will each NFL player score this season?',
     award: 'US$2,500',
@@ -170,16 +178,6 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
           <Title text="🏆 Manifold tournaments" />
           <div>{description}</div>
         </Col>
-        <div>
-          <SectionHeader
-            url={Salem.url}
-            title={Salem.title}
-            award={Salem.award}
-            endTime={Salem.endTime}
-          />
-          <span className="text-gray-500">{Salem.blurb}</span>
-          <ImageCarousel url={Salem.url} images={Salem.images} />
-        </div>
 
         {sections.map(
           ({ tourney, slug, numPeople }) =>
@@ -198,6 +196,17 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
               </div>
             )
         )}
+        {/* Salem center */}
+        <div>
+          <SectionHeader
+            url={Salem.url}
+            title={Salem.title}
+            award={Salem.award}
+            endTime={Salem.endTime}
+          />
+          <span className="text-gray-500">{Salem.blurb}</span>
+          <ImageCarousel url={Salem.url} images={Salem.images} />
+        </div>
 
         {/* Title break */}
         <div className="relative">

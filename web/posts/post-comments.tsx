@@ -94,6 +94,7 @@ export function PostCommentInput(props: {
       replyTo={replyToUser}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
+      pageId={post.id}
     />
   )
 }

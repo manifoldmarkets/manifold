@@ -7,12 +7,13 @@ import { User } from 'common/user'
 import { ManalinkCard, ManalinkInfo } from 'web/components/manalink-card'
 import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
-import Textarea from 'react-expanding-textarea'
 import dayjs from 'dayjs'
 import { Button } from '../button'
 import { getManalinkUrl } from 'web/pages/links'
 import { DuplicateIcon } from '@heroicons/react/outline'
 import { QRCode } from '../qr-code'
+import { Input } from '../input'
+import { ExpandingInput } from '../expanding-input'
 
 export function CreateLinksButton(props: {
   user: User
@@ -120,8 +121,8 @@ function CreateManalinkForm(props: {
                 <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
                   M$
                 </span>
-                <input
-                  className="input input-bordered w-full pl-10"
+                <Input
+                  className="w-full pl-10"
                   type="number"
                   min="1"
                   value={newManalink.amount}
@@ -136,8 +137,7 @@ function CreateManalinkForm(props: {
             <div className="flex flex-col gap-2 md:flex-row">
               <div className="form-control w-full md:w-1/2">
                 <label className="label">Uses</label>
-                <input
-                  className="input input-bordered"
+                <Input
                   type="number"
                   min="1"
                   value={newManalink.maxUses ?? ''}
@@ -146,7 +146,7 @@ function CreateManalinkForm(props: {
                       return { ...m, maxUses: parseInt(e.target.value) }
                     })
                   }
-                ></input>
+                />
               </div>
               <div className="form-control w-full md:w-1/2">
                 <label className="label">Expires in</label>
@@ -165,10 +165,9 @@ function CreateManalinkForm(props: {
             </div>
             <div className="form-control w-full">
               <label className="label">Message</label>
-              <Textarea
+              <ExpandingInput
                 placeholder={defaultMessage}
                 maxLength={200}
-                className="input input-bordered resize-none"
                 autoFocus
                 value={newManalink.message}
                 rows="3"

@@ -156,7 +156,7 @@ function getMoreDesktopNavigation(user?: User | null) {
   return buildArray(
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Groups', href: '/groups' },
-    { name: 'Referrals', href: '/referrals' },
+    { name: 'Refer a friend', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
@@ -215,7 +215,7 @@ function getMoreMobileNav() {
 
   return buildArray<MenuItem>(
     { name: 'Groups', href: '/groups' },
-    { name: 'Referrals', href: '/referrals' },
+    { name: 'Refer a friend', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },

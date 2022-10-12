@@ -81,6 +81,7 @@ export function ContractsGrid(props: {
             <ContractCardProbChange
               key={contract.id}
               contract={contract as CPMMBinaryContract}
+              showPosition
             />
           ) : (
             <ContractCard

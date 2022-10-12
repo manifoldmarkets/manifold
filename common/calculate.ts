@@ -178,6 +178,8 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
+export type ContractBetMetrics = ReturnType<typeof getContractBetMetrics>
+
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
   const isCpmm = contract.mechanism === 'cpmm-1'
@@ -215,7 +217,7 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   }
 
   const profit = payout + saleValue + redeemed - totalInvested
-  const profitPercent = (profit / totalInvested) * 100
+  const profitPercent = totalInvested === 0 ? 0 : (profit / totalInvested) * 100
 
   const invested = isCpmm ? getCpmmInvested(yourBets) : getDpmInvested(yourBets)
   const hasShares = Object.values(totalShares).some(

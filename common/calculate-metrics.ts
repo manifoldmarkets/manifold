@@ -1,11 +1,17 @@
-import { last, sortBy, sum, sumBy, uniq } from 'lodash'
-import { calculatePayout } from './calculate'
+import { Dictionary, groupBy, last, partition, sum, sumBy, uniq } from 'lodash'
+import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
-import { Contract, CPMMContract, DPMContract } from './contract'
+import {
+  Contract,
+  CPMMBinaryContract,
+  CPMMContract,
+  DPMContract,
+} from './contract'
 import { PortfolioMetrics, User } from './user'
 import { DAY_MS } from './util/time'
 import { getBinaryCpmmBetInfo, getNewMultiBetInfo } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
+import { removeUndefinedProps } from './util/object'
 
 const computeInvestmentValue = (
   bets: Bet[],
@@ -35,8 +41,7 @@ export const computeInvestmentValueCustomProb = (
 
     const betP = outcome === 'YES' ? p : 1 - p
 
-    const payout = betP * shares
-    const value = payout - (bet.loanAmount ?? 0)
+    const value = betP * shares
     if (isNaN(value)) return 0
     return value
   })
@@ -97,7 +102,11 @@ export const computeBinaryCpmmElasticity = (
   )
   const resultNo = getCpmmProbability(poolN, pN)
 
-  return resultYes - resultNo
+  // handle AMM overflow
+  const safeYes = Number.isFinite(resultYes) ? resultYes : 1
+  const safeNo = Number.isFinite(resultNo) ? resultNo : 0
+
+  return safeYes - safeNo
 }
 
 export const computeDpmElasticity = (
@@ -190,14 +199,9 @@ export const calculateNewPortfolioMetrics = (
 }
 
 const calculateProfitForPeriod = (
-  startTime: number,
-  descendingPortfolio: PortfolioMetrics[],
+  startingPortfolio: PortfolioMetrics | undefined,
   currentProfit: number
 ) => {
-  const startingPortfolio = descendingPortfolio.find(
-    (p) => p.timestamp < startTime
-  )
-
   if (startingPortfolio === undefined) {
     return currentProfit
   }
@@ -212,33 +216,100 @@ export const calculatePortfolioProfit = (portfolio: PortfolioMetrics) => {
 }
 
 export const calculateNewProfit = (
-  portfolioHistory: PortfolioMetrics[],
+  portfolioHistory: Record<
+    'current' | 'day' | 'week' | 'month',
+    PortfolioMetrics | undefined
+  >,
   newPortfolio: PortfolioMetrics
 ) => {
   const allTimeProfit = calculatePortfolioProfit(newPortfolio)
-  const descendingPortfolio = sortBy(
-    portfolioHistory,
-    (p) => p.timestamp
-  ).reverse()
 
   const newProfit = {
-    daily: calculateProfitForPeriod(
-      Date.now() - 1 * DAY_MS,
-      descendingPortfolio,
-      allTimeProfit
-    ),
-    weekly: calculateProfitForPeriod(
-      Date.now() - 7 * DAY_MS,
-      descendingPortfolio,
-      allTimeProfit
-    ),
-    monthly: calculateProfitForPeriod(
-      Date.now() - 30 * DAY_MS,
-      descendingPortfolio,
-      allTimeProfit
-    ),
+    daily: calculateProfitForPeriod(portfolioHistory.day, allTimeProfit),
+    weekly: calculateProfitForPeriod(portfolioHistory.week, allTimeProfit),
+    monthly: calculateProfitForPeriod(portfolioHistory.month, allTimeProfit),
     allTime: allTimeProfit,
   }
 
   return newProfit
+}
+
+export const calculateMetricsByContract = (
+  bets: Bet[],
+  contractsById: Dictionary<Contract>
+) => {
+  const betsByContract = groupBy(bets, (bet) => bet.contractId)
+  const unresolvedContracts = Object.keys(betsByContract)
+    .map((cid) => contractsById[cid])
+    .filter((c) => c && !c.isResolved)
+
+  return unresolvedContracts.map((c) => {
+    const bets = betsByContract[c.id] ?? []
+    const current = getContractBetMetrics(c, bets)
+
+    let periodMetrics
+    if (c.mechanism === 'cpmm-1' && c.outcomeType === 'BINARY') {
+      const periods = ['day', 'week', 'month'] as const
+      periodMetrics = Object.fromEntries(
+        periods.map((period) => [
+          period,
+          calculatePeriodProfit(c, bets, period),
+        ])
+      )
+    }
+
+    return removeUndefinedProps({
+      contractId: c.id,
+      ...current,
+      from: periodMetrics,
+    })
+  })
+}
+
+export type ContractMetrics = ReturnType<
+  typeof calculateMetricsByContract
+>[number]
+
+const calculatePeriodProfit = (
+  contract: CPMMBinaryContract,
+  bets: Bet[],
+  period: 'day' | 'week' | 'month'
+) => {
+  const days = period === 'day' ? 1 : period === 'week' ? 7 : 30
+  const fromTime = Date.now() - days * DAY_MS
+  const [previousBets, recentBets] = partition(
+    bets,
+    (b) => b.createdTime < fromTime
+  )
+
+  const prevProb = contract.prob - contract.probChanges[period]
+  const prob = contract.resolutionProbability
+    ? contract.resolutionProbability
+    : contract.prob
+
+  const previousBetsValue = computeInvestmentValueCustomProb(
+    previousBets,
+    contract,
+    prevProb
+  )
+  const currentBetsValue = computeInvestmentValueCustomProb(
+    previousBets,
+    contract,
+    prob
+  )
+
+  const { profit: recentProfit, invested: recentInvested } =
+    getContractBetMetrics(contract, recentBets)
+
+  const profit = currentBetsValue - previousBetsValue + recentProfit
+  const invested = previousBetsValue + recentInvested
+  const profitPercent = invested === 0 ? 0 : 100 * (profit / invested)
+
+  return {
+    profit,
+    profitPercent,
+    invested,
+    prevValue: previousBetsValue,
+    value: currentBetsValue,
+  }
 }

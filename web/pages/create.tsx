@@ -2,7 +2,6 @@ import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
-import Textarea from 'react-expanding-textarea'
 import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
@@ -23,7 +22,6 @@ import { ChoicesToggleGroup } from 'web/components/choices-toggle-group'
 import { getGroup, groupPath } from 'web/lib/firebase/groups'
 import { Group } from 'common/group'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useWarnUnsavedChanges } from 'web/hooks/use-warn-unsaved-changes'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
@@ -39,6 +37,8 @@ import { SiteLink } from 'web/components/site-link'
 import { Button } from 'web/components/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
+import { Input } from 'web/components/input'
+import { ExpandingInput } from 'web/components/expanding-input'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -104,9 +104,8 @@ export default function Create(props: { auth: { user: User } }) {
                 </span>
               </label>
 
-              <Textarea
+              <ExpandingInput
                 placeholder="e.g. Will the Democrats win the 2024 US presidential election?"
-                className="input input-bordered resize-none"
                 autoFocus
                 maxLength={MAX_QUESTION_LENGTH}
                 value={question}
@@ -228,6 +227,7 @@ export function NewContract(props: {
       : `e.g. I will choose the answer according to...`
 
   const { editor, upload } = useTextEditor({
+    key: 'create market',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
     disabled: isSubmitting,
@@ -235,9 +235,6 @@ export function NewContract(props: {
       ? JSON.parse(params.description)
       : undefined,
   })
-
-  const isEditorFilled = editor != null && !editor.isEmpty
-  useWarnUnsavedChanges(!isSubmitting && (Boolean(question) || isEditorFilled))
 
   function setCloseDateInDays(days: number) {
     const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
@@ -272,6 +269,7 @@ export function NewContract(props: {
         selectedGroup: selectedGroup?.id,
         isFree: false,
       })
+      editor?.commands.clearContent(true)
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
@@ -329,9 +327,9 @@ export function NewContract(props: {
             </label>
 
             <Row className="gap-2">
-              <input
+              <Input
                 type="number"
-                className="input input-bordered w-32"
+                className="w-32"
                 placeholder="LOW"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMinString(e.target.value)}
@@ -340,9 +338,9 @@ export function NewContract(props: {
                 disabled={isSubmitting}
                 value={minString ?? ''}
               />
-              <input
+              <Input
                 type="number"
-                className="input input-bordered w-32"
+                className="w-32"
                 placeholder="HIGH"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setMaxString(e.target.value)}
@@ -374,9 +372,8 @@ export function NewContract(props: {
             </label>
 
             <Row className="gap-2">
-              <input
+              <Input
                 type="number"
-                className="input input-bordered"
                 placeholder="Initial value"
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setInitialValueString(e.target.value)}
@@ -446,19 +443,17 @@ export function NewContract(props: {
             className={'col-span-4 sm:col-span-2'}
           />
         </Row>
-        <Row>
-          <input
+        <Row className="mt-4 gap-2">
+          <Input
             type={'date'}
-            className="input input-bordered mt-4"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseDate(e.target.value)}
             min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
             disabled={isSubmitting}
             value={closeDate}
           />
-          <input
+          <Input
             type={'time'}
-            className="input input-bordered mt-4 ml-2"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setCloseHoursMinutes(e.target.value)}
             min={'00:00'}
