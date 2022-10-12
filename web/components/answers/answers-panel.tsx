@@ -23,7 +23,7 @@ import { Linkify } from 'web/components/linkify'
 import { Button } from 'web/components/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
-import { CATEGORY_COLORS } from '../charts/contract/choice'
+import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
 
 export function AnswersPanel(props: {
@@ -190,7 +190,9 @@ function OpenAnswer(props: {
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
   const color =
-    colorIndex != undefined ? CATEGORY_COLORS[colorIndex] : '#B1B1C7'
+    colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
+      ? CHOICE_ANSWER_COLORS[colorIndex]
+      : '#B1B1C7'
 
   return (
     <Col className="my-1 px-2">
