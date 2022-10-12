@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { Col } from './layout/col'
 import clsx from 'clsx'
 import { SellSharesModal } from './sell-modal'
-import { Button } from './button'
 
 export function SellButton(props: {
   contract: BinaryContract | PseudoNumericContract
