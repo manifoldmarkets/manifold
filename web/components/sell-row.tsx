@@ -8,6 +8,7 @@ import { OutcomeLabel } from './outcome-label'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SellSharesModal } from './sell-modal'
+import { Button } from './button'
 
 export function SellRow(props: {
   contract: BinaryContract | PseudoNumericContract
@@ -37,17 +38,14 @@ export function SellRow(props: {
               shares
             </div>
 
-            <button
-              className="btn btn-sm"
-              style={{
-                backgroundColor: 'white',
-                border: '2px solid',
-                color: '#3D4451',
-              }}
+            <Button
+              className="my-auto"
+              size="xs"
+              color="gray-outline"
               onClick={() => setShowSellModal(true)}
             >
               Sell
-            </button>
+            </Button>
           </Row>
         </Col>
         {showSellModal && (
