@@ -230,7 +230,7 @@ export function PinnedItems(props: {
 
   return pinned.length > 0 || isEditable ? (
     <div>
-      <Row className="mb-3 items-center justify-between">
+      <Row className=" items-center justify-between">
         <SectionHeader label={'Featured'} href={`#`} />
         {isEditable && (
           <Button
@@ -265,7 +265,7 @@ export function PinnedItems(props: {
             </div>
           )}
           {pinned.map((element, index) => (
-            <div className="relative my-2">
+            <div className="relative mb-4">
               {element}
 
               {editMode && <CrossIcon onClick={() => onDeleteClicked(index)} />}

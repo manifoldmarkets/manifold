@@ -275,9 +275,13 @@ function renderSections(
         }
 
         if (id === 'featured') {
-          // For now, only admins can see the featured section, until we all agree its ship-ready
-          if (!isAdmin) return <></>
-          return <FeaturedSection globalConfig={globalConfig} pinned={pinned} />
+          return (
+            <FeaturedSection
+              globalConfig={globalConfig}
+              pinned={pinned}
+              isAdmin={isAdmin}
+            />
+          )
         }
 
         const contracts = sectionContracts[id]
@@ -396,8 +400,9 @@ function SearchSection(props: {
 function FeaturedSection(props: {
   globalConfig: GlobalConfig
   pinned: JSX.Element[]
+  isAdmin: boolean
 }) {
-  const { globalConfig, pinned } = props
+  const { globalConfig, pinned, isAdmin } = props
   const posts = useAllPosts()
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
@@ -422,7 +427,7 @@ function FeaturedSection(props: {
     <Col>
       <PinnedItems
         posts={posts}
-        isEditable={true}
+        isEditable={isAdmin}
         pinned={pinned}
         onDeleteClicked={onDeleteClicked}
         onSubmit={onSubmit}
