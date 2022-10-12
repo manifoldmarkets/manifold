@@ -5,7 +5,7 @@ import { sum } from 'lodash'
 import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
-import { AnyContractType, Contract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
@@ -154,14 +154,15 @@ export function ParentFeedComment(props: {
             numComments={numComments}
             onClick={onSeeReplyClick}
           />
-          <Row className="grow justify-end">
+          <Row className="my-auto grow justify-end">
             {onReplyClick && (
-              <button
-                className="font-bold hover:underline"
+              <Button
+                color="gray-white"
+                size="2xs"
                 onClick={() => onReplyClick(comment)}
               >
-                Reply
-              </button>
+                <ReplyIcon className="h-4 w-4" />
+              </Button>
             )}
             {showTip && (
               <Tipper
@@ -189,27 +190,7 @@ export const FeedComment = memo(function FeedComment(props: {
   onReplyClick?: (comment: ContractComment) => void
 }) {
   const { contract, comment, myTip, totalTip, showTip, onReplyClick } = props
-  const {
-    text,
-    content,
-    userUsername,
-    userName,
-    userAvatarUrl,
-    commenterPositionProb,
-    commenterPositionShares,
-    commenterPositionOutcome,
-    createdTime,
-    bountiesAwarded,
-  } = comment
-  const betOutcome = comment.betOutcome
-  let bought: string | undefined
-  let money: string | undefined
-  if (comment.betAmount != null) {
-    bought = comment.betAmount >= 0 ? 'bought' : 'sold'
-    money = formatMoney(Math.abs(comment.betAmount))
-  }
-  const totalAwarded = bountiesAwarded ?? 0
-
+  const { text, content, userUsername, userAvatarUrl } = comment
   const { isReady, asPath } = useRouter()
   const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
@@ -251,12 +232,13 @@ export const FeedComment = memo(function FeedComment(props: {
         />
         <Row className="justify-end">
           {onReplyClick && (
-            <button
-              className="font-bold hover:underline"
+            <Button
+              color="gray-white"
+              size="2xs"
               onClick={() => onReplyClick(comment)}
             >
-              Reply
-            </button>
+              <ReplyIcon className="h-4 w-4" />
+            </Button>
           )}
           {showTip && (
             <Tipper
@@ -273,33 +255,6 @@ export const FeedComment = memo(function FeedComment(props: {
     </Row>
   )
 })
-
-// export function CommentActions(props: {
-//   onReplyClick?: () => void
-//   tips?: CommentTips | undefined
-//   comment: ContractComment
-//   contract: Contract<AnyContractType>
-// }) {
-//   const { onReplyClick, tips, comment, contract } = props
-//   return (
-//     <Row className={clsx('ml-2 items-center gap-2 text-xs text-gray-500')}>
-//       {onReplyClick && (
-//         <Button
-//           className="font-bold hover:underline"
-//           onClick={onReplyClick}
-//           size="2xs"
-//           color="gray-white"
-//         >
-//           <ReplyIcon className="h-5 w-5" />
-//         </Button>
-//       )}
-//       {tips && <Tipper comment={comment} tips={tips} />}
-//       {(contract.openCommentBounties ?? 0) > 0 && (
-//         <AwardBountyButton comment={comment} contract={contract} />
-//       )}
-//     </Row>
-//   )
-// })
 
 function CommentStatus(props: {
   contract: Contract

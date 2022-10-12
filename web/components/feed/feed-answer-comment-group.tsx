@@ -1,26 +1,17 @@
 import { Answer } from 'common/answer'
 import { Contract } from 'common/contract'
-import { FreeResponseContract } from 'common/contract'
-import { ContractComment } from 'common/comment'
-import React, { useEffect, useRef, useState } from 'react'
-import { sum } from 'lodash'
+import React, { useEffect, useRef } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/avatar'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
-import { useUser } from 'web/hooks/use-user'
-import { useEvent } from 'web/hooks/use-event'
-import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { UserLink } from 'web/components/user-link'
-import { ReplyTo } from './feed-comments'
 
 export function CommentsAnswer(props: { answer: Answer; contract: Contract }) {
   const { answer, contract } = props
   const { username, avatarUrl, name, text } = answer
   const answerElementId = `answer-${answer.id}`
-  const [replyTo, setReplyTo] = useState<ReplyTo>()
-  const user = useUser()
   const router = useRouter()
   const highlighted = router.asPath.endsWith(`#${answerElementId}`)
   const answerRef = useRef<HTMLDivElement>(null)
@@ -45,7 +36,7 @@ export function CommentsAnswer(props: { answer: Answer; contract: Contract }) {
           />
         </div>
       </Row>
-      <div className="text-sm">{answer.text}</div>
+      <div className="text-sm">{text}</div>
     </Col>
   )
 }
