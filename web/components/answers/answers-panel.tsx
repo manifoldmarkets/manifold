@@ -191,8 +191,9 @@ function OpenAnswer(props: {
   const [open, setOpen] = useState(false)
   const color =
     colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
-      ? CHOICE_ANSWER_COLORS[colorIndex]
-      : '#B1B1C7'
+      ? CHOICE_ANSWER_COLORS[colorIndex] + '55' // semi-transparent
+      : '#B1B1C755'
+  const colorWidth = 100 * Math.max(prob, 0.01)
 
   return (
     <Col className="my-1 px-2">
@@ -208,9 +209,12 @@ function OpenAnswer(props: {
 
       <Col
         className={clsx(
-          'bg-greyscale-1 relative w-full rounded-lg transition-all',
+          'relative w-full rounded-lg transition-all',
           tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
         )}
+        style={{
+          background: `linear-gradient(to right, ${color} ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
+        }}
       >
         <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
           <Row>
@@ -238,11 +242,6 @@ function OpenAnswer(props: {
             )}
           </Row>
         </Row>
-        <hr
-          color={color}
-          className="absolute z-0 h-full w-full rounded-l-lg border-none opacity-30"
-          style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-        />
       </Col>
     </Col>
   )
