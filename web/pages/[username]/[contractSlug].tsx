@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useState } from 'react'
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 import dayjs from 'dayjs'
 
@@ -46,6 +46,8 @@ import { BetsSummary } from 'web/components/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
+import { Answer } from 'common/answer'
+import { useEvent } from 'web/hooks/use-event'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -204,6 +206,20 @@ export function ContractPageContent(
     contractId: contract.id,
   })
 
+  const [answerResponse, setAnswerResponse] = useState<Answer | undefined>(
+    undefined
+  )
+  const tabsContainerRef = useRef<null | HTMLDivElement>(null)
+  const onAnswerCommentClick = useEvent((answer: Answer) => {
+    setAnswerResponse(answer)
+    if (tabsContainerRef.current) {
+      tabsContainerRef.current.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      console.error('no ref to scroll to')
+    }
+  })
+  const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
+
   return (
     <Page
       rightSidebar={
@@ -257,7 +273,10 @@ export function ContractPageContent(
           outcomeType === 'MULTIPLE_CHOICE') && (
           <>
             <Spacer h={4} />
-            <AnswersPanel contract={contract} />
+            <AnswersPanel
+              contract={contract}
+              onAnswerCommentClick={onAnswerCommentClick}
+            />
             <Spacer h={4} />
           </>
         )}
@@ -286,12 +305,16 @@ export function ContractPageContent(
           userBets={userBets}
         />
 
-        <ContractTabs
-          contract={contract}
-          bets={bets}
-          userBets={userBets}
-          comments={comments}
-        />
+        <div ref={tabsContainerRef}>
+          <ContractTabs
+            contract={contract}
+            bets={bets}
+            userBets={userBets}
+            comments={comments}
+            answerResponse={answerResponse}
+            onCancelAnswerResponse={onCancelAnswerResponse}
+          />
+        </div>
       </Col>
       {!isCreator && <RecommendedContractsWidget contract={contract} />}
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />

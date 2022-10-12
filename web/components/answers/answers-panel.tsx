@@ -25,12 +25,14 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
+import { ChatIcon } from '@heroicons/react/outline'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
+  onAnswerCommentClick: (answer: Answer) => void
 }) {
   const isAdmin = useAdmin()
-  const { contract } = props
+  const { contract, onAnswerCommentClick } = props
   const { creatorId, resolution, resolutions, totalBets, outcomeType } =
     contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -138,6 +140,7 @@ export function AnswersPanel(props: {
               answer={item}
               contract={contract}
               colorIndex={colorSortedAnswer.indexOf(item.text)}
+              onAnswerCommentClick={onAnswerCommentClick}
             />
           ))}
           {hasZeroBetAnswers && !showAllAnswers && (
@@ -183,8 +186,9 @@ function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
   colorIndex: number | undefined
+  onAnswerCommentClick: (answer: Answer) => void
 }) {
-  const { answer, contract, colorIndex } = props
+  const { answer, contract, colorIndex, onAnswerCommentClick } = props
   const { username, avatarUrl, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
@@ -240,6 +244,14 @@ function OpenAnswer(props: {
                 BUY
               </Button>
             )}
+            {
+              <button
+                className="p-1"
+                onClick={() => onAnswerCommentClick(answer)}
+              >
+                <ChatIcon className="text-greyscale-4 hover:text-greyscale-6 h-5 w-5 transition-colors" />
+              </button>
+            }
           </Row>
         </Row>
       </Col>

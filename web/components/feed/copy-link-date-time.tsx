@@ -33,7 +33,7 @@ export function CopyLinkDateTimeComponent(props: {
         <a
           onClick={copyLinkToComment}
           className={
-            'mx-1 whitespace-nowrap rounded-sm px-1 text-gray-400 hover:bg-gray-100'
+            'text-greyscale-4 hover:bg-greyscale-1.5 mx-1 whitespace-nowrap rounded-sm px-1 text-xs transition-colors'
           }
         >
           {fromNow(createdTime)}
