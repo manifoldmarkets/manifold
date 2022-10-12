@@ -18,7 +18,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
-import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 import { DisplayMention } from './editor/mention'
 import { DisplayContractMention } from './editor/contract-mention'
@@ -43,6 +42,7 @@ import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
+import { ImageModal } from './editor/image-modal'
 import {
   storageStore,
   usePersistentState,
@@ -255,6 +255,7 @@ export function TextEditor(props: {
   children?: React.ReactNode // additional toolbar buttons
 }) {
   const { editor, upload, children } = props
+  const [imageOpen, setImageOpen] = useState(false)
   const [iframeOpen, setIframeOpen] = useState(false)
   const [marketOpen, setMarketOpen] = useState(false)
 
@@ -268,12 +269,19 @@ export function TextEditor(props: {
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
             <Tooltip text="Add image" noTap noFade>
-              <FileUploadButton
-                onFiles={upload.mutate}
+              <button
+                type="button"
+                onClick={() => setImageOpen(true)}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
               >
+                <ImageModal
+                  editor={editor}
+                  upload={upload}
+                  open={imageOpen}
+                  setOpen={setImageOpen}
+                />
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
-              </FileUploadButton>
+              </button>
             </Tooltip>
             <Tooltip text="Add embed" noTap noFade>
               <button
