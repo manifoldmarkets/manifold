@@ -1,11 +1,12 @@
 import * as admin from 'firebase-admin'
 
-import { getContract, getUser } from './utils'
+import { getContract, getUser, log } from './utils'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 import { removeUndefinedProps } from '../../common/util/object'
 import { htmlToRichText } from '../../common/util/parse'
+import { marked } from 'marked'
 
 const contentSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -59,18 +60,20 @@ export const createcomment = newEndpoint({}, async (req, auth) => {
   if (content) {
     contentJson = content
   } else if (html) {
+    console.log('html', html)
     contentJson = htmlToRichText(html)
   } else if (markdown) {
-    // Dynamic import, since micromark doesn't support CommonJS require()
-    const { micromark } = await import('micromark')
-    contentJson = htmlToRichText(micromark(markdown))
+    const markedParse = marked.parse(markdown)
+    log('parsed', markedParse)
+    contentJson = htmlToRichText(markedParse)
+    log('json', contentJson)
   }
 
   if (!contentJson) {
     throw new APIError(400, 'No comment content provided.')
   }
 
-  if (JSON.stringify(content).length > MAX_COMMENT_JSON_LENGTH) {
+  if (JSON.stringify(contentJson).length > MAX_COMMENT_JSON_LENGTH) {
     throw new APIError(
       400,
       `Comment is too long; should be less than ${MAX_COMMENT_JSON_LENGTH} as a JSON string.`
@@ -81,7 +84,7 @@ export const createcomment = newEndpoint({}, async (req, auth) => {
 
   const comment = removeUndefinedProps({
     id: ref.id,
-    content: content,
+    content: contentJson,
     createdTime: Date.now(),
 
     userId: creator.id,

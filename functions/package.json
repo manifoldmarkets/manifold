@@ -40,7 +40,7 @@
     "firebase-functions": "3.21.2",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
-    "micromark": "3.0.10",
+    "marked": "4.1.1",
     "module-alias": "2.2.2",
     "node-fetch": "2",
     "stripe": "8.194.0",
@@ -48,6 +48,7 @@
   },
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
+    "@types/marked": "4.0.7",
     "@types/module-alias": "2.0.1",
     "@types/node-fetch": "2.6.2",
     "firebase-functions-test": "0.3.3",

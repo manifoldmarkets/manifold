@@ -89,5 +89,5 @@ export function richTextToString(text?: JSONContent) {
 }
 
 export function htmlToRichText(html: string) {
-  return generateJSON(html, exhibitExts)
+  return generateJSON(html, stringParseExts)
 }
