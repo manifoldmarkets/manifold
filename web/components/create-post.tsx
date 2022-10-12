@@ -57,7 +57,7 @@ export function CreatePost(props: { group?: Group }) {
         <Title className="!mt-0" text="Create a post" />
         <form>
           <div className="form-control w-full">
-            <label className="label">
+            <label className="px-1 py-2">
               <span className="mb-1">
                 Title<span className={'text-red-700'}> *</span>
               </span>
@@ -70,7 +70,7 @@ export function CreatePost(props: { group?: Group }) {
               onChange={(e) => setTitle(e.target.value || '')}
             />
             <Spacer h={6} />
-            <label className="label">
+            <label className="px-1 py-2">
               <span className="mb-1">
                 Subtitle<span className={'text-red-700'}> *</span>
               </span>
@@ -83,7 +83,7 @@ export function CreatePost(props: { group?: Group }) {
               onChange={(e) => setSubtitle(e.target.value || '')}
             />
             <Spacer h={6} />
-            <label className="label">
+            <label className="px-1 py-2">
               <span className="mb-1">
                 Content<span className={'text-red-700'}> *</span>
               </span>
