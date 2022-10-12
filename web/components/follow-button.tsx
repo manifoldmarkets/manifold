@@ -11,10 +11,9 @@ export function FollowButton(props: {
   isFollowing: boolean | undefined
   onFollow: () => void
   onUnfollow: () => void
-  small?: boolean
   className?: string
 }) {
-  const { isFollowing, onFollow, onUnfollow, small, className } = props
+  const { isFollowing, onFollow, onUnfollow, className } = props
 
   const user = useUser()
 
@@ -50,8 +49,8 @@ export function FollowButton(props: {
   )
 }
 
-export function UserFollowButton(props: { userId: string; small?: boolean }) {
-  const { userId, small } = props
+export function UserFollowButton(props: { userId: string }) {
+  const { userId } = props
   const user = useUser()
   const following = useFollows(user?.id)
   const isFollowing = following?.includes(userId)
@@ -63,7 +62,6 @@ export function UserFollowButton(props: { userId: string; small?: boolean }) {
       isFollowing={isFollowing}
       onFollow={() => follow(user.id, userId)}
       onUnfollow={() => unfollow(user.id, userId)}
-      small={small}
     />
   )
 }
