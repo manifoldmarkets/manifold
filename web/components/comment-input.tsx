@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
 import Curve from 'web/public/custom-components/curve'
+import { getAnswerColor } from './answers/answers-panel'
 import { Avatar } from './avatar'
 import { TextEditor, useTextEditor } from './editor'
 import { CommentsAnswer } from './feed/feed-answer-comment-group'
@@ -87,7 +88,6 @@ export function AnswerCommentInput(props: {
     id: answerResponse.id,
     username: answerResponse.username,
   }
-
   return (
     <>
       <CommentsAnswer answer={answerResponse} contract={contract} />

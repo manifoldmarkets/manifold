@@ -38,6 +38,8 @@ import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
 import Curve from 'web/public/custom-components/curve'
 import { Answer } from 'common/answer'
 import { AnswerCommentInput } from '../comment-input'
+import { getAnswerColor } from '../answers/answers-panel'
+import { useChartAnswers } from '../charts/contract/choice'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -161,6 +163,8 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     </Row>
   )
   if (contract.outcomeType === 'FREE_RESPONSE') {
+    const answersArray = useChartAnswers(contract)
+
     return (
       <>
         <ContractCommentInput className="mb-5" contract={contract} />
@@ -194,10 +198,15 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
             console.error('Could not find answer that matches ID')
             return <></>
           }
+          const color = getAnswerColor(answer, answersArray)
           return (
             <>
               <Row className="gap-2">
-                <CommentsAnswer answer={answer} contract={contract} />
+                <CommentsAnswer
+                  answer={answer}
+                  contract={contract}
+                  color={color}
+                />
               </Row>
               <Row>
                 <div className="ml-1">

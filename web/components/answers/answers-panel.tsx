@@ -27,6 +27,13 @@ import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
 import { ChatIcon } from '@heroicons/react/outline'
 
+export function getAnswerColor(answer: Answer, answersArray: Answer[]) {
+  const colorIndex = answersArray.indexOf(answer)
+  return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
+    ? CHOICE_ANSWER_COLORS[colorIndex] + '90' // semi-transparent
+    : '#B1B1C755'
+}
+
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   onAnswerCommentClick: (answer: Answer) => void
@@ -107,10 +114,9 @@ export function AnswersPanel(props: {
     ? 'checkbox'
     : undefined
 
-  const colorSortedAnswer = useChartAnswers(contract).map(
-    (value, _index) => value.text
-  )
+  const answersArray = useChartAnswers(contract)
 
+  console.log(answersArray)
   return (
     <Col className="gap-3">
       {(resolveOption || resolution) &&
@@ -139,8 +145,8 @@ export function AnswersPanel(props: {
               key={item.id}
               answer={item}
               contract={contract}
-              colorIndex={colorSortedAnswer.indexOf(item.text)}
               onAnswerCommentClick={onAnswerCommentClick}
+              color={getAnswerColor(item, answersArray)}
             />
           ))}
           {hasZeroBetAnswers && !showAllAnswers && (
@@ -185,18 +191,14 @@ export function AnswersPanel(props: {
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
-  colorIndex: number | undefined
+  color: string
   onAnswerCommentClick: (answer: Answer) => void
 }) {
-  const { answer, contract, colorIndex, onAnswerCommentClick } = props
+  const { answer, contract, onAnswerCommentClick, color } = props
   const { username, avatarUrl, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
-  const color =
-    colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
-      ? CHOICE_ANSWER_COLORS[colorIndex] + '55' // semi-transparent
-      : '#B1B1C755'
   const colorWidth = 100 * Math.max(prob, 0.01)
 
   return (
