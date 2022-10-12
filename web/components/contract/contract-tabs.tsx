@@ -137,9 +137,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
   const topLevelComments = commentsByParent['_'] ?? []
 
-  // if (contract.outcomeType === 'FREE_RESPONSE') {
-  //   return <FreeResponseComments />
-  // } else {
   return (
     <>
       <ContractCommentInput className="mb-5" contract={contract} />
@@ -174,7 +171,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
         ))}
     </>
   )
-  // }
 })
 
 const BetsTabContent = memo(function BetsTabContent(props: {

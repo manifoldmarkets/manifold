@@ -91,7 +91,6 @@ export function AnswerCommentInput(props: {
     username: answerResponse.username,
   }
   const color = getAnswerColor(answerResponse, answersArray)
-  console.log('color:', color)
   return (
     <>
       <div className="opacity-60">
