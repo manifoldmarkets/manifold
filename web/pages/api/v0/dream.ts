@@ -18,7 +18,6 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
     methods: 'POST',
   })
 
-  // const body = JSON.parse(req.body)
   // Check that prompt and apiKey are included in the body
   if (!req.body.prompt) {
     res.status(400).json({ message: 'Missing prompt' })
@@ -59,6 +58,7 @@ export default async function route(req: NextApiRequest, res: NextApiResponse) {
 
     res.status(200).json({ url })
   } catch (e) {
+    console.error(e)
     res.status(500).json({ message: `Error running code: ${e}` })
   }
 }
