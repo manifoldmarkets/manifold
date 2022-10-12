@@ -46,7 +46,7 @@ export function TipButton(props: {
             className={clsx(
               'h-5 w-5 sm:h-6 sm:w-6',
               totalTipped > 0 ? 'mr-2' : '',
-              userTipped ? 'fill-green-700 text-green-700' : ''
+              userTipped ? 'fill-teal-500 text-teal-500' : ''
             )}
           />
           {totalTipped > 0 && (
