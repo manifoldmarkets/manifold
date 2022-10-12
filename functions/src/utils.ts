@@ -1,13 +1,12 @@
 import * as admin from 'firebase-admin'
 import fetch from 'node-fetch'
-
+import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { chunk, groupBy, mapValues, sumBy } from 'lodash'
+
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { toBatches } from 'common/util/array'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -215,11 +214,11 @@ export const payUsersMultipleTransactions = async (
   }[]
 ) => {
   const mergedPayouts = checkAndMergePayouts(payouts)
-  const batchedPayouts = toBatches(mergedPayouts, 500)
+  const payoutChunks = chunk(mergedPayouts, 500)
 
-  for (const batch of batchedPayouts) {
+  for (const payoutChunk of payoutChunks) {
     await firestore.runTransaction(async (transaction) => {
-      for (const { userId, payout, deposit } of batch) {
+      for (const { userId, payout, deposit } of payoutChunk) {
         updateUserBalance(transaction, userId, payout, deposit)
       }
     })

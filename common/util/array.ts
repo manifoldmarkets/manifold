@@ -38,11 +38,3 @@ export function groupConsecutive<T, U>(xs: T[], key: (x: T) => U) {
   result.push(curr)
   return result
 }
-
-export function toBatches<T>(xs: T[], batchSize: number) {
-  const result = []
-  for (let i = 0; i < xs.length; i += batchSize) {
-    result.push(xs.slice(i, i + batchSize))
-  }
-  return result
-}
