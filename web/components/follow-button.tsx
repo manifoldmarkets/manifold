@@ -35,7 +35,7 @@ export function FollowButton(props: {
     <Button
       size="sm"
       color="indigo"
-      className='my-auto'
+      className="my-auto"
       onClick={withTracking(onFollow, 'follow')}
     >
       Follow

@@ -1,6 +1,5 @@
 import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'

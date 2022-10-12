@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { PencilIcon } from '@heroicons/react/outline'
 
 import { User } from 'common/user'
 import { useState } from 'react'
@@ -11,7 +10,6 @@ import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { TextButton } from './text-button'
-import { track } from 'web/lib/service/analytics'
 
 export function FollowingButton(props: { user: User; className?: string }) {
   const { user, className } = props
