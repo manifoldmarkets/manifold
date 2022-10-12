@@ -103,7 +103,7 @@ export function CustomAnalytics(props: Stats) {
             title: 'Daily (7d avg)',
             content: (
               <DailyChart
-                dailyValues={dailyActiveUsersWeeklyAvg}
+                dailyValues={dailyActiveUsersWeeklyAvg.map(Math.round)}
                 startDate={startDate}
               />
             ),

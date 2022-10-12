@@ -42,7 +42,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         `}
       </Script>
       <Head>
-        <title>Manifold Markets — A market for every question</title>
+        <title>{'Manifold Markets — A market for every question'}</title>
 
         <meta
           property="og:title"
@@ -74,10 +74,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           content="https://manifold.markets/logo-bg-white.png"
           key="image2"
         />
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1"
-        />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
         <QueryClientProvider client={queryClient}>

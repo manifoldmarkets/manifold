@@ -5,8 +5,6 @@ import { HOUSE_LIQUIDITY_PROVIDER_ID } from '../../common/antes'
 import { createReferralNotification } from './create-notification'
 import { ReferralTxn } from '../../common/txn'
 import { Contract } from '../../common/contract'
-import { LimitBet } from '../../common/bet'
-import { QuerySnapshot } from 'firebase-admin/firestore'
 import { Group } from '../../common/group'
 import { REFERRAL_AMOUNT } from '../../common/economy'
 const firestore = admin.firestore()
@@ -20,10 +18,6 @@ export const onUpdateUser = functions.firestore
 
     if (prevUser.referredByUserId !== user.referredByUserId) {
       await handleUserUpdatedReferral(user, eventId)
-    }
-
-    if (user.balance <= 0) {
-      await cancelLimitOrders(user.id)
     }
   })
 
@@ -122,16 +116,4 @@ async function handleUserUpdatedReferral(user: User, eventId: string) {
       referredByGroup
     )
   })
-}
-
-async function cancelLimitOrders(userId: string) {
-  const snapshot = (await firestore
-    .collectionGroup('bets')
-    .where('userId', '==', userId)
-    .where('isFilled', '==', false)
-    .get()) as QuerySnapshot<LimitBet>
-
-  await Promise.all(
-    snapshot.docs.map((doc) => doc.ref.update({ isCancelled: true }))
-  )
 }

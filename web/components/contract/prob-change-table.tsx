@@ -1,13 +1,69 @@
-import { sortBy } from 'lodash'
 import clsx from 'clsx'
-import { contractPath } from 'web/lib/firebase/contracts'
-import { CPMMContract } from 'common/contract'
+import { sortBy } from 'lodash'
+import { filterDefined } from 'common/util/array'
+import { ContractMetrics } from 'common/calculate-metrics'
+import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
-import { SiteLink } from '../site-link'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { LoadingIndicator } from '../loading-indicator'
-import { useContractWithPreload } from 'web/hooks/use-contract'
+import { ContractCardProbChange } from './contract-card'
+
+export function ProfitChangeTable(props: {
+  contracts: CPMMBinaryContract[]
+  metrics: ContractMetrics[]
+}) {
+  const { contracts, metrics } = props
+
+  const contractProfit = metrics.map(
+    (m) => [m.contractId, m.from?.day.profit ?? 0] as const
+  )
+
+  const positiveProfit = sortBy(
+    contractProfit.filter(([, profit]) => profit > 0),
+    ([, profit]) => profit
+  ).reverse()
+  const positive = filterDefined(
+    positiveProfit.map(([contractId]) =>
+      contracts.find((c) => c.id === contractId)
+    )
+  )
+
+  const negativeProfit = sortBy(
+    contractProfit.filter(([, profit]) => profit < 0),
+    ([, profit]) => profit
+  )
+  const negative = filterDefined(
+    negativeProfit.map(([contractId]) =>
+      contracts.find((c) => c.id === contractId)
+    )
+  )
+
+  if (positive.length === 0 && negative.length === 0)
+    return <div className="px-4 text-gray-500">None</div>
+
+  return (
+    <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
+      <Col className="flex-1">
+        {positive.map((contract) => (
+          <ContractCardProbChange
+            key={contract.id}
+            contract={contract}
+            showPosition
+          />
+        ))}
+      </Col>
+      <Col className="flex-1">
+        {negative.map((contract) => (
+          <ContractCardProbChange
+            key={contract.id}
+            contract={contract}
+            showPosition
+          />
+        ))}
+      </Col>
+    </Col>
+  )
+}
 
 export function ProbChangeTable(props: {
   changes: CPMMContract[] | undefined
@@ -39,43 +95,26 @@ export function ProbChangeTable(props: {
   if (rows === 0) return <div className="px-4 text-gray-500">None</div>
 
   return (
-    <Col className="mb-4 w-full divide-x-2 divide-y rounded-lg bg-white shadow-md md:flex-row md:divide-y-0">
-      <Col className="flex-1 divide-y">
+    <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
+      <Col className="flex-1">
         {filteredPositiveChanges.map((contract) => (
-          <ProbChangeRow key={contract.id} contract={contract} />
+          <ContractCardProbChange
+            key={contract.id}
+            contract={contract}
+            showPosition
+          />
         ))}
       </Col>
-      <Col className="flex-1 divide-y">
+      <Col className="flex-1">
         {filteredNegativeChanges.map((contract) => (
-          <ProbChangeRow key={contract.id} contract={contract} />
+          <ContractCardProbChange
+            key={contract.id}
+            contract={contract}
+            showPosition
+          />
         ))}
       </Col>
     </Col>
-  )
-}
-
-export function ProbChangeRow(props: {
-  contract: CPMMContract
-  className?: string
-}) {
-  const { className } = props
-  const contract =
-    (useContractWithPreload(props.contract) as CPMMContract) ?? props.contract
-  return (
-    <Row
-      className={clsx(
-        'items-center justify-between gap-4 hover:bg-gray-100',
-        className
-      )}
-    >
-      <SiteLink
-        className="p-4 pr-0 font-semibold text-indigo-700"
-        href={contractPath(contract)}
-      >
-        <span className="line-clamp-2">{contract.question}</span>
-      </SiteLink>
-      <ProbChange className="py-2 pr-4 text-xl" contract={contract} />
-    </Row>
   )
 }
 

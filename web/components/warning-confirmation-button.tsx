@@ -6,7 +6,6 @@ import { ConfirmationButton } from './confirmation-button'
 import { ExclamationIcon } from '@heroicons/react/solid'
 import { formatMoney } from 'common/util/format'
 import { Button, ColorType, SizeType } from './button'
-import { capitalize } from 'lodash'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
@@ -18,7 +17,7 @@ export function WarningConfirmationButton(props: {
   openModalButtonClass?: string
   color: ColorType
   size: SizeType
-  actionLabel?: string
+  actionLabel: string
 }) {
   const {
     amount,
@@ -32,12 +31,11 @@ export function WarningConfirmationButton(props: {
     actionLabel,
   } = props
 
-  const label = capitalize(actionLabel) ?? 'Wager'
   const buttonText = isSubmitting
     ? 'Submitting...'
     : amount
-    ? `${label} ${formatMoney(amount)}`
-    : label
+    ? `${actionLabel} ${formatMoney(amount)}`
+    : actionLabel
 
   if (!warning) {
     return (

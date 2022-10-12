@@ -1,11 +1,16 @@
+import React, { memo, useEffect, useRef, useState } from 'react'
+import { Editor } from '@tiptap/react'
+import { useRouter } from 'next/router'
+import { sum } from 'lodash'
+import clsx from 'clsx'
+
 import { ContractComment } from 'common/comment'
 import { AnyContractType, Contract } from 'common/contract'
 import React, { useEffect, useRef, useState } from 'react'
+import { Contract } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import { useRouter } from 'next/router'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import { Avatar } from 'web/components/avatar'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
@@ -14,9 +19,9 @@ import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { Tipper } from '../tipper'
-import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
+import { CommentTipMap } from 'web/hooks/use-tip-txns'
+import { useEvent } from 'web/hooks/use-event'
 import { Content } from '../editor'
-import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
@@ -36,6 +41,12 @@ export function FeedCommentThread(props: {
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(false)
 
+  const user = useUser()
+  const onSubmitComment = useEvent(() => setReplyTo(undefined))
+  const onReplyClick = useEvent((comment: ContractComment) => {
+    setReplyTo({ id: comment.id, username: comment.userUsername })
+  })
+
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
       <Col>
@@ -43,7 +54,9 @@ export function FeedCommentThread(props: {
           key={parentComment.id}
           contract={contract}
           comment={parentComment}
-          tips={tips[parentComment.id] ?? {}}
+          myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
+          showTip={true}
+          totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
           seeReplies={seeReplies}
           numComments={threadComments.length}
           onSeeReplyClick={() => setSeeReplies(!seeReplies)}
@@ -77,7 +90,7 @@ export function FeedCommentThread(props: {
             contract={contract}
             parentCommentId={parentComment.id}
             replyTo={replyTo}
-            onSubmitComment={() => setReplyTo(undefined)}
+            onSubmitComment={onSubmitComment}
           />
         </Col>
       )}
@@ -154,21 +167,50 @@ export function ParentFeedComment(props: {
   )
 }
 
-export function FeedComment(props: {
+export const FeedComment = memo(function FeedComment(props: {
   contract: Contract
   comment: ContractComment
-  tips?: CommentTips
-  onReplyClick?: () => void
+  showTip?: boolean
+  myTip?: number
+  totalTip?: number
+  indent?: boolean
+  onReplyClick?: (comment: ContractComment) => void
 }) {
-  const { contract, comment, tips, onReplyClick } = props
-  const { text, content, userUsername, userAvatarUrl } = comment
+  const { contract, comment, myTip, totalTip, showTip, indent, onReplyClick } =
+    props
+  const {
+    text,
+    content,
+    userUsername,
+    userName,
+    userAvatarUrl,
+    commenterPositionProb,
+    commenterPositionShares,
+    commenterPositionOutcome,
+    createdTime,
+    bountiesAwarded,
+  } = comment
+  const betOutcome = comment.betOutcome
+  let bought: string | undefined
+  let money: string | undefined
+  if (comment.betAmount != null) {
+    bought = comment.betAmount >= 0 ? 'bought' : 'sold'
+    money = formatMoney(Math.abs(comment.betAmount))
+  }
+  const totalAwarded = bountiesAwarded ?? 0
 
-  const router = useRouter()
-  const highlighted = router.asPath.endsWith(`#${comment.id}`)
+  const { isReady, asPath } = useRouter()
+  const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (highlighted && commentRef.current != null) {
+    if (isReady && asPath.endsWith(`#${comment.id}`)) {
+      setHighlighted(true)
+    }
+  }, [isReady, asPath, comment.id])
+
+  useEffect(() => {
+    if (highlighted && commentRef.current) {
       commentRef.current.scrollIntoView(true)
     }
   }, [highlighted])
@@ -198,12 +240,24 @@ export function FeedComment(props: {
           smallImage
         />
         <Row className="justify-end">
-          <CommentActions
-            onReplyClick={onReplyClick}
-            tips={tips}
-            comment={comment}
-            contract={contract}
-          />
+          {onReplyClick && (
+            <button
+              className="font-bold hover:underline"
+              onClick={() => onReplyClick(comment)}
+            >
+              Reply
+            </button>
+          )}
+          {showTip && (
+            <Tipper
+              comment={comment}
+              myTip={myTip ?? 0}
+              totalTip={totalTip ?? 0}
+            />
+          )}
+          {(contract.openCommentBounties ?? 0) > 0 && (
+            <AwardBountyButton comment={comment} contract={contract} />
+          )}
         </Row>
       </Col>
     </Row>
@@ -235,7 +289,7 @@ export function CommentActions(props: {
       )}
     </Row>
   )
-}
+})
 
 function CommentStatus(props: {
   contract: Contract
@@ -286,6 +340,7 @@ export function ContractCommentInput(props: {
       parentAnswerOutcome={parentAnswerOutcome}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
+      pageId={contract.id}
       className={className}
     />
   )

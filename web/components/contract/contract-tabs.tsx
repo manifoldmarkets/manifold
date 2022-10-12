@@ -101,7 +101,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
-    key: `contract-${contract.id}-comments-sort`,
+    key: `contract-comments-sort`,
     store: storageStore(safeLocalStorage()),
   })
   const me = useUser()
@@ -231,8 +231,9 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   } else {
     return (
       <>
-        {sortRow}
         <ContractCommentInput className="mb-5" contract={contract} />
+        {sortRow}
+
         {topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}

@@ -2,7 +2,6 @@ import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
 import { useState } from 'react'
-import { PostCardList } from 'web/pages/group/[...slugs]'
 import { Button } from './button'
 import { PillButton } from './buttons/pill-button'
 import { ContractSearch } from './contract-search'
@@ -10,6 +9,7 @@ import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
+import { PostCardList } from './post-card'
 
 export function PinnedSelectModal(props: {
   title: string
@@ -20,8 +20,8 @@ export function PinnedSelectModal(props: {
     selectedItems: { itemId: string; type: string }[]
   ) => void | Promise<void>
   contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
-  group: Group
   posts: Post[]
+  group?: Group
 }) {
   const {
     title,
@@ -134,8 +134,8 @@ export function PinnedSelectModal(props: {
                 highlightClassName:
                   '!bg-indigo-100 outline outline-2 outline-indigo-300',
               }}
-              additionalFilter={{ groupSlug: group.slug }}
-              persistPrefix={`group-${group.slug}`}
+              additionalFilter={group ? { groupSlug: group.slug } : undefined}
+              persistPrefix={group ? `group-${group.slug}` : undefined}
               headerClassName="bg-white sticky"
               {...contractSearchOptions}
             />
@@ -152,7 +152,7 @@ export function PinnedSelectModal(props: {
                     '!bg-indigo-100 outline outline-2 outline-indigo-300',
                 }}
               />
-              {posts.length === 0 && (
+              {posts.length == 0 && (
                 <div className="text-center text-gray-500">No posts yet</div>
               )}
             </div>

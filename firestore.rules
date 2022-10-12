@@ -27,7 +27,7 @@ service cloud.firestore {
       allow read;
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
-                                                                    .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
+                                                                    .hasOnly(['bio', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
       // User referral rules
       allow update: if userId == request.auth.uid
                          && request.resource.data.diff(resource.data).affectedKeys()
@@ -41,6 +41,10 @@ service cloud.firestore {
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
+      allow read;
+    }
+
+    match /{somePath=**}/contract-metrics/{contractId} {
       allow read;
     }
 

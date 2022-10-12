@@ -6,7 +6,13 @@ import {
   Notification,
   notification_reason_types,
 } from '../../common/notification'
-import { User } from '../../common/user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+  PrivateUser,
+  User,
+} from '../../common/user'
 import { Contract } from '../../common/contract'
 import { getPrivateUser, getValues } from './utils'
 import { Comment } from '../../common/comment'
@@ -30,27 +36,26 @@ import {
 import { filterDefined } from '../../common/util/array'
 import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
+import { Badge } from 'common/badge'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
 }
 
-export const createNotification = async (
+export const createFollowOrMarketSubsidizedNotification = async (
   sourceId: string,
-  sourceType: 'contract' | 'liquidity' | 'follow',
-  sourceUpdateType: 'closed' | 'created',
+  sourceType: 'liquidity' | 'follow',
+  sourceUpdateType: 'created',
   sourceUser: User,
   idempotencyKey: string,
   sourceText: string,
   miscData?: {
     contract?: Contract
     recipients?: string[]
-    slug?: string
-    title?: string
   }
 ) => {
-  const { contract: sourceContract, recipients, slug, title } = miscData ?? {}
+  const { contract: sourceContract, recipients } = miscData ?? {}
 
   const shouldReceiveNotification = (
     userId: string,
@@ -94,23 +99,15 @@ export const createNotification = async (
           sourceContractCreatorUsername: sourceContract?.creatorUsername,
           sourceContractTitle: sourceContract?.question,
           sourceContractSlug: sourceContract?.slug,
-          sourceSlug: slug ? slug : sourceContract?.slug,
-          sourceTitle: title ? title : sourceContract?.question,
+          sourceSlug: sourceContract?.slug,
+          sourceTitle: sourceContract?.question,
         }
         await notificationRef.set(removeUndefinedProps(notification))
       }
 
       if (!sendToEmail) continue
 
-      if (reason === 'your_contract_closed' && privateUser && sourceContract) {
-        // TODO: include number and names of bettors waiting for creator to resolve their market
-        await sendMarketCloseEmail(
-          reason,
-          sourceUser,
-          privateUser,
-          sourceContract
-        )
-      } else if (reason === 'subsidized_your_market') {
+      if (reason === 'subsidized_your_market') {
         // TODO: send email to creator of market that was subsidized
       } else if (reason === 'on_new_follow') {
         // TODO: send email to user who was followed
@@ -127,20 +124,7 @@ export const createNotification = async (
         reason: 'on_new_follow',
       }
     return await sendNotificationsIfSettingsPermit(userToReasonTexts)
-  } else if (
-    sourceType === 'contract' &&
-    sourceUpdateType === 'closed' &&
-    sourceContract
-  ) {
-    userToReasonTexts[sourceContract.creatorId] = {
-      reason: 'your_contract_closed',
-    }
-    return await sendNotificationsIfSettingsPermit(userToReasonTexts)
-  } else if (
-    sourceType === 'liquidity' &&
-    sourceUpdateType === 'created' &&
-    sourceContract
-  ) {
+  } else if (sourceType === 'liquidity' && sourceContract) {
     if (shouldReceiveNotification(sourceContract.creatorId, userToReasonTexts))
       userToReasonTexts[sourceContract.creatorId] = {
         reason: 'subsidized_your_market',
@@ -1087,6 +1071,81 @@ export const createBountyNotification = async (
     sourceTitle: contract.question,
   }
   return await notificationRef.set(removeUndefinedProps(notification))
+}
 
-  // maybe TODO: send email notification to comment creator
+export const createBadgeAwardedNotification = async (
+  user: User,
+  badge: Badge
+) => {
+  const privateUser = await getPrivateUser(user.id)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'badges_awarded'
+  )
+  if (!sendToBrowser) return
+
+  const notificationRef = firestore
+    .collection(`/users/${user.id}/notifications`)
+    .doc()
+  const notification: Notification = {
+    id: notificationRef.id,
+    userId: user.id,
+    reason: 'badges_awarded',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: badge.type,
+    sourceType: 'badge',
+    sourceUpdateType: 'created',
+    sourceUserName: MANIFOLD_USER_NAME,
+    sourceUserUsername: MANIFOLD_USER_USERNAME,
+    sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+    sourceText: `You earned a new ${badge.name} badge!`,
+    sourceSlug: `/${user.username}?show=badges&badge=${badge.type}`,
+    sourceTitle: badge.name,
+    data: {
+      badge,
+    },
+  }
+  return await notificationRef.set(removeUndefinedProps(notification))
+
+  // TODO send email notification
+}
+
+export const createMarketClosedNotification = async (
+  contract: Contract,
+  creator: User,
+  privateUser: PrivateUser,
+  idempotencyKey: string
+) => {
+  const notificationRef = firestore
+    .collection(`/users/${creator.id}/notifications`)
+    .doc(idempotencyKey)
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: creator.id,
+    reason: 'your_contract_closed',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: contract.id,
+    sourceType: 'contract',
+    sourceUpdateType: 'closed',
+    sourceContractId: contract?.id,
+    sourceUserName: creator.name,
+    sourceUserUsername: creator.username,
+    sourceUserAvatarUrl: creator.avatarUrl,
+    sourceText: contract.closeTime?.toString() ?? new Date().toString(),
+    sourceContractCreatorUsername: creator.username,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
+  }
+  await notificationRef.set(removeUndefinedProps(notification))
+  await sendMarketCloseEmail(
+    'your_contract_closed',
+    creator,
+    privateUser,
+    contract
+  )
 }

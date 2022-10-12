@@ -8,7 +8,6 @@ import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
@@ -20,7 +19,6 @@ import NewContractBadge from '../new-contract-badge'
 import { MiniUserFollowButton } from '../follow-button'
 import { DAY_MS } from 'common/util/time'
 import { useUser, useUserById } from 'web/hooks/use-user'
-import { exhibitExts } from 'common/util/parse'
 import { Button } from 'web/components/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -40,6 +38,8 @@ import {
   BountiedContractBadge,
   BountiedContractSmallBadge,
 } from 'web/components/contract/bountied-contract-badge'
+import { Input } from '../input'
+import { editorExtensions } from '../editor'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -153,8 +153,8 @@ export function MarketSubheader(props: {
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
   const user = useUser()
-  const correctResolutionPercentage =
-    useUserById(creatorId)?.fractionResolvedCorrectly
+  const creator = useUserById(creatorId)
+  const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   const isMobile = useIsMobile()
   return (
@@ -177,12 +177,14 @@ export function MarketSubheader(props: {
           {disabled ? (
             creatorName
           ) : (
-            <UserLink
-              className="my-auto whitespace-nowrap"
-              name={creatorName}
-              username={creatorUsername}
-              short={isMobile}
-            />
+            <Row className={'gap-2'}>
+              <UserLink
+                className="my-auto whitespace-nowrap"
+                name={creatorName}
+                username={creatorUsername}
+              />
+              {/*<BadgeDisplay user={creator} />*/}
+            </Row>
           )}
           {correctResolutionPercentage != null &&
             correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
@@ -418,7 +420,7 @@ function EditableCloseDate(props: {
       const content = contract.description
       const formattedCloseDate = dayjs(newCloseTime).format('YYYY-MM-DD h:mm a')
 
-      const editor = new Editor({ content, extensions: exhibitExts })
+      const editor = new Editor({ content, extensions: editorExtensions() })
       editor.commands.focus('end')
       insertContent(
         editor,
@@ -437,46 +439,42 @@ function EditableCloseDate(props: {
   return (
     <>
       <Modal
-        size="sm"
+        size="md"
         open={isEditingCloseTime}
         setOpen={setIsEditingCloseTime}
         position="top"
       >
         <Col className="rounded bg-white px-8 pb-8">
-          <Subtitle text="Edit Close Date" />
-          <Row className="z-10 mr-2 w-full shrink-0 flex-wrap items-center gap-2">
-            <input
+          <Subtitle text="Edit market close time" />
+          <Row className="z-10 mr-2 mt-4 w-full shrink-0 flex-wrap items-center gap-2">
+            <Input
               type="date"
-              className="input input-bordered w-full shrink-0 sm:w-fit"
+              className="w-full shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
               min={Date.now()}
               value={closeDate}
             />
-            <input
+            <Input
               type="time"
-              className="input input-bordered w-full shrink-0 sm:w-max"
+              className="w-full shrink-0 sm:w-max"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseHoursMinutes(e.target.value)}
               min="00:00"
               value={closeHoursMinutes}
             />
+            <Button size={'xs'} color={'indigo'} onClick={() => onSave()}>
+              Set
+            </Button>
           </Row>
+
           <Button
-            className="mt-4"
+            className="mt-8"
             size={'xs'}
-            color={'indigo'}
-            onClick={() => onSave()}
-          >
-            Done
-          </Button>
-          <Button
-            className="mt-4"
-            size={'xs'}
-            color={'gray-white'}
+            color="red"
             onClick={() => onSave(Date.now())}
           >
-            Close Now
+            Close market now
           </Button>
         </Col>
       </Modal>

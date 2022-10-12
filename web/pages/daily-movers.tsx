@@ -1,10 +1,12 @@
-import { ProbChangeTable } from 'web/components/contract/prob-change-table'
+import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Page } from 'web/components/page'
 import { Title } from 'web/components/title'
-import { useProbChanges } from 'web/hooks/use-prob-changes'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserContractMetricsByProfit } from 'web/hooks/use-user'
+import { DailyProfit } from './home'
 
 export default function DailyMovers() {
   const user = useUser()
@@ -13,7 +15,10 @@ export default function DailyMovers() {
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
-        <Title className="mx-4 !mb-0 sm:mx-0" text="Daily movers" />
+        <Row className="mt-4 items-start justify-between sm:mt-0">
+          <Title className="mx-4 !mb-0 !mt-0 sm:mx-0" text="Daily movers" />
+          <DailyProfit user={user} />
+        </Row>
         {user && <ProbChangesWrapper userId={user.id} />}
       </Col>
     </Page>
@@ -23,9 +28,9 @@ export default function DailyMovers() {
 function ProbChangesWrapper(props: { userId: string }) {
   const { userId } = props
 
-  const changes = useProbChanges({ bettorId: userId })?.filter(
-    (c) => Math.abs(c.probChanges.day) >= 0.01
-  )
+  const data = useUserContractMetricsByProfit(userId, 50)
 
-  return <ProbChangeTable changes={changes} full />
+  if (!data) return <LoadingIndicator />
+
+  return <ProfitChangeTable contracts={data.contracts} metrics={data.metrics} />
 }

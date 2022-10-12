@@ -52,7 +52,7 @@ export function parseMentions(data: JSONContent): string[] {
 }
 
 // can't just do [StarterKit, Image...] because it doesn't work with cjs imports
-export const exhibitExts = [
+const stringParseExts = [
   Blockquote,
   Bold,
   BulletList,
@@ -72,7 +72,8 @@ export const exhibitExts = [
 
   Image,
   Link,
-  Mention,
+  Mention, // user @mention
+  Mention.extend({ name: 'contract-mention' }), // market %mention
   Iframe,
   TiptapTweet,
   TiptapSpoiler,
@@ -85,9 +86,18 @@ export function richTextToString(text?: JSONContent) {
   dfs(newText, (current) => {
     if (current.marks?.some((m) => m.type === TiptapSpoiler.name)) {
       current.text = '[spoiler]'
+    } else if (current.type === 'image') {
+      current.text = '[Image]'
+      // This is a hack, I've no idea how to change a tiptap extenstion's schema
+      current.type = 'text'
+    } else if (current.type === 'iframe') {
+      const src = current.attrs?.['src'] ? current.attrs['src'] : ''
+      current.text = '[Iframe]' + (src ? ` url:${src}` : '')
+      // This is a hack, I've no idea how to change a tiptap extenstion's schema
+      current.type = 'text'
     }
   })
-  return generateText(newText, exhibitExts)
+  return generateText(newText, stringParseExts)
 }
 
 const dfs = (data: JSONContent, f: (current: JSONContent) => any) => {

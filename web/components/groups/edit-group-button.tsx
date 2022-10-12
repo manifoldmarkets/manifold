@@ -3,13 +3,14 @@ import clsx from 'clsx'
 import { PencilIcon } from '@heroicons/react/outline'
 
 import { Group } from 'common/group'
-import { deleteGroup, joinGroup } from 'web/lib/firebase/groups'
+import { deleteGroup, joinGroup, updateGroup } from 'web/lib/firebase/groups'
 import { Spacer } from '../layout/spacer'
 import { useRouter } from 'next/router'
 import { Modal } from 'web/components/layout/modal'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
 import { useMemberIds } from 'web/hooks/use-group'
+import { Input } from '../input'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props
@@ -31,6 +32,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
     setIsSubmitting(true)
 
     await Promise.all(addMemberUsers.map((user) => joinGroup(group, user.id)))
+    await updateGroup(group, { name })
 
     setIsSubmitting(false)
     updateOpen(false)
@@ -53,9 +55,8 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
               <span className="mb-1">Group name</span>
             </label>
 
-            <input
+            <Input
               placeholder="Your group name"
-              className="input input-bordered resize-none"
               disabled={isSubmitting}
               value={name}
               onChange={(e) => setName(e.target.value || '')}

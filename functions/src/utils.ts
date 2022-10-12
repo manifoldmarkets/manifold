@@ -47,7 +47,7 @@ export const writeAsync = async (
     const batch = db.batch()
     for (const { doc, fields } of chunks[i]) {
       if (operationType === 'update') {
-        batch.update(doc, fields)
+        batch.update(doc, fields as any)
       } else {
         batch.set(doc, fields)
       }
@@ -110,6 +110,12 @@ export const getAllPrivateUsers = async () => {
   const firestore = admin.firestore()
   const users = await firestore.collection('private-users').get()
   return users.docs.map((doc) => doc.data() as PrivateUser)
+}
+
+export const getAllUsers = async () => {
+  const firestore = admin.firestore()
+  const users = await firestore.collection('users').get()
+  return users.docs.map((doc) => doc.data() as User)
 }
 
 export const getUserByUsername = async (username: string) => {

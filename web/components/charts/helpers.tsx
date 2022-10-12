@@ -9,6 +9,7 @@ import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 
@@ -168,6 +169,7 @@ export const SVGChart = <X, TT>(props: {
   const innerW = w - (margin.left + margin.right)
   const innerH = h - (margin.top + margin.bottom)
   const clipPathId = useMemo(() => nanoid(), [])
+  const isMobile = useIsMobile()
 
   const justSelected = useRef(false)
   useEffect(() => {
@@ -207,6 +209,15 @@ export const SVGChart = <X, TT>(props: {
     }
   }
 
+  const onTouchMove = (ev: React.TouchEvent) => {
+    if (onMouseOver) {
+      const touch = ev.touches[0]
+      const x = touch.pageX - ev.currentTarget.getBoundingClientRect().left
+      const y = touch.pageY - ev.currentTarget.getBoundingClientRect().top
+      onMouseOver(x, y)
+    }
+  }
+
   const onPointerLeave = () => {
     onMouseLeave?.()
   }
@@ -222,8 +233,9 @@ export const SVGChart = <X, TT>(props: {
             ttParams.y,
             innerW,
             innerH,
-            tooltipMeasure.width,
-            tooltipMeasure.height
+            tooltipMeasure.width ?? 140,
+            tooltipMeasure.height ?? 35,
+            isMobile ?? false
           )}
         >
           <Tooltip
@@ -242,18 +254,30 @@ export const SVGChart = <X, TT>(props: {
           <XAxis axis={xAxis} w={innerW} h={innerH} />
           <YAxis axis={yAxis} w={innerW} h={innerH} />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
-          <g
-            ref={overlayRef}
-            x="0"
-            y="0"
-            width={innerW}
-            height={innerH}
-            fill="none"
-            pointerEvents="all"
-            onPointerEnter={onPointerMove}
-            onPointerMove={onPointerMove}
-            onPointerLeave={onPointerLeave}
-          />
+          {!isMobile ? (
+            <g
+              ref={overlayRef}
+              x="0"
+              y="0"
+              width={innerW}
+              height={innerH}
+              fill="none"
+              pointerEvents="all"
+              onPointerEnter={onPointerMove}
+              onPointerMove={onPointerMove}
+              onPointerLeave={onPointerLeave}
+            />
+          ) : (
+            <rect
+              x="0"
+              y="0"
+              width={innerW}
+              height={innerH}
+              fill="transparent"
+              onTouchMove={onTouchMove}
+              onTouchEnd={onPointerLeave}
+            />
+          )}
         </g>
       </svg>
     </div>
@@ -267,23 +291,28 @@ export const getTooltipPosition = (
   mouseY: number,
   containerWidth: number,
   containerHeight: number,
-  tooltipWidth?: number,
-  tooltipHeight?: number
+  tooltipWidth: number,
+  tooltipHeight: number,
+  isMobile: boolean
 ) => {
   let left = mouseX + 12
-  let bottom = containerHeight - mouseY + 12
+  let bottom = !isMobile
+    ? containerHeight - mouseY + 12
+    : containerHeight - tooltipHeight + 12
   if (tooltipWidth != null) {
     const overflow = left + tooltipWidth - containerWidth
     if (overflow > 0) {
       left -= overflow
     }
   }
+
   if (tooltipHeight != null) {
     const overflow = tooltipHeight - mouseY
     if (overflow > 0) {
       bottom -= overflow
     }
   }
+
   return { left, bottom }
 }
 

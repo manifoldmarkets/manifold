@@ -49,6 +49,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   volume: number
   volume24Hours: number
   volume7Days: number
+  elasticity: number
 
   collectedFees: Fees
 
@@ -90,7 +91,8 @@ export type CPMM = {
   mechanism: 'cpmm-1'
   pool: { [outcome: string]: number }
   p: number // probability constant in y^p * n^(1-p) = k
-  totalLiquidity: number // in M$
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in M$
+  subsidyPool: number // current value of subsidy pool in M$
   prob: number
   probChanges: {
     day: number

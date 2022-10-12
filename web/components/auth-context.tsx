@@ -68,11 +68,11 @@ export function AuthProvider(props: {
   }, [setAuthUser, serverUser])
 
   useEffect(() => {
-    if (authUser != null) {
+    if (authUser) {
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
       localStorage.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
-    } else {
+    } else if (authUser === null) {
       localStorage.removeItem(CACHED_USER_KEY)
     }
   }, [authUser])

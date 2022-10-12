@@ -1,5 +1,6 @@
 import { track } from '@amplitude/analytics-browser'
 import { Editor } from '@tiptap/core'
+import { sum } from 'lodash'
 import clsx from 'clsx'
 import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
@@ -93,6 +94,7 @@ export function PostCommentInput(props: {
       replyTo={replyToUser}
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
+      pageId={post.id}
     />
   )
 }
@@ -109,6 +111,7 @@ export function PostComment(props: {
   const { text, content, userUsername, userName, userAvatarUrl, createdTime } =
     comment
 
+  const me = useUser()
   const [highlighted, setHighlighted] = useState(false)
   const router = useRouter()
   useEffect(() => {
@@ -162,7 +165,11 @@ export function PostComment(props: {
               Reply
             </button>
           )}
-          <Tipper comment={comment} tips={tips ?? {}} />
+          <Tipper
+            comment={comment}
+            myTip={me ? tips?.[me.id] ?? 0 : 0}
+            totalTip={sum(Object.values(tips ?? {}))}
+          />
         </Row>
       </div>
     </Row>

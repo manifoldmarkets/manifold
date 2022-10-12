@@ -146,3 +146,24 @@ export const newEndpoint = (endpointOpts: EndpointOptions, fn: Handler) => {
     },
   } as EndpointDefinition
 }
+
+export const newEndpointNoAuth = (
+  endpointOpts: EndpointOptions,
+  fn: (req: Request) => Promise<Output>
+) => {
+  const opts = Object.assign({}, DEFAULT_OPTS, endpointOpts)
+  return {
+    opts,
+    handler: async (req: Request, res: Response) => {
+      log(`${req.method} ${req.url} ${JSON.stringify(req.body)}`)
+      try {
+        if (opts.method !== req.method) {
+          throw new APIError(405, `This endpoint supports only ${opts.method}.`)
+        }
+        res.status(200).json(await fn(req))
+      } catch (e) {
+        writeResponseError(e, res)
+      }
+    },
+  } as EndpointDefinition
+}
