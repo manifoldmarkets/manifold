@@ -1,11 +1,13 @@
 import * as admin from 'firebase-admin'
 import fetch from 'node-fetch'
 
-import { chunk } from 'lodash'
+import { chunk, groupBy, mapValues, sumBy } from 'lodash'
 import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
+import { FieldValue, Transaction } from 'firebase-admin/firestore'
+import { toBatches } from 'common/util/array'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -128,38 +130,29 @@ export const getUserByUsername = async (username: string) => {
   return snap.empty ? undefined : (snap.docs[0].data() as User)
 }
 
+const firestore = admin.firestore()
+
 const updateUserBalance = (
+  transaction: Transaction,
   userId: string,
-  delta: number,
-  isDeposit = false
+  balanceDelta: number,
+  depositDelta: number
 ) => {
-  const firestore = admin.firestore()
-  return firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${userId}`)
-    const userSnap = await transaction.get(userDoc)
-    if (!userSnap.exists) return
-    const user = userSnap.data() as User
+  const userDoc = firestore.doc(`users/${userId}`)
 
-    const newUserBalance = user.balance + delta
-
-    // if (newUserBalance < 0)
-    //   throw new Error(
-    //     `User (${userId}) balance cannot be negative: ${newUserBalance}`
-    //   )
-
-    if (isDeposit) {
-      const newTotalDeposits = (user.totalDeposits || 0) + delta
-      transaction.update(userDoc, { totalDeposits: newTotalDeposits })
-    }
-
-    transaction.update(userDoc, { balance: newUserBalance })
+  // Note: Balance is allowed to go negative.
+  transaction.update(userDoc, {
+    balance: FieldValue.increment(balanceDelta),
+    totalDeposits: FieldValue.increment(depositDelta),
   })
 }
 
 export const payUser = (userId: string, payout: number, isDeposit = false) => {
   if (!isFinite(payout)) throw new Error('Payout is not finite: ' + payout)
 
-  return updateUserBalance(userId, payout, isDeposit)
+  return firestore.runTransaction(async (transaction) => {
+    updateUserBalance(transaction, userId, payout, isDeposit ? payout : 0)
+  })
 }
 
 export const chargeUser = (
@@ -170,7 +163,67 @@ export const chargeUser = (
   if (!isFinite(charge) || charge <= 0)
     throw new Error('User charge is not positive: ' + charge)
 
-  return updateUserBalance(userId, -charge, isAnte)
+  return payUser(userId, -charge, isAnte)
+}
+
+const checkAndMergePayouts = (
+  payouts: {
+    userId: string
+    payout: number
+    deposit?: number
+  }[]
+) => {
+  for (const { payout, deposit } of payouts) {
+    if (!isFinite(payout)) {
+      throw new Error('Payout is not finite: ' + payout)
+    }
+    if (deposit !== undefined && !isFinite(deposit)) {
+      throw new Error('Deposit is not finite: ' + deposit)
+    }
+  }
+
+  const groupedPayouts = groupBy(payouts, 'userId')
+  return Object.values(
+    mapValues(groupedPayouts, (payouts, userId) => ({
+      userId,
+      payout: sumBy(payouts, 'payout'),
+      deposit: sumBy(payouts, (p) => p.deposit ?? 0),
+    }))
+  )
+}
+
+// Max 500 users in one transaction.
+export const payUsers = (
+  transaction: Transaction,
+  payouts: {
+    userId: string
+    payout: number
+    deposit?: number
+  }[]
+) => {
+  const mergedPayouts = checkAndMergePayouts(payouts)
+  for (const { userId, payout, deposit } of mergedPayouts) {
+    updateUserBalance(transaction, userId, payout, deposit)
+  }
+}
+
+export const payUsersMultipleTransactions = async (
+  payouts: {
+    userId: string
+    payout: number
+    deposit?: number
+  }[]
+) => {
+  const mergedPayouts = checkAndMergePayouts(payouts)
+  const batchedPayouts = toBatches(mergedPayouts, 500)
+
+  for (const batch of batchedPayouts) {
+    await firestore.runTransaction(async (transaction) => {
+      for (const { userId, payout, deposit } of batch) {
+        updateUserBalance(transaction, userId, payout, deposit)
+      }
+    })
+  }
 }
 
 export const getContractPath = (contract: Contract) => {
