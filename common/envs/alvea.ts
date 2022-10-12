@@ -11,7 +11,7 @@ export const ALVEA_CONFIG: EnvConfig = {
     appId: '1:854070403258:web:b8b5f303bc97d010882283',
     measurementId: 'G-QHP8V3BM54',
   },
-  cloudRunId: '', // TODO: fill in real ID
+  cloudRunId: '2iftcb75eq',
   cloudRunRegion: 'uc',
   adminEmails: [...PROD_CONFIG.adminEmails],
   whitelistEmail: '@alveavax.com',
