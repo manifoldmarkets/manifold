@@ -386,14 +386,9 @@ function JoinGroupButton(props: {
 
   return (
     <div>
-      <button
-        onClick={follow}
-        className={
-          'btn-md btn-outline btn w-full whitespace-nowrap normal-case'
-        }
-      >
+      <Button onClick={follow} color="blue">
         Follow
-      </button>
+      </Button>
     </div>
   )
 }

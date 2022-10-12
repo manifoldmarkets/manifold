@@ -72,7 +72,6 @@ export function ResolutionPanel(props: {
         className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
-        btnClassName={isSubmitting ? 'btn-disabled' : ''}
       />
       <Spacer h={4} />
       <div>

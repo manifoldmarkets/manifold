@@ -95,7 +95,7 @@ export function UserPage(props: { user: User }) {
           )}
 
           <Col className="w-full gap-4 pl-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
               <Col>
                 <span className="break-anywhere text-lg font-bold sm:text-2xl">
                   {user.name}
