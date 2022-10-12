@@ -27,8 +27,8 @@ import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
 import { ChatIcon } from '@heroicons/react/outline'
 
-export function getAnswerColor(answer: Answer, answersArray: Answer[]) {
-  const colorIndex = answersArray.indexOf(answer)
+export function getAnswerColor(answer: Answer, answersArray: string[]) {
+  const colorIndex = answersArray.indexOf(answer.text)
   return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
     ? CHOICE_ANSWER_COLORS[colorIndex]
     : '#B1B1C7'
@@ -114,7 +114,7 @@ export function AnswersPanel(props: {
     ? 'checkbox'
     : undefined
 
-  const answersArray = useChartAnswers(contract)
+  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
 
   return (
     <Col className="gap-3">

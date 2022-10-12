@@ -82,7 +82,7 @@ export function AnswerCommentInput(props: {
   contract: Contract<AnyContractType>
   answerResponse: Answer
   onCancelAnswerResponse?: () => void
-  answersArray: Answer[]
+  answersArray: string[]
 }) {
   const { contract, answerResponse, onCancelAnswerResponse, answersArray } =
     props

@@ -47,7 +47,6 @@ export function CommentsAnswer(props: {
 
   return (
     <Row>
-      {/* TODO: known bug, doesn't grab color in time and it is gray */}
       <div
         className="w-2"
         style={{
@@ -89,7 +88,7 @@ export function FreeResponseComments(props: {
     commentsByParent,
     tips,
   } = props
-  const answersArray = useChartAnswers(contract)
+  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
   return (
     <>
       {answerResponse && (
