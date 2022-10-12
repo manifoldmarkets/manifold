@@ -1,4 +1,5 @@
 import { escapeRegExp } from 'lodash'
+import { ALVEA_CONFIG } from './alvea'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 import { THEOREMONE_CONFIG } from './theoremone'
@@ -9,6 +10,7 @@ const CONFIGS: { [env: string]: EnvConfig } = {
   PROD: PROD_CONFIG,
   DEV: DEV_CONFIG,
   THEOREMONE: THEOREMONE_CONFIG,
+  ALVEA: ALVEA_CONFIG,
 }
 
 export const ENV_CONFIG = CONFIGS[ENV]
