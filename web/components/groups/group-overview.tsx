@@ -192,7 +192,9 @@ function GroupOverviewPinned(props: {
     updateGroup(group, { pinnedItems: newPinned })
   }
 
-  return isEditable || (group.pinnedItems && group.pinnedItems.length > 0) ? (
+  if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>
+
+  return isEditable || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
     <PinnedItems
       posts={posts}
       group={group}
