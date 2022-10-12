@@ -1,9 +1,8 @@
 import { memo, useState } from 'react'
-import { getOutcomeProbability } from 'common/calculate'
 import { Pagination } from 'web/components/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
-import { FeedAnswerCommentGroup } from '../feed/feed-answer-comment-group'
+import { CommentsAnswer } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
@@ -25,7 +24,6 @@ import {
 import { buildArray } from 'common/util/array'
 import { ContractComment } from 'common/comment'
 
-import { Button } from 'web/components/button'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/tooltip'
@@ -36,14 +34,27 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
+import Curve from 'web/public/custom-components/curve'
+import { Answer } from 'common/answer'
+import { AnswerCommentInput } from '../comment-input'
 
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
   userBets: Bet[]
   comments: ContractComment[]
+  answerResponse?: Answer | undefined
+  onCancelAnswerResponse?: () => void
 }) {
-  const { contract, bets, userBets, comments } = props
+  const {
+    contract,
+    bets,
+    userBets,
+    comments,
+    answerResponse,
+    onCancelAnswerResponse,
+  } = props
 
   const yourTrades = (
     <div>
@@ -56,7 +67,14 @@ export function ContractTabs(props: {
   const tabs = buildArray(
     {
       title: 'Comments',
-      content: <CommentsTabContent contract={contract} comments={comments} />,
+      content: (
+        <CommentsTabContent
+          contract={contract}
+          comments={comments}
+          answerResponse={answerResponse}
+          onCancelAnswerResponse={onCancelAnswerResponse}
+        />
+      ),
     },
     bets.length > 0 && {
       title: capitalize(PAST_BETS),
@@ -76,8 +94,10 @@ export function ContractTabs(props: {
 const CommentsTabContent = memo(function CommentsTabContent(props: {
   contract: Contract
   comments: ContractComment[]
+  answerResponse?: Answer
+  onCancelAnswerResponse?: () => void
 }) {
-  const { contract } = props
+  const { contract, answerResponse, onCancelAnswerResponse } = props
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
@@ -95,10 +115,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const shouldBeNewestFirst = (c: ContractComment) =>
-    c.replyToCommentId == undefined &&
-    (contract.outcomeType === 'FREE_RESPONSE'
-      ? c.betId === undefined && c.answerOutcome == undefined
-      : true)
+    c.replyToCommentId == undefined
 
   // TODO: links to comments are broken because tips load after render and
   //  comments will reorganize themselves if there are tips/bounties awarded
@@ -123,73 +140,85 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   const topLevelComments = commentsByParent['_'] ?? []
 
   const sortRow = comments.length > 0 && (
-    <Row className="mb-4 items-center">
-      <Button
-        size={'xs'}
-        color={'gray-white'}
-        onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
-      >
-        <Tooltip
-          text={
-            sort === 'Best'
-              ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
-              : ''
-          }
-        >
-          Sort by: {sort}
-        </Tooltip>
-      </Button>
-
+    <Row className="mb-4 items-center justify-end gap-4">
       <BountiedContractSmallBadge contract={contract} showAmount />
+      <Row className="items-center gap-1">
+        <div className="text-greyscale-4 text-sm">Sort by:</div>
+        <button
+          className="text-greyscale-6 w-20 text-sm"
+          onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+        >
+          <Tooltip
+            text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
+          >
+            <Row className="items-center gap-1">
+              {sort}
+              <TriangleDownFillIcon className=" h-2 w-2" />
+            </Row>
+          </Tooltip>
+        </button>
+      </Row>
     </Row>
   )
-
   if (contract.outcomeType === 'FREE_RESPONSE') {
-    const sortedAnswers = sortBy(
-      contract.answers,
-      (a) => -getOutcomeProbability(contract, a.id)
-    )
-    const commentsByOutcome = groupBy(
-      sortedComments,
-      (c) => c.answerOutcome ?? c.betOutcome ?? '_'
-    )
-    const generalTopLevelComments = topLevelComments.filter(
-      (c) => c.answerOutcome === undefined && c.betId === undefined
-    )
-
     return (
       <>
+        <ContractCommentInput className="mb-5" contract={contract} />
         {sortRow}
-        {sortedAnswers.map((answer) => (
-          <div key={answer.id} className="relative pb-4">
-            <span
-              className="absolute top-5 left-5 -ml-px h-[calc(100%-2rem)] w-0.5 bg-gray-200"
-              aria-hidden="true"
-            />
-            <FeedAnswerCommentGroup
-              contract={contract}
-              answer={answer}
-              answerComments={commentsByOutcome[answer.number.toString()] ?? []}
-              tips={tips}
-            />
-          </div>
-        ))}
-        <Col className="mt-8 flex w-full">
-          <div className="text-md mt-8 mb-2 text-left">General Comments</div>
-          <div className="mb-4 w-full border-b border-gray-200" />
-          <ContractCommentInput className="mb-5" contract={contract} />
-          {sortRow}
-
-          {generalTopLevelComments.map((comment) => (
-            <FeedCommentThread
-              key={comment.id}
-              contract={contract}
-              parentComment={comment}
-              threadComments={commentsByParent[comment.id] ?? []}
-              tips={tips}
-            />
-          ))}
-        </Col>
+        {answerResponse && (
+          <AnswerCommentInput
+            contract={contract}
+            answerResponse={answerResponse}
+            onCancelAnswerResponse={onCancelAnswerResponse}
+          />
+        )}
+        {topLevelComments.map((parent) => {
+          if (parent.answerOutcome === undefined) {
+            return (
+              <FeedCommentThread
+                key={parent.id}
+                contract={contract}
+                parentComment={parent}
+                threadComments={sortBy(
+                  commentsByParent[parent.id] ?? [],
+                  (c) => c.createdTime
+                )}
+                tips={tips}
+              />
+            )
+          }
+          const answer = contract.answers.find(
+            (answer) => answer.id === parent.answerOutcome
+          )
+          if (answer === undefined) {
+            console.error('Could not find answer that matches ID')
+            return <></>
+          }
+          return (
+            <>
+              <Row className="gap-2">
+                <CommentsAnswer answer={answer} contract={contract} />
+              </Row>
+              <Row>
+                <div className="ml-1">
+                  <Curve size={28} strokeWidth={1} color="#D8D8EB" />
+                </div>
+                <div className="w-full pt-1">
+                  <FeedCommentThread
+                    key={parent.id}
+                    contract={contract}
+                    parentComment={parent}
+                    threadComments={sortBy(
+                      commentsByParent[parent.id] ?? [],
+                      (c) => c.createdTime
+                    )}
+                    tips={tips}
+                  />
+                </div>
+              </Row>
+            </>
+          )
+        })}
       </>
     )
   } else {
