@@ -62,9 +62,11 @@ import { Post } from 'common/post'
 import { isAdmin } from 'common/envs/constants'
 import { useAllPosts } from 'web/hooks/use-post'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export default function Home() {
   const user = useUser()
+  const isAdmin = useAdmin()
 
   useTracking('view home')
 
@@ -131,12 +133,16 @@ export default function Home() {
           <LoadingIndicator />
         ) : (
           <>
-            {renderSections(sections, {
-              score: trendingContracts,
-              newest: newContracts,
-              'daily-trending': dailyTrendingContracts,
-              'daily-movers': contractMetricsByProfit,
-            })}
+            {renderSections(
+              sections,
+              {
+                score: trendingContracts,
+                newest: newContracts,
+                'daily-trending': dailyTrendingContracts,
+                'daily-movers': contractMetricsByProfit,
+              },
+              isAdmin
+            )}
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -209,7 +215,8 @@ function renderSections(
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
-  }
+  },
+  isAdmin: boolean
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -226,7 +233,7 @@ function renderSections(
 
         if (id === 'featured') {
           // For now, only admins can see the featured section, until we all agree its ship-ready
-          if (!isAdmin()) return <></>
+          if (!isAdmin) return <></>
           return <FeaturedSection />
         }
 
