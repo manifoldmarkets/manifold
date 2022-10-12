@@ -47,9 +47,8 @@ export function AmountInput(props: {
           </span>
           <Input
             className={clsx(
-              'pl-9',
+              'w-24 pl-9 !text-base md:w-auto',
               error && 'input-error',
-              'w-24 md:w-auto',
               inputClassName
             )}
             ref={inputRef}

@@ -271,7 +271,7 @@ export function BuyPanel(props: {
     })
   }
 
-  const betDisabled = isSubmitting || !betAmount || error
+  const betDisabled = isSubmitting || !betAmount || !!error
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
     outcome ?? 'YES',
@@ -493,7 +493,7 @@ function LimitOrderPanel(props: {
     !betAmount ||
     rangeError ||
     outOfRangeError ||
-    error ||
+    !!error ||
     (!hasYesLimitBet && !hasNoLimitBet)
 
   const yesLimitProb =
@@ -785,11 +785,11 @@ function LimitOrderPanel(props: {
       {user && (
         <Button
           size="xl"
-          disabled={betDisabled ? true : false}
+          disabled={betDisabled}
           color={'indigo'}
           loading={isSubmitting}
           className="flex-1"
-          onClick={betDisabled ? undefined : submitBet}
+          onClick={submitBet}
         >
           {isSubmitting
             ? 'Submitting...'
