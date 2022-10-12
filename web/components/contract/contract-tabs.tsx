@@ -107,7 +107,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   onCancelAnswerResponse?: () => void
 }) {
   const { contract, answerResponse, onCancelAnswerResponse } = props
-  console.log(answerResponse)
   const tips = useTipTxns({ contractId: contract.id })
   const comments = useComments(contract.id) ?? props.comments
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
@@ -175,16 +174,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
     </Row>
   )
 
-  // console.log('answer response:: ', answerResponse)
-  // sortedComments.map((comment, index) =>
-  //   console.log(
-  //     index,
-  //     ',',
-  //     comment.content.content[0].content[0].text,
-  //     ':',
-  //     dayjs(comment.createdTime).format('MM/DD/YY H:mm')
-  //   )
-  // )
   if (contract.outcomeType === 'FREE_RESPONSE') {
     return (
       <>

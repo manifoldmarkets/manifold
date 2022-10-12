@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useState } from 'react'
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 import dayjs from 'dayjs'
 
@@ -209,11 +209,11 @@ export function ContractPageContent(
   const [answerResponse, setAnswerResponse] = useState<Answer | undefined>(
     undefined
   )
-
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
+    answerRef.current.scrollIntoView({ behavior: 'smooth' })
   })
-
+  const answerRef = useRef(null)
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
   return (
@@ -293,14 +293,16 @@ export function ContractPageContent(
           userBets={userBets}
         />
 
-        <ContractTabs
-          contract={contract}
-          bets={bets}
-          userBets={userBets}
-          comments={comments}
-          answerResponse={answerResponse}
-          onCancelAnswerResponse={onCancelAnswerResponse}
-        />
+        <div ref={answerRef}>
+          <ContractTabs
+            contract={contract}
+            bets={bets}
+            userBets={userBets}
+            comments={comments}
+            answerResponse={answerResponse}
+            onCancelAnswerResponse={onCancelAnswerResponse}
+          />
+        </div>
       </Col>
       {!isCreator && <RecommendedContractsWidget contract={contract} />}
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />

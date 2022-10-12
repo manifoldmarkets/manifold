@@ -158,7 +158,7 @@ export function CommentInputTextArea(props: {
           attrs: { label: replyTo.username, id: replyTo.id },
         })
         .insertContent(' ')
-        .focus()
+        .focus(undefined, { scrollIntoView: false })
         .run()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
