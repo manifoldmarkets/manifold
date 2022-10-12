@@ -7,7 +7,7 @@ export const ExpandingInput = (props: Parameters<typeof Textarea>[0]) => {
   return (
     <Textarea
       className={clsx(
-        'textarea textarea-bordered resize-none text-[16px] md:text-[14px]',
+        'resize-none rounded-md border border-gray-300 bg-white px-4 text-[16px] leading-loose shadow-sm transition-colors focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 md:text-[14px]',
         className
       )}
       {...rest}

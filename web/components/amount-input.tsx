@@ -46,11 +46,7 @@ export function AmountInput(props: {
             {label}
           </span>
           <Input
-            className={clsx(
-              'w-24 pl-9 !text-base md:w-auto',
-              error && 'input-error',
-              inputClassName
-            )}
+            className={clsx('w-24 pl-9 !text-base md:w-auto', inputClassName)}
             ref={inputRef}
             type="text"
             pattern="[0-9]*"
@@ -58,6 +54,7 @@ export function AmountInput(props: {
             placeholder="0"
             maxLength={6}
             value={amount ?? ''}
+            error={!!error}
             disabled={disabled}
             onChange={(e) => onAmountChange(e.target.value)}
           />
