@@ -23,7 +23,7 @@ service cloud.firestore {
       allow read;
     }
 
-    match /homeConfig/homeConfig {
+    match /globalConfig/globalConfig {
       allow read;
       allow update: if isAdmin()
       allow create: if isAdmin()

@@ -53,14 +53,15 @@ import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Input } from 'web/components/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
-import { getHomeConfig, updateHomeConfig } from 'web/lib/firebase/homeConfig'
-import { HomeConfig } from 'common/homeConfig'
-import { getAllPosts, getPost } from 'web/lib/firebase/posts'
+import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
+import { getPost } from 'web/lib/firebase/posts'
 import { PostCard } from 'web/components/post-card'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Post } from 'common/post'
 import { isAdmin } from 'common/envs/constants'
+import { useAllPosts } from 'web/hooks/use-post'
+import { useGlobalConfig } from 'web/hooks/use-global-config'
 
 export default function Home() {
   const user = useUser()
@@ -174,7 +175,7 @@ const HOME_SECTIONS = [
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
-]
+] as const
 
 export const getHomeItems = (sections: string[]) => {
   // Accommodate old home sections.
@@ -210,12 +211,7 @@ function renderSections(
     score: CPMMBinaryContract[]
   }
 ) {
-  type sectionTypes =
-    | 'daily-movers'
-    | 'daily-trending'
-    | 'newest'
-    | 'score'
-    | 'featured'
+  type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
   return (
     <>
@@ -349,22 +345,16 @@ function SearchSection(props: {
 
 function FeaturedSection() {
   const [pinned, setPinned] = useState<JSX.Element[]>([])
-  const [posts, setPosts] = useState<Post[]>([])
-  const [homeConfig, setHomeConfig] = useState<HomeConfig | undefined>(
-    undefined
-  )
-  useEffect(() => {
-    getHomeConfig().then(setHomeConfig)
-    getAllPosts().then(setPosts)
-  }, [])
+  const posts = useAllPosts()
+  const globalConfig = useGlobalConfig()
 
   useEffect(() => {
-    const pinnedItems = homeConfig?.pinnedItems
+    const pinnedItems = globalConfig?.pinnedItems
 
     async function getPinned() {
       if (pinnedItems == null) {
-        if (homeConfig != null) {
-          updateHomeConfig(homeConfig, { pinnedItems: [] })
+        if (globalConfig != null) {
+          updateGlobalConfig(globalConfig, { pinnedItems: [] })
         }
       } else {
         const itemComponents = await Promise.all(
@@ -390,26 +380,24 @@ function FeaturedSection() {
       }
     }
     getPinned()
-  }, [homeConfig])
+  }, [globalConfig])
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
-    if (homeConfig == null) return
-    await updateHomeConfig(homeConfig, {
+    if (globalConfig == null) return
+    await updateGlobalConfig(globalConfig, {
       pinnedItems: [
-        ...(homeConfig?.pinnedItems ?? []),
+        ...(globalConfig?.pinnedItems ?? []),
         ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
       ],
     })
-    getHomeConfig().then(setHomeConfig)
   }
 
   function onDeleteClicked(index: number) {
-    if (homeConfig == null) return
-    const newPinned = homeConfig.pinnedItems.filter((item) => {
-      return item.itemId !== homeConfig.pinnedItems[index].itemId
+    if (globalConfig == null) return
+    const newPinned = globalConfig.pinnedItems.filter((item) => {
+      return item.itemId !== globalConfig.pinnedItems[index].itemId
     })
-    updateHomeConfig(homeConfig, { pinnedItems: newPinned })
-    getHomeConfig().then(setHomeConfig)
+    updateGlobalConfig(globalConfig, { pinnedItems: newPinned })
   }
 
   return (
