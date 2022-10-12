@@ -52,6 +52,10 @@ export async function listPosts(postIds?: string[]) {
   return Promise.all(postIds.map(getPost))
 }
 
+export function getAllPosts() {
+  return getValues<Post>(posts)
+}
+
 export async function getDateDocs() {
   const q = query(posts, where('type', '==', 'date-doc'))
   return getValues<DateDoc>(q)
