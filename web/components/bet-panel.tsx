@@ -470,7 +470,6 @@ function LimitOrderPanel(props: {
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [lowLimitProb, setLowLimitProb] = useState<number | undefined>()
   const [highLimitProb, setHighLimitProb] = useState<number | undefined>()
-  const betChoice = 'YES'
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
