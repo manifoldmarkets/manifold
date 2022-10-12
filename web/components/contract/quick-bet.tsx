@@ -166,14 +166,14 @@ export function QuickBet(props: {
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? 'text-green-500' : 'text-gray-400'
+              upHover ? 'text-teal-500' : 'text-gray-400'
             )}
           />
         ) : (
           <TriangleFillIcon
             className={clsx(
               'mx-auto h-5 w-5',
-              upHover ? 'text-green-500' : 'text-gray-200'
+              upHover ? 'text-teal-500' : 'text-gray-200'
             )}
           />
         )}
@@ -201,14 +201,14 @@ export function QuickBet(props: {
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',
-                downHover ? 'text-red-500' : 'text-gray-400'
+                downHover ? 'text-red-400' : 'text-gray-400'
               )}
             />
           ) : (
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',
-                downHover ? 'text-red-500' : 'text-gray-200'
+                downHover ? 'text-red-400' : 'text-gray-200'
               )}
             />
           )}
