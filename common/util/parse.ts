@@ -23,7 +23,7 @@ import { Mention } from '@tiptap/extension-mention'
 import Iframe from './tiptap-iframe'
 import TiptapTweet from './tiptap-tweet-type'
 import { find } from 'linkifyjs'
-import { cloneDeep, uniq } from 'lodash'
+import { uniq } from 'lodash'
 import { TiptapSpoiler } from './tiptap-spoiler'
 
 /** get first url in text. like "notion.so " -> "http://notion.so"; "notion" -> null */
@@ -51,8 +51,8 @@ export function parseMentions(data: JSONContent): string[] {
   return uniq(mentions)
 }
 
-// can't just do [StarterKit, Image...] because it doesn't work with cjs imports
 const stringParseExts = [
+  // StarterKit extensions
   Blockquote,
   Bold,
   BulletList,
@@ -69,38 +69,20 @@ const stringParseExts = [
   Paragraph,
   Strike,
   Text,
-
-  Image,
+  // other extensions
   Link,
+  Image.extend({ renderText: () => '[image]' }),
   Mention, // user @mention
   Mention.extend({ name: 'contract-mention' }), // market %mention
-  Iframe,
-  TiptapTweet,
-  TiptapSpoiler,
+  Iframe.extend({
+    renderText: ({ node }) =>
+      '[embed]' + node.attrs.src ? `(${node.attrs.src})` : '',
+  }),
+  TiptapTweet.extend({ renderText: () => '[tweet]' }),
+  TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),
 ]
 
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
-  // remove spoiler tags.
-  const newText = cloneDeep(text)
-  dfs(newText, (current) => {
-    if (current.marks?.some((m) => m.type === TiptapSpoiler.name)) {
-      current.text = '[spoiler]'
-    } else if (current.type === 'image') {
-      current.text = '[Image]'
-      // This is a hack, I've no idea how to change a tiptap extenstion's schema
-      current.type = 'text'
-    } else if (current.type === 'iframe') {
-      const src = current.attrs?.['src'] ? current.attrs['src'] : ''
-      current.text = '[Iframe]' + (src ? ` url:${src}` : '')
-      // This is a hack, I've no idea how to change a tiptap extenstion's schema
-      current.type = 'text'
-    }
-  })
-  return generateText(newText, stringParseExts)
-}
-
-const dfs = (data: JSONContent, f: (current: JSONContent) => any) => {
-  data.content?.forEach((d) => dfs(d, f))
-  f(data)
+  return generateText(text, stringParseExts)
 }
