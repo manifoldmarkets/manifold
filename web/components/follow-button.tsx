@@ -20,7 +20,7 @@ export function FollowButton(props: {
 
   if (!user || isFollowing === undefined)
     return (
-      <Button size="sm" color="blue" className={className}>
+      <Button size="sm" color="gray" className={className}>
         Follow
       </Button>
     )
@@ -41,7 +41,7 @@ export function FollowButton(props: {
   return (
     <Button
       size="sm"
-      color="blue"
+      color="gray"
       className={clsx(className, 'my-auto')}
       onClick={withTracking(onFollow, 'follow')}
     >
