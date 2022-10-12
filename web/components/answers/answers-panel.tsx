@@ -30,7 +30,7 @@ import { ChatIcon } from '@heroicons/react/outline'
 export function getAnswerColor(answer: Answer, answersArray: Answer[]) {
   const colorIndex = answersArray.indexOf(answer)
   return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
-    ? CHOICE_ANSWER_COLORS[colorIndex] + '90' // semi-transparent
+    ? CHOICE_ANSWER_COLORS[colorIndex] // semi-transparent
     : '#B1B1C755'
 }
 
@@ -116,7 +116,6 @@ export function AnswersPanel(props: {
 
   const answersArray = useChartAnswers(contract)
 
-  console.log(answersArray)
   return (
     <Col className="gap-3">
       {(resolveOption || resolution) &&
@@ -219,7 +218,7 @@ function OpenAnswer(props: {
           tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
         )}
         style={{
-          background: `linear-gradient(to right, ${color} ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
+          background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
         }}
       >
         <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">

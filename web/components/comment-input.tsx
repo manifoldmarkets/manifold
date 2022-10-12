@@ -82,15 +82,25 @@ export function AnswerCommentInput(props: {
   contract: Contract<AnyContractType>
   answerResponse: Answer
   onCancelAnswerResponse?: () => void
+  answersArray: Answer[]
 }) {
-  const { contract, answerResponse, onCancelAnswerResponse } = props
+  const { contract, answerResponse, onCancelAnswerResponse, answersArray } =
+    props
   const replyTo = {
     id: answerResponse.id,
     username: answerResponse.username,
   }
+  const color = getAnswerColor(answerResponse, answersArray)
+  console.log('color:', color)
   return (
     <>
-      <CommentsAnswer answer={answerResponse} contract={contract} />
+      <div className="opacity-60">
+        <CommentsAnswer
+          answer={answerResponse}
+          contract={contract}
+          color={color}
+        />
+      </div>
       <Row>
         <div className="ml-1">
           <Curve size={28} strokeWidth={1} color="#D8D8EB" />
