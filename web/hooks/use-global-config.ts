@@ -7,6 +7,6 @@ export const useGlobalConfig = () => {
 
   useEffect(() => {
     listenForGlobalConfig(setGlobalConfig)
-  }, [globalConfig])
+  }, [])
   return globalConfig
 }
