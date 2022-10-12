@@ -4,7 +4,6 @@ import { Title } from 'web/components/title'
 
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { createPost } from 'web/lib/firebase/api'
-import clsx from 'clsx'
 import Router from 'next/router'
 import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { postPath } from 'web/lib/firebase/posts'
