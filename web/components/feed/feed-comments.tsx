@@ -37,7 +37,7 @@ export function FeedCommentThread(props: {
 }) {
   const { contract, threadComments, tips, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
-  const [seeReplies, setSeeReplies] = useState(false)
+  const [seeReplies, setSeeReplies] = useState(true)
 
   const user = useUser()
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
