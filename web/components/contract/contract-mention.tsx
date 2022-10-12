@@ -6,17 +6,19 @@ import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { fromNow } from 'web/lib/util/time'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
 import { getColor } from './quick-bet'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export function ContractMention(props: { contract: Contract }) {
   const { contract } = props
   const { outcomeType, resolution } = contract
   const probTextColor = `text-${getColor(contract)}`
+  const isClient = useIsClient()
 
   return (
     <Link href={contractPath(contract)}>
       <a
         className="group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50"
-        title={tooltipLabel(contract)}
+        title={isClient ? tooltipLabel(contract) : undefined}
       >
         <span className="break-anywhere mr-0.5 whitespace-normal font-normal text-indigo-700">
           {contract.question}
