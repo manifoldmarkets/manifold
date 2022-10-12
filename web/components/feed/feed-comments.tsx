@@ -114,7 +114,6 @@ export function ParentFeedComment(props: {
   } = props
   const { text, content, userUsername, userAvatarUrl } = comment
 
-  const router = useRouter()
   const { isReady, asPath } = useRouter()
   const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)

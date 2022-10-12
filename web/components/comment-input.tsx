@@ -11,7 +11,7 @@ import Curve from 'web/public/custom-components/curve'
 import { Avatar } from './avatar'
 import { TextEditor, useTextEditor } from './editor'
 import { CommentsAnswer } from './feed/feed-answer-comment-group'
-import { ContractCommentInput, ReplyTo } from './feed/feed-comments'
+import { ContractCommentInput } from './feed/feed-comments'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
 
