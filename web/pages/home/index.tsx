@@ -226,7 +226,7 @@ function renderSections(
 
         if (id === 'featured') {
           // For now, only admins can see the featured section, until we all agree its ship-ready
-          if (!isAdmin) return <></>
+          if (!isAdmin()) return <></>
           return <FeaturedSection />
         }
 
