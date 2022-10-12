@@ -1,11 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { Row } from '../layout/row'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import {
@@ -42,6 +38,7 @@ import { SiteLink } from '../site-link'
 import { ProbChange } from './prob-change-table'
 import { Card } from '../card'
 import { ProfitBadgeMana } from '../profit-badge'
+import { floatingEqual } from 'common/util/math'
 
 export function ContractCard(props: {
   contract: Contract
@@ -405,7 +402,7 @@ export function ContractCardProbChange(props: {
   const metrics = useUserContractMetrics(user?.id, contract.id)
   const dayMetrics = metrics && metrics.from && metrics.from.day
   const outcome =
-    metrics && metrics.hasShares && metrics.totalShares.YES ? 'YES' : 'NO'
+    metrics && floatingEqual(metrics.totalShares.NO ?? 0, 0) ? 'YES' : 'NO'
 
   return (
     <Card className={clsx(className, 'mb-4')}>
@@ -423,7 +420,7 @@ export function ContractCardProbChange(props: {
         </SiteLink>
         <ProbChange className="py-2 pr-4" contract={contract} />
       </Row>
-      {showPosition && metrics && (
+      {showPosition && metrics && metrics.hasShares && (
         <Row
           className={clsx(
             'items-center justify-between gap-4 pl-6 pr-4 pb-2 text-sm'
@@ -431,7 +428,7 @@ export function ContractCardProbChange(props: {
         >
           <Row className="gap-1 text-gray-700">
             <div className="text-gray-500">Position</div>
-            {formatMoney(metrics.payout)} {outcome}
+            {Math.floor(metrics.totalShares[outcome])} {outcome}
           </Row>
 
           {dayMetrics && (
