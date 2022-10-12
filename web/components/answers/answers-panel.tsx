@@ -27,16 +27,6 @@ import { CATEGORY_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
 import { ChatIcon } from '@heroicons/react/outline'
 
-// TODO: get a color
-// export function useAnswerColor(answer: Answer, contract:Contract) {
-//     const colorSortedAnswer = useChartAnswers(contract).map(
-//     (value, _index) => value.text
-//   )
-//   colorIndex={colorSortedAnswer.indexOf(answer.text)}
-//   const color =
-//     colorIndex != undefined ? CATEGORY_COLORS[colorIndex] : '#B1B1C7'
-// }
-
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   onAnswerCommentClick: (answer: Answer) => void

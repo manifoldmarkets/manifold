@@ -154,14 +154,17 @@ export function ParentFeedComment(props: {
             numComments={numComments}
             onClick={onSeeReplyClick}
           />
-          <Row className="my-auto grow justify-end">
+          <Row className="grow justify-end gap-2">
             {onReplyClick && (
               <Button
-                color="gray-white"
-                size="2xs"
+                size={'sm'}
+                className={clsx(
+                  'hover:bg-greyscale-2 mt-0 mb-1 max-w-xs px-0 py-0'
+                )}
+                color={'gray-white'}
                 onClick={() => onReplyClick(comment)}
               >
-                <ReplyIcon className="h-4 w-4" />
+                <ReplyIcon className="h-5 w-5" />
               </Button>
             )}
             {showTip && (

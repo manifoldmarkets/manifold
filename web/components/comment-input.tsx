@@ -90,9 +90,7 @@ export function AnswerCommentInput(props: {
 
   return (
     <>
-      <Row className="gap-2">
-        <CommentsAnswer answer={answerResponse} contract={contract} />
-      </Row>
+      <CommentsAnswer answer={answerResponse} contract={contract} />
       <Row>
         <div className="ml-1">
           <Curve size={28} strokeWidth={1} color="#D8D8EB" />
