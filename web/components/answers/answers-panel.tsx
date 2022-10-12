@@ -1,10 +1,7 @@
 import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
-import {
-  FreeResponseContract,
-  MultipleChoiceContract,
-} from 'common/contract'
+import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
