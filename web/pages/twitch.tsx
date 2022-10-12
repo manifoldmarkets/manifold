@@ -121,7 +121,7 @@ function TwitchPlaysManifoldMarkets(props: {
           <Button
             size="xl"
             color="green"
-            className="btn-disabled my-4 self-center !border-none"
+            className="my-4 self-center !border-none"
           >
             Account connected: {twitchUser}
           </Button>
@@ -331,25 +331,18 @@ function BotConnectButton(props: {
         <Button
           color="red"
           onClick={updateBotConnected(false)}
-          className={clsx(loading && '!btn-disabled', 'border-none')}
+          loading={loading}
         >
-          {loading ? (
-            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
-          ) : (
-            'Remove bot from channel'
-          )}
+          Remove bot from channel
         </Button>
       ) : (
         <Button
           color="green"
           onClick={updateBotConnected(true)}
-          className={clsx(loading && '!btn-disabled', 'border-none')}
+          loading={loading}
+          className="border-none"
         >
-          {loading ? (
-            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
-          ) : (
-            'Add bot to your channel'
-          )}
+          Add bot to your channel
         </Button>
       )}
     </>

@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { PencilIcon } from '@heroicons/react/outline'
 
 import { User } from 'common/user'
 import { useState } from 'react'
@@ -11,7 +10,6 @@ import { Modal } from './layout/modal'
 import { Tabs } from './layout/tabs'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { TextButton } from './text-button'
-import { track } from 'web/lib/service/analytics'
 
 export function FollowingButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -37,37 +35,6 @@ export function FollowingButton(props: { user: User; className?: string }) {
         setIsOpen={setIsOpen}
       />
     </>
-  )
-}
-
-export function EditFollowingButton(props: { user: User; className?: string }) {
-  const { user, className } = props
-  const [isOpen, setIsOpen] = useState(false)
-  const followingIds = useFollows(user.id)
-  const followerIds = useFollowers(user.id)
-
-  return (
-    <div
-      className={clsx(
-        className,
-        'btn btn-sm btn-ghost cursor-pointer gap-2 whitespace-nowrap text-sm normal-case text-gray-700'
-      )}
-      onClick={() => {
-        setIsOpen(true)
-        track('edit following button')
-      }}
-    >
-      <PencilIcon className="inline h-4 w-4" />
-      Following
-      <FollowsDialog
-        user={user}
-        defaultTab="following"
-        followingIds={followingIds ?? []}
-        followerIds={followerIds ?? []}
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-      />
-    </div>
   )
 }
 

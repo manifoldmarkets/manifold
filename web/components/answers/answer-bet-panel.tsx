@@ -126,7 +126,10 @@ export function AnswerBetPanel(props: {
         </div>
 
         {!isModal && (
-          <button className="btn-ghost btn-circle" onClick={closePanel}>
+          <button
+            className="hover:bg-greyscale-2 rounded-full"
+            onClick={closePanel}
+          >
             <XIcon
               className="mx-auto h-8 w-8 text-gray-500"
               aria-hidden="true"
