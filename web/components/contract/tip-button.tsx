@@ -44,7 +44,7 @@ export function TipButton(props: {
         <Col className={'relative items-center sm:flex-row'}>
           <HeartIcon
             className={clsx(
-              'h-5 w-5 sm:h-6 sm:w-6',
+              'h-5 w-5',
               totalTipped > 0 ? 'mr-2' : '',
               userTipped ? 'fill-teal-500 text-teal-500' : ''
             )}

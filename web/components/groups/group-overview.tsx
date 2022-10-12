@@ -116,10 +116,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
         </Col>
         <Col>
           {user && (
-            <Button
-              className="btn-md"
-              onClick={() => setShowCreatePost(!showCreatePost)}
-            >
+            <Button onClick={() => setShowCreatePost(!showCreatePost)}>
               Add a Post
             </Button>
           )}
@@ -192,7 +189,9 @@ function GroupOverviewPinned(props: {
     updateGroup(group, { pinnedItems: newPinned })
   }
 
-  return isEditable || (group.pinnedItems && group.pinnedItems.length > 0) ? (
+  if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>
+
+  return isEditable || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
     <PinnedItems
       posts={posts}
       group={group}
@@ -430,7 +429,7 @@ export function GroupAbout(props: {
             <CopyLinkButton
               url={shareUrl}
               tracking="copy group share link"
-              buttonClassName="btn-md rounded-l-none"
+              buttonClassName="rounded-l-none"
               toastClassName={'-left-28 mt-1'}
             />
           </Col>

@@ -50,7 +50,7 @@ export default function ReferralsPage() {
           <CopyLinkButton
             url={url}
             tracking="copy referral link"
-            buttonClassName="btn-md rounded-l-none"
+            buttonClassName="rounded-l-none"
             toastClassName={'-left-28 mt-1'}
           />
 
