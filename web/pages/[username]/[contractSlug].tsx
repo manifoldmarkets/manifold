@@ -248,10 +248,10 @@ export function ContractPageContent(
           ogCardProps={ogCardProps}
         />
       )}
-      <Col className="w-full justify-between rounded border-0 border-gray-100 bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
+      <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         {backToHome && (
           <button
-            className="btn btn-sm mb-4 items-center gap-2 self-start border-0 border-gray-700 bg-white normal-case text-gray-700 hover:bg-white hover:text-gray-700 lg:hidden"
+            className="mb-4 items-center gap-2 self-start bg-white text-gray-700 lg:hidden"
             onClick={backToHome}
           >
             <ArrowLeftIcon className="h-5 w-5 text-gray-700" />

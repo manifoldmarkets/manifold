@@ -1,6 +1,5 @@
 import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
@@ -519,20 +518,18 @@ export function NewContract(props: {
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
-          className={clsx(
-            'btn btn-primary normal-case',
-            isSubmitting && 'loading disabled'
-          )}
-          disabled={isSubmitting || !isValid || upload.isLoading}
+          color="green"
+          loading={isSubmitting}
+          disabled={!isValid || upload.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()
           }}
         >
           {isSubmitting ? 'Creating...' : 'Create question'}
-        </button>
+        </Button>
       </Row>
 
       <Spacer h={6} />

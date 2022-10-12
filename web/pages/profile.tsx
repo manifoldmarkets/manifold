@@ -3,11 +3,13 @@ import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
 import React, { useState } from 'react'
+import { buttonClass } from 'web/components/button'
 import { ConfirmationButton } from 'web/components/confirmation-button'
 import { ExpandingInput } from 'web/components/expanding-input'
 import { Input } from 'web/components/input'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Page } from 'web/components/page'
 import { SEO } from 'web/components/SEO'
 import { SiteLink } from 'web/components/site-link'
@@ -129,14 +131,17 @@ export default function ProfilePage(props: {
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="justify-between">
           <Title className="!mt-0" text="Edit Profile" />
-          <SiteLink className="btn btn-primary" href={`/${user.username}`}>
+          <SiteLink
+            className={buttonClass('md', 'green')}
+            href={`/${user.username}`}
+          >
             Done
           </SiteLink>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
             {avatarLoading ? (
-              <button className="btn btn-ghost btn-lg btn-circle loading"></button>
+              <LoadingIndicator />
             ) : (
               <>
                 <img

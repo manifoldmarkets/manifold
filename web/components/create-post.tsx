@@ -93,9 +93,10 @@ export function CreatePost(props: { group?: Group }) {
 
             <Button
               type="submit"
-              loading={isSubmitting}
+              color="green"
               size="xl"
-              disabled={isSubmitting || !isValid || upload.isLoading}
+              loading={isSubmitting}
+              disabled={!isValid || upload.isLoading}
               onClick={async () => {
                 setIsSubmitting(true)
                 await savePost(title)

@@ -20,6 +20,7 @@ import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { BetSignUpPrompt } from './sign-up-prompt'
 import { track } from 'web/lib/service/analytics'
+import { Button } from './button'
 
 export function NumericBetPanel(props: {
   contract: NumericContract
@@ -108,7 +109,7 @@ function NumericBuyPanel(props: {
     })
   }
 
-  const betDisabled = isSubmitting || !betAmount || !bucketChoice || error
+  const betDisabled = isSubmitting || !betAmount || !bucketChoice || !!error
 
   const { newBet, newPool, newTotalShares, newTotalBets } = getNumericBetsInfo(
     value ?? 0,
@@ -195,16 +196,14 @@ function NumericBuyPanel(props: {
       <Spacer h={8} />
 
       {user && (
-        <button
-          className={clsx(
-            'btn flex-1',
-            betDisabled ? 'btn-disabled' : 'btn-primary',
-            isSubmitting ? 'loading' : ''
-          )}
-          onClick={betDisabled ? undefined : submitBet}
+        <Button
+          disabled={betDisabled}
+          color="green"
+          loading={isSubmitting}
+          onClick={submitBet}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit'}
-        </button>
+          Submit
+        </Button>
       )}
 
       {wasSubmitted && <div className="mt-4">Bet submitted!</div>}
