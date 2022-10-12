@@ -20,7 +20,7 @@ export function FollowButton(props: {
 
   if (!user || isFollowing === undefined)
     return (
-      <Button size="sm" color="gray" className={className}>
+      <Button size="sm" color="gray" className={clsx(className, 'invisible')}>
         Follow
       </Button>
     )
