@@ -53,6 +53,8 @@ export function ImageModal(props: {
   )
 }
 
+// Note: this is currently tied to a DreamStudio API key tied to akrolsmir@gmail.com,
+// and injected on Vercel.
 const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
 
 function DreamTab(props: {
