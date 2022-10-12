@@ -277,6 +277,7 @@ function renderSections(
         if (id === 'featured') {
           return (
             <FeaturedSection
+              key={id}
               globalConfig={globalConfig}
               pinned={pinned}
               isAdmin={isAdmin}
