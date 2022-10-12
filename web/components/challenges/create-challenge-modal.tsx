@@ -20,7 +20,6 @@ import { getProbability } from 'common/calculate'
 import { createMarket } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
 import { FIXED_ANTE } from 'common/economy'
-import { useTextEditor } from 'web/components/editor'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { track } from 'web/lib/service/analytics'
 import { CopyLinkButton } from '../copy-link-button'
@@ -43,7 +42,6 @@ export function CreateChallengeModal(props: {
   const { user, contract, isOpen, setOpen } = props
   const [challengeSlug, setChallengeSlug] = useState('')
   const [loading, setLoading] = useState(false)
-  const { editor } = useTextEditor({ placeholder: '' })
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>
@@ -64,7 +62,6 @@ export function CreateChallengeModal(props: {
                         question: newChallenge.question,
                         outcomeType: 'BINARY',
                         initialProb: 50,
-                        description: editor?.getJSON(),
                         ante: FIXED_ANTE,
                         closeTime: dayjs().add(30, 'day').valueOf(),
                       })

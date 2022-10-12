@@ -28,10 +28,17 @@ export function ProfitBadge(props: {
   )
 }
 
-export function ProfitBadgeMana(props: { amount: number; className?: string }) {
-  const { amount, className } = props
-  const colors =
-    amount > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+export function ProfitBadgeMana(props: {
+  amount: number
+  gray?: boolean
+  className?: string
+}) {
+  const { amount, gray, className } = props
+  const colors = gray
+    ? 'bg-gray-100 text-gray-700'
+    : amount > 0
+    ? 'bg-gray-100 text-green-800'
+    : 'bg-gray-100 text-red-800'
 
   const formatted =
     ENV_CONFIG.moneyMoniker + (amount > 0 ? '+' : '') + amount.toFixed(0)

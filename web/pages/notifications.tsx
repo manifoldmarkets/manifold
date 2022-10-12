@@ -1220,10 +1220,9 @@ function getSourceUrl(notification: Notification) {
       sourceType
     )}`
   else if (sourceSlug)
-    return `/${sourceSlug}#${getSourceIdForLinkComponent(
-      sourceId ?? '',
-      sourceType
-    )}`
+    return `${
+      sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
+    }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
 }
 
 function getSourceIdForLinkComponent(

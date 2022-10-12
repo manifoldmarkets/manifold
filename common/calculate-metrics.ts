@@ -1,4 +1,4 @@
-import { Dictionary, groupBy, last, sum, sumBy, uniq } from 'lodash'
+import { Dictionary, groupBy, last, partition, sum, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -266,7 +266,9 @@ export const calculateMetricsByContract = (
   })
 }
 
-export type ContractMetrics = ReturnType<typeof calculateMetricsByContract>[number]
+export type ContractMetrics = ReturnType<
+  typeof calculateMetricsByContract
+>[number]
 
 const calculatePeriodProfit = (
   contract: CPMMBinaryContract,
@@ -275,7 +277,10 @@ const calculatePeriodProfit = (
 ) => {
   const days = period === 'day' ? 1 : period === 'week' ? 7 : 30
   const fromTime = Date.now() - days * DAY_MS
-  const previousBets = bets.filter((b) => b.createdTime < fromTime)
+  const [previousBets, recentBets] = partition(
+    bets,
+    (b) => b.createdTime < fromTime
+  )
 
   const prevProb = contract.prob - contract.probChanges[period]
   const prob = contract.resolutionProbability
@@ -292,13 +297,18 @@ const calculatePeriodProfit = (
     contract,
     prob
   )
-  const profit = currentBetsValue - previousBetsValue
-  const profitPercent =
-    previousBetsValue === 0 ? 0 : 100 * (profit / previousBetsValue)
+
+  const { profit: recentProfit, invested: recentInvested } =
+    getContractBetMetrics(contract, recentBets)
+
+  const profit = currentBetsValue - previousBetsValue + recentProfit
+  const invested = previousBetsValue + recentInvested
+  const profitPercent = invested === 0 ? 0 : 100 * (profit / invested)
 
   return {
     profit,
     profitPercent,
+    invested,
     prevValue: previousBetsValue,
     value: currentBetsValue,
   }

@@ -32,6 +32,9 @@ async function main() {
         user.achievements = await awardBettingStreakBadges(user)
         console.log('Added achievements to user', user.id)
         // going to ignore backfilling the proven correct badges for now
+      } else {
+        // Make corrections to existing achievements
+        await awardMarketCreatorBadges(user)
       }
     })
   )
@@ -67,12 +70,11 @@ async function removeErrorBadges(user: User) {
 
 async function awardMarketCreatorBadges(user: User) {
   // Award market maker badges
-  const contracts = await getValues<Contract>(
-    firestore
-      .collection(`contracts`)
-      .where('creatorId', '==', user.id)
-      .where('resolution', '!=', 'CANCEL')
-  )
+  const contracts = (
+    await getValues<Contract>(
+      firestore.collection(`contracts`).where('creatorId', '==', user.id)
+    )
+  ).filter((c) => !c.resolution || c.resolution != 'CANCEL')
 
   const achievements = {
     ...user.achievements,
@@ -81,7 +83,12 @@ async function awardMarketCreatorBadges(user: User) {
     },
   }
   for (const threshold of marketCreatorBadgeRarityThresholds) {
+    const alreadyHasBadge = user.achievements.marketCreator?.badges.some(
+      (b) => b.data.totalContractsCreated === threshold
+    )
+    if (alreadyHasBadge) continue
     if (contracts.length >= threshold) {
+      console.log(`User ${user.id} has at least ${threshold} contracts`)
       const badge = {
         type: 'MARKET_CREATOR',
         name: 'Market Creator',
