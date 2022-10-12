@@ -6,7 +6,7 @@ export const useGlobalConfig = () => {
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig | null>(null)
 
   useEffect(() => {
-    listenForGlobalConfig(setGlobalConfig)
+    return listenForGlobalConfig(setGlobalConfig)
   }, [])
   return globalConfig
 }
