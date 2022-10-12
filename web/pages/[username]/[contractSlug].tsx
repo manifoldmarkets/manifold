@@ -209,11 +209,11 @@ export function ContractPageContent(
   const [answerResponse, setAnswerResponse] = useState<Answer | undefined>(
     undefined
   )
-  const answerRef = useRef<null | HTMLDivElement>(null)
+  const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
-    if (answerRef.current) {
-      answerRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (tabsContainerRef.current) {
+      tabsContainerRef.current.scrollIntoView({ behavior: 'smooth' })
     } else {
       console.error('no ref to scroll to')
     }
@@ -305,7 +305,7 @@ export function ContractPageContent(
           userBets={userBets}
         />
 
-        <div ref={answerRef}>
+        <div ref={tabsContainerRef}>
           <ContractTabs
             contract={contract}
             bets={bets}

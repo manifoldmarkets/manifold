@@ -83,10 +83,10 @@ export function AnswerCommentInput(props: {
   onCancelAnswerResponse?: () => void
 }) {
   const { contract, answerResponse, onCancelAnswerResponse } = props
-  const [replyTo, _setReplyTo] = useState<ReplyTo>({
+  const replyTo = {
     id: answerResponse.id,
     username: answerResponse.username,
-  })
+  }
 
   return (
     <>

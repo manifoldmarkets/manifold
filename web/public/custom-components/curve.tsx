@@ -11,7 +11,7 @@ export default function Curve({
       height={size}
       fill="none"
       stroke={color}
-      stroke-width={strokeWidth}
+      strokeWidth={strokeWidth}
     >
       <path d="M5.02,0V5.24c0,4.3,3.49,7.79,7.79,7.79h5.2" />
     </svg>

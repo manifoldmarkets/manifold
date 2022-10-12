@@ -25,7 +25,7 @@ import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
 import { Button } from '../button'
-import { ReplyToggle } from '../comments/comments'
+import { ReplyToggle } from '../comments/reply-toggle'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -119,15 +119,21 @@ export function ParentFeedComment(props: {
   const { text, content, userUsername, userAvatarUrl } = comment
 
   const router = useRouter()
-  const highlighted = router.asPath.endsWith(`#${comment.id}`)
+  const { isReady, asPath } = useRouter()
+  const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (highlighted && commentRef.current != null) {
+    if (isReady && asPath.endsWith(`#${comment.id}`)) {
+      setHighlighted(true)
+    }
+  }, [isReady, asPath, comment.id])
+
+  useEffect(() => {
+    if (highlighted && commentRef.current) {
       commentRef.current.scrollIntoView(true)
     }
   }, [highlighted])
-
   return (
     <Row
       ref={commentRef}

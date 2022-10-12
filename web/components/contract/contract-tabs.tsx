@@ -6,7 +6,7 @@ import { CommentsAnswer } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { AnyContractType, Contract } from 'common/contract'
 import { PAST_BETS } from 'common/user'
 import { ContractBetsTable } from '../bets-list'
 import { Spacer } from '../layout/spacer'
@@ -149,11 +149,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
         >
           <Tooltip
-            text={
-              sort === 'Best'
-                ? 'Highest tips + bounties first. Your new comments briefly appear to you first.'
-                : ''
-            }
+            text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
           >
             <Row className="items-center gap-1">
               {sort}
@@ -164,7 +160,6 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
       </Row>
     </Row>
   )
-
   if (contract.outcomeType === 'FREE_RESPONSE') {
     return (
       <>
