@@ -128,7 +128,7 @@ export function ProbChange(props: {
     probChanges: { day: change },
   } = contract
 
-  const color = change >= 0 ? 'text-green-500' : 'text-red-500'
+  const color = change >= 0 ? 'text-teal-500' : 'text-red-400'
 
   return (
     <Col className={clsx('flex flex-col items-end', className)}>
