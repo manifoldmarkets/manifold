@@ -52,7 +52,13 @@ export default function CreateDateDocPage() {
 
     const newPost: Omit<
       DateDoc,
-      'id' | 'creatorId' | 'createdTime' | 'slug' | 'contractSlug'
+      | 'id'
+      | 'creatorId'
+      | 'createdTime'
+      | 'slug'
+      | 'contractSlug'
+      | 'creatorUsername'
+      | 'creatorName'
     > & { question?: string } = removeUndefinedProps({
       title,
       subtitle,
