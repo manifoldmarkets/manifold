@@ -101,7 +101,7 @@ export function YesNoCancelSelector(props: {
       <Button
         color={selected === 'MKT' ? 'blue' : 'gray'}
         onClick={() => onSelect('MKT')}
-        className={clsx(btnClassName, 'btn-sm')}
+        className={btnClassName}
       >
         PROB
       </Button>
@@ -109,7 +109,7 @@ export function YesNoCancelSelector(props: {
       <Button
         color={selected === 'CANCEL' ? 'yellow' : 'gray'}
         onClick={() => onSelect('CANCEL')}
-        className={clsx(btnClassName, 'btn-sm')}
+        className={btnClassName}
       >
         N/A
       </Button>

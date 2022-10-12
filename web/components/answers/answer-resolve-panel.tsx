@@ -10,6 +10,7 @@ import { ChooseCancelSelector } from '../yes-no-selector'
 import { ResolveConfirmationButton } from '../confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 import { BETTOR, PAST_BETS } from 'common/user'
+import { Button } from '../button'
 
 export function AnswerResolvePanel(props: {
   isAdmin: boolean
@@ -109,14 +110,14 @@ export function AnswerResolvePanel(props: {
           )}
         >
           {resolveOption && (
-            <button
-              className="btn btn-ghost"
+            <Button
+              color="gray-white"
               onClick={() => {
                 setResolveOption(undefined)
               }}
             >
               Clear
-            </button>
+            </Button>
           )}
 
           <ResolveConfirmationButton

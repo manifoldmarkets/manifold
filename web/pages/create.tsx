@@ -519,20 +519,18 @@ export function NewContract(props: {
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
-          className={clsx(
-            'btn btn-primary normal-case',
-            isSubmitting && 'loading disabled'
-          )}
-          disabled={isSubmitting || !isValid || upload.isLoading}
+          color="green"
+          loading={isSubmitting}
+          disabled={!isValid || upload.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()
           }}
         >
           {isSubmitting ? 'Creating...' : 'Create question'}
-        </button>
+        </Button>
       </Row>
 
       <Spacer h={6} />

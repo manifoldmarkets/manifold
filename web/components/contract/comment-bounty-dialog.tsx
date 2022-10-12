@@ -64,7 +64,7 @@ export function CommentBountyDialog(props: {
 
         <Row className={'items-center gap-2'}>
           <Button
-            className={clsx('ml-2', isLoading && 'btn-disabled')}
+            className="ml-2"
             onClick={submit}
             disabled={isLoading}
             color={'blue'}

@@ -197,17 +197,15 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
             </>
           )}
           {user ? (
-            <button
-              className={clsx(
-                'btn mt-2',
-                canSubmit ? 'btn-outline' : 'btn-disabled',
-                isSubmitting && 'loading'
-              )}
+            <Button
+              color="green"
+              size="lg"
+              loading={isSubmitting}
               disabled={!canSubmit}
               onClick={withTracking(submitAnswer, 'submit answer')}
             >
               Submit
-            </button>
+            </Button>
           ) : (
             text && (
               <Button

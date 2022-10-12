@@ -11,6 +11,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { firestoreConsolePath } from 'common/envs/constants'
+import { Button } from 'web/components/button'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -107,9 +108,7 @@ function UsersTable() {
           limit: 25,
         }}
       />
-      <button className="btn" onClick={exportCsv}>
-        Export emails to CSV
-      </button>
+      <Button onClick={exportCsv}>Export emails to CSV</Button>
     </>
   )
 }
