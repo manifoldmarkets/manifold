@@ -36,6 +36,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
+import { User } from 'common/user'
 
 const bodySchema = z.object({
   contractId: z.string(),
@@ -89,13 +90,10 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   if (!contractSnap.exists)
     throw new APIError(404, 'No contract exists with the provided ID')
   const contract = contractSnap.data() as Contract
-  const { creatorId, closeTime } = contract
+  const { creatorId } = contract
   const firebaseUser = await admin.auth().getUser(auth.uid)
 
-  const { value, resolutions, probabilityInt, outcome } = getResolutionParams(
-    contract,
-    req.body
-  )
+  const resolutionParams = getResolutionParams(contract, req.body)
 
   if (
     creatorId !== auth.uid &&
@@ -108,6 +106,16 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(500, 'Creator not found')
+
+  return await resolveMarket(contract, creator, resolutionParams)
+})
+
+export const resolveMarket = async (
+  contract: Contract,
+  creator: User,
+  { value, resolutions, probabilityInt, outcome }: ResolutionParams
+) => {
+  const { creatorId, closeTime, id: contractId } = contract
 
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -183,6 +191,7 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     )
 
   const userCount = uniqBy(payouts, 'userId').length
+  const contractDoc = firestore.doc(`contracts/${contractId}`)
 
   if (userCount <= 499) {
     await firestore.runTransaction(async (transaction) => {
@@ -226,7 +235,7 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
   )
 
   return updatedContract
-})
+}
 
 function getResolutionParams(contract: Contract, body: string) {
   const { outcomeType } = contract
@@ -291,6 +300,8 @@ function getResolutionParams(contract: Contract, body: string) {
   }
   throw new APIError(500, `Invalid outcome type: ${outcomeType}`)
 }
+
+type ResolutionParams = ReturnType<typeof getResolutionParams>
 
 function validateAnswer(
   contract: FreeResponseContract | MultipleChoiceContract,
