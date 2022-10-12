@@ -53,6 +53,8 @@ export function ImageModal(props: {
   )
 }
 
+// Note: this is currently tied to a DreamStudio API key tied to akrolsmir@gmail.com,
+// and injected on Vercel.
 const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
 
 function DreamTab(props: {
@@ -77,17 +79,13 @@ function DreamTab(props: {
 
   async function dream() {
     setIsDreaming(true)
-    const url = `/api/v0/dream`
     const data = {
       prompt: input + ', ' + MODIFIERS,
       apiKey: API_KEY,
     }
-    const headers = {
-      'Content-Type': 'application/json',
-    }
-    const response = await fetch(url, {
+    const response = await fetch(`/api/v0/dream`, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
     const json = await response.json()
