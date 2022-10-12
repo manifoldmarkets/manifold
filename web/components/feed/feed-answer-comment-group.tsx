@@ -51,7 +51,7 @@ export function CommentsAnswer(props: {
       <div
         className="w-2"
         style={{
-          background: color ? color : '#B1B1C755',
+          background: color ? color : '#B1B1C7',
         }}
       />
       <Col className="w-fit gap-1 bg-gray-100 py-2 pl-2 pr-4">
