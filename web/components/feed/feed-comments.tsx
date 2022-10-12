@@ -78,10 +78,6 @@ export function FeedCommentThread(props: {
         ))}
       {replyTo && (
         <Col className="-pb-2 relative ml-6">
-          <span
-            className="absolute -left-1 -ml-[1px] mt-[0.8rem] h-2 w-0.5 rotate-90 bg-gray-200"
-            aria-hidden="true"
-          />
           <ContractCommentInput
             contract={contract}
             parentCommentId={parentComment.id}

@@ -173,40 +173,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           />
         )}
         {topLevelComments.map((parent) => {
-          if (parent.answerOutcome != undefined) {
-            const answer = contract.answers.find(
-              (answer) => answer.id === parent.answerOutcome
-            )
-            if (answer === undefined) {
-              console.error('Could not find answer that matches ID')
-              return <></>
-            } else {
-              return (
-                <>
-                  <Row className="gap-2">
-                    <CommentsAnswer answer={answer} contract={contract} />
-                  </Row>
-                  <Row>
-                    <div className="ml-1">
-                      <Curve size={28} strokeWidth={1} color="#D8D8EB" />
-                    </div>
-                    <div className="w-full pt-1">
-                      <FeedCommentThread
-                        key={parent.id}
-                        contract={contract}
-                        parentComment={parent}
-                        threadComments={sortBy(
-                          commentsByParent[parent.id] ?? [],
-                          (c) => c.createdTime
-                        )}
-                        tips={tips}
-                      />
-                    </div>
-                  </Row>
-                </>
-              )
-            }
-          } else {
+          if (parent.answerOutcome === undefined) {
             return (
               <FeedCommentThread
                 key={parent.id}
@@ -220,6 +187,37 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
               />
             )
           }
+          const answer = contract.answers.find(
+            (answer) => answer.id === parent.answerOutcome
+          )
+          if (answer === undefined) {
+            console.error('Could not find answer that matches ID')
+            return <></>
+          }
+          return (
+            <>
+              <Row className="gap-2">
+                <CommentsAnswer answer={answer} contract={contract} />
+              </Row>
+              <Row>
+                <div className="ml-1">
+                  <Curve size={28} strokeWidth={1} color="#D8D8EB" />
+                </div>
+                <div className="w-full pt-1">
+                  <FeedCommentThread
+                    key={parent.id}
+                    contract={contract}
+                    parentComment={parent}
+                    threadComments={sortBy(
+                      commentsByParent[parent.id] ?? [],
+                      (c) => c.createdTime
+                    )}
+                    tips={tips}
+                  />
+                </div>
+              </Row>
+            </>
+          )
         })}
       </>
     )
