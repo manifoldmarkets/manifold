@@ -34,6 +34,7 @@ import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useIsClient } from 'web/hooks/use-is-client'
 import {
   BountiedContractBadge,
   BountiedContractSmallBadge,
@@ -52,22 +53,23 @@ export function MiscDetails(props: {
   const { volume, closeTime, isResolved, createdTime, resolutionTime } =
     contract
 
+  const isClient = useIsClient()
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <Row className="items-center gap-3 truncate text-sm text-gray-400">
-      {showTime === 'close-date' ? (
+      {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
         </Row>
-      ) : showTime === 'resolve-date' && resolutionTime !== undefined ? (
+      ) : isClient && showTime === 'resolve-date' && resolutionTime ? (
         <Row className="gap-0.5">
           <ClockIcon className="h-5 w-5" />
           {'Resolved '}
-          {fromNow(resolutionTime || 0)}
+          {fromNow(resolutionTime)}
         </Row>
       ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
         <FeaturedContractBadge />
@@ -390,6 +392,7 @@ function EditableCloseDate(props: {
 }) {
   const { closeTime, contract, isCreator, disabled } = props
 
+  const isClient = useIsClient()
   const dayJsCloseTime = dayjs(closeTime)
   const dayJsNow = dayjs()
 
@@ -452,7 +455,7 @@ function EditableCloseDate(props: {
               className="w-full shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
-              min={Date.now()}
+              min={isClient ? Date.now() : undefined}
               value={closeDate}
             />
             <Input
@@ -479,14 +482,18 @@ function EditableCloseDate(props: {
         </Col>
       </Modal>
       <DateTimeTooltip
-        text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
+        text={
+          isClient && closeTime <= Date.now()
+            ? 'Trading ended:'
+            : 'Trading ends:'
+        }
         time={closeTime}
       >
         <Row
           className={clsx(!disabled && isCreator ? 'cursor-pointer' : '')}
           onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
-          {isSameDay ? (
+          {isSameDay && isClient ? (
             <span className={'capitalize'}> {fromNow(closeTime)}</span>
           ) : isSameYear ? (
             dayJsCloseTime.format('MMM D')
