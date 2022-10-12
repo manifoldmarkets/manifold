@@ -10,7 +10,7 @@ export const SignInButton = (props: { className?: string }) => {
   return (
     <Button
       size="lg"
-      color="gray"
+      color="gradient"
       onClick={async () => {
         // login, and then reload the page, to hit any SSR redirect (e.g.
         // redirecting from / to /home for logged in users)
