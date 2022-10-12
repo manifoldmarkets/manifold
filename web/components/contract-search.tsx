@@ -42,6 +42,7 @@ import { Button } from './button'
 import { Modal } from './layout/modal'
 import { Title } from './title'
 import { Input } from './input'
+import { Select } from './select'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
@@ -543,8 +544,7 @@ export function SearchFilters(props: {
 
   return (
     <div className={className}>
-      <select
-        className="select select-bordered"
+      <Select
         value={filter}
         onChange={(e) => selectFilter(e.target.value as filter)}
       >
@@ -552,10 +552,9 @@ export function SearchFilters(props: {
         <option value="closed">Closed</option>
         <option value="resolved">Resolved</option>
         <option value="all">All</option>
-      </select>
+      </Select>
       {!hideOrderSelector && (
-        <select
-          className="select select-bordered"
+        <Select
           value={sort}
           onChange={(e) => selectSort(e.target.value as Sort)}
         >
@@ -564,7 +563,7 @@ export function SearchFilters(props: {
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       )}
     </div>
   )

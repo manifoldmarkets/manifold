@@ -52,6 +52,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ExclamationIcon } from '@heroicons/react/outline'
+import { Select } from './select'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -200,8 +201,7 @@ export function BetsList(props: { user: User }) {
         </Row>
 
         <Row className="gap-2">
-          <select
-            className="border-greyscale-4 self-start overflow-hidden rounded border px-2 py-2 text-sm"
+          <Select
             value={filter}
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
@@ -211,10 +211,9 @@ export function BetsList(props: { user: User }) {
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
             <option value="all">All</option>
-          </select>
+          </Select>
 
-          <select
-            className="border-greyscale-4 self-start overflow-hidden rounded px-2 py-2 text-sm"
+          <Select
             value={sort}
             onChange={(e) => setSort(e.target.value as BetSort)}
           >
@@ -222,7 +221,7 @@ export function BetsList(props: { user: User }) {
             <option value="value">Value</option>
             <option value="profit">Profit</option>
             <option value="closeTime">Close date</option>
-          </select>
+          </Select>
         </Row>
       </Col>
 

@@ -14,6 +14,7 @@ import { DuplicateIcon } from '@heroicons/react/outline'
 import { QRCode } from '../qr-code'
 import { Input } from '../input'
 import { ExpandingInput } from '../expanding-input'
+import { Select } from '../select'
 
 export function CreateLinksButton(props: {
   user: User
@@ -150,8 +151,7 @@ function CreateManalinkForm(props: {
               </div>
               <div className="form-control w-full md:w-1/2">
                 <label className="px-1 py-2">Expires in</label>
-                <select
-                  className="!select !select-bordered"
+                <Select
                   value={expiresIn}
                   defaultValue={defaultExpire}
                   onChange={(e) => {
@@ -160,7 +160,7 @@ function CreateManalinkForm(props: {
                   }}
                 >
                   {expireOptions}
-                </select>
+                </Select>
               </div>
             </div>
             <div className="form-control w-full">
