@@ -59,14 +59,15 @@ import { PostCard } from 'web/components/post-card'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Post } from 'common/post'
-import { isAdmin } from 'common/envs/constants'
 import { useAllPosts } from 'web/hooks/use-post'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import { useAdmin } from 'web/hooks/use-admin'
+import { GlobalConfig } from 'common/globalConfig'
 
 export default function Home() {
   const user = useUser()
   const isAdmin = useAdmin()
+  const globalConfig = useGlobalConfig()
 
   useTracking('view home')
 
@@ -104,12 +105,50 @@ export default function Home() {
     groups?.map((g) => g.slug)
   )
 
+  const [pinned, setPinned] = useState<JSX.Element[] | null>(null)
+
+  useEffect(() => {
+    const pinnedItems = globalConfig?.pinnedItems
+
+    async function getPinned() {
+      if (pinnedItems == null) {
+        if (globalConfig != null) {
+          updateGlobalConfig(globalConfig, { pinnedItems: [] })
+        }
+      } else {
+        const itemComponents = await Promise.all(
+          pinnedItems.map(async (element) => {
+            if (element.type === 'post') {
+              const post = await getPost(element.itemId)
+              if (post) {
+                return <PostCard post={post as Post} />
+              }
+            } else if (element.type === 'contract') {
+              const contract = await getContractFromId(element.itemId)
+              if (contract) {
+                return <ContractCard contract={contract as Contract} />
+              }
+            }
+          })
+        )
+        setPinned(
+          itemComponents.filter(
+            (element) => element != undefined
+          ) as JSX.Element[]
+        )
+      }
+    }
+    getPinned()
+  }, [globalConfig])
+
   const isLoading =
     !user ||
     !contractMetricsByProfit ||
     !trendingContracts ||
     !newContracts ||
-    !dailyTrendingContracts
+    !dailyTrendingContracts ||
+    !globalConfig ||
+    !pinned
 
   return (
     <Page>
@@ -141,7 +180,9 @@ export default function Home() {
                 'daily-trending': dailyTrendingContracts,
                 'daily-movers': contractMetricsByProfit,
               },
-              isAdmin
+              isAdmin,
+              globalConfig,
+              pinned
             )}
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
@@ -216,7 +257,9 @@ function renderSections(
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
   },
-  isAdmin: boolean
+  isAdmin: boolean,
+  globalConfig: GlobalConfig,
+  pinned: JSX.Element[]
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -234,7 +277,7 @@ function renderSections(
         if (id === 'featured') {
           // For now, only admins can see the featured section, until we all agree its ship-ready
           if (!isAdmin) return <></>
-          return <FeaturedSection />
+          return <FeaturedSection globalConfig={globalConfig} pinned={pinned} />
         }
 
         const contracts = sectionContracts[id]
@@ -350,44 +393,12 @@ function SearchSection(props: {
   )
 }
 
-function FeaturedSection() {
-  const [pinned, setPinned] = useState<JSX.Element[]>([])
+function FeaturedSection(props: {
+  globalConfig: GlobalConfig
+  pinned: JSX.Element[]
+}) {
+  const { globalConfig, pinned } = props
   const posts = useAllPosts()
-  const globalConfig = useGlobalConfig()
-
-  useEffect(() => {
-    const pinnedItems = globalConfig?.pinnedItems
-
-    async function getPinned() {
-      if (pinnedItems == null) {
-        if (globalConfig != null) {
-          updateGlobalConfig(globalConfig, { pinnedItems: [] })
-        }
-      } else {
-        const itemComponents = await Promise.all(
-          pinnedItems.map(async (element) => {
-            if (element.type === 'post') {
-              const post = await getPost(element.itemId)
-              if (post) {
-                return <PostCard post={post as Post} />
-              }
-            } else if (element.type === 'contract') {
-              const contract = await getContractFromId(element.itemId)
-              if (contract) {
-                return <ContractCard contract={contract as Contract} />
-              }
-            }
-          })
-        )
-        setPinned(
-          itemComponents.filter(
-            (element) => element != undefined
-          ) as JSX.Element[]
-        )
-      }
-    }
-    getPinned()
-  }, [globalConfig])
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
     if (globalConfig == null) return
@@ -409,7 +420,6 @@ function FeaturedSection() {
 
   return (
     <Col>
-      <SectionHeader label={'Featured'} href={`#`} />
       <PinnedItems
         posts={posts}
         isEditable={true}
