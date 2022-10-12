@@ -29,7 +29,11 @@ export function PostCard(props: {
       <Row className="flex grow  justify-between">
         <div className="">
           <Row className="items-center text-sm ">
-            <Avatar className="mx-1 h-7 w-7" username={post.creatorUsername} />
+            <Avatar
+              className="mx-1 h-7 w-7"
+              username={post.creatorUsername}
+              avatarUrl={post.creatorAvatarUrl}
+            />
             <UserLink
               className=" text-gray-400"
               name={post.creatorName}
