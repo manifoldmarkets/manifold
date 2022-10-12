@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { track } from '@amplitude/analytics-browser'
 import { Col } from './col'
 import { Tooltip } from 'web/components/tooltip'

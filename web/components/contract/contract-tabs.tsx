@@ -1,5 +1,4 @@
 import { memo, useState } from 'react'
-import { getOutcomeProbability } from 'common/calculate'
 import { Pagination } from 'web/components/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -25,7 +24,6 @@ import {
 import { buildArray } from 'common/util/array'
 import { ContractComment } from 'common/comment'
 
-import { Button } from 'web/components/button'
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
 import { Tooltip } from 'web/components/tooltip'
@@ -37,15 +35,8 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import { connectStorageEmulator } from 'firebase/storage'
-import { Avatar } from '../avatar'
-import { UserLink } from '../user-link'
-import { CopyLinkDateTimeComponent } from '../feed/copy-link-date-time'
-import { Linkify } from '../linkify'
-import { ArrowRightIcon, ReplyIcon, XIcon } from '@heroicons/react/solid'
 import Curve from 'web/public/custom-components/curve'
 import { Answer } from 'common/answer'
-import dayjs from 'dayjs'
 import { AnswerCommentInput } from '../comment-input'
 
 export function ContractTabs(props: {

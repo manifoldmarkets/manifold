@@ -2,7 +2,6 @@ import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
 import {
-  Contract,
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
@@ -29,11 +28,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 import { CATEGORY_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
-import { ChatAlt2Icon, ChatAltIcon } from '@heroicons/react/solid'
 import { ChatIcon } from '@heroicons/react/outline'
-import { ReplyTo } from '../feed/feed-comments'
-import { InfoTooltip } from '../info-tooltip'
-import { Tooltip } from '../tooltip'
 
 // TODO: get a color
 // export function useAnswerColor(answer: Answer, contract:Contract) {

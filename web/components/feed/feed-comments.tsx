@@ -20,13 +20,9 @@ import { Editor } from '@tiptap/react'
 import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
-import { ReplyIcon, XIcon } from '@heroicons/react/solid'
+import { ReplyIcon } from '@heroicons/react/solid'
 import { Button } from '../button'
 import { ReplyToggle } from '../comments/comments'
-import { CommentsAnswer } from './feed-answer-comment-group'
-import Curve from 'web/public/custom-components/curve'
-import { Answer } from 'common/answer'
-import { useEvent } from 'web/hooks/use-event'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -60,7 +56,7 @@ export function FeedCommentThread(props: {
         />
       </Col>
       {seeReplies &&
-        threadComments.map((comment, commentIdx) => (
+        threadComments.map((comment, _commentIdx) => (
           <FeedComment
             key={comment.id}
             contract={contract}
@@ -117,8 +113,6 @@ export function ParentFeedComment(props: {
       commentRef.current.scrollIntoView(true)
     }
   }, [highlighted])
-
-  const [showActions, setShowActions] = useState(false)
 
   return (
     <Row
@@ -365,44 +359,5 @@ export function FeedCommentHeader(props: {
         )}
       </div>
     </Row>
-  )
-}
-
-export function AnswerCommentInput(props: {
-  contract: Contract<AnyContractType>
-  answerResponse: Answer
-  onCancelAnswerResponse?: () => void
-}) {
-  const { contract, answerResponse, onCancelAnswerResponse } = props
-  const [replyTo, setReplyTo] = useState<ReplyTo | undefined>({
-    id: answerResponse.id,
-    username: answerResponse.username,
-  })
-  const onSubmitComment = useEvent(() => {
-    setReplyTo(undefined)
-    onCancelAnswerResponse
-  })
-  return (
-    <>
-      <Row className="gap-2">
-        <CommentsAnswer answer={answerResponse} contract={contract} />
-      </Row>
-      <Row>
-        <div className="ml-1">
-          <Curve size={28} strokeWidth={1} color="#D8D8EB" />
-        </div>
-        <div className="w-full pt-1">
-          <ContractCommentInput
-            contract={contract}
-            parentAnswerOutcome={answerResponse.number.toString()}
-            replyTo={replyTo}
-            onSubmitComment={onSubmitComment}
-          />
-        </div>
-        <button onClick={onCancelAnswerResponse}>
-          <XIcon className="h-5 w-5" />
-        </button>
-      </Row>
-    </>
   )
 }
