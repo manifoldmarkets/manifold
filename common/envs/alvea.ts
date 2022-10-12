@@ -17,8 +17,8 @@ export const ALVEA_CONFIG: EnvConfig = {
   whitelistEmail: '@alveavax.com',
   moneyMoniker: 'A$',
   visibility: 'PRIVATE',
-  faviconPath: '/theoremone/logo.ico',
-  navbarLogoPath: '/theoremone/TheoremOne-Logo.svg',
+  // faviconPath: '/theoremone/logo.ico',
+  navbarLogoPath: '/alvea/alvea-logo.svg',
   newQuestionPlaceholders: [
     'Will we have at least 5 new team members by the end of this quarter?',
   ],
