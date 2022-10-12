@@ -126,8 +126,8 @@ export function JoinOrLeaveGroupButton(props: {
     return (
       <Button
         size="xs"
-        color="gray-white"
-        className={`${className}  border-greyscale-4 border !border-solid`}
+        color="blue-outline"
+        className={className}
         onClick={withTracking(onLeaveGroup, 'leave group')}
       >
         Unfollow

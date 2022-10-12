@@ -7,13 +7,13 @@ export type ColorType =
   | 'green'
   | 'red'
   | 'blue'
+  | 'blue-outline'
   | 'indigo'
   | 'yellow'
   | 'gray'
   | 'gray-outline'
   | 'gradient'
   | 'gray-white'
-  | 'highlight-blue'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -27,7 +27,7 @@ const sizeClasses = {
 
 export function buttonClass(size: SizeType, color: ColorType | 'override') {
   return clsx(
-    'font-md inline-flex items-center justify-center rounded-md border border-transparent shadow-sm transition-colors disabled:cursor-not-allowed',
+    'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed',
     sizeClasses[size],
     color === 'green' &&
       'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-600',
@@ -37,18 +37,18 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
       'disabled:bg-greyscale-2 bg-yellow-400 text-white hover:bg-yellow-500',
     color === 'blue' &&
       'disabled:bg-greyscale-2 bg-blue-400 text-white hover:bg-blue-500',
+    color === 'blue-outline' &&
+      'ring-2  ring-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white disabled:opacity-50',
     color === 'indigo' &&
       'disabled:bg-greyscale-2 bg-indigo-500 text-white hover:bg-indigo-600',
     color === 'gray' &&
       'bg-greyscale-1 text-greyscale-6 hover:bg-greyscale-2 disabled:opacity-50',
     color === 'gray-outline' &&
-      'border-greyscale-4 text-greyscale-4 hover:bg-greyscale-4 border-2 hover:text-white disabled:opacity-50',
+      'ring-2 ring-greyscale-4 text-greyscale-4 hover:bg-greyscale-4 hover:text-white disabled:opacity-50',
     color === 'gradient' &&
-      'disabled:bg-greyscale-2 border-none bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+      'disabled:bg-greyscale-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
     color === 'gray-white' &&
-      'text-greyscale-6 hover:bg-greyscale-2 border-none shadow-none disabled:opacity-50',
-    color === 'highlight-blue' &&
-      'text-highlight-blue disabled:bg-greyscale-2 border-none shadow-none'
+      'text-greyscale-6 hover:bg-greyscale-2 shadow-none disabled:opacity-50'
   )
 }
 
