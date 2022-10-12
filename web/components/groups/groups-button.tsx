@@ -125,8 +125,8 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     return (
       <Button
-        size="xs"
-        color="blue-outline"
+        size="sm"
+        color="gray-outline"
         className={className}
         onClick={withTracking(onLeaveGroup, 'leave group')}
       >
@@ -139,8 +139,8 @@ export function JoinOrLeaveGroupButton(props: {
     return <div className={clsx(className, 'text-gray-500')}>Closed</div>
   return (
     <Button
-      size="xs"
-      color="blue"
+      size="sm"
+      color="indigo"
       className={className}
       onClick={withTracking(onJoinGroup, 'join group')}
     >
