@@ -88,7 +88,9 @@ export function FreeResponseComments(props: {
     commentsByParent,
     tips,
   } = props
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
+  const answersArray = useChartAnswers(contract).map(
+    (answer, _index) => answer.text
+  )
   return (
     <>
       {answerResponse && (

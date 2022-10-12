@@ -114,7 +114,9 @@ export function AnswersPanel(props: {
     ? 'checkbox'
     : undefined
 
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
+  const answersArray = useChartAnswers(contract).map(
+    (answer, _index) => answer.text
+  )
 
   return (
     <Col className="gap-3">
