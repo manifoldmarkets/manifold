@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { mapValues, groupBy, sumBy } from 'lodash'
+import { mapValues, groupBy, sumBy, uniqBy } from 'lodash'
 
 import {
   Contract,
@@ -15,14 +15,14 @@ import {
   getValues,
   isProd,
   log,
-  payUser,
+  payUsers,
+  payUsersMultipleTransactions,
   revalidateStaticProps,
 } from './utils'
 import {
   getLoanPayouts,
   getPayouts,
   groupPayoutsByUser,
-  Payout,
 } from '../../common/payouts'
 import { isAdmin, isManifoldId } from '../../common/envs/constants'
 import { removeUndefinedProps } from '../../common/util/object'
@@ -131,15 +131,19 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     (doc) => doc.data() as LiquidityProvision
   )
 
-  const { payouts, creatorPayout, liquidityPayouts, collectedFees } =
-    getPayouts(
-      outcome,
-      contract,
-      bets,
-      liquidities,
-      resolutions,
-      resolutionProbability
-    )
+  const {
+    payouts: traderPayouts,
+    creatorPayout,
+    liquidityPayouts,
+    collectedFees,
+  } = getPayouts(
+    outcome,
+    contract,
+    bets,
+    liquidities,
+    resolutions,
+    resolutionProbability
+  )
 
   const updatedContract = {
     ...contract,
@@ -156,30 +160,43 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
     subsidyPool: 0,
   }
 
-  await contractDoc.update(updatedContract)
-
-  console.log('contract ', contractId, 'resolved to:', outcome)
-
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
   const loanPayouts = getLoanPayouts(openBets)
 
+  const payouts = [
+    { userId: creatorId, payout: creatorPayout, deposit: creatorPayout },
+    ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
+    ...traderPayouts,
+    ...loanPayouts,
+  ]
+
   if (!isProd())
     console.log(
-      'payouts:',
-      payouts,
+      'trader payouts:',
+      traderPayouts,
       'creator payout:',
       creatorPayout,
-      'liquidity payout:'
+      'liquidity payout:',
+      liquidityPayouts,
+      'loan payouts:',
+      loanPayouts
     )
 
-  if (creatorPayout)
-    await processPayouts([{ userId: creatorId, payout: creatorPayout }], true)
+  const userCount = uniqBy(payouts, 'userId').length
 
-  await processPayouts(liquidityPayouts, true)
+  if (userCount <= 499) {
+    await firestore.runTransaction(async (transaction) => {
+      payUsers(transaction, payouts)
+      transaction.update(contractDoc, updatedContract)
+    })
+  } else {
+    await payUsersMultipleTransactions(payouts)
+    await contractDoc.update(updatedContract)
+  }
 
-  await processPayouts([...payouts, ...loanPayouts])
+  console.log('contract ', contractId, 'resolved to:', outcome)
+
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
-
   await revalidateStaticProps(getContractPath(contract))
 
   const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
@@ -210,18 +227,6 @@ export const resolvemarket = newEndpoint(opts, async (req, auth) => {
 
   return updatedContract
 })
-
-const processPayouts = async (payouts: Payout[], isDeposit = false) => {
-  const userPayouts = groupPayoutsByUser(payouts)
-
-  const payoutPromises = Object.entries(userPayouts).map(([userId, payout]) =>
-    payUser(userId, payout, isDeposit)
-  )
-
-  return await Promise.all(payoutPromises)
-    .catch((e) => ({ status: 'error', message: e }))
-    .then(() => ({ status: 'success' }))
-}
 
 function getResolutionParams(contract: Contract, body: string) {
   const { outcomeType } = contract
