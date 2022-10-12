@@ -142,7 +142,6 @@ export function ParentFeedComment(props: {
       </Col>
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        {/* TODO: bug where if this is iFrame, it does not scroll */}
         <Content
           className="text-greyscale-7 mt-2 grow text-[14px]"
           content={content || text}
