@@ -303,7 +303,7 @@ export function ProfilePrivateStats(props: {
           }
           onClick={() => setShowLoansModal(true)}
         >
-          <span className="text-green-600">
+          <span className="text-teal-600">
             🏦 {formatMoney(user.nextLoanCached ?? 0)}
           </span>
           <span className="mx-auto text-xs sm:text-sm">next loan</span>
