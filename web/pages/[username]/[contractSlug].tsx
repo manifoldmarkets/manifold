@@ -209,11 +209,15 @@ export function ContractPageContent(
   const [answerResponse, setAnswerResponse] = useState<Answer | undefined>(
     undefined
   )
+  const answerRef = useRef<null | HTMLDivElement>(null)
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
-    answerRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (answerRef.current) {
+      answerRef.current.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      console.error('no ref to scroll to')
+    }
   })
-  const answerRef = useRef(null)
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
   return (
