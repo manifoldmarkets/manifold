@@ -45,7 +45,7 @@ export function PostCard(props: {
           <div className=" break-words text-lg font-semibold  text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2">
             {post.title}
           </div>
-          <div className="font-small  text-md  break-words text-indigo-400">
+          <div className="font-small  text-md  break-words text-gray-500">
             {post.subtitle}
           </div>
         </div>
