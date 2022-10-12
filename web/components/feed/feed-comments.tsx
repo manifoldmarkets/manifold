@@ -6,8 +6,6 @@ import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
 import { AnyContractType, Contract } from 'common/contract'
-import React, { useEffect, useRef, useState } from 'react'
-import { Contract } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
@@ -49,35 +47,33 @@ export function FeedCommentThread(props: {
 
   return (
     <Col className="relative w-full items-stretch gap-3 pb-4">
-      <Col>
-        <ParentFeedComment
-          key={parentComment.id}
-          contract={contract}
-          comment={parentComment}
-          myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
-          showTip={true}
-          totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
-          seeReplies={seeReplies}
-          numComments={threadComments.length}
-          onSeeReplyClick={() => setSeeReplies(!seeReplies)}
-          onReplyClick={() =>
-            setReplyTo({
-              id: parentComment.id,
-              username: parentComment.userUsername,
-            })
-          }
-        />
-      </Col>
+      <ParentFeedComment
+        key={parentComment.id}
+        contract={contract}
+        comment={parentComment}
+        myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
+        totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
+        showTip={true}
+        seeReplies={seeReplies}
+        numComments={threadComments.length}
+        onSeeReplyClick={() => setSeeReplies(!seeReplies)}
+        onReplyClick={() =>
+          setReplyTo({
+            id: parentComment.id,
+            username: parentComment.userUsername,
+          })
+        }
+      />
       {seeReplies &&
         threadComments.map((comment, _commentIdx) => (
           <FeedComment
             key={comment.id}
             contract={contract}
             comment={comment}
-            tips={tips[comment.id] ?? {}}
-            onReplyClick={() =>
-              setReplyTo({ id: comment.id, username: comment.userUsername })
-            }
+            myTip={user ? tips[comment.id]?.[user.id] : undefined}
+            totalTip={sum(Object.values(tips[comment.id] ?? {}))}
+            showTip={true}
+            onReplyClick={onReplyClick}
           />
         ))}
       {replyTo && (
@@ -97,19 +93,24 @@ export function FeedCommentThread(props: {
     </Col>
   )
 }
+
 export function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
-  tips?: CommentTips
+  showTip?: boolean
+  myTip?: number
+  totalTip?: number
   seeReplies: boolean
   numComments: number
-  onReplyClick?: () => void
+  onReplyClick?: (comment: ContractComment) => void
   onSeeReplyClick: () => void
 }) {
   const {
     contract,
     comment,
-    tips,
+    myTip,
+    totalTip,
+    showTip,
     onReplyClick,
     onSeeReplyClick,
     seeReplies,
@@ -154,12 +155,24 @@ export function ParentFeedComment(props: {
             onClick={onSeeReplyClick}
           />
           <Row className="grow justify-end">
-            <CommentActions
-              onReplyClick={onReplyClick}
-              tips={tips}
-              comment={comment}
-              contract={contract}
-            />
+            {onReplyClick && (
+              <button
+                className="font-bold hover:underline"
+                onClick={() => onReplyClick(comment)}
+              >
+                Reply
+              </button>
+            )}
+            {showTip && (
+              <Tipper
+                comment={comment}
+                myTip={myTip ?? 0}
+                totalTip={totalTip ?? 0}
+              />
+            )}
+            {(contract.openCommentBounties ?? 0) > 0 && (
+              <AwardBountyButton comment={comment} contract={contract} />
+            )}
           </Row>
         </Row>
       </Col>
@@ -173,11 +186,9 @@ export const FeedComment = memo(function FeedComment(props: {
   showTip?: boolean
   myTip?: number
   totalTip?: number
-  indent?: boolean
   onReplyClick?: (comment: ContractComment) => void
 }) {
-  const { contract, comment, myTip, totalTip, showTip, indent, onReplyClick } =
-    props
+  const { contract, comment, myTip, totalTip, showTip, onReplyClick } = props
   const {
     text,
     content,
@@ -233,7 +244,6 @@ export const FeedComment = memo(function FeedComment(props: {
       </Col>
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        {/* TODO: bug where if this is iFrame, it does not scroll */}
         <Content
           className="text-greyscale-7 mt-2 grow text-[14px]"
           content={content || text}
@@ -262,34 +272,34 @@ export const FeedComment = memo(function FeedComment(props: {
       </Col>
     </Row>
   )
-}
-
-export function CommentActions(props: {
-  onReplyClick?: () => void
-  tips?: CommentTips | undefined
-  comment: ContractComment
-  contract: Contract<AnyContractType>
-}) {
-  const { onReplyClick, tips, comment, contract } = props
-  return (
-    <Row className={clsx('ml-2 items-center gap-2 text-xs text-gray-500')}>
-      {onReplyClick && (
-        <Button
-          className="font-bold hover:underline"
-          onClick={onReplyClick}
-          size="2xs"
-          color="gray-white"
-        >
-          <ReplyIcon className="h-5 w-5" />
-        </Button>
-      )}
-      {tips && <Tipper comment={comment} tips={tips} />}
-      {(contract.openCommentBounties ?? 0) > 0 && (
-        <AwardBountyButton comment={comment} contract={contract} />
-      )}
-    </Row>
-  )
 })
+
+// export function CommentActions(props: {
+//   onReplyClick?: () => void
+//   tips?: CommentTips | undefined
+//   comment: ContractComment
+//   contract: Contract<AnyContractType>
+// }) {
+//   const { onReplyClick, tips, comment, contract } = props
+//   return (
+//     <Row className={clsx('ml-2 items-center gap-2 text-xs text-gray-500')}>
+//       {onReplyClick && (
+//         <Button
+//           className="font-bold hover:underline"
+//           onClick={onReplyClick}
+//           size="2xs"
+//           color="gray-white"
+//         >
+//           <ReplyIcon className="h-5 w-5" />
+//         </Button>
+//       )}
+//       {tips && <Tipper comment={comment} tips={tips} />}
+//       {(contract.openCommentBounties ?? 0) > 0 && (
+//         <AwardBountyButton comment={comment} contract={contract} />
+//       )}
+//     </Row>
+//   )
+// })
 
 function CommentStatus(props: {
   contract: Contract
