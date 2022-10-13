@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from 'react'
+import React, { ReactNode, useEffect } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
@@ -63,6 +63,10 @@ import { useAllPosts } from 'web/hooks/use-post'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import { useAdmin } from 'web/hooks/use-admin'
 import { GlobalConfig } from 'common/globalConfig'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 
 export default function Home() {
   const user = useUser()
@@ -105,7 +109,10 @@ export default function Home() {
     groups?.map((g) => g.slug)
   )
 
-  const [pinned, setPinned] = useState<JSX.Element[] | null>(null)
+  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
+    store: inMemoryStore(),
+    key: 'home-pinned',
+  })
 
   useEffect(() => {
     const pinnedItems = globalConfig?.pinnedItems
@@ -139,7 +146,7 @@ export default function Home() {
       }
     }
     getPinned()
-  }, [globalConfig])
+  }, [globalConfig, setPinned])
 
   const isLoading =
     !user ||

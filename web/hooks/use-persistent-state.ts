@@ -89,6 +89,17 @@ export const historyStore = <T>(prefix = '__manifold'): PersistentStore<T> => ({
   },
 })
 
+const store: Record<string, any> = {}
+
+export const inMemoryStore = <T>(): PersistentStore<T> => ({
+  get: (k: string) => {
+    return store[k]
+  },
+  set: (k: string, v: T | undefined) => {
+    store[k] = v
+  },
+})
+
 export const usePersistentState = <T>(
   initial: T,
   persist?: PersistenceOptions<T>
