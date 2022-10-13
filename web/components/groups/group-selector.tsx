@@ -72,7 +72,7 @@ export function GroupSelector(props: {
     )
   }
   return (
-    <div className="form-control items-start">
+    <div className="flex flex-col items-start">
       <Combobox
         as="div"
         value={selectedGroup}

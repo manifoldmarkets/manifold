@@ -171,7 +171,7 @@ function CreateChallengeForm(props: {
               <div>You'll bet:</div>
               <Row
                 className={
-                  'form-control w-full max-w-xs items-center justify-between gap-4 pr-3'
+                  'w-full max-w-xs items-center justify-between gap-4 pr-3'
                 }
               >
                 <AmountInput

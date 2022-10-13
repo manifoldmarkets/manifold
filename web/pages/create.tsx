@@ -96,7 +96,7 @@ export default function Create(props: { auth: { user: User } }) {
           <Title className="!mt-0" text="Create a market" />
 
           <form>
-            <div className="form-control w-full">
+            <div className="flex w-full flex-col">
               <label className="px-1 pt-2 pb-3">
                 Question<span className={'text-red-700'}>*</span>
               </label>
@@ -314,7 +314,7 @@ export function NewContract(props: {
 
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>
-          <div className="form-control mb-2 items-start">
+          <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
               <span className="mb-1">Range</span>
               <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
@@ -359,7 +359,7 @@ export function NewContract(props: {
               </div>
             )}
           </div>
-          <div className="form-control mb-2 items-start">
+          <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
               <span className="mb-1">Initial value</span>
               <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
@@ -406,7 +406,7 @@ export function NewContract(props: {
         )}
       </Row>
 
-      <Row className="form-control my-2 items-center gap-2 text-sm">
+      <Row className="my-2 items-center gap-2 text-sm">
         <span>Display this market on homepage</span>
         <ShortToggle
           on={visibility === 'public'}
@@ -416,7 +416,7 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <div className="form-control mb-1 items-start">
+      <div className="mb-1 flex flex-col items-start">
         <label className="mb-1 gap-2 px-1 py-2">
           <span>Question closes in</span>
           <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
@@ -459,7 +459,7 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <div className="form-control mb-1 items-start gap-1">
+      <div className="mb-1 flex flex-col items-start gap-1">
         <label className="gap-2 px-1 py-2">
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
@@ -470,7 +470,7 @@ export function NewContract(props: {
       <Spacer h={6} />
       <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
-        <div className="form-control mb-1 items-start">
+        <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
             <span>Cost</span>
             <InfoTooltip

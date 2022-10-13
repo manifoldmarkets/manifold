@@ -55,7 +55,7 @@ export function CreatePost(props: { group?: Group }) {
       <div className="rounded-lg px-6 py-4 sm:py-0">
         <Title className="!mt-0" text="Create a post" />
         <form>
-          <div className="form-control w-full">
+          <div className="flex w-full flex-col">
             <label className="px-1 py-2">
               <span className="mb-1">
                 Title<span className={'text-red-700'}> *</span>
