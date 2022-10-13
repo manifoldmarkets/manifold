@@ -23,9 +23,6 @@ import { IconButton } from '../button'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { Tooltip } from '../tooltip'
 
-// export const contractDetailsButtonClassName =
-//   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
-
 export function ContractInfoDialog(props: {
   contract: Contract
   user: User | null | undefined
