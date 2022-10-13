@@ -5,7 +5,6 @@ import { awardCommentBounty } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Row } from './layout/row'
 import { Contract } from 'common/contract'
-import { TextButton } from 'web/components/text-button'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
@@ -37,10 +36,17 @@ export function AwardBountyButton(prop: {
   const canUp = me && me.id !== comment.userId && contract.creatorId === me.id
   if (!canUp) return <div />
   return (
-    <Row className={clsx('-ml-2 items-center gap-0.5', !canUp ? '-ml-6' : '')}>
-      <TextButton className={'font-bold'} onClick={submit}>
+    <Row
+      className={clsx('my-auto items-center gap-0.5', !canUp ? '-ml-6' : '')}
+    >
+      <button
+        className={
+          'rounded-full border border-indigo-400 bg-indigo-50 py-0.5 px-2 text-xs text-indigo-400 transition-colors hover:bg-indigo-400 hover:text-white'
+        }
+        onClick={submit}
+      >
         Award {formatMoney(COMMENT_BOUNTY_AMOUNT)}
-      </TextButton>
+      </button>
     </Row>
   )
 }
