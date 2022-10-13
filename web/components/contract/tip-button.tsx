@@ -1,11 +1,9 @@
 import clsx from 'clsx'
-import { HeartIcon } from '@heroicons/react/outline'
-
-import { Button } from 'web/components/button'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../tooltip'
 import TipJar from 'web/public/custom-components/tipJar'
+import { useState } from 'react'
 
 export function TipButton(props: {
   tipAmount: number
@@ -20,6 +18,8 @@ export function TipButton(props: {
 
   const tipDisplay = shortFormatNumber(Math.ceil(totalTipped / 10))
 
+  const [hover, setHover] = useState(false)
+
   return (
     <Tooltip
       text={
@@ -31,35 +31,39 @@ export function TipButton(props: {
       noTap
       noFade
     >
-      <Button
-        size={'sm'}
-        className={clsx(
-          'max-w-xs self-center',
-          isCompact && 'px-0 py-0',
-          disabled && 'hover:bg-inherit'
-        )}
-        color={'gray-white'}
+      <button
         onClick={onClick}
         disabled={disabled}
+        className={clsx(
+          'text-greyscale-6 transition-transform hover:text-indigo-600 disabled:cursor-not-allowed',
+          !disabled ? 'hover:rotate-12' : ''
+        )}
+        onMouseOver={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
       >
-        <Col
-          className={
-            'relative items-center transition-transform hover:rotate-12 sm:flex-row'
-          }
-        >
-          <TipJar />
+        <Col className={clsx('relative', disabled ? 'opacity-30' : '')}>
+          <TipJar
+            size={16}
+            color={hover || userTipped ? '#4f46e5' : '#66667C'}
+            fill={userTipped ? '#4f46e5' : 'none'}
+          />
           <div
             className={clsx(
-              'bg-greyscale-5 absolute rounded-full text-white',
-              tipDisplay.length > 2
-                ? 'text-[0.4rem] sm:text-[0.5rem]'
-                : 'text-[0.5rem]'
+              ' absolute top-[3px] text-[0.5rem]',
+              userTipped ? 'text-white' : '',
+              tipDisplay.length === 1
+                ? 'left-[6px]'
+                : tipDisplay.length === 2
+                ? 'left-[3.5px]'
+                : tipDisplay.length > 2
+                ? 'left-[3px] top-[5px] text-[0.35rem]'
+                : ''
             )}
           >
             {totalTipped > 0 ? tipDisplay : ''}
           </div>
         </Col>
-      </Button>
+      </button>
     </Tooltip>
   )
 }

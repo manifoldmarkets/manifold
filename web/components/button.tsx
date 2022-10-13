@@ -82,3 +82,39 @@ export function Button(props: {
     </button>
   )
 }
+
+export function IconButton(props: {
+  className?: string
+  onClick?: MouseEventHandler<any> | undefined
+  children?: ReactNode
+  size?: SizeType
+  type?: 'button' | 'reset' | 'submit'
+  disabled?: boolean
+  loading?: boolean
+}) {
+  const {
+    children,
+    className,
+    onClick,
+    size = 'md',
+    type = 'button',
+    disabled = false,
+    loading,
+  } = props
+
+  return (
+    <button
+      type={type}
+      className={clsx(
+        'inline-flex items-center justify-center transition-colors disabled:cursor-not-allowed',
+        sizeClasses[size],
+        'disabled:text-greyscale-2 text-greyscale-6 hover:text-indigo-600',
+        className
+      )}
+      disabled={disabled || loading}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
