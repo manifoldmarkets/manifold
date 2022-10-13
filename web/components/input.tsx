@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import React from 'react'
+import { noop } from 'lodash'
 
 /** Text input. Wraps html `<input>` */
 export const Input = (
