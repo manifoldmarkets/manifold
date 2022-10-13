@@ -7,6 +7,7 @@ import { formatPercent } from 'common/util/format'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../loading-indicator'
 import { ContractCardProbChange } from './contract-card'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 export function ProfitChangeTable(props: {
   contracts: CPMMBinaryContract[]
@@ -118,7 +119,7 @@ export function ProbChangeTable(props: {
   )
 }
 
-export function ProbChange(props: {
+export function ProbOrNumericChange(props: {
   contract: CPMMContract
   className?: string
 }) {
@@ -127,13 +128,17 @@ export function ProbChange(props: {
     prob,
     probChanges: { day: change },
   } = contract
+  const number =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? formatNumericProbability(prob, contract)
+      : null
 
   const color = change >= 0 ? 'text-teal-500' : 'text-red-400'
 
   return (
     <Col className={clsx('flex flex-col items-end', className)}>
       <div className="mb-0.5 mr-0.5 text-2xl">
-        {formatPercent(Math.round(100 * prob) / 100)}
+        {number ? number : formatPercent(Math.round(100 * prob) / 100)}
       </div>
       <div className={clsx('text-base', color)}>
         {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
