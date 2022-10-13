@@ -16,7 +16,6 @@ export const DEV_CONFIG: EnvConfig = {
   cloudRunId: 'w3txbmd3ba',
   cloudRunRegion: 'uc',
   amplitudeApiKey: 'fd8cbfd964b9a205b8678a39faae71b3',
-  // this is Phil's deployment
-  twitchBotEndpoint: 'https://king-prawn-app-5btyw.ondigitalocean.app',
+  twitchBotEndpoint: 'https://dev-twitch-bot.manifold.markets',
   sprigEnvironmentId: 'Tu7kRZPm7daP',
 }
