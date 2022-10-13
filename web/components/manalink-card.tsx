@@ -139,10 +139,6 @@ export function ManalinkCardFromView(props: {
 
           <ShareIconButton
             toastClassName={'-left-48 min-w-[250%]'}
-            buttonClassName={'transition-colors'}
-            onCopyButtonClassName={
-              'bg-gray-200 text-gray-600 transition-none hover:bg-gray-200 hover:text-gray-600'
-            }
             copyPayload={getManalinkUrl(link.slug)}
           />
           <IconButton
