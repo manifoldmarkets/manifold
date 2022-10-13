@@ -16,6 +16,10 @@ module.exports = {
     ),
     extend: {
       colors: {
+        primary: '#11b981',
+        'primary-focus': '#069668',
+        warning: '#F59E0B', // amber-500 TODO: change color
+        error: '#ff5724', // TODO: change color
         'red-25': '#FDF7F6',
         'greyscale-1': '#FBFBFF',
         'greyscale-1.5': '#F4F4FB',
@@ -42,7 +46,6 @@ module.exports = {
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
     require('@tailwindcss/line-clamp'),
-    require('daisyui'),
     plugin(function ({ addUtilities }) {
       addUtilities({
         '.scrollbar-hide': {
@@ -64,42 +67,4 @@ module.exports = {
       })
     }),
   ],
-  daisyui: {
-    themes: [
-      {
-        mantic: {
-          primary: '#11b981',
-          'primary-focus': '#069668',
-          // Foreground content color to use on primary color
-          'primary-content': '#ffffff',
-
-          secondary: '#a991f7',
-          'secondary-focus': '#8462f4',
-          // Foreground content color to use on secondary color
-          'secondary-content': '#ffffff',
-
-          accent: '#f6d860',
-          'accent-focus': '#f3cc30',
-          // Foreground content color to use on accent color
-          'accent-content': '#ffffff',
-
-          neutral: '#3d4451',
-          'neutral-focus': '#2a2e37',
-          // Foreground content color to use on neutral color
-          'neutral-content': '#ffffff',
-
-          'base-100': '#ffffff' /* Base page color, for blank backgrounds */,
-          'base-200': '#f9fafb' /* Base color, a little darker */,
-          'base-300': '#d1d5db' /* Base color, even more dark */,
-          // Foreground content color to use on base color
-          'base-content': '#1f2937',
-
-          info: '#2094f3',
-          success: '#009485',
-          warning: '#ff9900',
-          error: '#ff5724',
-        },
-      },
-    ],
-  },
 }

@@ -35,7 +35,7 @@ export function AddFundsModal(props: {
         <div className="text-xl">{manaToUSD(amountSelected)}</div>
       </div>
 
-      <div className="modal-action">
+      <div className="flex">
         <Button color="gray-white" onClick={() => setOpen(false)}>
           Back
         </Button>

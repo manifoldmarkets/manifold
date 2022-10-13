@@ -438,7 +438,7 @@ function ContractSearchControls(props: {
   }
 
   return (
-    <Col className={clsx('bg-base-200 top-0 z-20 gap-3 pb-3', className)}>
+    <Col className={clsx('bg-greyscale-1 top-0 z-20 gap-3 pb-3', className)}>
       <Row className="gap-1 sm:gap-2">
         <Input
           type="text"

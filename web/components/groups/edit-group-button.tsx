@@ -77,7 +77,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
             />
           </div>
 
-          <div className="modal-action">
+          <div className="flex">
             <Button
               color="red"
               size="xs"

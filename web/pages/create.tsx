@@ -479,10 +479,12 @@ export function NewContract(props: {
             />
           </label>
           {!deservesFreeMarket ? (
-            <div className="text-neutral pl-1 text-sm">{formatMoney(ante)}</div>
+            <div className="pl-1 text-sm text-gray-700">
+              {formatMoney(ante)}
+            </div>
           ) : (
             <Row className="text-sm">
-              <div className="text-neutral pl-1 line-through">
+              <div className="pl-1 text-gray-700 line-through">
                 {formatMoney(ante)}
               </div>
               <div className="text-primary pl-1">FREE </div>

@@ -5469,11 +5469,6 @@ d3-transition@3:
     d3-interpolate "1 - 3"
     d3-timer "1 - 3"
 
-daisyui@1.16.4:
-  version "1.16.4"
-  resolved "https://registry.yarnpkg.com/daisyui/-/daisyui-1.16.4.tgz#52773401c0962e37ef40507d29f0e513c7f2856f"
-  integrity sha512-bpPUlIR6PJdnaM+Vj+Rd0ljMwbdwjvFAW9E/bhxCRDEU48OnmpKQxnkwNGAtXbwWWATS6I1dEIlLdM8zCbV3uQ==
-
 damerau-levenshtein@^1.0.7:
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/damerau-levenshtein/-/damerau-levenshtein-1.0.8.tgz#b43d286ccbd36bc5b2f7ed41caf2d0aba1f8a6e7"

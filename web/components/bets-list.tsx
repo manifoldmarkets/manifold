@@ -550,7 +550,7 @@ function BetRow(props: {
 
   return (
     <tr>
-      <td className="text-neutral">
+      <td className="text-gray-700">
         {isYourBet &&
           !isCPMM &&
           !isResolved &&
