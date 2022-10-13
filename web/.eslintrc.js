@@ -24,6 +24,7 @@ module.exports = {
     'lodash/import-scope': [2, 'member'],
     'unused-imports/no-unused-imports': 'error',
   },
+  ignorePatterns: ['/public/mtg/*'],
   env: {
     browser: true,
     node: true,
