@@ -95,8 +95,7 @@ export default function Home() {
   }, [user, sections])
 
   const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_',
-    3
+    user?.id ?? '_'
   )
 
   const trendingContracts = useTrendingContracts(6)
@@ -494,7 +493,7 @@ function DailyMoversSection(props: {
   return (
     <Col className="gap-2">
       <SectionHeader label="Daily movers" href="/daily-movers" />
-      <ProfitChangeTable contracts={contracts} metrics={metrics} />
+      <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
   )
 }
@@ -530,8 +529,7 @@ export function DailyProfit(props: { user: User | null | undefined }) {
   const { user } = props
 
   const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_',
-    100
+    user?.id ?? '_'
   )
   const profit = sum(
     contractMetricsByProfit?.metrics.map((m) =>
