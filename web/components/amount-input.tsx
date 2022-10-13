@@ -9,7 +9,6 @@ import { AddFundsModal } from './add-funds-modal'
 import { Input } from './input'
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
-import { transform } from 'lodash'
 
 export function AmountInput(props: {
   amount: number | undefined
