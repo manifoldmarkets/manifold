@@ -13,8 +13,7 @@ export function TipButton(props: {
   isCompact?: boolean
   disabled?: boolean
 }) {
-  const { tipAmount, totalTipped, userTipped, isCompact, onClick, disabled } =
-    props
+  const { tipAmount, totalTipped, userTipped, onClick, disabled } = props
 
   const tipDisplay = shortFormatNumber(Math.ceil(totalTipped / 10))
 
@@ -35,6 +34,7 @@ export function TipButton(props: {
         onClick={onClick}
         disabled={disabled}
         className={clsx(
+          'px-2 py-1 text-xs', //2xs button
           'text-greyscale-6 transition-transform hover:text-indigo-600 disabled:cursor-not-allowed',
           !disabled ? 'hover:rotate-12' : ''
         )}
@@ -43,20 +43,20 @@ export function TipButton(props: {
       >
         <Col className={clsx('relative', disabled ? 'opacity-30' : '')}>
           <TipJar
-            size={16}
-            color={hover || userTipped ? '#4f46e5' : '#66667C'}
+            size={18}
+            color={userTipped || (hover && !disabled) ? '#4f46e5' : '#66667C'}
             fill={userTipped ? '#4f46e5' : 'none'}
           />
           <div
             className={clsx(
-              ' absolute top-[3px] text-[0.5rem]',
+              ' absolute top-[2px] text-[0.5rem]',
               userTipped ? 'text-white' : '',
               tipDisplay.length === 1
-                ? 'left-[6px]'
+                ? 'left-[7px]'
                 : tipDisplay.length === 2
-                ? 'left-[3.5px]'
+                ? 'left-[4.5px]'
                 : tipDisplay.length > 2
-                ? 'left-[3px] top-[5px] text-[0.35rem]'
+                ? 'left-[4px] top-[2.5px] text-[0.35rem]'
                 : ''
             )}
           >

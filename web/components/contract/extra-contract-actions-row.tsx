@@ -2,7 +2,7 @@ import { ShareIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
 import React, { useState } from 'react'
-import { Button } from 'web/components/button'
+import { IconButton } from 'web/components/button'
 import { useUser } from 'web/hooks/use-user'
 import { ShareModal } from './share-modal'
 import { FollowMarketButton } from 'web/components/follow-market-button'
@@ -16,15 +16,14 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
   const [isShareOpen, setShareOpen] = useState(false)
 
   return (
-    <Row>
+    <Row className="gap-1">
       <FollowMarketButton contract={contract} user={user} />
 
       <LikeMarketButton contract={contract} user={user} />
 
       <Tooltip text="Share" placement="bottom" noTap noFade>
-        <Button
-          size="sm"
-          color="gray-white"
+        <IconButton
+          size="2xs"
           className={'flex'}
           onClick={() => setShareOpen(true)}
         >
@@ -35,7 +34,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
             contract={contract}
             user={user}
           />
-        </Button>
+        </IconButton>
       </Tooltip>
 
       <ContractInfoDialog contract={contract} user={user} />

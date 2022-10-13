@@ -178,14 +178,10 @@ export function CommentActions(props: {
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
   return (
-    <Row className="grow justify-end gap-2">
+    <Row className="grow justify-end">
       {onReplyClick && (
-        <IconButton
-          size={'xs'}
-          className={clsx('mt-0 mb-1 max-w-xs')}
-          onClick={() => onReplyClick(comment)}
-        >
-          <ReplyIcon className="h-4 w-4" />
+        <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
+          <ReplyIcon className="h-5 w-5" />
         </IconButton>
       )}
       {showTip && (
