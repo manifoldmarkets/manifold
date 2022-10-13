@@ -61,18 +61,6 @@ module.exports = {
           'overflow-wrap': 'anywhere',
           'word-break': 'break-word', // for Safari
         },
-        '.only-thumb': {
-          'pointer-events': 'none',
-          '&::-webkit-slider-thumb': {
-            'pointer-events': 'auto !important',
-          },
-          '&::-moz-range-thumb': {
-            'pointer-events': 'auto !important',
-          },
-          '&::-ms-thumb': {
-            'pointer-events': 'auto !important',
-          },
-        },
       })
     }),
   ],
