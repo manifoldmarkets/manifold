@@ -4,18 +4,15 @@ import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BucketInput } from './bucket-input'
 import { Input } from './input'
 import { Col } from './layout/col'
-import { Spacer } from './layout/spacer'
 
-export function ProbabilityInput(props: {
+function ProbabilityInput(props: {
   prob: number | undefined
   onChange: (newProb: number | undefined) => void
   disabled?: boolean
   placeholder?: string
-  className?: string
   inputClassName?: string
 }) {
-  const { prob, onChange, disabled, placeholder, className, inputClassName } =
-    props
+  const { prob, onChange, disabled, placeholder, inputClassName } = props
 
   const onProbChange = (str: string) => {
     let prob = parseInt(str.replace(/\D/g, ''))
@@ -29,10 +26,10 @@ export function ProbabilityInput(props: {
   }
 
   return (
-    <Col className={className}>
-      <label className="flex w-full items-stretch">
+    <Col>
+      <label className="relative w-fit">
         <Input
-          className={clsx('max-w-[200px] !text-lg', inputClassName)}
+          className={clsx('pr-2 !text-lg', inputClassName)}
           type="number"
           max={99}
           min={1}
@@ -44,9 +41,10 @@ export function ProbabilityInput(props: {
           disabled={disabled}
           onChange={(e) => onProbChange(e.target.value)}
         />
-        <span className="bg-gray-200 text-sm">%</span>
+        <span className="text-greyscale-4 absolute top-1/2 right-10 my-auto -translate-y-1/2">
+          %
+        </span>
       </label>
-      <Spacer h={4} />
     </Col>
   )
 }
@@ -82,7 +80,7 @@ export function ProbabilityOrNumericInput(props: {
     />
   ) : (
     <ProbabilityInput
-      inputClassName="w-full max-w-none"
+      inputClassName="w-24"
       prob={prob}
       onChange={setProb}
       disabled={isSubmitting}
