@@ -197,6 +197,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     return await notificationRef.set(removeUndefinedProps(notification))
   }
 
+  const needNotFollowContractReasons = ['tagged_user']
   const stillFollowingContract = (userId: string) => {
     return contractFollowersIds.includes(userId)
   }
@@ -205,7 +206,12 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     userId: string,
     reason: notification_reason_types
   ) => {
-    if (!stillFollowingContract(userId) || sourceUser.id == userId) return
+    if (
+      (!stillFollowingContract(userId) &&
+        !needNotFollowContractReasons.includes(reason)) ||
+      sourceUser.id == userId
+    )
+      return
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
     const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
