@@ -980,11 +980,11 @@ export function SellPanel(props: {
       <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="items-center justify-between gap-2 text-gray-500">
           Sale amount
-          <span className="text-neutral">{formatMoney(saleValue)}</span>
+          <span className="text-gray-700">{formatMoney(saleValue)}</span>
         </Row>
         <Row className="items-center justify-between gap-2 text-gray-500">
           Profit
-          <span className="text-neutral">{formatMoney(profit)}</span>
+          <span className="text-gray-700">{formatMoney(profit)}</span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-gray-500">
@@ -1000,11 +1000,11 @@ export function SellPanel(props: {
           <>
             <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
               Loan payment
-              <span className="text-neutral">{formatMoney(-loanPaid)}</span>
+              <span className="text-gray-700">{formatMoney(-loanPaid)}</span>
             </Row>
             <Row className="items-center justify-between gap-2 text-gray-500">
               Net proceeds
-              <span className="text-neutral">{formatMoney(netProceeds)}</span>
+              <span className="text-gray-700">{formatMoney(netProceeds)}</span>
             </Row>
           </>
         )}

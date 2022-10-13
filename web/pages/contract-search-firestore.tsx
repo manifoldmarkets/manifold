@@ -10,6 +10,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { PAST_BETS } from 'common/user'
 import { Input } from 'web/components/input'
+import { Select } from 'web/components/select'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -96,17 +97,13 @@ export default function ContractSearchFirestore(props: {
           placeholder="Search markets"
           className="w-full"
         />
-        <select
-          className="select select-bordered"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
+        <Select value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="score">Trending</option>
           <option value="newest">Newest</option>
           <option value="most-traded">Most ${PAST_BETS}</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
-        </select>
+        </Select>
       </div>
       <ContractsGrid contracts={matches} showTime={showTime} />
     </div>

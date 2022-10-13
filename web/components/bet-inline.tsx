@@ -92,10 +92,7 @@ export function BetInline(props: {
         />
         <BuyAmountInput
           className="-mb-4"
-          inputClassName={clsx(
-            'input-sm w-20 !text-base',
-            error && 'input-error'
-          )}
+          inputClassName="w-20 !text-base"
           amount={amount}
           onChange={setAmount}
           error="" // handle error ourselves

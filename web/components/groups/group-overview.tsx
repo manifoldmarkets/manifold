@@ -377,7 +377,7 @@ export function GroupAbout(props: {
           <div className={'inline-flex items-center'}>
             <div className="mr-1 text-gray-500">Created by</div>
             <UserLink
-              className="text-neutral"
+              className="text-gray-700"
               name={creator.name}
               username={creator.username}
             />

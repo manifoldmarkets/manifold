@@ -22,6 +22,7 @@ import { BETTORS, User } from 'common/user'
 import { IconButton } from '../button'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { Tooltip } from '../tooltip'
+import { Table } from '../table'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -98,7 +99,7 @@ export function ContractInfoDialog(props: {
           <Col className="gap-4 rounded bg-white p-6">
             <Title className="!mt-0 !mb-0" text="This Market" />
 
-            <table className="table-compact table-zebra table w-full text-gray-500">
+            <Table>
               <tbody>
                 <tr>
                   <td>Type</td>
@@ -238,7 +239,7 @@ export function ContractInfoDialog(props: {
                   </tr>
                 )}
               </tbody>
-            </table>
+            </Table>
 
             <Row className="flex-wrap">
               {mechanism === 'cpmm-1' && (
