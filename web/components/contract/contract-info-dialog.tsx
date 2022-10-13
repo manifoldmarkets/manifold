@@ -21,6 +21,7 @@ import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
 import { Button } from '../button'
 import { AddLiquidityButton } from './add-liquidity-button'
+import { Table } from '../table'
 
 export const contractDetailsButtonClassName =
   'group flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-100 text-gray-400 hover:text-gray-500'
@@ -99,8 +100,7 @@ export function ContractInfoDialog(props: {
       <Modal open={open} setOpen={setOpen}>
         <Col className="gap-4 rounded bg-white p-6">
           <Title className="!mt-0 !mb-0" text="This Market" />
-
-          <table className="table-compact table-zebra table w-full text-gray-500">
+          <Table>
             <tbody>
               <tr>
                 <td>Type</td>
@@ -239,7 +239,7 @@ export function ContractInfoDialog(props: {
                 </tr>
               )}
             </tbody>
-          </table>
+          </Table>
 
           <Row className="flex-wrap">
             {mechanism === 'cpmm-1' && (

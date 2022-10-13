@@ -53,6 +53,7 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ExclamationIcon } from '@heroicons/react/outline'
 import { Select } from './select'
+import { Table } from './table'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -450,7 +451,7 @@ export function ContractBetsTable(props: {
         </>
       )}
 
-      <table className="table-zebra table-compact table w-full text-gray-500">
+      <Table>
         <thead>
           <tr className="p-2">
             <th></th>
@@ -479,7 +480,7 @@ export function ContractBetsTable(props: {
             />
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   )
 }
