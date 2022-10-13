@@ -37,10 +37,15 @@ export function AwardBountyButton(prop: {
   const canUp = me && me.id !== comment.userId && contract.creatorId === me.id
   if (!canUp) return <div />
   return (
-    <Row className={clsx('-ml-2 items-center gap-0.5', !canUp ? '-ml-6' : '')}>
-      <TextButton className={'font-bold'} onClick={submit}>
+    <Row className={clsx('my-1 items-center gap-0.5', !canUp ? '-ml-6' : '')}>
+      <button
+        className={
+          'rounded-full bg-indigo-50 px-2 py-1 text-xs text-indigo-400 transition-colors hover:bg-indigo-400 hover:text-white'
+        }
+        onClick={submit}
+      >
         Award {formatMoney(COMMENT_BOUNTY_AMOUNT)}
-      </TextButton>
+      </button>
     </Row>
   )
 }
