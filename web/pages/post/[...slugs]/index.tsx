@@ -171,11 +171,9 @@ export function PostCommentsActivity(props: {
 export function RichEditPost(props: { post: Post }) {
   const { post } = props
   const [editing, setEditing] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { editor, upload } = useTextEditor({
     defaultValue: post.content,
-    disabled: isSubmitting,
   })
 
   async function savePost() {
@@ -193,10 +191,8 @@ export function RichEditPost(props: { post: Post }) {
       <Row className="gap-2">
         <Button
           onClick={async () => {
-            setIsSubmitting(true)
             await savePost()
             setEditing(false)
-            setIsSubmitting(false)
           }}
         >
           Save

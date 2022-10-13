@@ -90,18 +90,17 @@ export const editorExtensions = (simple = false): Extensions => [
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
-  'font-light prose-a:font-light prose-blockquote:font-light'
+  'font-light prose-a:font-light prose-blockquote:font-light prose-sm'
 )
 
 export function useTextEditor(props: {
   placeholder?: string
   max?: number
   defaultValue?: Content
-  disabled?: boolean
   simple?: boolean
   key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
 }) {
-  const { placeholder, max, defaultValue, disabled, simple, key } = props
+  const { placeholder, max, defaultValue, simple, key } = props
 
   const [content, saveContent] = usePersistentState<JSONContent | undefined>(
     undefined,
@@ -168,10 +167,6 @@ export function useTextEditor(props: {
       },
     },
   })
-
-  useEffect(() => {
-    editor?.setEditable(!disabled)
-  }, [editor, disabled])
 
   return { editor, upload }
 }

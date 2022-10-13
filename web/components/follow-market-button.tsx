@@ -1,4 +1,4 @@
-import { Button } from 'web/components/button'
+import { IconButton } from 'web/components/button'
 import {
   Contract,
   followContract,
@@ -33,9 +33,8 @@ export const FollowMarketButton = (props: {
       noTap
       noFade
     >
-      <Button
-        size={'sm'}
-        color={'gray-white'}
+      <IconButton
+        size="2xs"
         onClick={async () => {
           if (!user) return firebaseLogin()
           if (followers?.includes(user.id)) {
@@ -65,18 +64,12 @@ export const FollowMarketButton = (props: {
       >
         {watching ? (
           <Col className={'items-center gap-x-2 sm:flex-row'}>
-            <EyeOffIcon
-              className={clsx('h-5 w-5 sm:h-6 sm:w-6')}
-              aria-hidden="true"
-            />
+            <EyeOffIcon className={clsx('h-5 w-5')} aria-hidden="true" />
             {/* Unwatch */}
           </Col>
         ) : (
           <Col className={'items-center gap-x-2 sm:flex-row'}>
-            <EyeIcon
-              className={clsx('h-5 w-5 sm:h-6 sm:w-6')}
-              aria-hidden="true"
-            />
+            <EyeIcon className={clsx('h-5 w-5')} aria-hidden="true" />
             {/* Watch */}
           </Col>
         )}
@@ -87,7 +80,7 @@ export const FollowMarketButton = (props: {
             followers?.includes(user?.id ?? 'nope') ? 'watched' : 'unwatched'
           } a question!`}
         />
-      </Button>
+      </IconButton>
     </Tooltip>
   )
 }

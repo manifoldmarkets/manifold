@@ -206,7 +206,7 @@ export function BetsList(props: { user: User }) {
             value={filter}
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
-            <option value="open">Open</option>
+            <option value="open">Active</option>
             <option value="limit_bet">Limit orders</option>
             <option value="sold">Sold</option>
             <option value="closed">Closed</option>

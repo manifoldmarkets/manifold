@@ -227,7 +227,6 @@ export function NewContract(props: {
     key: 'create market',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
-    disabled: isSubmitting,
     defaultValue: params?.description
       ? JSON.parse(params.description)
       : undefined,

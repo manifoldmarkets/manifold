@@ -291,7 +291,7 @@ export function ProfilePrivateStats(props: {
       <Row className={'justify-between gap-4 sm:justify-end'}>
         <Col className={'text-greyscale-4 text-md sm:text-lg'}>
           <span
-            className={clsx(profit >= 0 ? 'text-green-600' : 'text-red-400')}
+            className={clsx(profit >= 0 ? 'text-teal-600' : 'text-red-400')}
           >
             {formatMoney(profit)}
           </span>

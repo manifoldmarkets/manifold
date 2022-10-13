@@ -5,34 +5,22 @@ import clsx from 'clsx'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
-import { contractDetailsButtonClassName } from 'web/components/contract/contract-info-dialog'
+import { IconButton } from './button'
 
 export function ShareIconButton(props: {
-  buttonClassName?: string
-  onCopyButtonClassName?: string
   toastClassName?: string
   children?: React.ReactNode
   iconClassName?: string
   copyPayload: string
 }) {
-  const {
-    buttonClassName,
-    onCopyButtonClassName,
-    toastClassName,
-    children,
-    iconClassName,
-    copyPayload,
-  } = props
+  const { toastClassName, children, iconClassName, copyPayload } = props
   const [showToast, setShowToast] = useState(false)
 
   return (
     <div className="relative z-10 flex-shrink-0">
-      <button
-        className={clsx(
-          contractDetailsButtonClassName,
-          buttonClassName,
-          showToast ? onCopyButtonClassName : ''
-        )}
+      <IconButton
+        size="2xs"
+        className={clsx('mt-1', showToast ? 'text-indigo-600' : '')}
         onClick={() => {
           copyToClipboard(copyPayload)
           track('copy share link')
@@ -41,11 +29,11 @@ export function ShareIconButton(props: {
         }}
       >
         <LinkIcon
-          className={clsx(iconClassName ? iconClassName : 'h-[24px] w-5')}
+          className={clsx(iconClassName ? iconClassName : 'h-5 w-5')}
           aria-hidden="true"
         />
         {children}
-      </button>
+      </IconButton>
 
       {showToast && <ToastClipboard className={toastClassName} />}
     </div>

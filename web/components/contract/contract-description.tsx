@@ -45,13 +45,11 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   const { contract, isAdmin } = props
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { editor, upload } = useTextEditor({
     // key: `description ${contract.id}`,
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
-    disabled: isSubmitting,
   })
 
   async function saveDescription() {
@@ -66,10 +64,8 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
       <Row className="gap-2">
         <Button
           onClick={async () => {
-            setIsSubmitting(true)
             await saveDescription()
             setEditing(false)
-            setIsSubmitting(false)
           }}
         >
           Save
