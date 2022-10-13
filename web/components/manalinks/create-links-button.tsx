@@ -116,7 +116,7 @@ function CreateManalinkForm(props: {
         >
           <Title className="!my-0" text="Create a Manalink" />
           <div className="flex flex-col flex-wrap gap-x-5 gap-y-2">
-            <div className="form-control flex-auto">
+            <div className="flex flex-auto flex-col">
               <label className="px-1 py-2">Amount</label>
               <div className="relative">
                 <span className="absolute mx-3 mt-3.5 text-sm text-gray-400">
@@ -136,7 +136,7 @@ function CreateManalinkForm(props: {
               </div>
             </div>
             <div className="flex flex-col gap-2 md:flex-row">
-              <div className="form-control w-full md:w-1/2">
+              <div className="flex w-full flex-col md:w-1/2">
                 <label className="px-1 py-2">Uses</label>
                 <Input
                   type="number"
@@ -149,7 +149,7 @@ function CreateManalinkForm(props: {
                   }
                 />
               </div>
-              <div className="form-control w-full md:w-1/2">
+              <div className="flex w-full flex-col md:w-1/2">
                 <label className="px-1 py-2">Expires in</label>
                 <Select
                   value={expiresIn}
@@ -163,7 +163,7 @@ function CreateManalinkForm(props: {
                 </Select>
               </div>
             </div>
-            <div className="form-control w-full">
+            <div className="flex w-full flex-col">
               <label className="px-1 py-2">Message</label>
               <ExpandingInput
                 placeholder={defaultMessage}

@@ -103,7 +103,7 @@ export function CreateGroupButton(props: {
       </Col>
       {errorText && <div className={'text-error'}>{errorText}</div>}
 
-      <div className="form-control w-full">
+      <div className="flex w-full flex-col">
         <label className="mb-2 ml-1 mt-0">Group name</label>
         <Input
           placeholder={'Your group name'}
