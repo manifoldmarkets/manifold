@@ -48,6 +48,7 @@ export function TipButton(props: {
           />
           <div
             className={clsx(
+              userTipped && 'text-indigo-600',
               ' absolute top-[2px] text-[0.5rem]',
               tipDisplay.length === 1
                 ? 'left-[7px]'
