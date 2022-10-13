@@ -427,8 +427,7 @@ export function ContractCardProbChange(props: {
           )}
         >
           <Row className="gap-1 text-gray-700">
-            <div className="text-gray-500">Position</div>
-            {Math.floor(metrics.totalShares[outcome])} {outcome}
+            {Math.floor(metrics.totalShares[outcome])} {outcome} shares
           </Row>
 
           {dayMetrics && (
