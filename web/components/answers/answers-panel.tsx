@@ -227,10 +227,7 @@ function OpenAnswer(props: {
               username={username}
               avatarUrl={avatarUrl}
             />
-            <Linkify
-              className="text-md cursor-pointer whitespace-pre-line"
-              text={text}
-            />
+            <Linkify className="text-md whitespace-pre-line" text={text} />
           </Row>
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>
