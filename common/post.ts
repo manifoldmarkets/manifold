@@ -13,6 +13,11 @@ export type Post = {
   creatorName: string
   creatorUsername: string
   creatorAvatarUrl?: string
+
+  likedByUserIds?: string[]
+  likedByUserCount?: number
+
+  itemType: 'post'
 }
 
 export type DateDoc = Post & {

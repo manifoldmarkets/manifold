@@ -1,23 +1,24 @@
 import React, { useMemo, useState } from 'react'
-import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
 import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
-import { likeContract } from 'web/lib/firebase/likes'
+import { likeItem } from 'web/lib/firebase/likes'
 import { LIKE_TIP_AMOUNT } from 'common/like'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { useMarketTipTxns } from 'web/hooks/use-tip-txns'
+import { useItemTipTxns } from 'web/hooks/use-tip-txns'
 import { sum } from 'lodash'
 import { TipButton } from './tip-button'
+import { Contract } from 'common/contract'
+import { Post } from 'common/post'
 
-export function LikeMarketButton(props: {
-  contract: Contract
+export function LikeItemButton(props: {
+  item: Contract | Post
   user: User | null | undefined
 }) {
-  const { contract, user } = props
+  const { item, user } = props
 
-  const tips = useMarketTipTxns(contract.id)
+  const tips = useItemTipTxns(item.id)
 
   const totalTipped = useMemo(() => {
     return sum(tips.map((tip) => tip.amount))
@@ -27,16 +28,17 @@ export function LikeMarketButton(props: {
 
   const [isLiking, setIsLiking] = useState(false)
 
-  const userLikedContractIds = likes
-    ?.filter((l) => l.type === 'contract')
+  const userLikedItemIds = likes
+    ?.filter((l) => l.type === 'contract' || l.type === 'post')
     .map((l) => l.id)
 
   const onLike = async () => {
     if (!user) return firebaseLogin()
 
     setIsLiking(true)
-    likeContract(user, contract).catch(() => setIsLiking(false))
-    toast(`You tipped ${contract.creatorName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
+    likeItem(user, item).catch(() => setIsLiking(false))
+
+    toast(`You tipped ${item.creatorName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
   }
 
   return (
@@ -47,10 +49,10 @@ export function LikeMarketButton(props: {
       userTipped={
         !!user &&
         (isLiking ||
-          userLikedContractIds?.includes(contract.id) ||
-          (!likes && !!contract.likedByUserIds?.includes(user.id)))
+          userLikedItemIds?.includes(item.id) ||
+          (!likes && !!item.likedByUserIds?.includes(user.id)))
       }
-      disabled={contract.creatorId === user?.id}
+      disabled={item.creatorId === user?.id}
     />
   )
 }

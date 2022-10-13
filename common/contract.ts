@@ -10,6 +10,7 @@ export type AnyOutcomeType =
   | PseudoNumeric
   | FreeResponse
   | Numeric
+
 export type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
@@ -66,6 +67,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   flaggedByUsernames?: string[]
   openCommentBounties?: number
   unlistedById?: string
+  itemType: 'contract'
 } & T
 
 export type BinaryContract = Contract & Binary
