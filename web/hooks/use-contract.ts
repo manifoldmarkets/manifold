@@ -3,12 +3,10 @@ import { useFirestoreDocumentData } from '@react-query-firebase/firestore'
 import {
   Contract,
   contracts,
-  getContractFromId,
   listenForContract,
 } from 'web/lib/firebase/contracts'
 import { useStateCheckEquality } from './use-state-check-equality'
 import { doc, DocumentData } from 'firebase/firestore'
-import { useQuery } from 'react-query'
 
 export const useContract = (contractId: string) => {
   const result = useFirestoreDocumentData<DocumentData, Contract>(
@@ -18,17 +16,6 @@ export const useContract = (contractId: string) => {
   )
 
   return result.isLoading ? undefined : result.data
-}
-
-export const useContractsFromIds = (contractIds: string[]) => {
-  const contractResult = useQuery(['contracts', contractIds], () =>
-    Promise.all(contractIds.map(getContractFromId))
-  )
-  const contracts = contractResult.data?.filter(
-    (contract): contract is Contract => !!contract
-  )
-
-  return contractResult.isLoading ? undefined : contracts
 }
 
 export const useContractWithPreload = (
