@@ -5,7 +5,6 @@ import clsx from 'clsx'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
-import { contractDetailsButtonClassName } from 'web/components/contract/contract-info-dialog'
 
 export function ShareIconButton(props: {
   buttonClassName?: string
@@ -29,7 +28,6 @@ export function ShareIconButton(props: {
     <div className="relative z-10 flex-shrink-0">
       <button
         className={clsx(
-          contractDetailsButtonClassName,
           buttonClassName,
           showToast ? onCopyButtonClassName : ''
         )}

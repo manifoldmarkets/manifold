@@ -9,7 +9,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
 import { ShareIconButton } from './share-icon-button'
-import { contractDetailsButtonClassName } from './contract/contract-info-dialog'
 import { useUserById } from 'web/hooks/use-user'
 import getManalinkUrl from 'web/get-manalink-url'
 
@@ -133,10 +132,7 @@ export function ManalinkCardFromView(props: {
             {formatMoney(amount)}
           </div>
 
-          <button
-            onClick={() => (window.location.href = qrUrl)}
-            className={clsx(contractDetailsButtonClassName)}
-          >
+          <button onClick={() => (window.location.href = qrUrl)}>
             <QrcodeIcon className="h-6 w-6" />
           </button>
 
@@ -151,7 +147,6 @@ export function ManalinkCardFromView(props: {
           <button
             onClick={() => setShowDetails(!showDetails)}
             className={clsx(
-              contractDetailsButtonClassName,
               showDetails
                 ? 'bg-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-600'
                 : ''
