@@ -35,9 +35,7 @@ export default function CreateDateDocPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { editor, upload } = useTextEditor({
-    disabled: isSubmitting,
-  })
+  const { editor, upload } = useTextEditor({})
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =

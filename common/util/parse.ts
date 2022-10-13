@@ -1,4 +1,5 @@
 import { generateText, JSONContent } from '@tiptap/core'
+import { generateJSON } from '@tiptap/html'
 // Tiptap starter extensions
 import { Blockquote } from '@tiptap/extension-blockquote'
 import { Bold } from '@tiptap/extension-bold'
@@ -85,4 +86,8 @@ const stringParseExts = [
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
   return generateText(text, stringParseExts)
+}
+
+export function htmlToRichText(html: string) {
+  return generateJSON(html, stringParseExts)
 }

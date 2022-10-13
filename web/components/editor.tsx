@@ -97,11 +97,10 @@ export function useTextEditor(props: {
   placeholder?: string
   max?: number
   defaultValue?: Content
-  disabled?: boolean
   simple?: boolean
   key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
 }) {
-  const { placeholder, max, defaultValue, disabled, simple, key } = props
+  const { placeholder, max, defaultValue, simple, key } = props
 
   const [content, saveContent] = usePersistentState<JSONContent | undefined>(
     undefined,
@@ -168,10 +167,6 @@ export function useTextEditor(props: {
       },
     },
   })
-
-  useEffect(() => {
-    editor?.setEditable(!disabled)
-  }, [editor, disabled])
 
   return { editor, upload }
 }
