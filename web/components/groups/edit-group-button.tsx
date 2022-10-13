@@ -52,7 +52,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
       <Modal open={open} setOpen={updateOpen}>
         <div className="h-full rounded-md bg-white p-8">
           <div className="form-control w-full">
-            <label className="label">
+            <label className="px-1 py-2">
               <span className="mb-1">Group name</span>
             </label>
 
@@ -67,7 +67,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
           <Spacer h={4} />
 
           <div className="form-control w-full">
-            <label className="label">
+            <label className="px-1 py-2">
               <span className="mb-0">Add members</span>
             </label>
             <FilterSelectUsers
@@ -77,7 +77,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
             />
           </div>
 
-          <div className="modal-action">
+          <div className="flex">
             <Button
               color="red"
               size="xs"

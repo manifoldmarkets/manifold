@@ -86,7 +86,7 @@ export default function PostPage(props: {
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
               <UserLink
-                className="text-neutral"
+                className="text-gray-700"
                 name={creator.name}
                 username={creator.username}
               />

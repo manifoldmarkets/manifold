@@ -30,7 +30,7 @@ export function ProbabilityInput(props: {
 
   return (
     <Col className={className}>
-      <label className="input-group">
+      <label className="flex w-full items-stretch">
         <Input
           className={clsx('max-w-[200px] !text-lg', inputClassName)}
           type="number"

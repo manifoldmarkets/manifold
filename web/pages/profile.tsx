@@ -43,7 +43,7 @@ function EditUserField(props: {
 
   return (
     <div>
-      <label className="label">{label}</label>
+      <label className="px-1 py-2">{label}</label>
 
       {field === 'bio' ? (
         <ExpandingInput
@@ -156,7 +156,7 @@ export default function ProfilePage(props: {
           </Row>
 
           <div>
-            <label className="label">Display name</label>
+            <label className="px-1 py-2">Display name</label>
             <Input
               type="text"
               placeholder="Display name"
@@ -167,7 +167,7 @@ export default function ProfilePage(props: {
           </div>
 
           <div>
-            <label className="label">Username</label>
+            <label className="px-1 py-2">Username</label>
             <Input
               type="text"
               placeholder="Username"
@@ -193,15 +193,15 @@ export default function ProfilePage(props: {
           ))}
 
           <div>
-            <label className="label">Email</label>
+            <label className="px-1 py-2">Email</label>
             <div className="ml-1 text-gray-500">
               {privateUser.email ?? '\u00a0'}
             </div>
           </div>
 
           <div>
-            <label className="label">API key</label>
-            <div className="input-group w-full">
+            <label className="px-1 py-2">API key</label>
+            <div className="flex w-full items-stretch">
               <Input
                 type="text"
                 placeholder="Click refresh to generate key"

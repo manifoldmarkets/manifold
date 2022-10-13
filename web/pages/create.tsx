@@ -97,10 +97,8 @@ export default function Create(props: { auth: { user: User } }) {
 
           <form>
             <div className="form-control w-full">
-              <label className="label">
-                <span className="mb-1">
-                  Question<span className={'text-red-700'}>*</span>
-                </span>
+              <label className="px-1 pt-2 pb-3">
+                Question<span className={'text-red-700'}>*</span>
               </label>
 
               <ExpandingInput
@@ -280,9 +278,7 @@ export function NewContract(props: {
 
   return (
     <div>
-      <label className="label">
-        <span className="mb-1">Answer type</span>
-      </label>
+      <label className="px-1 pt-2 pb-3">Answer type</label>
       <Row>
         <ChoicesToggleGroup
           currentChoice={outcomeType}
@@ -319,7 +315,7 @@ export function NewContract(props: {
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>
           <div className="form-control mb-2 items-start">
-            <label className="label gap-2">
+            <label className="gap-2 px-1 py-2">
               <span className="mb-1">Range</span>
               <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             </label>
@@ -364,7 +360,7 @@ export function NewContract(props: {
             )}
           </div>
           <div className="form-control mb-2 items-start">
-            <label className="label gap-2">
+            <label className="gap-2 px-1 py-2">
               <span className="mb-1">Initial value</span>
               <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
             </label>
@@ -421,7 +417,7 @@ export function NewContract(props: {
       <Spacer h={6} />
 
       <div className="form-control mb-1 items-start">
-        <label className="label mb-1 gap-2">
+        <label className="mb-1 gap-2 px-1 py-2">
           <span>Question closes in</span>
           <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
         </label>
@@ -464,7 +460,7 @@ export function NewContract(props: {
       <Spacer h={6} />
 
       <div className="form-control mb-1 items-start gap-1">
-        <label className="label gap-2">
+        <label className="gap-2 px-1 py-2">
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
@@ -475,23 +471,23 @@ export function NewContract(props: {
       <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
         <div className="form-control mb-1 items-start">
-          <label className="label mb-1 gap-2">
+          <label className="mb-1 gap-2 px-1 py-2">
             <span>Cost</span>
             <InfoTooltip
               text={`Cost to create your question. This amount is used to subsidize predictions.`}
             />
           </label>
           {!deservesFreeMarket ? (
-            <div className="label-text text-neutral pl-1">
+            <div className="pl-1 text-sm text-gray-700">
               {formatMoney(ante)}
             </div>
           ) : (
-            <Row>
-              <div className="label-text text-neutral pl-1 line-through">
+            <Row className="text-sm">
+              <div className="pl-1 text-gray-700 line-through">
                 {formatMoney(ante)}
               </div>
-              <div className="label-text text-primary pl-1">FREE </div>
-              <div className="label-text pl-1 text-gray-500">
+              <div className="text-primary pl-1">FREE </div>
+              <div className="pl-1 text-gray-500">
                 (You have{' '}
                 {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
                 free markets left)

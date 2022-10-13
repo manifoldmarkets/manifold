@@ -246,7 +246,7 @@ Future plans: We expect to focus on similar theoretical problems in alignment un
     description: `At Rethink Charity, we’re excited about improving the world by providing vital support to high-impact charities and charitable projects. We equip them with tools to boost their impact, through our projects that empower their donors with tax-efficient giving options and strategically coordinated matching opportunities.
     What we do:
 
-    - Rethink Charity Forward is a cause-neutral donation routing fund for high-impact charities around the world. Canadians have used RC Forward to donate $10 million to high-impact charities since the project was launched in late 2017. 
+    - Rethink Charity Forward is a cause-gray-700 donation routing fund for high-impact charities around the world. Canadians have used RC Forward to donate $10 million to high-impact charities since the project was launched in late 2017. 
 
     - EA Giving Tuesday supports both donors and highly effective nonprofits participating in Facebook’s annual Giving Tuesday match. In addition to setting up systems and processes, the team provides analysis-based recommendations, detailed instructions, and responsive support. The team’s goal is to make it as easy as possible for donors to direct matching dollars to highly effective nonprofits.`,
   },
@@ -595,7 +595,8 @@ In addition to housing impact litigation, we provide free legal aid, education a
     photo:
       'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2Fci2h3hStFM.47?alt=media&token=0d2cdc3d-e4d8-4f5e-8f23-4a586b6ff637',
     preview: 'Donate supplies to soldiers in Ukraine',
-    description: 'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
+    description:
+      'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

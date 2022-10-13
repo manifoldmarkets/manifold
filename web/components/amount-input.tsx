@@ -7,6 +7,8 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from './layout/row'
 import { AddFundsModal } from './add-funds-modal'
 import { Input } from './input'
+import Slider from 'rc-slider'
+import 'rc-slider/assets/index.css'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -40,17 +42,13 @@ export function AmountInput(props: {
 
   return (
     <>
-      <Col className={className}>
+      <Col className={clsx('relative', className)}>
         <label className="font-sm md:font-lg relative">
           <span className="text-greyscale-4 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
           </span>
           <Input
-            className={clsx(
-              'w-24 pl-9 !text-base md:w-auto',
-              error && 'input-error',
-              inputClassName
-            )}
+            className={clsx('w-24 pl-9 !text-base md:w-auto', inputClassName)}
             ref={inputRef}
             type="text"
             pattern="[0-9]*"
@@ -58,13 +56,14 @@ export function AmountInput(props: {
             placeholder="0"
             maxLength={6}
             value={amount ?? ''}
+            error={!!error}
             disabled={disabled}
             onChange={(e) => onAmountChange(e.target.value)}
           />
         </label>
 
         {error && (
-          <div className="absolute mt-11 whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          <div className="absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
             {error === 'Insufficient balance' ? (
               <>
                 Not enough funds.
@@ -148,7 +147,7 @@ export function BuyAmountInput(props: {
 
   return (
     <>
-      <Row className="gap-4">
+      <Row className="items-center gap-4">
         <AmountInput
           amount={amount}
           onChange={onAmountChange}
@@ -160,14 +159,23 @@ export function BuyAmountInput(props: {
           inputRef={inputRef}
         />
         {showSlider && (
-          <input
-            type="range"
-            min="0"
-            max="205"
+          <Slider
+            min={0}
+            max={205}
             value={getRaw(amount ?? 0)}
-            onChange={(e) => onAmountChange(parseRaw(parseInt(e.target.value)))}
-            className="range range-lg only-thumb my-auto align-middle xl:hidden"
-            step="5"
+            onChange={(value) => onAmountChange(parseRaw(value as number))}
+            className="mx-4 !h-4 xl:hidden [&>.rc-slider-rail]:bg-gray-200 [&>.rc-slider-track]:bg-indigo-400 [&>.rc-slider-handle]:bg-indigo-400"
+            railStyle={{ height: 16, top: 0, left: 0 }}
+            trackStyle={{ height: 16, top: 0 }}
+            handleStyle={{
+              height: 32,
+              width: 32,
+              opacity: 1,
+              border: 'none',
+              boxShadow: 'none',
+              top: -2,
+            }}
+            step={5}
           />
         )}
       </Row>
