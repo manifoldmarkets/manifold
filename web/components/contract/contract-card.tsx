@@ -426,7 +426,7 @@ export function ContractCardProbChange(props: {
             'items-center justify-between gap-4 pl-6 pr-4 pb-2 text-sm'
           )}
         >
-          <Row className="gap-1 text-gray-700">
+          <Row className="gap-1 text-gray-500">
             {Math.floor(metrics.totalShares[outcome])} {outcome} shares
           </Row>
 
