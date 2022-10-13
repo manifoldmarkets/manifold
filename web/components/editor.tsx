@@ -21,6 +21,8 @@ import { useMutation } from 'react-query'
 import { linkClass } from './site-link'
 import { DisplayMention } from './editor/mention'
 import { DisplayContractMention } from './editor/contract-mention'
+import GridComponent from './editor/tiptap-grid-cards'
+
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
 import { EmbedModal } from './editor/embed-modal'
@@ -78,6 +80,7 @@ export const editorExtensions = (simple = false): Extensions => [
   DisplayLink,
   DisplayMention,
   DisplayContractMention,
+  GridComponent,
   Iframe,
   TiptapTweet,
   TiptapSpoiler.configure({
@@ -358,6 +361,7 @@ export function RichContent(props: {
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
       DisplayContractMention,
+      GridComponent,
       Iframe,
       TiptapTweet,
       TiptapSpoiler.configure({
