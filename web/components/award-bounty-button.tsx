@@ -5,7 +5,6 @@ import { awardCommentBounty } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Row } from './layout/row'
 import { Contract } from 'common/contract'
-import { TextButton } from 'web/components/text-button'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
