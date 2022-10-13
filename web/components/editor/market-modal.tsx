@@ -1,7 +1,7 @@
 import { Editor } from '@tiptap/react'
 import { Contract } from 'common/contract'
 import { SelectMarketsModal } from '../contract-select-modal'
-import { embedContractCode, embedContractGridCode } from '../share-embed-button'
+import { embedContractCode } from '../share-embed-button'
 import { insertContent } from './utils'
 
 export function MarketModal(props: {
@@ -15,7 +15,10 @@ export function MarketModal(props: {
     if (contracts.length == 1) {
       insertContent(editor, embedContractCode(contracts[0]))
     } else if (contracts.length > 1) {
-      insertContent(editor, embedContractGridCode(contracts))
+      insertContent(
+        editor,
+        `<grid-cards-component contractIds="${contracts.map((c) => c.id)}" />`
+      )
     }
   }
 
