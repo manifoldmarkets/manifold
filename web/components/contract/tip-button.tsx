@@ -5,6 +5,7 @@ import { Button } from 'web/components/button'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../tooltip'
+import TipJar from 'web/public/custom-components/tipJar'
 
 export function TipButton(props: {
   tipAmount: number
@@ -41,26 +42,22 @@ export function TipButton(props: {
         onClick={onClick}
         disabled={disabled}
       >
-        <Col className={'relative items-center sm:flex-row'}>
-          <HeartIcon
+        <Col
+          className={
+            'relative items-center transition-transform hover:rotate-12 sm:flex-row'
+          }
+        >
+          <TipJar />
+          <div
             className={clsx(
-              'h-5 w-5',
-              totalTipped > 0 ? 'mr-2' : '',
-              userTipped ? 'fill-teal-500 text-teal-500' : ''
+              'bg-greyscale-5 absolute rounded-full text-white',
+              tipDisplay.length > 2
+                ? 'text-[0.4rem] sm:text-[0.5rem]'
+                : 'text-[0.5rem]'
             )}
-          />
-          {totalTipped > 0 && (
-            <div
-              className={clsx(
-                'bg-greyscale-5 absolute ml-3.5 mt-2 h-4 w-4 rounded-full align-middle text-white sm:mt-3 sm:h-5 sm:w-5 sm:px-1',
-                tipDisplay.length > 2
-                  ? 'text-[0.4rem] sm:text-[0.5rem]'
-                  : 'sm:text-2xs text-[0.5rem]'
-              )}
-            >
-              {tipDisplay}
-            </div>
-          )}
+          >
+            {totalTipped > 0 ? tipDisplay : ''}
+          </div>
         </Col>
       </Button>
     </Tooltip>
