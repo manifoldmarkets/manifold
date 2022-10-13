@@ -43,7 +43,7 @@ export function AmountInput(props: {
 
   return (
     <>
-      <Col className={className}>
+      <Col className={clsx('relative', className)}>
         <label className="font-sm md:font-lg relative">
           <span className="text-greyscale-4 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
@@ -64,7 +64,7 @@ export function AmountInput(props: {
         </label>
 
         {error && (
-          <div className="absolute mt-11 whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          <div className="absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
             {error === 'Insufficient balance' ? (
               <>
                 Not enough funds.
