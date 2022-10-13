@@ -22,7 +22,7 @@ module.exports = {
     '@next/next/no-typos': 'off',
     'linebreak-style': ['error', 'unix'],
     'lodash/import-scope': [2, 'member'],
-    'unused-imports/no-unused-imports': 'error',
+    'unused-imports/no-unused-imports': 'warn',
   },
   ignorePatterns: ['/public/mtg/*'],
   env: {
