@@ -45,12 +45,10 @@ export function TipButton(props: {
           <TipJar
             size={18}
             color={userTipped || (hover && !disabled) ? '#4f46e5' : '#66667C'}
-            fill={userTipped ? '#4f46e5' : 'none'}
           />
           <div
             className={clsx(
               ' absolute top-[2px] text-[0.5rem]',
-              userTipped ? 'text-white' : '',
               tipDisplay.length === 1
                 ? 'left-[7px]'
                 : tipDisplay.length === 2
