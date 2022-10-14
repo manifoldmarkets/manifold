@@ -21,22 +21,13 @@ export function Tipper(prop: {
 }) {
   const { comment, myTip, totalTip } = prop
 
+  // This is a temporary tipping amount that we can cancel. Used just for rendering :)
+  const [userTipped, setUserTipped] = useState(false)
+
   const me = useUser()
 
-  const [localTip, setLocalTip] = useState(myTip)
+  const total = totalTip - myTip
 
-  // listen for user being set
-  const initialized = useRef(false)
-  useEffect(() => {
-    if (myTip && !initialized.current) {
-      setLocalTip(myTip)
-      initialized.current = true
-    }
-  }, [myTip])
-
-  const total = totalTip - myTip + localTip
-
-  // declare debounced function only on first render
   const [saveTip] = useState(
     () => async (user: User, comment: Comment, change: number) => {
       if (change === 0) {
@@ -73,9 +64,9 @@ export function Tipper(prop: {
   )
 
   const addTip = (delta: number) => {
+    setUserTipped(true)
     const timeoutId = setTimeout(() => {
-      setLocalTip(localTip + delta)
-      me && saveTip(me, comment, localTip - myTip + delta)
+      me && saveTip(me, comment, delta)
     }, 3000)
     toast.custom(
       (t) => (
@@ -91,15 +82,15 @@ export function Tipper(prop: {
   }
 
   const canUp =
-    me && comment.userId !== me.id && me.balance >= localTip + LIKE_TIP_AMOUNT
+    me && comment.userId !== me.id && me.balance >= myTip + LIKE_TIP_AMOUNT
 
   return (
     <Row className="items-center gap-0.5">
       <TipButton
         tipAmount={LIKE_TIP_AMOUNT}
-        totalTipped={total}
+        totalTipped={total + myTip}
         onClick={() => addTip(+LIKE_TIP_AMOUNT)}
-        userTipped={localTip > 0}
+        userTipped={userTipped || myTip > 0}
         disabled={!canUp}
         isCompact
       />
