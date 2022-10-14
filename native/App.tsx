@@ -103,7 +103,7 @@ export default function App() {
   return (
     <>
       <WebView
-        style={{ marginTop: 20 }}
+        style={{ marginTop: 20, marginBottom: 15 }}
         allowsBackForwardNavigationGestures={true}
         sharedCookiesEnabled={true}
         source={{ uri }}
