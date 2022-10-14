@@ -1,4 +1,3 @@
-
 export default function Coin({
   size = 18,
   color = '#66667C',
