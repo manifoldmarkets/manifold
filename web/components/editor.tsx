@@ -53,7 +53,7 @@ import { debounce } from 'lodash'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
-    class: 'max-h-60',
+    class: 'max-h-96',
   },
 })
 
