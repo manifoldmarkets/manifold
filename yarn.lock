@@ -11371,10 +11371,10 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-stability-client@1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/stability-client/-/stability-client-1.5.0.tgz#f221420a297c808f209c469a0df8fa2401f8f6ae"
-  integrity sha512-hXuDK6QW/msf50pu8M4L1hTCYG4w5ZrhLgxirigUrSZEARupIPT88O7qz4YSmUbbp9nKlzS8UJ6NjYUH7qy45w==
+stability-client@1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/stability-client/-/stability-client-1.6.0.tgz#f23612d8942d49937b6f99114fca9a522c5b076b"
+  integrity sha512-Kx47rnlSBI3hWArF846YdfXKtef0sjNjGbPRdCc62XB6ZFvRBis67hI1xvejn5wu2wTKBZNL4jWM/oOU1xnUYg==
   dependencies:
     "@improbable-eng/grpc-web" "^0.15.0"
     "@improbable-eng/grpc-web-node-http-transport" "^0.15.0"
