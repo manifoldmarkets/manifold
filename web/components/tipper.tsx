@@ -9,7 +9,7 @@ import { transact } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { TipButton } from './contract/tip-button'
 import { Row } from './layout/row'
-import { LIKE_TIP_AMOUNT } from 'common/like'
+import { LIKE_TIP_AMOUNT, TIP_UNDO_DURATION } from 'common/like'
 import { formatMoney } from 'common/util/format'
 import { Button } from './button'
 import clsx from 'clsx'
@@ -37,8 +37,8 @@ export function Tipper(prop: {
   const total = totalTip - myTip + localTip
 
   // declare debounced function only on first render
-  const [saveTip] = useState(() =>
-    debounce(async (user: User, comment: Comment, change: number) => {
+  const [saveTip] = useState(
+    () => async (user: User, comment: Comment, change: number) => {
       if (change === 0) {
         return
       }
@@ -69,40 +69,25 @@ export function Tipper(prop: {
         fromId: user.id,
         toId: comment.userId,
       })
-    }, 1500)
+    }
   )
-  // instant save on unrender
-  useEffect(() => () => void saveTip.flush(), [saveTip])
 
   const addTip = (delta: number) => {
-    let cancelled = false
-    setLocalTip(localTip + delta)
     const timeoutId = setTimeout(() => {
+      setLocalTip(localTip + delta)
       me && saveTip(me, comment, localTip - myTip + delta)
-    }, 5000)
-    toast.custom((t) => (
-      <Row className="text-greyscale-6 items-center gap-4 rounded-lg bg-white px-4 py-2 text-sm drop-shadow-md">
-        <div className={clsx(cancelled ? 'hidden' : 'inline')}>
-          You tipped {comment.userName} {formatMoney(LIKE_TIP_AMOUNT)}!
-        </div>
-        <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
-          Cancelled tipping
-        </div>
-        <Button
-          className={clsx(cancelled ? 'hidden' : 'inline')}
-          size="xs"
-          color="gray-outline"
-          onClick={() => {
+    }, 3000)
+    toast.custom(
+      (t) => (
+        <TipToast
+          userName={comment.userName}
+          onUndoClick={() => {
             clearTimeout(timeoutId)
-            setLocalTip(localTip)
-            cancelled = true
           }}
-          disabled={cancelled}
-        >
-          Undo
-        </Button>
-      </Row>
-    ))
+        />
+      ),
+      { duration: TIP_UNDO_DURATION }
+    )
   }
 
   const canUp =
@@ -119,5 +104,40 @@ export function Tipper(prop: {
         isCompact
       />
     </Row>
+  )
+}
+
+export function TipToast(props: { userName: string; onUndoClick: () => void }) {
+  const { userName, onUndoClick } = props
+  const [cancelled, setCancelled] = useState(false)
+  return (
+    <div className="relative overflow-hidden rounded-lg bg-white drop-shadow-md">
+      <div
+        className={clsx(
+          'animate-progress-loading absolute bottom-0 z-10 h-1 w-full bg-indigo-600',
+          cancelled ? 'hidden' : ''
+        )}
+      />
+      <Row className="text-greyscale-6 items-center gap-4 px-4 py-2 text-sm">
+        <div className={clsx(cancelled ? 'hidden' : 'inline')}>
+          Tipping {userName} {formatMoney(LIKE_TIP_AMOUNT)}...
+        </div>
+        <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
+          Cancelled tipping
+        </div>
+        <Button
+          className={clsx(cancelled ? 'hidden' : 'inline')}
+          size="xs"
+          color="gray-outline"
+          onClick={() => {
+            onUndoClick()
+            setCancelled(true)
+          }}
+          disabled={cancelled}
+        >
+          Cancel
+        </Button>
+      </Row>
+    </div>
   )
 }

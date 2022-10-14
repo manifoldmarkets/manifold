@@ -15,6 +15,15 @@ module.exports = {
       }
     ),
     extend: {
+      keyframes: {
+        progress: {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' },
+        },
+      },
+      animation: {
+        'progress-loading': 'progress 2s linear',
+      },
       colors: {
         primary: '#11b981',
         'primary-focus': '#069668',

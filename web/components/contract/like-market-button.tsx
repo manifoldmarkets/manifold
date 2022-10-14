@@ -5,11 +5,12 @@ import { useUserLikes } from 'web/hooks/use-likes'
 import toast from 'react-hot-toast'
 import { formatMoney } from 'common/util/format'
 import { likeContract } from 'web/lib/firebase/likes'
-import { LIKE_TIP_AMOUNT } from 'common/like'
+import { LIKE_TIP_AMOUNT, TIP_UNDO_DURATION } from 'common/like'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useMarketTipTxns } from 'web/hooks/use-tip-txns'
 import { sum } from 'lodash'
 import { TipButton } from './tip-button'
+import { TipToast } from '../tipper'
 
 export function LikeMarketButton(props: {
   contract: Contract
@@ -35,8 +36,20 @@ export function LikeMarketButton(props: {
     if (!user) return firebaseLogin()
 
     setIsLiking(true)
-    likeContract(user, contract).catch(() => setIsLiking(false))
-    toast(`You tipped ${contract.creatorName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
+    const timeoutId = setTimeout(() => {
+      likeContract(user, contract).catch(() => setIsLiking(false))
+    }, 3000)
+    toast.custom(
+      (t) => (
+        <TipToast
+          userName={contract.creatorUsername}
+          onUndoClick={() => {
+            clearTimeout(timeoutId)
+          }}
+        />
+      ),
+      { duration: TIP_UNDO_DURATION }
+    )
   }
 
   return (
