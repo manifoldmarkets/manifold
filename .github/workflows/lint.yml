@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, fix-lint-auto]
+    branches: [main]
 
 env:
   FORCE_COLOR: 3
