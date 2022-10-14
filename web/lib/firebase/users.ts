@@ -14,7 +14,7 @@ import {
   onSnapshot,
   Query,
 } from 'firebase/firestore'
-import { getAuth } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
@@ -190,14 +190,10 @@ export async function firebaseLogin() {
     ;(window as any).ReactNativeWebView.postMessage('googleLoginClicked')
     return
   }
-  // } else {
-  // await setFbUser(fakeUser)
-  // return
-  // }
-  // const provider = new GoogleAuthProvider()
-  // return signInWithPopup(auth, provider).then(async (result) => {
-  //   return result
-  // })
+  const provider = new GoogleAuthProvider()
+  return signInWithPopup(auth, provider).then(async (result) => {
+    return result
+  })
 }
 
 export async function firebaseLogout() {

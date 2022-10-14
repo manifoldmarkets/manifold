@@ -20,6 +20,7 @@ import { sellshares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createmarket } from './create-market'
 import { createcomment } from './create-comment'
+import { gettoken } from './get-token'
 import { creategroup } from './create-group'
 import { resolvemarket } from './resolve-market'
 import { unsubscribe } from './unsubscribe'
@@ -55,6 +56,7 @@ addJsonEndpointRoute('/changeuserinfo', changeuserinfo)
 addJsonEndpointRoute('/createuser', createuser)
 addJsonEndpointRoute('/createanswer', createanswer)
 addJsonEndpointRoute('/createcomment', createcomment)
+addJsonEndpointRoute('/gettoken', gettoken)
 addJsonEndpointRoute('/placebet', placebet)
 addJsonEndpointRoute('/cancelbet', cancelbet)
 addJsonEndpointRoute('/sellbet', sellbet)
