@@ -9,7 +9,7 @@ import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
-import { PostCardList } from './post-card'
+import { PostCardList } from './posts/post-card'
 
 export function PinnedSelectModal(props: {
   title: string

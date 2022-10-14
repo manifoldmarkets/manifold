@@ -8,8 +8,8 @@ import Router from 'next/router'
 import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { postPath } from 'web/lib/firebase/posts'
 import { Group } from 'common/group'
-import { ExpandingInput } from './expanding-input'
-import { Button } from './buttons/button'
+import { ExpandingInput } from '../expanding-input'
+import { Button } from '../buttons/button'
 
 export function CreatePost(props: { group?: Group }) {
   const [title, setTitle] = useState('')

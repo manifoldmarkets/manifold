@@ -36,10 +36,10 @@ import { CopyLinkButton } from '../buttons/copy-link-button'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import toast from 'react-hot-toast'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { PostCard, PostCardList } from '../post-card'
+import { PostCard, PostCardList } from '../posts/post-card'
 import { LoadingIndicator } from '../loading-indicator'
 import { useUser } from 'web/hooks/use-user'
-import { CreatePost } from '../create-post'
+import { CreatePost } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 
 const MAX_TRENDING_POSTS = 6
