@@ -22,6 +22,7 @@ import { linkClass } from './site-link'
 import { DisplayMention } from './editor/mention'
 import { DisplayContractMention } from './editor/contract-mention'
 import GridComponent from './editor/tiptap-grid-cards'
+import StaticReactEmbedComponent from './editor/tiptap-static-react-embed'
 
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
@@ -81,6 +82,7 @@ export const editorExtensions = (simple = false): Extensions => [
   DisplayMention,
   DisplayContractMention,
   GridComponent,
+  StaticReactEmbedComponent,
   Iframe,
   TiptapTweet,
   TiptapSpoiler.configure({
@@ -363,6 +365,7 @@ export function RichContent(props: {
       DisplayMention,
       DisplayContractMention,
       GridComponent,
+      StaticReactEmbedComponent,
       Iframe,
       TiptapTweet,
       TiptapSpoiler.configure({
