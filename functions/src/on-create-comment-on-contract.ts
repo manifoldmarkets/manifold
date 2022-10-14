@@ -19,6 +19,7 @@ import {
 } from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 const firestore = admin.firestore()
 
@@ -204,6 +205,12 @@ export const onCreateCommentOnContract = functions
         }
       }
     })
+
+    // Don't notify users for bot comments
+    if (BOT_USERNAMES.includes(commentCreator.username)) {
+      return
+    }
+
     await createCommentOrAnswerOrUpdatedContractNotification(
       comment.id,
       'comment',
