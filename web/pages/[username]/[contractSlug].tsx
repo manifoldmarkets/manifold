@@ -1,5 +1,4 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
-import dayjs from 'dayjs'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
@@ -47,6 +46,7 @@ import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
 import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
+import { needsAdminToResolve } from 'web/lib/util/admin'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -96,11 +96,6 @@ export default function ContractPage(props: {
   }
 
   return <ContractPageContent key={contract.id} {...{ ...props, contract }} />
-}
-
-// requires an admin to resolve a week after market closes
-export function needsAdminToResolve(contract: Contract) {
-  return !contract.isResolved && dayjs().diff(contract.closeTime, 'day') > 7
 }
 
 export function ContractPageContent(
