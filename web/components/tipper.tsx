@@ -11,6 +11,8 @@ import { TipButton } from './contract/tip-button'
 import { Row } from './layout/row'
 import { LIKE_TIP_AMOUNT } from 'common/like'
 import { formatMoney } from 'common/util/format'
+import { Button } from './button'
+import clsx from 'clsx'
 
 export function Tipper(prop: {
   comment: Comment
@@ -73,9 +75,34 @@ export function Tipper(prop: {
   useEffect(() => () => void saveTip.flush(), [saveTip])
 
   const addTip = (delta: number) => {
+    let cancelled = false
     setLocalTip(localTip + delta)
-    me && saveTip(me, comment, localTip - myTip + delta)
-    toast(`You tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
+    const timeoutId = setTimeout(() => {
+      me && saveTip(me, comment, localTip - myTip + delta)
+    }, 5000)
+    toast.custom((t) => (
+      <Row className="text-greyscale-6 items-center gap-4 rounded-lg bg-white px-4 py-2 text-sm drop-shadow-md">
+        <div className={clsx(cancelled ? 'hidden' : 'inline')}>
+          You tipped {comment.userName} {formatMoney(LIKE_TIP_AMOUNT)}!
+        </div>
+        <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
+          Cancelled tipping
+        </div>
+        <Button
+          className={clsx(cancelled ? 'hidden' : 'inline')}
+          size="xs"
+          color="gray-outline"
+          onClick={() => {
+            clearTimeout(timeoutId)
+            setLocalTip(localTip)
+            cancelled = true
+          }}
+          disabled={cancelled}
+        >
+          Undo
+        </Button>
+      </Row>
+    ))
   }
 
   const canUp =
