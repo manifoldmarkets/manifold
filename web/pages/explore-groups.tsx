@@ -1,7 +1,7 @@
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useMemberGroupIds, useTrendingGroups } from 'web/hooks/use-group'
 import { useUser } from 'web/hooks/use-user'

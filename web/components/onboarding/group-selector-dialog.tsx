@@ -10,7 +10,7 @@ import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { Group } from 'common/group'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { withTracking } from 'web/lib/service/analytics'
 
 export default function GroupSelectorDialog(props: {

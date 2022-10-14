@@ -6,7 +6,7 @@ import Confetti from 'react-confetti'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Spacer } from 'web/components/layout/spacer'

@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
-import { buttonClass } from './buttons/button'
+import { buttonClass } from './button'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props

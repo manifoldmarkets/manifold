@@ -1,4 +1,4 @@
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Grid, _ as r } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { html } from 'gridjs'

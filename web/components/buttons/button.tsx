@@ -1,6 +1,6 @@
 import { MouseEventHandler, ReactNode } from 'react'
 import clsx from 'clsx'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MidtermsMaps } from './midterms-maps'
+import { MidtermsMaps } from './usa-map/midterms-maps'
 
 export function StaticReactEmbed(props: { embedName: string }) {
   const { embedName } = props

@@ -8,7 +8,7 @@ import { ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
-import { LoadingIndicator } from './loading-indicator'
+import { LoadingIndicator } from './widgets/loading-indicator'
 import { PostCardList } from './posts/post-card'
 
 export function PinnedSelectModal(props: {

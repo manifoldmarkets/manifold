@@ -9,7 +9,7 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 import { Content } from '../widgets/editor'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from 'web/components/widgets/user-link'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 

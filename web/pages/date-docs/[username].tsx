@@ -1,6 +1,6 @@
 import { getDateDoc } from 'web/lib/firebase/posts'
 import { ArrowLeftIcon, LinkIcon } from '@heroicons/react/outline'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import dayjs from 'dayjs'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'

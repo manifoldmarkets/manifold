@@ -23,7 +23,7 @@ import { Row } from '../layout/row'
 import { sellBet } from 'web/lib/firebase/api'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { OutcomeLabel } from '../outcome-label'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { SiteLink } from '../widgets/site-link'
 import {
   calculatePayout,

@@ -7,7 +7,7 @@ import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
 import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from 'common/economy'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import {
   MAX_DESCRIPTION_LENGTH,

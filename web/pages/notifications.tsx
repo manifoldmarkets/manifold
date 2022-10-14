@@ -9,7 +9,7 @@ import {
 } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
@@ -47,7 +47,7 @@ import { NotificationSettings } from 'web/components/notification-settings'
 import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { UserLink } from 'web/components/widgets/user-link'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import {
   MultiUserLinkInfo,
   MultiUserTransactionLink,

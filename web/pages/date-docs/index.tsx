@@ -1,4 +1,4 @@
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { PlusCircleIcon } from '@heroicons/react/outline'
 
 import { getDateDocs } from 'web/lib/firebase/posts'

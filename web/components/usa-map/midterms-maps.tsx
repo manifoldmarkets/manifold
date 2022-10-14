@@ -1,11 +1,8 @@
 import { useEffect } from 'react'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
-import {
-  StateElectionMap,
-  StateElectionMarket,
-} from './usa-map/state-election-map'
+import { StateElectionMap, StateElectionMarket } from './state-election-map'
 import { useState } from 'react'
-import { LoadingIndicator } from './loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { CPMMBinaryContract } from 'common/contract'
 
 export function MidtermsMaps(props: { mapType: string }) {

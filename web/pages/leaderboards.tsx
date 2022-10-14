@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import {
   getTopCreators,
   getTopTraders,

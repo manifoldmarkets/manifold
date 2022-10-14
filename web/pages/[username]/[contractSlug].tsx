@@ -14,7 +14,7 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'

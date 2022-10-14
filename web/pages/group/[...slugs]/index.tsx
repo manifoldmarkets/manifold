@@ -40,7 +40,7 @@ import { track } from '@amplitude/analytics-browser'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Tabs } from 'web/components/layout/tabs'
 import { GroupOverview } from 'web/components/groups/group-overview'
 

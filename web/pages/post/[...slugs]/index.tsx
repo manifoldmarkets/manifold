@@ -1,4 +1,4 @@
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 
 import { postPath, getPostBySlug, updatePost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'

@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { toast, Toaster } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { useTracking } from 'web/hooks/use-tracking'
@@ -50,7 +50,7 @@ import {
   useNewContracts,
 } from 'web/hooks/use-contracts'
 import { ProfitBadge } from 'web/components/profit-badge'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Input } from 'web/components/widgets/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
 import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'

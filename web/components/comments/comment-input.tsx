@@ -15,7 +15,7 @@ import { CommentsAnswer } from '../feed/feed-answer-comment-group'
 import { ContractCommentInput } from '../feed/feed-comments'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function CommentInput(props: {
   replyTo?: { id: string; username: string }
