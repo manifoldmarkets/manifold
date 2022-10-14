@@ -69,17 +69,17 @@ export default function App() {
       // on sign in from the native side, pass the webview the fb user
       signInWithCredential(auth, credential).then((result) => {
         const fbUserPrint = JSON.stringify(result.user, null, 2) // spacing level = 2
-        const fbUser = JSON.stringify(result.user)
+        const fbUser = result.user.toJSON()
         // setGoogleCred(JSON.stringify(credential.toJSON()))
         if (webview.current) {
-          // console.log('setting fbUser', fbUserPrint)
+          console.log('setting fbUser', fbUserPrint.slice(0, 100))
           webview.current.postMessage(
             // JSON.stringify({ type: 'nativeFbUser', data: credential.toJSON() })
             // JSON.stringify({ type: 'nativeFbUser', data: credential.idToken })
             JSON.stringify({ type: 'nativeFbUser', data: fbUser })
           )
         }
-        setFbUser(fbUser)
+        setFbUser(JSON.stringify(result.user.toJSON()))
       })
     }
   }, [response])
@@ -87,26 +87,14 @@ export default function App() {
   useEffect(() => {
     console.log('is expo client:', isExpoClient)
     // if (fbUser) {
-    // !isExpoClient &&
-    //   require('@react-native-cookies/cookies').CookieManager.set(
-    // CookieManager.set(
-    //   uri,
-    //   {
-    //     name: 'FBUSER_DEV_MANTIC_MARKETS',
-    //     value: encodeURIComponent(fbUser),
-    //     path: '/',
-    //     expires: new Date(TEN_YEARS_SECS).toISOString(),
-    //     secure: true,
-    //   },
-    //   useWebKit
-    // )
+
     if (webview.current) {
       console.log('setting native flag')
       webview.current.injectJavaScript('window.isNative = true')
       setHasInjectedVariable(true)
-      webview.current.postMessage(
-        JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-      )
+      // webview.current.postMessage(
+      //   JSON.stringify({ type: 'nativeFbUser', data: fbUser })
+      // )
     }
     // }
   }, [])
@@ -190,9 +178,14 @@ const CustomHeaderWebView = forwardRef((props: any, ref) => {
       source={newSource}
       sharedCookiesEnabled={true}
       onShouldStartLoadWithRequest={(request) => {
+        const url = request.url
         console.log('request url', request.url)
+        if (url.includes('firebaseapp.com/__/auth/')) {
+          console.log('not loading url:', url)
+          // setURI(uri + 'home')
+          return false
+        }
         return true
-        // const url = request.url
         // // If we're loading the current URI, allow it to load
         // if (url === currentURI) {
         //   console.log('Allowing load of current URI', url)

@@ -63,7 +63,7 @@ export const authenticateOnServer = async (ctx: RequestContext) => {
   }
   try {
     const deserializedUser = JSON.parse(user)
-    // console.log('deserialized user', deserializedUser)
+    console.log('deserialized user', deserializedUser)
     const clientAuth = getAuth(clientApp) as FirebaseAuthInternal
     const persistenceManager = clientAuth.persistenceManager
     const persistence = persistenceManager.persistence
@@ -72,7 +72,7 @@ export const authenticateOnServer = async (ctx: RequestContext) => {
     const fbUser = (await persistenceManager.getCurrentUser())!
     await fbUser.getIdToken() // forces a refresh if necessary
     await updateCurrentUser(clientAuth, fbUser)
-    // console.debug('Signed in with user from cookie.')
+    console.debug('Signed in with user from cookie.')
     return fbUser
   } catch (e) {
     console.error('deserializing', e)
