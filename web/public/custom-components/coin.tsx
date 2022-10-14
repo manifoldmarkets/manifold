@@ -1,4 +1,3 @@
-import { rootCertificates } from 'tls'
 
 export default function Coin({
   size = 18,
