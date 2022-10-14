@@ -135,7 +135,7 @@ export function ParentFeedComment(props: {
       id={comment.id}
       className={clsx(
         'hover:bg-greyscale-1 ml-3 gap-2 transition-colors',
-        highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
+        highlighted ? `-m-1.5 mb-2 rounded bg-indigo-500/[0.2] p-1.5 pl-5` : ''
       )}
     >
       <Col className="-ml-3.5">
