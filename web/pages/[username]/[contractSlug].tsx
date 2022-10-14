@@ -256,7 +256,7 @@ export function ContractPageContent(
   )
 }
 
-export function ContractPageSidebar(props: { contract: Contract }) {
+function ContractPageSidebar(props: { contract: Contract }) {
   const { contract } = props
   const { creatorId, isResolved, outcomeType } = contract
   const user = useUser()
