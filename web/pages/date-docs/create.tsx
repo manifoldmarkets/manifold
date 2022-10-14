@@ -35,9 +35,7 @@ export default function CreateDateDocPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { editor, upload } = useTextEditor({
-    disabled: isSubmitting,
-  })
+  const { editor, upload } = useTextEditor({})
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
@@ -52,7 +50,13 @@ export default function CreateDateDocPage() {
 
     const newPost: Omit<
       DateDoc,
-      'id' | 'creatorId' | 'createdTime' | 'slug' | 'contractSlug'
+      | 'id'
+      | 'creatorId'
+      | 'createdTime'
+      | 'slug'
+      | 'contractSlug'
+      | 'creatorUsername'
+      | 'creatorName'
     > & { question?: string } = removeUndefinedProps({
       title,
       subtitle,

@@ -100,6 +100,9 @@ export const createpost = newEndpoint({}, async (req, auth) => {
     createdTime: Date.now(),
     content: content,
     contractSlug,
+    creatorName: creator.name,
+    creatorUsername: creator.username,
+    creatorAvatarUrl: creator.avatarUrl,
   })
 
   await postRef.create(post)

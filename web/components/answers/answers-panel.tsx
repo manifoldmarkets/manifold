@@ -23,14 +23,16 @@ import { Linkify } from 'web/components/linkify'
 import { Button } from 'web/components/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
-import { CATEGORY_COLORS } from '../charts/contract/choice'
+import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
+import { ChatIcon } from '@heroicons/react/outline'
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
+  onAnswerCommentClick: (answer: Answer) => void
 }) {
   const isAdmin = useAdmin()
-  const { contract } = props
+  const { contract, onAnswerCommentClick } = props
   const { creatorId, resolution, resolutions, totalBets, outcomeType } =
     contract
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -138,6 +140,7 @@ export function AnswersPanel(props: {
               answer={item}
               contract={contract}
               colorIndex={colorSortedAnswer.indexOf(item.text)}
+              onAnswerCommentClick={onAnswerCommentClick}
             />
           ))}
           {hasZeroBetAnswers && !showAllAnswers && (
@@ -183,14 +186,18 @@ function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
   colorIndex: number | undefined
+  onAnswerCommentClick: (answer: Answer) => void
 }) {
-  const { answer, contract, colorIndex } = props
+  const { answer, contract, colorIndex, onAnswerCommentClick } = props
   const { username, avatarUrl, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
   const color =
-    colorIndex != undefined ? CATEGORY_COLORS[colorIndex] : '#B1B1C7'
+    colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
+      ? CHOICE_ANSWER_COLORS[colorIndex] + '55' // semi-transparent
+      : '#B1B1C755'
+  const colorWidth = 100 * Math.max(prob, 0.01)
 
   return (
     <Col className="my-1 px-2">
@@ -206,9 +213,12 @@ function OpenAnswer(props: {
 
       <Col
         className={clsx(
-          'bg-greyscale-1 relative w-full rounded-lg transition-all',
+          'relative w-full rounded-lg transition-all',
           tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
         )}
+        style={{
+          background: `linear-gradient(to right, ${color} ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
+        }}
       >
         <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
           <Row>
@@ -217,10 +227,7 @@ function OpenAnswer(props: {
               username={username}
               avatarUrl={avatarUrl}
             />
-            <Linkify
-              className="text-md cursor-pointer whitespace-pre-line"
-              text={text}
-            />
+            <Linkify className="text-md whitespace-pre-line" text={text} />
           </Row>
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>
@@ -234,13 +241,16 @@ function OpenAnswer(props: {
                 BUY
               </Button>
             )}
+            {
+              <button
+                className="p-1"
+                onClick={() => onAnswerCommentClick(answer)}
+              >
+                <ChatIcon className="text-greyscale-4 hover:text-greyscale-6 h-5 w-5 transition-colors" />
+              </button>
+            }
           </Row>
         </Row>
-        <hr
-          color={color}
-          className="absolute z-0 h-full w-full rounded-l-lg border-none opacity-30"
-          style={{ width: `${100 * Math.max(prob, 0.01)}%` }}
-        />
       </Col>
     </Col>
   )

@@ -12,6 +12,7 @@ import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { getUser, updateUser } from 'web/lib/firebase/users'
 import { TextButton } from 'web/components/text-button'
 import { UserLink } from 'web/components/user-link'
+import { Button } from './button'
 
 export function ReferralsButton(props: {
   user: User
@@ -89,11 +90,9 @@ function ReferralsDialog(props: {
                         maxUsers={1}
                       />
                       <Row className={'mt-0 justify-end'}>
-                        <button
+                        <Button
                           className={
-                            referredBy.length === 0
-                              ? 'hidden'
-                              : 'btn btn-primary btn-md my-2 w-24 normal-case'
+                            referredBy.length === 0 ? 'hidden' : 'my-2 w-24'
                           }
                           disabled={referredBy.length === 0 || isSubmitting}
                           onClick={() => {
@@ -114,7 +113,7 @@ function ReferralsDialog(props: {
                           }}
                         >
                           Save
-                        </button>
+                        </Button>
                       </Row>
                       <span className={'text-warning'}>
                         {referredBy.length > 0 &&

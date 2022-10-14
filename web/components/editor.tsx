@@ -18,10 +18,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
-import { FileUploadButton } from './file-upload-button'
 import { linkClass } from './site-link'
 import { DisplayMention } from './editor/mention'
 import { DisplayContractMention } from './editor/contract-mention'
+import GridComponent from './editor/tiptap-grid-cards'
+
 import Iframe from 'common/util/tiptap-iframe'
 import TiptapTweet from './editor/tiptap-tweet'
 import { EmbedModal } from './editor/embed-modal'
@@ -41,6 +42,7 @@ import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
+import { ImageModal } from './editor/image-modal'
 import {
   storageStore,
   usePersistentState,
@@ -50,7 +52,7 @@ import { debounce } from 'lodash'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
-    class: 'max-h-60',
+    class: 'max-h-60 hover:max-h-[120rem] transition-all',
   },
 })
 
@@ -78,6 +80,7 @@ export const editorExtensions = (simple = false): Extensions => [
   DisplayLink,
   DisplayMention,
   DisplayContractMention,
+  GridComponent,
   Iframe,
   TiptapTweet,
   TiptapSpoiler.configure({
@@ -87,18 +90,17 @@ export const editorExtensions = (simple = false): Extensions => [
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
-  'font-light prose-a:font-light prose-blockquote:font-light'
+  'font-light prose-a:font-light prose-blockquote:font-light prose-sm'
 )
 
 export function useTextEditor(props: {
   placeholder?: string
   max?: number
   defaultValue?: Content
-  disabled?: boolean
   simple?: boolean
   key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
 }) {
-  const { placeholder, max, defaultValue, disabled, simple, key } = props
+  const { placeholder, max, defaultValue, simple, key } = props
 
   const [content, saveContent] = usePersistentState<JSONContent | undefined>(
     undefined,
@@ -165,10 +167,6 @@ export function useTextEditor(props: {
       },
     },
   })
-
-  useEffect(() => {
-    editor?.setEditable(!disabled)
-  }, [editor, disabled])
 
   return { editor, upload }
 }
@@ -252,6 +250,7 @@ export function TextEditor(props: {
   children?: React.ReactNode // additional toolbar buttons
 }) {
   const { editor, upload, children } = props
+  const [imageOpen, setImageOpen] = useState(false)
   const [iframeOpen, setIframeOpen] = useState(false)
   const [marketOpen, setMarketOpen] = useState(false)
 
@@ -259,18 +258,26 @@ export function TextEditor(props: {
     <>
       {/* hide placeholder when focused */}
       <div className="relative w-full [&:focus-within_p.is-empty]:before:content-none">
-        <div className="rounded-lg border border-gray-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+        {/* matches input styling */}
+        <div className="rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
           <FloatingMenu editor={editor} />
           <EditorContent editor={editor} />
           {/* Toolbar, with buttons for images and embeds */}
           <div className="flex h-9 items-center gap-5 pl-4 pr-1">
             <Tooltip text="Add image" noTap noFade>
-              <FileUploadButton
-                onFiles={upload.mutate}
+              <button
+                type="button"
+                onClick={() => setImageOpen(true)}
                 className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
               >
+                <ImageModal
+                  editor={editor}
+                  upload={upload}
+                  open={imageOpen}
+                  setOpen={setImageOpen}
+                />
                 <PhotographIcon className="h-5 w-5" aria-hidden="true" />
-              </FileUploadButton>
+              </button>
             </Tooltip>
             <Tooltip text="Add embed" noTap noFade>
               <button
@@ -355,6 +362,7 @@ export function RichContent(props: {
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
       DisplayContractMention,
+      GridComponent,
       Iframe,
       TiptapTweet,
       TiptapSpoiler.configure({

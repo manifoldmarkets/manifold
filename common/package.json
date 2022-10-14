@@ -8,11 +8,13 @@
   },
   "sideEffects": false,
   "dependencies": {
-    "@tiptap/core": "2.0.0-beta.182",
-    "@tiptap/extension-image": "2.0.0-beta.30",
-    "@tiptap/extension-link": "2.0.0-beta.43",
-    "@tiptap/extension-mention": "2.0.0-beta.102",
-    "@tiptap/starter-kit": "2.0.0-beta.191",
+    "@tiptap/core": "2.0.0-beta.199",
+    "@tiptap/extension-image": "2.0.0-beta.199",
+    "@tiptap/extension-link": "2.0.0-beta.199",
+    "@tiptap/extension-mention": "2.0.0-beta.199",
+    "@tiptap/html": "2.0.0-beta.199",
+    "@tiptap/starter-kit": "2.0.0-beta.199",
+    "@tiptap/suggestion": "2.0.0-beta.199",
     "lodash": "4.17.21"
   },
   "devDependencies": {

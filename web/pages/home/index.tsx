@@ -42,7 +42,7 @@ import { filterDefined } from 'common/util/array'
 import { updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
-import { CPMMBinaryContract } from 'common/contract'
+import { Contract, CPMMBinaryContract } from 'common/contract'
 import {
   useContractsByDailyScoreNotBetOn,
   useContractsByDailyScoreGroups,
@@ -52,9 +52,26 @@ import {
 import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Input } from 'web/components/input'
+import { PinnedItems } from 'web/components/groups/group-overview'
+import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
+import { getPost } from 'web/lib/firebase/posts'
+import { PostCard } from 'web/components/post-card'
+import { getContractFromId } from 'web/lib/firebase/contracts'
+import { ContractCard } from 'web/components/contract/contract-card'
+import { Post } from 'common/post'
+import { useAllPosts } from 'web/hooks/use-post'
+import { useGlobalConfig } from 'web/hooks/use-global-config'
+import { useAdmin } from 'web/hooks/use-admin'
+import { GlobalConfig } from 'common/globalConfig'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 
 export default function Home() {
   const user = useUser()
+  const isAdmin = useAdmin()
+  const globalConfig = useGlobalConfig()
 
   useTracking('view home')
 
@@ -78,8 +95,7 @@ export default function Home() {
   }, [user, sections])
 
   const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_',
-    3
+    user?.id ?? '_'
   )
 
   const trendingContracts = useTrendingContracts(6)
@@ -92,12 +108,53 @@ export default function Home() {
     groups?.map((g) => g.slug)
   )
 
+  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
+    store: inMemoryStore(),
+    key: 'home-pinned',
+  })
+
+  useEffect(() => {
+    const pinnedItems = globalConfig?.pinnedItems
+
+    async function getPinned() {
+      if (pinnedItems == null) {
+        if (globalConfig != null) {
+          updateGlobalConfig(globalConfig, { pinnedItems: [] })
+        }
+      } else {
+        const itemComponents = await Promise.all(
+          pinnedItems.map(async (element) => {
+            if (element.type === 'post') {
+              const post = await getPost(element.itemId)
+              if (post) {
+                return <PostCard post={post as Post} />
+              }
+            } else if (element.type === 'contract') {
+              const contract = await getContractFromId(element.itemId)
+              if (contract) {
+                return <ContractCard contract={contract as Contract} />
+              }
+            }
+          })
+        )
+        setPinned(
+          itemComponents.filter(
+            (element) => element != undefined
+          ) as JSX.Element[]
+        )
+      }
+    }
+    getPinned()
+  }, [globalConfig, setPinned])
+
   const isLoading =
     !user ||
     !contractMetricsByProfit ||
     !trendingContracts ||
     !newContracts ||
-    !dailyTrendingContracts
+    !dailyTrendingContracts ||
+    !globalConfig ||
+    !pinned
 
   return (
     <Page>
@@ -121,12 +178,18 @@ export default function Home() {
           <LoadingIndicator />
         ) : (
           <>
-            {renderSections(sections, {
-              score: trendingContracts,
-              newest: newContracts,
-              'daily-trending': dailyTrendingContracts,
-              'daily-movers': contractMetricsByProfit,
-            })}
+            {renderSections(
+              sections,
+              {
+                score: trendingContracts,
+                newest: newContracts,
+                'daily-trending': dailyTrendingContracts,
+                'daily-movers': contractMetricsByProfit,
+              },
+              isAdmin,
+              globalConfig,
+              pinned
+            )}
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -160,11 +223,12 @@ export default function Home() {
 }
 
 const HOME_SECTIONS = [
+  { label: 'Featured', id: 'featured' },
   { label: 'Daily trending', id: 'daily-trending' },
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
-]
+] as const
 
 export const getHomeItems = (sections: string[]) => {
   // Accommodate old home sections.
@@ -198,17 +262,33 @@ function renderSections(
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
-  }
+  },
+  isAdmin: boolean,
+  globalConfig: GlobalConfig,
+  pinned: JSX.Element[]
 ) {
+  type sectionTypes = typeof HOME_SECTIONS[number]['id']
+
   return (
     <>
       {sections.map((s) => {
         const { id, label } = s as {
-          id: keyof typeof sectionContracts
+          id: sectionTypes
           label: string
         }
         if (id === 'daily-movers') {
           return <DailyMoversSection key={id} {...sectionContracts[id]} />
+        }
+
+        if (id === 'featured') {
+          return (
+            <FeaturedSection
+              key={id}
+              globalConfig={globalConfig}
+              pinned={pinned}
+              isAdmin={isAdmin}
+            />
+          )
         }
 
         const contracts = sectionContracts[id]
@@ -324,6 +404,46 @@ function SearchSection(props: {
   )
 }
 
+function FeaturedSection(props: {
+  globalConfig: GlobalConfig
+  pinned: JSX.Element[]
+  isAdmin: boolean
+}) {
+  const { globalConfig, pinned, isAdmin } = props
+  const posts = useAllPosts()
+
+  async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
+    if (globalConfig == null) return
+    await updateGlobalConfig(globalConfig, {
+      pinnedItems: [
+        ...(globalConfig?.pinnedItems ?? []),
+        ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
+      ],
+    })
+  }
+
+  function onDeleteClicked(index: number) {
+    if (globalConfig == null) return
+    const newPinned = globalConfig.pinnedItems.filter((item) => {
+      return item.itemId !== globalConfig.pinnedItems[index].itemId
+    })
+    updateGlobalConfig(globalConfig, { pinnedItems: newPinned })
+  }
+
+  return (
+    <Col>
+      <PinnedItems
+        posts={posts}
+        isEditable={isAdmin}
+        pinned={pinned}
+        onDeleteClicked={onDeleteClicked}
+        onSubmit={onSubmit}
+        modalMessage={'Pin posts or markets to the overview of this group.'}
+      />
+    </Col>
+  )
+}
+
 function GroupSection(props: {
   group: Group
   user: User
@@ -373,7 +493,7 @@ function DailyMoversSection(props: {
   return (
     <Col className="gap-2">
       <SectionHeader label="Daily movers" href="/daily-movers" />
-      <ProfitChangeTable contracts={contracts} metrics={metrics} />
+      <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
   )
 }
@@ -409,8 +529,7 @@ export function DailyProfit(props: { user: User | null | undefined }) {
   const { user } = props
 
   const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_',
-    100
+    user?.id ?? '_'
   )
   const profit = sum(
     contractMetricsByProfit?.metrics.map((m) =>

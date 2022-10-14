@@ -228,7 +228,7 @@ function GroupMembersList(props: { group: Group }) {
   const { totalMembers } = group
   if (totalMembers === 1) return <div />
   return (
-    <div className="text-neutral flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1 text-gray-700">
       <span>{totalMembers} members</span>
     </div>
   )

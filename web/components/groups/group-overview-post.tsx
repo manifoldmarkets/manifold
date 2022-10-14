@@ -33,11 +33,9 @@ export function GroupOverviewPost(props: {
 function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   const { group, post } = props
   const [editing, setEditing] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { editor, upload } = useTextEditor({
     defaultValue: post?.content,
-    disabled: isSubmitting,
   })
 
   async function savePost() {
@@ -76,10 +74,8 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
       <Row className="gap-2">
         <Button
           onClick={async () => {
-            setIsSubmitting(true)
             await savePost()
             setEditing(false)
-            setIsSubmitting(false)
           }}
         >
           Save

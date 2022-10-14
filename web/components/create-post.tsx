@@ -4,12 +4,12 @@ import { Title } from 'web/components/title'
 
 import { TextEditor, useTextEditor } from 'web/components/editor'
 import { createPost } from 'web/lib/firebase/api'
-import clsx from 'clsx'
 import Router from 'next/router'
 import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { postPath } from 'web/lib/firebase/posts'
 import { Group } from 'common/group'
 import { ExpandingInput } from './expanding-input'
+import { Button } from './button'
 
 export function CreatePost(props: { group?: Group }) {
   const [title, setTitle] = useState('')
@@ -22,7 +22,6 @@ export function CreatePost(props: { group?: Group }) {
 
   const { editor, upload } = useTextEditor({
     key: `post ${group?.id || ''}`,
-    disabled: isSubmitting,
   })
 
   const isValid =
@@ -56,8 +55,8 @@ export function CreatePost(props: { group?: Group }) {
       <div className="rounded-lg px-6 py-4 sm:py-0">
         <Title className="!mt-0" text="Create a post" />
         <form>
-          <div className="form-control w-full">
-            <label className="label">
+          <div className="flex w-full flex-col">
+            <label className="px-1 py-2">
               <span className="mb-1">
                 Title<span className={'text-red-700'}> *</span>
               </span>
@@ -70,7 +69,7 @@ export function CreatePost(props: { group?: Group }) {
               onChange={(e) => setTitle(e.target.value || '')}
             />
             <Spacer h={6} />
-            <label className="label">
+            <label className="px-1 py-2">
               <span className="mb-1">
                 Subtitle<span className={'text-red-700'}> *</span>
               </span>
@@ -83,7 +82,7 @@ export function CreatePost(props: { group?: Group }) {
               onChange={(e) => setSubtitle(e.target.value || '')}
             />
             <Spacer h={6} />
-            <label className="label">
+            <label className="px-1 py-2">
               <span className="mb-1">
                 Content<span className={'text-red-700'}> *</span>
               </span>
@@ -91,13 +90,12 @@ export function CreatePost(props: { group?: Group }) {
             <TextEditor editor={editor} upload={upload} />
             <Spacer h={6} />
 
-            <button
+            <Button
               type="submit"
-              className={clsx(
-                'btn btn-primary normal-case',
-                isSubmitting && 'loading disabled'
-              )}
-              disabled={isSubmitting || !isValid || upload.isLoading}
+              color="green"
+              size="xl"
+              loading={isSubmitting}
+              disabled={!isValid || upload.isLoading}
               onClick={async () => {
                 setIsSubmitting(true)
                 await savePost(title)
@@ -105,7 +103,7 @@ export function CreatePost(props: { group?: Group }) {
               }}
             >
               {isSubmitting ? 'Creating...' : 'Create a post'}
-            </button>
+            </Button>
             {error !== '' && <div className="text-red-700">{error}</div>}
           </div>
         </form>

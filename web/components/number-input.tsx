@@ -32,24 +32,19 @@ export function NumberInput(props: {
 
   return (
     <Col className={className}>
-      <label className="input-group">
-        <Input
-          className={clsx(
-            'max-w-[200px] !text-lg',
-            error && 'input-error',
-            inputClassName
-          )}
-          ref={inputRef}
-          type="number"
-          pattern="[0-9]*"
-          inputMode="numeric"
-          placeholder={placeholder ?? '0'}
-          maxLength={9}
-          value={numberString}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value.substring(0, 9))}
-        />
-      </label>
+      <Input
+        className={clsx('max-w-[200px] !text-lg', inputClassName)}
+        ref={inputRef}
+        type="number"
+        pattern="[0-9]*"
+        inputMode="numeric"
+        placeholder={placeholder ?? '0'}
+        maxLength={9}
+        value={numberString}
+        error={!!error}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value.substring(0, 9))}
+      />
 
       <Spacer h={4} />
 

@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { Row } from '../layout/row'
 import {
   formatLargeNumber,
-  formatMoney,
   formatPercent,
+  formatWithCommas,
 } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -39,9 +39,10 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../tooltip'
 import { SiteLink } from '../site-link'
-import { ProbChange } from './prob-change-table'
+import { ProbOrNumericChange } from './prob-change-table'
 import { Card } from '../card'
-import { ProfitBadgeMana } from '../profit-badge'
+import { floatingEqual } from 'common/util/math'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function ContractCard(props: {
   contract: Contract
@@ -399,13 +400,24 @@ export function ContractCardProbChange(props: {
   className?: string
 }) {
   const { noLinkAvatar, showPosition, className } = props
+  const yesOutcomeLabel =
+    props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
+  const noOutcomeLabel =
+    props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
+
   const contract = useContractWithPreload(props.contract) as CPMMBinaryContract
 
   const user = useUser()
   const metrics = useUserContractMetrics(user?.id, contract.id)
   const dayMetrics = metrics && metrics.from && metrics.from.day
-  const outcome =
-    metrics && metrics.hasShares && metrics.totalShares.YES ? 'YES' : 'NO'
+  const binaryOutcome =
+    metrics && floatingEqual(metrics.totalShares.NO ?? 0, 0) ? 'YES' : 'NO'
+
+  const displayedProfit = dayMetrics
+    ? ENV_CONFIG.moneyMoniker +
+      (dayMetrics.profit > 0 ? '+' : '') +
+      dayMetrics.profit.toFixed(0)
+    : undefined
 
   return (
     <Card className={clsx(className, 'mb-4')}>
@@ -421,27 +433,19 @@ export function ContractCardProbChange(props: {
         >
           <span className="line-clamp-3">{contract.question}</span>
         </SiteLink>
-        <ProbChange className="py-2 pr-4" contract={contract} />
+        <ProbOrNumericChange className="py-2 pr-4" contract={contract} />
       </Row>
-      {showPosition && metrics && (
+      {showPosition && metrics && metrics.hasShares && (
         <Row
           className={clsx(
             'items-center justify-between gap-4 pl-6 pr-4 pb-2 text-sm'
           )}
         >
-          <Row className="gap-1 text-gray-700">
-            <div className="text-gray-500">Position</div>
-            {formatMoney(metrics.payout)} {outcome}
+          <Row className="gap-1 text-gray-400">
+            You: {formatWithCommas(metrics.totalShares[binaryOutcome])}{' '}
+            {binaryOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel} shares
+            <span className="ml-1.5">{displayedProfit} today</span>
           </Row>
-
-          {dayMetrics && (
-            <>
-              <Row className="items-center">
-                <div className="mr-1 text-gray-500">Daily profit</div>
-                <ProfitBadgeMana amount={dayMetrics.profit} gray />
-              </Row>
-            </>
-          )}
         </Row>
       )}
     </Card>

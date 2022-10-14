@@ -5,57 +5,46 @@ import { useFollows } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
+import { Button } from './button'
 
 export function FollowButton(props: {
   isFollowing: boolean | undefined
   onFollow: () => void
   onUnfollow: () => void
-  small?: boolean
-  className?: string
 }) {
-  const { isFollowing, onFollow, onUnfollow, small, className } = props
+  const { isFollowing, onFollow, onUnfollow } = props
 
   const user = useUser()
 
-  const smallStyle =
-    'btn !btn-xs border-2 border-gray-500 bg-white normal-case text-gray-500 hover:border-gray-500 hover:bg-white hover:text-gray-500'
-
-  if (!user || isFollowing === undefined)
-    return (
-      <button
-        className={clsx('btn btn-sm invisible', small && smallStyle, className)}
-      >
-        Follow
-      </button>
-    )
+  if (!user || isFollowing === undefined) return <></>
 
   if (isFollowing) {
     return (
-      <button
-        className={clsx(
-          'btn btn-outline btn-sm',
-          small && smallStyle,
-          className
-        )}
+      <Button
+        size="sm"
+        color="gray-outline"
+        className="my-auto"
         onClick={withTracking(onUnfollow, 'unfollow')}
       >
         Following
-      </button>
+      </Button>
     )
   }
 
   return (
-    <button
-      className={clsx('btn btn-sm', small && smallStyle, className)}
+    <Button
+      size="sm"
+      color="indigo"
+      className="my-auto"
       onClick={withTracking(onFollow, 'follow')}
     >
       Follow
-    </button>
+    </Button>
   )
 }
 
-export function UserFollowButton(props: { userId: string; small?: boolean }) {
-  const { userId, small } = props
+export function UserFollowButton(props: { userId: string }) {
+  const { userId } = props
   const user = useUser()
   const following = useFollows(user?.id)
   const isFollowing = following?.includes(userId)
@@ -67,7 +56,6 @@ export function UserFollowButton(props: { userId: string; small?: boolean }) {
       isFollowing={isFollowing}
       onFollow={() => follow(user.id, userId)}
       onUnfollow={() => unfollow(user.id, userId)}
-      small={small}
     />
   )
 }

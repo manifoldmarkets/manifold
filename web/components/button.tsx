@@ -13,7 +13,6 @@ export type ColorType =
   | 'gray-outline'
   | 'gradient'
   | 'gray-white'
-  | 'highlight-blue'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -27,7 +26,7 @@ const sizeClasses = {
 
 export function buttonClass(size: SizeType, color: ColorType | 'override') {
   return clsx(
-    'font-md inline-flex items-center justify-center rounded-md border border-transparent shadow-sm transition-colors disabled:cursor-not-allowed',
+    'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed',
     sizeClasses[size],
     color === 'green' &&
       'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-600',
@@ -42,13 +41,11 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gray' &&
       'bg-greyscale-1 text-greyscale-6 hover:bg-greyscale-2 disabled:opacity-50',
     color === 'gray-outline' &&
-      'border-greyscale-4 text-greyscale-4 hover:bg-greyscale-4 border-2 hover:text-white disabled:opacity-50',
+      'ring-2 ring-greyscale-4 text-greyscale-4 hover:bg-greyscale-4 hover:text-white disabled:opacity-50',
     color === 'gradient' &&
-      'disabled:bg-greyscale-2 border-none bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+      'disabled:bg-greyscale-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
     color === 'gray-white' &&
-      'text-greyscale-6 hover:bg-greyscale-2 border-none shadow-none disabled:opacity-50',
-    color === 'highlight-blue' &&
-      'text-highlight-blue disabled:bg-greyscale-2 border-none shadow-none'
+      'text-greyscale-6 hover:bg-greyscale-2 shadow-none disabled:opacity-50'
   )
 }
 
@@ -81,6 +78,42 @@ export function Button(props: {
       onClick={onClick}
     >
       {loading && <LoadingIndicator className={'mr-2 border-gray-500'} />}
+      {children}
+    </button>
+  )
+}
+
+export function IconButton(props: {
+  className?: string
+  onClick?: MouseEventHandler<any> | undefined
+  children?: ReactNode
+  size?: SizeType
+  type?: 'button' | 'reset' | 'submit'
+  disabled?: boolean
+  loading?: boolean
+}) {
+  const {
+    children,
+    className,
+    onClick,
+    size = 'md',
+    type = 'button',
+    disabled = false,
+    loading,
+  } = props
+
+  return (
+    <button
+      type={type}
+      className={clsx(
+        'inline-flex items-center justify-center transition-colors disabled:cursor-not-allowed',
+        sizeClasses[size],
+        'disabled:text-greyscale-2 text-greyscale-6 hover:text-indigo-600',
+        className
+      )}
+      disabled={disabled || loading}
+      onClick={onClick}
+    >
       {children}
     </button>
   )

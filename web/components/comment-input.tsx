@@ -1,12 +1,17 @@
-import { PaperAirplaneIcon } from '@heroicons/react/solid'
+import { PaperAirplaneIcon, XCircleIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
+import { Answer } from 'common/answer'
+import { AnyContractType, Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
+import Curve from 'web/public/custom-components/curve'
 import { Avatar } from './avatar'
 import { TextEditor, useTextEditor } from './editor'
+import { CommentsAnswer } from './feed/feed-answer-comment-group'
+import { ContractCommentInput } from './feed/feed-comments'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
 
@@ -72,6 +77,40 @@ export function CommentInput(props: {
     </Row>
   )
 }
+export function AnswerCommentInput(props: {
+  contract: Contract<AnyContractType>
+  answerResponse: Answer
+  onCancelAnswerResponse?: () => void
+}) {
+  const { contract, answerResponse, onCancelAnswerResponse } = props
+  const replyTo = {
+    id: answerResponse.id,
+    username: answerResponse.username,
+  }
+
+  return (
+    <>
+      <CommentsAnswer answer={answerResponse} contract={contract} />
+      <Row>
+        <div className="ml-1">
+          <Curve size={28} strokeWidth={1} color="#D8D8EB" />
+        </div>
+        <div className="relative w-full pt-1">
+          <ContractCommentInput
+            contract={contract}
+            parentAnswerOutcome={answerResponse.number.toString()}
+            replyTo={replyTo}
+            onSubmitComment={onCancelAnswerResponse}
+          />
+          <button onClick={onCancelAnswerResponse}>
+            <div className="absolute -top-1 -right-2 h-4 w-4 rounded-full bg-white" />
+            <XCircleIcon className="text-greyscale-5 hover:text-greyscale-6 absolute -top-1 -right-2 h-5 w-5" />
+          </button>
+        </div>
+      </Row>
+    </>
+  )
+}
 
 export function CommentInputTextArea(props: {
   user: User | undefined | null
@@ -123,7 +162,7 @@ export function CommentInputTextArea(props: {
           attrs: { label: replyTo.username, id: replyTo.id },
         })
         .insertContent(' ')
-        .focus()
+        .focus(undefined, { scrollIntoView: false })
         .run()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

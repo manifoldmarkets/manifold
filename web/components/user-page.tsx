@@ -95,7 +95,7 @@ export function UserPage(props: { user: User }) {
           )}
 
           <Col className="w-full gap-4 pl-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
               <Col>
                 <span className="break-anywhere text-lg font-bold sm:text-2xl">
                   {user.name}
@@ -291,7 +291,7 @@ export function ProfilePrivateStats(props: {
       <Row className={'justify-between gap-4 sm:justify-end'}>
         <Col className={'text-greyscale-4 text-md sm:text-lg'}>
           <span
-            className={clsx(profit >= 0 ? 'text-green-600' : 'text-red-400')}
+            className={clsx(profit >= 0 ? 'text-teal-600' : 'text-red-400')}
           >
             {formatMoney(profit)}
           </span>
@@ -303,7 +303,7 @@ export function ProfilePrivateStats(props: {
           }
           onClick={() => setShowLoansModal(true)}
         >
-          <span className="text-green-600">
+          <span className="text-teal-600">
             🏦 {formatMoney(user.nextLoanCached ?? 0)}
           </span>
           <span className="mx-auto text-xs sm:text-sm">next loan</span>

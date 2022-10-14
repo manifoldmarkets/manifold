@@ -47,6 +47,7 @@ import { Modal } from './layout/modal'
 import { Title } from './title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
+import { Button } from './button'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
@@ -270,7 +271,7 @@ export function BuyPanel(props: {
     })
   }
 
-  const betDisabled = isSubmitting || !betAmount || error
+  const betDisabled = isSubmitting || !betAmount || !!error
 
   const { newPool, newP, newBet } = getBinaryCpmmBetInfo(
     outcome ?? 'YES',
@@ -469,7 +470,6 @@ function LimitOrderPanel(props: {
   const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [lowLimitProb, setLowLimitProb] = useState<number | undefined>()
   const [highLimitProb, setHighLimitProb] = useState<number | undefined>()
-  const betChoice = 'YES'
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -493,7 +493,7 @@ function LimitOrderPanel(props: {
     !betAmount ||
     rangeError ||
     outOfRangeError ||
-    error ||
+    !!error ||
     (!hasYesLimitBet && !hasNoLimitBet)
 
   const yesLimitProb =
@@ -631,9 +631,9 @@ function LimitOrderPanel(props: {
 
   return (
     <Col className={hidden ? 'hidden' : ''}>
-      <Row className="mt-1 items-center gap-4">
+      <Row className="mt-1 mb-4 items-center gap-4">
         <Col className="gap-2">
-          <div className="relative ml-1 text-sm text-gray-500">
+          <div className="text-sm text-gray-500">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
@@ -641,10 +641,11 @@ function LimitOrderPanel(props: {
             prob={lowLimitProb}
             setProb={setLowLimitProb}
             isSubmitting={isSubmitting}
+            placeholder="10"
           />
         </Col>
         <Col className="gap-2">
-          <div className="ml-1 text-sm text-gray-500">
+          <div className="text-sm text-gray-500">
             Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
           </div>
           <ProbabilityOrNumericInput
@@ -652,6 +653,7 @@ function LimitOrderPanel(props: {
             prob={highLimitProb}
             setProb={setHighLimitProb}
             isSubmitting={isSubmitting}
+            placeholder="90"
           />
         </Col>
       </Row>
@@ -783,22 +785,18 @@ function LimitOrderPanel(props: {
       {(hasYesLimitBet || hasNoLimitBet) && <Spacer h={8} />}
 
       {user && (
-        <button
-          className={clsx(
-            'btn flex-1',
-            betDisabled
-              ? 'btn-disabled'
-              : betChoice === 'YES'
-              ? 'btn-primary'
-              : 'border-none bg-red-400 hover:bg-red-500',
-            isSubmitting ? 'loading' : ''
-          )}
-          onClick={betDisabled ? undefined : submitBet}
+        <Button
+          size="xl"
+          disabled={betDisabled}
+          color={'indigo'}
+          loading={isSubmitting}
+          className="flex-1"
+          onClick={submitBet}
         >
           {isSubmitting
             ? 'Submitting...'
             : `Submit order${hasTwoBets ? 's' : ''}`}
-        </button>
+        </Button>
       )}
     </Col>
   )
@@ -984,11 +982,11 @@ export function SellPanel(props: {
       <Col className="mt-3 w-full gap-3 text-sm">
         <Row className="items-center justify-between gap-2 text-gray-500">
           Sale amount
-          <span className="text-neutral">{formatMoney(saleValue)}</span>
+          <span className="text-gray-700">{formatMoney(saleValue)}</span>
         </Row>
         <Row className="items-center justify-between gap-2 text-gray-500">
           Profit
-          <span className="text-neutral">{formatMoney(profit)}</span>
+          <span className="text-gray-700">{formatMoney(profit)}</span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-gray-500">
@@ -1004,11 +1002,11 @@ export function SellPanel(props: {
           <>
             <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
               Loan payment
-              <span className="text-neutral">{formatMoney(-loanPaid)}</span>
+              <span className="text-gray-700">{formatMoney(-loanPaid)}</span>
             </Row>
             <Row className="items-center justify-between gap-2 text-gray-500">
               Net proceeds
-              <span className="text-neutral">{formatMoney(netProceeds)}</span>
+              <span className="text-gray-700">{formatMoney(netProceeds)}</span>
             </Row>
           </>
         )}

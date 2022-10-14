@@ -52,6 +52,8 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ExclamationIcon } from '@heroicons/react/outline'
+import { Select } from './select'
+import { Table } from './table'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -200,21 +202,19 @@ export function BetsList(props: { user: User }) {
         </Row>
 
         <Row className="gap-2">
-          <select
-            className="border-greyscale-4 self-start overflow-hidden rounded border px-2 py-2 text-sm"
+          <Select
             value={filter}
             onChange={(e) => setFilter(e.target.value as BetFilter)}
           >
-            <option value="open">Open</option>
+            <option value="open">Active</option>
             <option value="limit_bet">Limit orders</option>
             <option value="sold">Sold</option>
             <option value="closed">Closed</option>
             <option value="resolved">Resolved</option>
             <option value="all">All</option>
-          </select>
+          </Select>
 
-          <select
-            className="border-greyscale-4 self-start overflow-hidden rounded px-2 py-2 text-sm"
+          <Select
             value={sort}
             onChange={(e) => setSort(e.target.value as BetSort)}
           >
@@ -222,7 +222,7 @@ export function BetsList(props: { user: User }) {
             <option value="value">Value</option>
             <option value="profit">Profit</option>
             <option value="closeTime">Close date</option>
-          </select>
+          </Select>
         </Row>
       </Col>
 
@@ -451,7 +451,7 @@ export function ContractBetsTable(props: {
         </>
       )}
 
-      <table className="table-zebra table-compact table w-full text-gray-500">
+      <Table>
         <thead>
           <tr className="p-2">
             <th></th>
@@ -480,7 +480,7 @@ export function ContractBetsTable(props: {
             />
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   )
 }
@@ -551,7 +551,7 @@ function BetRow(props: {
 
   return (
     <tr>
-      <td className="text-neutral">
+      <td className="text-gray-700">
         {isYourBet &&
           !isCPMM &&
           !isResolved &&

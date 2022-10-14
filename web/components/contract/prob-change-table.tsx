@@ -7,12 +7,14 @@ import { formatPercent } from 'common/util/format'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../loading-indicator'
 import { ContractCardProbChange } from './contract-card'
+import { formatNumericProbability } from 'common/pseudo-numeric'
 
 export function ProfitChangeTable(props: {
   contracts: CPMMBinaryContract[]
   metrics: ContractMetrics[]
+  maxRows?: number
 }) {
-  const { contracts, metrics } = props
+  const { contracts, metrics, maxRows } = props
 
   const contractProfit = metrics.map(
     (m) => [m.contractId, m.from?.day.profit ?? 0] as const
@@ -26,7 +28,7 @@ export function ProfitChangeTable(props: {
     positiveProfit.map(([contractId]) =>
       contracts.find((c) => c.id === contractId)
     )
-  )
+  ).slice(0, maxRows)
 
   const negativeProfit = sortBy(
     contractProfit.filter(([, profit]) => profit < 0),
@@ -36,7 +38,7 @@ export function ProfitChangeTable(props: {
     negativeProfit.map(([contractId]) =>
       contracts.find((c) => c.id === contractId)
     )
-  )
+  ).slice(0, maxRows)
 
   if (positive.length === 0 && negative.length === 0)
     return <div className="px-4 text-gray-500">None</div>
@@ -118,7 +120,7 @@ export function ProbChangeTable(props: {
   )
 }
 
-export function ProbChange(props: {
+export function ProbOrNumericChange(props: {
   contract: CPMMContract
   className?: string
 }) {
@@ -127,13 +129,17 @@ export function ProbChange(props: {
     prob,
     probChanges: { day: change },
   } = contract
+  const number =
+    contract.outcomeType === 'PSEUDO_NUMERIC'
+      ? formatNumericProbability(prob, contract)
+      : null
 
-  const color = change >= 0 ? 'text-green-500' : 'text-red-500'
+  const color = change >= 0 ? 'text-teal-500' : 'text-red-400'
 
   return (
     <Col className={clsx('flex flex-col items-end', className)}>
       <div className="mb-0.5 mr-0.5 text-2xl">
-        {formatPercent(Math.round(100 * prob) / 100)}
+        {number ? number : formatPercent(Math.round(100 * prob) / 100)}
       </div>
       <div className={clsx('text-base', color)}>
         {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}

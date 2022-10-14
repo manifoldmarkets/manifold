@@ -93,15 +93,15 @@ export function AnswerItem(props: {
             <div
               className={clsx(
                 'text-2xl',
-                tradingAllowed(contract) ? 'text-green-500' : 'text-gray-500'
+                tradingAllowed(contract) ? 'text-teal-500' : 'text-gray-500'
               )}
             >
               {probPercent}
             </div>
           ))}
         {showChoice ? (
-          <div className="form-control py-1">
-            <label className="label cursor-pointer gap-3">
+          <div className="flex flex-col py-1">
+            <label className="cursor-pointer gap-3 px-1 py-2">
               <span className="">Choose this answer</span>
               {showChoice === 'radio' && (
                 <input
@@ -144,7 +144,7 @@ export function AnswerItem(props: {
               <div
                 className={clsx(
                   'text-xl',
-                  resolution === 'MKT' ? 'text-blue-700' : 'text-green-700'
+                  resolution === 'MKT' ? 'text-blue-700' : 'text-teal-600'
                 )}
               >
                 Chosen{' '}

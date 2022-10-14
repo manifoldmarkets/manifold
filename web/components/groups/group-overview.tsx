@@ -116,10 +116,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
         </Col>
         <Col>
           {user && (
-            <Button
-              className="btn-md"
-              onClick={() => setShowCreatePost(!showCreatePost)}
-            >
+            <Button onClick={() => setShowCreatePost(!showCreatePost)}>
               Add a Post
             </Button>
           )}
@@ -192,7 +189,9 @@ function GroupOverviewPinned(props: {
     updateGroup(group, { pinnedItems: newPinned })
   }
 
-  return isEditable || (group.pinnedItems && group.pinnedItems.length > 0) ? (
+  if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>
+
+  return isEditable || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
     <PinnedItems
       posts={posts}
       group={group}
@@ -230,8 +229,8 @@ export function PinnedItems(props: {
 
   return pinned.length > 0 || isEditable ? (
     <div>
-      <Row className="mb-3 items-center justify-between">
-        <SectionHeader label={'Pinned'} />
+      <Row className=" items-center justify-between">
+        <SectionHeader label={'Featured'} href={`#`} />
         {isEditable && (
           <Button
             color="gray"
@@ -265,7 +264,7 @@ export function PinnedItems(props: {
             </div>
           )}
           {pinned.map((element, index) => (
-            <div className="relative my-2">
+            <div className="relative mb-4" key={element.key}>
               {element}
 
               {editMode && <CrossIcon onClick={() => onDeleteClicked(index)} />}
@@ -378,7 +377,7 @@ export function GroupAbout(props: {
           <div className={'inline-flex items-center'}>
             <div className="mr-1 text-gray-500">Created by</div>
             <UserLink
-              className="text-neutral"
+              className="text-gray-700"
               name={creator.name}
               username={creator.username}
             />
@@ -430,7 +429,7 @@ export function GroupAbout(props: {
             <CopyLinkButton
               url={shareUrl}
               tracking="copy group share link"
-              buttonClassName="btn-md rounded-l-none"
+              buttonClassName="rounded-l-none"
               toastClassName={'-left-28 mt-1'}
             />
           </Col>

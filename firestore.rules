@@ -23,6 +23,12 @@ service cloud.firestore {
       allow read;
     }
 
+    match /globalConfig/globalConfig {
+      allow read;
+      allow update: if isAdmin()
+      allow create: if isAdmin()
+    }
+
     match /users/{userId} {
       allow read;
       allow update: if userId == request.auth.uid
@@ -104,7 +110,7 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read;
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
-                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks']);
+                                                                 .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks', 'flaggedByUsernames']);
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['description', 'closeTime', 'question', 'visibility', 'unlistedById'])
                        && resource.data.creatorId == request.auth.uid;

@@ -23,6 +23,7 @@ import { Donation } from 'web/components/charity/feed-items'
 import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
+import { Button } from 'web/components/button'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -126,15 +127,13 @@ function Blurb({ text }: { text: string }) {
       >
         {text}
       </div>
-      <button
+      <Button
+        color="indigo"
         onClick={() => setOpen(!open)}
-        className={clsx(
-          'btn btn-link capitalize-none my-3 normal-case text-indigo-700',
-          hideExpander && 'invisible'
-        )}
+        className={clsx('my-3', hideExpander && 'invisible')}
       >
         {open ? 'Hide' : 'Read more'}
-      </button>
+      </Button>
     </>
   )
 }
@@ -175,7 +174,7 @@ function DonationBox(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
 
-  const donateDisabled = isSubmitting || !amount || error
+  const donateDisabled = isSubmitting || !amount || !!error
 
   const onSubmit: React.FormEventHandler = async (e) => {
     if (!user || donateDisabled) return
@@ -230,16 +229,15 @@ function DonationBox(props: {
         <Spacer h={8} />
 
         {user && (
-          <button
+          <Button
             type="submit"
-            className={clsx(
-              'btn w-full',
-              donateDisabled ? 'btn-disabled' : 'btn-primary',
-              isSubmitting && 'loading'
-            )}
+            color="green"
+            className="w-full"
+            disabled={donateDisabled}
+            loading={isSubmitting}
           >
             Donate
-          </button>
+          </Button>
         )}
       </form>
     </div>
