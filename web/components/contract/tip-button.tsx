@@ -24,7 +24,7 @@ export function TipButton(props: {
     <Tooltip
       text={
         disabled
-          ? `Tips (${formatMoney(totalTipped)})`
+          ? `Total tips ${formatMoney(totalTipped)}`
           : `Tip ${formatMoney(tipAmount)}`
       }
       placement="bottom"
