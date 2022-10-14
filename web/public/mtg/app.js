@@ -81,7 +81,7 @@ function putIntoMapAndFetch(data) {
     document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
     wordCategory = 'Unused Artist Names: '
   } else if (whichGuesser === 'artifact') {
-    document.getElementById('guess-type').innerText = 'Archaeological Dating'
+    document.getElementById('guess-type').innerText = 'Archaeological Dig'
     wordCategory = 'Unused Dates: '
   }
   window.console.log(whichGuesser)
