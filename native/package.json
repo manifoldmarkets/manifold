@@ -2,6 +2,8 @@
   "name": "manifold",
   "version": "1.0.0",
   "scripts": {
+    "ios:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV yarn ios",
+    "ios:prod": "NEXT_PUBLIC_FIREBASE_ENV=PROD yarn ios",
     "start": "expo start",
     "start:dev": "expo start --dev-client",
     "android": "expo run:android",
@@ -9,6 +11,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@babel/runtime": "^7.19.4",
     "@react-native-cookies/cookies": "^6.2.1",
     "@types/react-native": "~0.69.1",
     "expo": "~46.0.13",
@@ -27,7 +30,8 @@
     "react-native-webview": "11.23.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.9"
+    "@babel/core": "^7.12.9",
+    "babel-plugin-transform-inline-environment-variables": "^0.4.4"
   },
   "private": true
 }

@@ -20,15 +20,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "markets.manifold",
-      "infoPlist": {
-        "LSApplicationQueriesSchemes": ["data"],
-        "NSAppTransportSecurity" : {
-          "NSAllowsArbitraryLoads" : true,
-          "NSAllowsArbitraryLoadsInWebContent": true,
-          "NSAllowsLocalNetworking": true
-        }
-       }
+      "bundleIdentifier": "markets.manifold"
     },
     "android": {
       "adaptiveIcon": {
