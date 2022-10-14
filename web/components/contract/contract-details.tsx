@@ -3,6 +3,7 @@ import {
   ExclamationIcon,
   PencilIcon,
   PlusCircleIcon,
+  UserGroupIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
@@ -50,8 +51,13 @@ export function MiscDetails(props: {
   hideGroupLink?: boolean
 }) {
   const { contract, showTime, hideGroupLink } = props
-  const { volume, closeTime, isResolved, createdTime, resolutionTime } =
-    contract
+  const {
+    closeTime,
+    isResolved,
+    createdTime,
+    resolutionTime,
+    uniqueBettorCount,
+  } = contract
 
   const isClient = useIsClient()
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
@@ -75,8 +81,11 @@ export function MiscDetails(props: {
         <FeaturedContractBadge />
       ) : (contract.openCommentBounties ?? 0) > 0 ? (
         <BountiedContractBadge />
-      ) : volume > 0 || !isNew ? (
-        <Row className={'shrink-0'}>{formatMoney(volume)} bet</Row>
+      ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
+        <Row className={'shrink-0'}>
+          <UserGroupIcon className="mr-1 h-4 w-4" />
+          {uniqueBettorCount} trader{uniqueBettorCount !== 1 ? 's' : ''}
+        </Row>
       ) : (
         <NewContractBadge />
       )}
