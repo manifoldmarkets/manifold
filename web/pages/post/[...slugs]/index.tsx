@@ -87,7 +87,7 @@ export default function PostPage(props: {
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
               <UserLink
-                className="text-neutral"
+                className="text-gray-700"
                 name={creator.name}
                 username={creator.username}
               />
@@ -122,7 +122,7 @@ export default function PostPage(props: {
 
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
-          <div className="form-control w-full py-2">
+          <div className="flex w-full flex-col py-2">
             {user && user.id === post.creatorId ? (
               <RichEditPost post={post} />
             ) : (

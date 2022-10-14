@@ -100,8 +100,8 @@ export function AnswerItem(props: {
             </div>
           ))}
         {showChoice ? (
-          <div className="form-control py-1">
-            <label className="label cursor-pointer gap-3">
+          <div className="flex flex-col py-1">
+            <label className="cursor-pointer gap-3 px-1 py-2">
               <span className="">Choose this answer</span>
               {showChoice === 'radio' && (
                 <input

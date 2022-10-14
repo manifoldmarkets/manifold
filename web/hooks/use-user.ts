@@ -47,10 +47,7 @@ export const usePrefetchUsers = (userIds: string[]) => {
   )
 }
 
-export const useUserContractMetricsByProfit = (
-  userId: string,
-  count: number
-) => {
+export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
   const positiveResult = useFirestoreQueryData<ContractMetrics>(
     ['contract-metrics-descending', userId, count],
     getUserContractMetricsQuery(userId, count, 'desc')
@@ -71,10 +68,13 @@ export const useUserContractMetricsByProfit = (
   if (!positiveResult.data || !negativeResult.data || !contracts)
     return undefined
 
-  const filteredContracts = filterDefined(contracts) as CPMMBinaryContract[]
-  const filteredMetrics = metrics.filter(
-    (m) => m.from && Math.abs(m.from.day.profit) >= 0.5
-  )
+  const filteredContracts = filterDefined(contracts).filter(
+    (c) => !c.isResolved
+  ) as CPMMBinaryContract[]
+  const filteredMetrics = metrics
+    .filter((m) => m.from && Math.abs(m.from.day.profit) >= 0.5)
+    .filter((m) => filteredContracts.find((c) => c.id === m.contractId))
+
   return { contracts: filteredContracts, metrics: filteredMetrics }
 }
 

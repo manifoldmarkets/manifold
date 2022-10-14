@@ -28,7 +28,7 @@ export default function DailyMovers() {
 function ProbChangesWrapper(props: { userId: string }) {
   const { userId } = props
 
-  const data = useUserContractMetricsByProfit(userId, 50)
+  const data = useUserContractMetricsByProfit(userId)
 
   if (!data) return <LoadingIndicator />
 

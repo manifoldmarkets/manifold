@@ -4,6 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../tooltip'
 import TipJar from 'web/public/custom-components/tipJar'
 import { useState } from 'react'
+import Coin from 'web/public/custom-components/coin'
 
 export function TipButton(props: {
   tipAmount: number
@@ -23,7 +24,7 @@ export function TipButton(props: {
     <Tooltip
       text={
         disabled
-          ? `Tips (${formatMoney(totalTipped)})`
+          ? `Total tips ${formatMoney(totalTipped)}`
           : `Tip ${formatMoney(tipAmount)}`
       }
       placement="bottom"
@@ -35,22 +36,49 @@ export function TipButton(props: {
         disabled={disabled}
         className={clsx(
           'px-2 py-1 text-xs', //2xs button
-          'text-greyscale-6 transition-transform hover:text-indigo-600 disabled:cursor-not-allowed',
-          !disabled ? 'hover:rotate-12' : ''
+          'text-greyscale-5 transition-transform disabled:cursor-not-allowed',
+          !disabled ? 'hover:text-greyscale-6' : ''
         )}
-        onMouseOver={() => setHover(true)}
+        onMouseOver={() => {
+          if (!disabled) {
+            setHover(true)
+          }
+        }}
         onMouseLeave={() => setHover(false)}
       >
-        <Col className={clsx('relative', disabled ? 'opacity-30' : '')}>
+        <Col className={clsx('relative')}>
+          <div
+            className={clsx(
+              'absolute transition-all',
+              hover ? 'left-[6px] -top-[9px]' : 'left-[8px] -top-[10px]'
+            )}
+          >
+            <Coin
+              size={10}
+              color={
+                hover && !userTipped
+                  ? '#66667C'
+                  : userTipped
+                  ? '#4f46e5'
+                  : '#9191a7'
+              }
+              strokeWidth={2}
+            />
+          </div>
           <TipJar
             size={18}
-            color={userTipped || (hover && !disabled) ? '#4f46e5' : '#66667C'}
-            fill={userTipped ? '#4f46e5' : 'none'}
+            color={
+              hover && !disabled && !userTipped
+                ? '#66667C'
+                : userTipped
+                ? '#4f46e5'
+                : '#9191a7'
+            }
           />
           <div
             className={clsx(
+              userTipped && 'text-indigo-600',
               ' absolute top-[2px] text-[0.5rem]',
-              userTipped ? 'text-white' : '',
               tipDisplay.length === 1
                 ? 'left-[7px]'
                 : tipDisplay.length === 2

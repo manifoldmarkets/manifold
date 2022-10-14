@@ -25,6 +25,7 @@ import { Carousel } from 'web/components/carousel'
 import { usePagination } from 'web/hooks/use-pagination'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { Title } from 'web/components/title'
+import { useTracking } from 'web/hooks/use-tracking'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -170,6 +171,9 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
 
   const description = `Win real prizes (including cash!) by participating in forecasting
             tournaments on current events, sports, science, and more.`
+
+  useTracking('view tournaments')
+
   return (
     <Page>
       <SEO title="Tournaments" description={description} />

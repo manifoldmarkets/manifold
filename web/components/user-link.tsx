@@ -48,6 +48,7 @@ const BOT_USERNAMES = [
   'MarketManagerBot',
   'Botlab',
   'JuniorBot',
+  'ManifoldDream',
 ]
 
 function BotBadge() {

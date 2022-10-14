@@ -120,7 +120,10 @@ function DreamTab(props: {
         <div className="text-sm">This may take ~10 seconds...</div>
       )}
       {/* TODO: Allow the user to choose their own modifiers */}
-      <div className="pt-2 text-sm text-gray-400">Modifiers: {MODIFIERS}</div>
+      <div className="pt-2 text-sm text-gray-400">
+        Commission a custom image using AI.
+      </div>
+      <div className="pt-2 text-xs text-gray-400">Modifiers: {MODIFIERS}</div>
 
       {/* Show the current imageUrl */}
       {/* TODO: Keep the other generated images, so the user can play with different attempts. */}

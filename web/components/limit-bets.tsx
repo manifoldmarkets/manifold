@@ -14,6 +14,7 @@ import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from './outcome-label'
 import { Subtitle } from './subtitle'
+import { Table } from './table'
 import { Title } from './title'
 
 export function LimitBets(props: {
@@ -74,7 +75,7 @@ export function LimitOrderTable(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   return (
-    <table className="table-compact table w-full rounded text-gray-500">
+    <Table className="rounded">
       <thead>
         <tr>
           {!isYou && <th></th>}
@@ -89,7 +90,7 @@ export function LimitOrderTable(props: {
           <LimitBet key={bet.id} bet={bet} contract={contract} isYou={isYou} />
         ))}
       </tbody>
-    </table>
+    </Table>
   )
 }
 
