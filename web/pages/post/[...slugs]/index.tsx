@@ -26,6 +26,7 @@ import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
 import { Subtitle } from 'web/components/subtitle'
+import { LikeItemButton } from 'web/components/contract/like-item-button'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -81,7 +82,7 @@ export default function PostPage(props: {
           <br />
           <Subtitle className="!mt-2 px-2 pb-4" text={post.subtitle} />
         </div>
-        <Row>
+        <Row className="items-center">
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
@@ -92,27 +93,31 @@ export default function PostPage(props: {
               />
             </div>
           </Col>
-          <Col className="px-2">
-            <Button
-              size="lg"
-              color="gray-white"
-              className={'flex'}
-              onClick={() => {
-                setShareOpen(true)
-              }}
-            >
-              <ShareIcon
-                className={clsx('mr-2 h-[24px] w-5')}
-                aria-hidden="true"
-              />
-              Share
-              <SharePostModal
-                isOpen={isShareOpen}
-                setOpen={setShareOpen}
-                shareUrl={shareUrl}
-              />
-            </Button>
-          </Col>
+          <Row className="items-center">
+            <LikeItemButton item={post} user={user} itemType={'post'} />
+
+            <Col className="px-2">
+              <Button
+                size="lg"
+                color="gray-white"
+                className={'flex'}
+                onClick={() => {
+                  setShareOpen(true)
+                }}
+              >
+                <ShareIcon
+                  className={clsx('mr-2 h-[24px] w-5')}
+                  aria-hidden="true"
+                />
+                Share
+                <SharePostModal
+                  isOpen={isShareOpen}
+                  setOpen={setShareOpen}
+                  shareUrl={shareUrl}
+                />
+              </Button>
+            </Col>
+          </Row>
         </Row>
 
         <Spacer h={2} />
