@@ -486,7 +486,10 @@ function DailyMoversSection(props: {
 }) {
   const { contracts, metrics } = props
 
-  if (contracts.length === 0) {
+  const hasProfit = metrics.some((m) => m.from && m.from.day.profit > 0)
+  const hasLoss = metrics.some((m) => m.from && m.from.day.profit < 0)
+
+  if (!hasProfit || !hasLoss) {
     return null
   }
 
