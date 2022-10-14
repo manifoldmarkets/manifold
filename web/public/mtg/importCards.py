@@ -17,7 +17,7 @@ def generate_initial_query(category):
     if category == 'counterspell':
         string_query += 'otag%3Acounterspell+t%3Ainstant+not%3Aadventure+not%3Adfc'
     elif category == 'beast':
-        string_query += '-type%3Alegendary+type%3Abeast+-type%3Atoken+not%3Adfc'
+        string_query += '-t%3Alegendary+t%3Abeast+-t%3Atoken+not%3Adfc'
     # elif category == 'terror':
     #     string_query += 'otag%3Acreature-removal+o%3A%2Fdestroy+target.%2A+%28creature%7Cpermanent%29%2F+%28t' \
     #                     '%3Ainstant+or+t%3Asorcery%29+o%3Atarget+not%3Aadventure'
@@ -34,7 +34,7 @@ def generate_initial_query(category):
     # elif category == 'zombie':
     #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken+not%3Adfc'
     elif category == 'artifact':
-        string_query += 't%3Aartifact+not%3Adatestamped+-type%3Atoken+-art%3Acreation-date+not%3Adfc'
+        string_query += 't%3Aartifact+not%3Adatestamped+-t%3Acreature+-t%3Atoken+-art%3Acreation-date+not%3Adfc'
     # add category string query here
     string_query += '+-%28set%3Asld+%28cn>%3D231+cn<%3D233+or+cn>%3D436+cn<%3D440+or+cn>%3D321+cn<%3D324+or' \
         '+cn>%3D185+cn<%3D189+or+cn>%3D138+cn<%3D142+or+cn>%3D364+cn<%3D368+or+cn%3A669+or+cn%3A670%29%29+' \
