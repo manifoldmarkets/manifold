@@ -11,7 +11,7 @@ import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-ti
 import { useRouter } from 'next/router'
 import { UserLink } from 'web/components/user-link'
 import { FeedCommentThread } from './feed-comments'
-import { AnswerCommentInput } from '../comment-input'
+import { AnswerCommentInput } from '../comments/comment-input'
 import { ContractComment } from 'common/comment'
 import { Dictionary, sortBy } from 'lodash'
 import { getAnswerColor } from '../answers/answers-panel'
