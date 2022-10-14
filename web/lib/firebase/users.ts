@@ -15,7 +15,6 @@ import {
   Query,
 } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
 import { PortfolioMetrics, PrivateUser, User } from 'common/user'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
@@ -29,6 +28,7 @@ dayjs.extend(utc)
 
 import { Like } from 'common/like'
 import { track } from '../service/analytics'
+import { fakeUser, setFbUser } from 'web/components/auth-context'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
@@ -190,11 +190,25 @@ export async function setCachedReferralInfoForUser(user: User | null) {
 }
 
 export async function firebaseLogin() {
-  const provider = new GoogleAuthProvider()
-  return signInWithPopup(auth, provider)
+  // if ((window as any).isNative) {
+  //   Post the message back to expo
+  // ;(window as any).ReactNativeWebView.postMessage('googleLoginClicked')
+  // return
+  // } else {
+  await setFbUser(fakeUser)
+  return
+  // }
+  // const provider = new GoogleAuthProvider()
+  // return signInWithPopup(auth, provider).then(async (result) => {
+  //   return result
+  // })
 }
 
 export async function firebaseLogout() {
+  if ((window as any).isNative) {
+    // Post the message back to expo
+    ;(window as any).ReactNativeWebView.postMessage('signOut')
+  }
   await auth.signOut()
 }
 

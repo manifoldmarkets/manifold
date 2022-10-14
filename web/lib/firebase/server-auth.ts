@@ -44,7 +44,7 @@ type RequestContext = {
 // Persistence manager: https://github.com/firebase/firebase-js-sdk/blob/39f4635ebc07316661324145f1b8c27f9bd7aedb/packages/auth/src/core/persistence/persistence_user_manager.ts#L64
 // Token manager: https://github.com/firebase/firebase-js-sdk/blob/39f4635ebc07316661324145f1b8c27f9bd7aedb/packages/auth/src/core/user/token_manager.ts#L76
 
-interface FirebaseAuthInternal extends FirebaseAuth {
+export interface FirebaseAuthInternal extends FirebaseAuth {
   persistenceManager: {
     fullUserKey: string
     getCurrentUser: () => Promise<FirebaseUser | null>
@@ -56,12 +56,14 @@ interface FirebaseAuthInternal extends FirebaseAuth {
 
 export const authenticateOnServer = async (ctx: RequestContext) => {
   const user = getCookies(ctx.req.headers.cookie ?? '')[AUTH_COOKIE_NAME]
+  console.log('user in cookie', user?.slice(0, 20))
   if (user == null) {
     console.debug('User is unauthenticated.')
     return null
   }
   try {
     const deserializedUser = JSON.parse(user)
+    // console.log('deserialized user', deserializedUser)
     const clientAuth = getAuth(clientApp) as FirebaseAuthInternal
     const persistenceManager = clientAuth.persistenceManager
     const persistence = persistenceManager.persistence
@@ -70,10 +72,10 @@ export const authenticateOnServer = async (ctx: RequestContext) => {
     const fbUser = (await persistenceManager.getCurrentUser())!
     await fbUser.getIdToken() // forces a refresh if necessary
     await updateCurrentUser(clientAuth, fbUser)
-    console.debug('Signed in with user from cookie.')
+    // console.debug('Signed in with user from cookie.')
     return fbUser
   } catch (e) {
-    console.error(e)
+    console.error('deserializing', e)
     return null
   }
 }
