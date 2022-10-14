@@ -61,11 +61,11 @@ export function Tipper(prop: {
   )
 
   const addTip = (delta: number) => {
-    setTempTip(tempTip + delta)
+    setTempTip((tempTip) => tempTip + delta)
     const timeoutId = setTimeout(() => {
       me &&
         saveTip(me, comment, delta)
-          .then(() => setTempTip(tempTip - delta))
+          .then(() => setTempTip((tempTip) => tempTip - delta))
           .catch((e) => console.error(e))
     }, TIP_UNDO_DURATION + 1000)
     toast.custom(
@@ -74,7 +74,7 @@ export function Tipper(prop: {
           userName={comment.userName}
           onUndoClick={() => {
             clearTimeout(timeoutId)
-            setTempTip(tempTip - delta)
+            setTempTip((tempTip) => tempTip - delta)
           }}
         />
       ),
