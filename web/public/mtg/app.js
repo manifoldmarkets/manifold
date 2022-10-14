@@ -214,9 +214,11 @@ function determineIfSkip(card) {
         card.name === 'Conspiracy' ||
         card.name === 'Foretell' ||
         card.name === 'Tarkir' ||
+        card.name === 'Wotc' ||
         card.set === 'h17' ||
         card.set === 'ptg' ||
-        card.set === 'htr18'
+        card.set === 'htr18' ||
+        card.set_type === 'promo'
       ) {
         return true
       }
