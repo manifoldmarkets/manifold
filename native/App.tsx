@@ -26,7 +26,7 @@ const uri = 'http://localhost:3000/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
+  const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     isDev
       ? {
           //dev:
@@ -46,7 +46,7 @@ export default function App() {
   const webview = useRef<WebView>()
   const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
   const useWebKit = true
-  // We can't just login to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
+  // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.params
@@ -117,25 +117,25 @@ export default function App() {
         }}
       />
 
-      {!fbUser && (
-        <View
-          style={{
-            alignItems: 'center',
-            width: 400,
-            height: 200,
-            marginTop: 40,
-          }}
-        >
-          <Button
-            disabled={!request}
-            title="Login"
-            color={'black'}
-            onPress={() => {
-              promptAsync()
-            }}
-          />
-        </View>
-      )}
+      {/*{!fbUser && (*/}
+      {/*  <View*/}
+      {/*    style={{*/}
+      {/*      alignItems: 'center',*/}
+      {/*      width: 400,*/}
+      {/*      height: 200,*/}
+      {/*      marginTop: 40,*/}
+      {/*    }}*/}
+      {/*  >*/}
+      {/*    <Button*/}
+      {/*      disabled={!request}*/}
+      {/*      title="Login"*/}
+      {/*      color={'black'}*/}
+      {/*      onPress={() => {*/}
+      {/*        promptAsync()*/}
+      {/*      }}*/}
+      {/*    />*/}
+      {/*  </View>*/}
+      {/*)}*/}
     </>
   )
 }
