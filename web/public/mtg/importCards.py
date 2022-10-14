@@ -5,7 +5,7 @@ import math
 
 # queued categories: 'terror', 'wrath', 'zombie', 'artifact']
 # add category name here
-allCategories = ['counterspell', 'beast', 'burn', 'commander']
+allCategories = ['counterspell', 'beast', 'burn', 'commander', 'artifact']
 specialCategories = ['set', 'basic', 'watermark']
 artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
 artist_allowlist = {'David Martin', 'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay', 'DiTerlizzi',
@@ -33,8 +33,8 @@ def generate_initial_query(category):
             '+or+legal%3Acommander+or+legal%3Abrawl%29'
     # elif category == 'zombie':
     #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken+not%3Adfc'
-    # elif category == 'artifact':
-        # string_query += 't%3Aartifact+not%3Adatestamped+not%3Adfc&order=released&dir=asc&unique=prints&page='
+    elif category == 'artifact':
+        string_query += 't%3Aartifact+not%3Adatestamped+-type%3Atoken+-art%3Acreation-date+not%3Adfc'
     # add category string query here
     string_query += '+-%28set%3Asld+%28cn>%3D231+cn<%3D233+or+cn>%3D436+cn<%3D440+or+cn>%3D321+cn<%3D324+or' \
         '+cn>%3D185+cn<%3D189+or+cn>%3D138+cn<%3D142+or+cn>%3D364+cn<%3D368+or+cn%3A669+or+cn%3A670%29%29+' \
@@ -194,9 +194,9 @@ def to_compact_write_form(smallJson, art_names, response, category):
             continue
         write_card = dict()
         for field in fieldsInCard:
-            # if field == 'name' and category == 'artifact':
-            #     write_card['name'] = card['released_at'].split('-')[0]
-            if field == 'name' and 'card_faces' in card:
+            if field == 'name' and category == 'artifact':
+                write_card['name'] = card['released_at'].split('-')[0]
+            elif field == 'name' and 'card_faces' in card:
                 write_card['name'] = card['card_faces'][0]['name']
             elif field == 'image_uris':
                 if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
@@ -366,7 +366,7 @@ def write_image_uris(card_image_uris):
 
 if __name__ == "__main__":
     # uncomment this once in a while, but it's expensive to run
-    fetch_and_write_initial_artist_query()
+    # fetch_and_write_initial_artist_query()
 
     for category in allCategories:
         print(category)

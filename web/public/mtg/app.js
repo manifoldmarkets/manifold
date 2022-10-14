@@ -12,6 +12,7 @@ wordsLeft = k + extra
 imagesLeft = k
 maxRounds = 20
 whichGuesser = 'counterspell'
+wordCategory = 'Unused Card Names: '
 un = false
 ub = false
 online = false
@@ -70,12 +71,18 @@ function putIntoMapAndFetch(data) {
     document.getElementById('guess-type').innerText = 'Finding Fantastic Beasts'
   } else if (whichGuesser === 'basic') {
     document.getElementById('guess-type').innerText = 'How Basic'
+    wordCategory = 'Unused Set Names: '
   } else if (whichGuesser === 'commander') {
     document.getElementById('guess-type').innerText = 'General Knowledge'
   } else if (whichGuesser === 'watermark') {
     document.getElementById('guess-type').innerText = 'Watermark It'
+    wordCategory = 'Unused Watermarks: '
   } else if (whichGuesser === 'artist') {
     document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
+    wordCategory = 'Unused Artist Names: '
+  } else if (whichGuesser === 'artifact') {
+    document.getElementById('guess-type').innerText = 'Archaeological Dating'
+    wordCategory = 'Unused Dates: '
   }
   window.console.log(whichGuesser)
   setUpNewGame()
@@ -483,10 +490,6 @@ function dropOnCard(id, data) {
 }
 
 function setWordsLeft() {
-  cardName = 'Unused Card Names: '
-  if (whichGuesser === 'basic') {
-    cardName = 'Unused Set Names: '
-  }
   document.getElementById('words-left').innerText =
-    cardName + wordsLeft + '/Images: ' + imagesLeft
+    wordCategory + wordsLeft + '/Images: ' + imagesLeft
 }
