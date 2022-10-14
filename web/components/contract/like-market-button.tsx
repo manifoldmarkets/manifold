@@ -3,7 +3,6 @@ import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
 import toast from 'react-hot-toast'
-import { formatMoney } from 'common/util/format'
 import { likeContract } from 'web/lib/firebase/likes'
 import { LIKE_TIP_AMOUNT, TIP_UNDO_DURATION } from 'common/like'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -40,7 +39,7 @@ export function LikeMarketButton(props: {
       likeContract(user, contract).catch(() => setIsLiking(false))
     }, 3000)
     toast.custom(
-      (t) => (
+      () => (
         <TipToast
           userName={contract.creatorUsername}
           onUndoClick={() => {

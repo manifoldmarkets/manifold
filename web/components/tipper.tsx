@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { debounce } from 'lodash'
 
 import { Comment } from 'common/comment'
 import { User } from 'common/user'
@@ -69,7 +68,7 @@ export function Tipper(prop: {
       me && saveTip(me, comment, delta)
     }, 3000)
     toast.custom(
-      (t) => (
+      () => (
         <TipToast
           userName={comment.userName}
           onUndoClick={() => {
