@@ -65,9 +65,7 @@ export function Tipper(prop: {
     const timeoutId = setTimeout(() => {
       me &&
         saveTip(me, comment, delta)
-          .then(() => {
-            setTempTip((tempTip) => tempTip - delta)
-          })
+          .then(() => setTempTip((tempTip) => tempTip - delta))
           .catch((e) => console.error(e))
     }, TIP_UNDO_DURATION + 1000)
     toast.custom(
