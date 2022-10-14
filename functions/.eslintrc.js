@@ -26,7 +26,7 @@ module.exports = {
             caughtErrorsIgnorePattern: '^_',
           },
         ],
-        'unused-imports/no-unused-imports': 'error',
+        'unused-imports/no-unused-imports': 'warn',
       },
     },
   ],

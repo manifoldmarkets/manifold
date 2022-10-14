@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import { isEmpty } from 'lodash'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
@@ -12,7 +13,7 @@ type PropzProps = {
 // This allows us to client-side render the page for authenticated users.
 // TODO: Could cache the result using stale-while-revalidate: https://swr.vercel.app/
 export function usePropz(
-  initialProps: Object,
+  initialProps: Record<string, unknown>,
   getStaticPropz: (props: PropzProps) => Promise<any>
 ) {
   // If props were successfully server-side generated, just use those
@@ -29,6 +30,7 @@ export function usePropz(
     if (router.isReady) {
       getStaticPropz({ params }).then((result) => setPropz(result.props))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
   return propz
 }
