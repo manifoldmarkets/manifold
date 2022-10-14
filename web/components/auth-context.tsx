@@ -1,5 +1,10 @@
 import { ReactNode, createContext, useEffect, useState } from 'react'
-import { onIdTokenChanged, updateCurrentUser } from 'firebase/auth'
+import {
+  GoogleAuthProvider,
+  onIdTokenChanged,
+  signInWithCredential,
+  updateCurrentUser,
+} from 'firebase/auth'
 import {
   UserAndPrivateUser,
   auth,
@@ -68,8 +73,8 @@ export function AuthProvider(props: {
       const data = event.data
       // console.log('got fbUser from native', data)
       // setShowData(JSON.stringify(fakeUser))
-      ;(window as any).ReactNativeWebView.postMessage('received fbUser')
-      setFbUser(data)
+      // setFbUser(data)
+      signInWithIdToken(data)
     } catch (e) {
       console.log('error parsing native message', e)
       return
@@ -78,9 +83,15 @@ export function AuthProvider(props: {
     // const cred = GoogleAuthProvider.credential(data)
     // if (cred) signInWithCredential(auth, cred)
   }
+  const signInWithIdToken = async (token: any) => {
+    ;(window as any).ReactNativeWebView.postMessage('received credential!')
+    const credential = GoogleAuthProvider.credential(token)
+    await signInWithCredential(auth, credential)
+  }
 
   const setFbUser = async (deserializedUser: any) => {
     try {
+      ;(window as any).ReactNativeWebView.postMessage('received fbUser')
       const clientAuth = auth as FirebaseAuthInternal
       const persistenceManager = clientAuth.persistenceManager
       const persistence = persistenceManager.persistence

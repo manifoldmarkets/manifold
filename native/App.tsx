@@ -63,24 +63,27 @@ export default function App() {
   useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.params
+      webview.current.postMessage(
+        JSON.stringify({ type: 'nativeFbUser', data: id_token })
+      )
 
-      const auth = getAuth(app)
-      const credential = GoogleAuthProvider.credential(id_token)
-      // on sign in from the native side, pass the webview the fb user
-      signInWithCredential(auth, credential).then((result) => {
-        const fbUserPrint = JSON.stringify(result.user, null, 2) // spacing level = 2
-        const fbUser = result.user.toJSON()
-        // setGoogleCred(JSON.stringify(credential.toJSON()))
-        if (webview.current) {
-          console.log('setting fbUser', fbUserPrint.slice(0, 100))
-          webview.current.postMessage(
-            // JSON.stringify({ type: 'nativeFbUser', data: credential.toJSON() })
-            // JSON.stringify({ type: 'nativeFbUser', data: credential.idToken })
-            JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-          )
-        }
-        setFbUser(JSON.stringify(result.user.toJSON()))
-      })
+      // const auth = getAuth(app)
+      // const credential = GoogleAuthProvider.credential(id_token)
+      // // on sign in from the native side, pass the webview the fb user
+      // signInWithCredential(auth, credential).then((result) => {
+      //   const fbUserPrint = JSON.stringify(result.user, null, 2) // spacing level = 2
+      //   const fbUser = result.user.toJSON()
+      //   // setGoogleCred(JSON.stringify(credential.toJSON()))
+      //   if (webview.current) {
+      //     console.log('setting fbUser', fbUserPrint.slice(0, 100))
+      //     webview.current.postMessage(
+      //       // JSON.stringify({ type: 'nativeFbUser', data: credential.toJSON() })
+      //       // JSON.stringify({ type: 'nativeFbUser', data: credential.idToken })
+      //       JSON.stringify({ type: 'nativeFbUser', data: fbUser })
+      //     )
+      //   }
+      //   setFbUser(JSON.stringify(result.user.toJSON()))
+      // })
     }
   }, [response])
 
