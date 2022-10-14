@@ -53,7 +53,7 @@ import { debounce } from 'lodash'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
-    class: 'max-h-60 hover:max-h-[120rem] transition-all',
+    class: 'max-h-60',
   },
 })
 
