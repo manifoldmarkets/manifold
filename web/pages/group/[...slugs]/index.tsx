@@ -168,8 +168,8 @@ export default function GroupPage(props: {
         url={groupPath(group.slug)}
       />
       <TopGroupNavBar group={group} isMember={isMember} />
-      <div className="relative justify-self-end">
-        <div className="absolute right-0 top-0 z-10 hidden md:flex">
+      <div className="relative hidden justify-self-end md:flex">
+        <div className="absolute right-0 top-0 z-10">
           <JoinOrAddQuestionsButtons
             group={group}
             user={user}
