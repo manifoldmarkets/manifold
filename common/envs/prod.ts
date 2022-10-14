@@ -70,7 +70,7 @@ export const PROD_CONFIG: EnvConfig = {
     appId: '1:128925704902:web:f61f86944d8ffa2a642dc7',
     measurementId: 'G-SSFK1Q138D',
   },
-  twitchBotEndpoint: 'https://twitch-bot-nggbo3neva-uc.a.run.app',
+  twitchBotEndpoint: 'https://twitch-bot.manifold.markets',
   cloudRunId: 'nggbo3neva',
   cloudRunRegion: 'uc',
   adminEmails: [
