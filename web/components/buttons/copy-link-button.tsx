@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { ToastClipboard } from 'web/components/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
-import { Row } from './layout/row'
+import { Row } from '../layout/row'
 
 export function CopyLinkButton(props: {
   url: string

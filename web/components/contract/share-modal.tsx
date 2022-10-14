@@ -17,7 +17,7 @@ import { useState } from 'react'
 import { CHALLENGES_ENABLED } from 'common/challenge'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
 import { QRCode } from '../qr-code'
-import { CopyLinkButton } from '../copy-link-button'
+import { CopyLinkButton } from '../buttons/copy-link-button'
 import { Button } from '../buttons/button'
 
 export function ShareModal(props: {

@@ -1,6 +1,6 @@
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Contract, contractPath, contractUrl } from 'web/lib/firebase/contracts'
-import { CopyLinkButton } from '../copy-link-button'
+import { CopyLinkButton } from './copy-link-button'
 
 export function ShareMarketButton(props: { contract: Contract }) {
   const { contract } = props

@@ -22,7 +22,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { FIXED_ANTE } from 'common/economy'
 import { LoadingIndicator } from 'web/components/loading-indicator'
 import { track } from 'web/lib/service/analytics'
-import { CopyLinkButton } from '../copy-link-button'
+import { CopyLinkButton } from '../buttons/copy-link-button'
 import { ExpandingInput } from '../expanding-input'
 
 type challengeInfo = {
