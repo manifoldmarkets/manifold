@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 
-import { buttonClass } from 'web/components/button'
+import { buttonClass } from 'web/components/buttons/button'
 import { CPMMContract } from 'common/contract'
 import { LiquidityModal } from './liquidity-modal'
 

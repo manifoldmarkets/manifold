@@ -2,13 +2,13 @@ import { ShareIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
 import { Contract } from 'web/lib/firebase/contracts'
 import React, { useState } from 'react'
-import { IconButton } from 'web/components/button'
+import { IconButton } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { ShareModal } from './share-modal'
-import { FollowMarketButton } from 'web/components/follow-market-button'
+import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { LikeItemButton } from 'web/components/contract/like-item-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
-import { Tooltip } from '../tooltip'
+import { Tooltip } from '../widgets/tooltip'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props

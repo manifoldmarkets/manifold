@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { toast, Toaster } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { useTracking } from 'web/hooks/use-tracking'
@@ -18,7 +18,7 @@ import { track } from 'web/lib/service/analytics'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import {
   usePrivateUser,
   useUser,
@@ -28,7 +28,7 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -50,12 +50,12 @@ import {
   useNewContracts,
 } from 'web/hooks/use-contracts'
 import { ProfitBadge } from 'web/components/profit-badge'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import { Input } from 'web/components/input'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Input } from 'web/components/widgets/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
 import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
 import { getPost } from 'web/lib/firebase/posts'
-import { PostCard } from 'web/components/post-card'
+import { PostCard } from 'web/components/posts/post-card'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Post } from 'common/post'

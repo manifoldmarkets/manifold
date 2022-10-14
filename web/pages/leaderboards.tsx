@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import {
   getTopCreators,
   getTopTraders,
@@ -10,7 +10,7 @@ import {
 } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { Tabs } from 'web/components/layout/tabs'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'

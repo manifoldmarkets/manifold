@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { DateTimeTooltip } from 'web/components/datetime-tooltip'
+import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import Link from 'next/link'
 import { fromNow } from 'web/lib/util/time'
-import { ToastClipboard } from 'web/components/toast-clipboard'
+import { ToastClipboard } from 'web/components/widgets/toast-clipboard'
 import { LinkIcon } from '@heroicons/react/outline'
 import { useIsClient } from 'web/hooks/use-is-client'
 

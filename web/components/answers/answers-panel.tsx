@@ -1,5 +1,6 @@
 import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
+import { ChatIcon } from '@heroicons/react/outline'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -18,14 +19,13 @@ import { formatPercent } from 'common/util/format'
 import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
-import { Linkify } from 'web/components/linkify'
-import { Button } from 'web/components/button'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Linkify } from 'web/components/widgets/linkify'
+import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
-import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
-import { ChatIcon } from '@heroicons/react/outline'
+import { needsAdminToResolve } from 'web/lib/util/admin'
 
 export function getAnswerColor(answer: Answer, answersArray: string[]) {
   const colorIndex = answersArray.indexOf(answer.text)

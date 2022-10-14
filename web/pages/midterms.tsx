@@ -1,9 +1,9 @@
 import { CPMMBinaryContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Spacer } from 'web/components/layout/spacer'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import {
   StateElectionMarket,
   StateElectionMap,

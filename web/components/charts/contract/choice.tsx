@@ -17,7 +17,7 @@ import {
 } from '../helpers'
 import { MultiPoint, MultiValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
+import { Avatar } from 'web/components/widgets/avatar'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
