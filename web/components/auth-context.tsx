@@ -1,8 +1,9 @@
-import { ReactNode, createContext, useEffect, useState } from 'react'
+import { ReactNode, createContext, useEffect } from 'react'
 import {
   GoogleAuthProvider,
   onIdTokenChanged,
   signInWithCredential,
+  signInWithCustomToken,
   updateCurrentUser,
 } from 'firebase/auth'
 import {
@@ -65,16 +66,14 @@ export function AuthProvider(props: {
 }) {
   const { children, serverUser } = props
   const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
-  const [showData, setShowData] = useState<string | null>()
 
   const handleNativeMessage = (e: any) => {
     try {
       const event = JSON.parse(e.data)
       const data = event.data
-      // console.log('got fbUser from native', data)
-      // setShowData(JSON.stringify(fakeUser))
-      // setFbUser(data)
-      signInWithIdToken(data)
+      setFbUser(data)
+      // signInWithIdToken(data)
+      // signInWithToken(data)
     } catch (e) {
       console.log('error parsing native message', e)
       return
@@ -87,6 +86,13 @@ export function AuthProvider(props: {
     ;(window as any).ReactNativeWebView.postMessage('received credential!')
     const credential = GoogleAuthProvider.credential(token)
     await signInWithCredential(auth, credential)
+  }
+  const signInWithToken = async (token: any) => {
+    ;(window as any).ReactNativeWebView.postMessage('received custom token!')
+    await signInWithCustomToken(
+      auth,
+      'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2lkZW50aXR5dG9vbGtpdC5nb29nbGVhcGlzLmNvbS9nb29nbGUuaWRlbnRpdHkuaWRlbnRpdHl0b29sa2l0LnYxLklkZW50aXR5VG9vbGtpdCIsImlhdCI6MTY2NTc1OTIzNSwiZXhwIjoxNjY1NzYyODM1LCJpc3MiOiJmaXJlYmFzZS1hZG1pbnNkay1zaXI1bUBkZXYtbWFudGljLW1hcmtldHMuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1zaXI1bUBkZXYtbWFudGljLW1hcmtldHMuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJ1aWQiOiI2aEhwenZSRzBwTXE4UE5KczdSWmoycWxaR24yIn0.OP3RlXe8JXicZFzT6oQu0DrmsfrHewk2kSRsY0RMvkSl7NxXaX7JOhcZqoFAtOuk7Mk8XxRPKsfFBovjsG5r42WzoY6pCwu1t9QWxZS8uxmhMOPnsUd0dWWOCU2Fy4HqYtc39plz9i2tMNsGNyl93VWondmxh-xQLpddSGre3jyahHYRehGneaYxurcw9JAP41D4f9oIJsXcbpUs9dVYRJDGH-bkuKZpbfdR6ZOLU9uNEQfjDfXsgz0HXsNzBo56gXVtlMkmv0V9Y4dYx4T8rdrBxJ1sLwmK6poOcIloWzyr-cSigfv7mqiGhvyty8O5ixu8McyD4kmwEzVb6-PJwg'
+    )
   }
 
   const setFbUser = async (deserializedUser: any) => {
@@ -101,10 +107,7 @@ export function AuthProvider(props: {
       ;(window as any).ReactNativeWebView.postMessage(`called fbuser ${fbUser}`)
       await fbUser?.getIdToken() // forces a refresh if necessary
       await updateCurrentUser(auth, fbUser)
-      // const credential = GoogleAuthProvider.credential(idToken)
-      // await signInWithCredential(auth, credential)
     } catch (e) {
-      // setShowData(e)
       ;(window as any).ReactNativeWebView.postMessage(
         `error setting fb user ${e}`
       )
@@ -130,7 +133,7 @@ export function AuthProvider(props: {
       if ((window as any).isNative) {
         // TODO: also communicate sign out
         // Post the message back to expo
-        ;(window as any).ReactNativeWebView.postMessage('loading cached user')
+        ;(window as any).ReactNativeWebView.postMessage(cachedUser)
       }
     }
   }, [setAuthUser, serverUser])
@@ -149,7 +152,6 @@ export function AuthProvider(props: {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
-        ;(window as any).ReactNativeWebView.postMessage(`on id token changed`)
         if (fbUser) {
           setUserCookie(JSON.stringify(fbUser.toJSON()))
           let current = await getUserAndPrivateUser(fbUser.uid)
@@ -201,40 +203,7 @@ export function AuthProvider(props: {
     }
   }, [username])
 
-  if (showData) return <div>{showData}</div>
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
   )
-}
-
-export const fakeUser = {
-  uid: '6hHpzvRG0pMq8PNJs7RZj2qlZGn2',
-  email: 'iansphilips@gmail.com',
-  emailVerified: true,
-  displayName: 'Ian Philips',
-  isAnonymous: false,
-  photoURL:
-    'https://lh3.googleusercontent.com/a-/AOh14GhGa0Vhb3LTBXbd2fGfekbG5clPQSVe59Xh35CrKw=s96-c',
-  providerData: [
-    {
-      providerId: 'google.com',
-      uid: '104873811885476820901',
-      displayName: 'Ian Philips',
-      email: 'iansphilips@gmail.com',
-      phoneNumber: null,
-      photoURL:
-        'https://lh3.googleusercontent.com/a/ALm5wu2L9687DDQ_ifWj1ByKV2fggze7MlFK_B8mFwcU-DY=s96-c',
-    },
-  ],
-  stsTokenManager: {
-    refreshToken:
-      'AOEOulbccgCwkis-c7EXs3NHhAk5gHd2bKjBnI7XZNBho6cyqYwWM5LXBSX9O4Paut6-cJChJYcODG-btqbs7OfE58uIm-BixV0kgYJ8iZxRyUDvbNI0PfosDEoUvAR4D1jWvLca0Tjov_HfW9ZREWWuJCh9vw0unNdAXDjwkjhpRtp5HYB8khGeD2VVuZYDBEj0v8U1iSFI0yvYjCEnlB-DRN0cYSwZFCavTRji_wnW7Ks9x4OWqrs1uOk0z3QEDJeRePe9gzUG_RXV1sbkz3z5WC6meQVLblh8MrMDZ3FNlWjb-N8XdB4RwbHSCZ7SOt6_E9omxupCSoFmZBWg9Ad5_qoC3oWpRR8tdEu7CTNT9DV1yGhWYKAzSp-MUJEzzVNqy72tjdVQMfyOfAfjPpMbOyi8uHpdRSgERJ3myNmurrhTDQNTZpY',
-    accessToken:
-      'eyJhbGciOiJSUzI1NiIsImtpZCI6Ijk5NjJmMDRmZWVkOTU0NWNlMjEzNGFiNTRjZWVmNTgxYWYyNGJhZmYiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiSWFuIFBoaWxpcHMiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EtL0FPaDE0R2hHYTBWaGIzTFRCWGJkMmZHZmVrYkc1Y2xQUVNWZTU5WGgzNUNyS3c9czk2LWMiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZGV2LW1hbnRpYy1tYXJrZXRzIiwiYXVkIjoiZGV2LW1hbnRpYy1tYXJrZXRzIiwiYXV0aF90aW1lIjoxNjY1NzUwMDc0LCJ1c2VyX2lkIjoiNmhIcHp2UkcwcE1xOFBOSnM3UlpqMnFsWkduMiIsInN1YiI6IjZoSHB6dlJHMHBNcThQTkpzN1JaajJxbFpHbjIiLCJpYXQiOjE2NjU3NTAwNzQsImV4cCI6MTY2NTc1MzY3NCwiZW1haWwiOiJpYW5zcGhpbGlwc0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJnb29nbGUuY29tIjpbIjEwNDg3MzgxMTg4NTQ3NjgyMDkwMSJdLCJlbWFpbCI6WyJpYW5zcGhpbGlwc0BnbWFpbC5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJnb29nbGUuY29tIn19.U0dnyvSJd0ErV1iZU-feJwgjE3H2oybJF9dUmCf7IJGVAv5bXy8_GhWPVJeUQQ2ne-VErgmxziN4aOQ09Y6nRCFov-QTVC1KlN2oV9QB2pWsya-r_e0rsSO2BNcEQHuw9ju_H65LqOAp-oM1Rmsej7OHv6uGL-q35qnUIsnvkqL9oKSiG4A87L_iApGcw3ixqxXppMAG54bkevpKLKZvdEKxCdp7aMyn-kipkx3YvCA8NRzS_f6oxwF6koSjnEmJLxtdHvoYfsLjAgZvcnRPu7API52-Qi5NGqJn9rbabywf87GeSZbAL22xpkrzfqH8Lw_dGhgTZhPsZ4R6n5OaMQ',
-    expirationTime: 1665753674429,
-  },
-  createdAt: '1650038386755',
-  lastLoginAt: '1665704537930',
-  apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
-  appName: '[DEFAULT]',
 }
