@@ -1,8 +1,8 @@
 import { Modal } from './layout/modal'
 import { Col } from './layout/col'
-import { Title } from './title'
-import { TweetButton } from './tweet-button'
-import { CopyLinkButton } from './copy-link-button'
+import { Title } from './widgets/title'
+import { TweetButton } from './buttons/tweet-button'
+import { CopyLinkButton } from './buttons/copy-link-button'
 
 export function SharePostModal(props: {
   shareUrl: string

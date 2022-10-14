@@ -1,7 +1,7 @@
 import { Switch } from '@headlessui/react'
 import clsx from 'clsx'
 import React from 'react'
-import { Tooltip } from 'web/components/tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const SwitchSetting = (props: {
   checked: boolean

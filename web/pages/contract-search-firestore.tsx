@@ -9,8 +9,8 @@ import {
   urlParamStore,
 } from 'web/hooks/use-persistent-state'
 import { PAST_BETS } from 'common/user'
-import { Input } from 'web/components/input'
-import { Select } from 'web/components/select'
+import { Input } from 'web/components/widgets/input'
+import { Select } from 'web/components/widgets/select'
 
 const MAX_CONTRACTS_RENDERED = 100
 

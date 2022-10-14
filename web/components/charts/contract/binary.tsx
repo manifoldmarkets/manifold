@@ -16,7 +16,7 @@ import {
 } from '../helpers'
 import { HistoryPoint, SingleValueHistoryChart } from '../generic-charts'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
+import { Avatar } from 'web/components/widgets/avatar'
 
 const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
 const MARGIN_X = MARGIN.left + MARGIN.right

@@ -6,17 +6,17 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { Content } from '../editor'
+import { Content } from '../widgets/editor'
 import {
   TextEditor,
   editorExtensions,
   useTextEditor,
-} from 'web/components/editor'
-import { Button } from '../button'
+} from 'web/components/widgets/editor'
+import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
-import { ExpandingInput } from '../expanding-input'
+import { ExpandingInput } from '../widgets/expanding-input'
 
 export function ContractDescription(props: {
   contract: Contract

@@ -1,10 +1,8 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeftIcon } from '@heroicons/react/outline'
-import dayjs from 'dayjs'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
-import { BetPanel } from 'web/components/bet-panel'
+import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
@@ -16,20 +14,20 @@ import {
   tradingAllowed,
 } from 'web/lib/firebase/contracts'
 import { SEO } from 'web/components/SEO'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Bet, listAllBets } from 'web/lib/firebase/bets'
 import Custom404 from '../404'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
-import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
-import { NumericBetPanel } from 'web/components/numeric-bet-panel'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { NumericBetPanel } from 'web/components/bet/numeric-bet-panel'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useBets } from 'web/hooks/use-bets'
 import { CPMMBinaryContract } from 'common/contract'
-import { AlertBox } from 'web/components/alert-box'
+import { AlertBox } from 'web/components/widgets/alert-box'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'common/contract-details'
@@ -39,15 +37,16 @@ import {
   ContractTopTrades,
 } from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { useAdmin } from 'web/hooks/use-admin'
-import { BetsSummary } from 'web/components/bet-summary'
+import { BetsSummary } from 'web/components/bet/bet-summary'
 import { listAllComments } from 'web/lib/firebase/comments'
 import { ContractComment } from 'common/comment'
-import { ScrollToTopButton } from 'web/components/scroll-to-top-button'
+import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
+import { needsAdminToResolve } from 'web/lib/util/admin'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -78,7 +77,6 @@ export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
   comments: ContractComment[]
-  backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -100,66 +98,12 @@ export default function ContractPage(props: {
   return <ContractPageContent key={contract.id} {...{ ...props, contract }} />
 }
 
-// requires an admin to resolve a week after market closes
-export function needsAdminToResolve(contract: Contract) {
-  return !contract.isResolved && dayjs().diff(contract.closeTime, 'day') > 7
-}
-
-export function ContractPageSidebar(props: { contract: Contract }) {
-  const { contract } = props
-  const { creatorId, isResolved, outcomeType } = contract
-  const user = useUser()
-  const isCreator = user?.id === creatorId
-  const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isNumeric = outcomeType === 'NUMERIC'
-  const allowTrade = tradingAllowed(contract)
-  const isAdmin = useAdmin()
-  const allowResolve =
-    !isResolved &&
-    (isCreator || (needsAdminToResolve(contract) && isAdmin)) &&
-    !!user
-
-  const hasSidePanel =
-    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
-
-  return hasSidePanel ? (
-    <Col className="gap-4">
-      {allowTrade &&
-        (isNumeric ? (
-          <NumericBetPanel className="hidden xl:flex" contract={contract} />
-        ) : (
-          <BetPanel
-            className="hidden xl:flex"
-            contract={contract as CPMMBinaryContract}
-          />
-        ))}
-      {allowResolve &&
-        (isNumeric || isPseudoNumeric ? (
-          <NumericResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
-          />
-        ) : (
-          <ResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
-          />
-        ))}
-    </Col>
-  ) : null
-}
-
 export function ContractPageContent(
   props: Parameters<typeof ContractPage>[0] & {
     contract: Contract
   }
 ) {
-  const { backToHome, comments } = props
+  const { comments } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
@@ -249,16 +193,6 @@ export function ContractPageContent(
         />
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        {backToHome && (
-          <button
-            className="mb-4 items-center gap-2 self-start bg-white text-gray-700 lg:hidden"
-            onClick={backToHome}
-          >
-            <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
-            Back
-          </button>
-        )}
-
         <ContractOverview contract={contract} bets={nonChallengeBets} />
         <ContractDescription className="mb-6 px-2" contract={contract} />
 
@@ -320,6 +254,55 @@ export function ContractPageContent(
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
+}
+
+function ContractPageSidebar(props: { contract: Contract }) {
+  const { contract } = props
+  const { creatorId, isResolved, outcomeType } = contract
+  const user = useUser()
+  const isCreator = user?.id === creatorId
+  const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isNumeric = outcomeType === 'NUMERIC'
+  const allowTrade = tradingAllowed(contract)
+  const isAdmin = useAdmin()
+  const allowResolve =
+    !isResolved &&
+    (isCreator || (needsAdminToResolve(contract) && isAdmin)) &&
+    !!user
+
+  const hasSidePanel =
+    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
+
+  return hasSidePanel ? (
+    <Col className="gap-4">
+      {allowTrade &&
+        (isNumeric ? (
+          <NumericBetPanel className="hidden xl:flex" contract={contract} />
+        ) : (
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
+        ))}
+      {allowResolve &&
+        (isNumeric || isPseudoNumeric ? (
+          <NumericResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            isCreator={isCreator}
+            contract={contract}
+          />
+        ) : (
+          <ResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            isCreator={isCreator}
+            contract={contract}
+          />
+        ))}
+    </Col>
+  ) : null
 }
 
 const RecommendedContractsWidget = memo(

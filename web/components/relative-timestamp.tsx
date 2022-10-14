@@ -1,4 +1,4 @@
-import { DateTimeTooltip } from './datetime-tooltip'
+import { DateTimeTooltip } from './widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { useIsClient } from 'web/hooks/use-is-client'
 

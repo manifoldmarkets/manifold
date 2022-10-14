@@ -1,9 +1,9 @@
 import clsx from 'clsx'
-import { Avatar } from './avatar'
+import { Avatar } from './widgets/avatar'
 import { Row } from './layout/row'
-import { SiteLink } from './site-link'
-import { Table } from './table'
-import { Title } from './title'
+import { SiteLink } from './widgets/site-link'
+import { Table } from './widgets/table'
+import { Title } from './widgets/title'
 
 interface LeaderboardEntry {
   username: string

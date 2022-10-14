@@ -10,7 +10,7 @@ import { sum } from 'lodash'
 import { TipButton } from './tip-button'
 import { Contract } from 'common/contract'
 import { Post } from 'common/post'
-import { TipToast } from '../tipper'
+import { TipToast } from '../widgets/tipper'
 
 export function LikeItemButton(props: {
   item: Contract | Post

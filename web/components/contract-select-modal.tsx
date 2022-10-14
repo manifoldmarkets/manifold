@@ -1,11 +1,11 @@
 import { Contract } from 'common/contract'
 import { useState } from 'react'
-import { Button } from './button'
+import { Button } from './buttons/button'
 import { ContractSearch } from './contract-search'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
-import { LoadingIndicator } from './loading-indicator'
+import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function SelectMarketsModal(props: {
   title: string
