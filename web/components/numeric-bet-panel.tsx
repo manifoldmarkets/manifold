@@ -20,7 +20,7 @@ import { Row } from './layout/row'
 import { Spacer } from './layout/spacer'
 import { BetSignUpPrompt } from './sign-up-prompt'
 import { track } from 'web/lib/service/analytics'
-import { Button } from './button'
+import { Button } from './buttons/button'
 
 export function NumericBetPanel(props: {
   contract: NumericContract

@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
 import { Button, ColorType, SizeType } from './button'
-import { Col } from './layout/col'
-import { Modal } from './layout/modal'
-import { Row } from './layout/row'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
 
 export function ConfirmationButton(props: {
   openModalBtn: {

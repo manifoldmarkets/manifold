@@ -1,7 +1,7 @@
 import { Editor } from '@tiptap/react'
 import { DOMAIN } from 'common/envs/constants'
 import { useState } from 'react'
-import { Button } from '../button'
+import { Button } from '../buttons/button'
 import { RichContent } from '../editor'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'

@@ -21,7 +21,7 @@ import {
 } from 'web/lib/firebase/contracts'
 import { Row } from './layout/row'
 import { sellBet } from 'web/lib/firebase/api'
-import { ConfirmationButton } from './confirmation-button'
+import { ConfirmationButton } from './buttons/confirmation-button'
 import { OutcomeLabel } from './outcome-label'
 import { LoadingIndicator } from './loading-indicator'
 import { SiteLink } from './site-link'

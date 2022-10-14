@@ -4,7 +4,7 @@ import { PrivateUser, User } from 'common/user'
 import { MouseEventHandler, ReactNode, useEffect, useState } from 'react'
 
 import toast from 'react-hot-toast'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'

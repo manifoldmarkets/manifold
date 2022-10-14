@@ -24,7 +24,7 @@ import { Bet } from 'common/bet'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { lowerCase } from 'lodash'
-import { Button } from '../button'
+import { Button } from '../buttons/button'
 import { ExpandingInput } from '../expanding-input'
 
 export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {

@@ -1,4 +1,4 @@
-import { IconButton } from 'web/components/button'
+import { IconButton } from 'web/components/buttons/button'
 import {
   Contract,
   followContract,
@@ -14,7 +14,7 @@ import { track } from 'web/lib/service/analytics'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { Tooltip } from './tooltip'
+import { Tooltip } from '../tooltip'
 
 export const FollowMarketButton = (props: {
   contract: Contract

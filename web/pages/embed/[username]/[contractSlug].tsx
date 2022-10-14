@@ -3,7 +3,7 @@ import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect, useState } from 'react'
 import { BetInline } from 'web/components/bet-inline'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import {
   BinaryResolutionOrChance,
   ContractCard,

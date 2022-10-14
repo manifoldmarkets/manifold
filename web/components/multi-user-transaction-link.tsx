@@ -5,7 +5,7 @@ import { Col } from 'web/components/layout/col'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from 'web/components/avatar'
 import { UserLink } from 'web/components/user-link'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 
 export type MultiUserLinkInfo = {
   name: string

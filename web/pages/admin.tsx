@@ -11,7 +11,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { firestoreConsolePath } from 'common/envs/constants'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 

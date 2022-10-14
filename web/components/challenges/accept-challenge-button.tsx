@@ -9,7 +9,7 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/title'
 import { Row } from 'web/components/layout/row'
 import { formatMoney } from 'common/util/format'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import clsx from 'clsx'
 
 export function AcceptChallengeButton(props: {

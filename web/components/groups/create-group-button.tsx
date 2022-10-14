@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { groupPath } from 'web/lib/firebase/groups'
-import { ConfirmationButton } from '../confirmation-button'
+import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
 import { Title } from '../title'

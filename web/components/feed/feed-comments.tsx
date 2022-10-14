@@ -24,7 +24,7 @@ import { UserLink } from 'web/components/user-link'
 import { CommentInput } from '../comment-input'
 import { AwardBountyButton } from 'web/components/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
-import { IconButton } from '../button'
+import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 
 export type ReplyTo = { id: string; username: string }

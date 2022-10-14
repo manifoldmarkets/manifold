@@ -23,7 +23,7 @@ import { Donation } from 'web/components/charity/feed-items'
 import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 
 export default function CharityPageWrapper() {
   const router = useRouter()

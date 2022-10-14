@@ -8,7 +8,7 @@ import { OutcomeLabel } from './outcome-label'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useSaveBinaryShares } from './use-save-binary-shares'
 import { SellSharesModal } from './sell-modal'
-import { Button } from './button'
+import { Button } from './buttons/button'
 
 export function SellRow(props: {
   contract: BinaryContract | PseudoNumericContract

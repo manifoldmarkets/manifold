@@ -12,7 +12,7 @@ import {
   editorExtensions,
   useTextEditor,
 } from 'web/components/editor'
-import { Button } from '../button'
+import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'

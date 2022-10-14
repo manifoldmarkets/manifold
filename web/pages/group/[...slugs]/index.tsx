@@ -29,7 +29,7 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 
 import { ContractSearch } from 'web/components/contract-search'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { getPost, listPosts } from 'web/lib/firebase/posts'

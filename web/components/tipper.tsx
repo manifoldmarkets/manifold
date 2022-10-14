@@ -10,7 +10,7 @@ import { TipButton } from './contract/tip-button'
 import { Row } from './layout/row'
 import { LIKE_TIP_AMOUNT, TIP_UNDO_DURATION } from 'common/like'
 import { formatMoney } from 'common/util/format'
-import { Button } from './button'
+import { Button } from './buttons/button'
 import clsx from 'clsx'
 
 export function Tipper(prop: {

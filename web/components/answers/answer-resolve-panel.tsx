@@ -7,10 +7,10 @@ import { Col } from '../layout/col'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { ChooseCancelSelector } from '../yes-no-selector'
-import { ResolveConfirmationButton } from '../confirmation-button'
+import { ResolveConfirmationButton } from '../buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 import { BETTOR, PAST_BETS } from 'common/user'
-import { Button } from '../button'
+import { Button } from '../buttons/button'
 
 export function AnswerResolvePanel(props: {
   isAdmin: boolean

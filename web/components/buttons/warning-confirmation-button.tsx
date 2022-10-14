@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import React from 'react'
-
-import { Row } from './layout/row'
-import { ConfirmationButton } from './confirmation-button'
 import { ExclamationIcon } from '@heroicons/react/solid'
+
+import { Row } from '../layout/row'
+import { ConfirmationButton } from './confirmation-button'
 import { formatMoney } from 'common/util/format'
 import { Button, ColorType, SizeType } from './button'
 

@@ -1,6 +1,6 @@
 import { User } from 'common/user'
 import { useState } from 'react'
-import { TextButton } from 'web/components/text-button'
+import { TextButton } from 'web/components/buttons/text-button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { useUserLikedContracts } from 'web/hooks/use-likes'

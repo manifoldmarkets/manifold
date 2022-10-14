@@ -25,7 +25,7 @@ import {
 import { Bet } from 'common/bet'
 import { track } from 'web/lib/service/analytics'
 import { BetSignUpPrompt } from '../sign-up-prompt'
-import { WarningConfirmationButton } from '../warning-confirmation-button'
+import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 
 export function AnswerBetPanel(props: {
   answer: Answer

@@ -38,7 +38,7 @@ import {
 } from 'web/lib/service/algolia'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AdjustmentsIcon } from '@heroicons/react/solid'
-import { Button } from './button'
+import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { Title } from './title'
 import { Input } from './input'

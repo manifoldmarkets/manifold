@@ -3,7 +3,7 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { GroupLinkItem } from 'web/pages/groups'
 import { XIcon } from '@heroicons/react/outline'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import {
   addContractToGroup,

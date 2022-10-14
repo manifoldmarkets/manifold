@@ -11,7 +11,7 @@ import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
 import { useMemberIds } from 'web/hooks/use-group'
 import { Input } from '../input'
-import { Button } from '../button'
+import { Button } from '../buttons/button'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props

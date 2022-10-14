@@ -41,13 +41,13 @@ import { PillButton } from './buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
 import { PlayMoneyDisclaimer } from './play-money-disclaimer'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { WarningConfirmationButton } from './warning-confirmation-button'
+import { WarningConfirmationButton } from './buttons/warning-confirmation-button'
 import { MarketIntroPanel } from './market-intro-panel'
 import { Modal } from './layout/modal'
 import { Title } from './title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import { Button } from './button'
+import { Button } from './buttons/button'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract

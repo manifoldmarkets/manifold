@@ -9,7 +9,7 @@ import { Page } from 'web/components/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
