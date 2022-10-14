@@ -35,7 +35,7 @@ export default function CreateDateDocPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { editor, upload } = useTextEditor({})
+  const editor = useTextEditor({})
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
@@ -83,7 +83,8 @@ export default function CreateDateDocPage() {
             <Title className="!my-0 text-blue-500" text="Your Date Doc" />
             <Button
               type="submit"
-              disabled={isSubmitting || !isValid || upload.isLoading}
+              loading={isSubmitting}
+              disabled={!isValid || editor.storage.upload.mutation.isLoading}
               onClick={async () => {
                 setIsSubmitting(true)
                 await saveDateDoc()
@@ -112,7 +113,7 @@ export default function CreateDateDocPage() {
               <div className="">
                 Tell us about you! What are you looking for?
               </div>
-              <TextEditor editor={editor} upload={upload} />
+              <TextEditor editor={editor} />
             </Col>
 
             <Col className="gap-4">

@@ -177,9 +177,7 @@ export function RichEditPost(props: { post: Post }) {
   const { post } = props
   const [editing, setEditing] = useState(false)
 
-  const { editor, upload } = useTextEditor({
-    defaultValue: post.content,
-  })
+  const editor = useTextEditor({ defaultValue: post.content })
 
   async function savePost() {
     if (!editor) return
@@ -191,7 +189,7 @@ export function RichEditPost(props: { post: Post }) {
 
   return editing ? (
     <>
-      <TextEditor editor={editor} upload={upload} />
+      <TextEditor editor={editor} />
       <Spacer h={2} />
       <Row className="gap-2">
         <Button

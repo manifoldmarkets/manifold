@@ -223,7 +223,7 @@ export function NewContract(props: {
       ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
       : `e.g. I will choose the answer according to...`
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     key: 'create market',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
@@ -278,7 +278,7 @@ export function NewContract(props: {
 
   return (
     <div>
-      <label className="px-1 pt-2 pb-3">Answer type</label>
+      <label className="flex px-1 pt-2 pb-3">Answer type</label>
       <Row>
         <ChoicesToggleGroup
           currentChoice={outcomeType}
@@ -464,7 +464,7 @@ export function NewContract(props: {
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <TextEditor editor={editor} upload={upload} />
+        <TextEditor editor={editor} />
       </div>
 
       <Spacer h={6} />
@@ -517,7 +517,7 @@ export function NewContract(props: {
           type="submit"
           color="green"
           loading={isSubmitting}
-          disabled={!isValid || upload.isLoading}
+          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()

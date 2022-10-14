@@ -34,7 +34,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   const { group, post } = props
   const [editing, setEditing] = useState(false)
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     defaultValue: post?.content,
   })
 
@@ -69,7 +69,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
 
   return editing ? (
     <>
-      <TextEditor editor={editor} upload={upload} />
+      <TextEditor editor={editor} />
       <Spacer h={2} />
       <Row className="gap-2">
         <Button
