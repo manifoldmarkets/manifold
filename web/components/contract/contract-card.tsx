@@ -31,7 +31,7 @@ import {
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import { getColor, ProbBar, QuickBet } from './quick-bet'
+import { getColor, ProbBar, QuickBet } from '../bet/quick-bet'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser, useUserContractMetrics } from 'web/hooks/use-user'
 import { track } from '@amplitude/analytics-browser'

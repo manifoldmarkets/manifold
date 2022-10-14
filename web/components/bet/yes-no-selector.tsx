@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import React, { ReactNode } from 'react'
 import { formatMoney } from 'common/util/format'
-import { Col } from './layout/col'
-import { Row } from './layout/row'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { resolution } from 'common/contract'
 
 export function YesNoSelector(props: {

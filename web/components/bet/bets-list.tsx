@@ -11,20 +11,20 @@ import {
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { Col } from './layout/col'
-import { Spacer } from './layout/spacer'
+import { Col } from '../layout/col'
+import { Spacer } from '../layout/spacer'
 import {
   Contract,
   contractPath,
   getBinaryProbPercent,
   MAX_USER_BET_CONTRACTS_LOADED,
 } from 'web/lib/firebase/contracts'
-import { Row } from './layout/row'
+import { Row } from '../layout/row'
 import { sellBet } from 'web/lib/firebase/api'
-import { ConfirmationButton } from './buttons/confirmation-button'
-import { OutcomeLabel } from './outcome-label'
-import { LoadingIndicator } from './loading-indicator'
-import { SiteLink } from './site-link'
+import { ConfirmationButton } from '../buttons/confirmation-button'
+import { OutcomeLabel } from '../outcome-label'
+import { LoadingIndicator } from '../loading-indicator'
+import { SiteLink } from '../site-link'
 import {
   calculatePayout,
   calculateSaleAmount,
@@ -40,20 +40,20 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserBets } from 'web/hooks/use-user-bets'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { LimitBet } from 'common/bet'
-import { Pagination } from './pagination'
+import { Pagination } from '../pagination'
 import { LimitOrderTable } from './limit-bets'
 import { UserLink } from 'web/components/user-link'
 import { useUserBetContracts } from 'web/hooks/use-contracts'
 import { BetsSummary } from './bet-summary'
-import { ProfitBadge } from './profit-badge'
+import { ProfitBadge } from '../profit-badge'
 import {
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { ExclamationIcon } from '@heroicons/react/outline'
-import { Select } from './select'
-import { Table } from './table'
+import { Select } from '../select'
+import { Table } from '../table'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'

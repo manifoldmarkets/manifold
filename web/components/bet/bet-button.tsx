@@ -7,17 +7,17 @@ import {
   CPMMBinaryContract,
   PseudoNumericContract,
 } from 'common/contract'
-import { Modal } from './layout/modal'
+import { Modal } from '../layout/modal'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useSaveBinaryShares } from './use-save-binary-shares'
-import { Col } from './layout/col'
+import { useSaveBinaryShares } from '../use-save-binary-shares'
+import { Col } from '../layout/col'
 import { Button } from 'web/components/buttons/button'
-import { BetSignUpPrompt } from './sign-up-prompt'
+import { BetSignUpPrompt } from '../sign-up-prompt'
 import { User } from 'web/lib/firebase/users'
 import { SellRow } from './sell-row'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { PlayMoneyDisclaimer } from './play-money-disclaimer'
+import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 
 /** Button that opens BetPanel in a new modal */
 export default function BetButton(props: {

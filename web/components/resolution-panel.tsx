@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 
 import { Col } from './layout/col'
 import { User } from 'web/lib/firebase/users'
-import { YesNoCancelSelector } from './yes-no-selector'
+import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'

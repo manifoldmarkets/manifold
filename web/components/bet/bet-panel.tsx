@@ -4,9 +4,9 @@ import { clamp, partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
-import { Col } from './layout/col'
-import { Row } from './layout/row'
-import { Spacer } from './layout/spacer'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
 import {
   formatLargeNumber,
   formatMoney,
@@ -17,37 +17,37 @@ import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
 import { Bet, LimitBet } from 'common/bet'
 import { APIError, placeBet, sellShares } from 'web/lib/firebase/api'
-import { AmountInput, BuyAmountInput } from './amount-input'
+import { AmountInput, BuyAmountInput } from '../amount-input'
 import {
   BinaryOutcomeLabel,
   HigherLabel,
   LowerLabel,
   NoLabel,
   YesLabel,
-} from './outcome-label'
+} from '../outcome-label'
 import { getContractBetMetrics, getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
-import { useSaveBinaryShares } from './use-save-binary-shares'
-import { BetSignUpPrompt } from './sign-up-prompt'
-import { ProbabilityOrNumericInput } from './probability-input'
+import { useSaveBinaryShares } from '../use-save-binary-shares'
+import { BetSignUpPrompt } from '../sign-up-prompt'
+import { ProbabilityOrNumericInput } from '../probability-input'
 import { track } from 'web/lib/service/analytics'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { LimitBets } from './limit-bets'
-import { PillButton } from './buttons/pill-button'
+import { PillButton } from '../buttons/pill-button'
 import { YesNoSelector } from './yes-no-selector'
-import { PlayMoneyDisclaimer } from './play-money-disclaimer'
+import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { WarningConfirmationButton } from './buttons/warning-confirmation-button'
-import { MarketIntroPanel } from './market-intro-panel'
-import { Modal } from './layout/modal'
-import { Title } from './title'
+import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
+import { MarketIntroPanel } from '../market-intro-panel'
+import { Modal } from '../layout/modal'
+import { Title } from '../title'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import { Button } from './buttons/button'
+import { Button } from '../buttons/button'
 
 export function BetPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract

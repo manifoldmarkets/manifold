@@ -11,7 +11,7 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton, { BinaryMobileBetting } from '../bet-button'
+import BetButton, { BinaryMobileBetting } from '../bet/bet-button'
 import {
   Contract,
   CPMMContract,

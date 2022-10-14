@@ -3,17 +3,17 @@ import clsx from 'clsx'
 
 import { Bet } from 'web/lib/firebase/bets'
 import { formatMoney, formatWithCommas } from 'common/util/format'
-import { Col } from './layout/col'
+import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
-import { Row } from './layout/row'
-import { YesLabel, NoLabel } from './outcome-label'
+import { Row } from '../layout/row'
+import { YesLabel, NoLabel } from '../outcome-label'
 import {
   calculatePayout,
   getContractBetMetrics,
   getProbability,
 } from 'common/calculate'
-import { InfoTooltip } from './info-tooltip'
-import { ProfitBadge } from './profit-badge'
+import { InfoTooltip } from '../info-tooltip'
+import { ProfitBadge } from '../profit-badge'
 
 export function BetsSummary(props: {
   contract: Contract

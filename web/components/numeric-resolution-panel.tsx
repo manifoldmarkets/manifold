@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 
 import { Col } from './layout/col'
 import { User } from 'web/lib/firebase/users'
-import { NumberCancelSelector } from './yes-no-selector'
+import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { NumericContract, PseudoNumericContract } from 'common/contract'
