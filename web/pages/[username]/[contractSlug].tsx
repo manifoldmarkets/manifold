@@ -1,5 +1,4 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeftIcon } from '@heroicons/react/outline'
 import dayjs from 'dayjs'
 
 import { useContractWithPreload } from 'web/hooks/use-contract'
@@ -78,7 +77,6 @@ export default function ContractPage(props: {
   contract: Contract | null
   bets: Bet[]
   comments: ContractComment[]
-  backToHome?: () => void
 }) {
   props = usePropz(props, getStaticPropz) ?? {
     contract: null,
@@ -110,7 +108,7 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { backToHome, comments } = props
+  const { comments } = props
   const contract = useContractWithPreload(props.contract) ?? props.contract
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
@@ -200,16 +198,6 @@ export function ContractPageContent(
         />
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        {backToHome && (
-          <button
-            className="mb-4 items-center gap-2 self-start bg-white text-gray-700 lg:hidden"
-            onClick={backToHome}
-          >
-            <ArrowLeftIcon className="h-5 w-5 text-gray-700" />
-            Back
-          </button>
-        )}
-
         <ContractOverview contract={contract} bets={nonChallengeBets} />
         <ContractDescription className="mb-6 px-2" contract={contract} />
 
