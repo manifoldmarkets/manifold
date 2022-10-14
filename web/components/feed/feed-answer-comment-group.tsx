@@ -53,10 +53,10 @@ export function CommentsAnswer(props: {
           background: color ? color : '#B1B1C7',
         }}
       />
-      <Col className="w-fit gap-1 bg-gray-100 py-2 pl-2 pr-4">
+      <Col className="w-fit bg-gray-100 py-1 pl-2 pr-2">
         <Row className="gap-2">
-          <Avatar username={username} avatarUrl={avatarUrl} size="xxs" />
-          <div className="text-greyscale-6 text-xs">
+          {/* <Avatar username={username} avatarUrl={avatarUrl} size="xxs" /> */}
+          <div className="text-greyscale-4 text-xs">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
               prefix={contract.creatorUsername}
@@ -88,9 +88,7 @@ export function FreeResponseComments(props: {
     commentsByParent,
     tips,
   } = props
-  const answersArray = useChartAnswers(contract).map(
-    (answer, _index) => answer.text
-  )
+  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
   return (
     <>
       {answerResponse && (
@@ -126,30 +124,30 @@ export function FreeResponseComments(props: {
         const color = getAnswerColor(answer, answersArray)
         return (
           <>
-            <Row className="gap-2">
-              <CommentsAnswer
-                answer={answer}
-                contract={contract}
-                color={color}
-              />
-            </Row>
-            <Row>
-              <div className="ml-1">
-                <Curve size={28} strokeWidth={1} color="#D8D8EB" />
+            <Row className="relative">
+              <div className="absolute -bottom-1 left-1.5">
+                <Curve size={32} strokeWidth={1} color="#D8D8EB" />
               </div>
-              <div className="w-full pt-1">
-                <FeedCommentThread
-                  key={parent.id}
+              <div className="ml-[38px]">
+                <CommentsAnswer
+                  answer={answer}
                   contract={contract}
-                  parentComment={parent}
-                  threadComments={sortBy(
-                    commentsByParent[parent.id] ?? [],
-                    (c) => c.createdTime
-                  )}
-                  tips={tips}
+                  color={color}
                 />
               </div>
             </Row>
+            <div className="w-full pt-1">
+              <FeedCommentThread
+                key={parent.id}
+                contract={contract}
+                parentComment={parent}
+                threadComments={sortBy(
+                  commentsByParent[parent.id] ?? [],
+                  (c) => c.createdTime
+                )}
+                tips={tips}
+              />
+            </div>
           </>
         )
       })}

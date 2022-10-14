@@ -156,7 +156,7 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
           tips={tips}
         />
       )}
-      {contract.outcomeType != 'FREE_RESPONSE' &&
+      {contract.outcomeType !== 'FREE_RESPONSE' &&
         topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}
