@@ -7,7 +7,6 @@ import {
 import React, { useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { useRouter } from 'next/router'
 import { UserLink } from 'web/components/user-link'
@@ -26,7 +25,7 @@ export function CommentsAnswer(props: {
   color: string
 }) {
   const { answer, contract, color } = props
-  const { username, avatarUrl, name, text } = answer
+  const { username, name, text } = answer
   const answerElementId = `answer-${answer.id}`
 
   const { isReady, asPath } = useRouter()
@@ -55,7 +54,6 @@ export function CommentsAnswer(props: {
       />
       <Col className="w-fit bg-gray-100 py-1 pl-2 pr-2">
         <Row className="gap-2">
-          {/* <Avatar username={username} avatarUrl={avatarUrl} size="xxs" /> */}
           <div className="text-greyscale-4 text-xs">
             <UserLink username={username} name={name} /> answered
             <CopyLinkDateTimeComponent
