@@ -100,6 +100,7 @@ const stringParseExts = [
       '[embed]' + node.attrs.src ? `(${node.attrs.src})` : '',
   }),
   skippableComponent('gridCardsComponent'),
+  skippableComponent('staticReactEmbedComponent'),
   TiptapTweet.extend({ renderText: () => '[tweet]' }),
   TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),
 ]
