@@ -7,7 +7,7 @@ import { useUserLikedContracts } from 'web/hooks/use-likes'
 import { SiteLink } from 'web/components/site-link'
 import { Row } from 'web/components/layout/row'
 import { XIcon } from '@heroicons/react/outline'
-import { unLikeContract } from 'web/lib/firebase/likes'
+import { unLikeItem } from 'web/lib/firebase/likes'
 import { contractPath } from 'web/lib/firebase/contracts'
 
 export function UserLikesButton(props: { user: User; className?: string }) {
@@ -36,7 +36,7 @@ export function UserLikesButton(props: { user: User; className?: string }) {
                 </SiteLink>
                 <XIcon
                   className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
-                  onClick={() => unLikeContract(user.id, likedContract.id)}
+                  onClick={() => unLikeItem(user.id, likedContract.id)}
                 />
               </Row>
             ))}

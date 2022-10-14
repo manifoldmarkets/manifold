@@ -10,6 +10,7 @@ export type AnyOutcomeType =
   | PseudoNumeric
   | FreeResponse
   | Numeric
+
 export type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)

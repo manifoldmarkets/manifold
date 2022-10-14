@@ -6,7 +6,7 @@ import { IconButton } from 'web/components/button'
 import { useUser } from 'web/hooks/use-user'
 import { ShareModal } from './share-modal'
 import { FollowMarketButton } from 'web/components/follow-market-button'
-import { LikeMarketButton } from 'web/components/contract/like-market-button'
+import { LikeItemButton } from 'web/components/contract/like-item-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { Tooltip } from '../tooltip'
 
@@ -19,7 +19,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
     <Row className="gap-1">
       <FollowMarketButton contract={contract} user={user} />
 
-      <LikeMarketButton contract={contract} user={user} />
+      <LikeItemButton item={contract} user={user} itemType={'contract'} />
 
       <Tooltip text="Share" placement="bottom" noTap noFade>
         <IconButton

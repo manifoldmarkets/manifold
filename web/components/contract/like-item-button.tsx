@@ -1,23 +1,25 @@
 import React, { useMemo, useState } from 'react'
-import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
 import toast from 'react-hot-toast'
-import { likeContract } from 'web/lib/firebase/likes'
+import { likeItem } from 'web/lib/firebase/likes'
 import { LIKE_TIP_AMOUNT, TIP_UNDO_DURATION } from 'common/like'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { useMarketTipTxns } from 'web/hooks/use-tip-txns'
+import { useItemTipTxns } from 'web/hooks/use-tip-txns'
 import { sum } from 'lodash'
 import { TipButton } from './tip-button'
+import { Contract } from 'common/contract'
+import { Post } from 'common/post'
 import { TipToast } from '../tipper'
 
-export function LikeMarketButton(props: {
-  contract: Contract
+export function LikeItemButton(props: {
+  item: Contract | Post
   user: User | null | undefined
+  itemType: string
 }) {
-  const { contract, user } = props
+  const { item, user, itemType } = props
 
-  const tips = useMarketTipTxns(contract.id)
+  const tips = useItemTipTxns(item.id)
 
   const totalTipped = useMemo(() => {
     return sum(tips.map((tip) => tip.amount))
@@ -27,21 +29,22 @@ export function LikeMarketButton(props: {
 
   const [isLiking, setIsLiking] = useState(false)
 
-  const userLikedContractIds = likes
-    ?.filter((l) => l.type === 'contract')
+  const userLikedItemIds = likes
+    ?.filter((l) => l.type === 'contract' || l.type === 'post')
     .map((l) => l.id)
 
   const onLike = async () => {
     if (!user) return firebaseLogin()
 
     setIsLiking(true)
+
     const timeoutId = setTimeout(() => {
-      likeContract(user, contract).catch(() => setIsLiking(false))
+      likeItem(user, item, itemType).catch(() => setIsLiking(false))
     }, 3000)
     toast.custom(
       () => (
         <TipToast
-          userName={contract.creatorUsername}
+          userName={item.creatorUsername}
           onUndoClick={() => {
             clearTimeout(timeoutId)
           }}
@@ -59,10 +62,10 @@ export function LikeMarketButton(props: {
       userTipped={
         !!user &&
         (isLiking ||
-          userLikedContractIds?.includes(contract.id) ||
-          (!likes && !!contract.likedByUserIds?.includes(user.id)))
+          userLikedItemIds?.includes(item.id) ||
+          (!likes && !!item.likedByUserIds?.includes(user.id)))
       }
-      disabled={contract.creatorId === user?.id}
+      disabled={item.creatorId === user?.id}
     />
   )
 }
