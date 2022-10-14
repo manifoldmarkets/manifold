@@ -28,7 +28,6 @@ dayjs.extend(utc)
 
 import { track } from '@amplitude/analytics-browser'
 import { Like } from 'common/like'
-import { fakeUser, setFbUser } from 'web/components/auth-context'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
@@ -186,13 +185,14 @@ export async function setCachedReferralInfoForUser(user: User | null) {
 }
 
 export async function firebaseLogin() {
-  // if ((window as any).isNative) {
-  //   Post the message back to expo
-  // ;(window as any).ReactNativeWebView.postMessage('googleLoginClicked')
-  // return
+  if ((window as any).isNative) {
+    // Post the message back to expo
+    ;(window as any).ReactNativeWebView.postMessage('googleLoginClicked')
+    return
+  }
   // } else {
-  await setFbUser(fakeUser)
-  return
+  // await setFbUser(fakeUser)
+  // return
   // }
   // const provider = new GoogleAuthProvider()
   // return signInWithPopup(auth, provider).then(async (result) => {

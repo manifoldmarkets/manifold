@@ -54,23 +54,6 @@ export const setUserCookie = (cookie: string | undefined) => {
 
 export const AuthContext = createContext<AuthUser>(undefined)
 
-export const setFbUser = async (deserializedUser: any) => {
-  try {
-    const clientAuth = auth as FirebaseAuthInternal
-    const persistenceManager = clientAuth.persistenceManager
-    const persistence = persistenceManager.persistence
-    await persistence._set(persistenceManager.fullUserKey, deserializedUser)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const fbUser = (await persistenceManager.getCurrentUser())!
-    await fbUser.getIdToken() // forces a refresh if necessary
-    await updateCurrentUser(auth, fbUser)
-  } catch (e) {
-    // setShowData(e)
-    ;(window as any).ReactNativeWebView.postMessage('error setting fb user')
-    console.error('deserializing', e)
-    return null
-  }
-}
 export function AuthProvider(props: {
   children: ReactNode
   serverUser?: AuthUser
@@ -78,16 +61,45 @@ export function AuthProvider(props: {
   const { children, serverUser } = props
   const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
   const [showData, setShowData] = useState<string | null>()
+
   const handleNativeMessage = (e: any) => {
-    // const event = JSON.parse(e.data)
-    // const data = event.data
-    // console.log('got fbUser from native', data)
-    // setShowData(JSON.stringify(fakeUser))
-    setFbUser(fakeUser)
-    ;(window as any).ReactNativeWebView.postMessage('set user on web')
+    try {
+      const event = JSON.parse(e.data)
+      const data = event.data
+      // console.log('got fbUser from native', data)
+      // setShowData(JSON.stringify(fakeUser))
+      ;(window as any).ReactNativeWebView.postMessage('received fbUser')
+      setFbUser(data)
+    } catch (e) {
+      console.log('error parsing native message', e)
+      return
+    }
     // const cred = OAuthCredential.fromJSON(data)
     // const cred = GoogleAuthProvider.credential(data)
     // if (cred) signInWithCredential(auth, cred)
+  }
+
+  const setFbUser = async (deserializedUser: any) => {
+    try {
+      const clientAuth = auth as FirebaseAuthInternal
+      const persistenceManager = clientAuth.persistenceManager
+      const persistence = persistenceManager.persistence
+      await persistence._set(persistenceManager.fullUserKey, deserializedUser)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const fbUser = (await persistenceManager.getCurrentUser())!
+      ;(window as any).ReactNativeWebView.postMessage(`called fbuser ${fbUser}`)
+      await fbUser?.getIdToken() // forces a refresh if necessary
+      await updateCurrentUser(auth, fbUser)
+      // const credential = GoogleAuthProvider.credential(idToken)
+      // await signInWithCredential(auth, credential)
+    } catch (e) {
+      // setShowData(e)
+      ;(window as any).ReactNativeWebView.postMessage(
+        `error setting fb user ${e}`
+      )
+      console.error('deserializing', e)
+      return null
+    }
   }
   useEffect(() => {
     // if ((window as any).isNative) {
@@ -107,7 +119,7 @@ export function AuthProvider(props: {
       if ((window as any).isNative) {
         // TODO: also communicate sign out
         // Post the message back to expo
-        ;(window as any).ReactNativeWebView.postMessage(cachedUser)
+        ;(window as any).ReactNativeWebView.postMessage('loading cached user')
       }
     }
   }, [setAuthUser, serverUser])
@@ -126,6 +138,7 @@ export function AuthProvider(props: {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
+        ;(window as any).ReactNativeWebView.postMessage(`on id token changed`)
         if (fbUser) {
           setUserCookie(JSON.stringify(fbUser.toJSON()))
           let current = await getUserAndPrivateUser(fbUser.uid)
