@@ -20,8 +20,6 @@ export function Tipper(prop: {
 }) {
   const { comment, myTip, totalTip } = prop
 
-  const [didTip, setDidTip] = useState(false)
-
   // This is a temporary tipping amount before it actually gets confirmed. This is so tha we dont accidentally tip more than you have
   const [tempTip, setTempTip] = useState(0)
 
@@ -64,7 +62,6 @@ export function Tipper(prop: {
 
   const addTip = (delta: number) => {
     setTempTip(tempTip + delta)
-    setDidTip(true)
     const timeoutId = setTimeout(() => {
       me &&
         saveTip(me, comment, delta)
@@ -94,7 +91,7 @@ export function Tipper(prop: {
         tipAmount={LIKE_TIP_AMOUNT}
         totalTipped={totalTip}
         onClick={() => addTip(+LIKE_TIP_AMOUNT)}
-        userTipped={didTip || myTip > 0}
+        userTipped={tempTip > 0 || myTip > 0}
         disabled={!canUp}
         isCompact
       />
@@ -105,6 +102,15 @@ export function Tipper(prop: {
 export function TipToast(props: { userName: string; onUndoClick: () => void }) {
   const { userName, onUndoClick } = props
   const [cancelled, setCancelled] = useState(false)
+
+  // There is a strange bug with toast where sometimes if you interact with one popup, the others will not dissappear at the right time, overriding it for now with this
+  const [timedOut, setTimedOut] = useState(false)
+  setTimeout(() => {
+    setTimedOut(true)
+  }, TIP_UNDO_DURATION)
+  if (timedOut) {
+    return <></>
+  }
   return (
     <div className="relative overflow-hidden rounded-lg bg-white drop-shadow-md">
       <div
