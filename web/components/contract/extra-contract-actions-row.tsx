@@ -19,7 +19,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
     <Row className="gap-1">
       <FollowMarketButton contract={contract} user={user} />
 
-      <LikeItemButton item={contract} user={user} />
+      <LikeItemButton item={contract} user={user} itemType={'contract'} />
 
       <Tooltip text="Share" placement="bottom" noTap noFade>
         <IconButton

@@ -94,7 +94,7 @@ export default function PostPage(props: {
             </div>
           </Col>
           <Row className="items-center">
-            <LikeItemButton item={post} user={user} />
+            <LikeItemButton item={post} user={user} itemType={'post'} />
 
             <Col className="px-2">
               <Button

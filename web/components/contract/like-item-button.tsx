@@ -15,8 +15,9 @@ import { Post } from 'common/post'
 export function LikeItemButton(props: {
   item: Contract | Post
   user: User | null | undefined
+  itemType: string
 }) {
-  const { item, user } = props
+  const { item, user, itemType } = props
 
   const tips = useItemTipTxns(item.id)
 
@@ -36,7 +37,7 @@ export function LikeItemButton(props: {
     if (!user) return firebaseLogin()
 
     setIsLiking(true)
-    likeItem(user, item).catch(() => setIsLiking(false))
+    likeItem(user, item, itemType).catch(() => setIsLiking(false))
 
     toast(`You tipped ${item.creatorName} ${formatMoney(LIKE_TIP_AMOUNT)}!`)
   }

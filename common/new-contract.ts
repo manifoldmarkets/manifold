@@ -78,7 +78,6 @@ export function getNewContract(
       liquidityFee: 0,
       platformFee: 0,
     },
-    itemType: 'contract',
   })
 
   return contract as Contract

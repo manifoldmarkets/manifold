@@ -18,7 +18,11 @@ export const unLikeItem = async (userId: string, itemId: string) => {
   return await deleteDoc(ref)
 }
 
-export const likeItem = async (user: User, item: Contract | Post) => {
+export const likeItem = async (
+  user: User,
+  item: Contract | Post,
+  itemType: string
+) => {
   if (user.balance < LIKE_TIP_AMOUNT) {
     toast('You do not have enough M$ to like this market!')
     return
@@ -34,7 +38,7 @@ export const likeItem = async (user: User, item: Contract | Post) => {
       token: 'M$',
       category: 'TIP',
       data: { contractId: item.id },
-      description: `${user.name} liked ${item.itemType} ${item.id} for M$ ${LIKE_TIP_AMOUNT} to ${item.creatorId} `,
+      description: `${user.name} liked ${itemType}${item.id} for M$ ${LIKE_TIP_AMOUNT} to ${item.creatorId} `,
     })
     console.log('result', result)
   }
@@ -45,7 +49,7 @@ export const likeItem = async (user: User, item: Contract | Post) => {
     id: ref.id,
     userId: user.id,
     createdTime: Date.now(),
-    type: item.itemType,
+    type: itemType,
     tipTxnId: result.txn.id,
   } as Like)
   track('like', {

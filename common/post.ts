@@ -16,8 +16,6 @@ export type Post = {
 
   likedByUserIds?: string[]
   likedByUserCount?: number
-
-  itemType: 'post'
 }
 
 export type DateDoc = Post & {
