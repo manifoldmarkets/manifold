@@ -105,55 +105,6 @@ export function needsAdminToResolve(contract: Contract) {
   return !contract.isResolved && dayjs().diff(contract.closeTime, 'day') > 7
 }
 
-export function ContractPageSidebar(props: { contract: Contract }) {
-  const { contract } = props
-  const { creatorId, isResolved, outcomeType } = contract
-  const user = useUser()
-  const isCreator = user?.id === creatorId
-  const isBinary = outcomeType === 'BINARY'
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isNumeric = outcomeType === 'NUMERIC'
-  const allowTrade = tradingAllowed(contract)
-  const isAdmin = useAdmin()
-  const allowResolve =
-    !isResolved &&
-    (isCreator || (needsAdminToResolve(contract) && isAdmin)) &&
-    !!user
-
-  const hasSidePanel =
-    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
-
-  return hasSidePanel ? (
-    <Col className="gap-4">
-      {allowTrade &&
-        (isNumeric ? (
-          <NumericBetPanel className="hidden xl:flex" contract={contract} />
-        ) : (
-          <BetPanel
-            className="hidden xl:flex"
-            contract={contract as CPMMBinaryContract}
-          />
-        ))}
-      {allowResolve &&
-        (isNumeric || isPseudoNumeric ? (
-          <NumericResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
-          />
-        ) : (
-          <ResolutionPanel
-            isAdmin={isAdmin}
-            creator={user}
-            isCreator={isCreator}
-            contract={contract}
-          />
-        ))}
-    </Col>
-  ) : null
-}
-
 export function ContractPageContent(
   props: Parameters<typeof ContractPage>[0] & {
     contract: Contract
@@ -320,6 +271,55 @@ export function ContractPageContent(
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
+}
+
+export function ContractPageSidebar(props: { contract: Contract }) {
+  const { contract } = props
+  const { creatorId, isResolved, outcomeType } = contract
+  const user = useUser()
+  const isCreator = user?.id === creatorId
+  const isBinary = outcomeType === 'BINARY'
+  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const isNumeric = outcomeType === 'NUMERIC'
+  const allowTrade = tradingAllowed(contract)
+  const isAdmin = useAdmin()
+  const allowResolve =
+    !isResolved &&
+    (isCreator || (needsAdminToResolve(contract) && isAdmin)) &&
+    !!user
+
+  const hasSidePanel =
+    (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
+
+  return hasSidePanel ? (
+    <Col className="gap-4">
+      {allowTrade &&
+        (isNumeric ? (
+          <NumericBetPanel className="hidden xl:flex" contract={contract} />
+        ) : (
+          <BetPanel
+            className="hidden xl:flex"
+            contract={contract as CPMMBinaryContract}
+          />
+        ))}
+      {allowResolve &&
+        (isNumeric || isPseudoNumeric ? (
+          <NumericResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            isCreator={isCreator}
+            contract={contract}
+          />
+        ) : (
+          <ResolutionPanel
+            isAdmin={isAdmin}
+            creator={user}
+            isCreator={isCreator}
+            contract={contract}
+          />
+        ))}
+    </Col>
+  ) : null
 }
 
 const RecommendedContractsWidget = memo(
