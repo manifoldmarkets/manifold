@@ -81,6 +81,7 @@ export function Tipper(prop: {
       { duration: TIP_UNDO_DURATION }
     )
   }
+
   const canUp =
     me && comment.userId !== me.id && me.balance - tempTip >= LIKE_TIP_AMOUNT
 
