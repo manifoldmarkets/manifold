@@ -18,7 +18,7 @@ import { track } from 'web/lib/service/analytics'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import {
   usePrivateUser,
   useUser,
@@ -51,7 +51,7 @@ import {
 } from 'web/hooks/use-contracts'
 import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/loading-indicator'
-import { Input } from 'web/components/input'
+import { Input } from 'web/components/widgets/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
 import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
 import { getPost } from 'web/lib/firebase/posts'

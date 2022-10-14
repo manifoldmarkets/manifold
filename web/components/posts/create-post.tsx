@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Spacer } from 'web/components/layout/spacer'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 
-import { TextEditor, useTextEditor } from 'web/components/editor'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { createPost } from 'web/lib/firebase/api'
 import Router from 'next/router'
 import { MAX_POST_TITLE_LENGTH } from 'common/post'
 import { postPath } from 'web/lib/firebase/posts'
 import { Group } from 'common/group'
-import { ExpandingInput } from '../expanding-input'
+import { ExpandingInput } from '../widgets/expanding-input'
 import { Button } from '../buttons/button'
 
 export function CreatePost(props: { group?: Group }) {

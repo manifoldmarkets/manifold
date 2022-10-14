@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { FundsSelector } from 'web/components/bet/yes-no-selector'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'

@@ -3,7 +3,7 @@ import { LinkIcon } from '@heroicons/react/outline'
 import { Menu, Transition } from '@headlessui/react'
 import clsx from 'clsx'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { ToastClipboard } from 'web/components/toast-clipboard'
+import { ToastClipboard } from 'web/components/widgets/toast-clipboard'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 

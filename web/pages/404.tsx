@@ -1,6 +1,6 @@
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 
 export default function Custom404() {
   if (IS_PRIVATE_MANIFOLD) {

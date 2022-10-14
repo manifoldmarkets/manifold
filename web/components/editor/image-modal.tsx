@@ -1,7 +1,7 @@
 import { UploadIcon } from '@heroicons/react/outline'
 import { Editor } from '@tiptap/react'
 import { useState } from 'react'
-import { AlertBox } from '../alert-box'
+import { AlertBox } from '../widgets/alert-box'
 import { Button } from '../buttons/button'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { Col } from '../layout/col'

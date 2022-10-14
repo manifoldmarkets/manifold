@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from './button'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 
 export const CreateQuestionButton = () => {
   return (

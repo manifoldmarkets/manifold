@@ -40,9 +40,9 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AdjustmentsIcon } from '@heroicons/react/solid'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
-import { Title } from './title'
-import { Input } from './input'
-import { Select } from './select'
+import { Title } from './widgets/title'
+import { Input } from './widgets/input'
+import { Select } from './widgets/select'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },

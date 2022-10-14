@@ -5,12 +5,12 @@ import { Post } from 'common/post'
 import Link from 'next/link'
 import { postPath } from 'web/lib/firebase/posts'
 import { fromNow } from 'web/lib/util/time'
-import { Avatar } from '../avatar'
-import { Card } from '../card'
+import { Avatar } from '../widgets/avatar'
+import { Card } from '../widgets/card'
 import { CardHighlightOptions } from '../contract/contracts-grid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { UserLink } from '../user-link'
+import { UserLink } from '../widgets/user-link'
 
 export function PostCard(props: {
   post: Post

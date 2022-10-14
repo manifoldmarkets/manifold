@@ -2,8 +2,8 @@ import clsx from 'clsx'
 import { ReactNode } from 'react'
 
 import React from 'react'
-import { Col } from './layout/col'
-import { Spacer } from './layout/spacer'
+import { Col } from '../layout/col'
+import { Spacer } from '../layout/spacer'
 import { Input } from './input'
 
 export function NumberInput(props: {

@@ -1,9 +1,9 @@
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
 import { DateDoc } from 'common/post'
-import { useTextEditor, TextEditor } from 'web/components/editor'
+import { useTextEditor, TextEditor } from 'web/components/widgets/editor'
 import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
 import { createPost } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
@@ -15,8 +15,8 @@ import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { NoSEO } from 'web/components/NoSEO'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { removeUndefinedProps } from 'common/util/object'
-import { Input } from 'web/components/input'
-import { ExpandingInput } from 'web/components/expanding-input'
+import { Input } from 'web/components/widgets/input'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
 
 export default function CreateDateDocPage() {
   const user = useUser()

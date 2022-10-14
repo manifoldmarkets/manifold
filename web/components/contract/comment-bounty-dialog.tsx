@@ -7,7 +7,7 @@ import { Row } from 'web/components/layout/row'
 import { formatMoney } from 'common/util/format'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 import { Button } from 'web/components/buttons/button'
-import { Title } from '../title'
+import { Title } from '../widgets/title'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 

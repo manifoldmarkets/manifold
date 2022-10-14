@@ -8,7 +8,7 @@ import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { NumericContract, PseudoNumericContract } from 'common/contract'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
-import { BucketInput } from './bucket-input'
+import { BucketInput } from './widgets/bucket-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTOR, BETTORS, PAST_BETS } from 'common/user'
 

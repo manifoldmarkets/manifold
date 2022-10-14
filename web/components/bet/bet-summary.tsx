@@ -12,7 +12,7 @@ import {
   getContractBetMetrics,
   getProbability,
 } from 'common/calculate'
-import { InfoTooltip } from '../info-tooltip'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
 
 export function BetsSummary(props: {

@@ -2,7 +2,7 @@ import { sortBy } from 'lodash'
 import React, { useRef } from 'react'
 
 import { Col } from 'web/components/layout/col'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'

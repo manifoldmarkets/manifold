@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import clsx from 'clsx'
-import { Spacer } from './layout/spacer'
-import { Row } from './layout/row'
+import { Spacer } from '../layout/spacer'
+import { Row } from '../layout/row'
 
 export function PaginationNextPrev(props: {
   className?: string

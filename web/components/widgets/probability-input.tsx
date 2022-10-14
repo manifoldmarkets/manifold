@@ -3,7 +3,7 @@ import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BucketInput } from './bucket-input'
 import { Input } from './input'
-import { Col } from './layout/col'
+import { Col } from '../layout/col'
 
 function ProbabilityInput(props: {
   prob: number | undefined

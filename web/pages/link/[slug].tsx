@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { claimManalink } from 'web/lib/firebase/api'
 import { useManalink } from 'web/lib/firebase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'

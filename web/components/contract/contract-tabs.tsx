@@ -1,5 +1,5 @@
 import { memo, useState } from 'react'
-import { Pagination } from 'web/components/pagination'
+import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { FreeResponseComments } from '../feed/feed-answer-comment-group'
@@ -26,7 +26,7 @@ import { ContractComment } from 'common/comment'
 
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
-import { Tooltip } from 'web/components/tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Row } from '../layout/row'
 import {

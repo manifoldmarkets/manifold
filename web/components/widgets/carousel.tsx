@@ -2,8 +2,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { throttle } from 'lodash'
 import { ReactNode, useRef, useState, useEffect } from 'react'
-import { Row } from './layout/row'
-import { VisibilityObserver } from 'web/components/visibility-observer'
+import { Row } from '../layout/row'
+import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
 export function Carousel(props: {
   children: ReactNode

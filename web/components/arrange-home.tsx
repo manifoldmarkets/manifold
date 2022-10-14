@@ -6,7 +6,7 @@ import { XCircleIcon } from '@heroicons/react/outline'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Subtitle } from 'web/components/subtitle'
+import { Subtitle } from 'web/components/widgets/subtitle'
 import { keyBy } from 'lodash'
 import { Button } from './buttons/button'
 import { updateUser } from 'web/lib/firebase/users'

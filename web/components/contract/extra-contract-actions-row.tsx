@@ -8,7 +8,7 @@ import { ShareModal } from './share-modal'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { LikeItemButton } from 'web/components/contract/like-item-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
-import { Tooltip } from '../tooltip'
+import { Tooltip } from '../widgets/tooltip'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props

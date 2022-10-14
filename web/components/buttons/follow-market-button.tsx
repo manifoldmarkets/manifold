@@ -14,7 +14,7 @@ import { track } from 'web/lib/service/analytics'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { Tooltip } from '../tooltip'
+import { Tooltip } from '../widgets/tooltip'
 
 export const FollowMarketButton = (props: {
   contract: Contract

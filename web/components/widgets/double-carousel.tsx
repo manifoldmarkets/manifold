@@ -1,6 +1,6 @@
 import { Contract } from 'common/contract'
 import { range } from 'lodash'
-import { Carousel } from 'web/components/carousel'
+import { Carousel } from 'web/components/widgets/carousel'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { ShowTime } from 'web/components/contract/contract-details'
 import { Col } from 'web/components/layout/col'

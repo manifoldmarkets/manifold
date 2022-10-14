@@ -3,7 +3,7 @@ import { Col } from '../layout/col'
 import { ContractChart } from 'web/components/charts/contract'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
-import { Linkify } from '../linkify'
+import { Linkify } from '../widgets/linkify'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,

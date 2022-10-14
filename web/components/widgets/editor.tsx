@@ -19,14 +19,14 @@ import { Linkify } from './linkify'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { useMutation } from 'react-query'
 import { linkClass } from './site-link'
-import { DisplayMention } from './editor/mention'
-import { DisplayContractMention } from './editor/contract-mention'
-import GridComponent from './editor/tiptap-grid-cards'
-import StaticReactEmbedComponent from './editor/tiptap-static-react-embed'
+import { DisplayMention } from '../editor/mention'
+import { DisplayContractMention } from '../editor/contract-mention'
+import GridComponent from '../editor/tiptap-grid-cards'
+import StaticReactEmbedComponent from '../editor/tiptap-static-react-embed'
 
 import Iframe from 'common/util/tiptap-iframe'
-import TiptapTweet from './editor/tiptap-tweet'
-import { EmbedModal } from './editor/embed-modal'
+import TiptapTweet from '../editor/tiptap-tweet'
+import { EmbedModal } from '../editor/embed-modal'
 import {
   CheckIcon,
   CodeIcon,
@@ -35,15 +35,15 @@ import {
   PresentationChartLineIcon,
   TrashIcon,
 } from '@heroicons/react/solid'
-import { MarketModal } from './editor/market-modal'
-import { insertContent } from './editor/utils'
+import { MarketModal } from '../editor/market-modal'
+import { insertContent } from '../editor/utils'
 import { Tooltip } from './tooltip'
 import BoldIcon from 'web/lib/icons/bold-icon'
 import ItalicIcon from 'web/lib/icons/italic-icon'
 import LinkIcon from 'web/lib/icons/link-icon'
 import { getUrl } from 'common/util/parse'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
-import { ImageModal } from './editor/image-modal'
+import { ImageModal } from '../editor/image-modal'
 import {
   storageStore,
   usePersistentState,

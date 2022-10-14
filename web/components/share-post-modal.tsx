@@ -1,6 +1,6 @@
 import { Modal } from './layout/modal'
 import { Col } from './layout/col'
-import { Title } from './title'
+import { Title } from './widgets/title'
 import { TweetButton } from './buttons/tweet-button'
 import { CopyLinkButton } from './buttons/copy-link-button'
 

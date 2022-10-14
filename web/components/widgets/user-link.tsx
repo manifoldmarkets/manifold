@@ -1,4 +1,4 @@
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import { useWindowSize } from 'web/hooks/use-window-size'
 

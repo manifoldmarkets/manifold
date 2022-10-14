@@ -4,7 +4,7 @@ import { XIcon } from '@heroicons/react/solid'
 
 import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
-import { BuyAmountInput } from '../amount-input'
+import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, placeBet } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
@@ -14,7 +14,7 @@ import {
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { InfoTooltip } from '../info-tooltip'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import {
   getDpmOutcomeProbability,

@@ -1,6 +1,6 @@
 import { Row } from '../layout/row'
-import { Content } from '../editor'
-import { TextEditor, useTextEditor } from 'web/components/editor'
+import { Content } from '../widgets/editor'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { Group } from 'common/group'

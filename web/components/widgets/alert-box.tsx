@@ -1,6 +1,6 @@
 import { ExclamationIcon } from '@heroicons/react/solid'
-import { Col } from './layout/col'
-import { Row } from './layout/row'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { Linkify } from './linkify'
 
 export function AlertBox(props: { title: string; text: string }) {

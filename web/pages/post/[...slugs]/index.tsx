@@ -2,9 +2,13 @@ import { Page } from 'web/components/page'
 
 import { postPath, getPostBySlug, updatePost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { Content, TextEditor, useTextEditor } from 'web/components/editor'
+import {
+  Content,
+  TextEditor,
+  useTextEditor,
+} from 'web/components/widgets/editor'
 import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon, ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -15,7 +19,7 @@ import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
-import { UserLink } from 'web/components/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
 import { PostComment } from 'common/comment'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
@@ -28,7 +32,7 @@ import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
-import { Subtitle } from 'web/components/subtitle'
+import { Subtitle } from 'web/components/widgets/subtitle'
 import { LikeItemButton } from 'web/components/contract/like-item-button'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {

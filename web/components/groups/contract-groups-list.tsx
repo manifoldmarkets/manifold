@@ -11,7 +11,7 @@ import {
 } from 'web/lib/firebase/groups'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { useGroupsWithContract, useMemberGroupIds } from 'web/hooks/use-group'
 import { Group } from 'common/group'
 
