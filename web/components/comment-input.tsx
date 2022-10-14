@@ -8,10 +8,12 @@ import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
 import Curve from 'web/public/custom-components/curve'
+import { getAnswerColor } from './answers/answers-panel'
 import { Avatar } from './avatar'
 import { TextEditor, useTextEditor } from './editor'
 import { CommentsAnswer } from './feed/feed-answer-comment-group'
 import { ContractCommentInput } from './feed/feed-comments'
+import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './loading-indicator'
 
@@ -81,20 +83,30 @@ export function AnswerCommentInput(props: {
   contract: Contract<AnyContractType>
   answerResponse: Answer
   onCancelAnswerResponse?: () => void
+  answersArray: string[]
 }) {
-  const { contract, answerResponse, onCancelAnswerResponse } = props
+  const { contract, answerResponse, onCancelAnswerResponse, answersArray } =
+    props
   const replyTo = {
     id: answerResponse.id,
     username: answerResponse.username,
   }
-
+  const color = getAnswerColor(answerResponse, answersArray)
   return (
     <>
-      <CommentsAnswer answer={answerResponse} contract={contract} />
-      <Row>
-        <div className="ml-1">
-          <Curve size={28} strokeWidth={1} color="#D8D8EB" />
-        </div>
+      <Col>
+        <Row className="relative">
+          <div className="absolute -bottom-1 left-1.5">
+            <Curve size={32} strokeWidth={1} color="#D8D8EB" />
+          </div>
+          <div className="ml-[38px]">
+            <CommentsAnswer
+              answer={answerResponse}
+              contract={contract}
+              color={color}
+            />
+          </div>
+        </Row>
         <div className="relative w-full pt-1">
           <ContractCommentInput
             contract={contract}
@@ -107,7 +119,7 @@ export function AnswerCommentInput(props: {
             <XCircleIcon className="text-greyscale-5 hover:text-greyscale-6 absolute -top-1 -right-2 h-5 w-5" />
           </button>
         </div>
-      </Row>
+      </Col>
     </>
   )
 }
