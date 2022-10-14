@@ -108,7 +108,7 @@ export function IconButton(props: {
       className={clsx(
         'inline-flex items-center justify-center transition-colors disabled:cursor-not-allowed',
         sizeClasses[size],
-        'disabled:text-greyscale-2 text-greyscale-6 hover:text-indigo-600',
+        'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6',
         className
       )}
       disabled={disabled || loading}
