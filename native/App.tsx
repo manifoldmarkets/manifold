@@ -1,20 +1,14 @@
-import { forwardRef, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as Google from 'expo-auth-session/providers/google'
-import { Button, Platform, View } from 'react-native'
-import WebView, { WebViewProps } from 'react-native-webview'
+import { Button, View } from 'react-native'
+import WebView from 'react-native-webview'
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithCredential,
 } from 'firebase/auth'
 import { initializeApp } from 'firebase/app'
-import {
-  doc,
-  getFirestore,
-  setDoc,
-  getDoc,
-  updateDoc,
-} from 'firebase/firestore'
+import { doc, getFirestore, getDoc, updateDoc } from 'firebase/firestore'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
 import 'expo-dev-client'
 import CookieManager from '@react-native-cookies/cookies'
@@ -44,10 +38,9 @@ const app = initializeApp({
   measurementId: 'G-YJC9E37P37',
 })
 const firestore = getFirestore(app)
+
+// no other uri works for API requests due to CORS
 const uri = 'http://localhost:3000/'
-// ? 'https://a6f7-154-9-128-144.ngrok.io'
-// : // : 'https://b9d7-24-128-53-123.ngrok.io'
-// const url = 'https://24f6-71-218-239-220.ngrok.io/IanPhilips';
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
@@ -78,27 +71,15 @@ export default function App() {
   }
   const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
   const useWebKit = true
-  // we can't just login to google via webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
+  // We can't just login to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.params
       const credential = GoogleAuthProvider.credential(id_token)
-      // on sign in from the native side, pass the webview the fb user
       signInWithCredential(auth, credential).then((result) => {
-        const fbUserPrint = JSON.stringify(result.user, null, 2) // spacing level = 2
         const fbUser = result.user.toJSON()
-
         if (webview.current) {
-          console.log('setting fbUser', fbUserPrint.slice(0, 100))
-          testFirestore()
           webview.current.postMessage(
-            // token
-            //   JSON.stringify({
-            //     type: 'nativeFbUser',
-            //     data: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2lkZW50aXR5dG9vbGtpdC5nb29nbGVhcGlzLmNvbS9nb29nbGUuaWRlbnRpdHkuaWRlbnRpdHl0b29sa2l0LnYxLklkZW50aXR5VG9vbGtpdCIsImlhdCI6MTY2NTc1OTIzNSwiZXhwIjoxNjY1NzYyODM1LCJpc3MiOiJmaXJlYmFzZS1hZG1pbnNkay1zaXI1bUBkZXYtbWFudGljLW1hcmtldHMuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1zaXI1bUBkZXYtbWFudGljLW1hcmtldHMuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJ1aWQiOiI2aEhwenZSRzBwTXE4UE5KczdSWmoycWxaR24yIn0.OP3RlXe8JXicZFzT6oQu0DrmsfrHewk2kSRsY0RMvkSl7NxXaX7JOhcZqoFAtOuk7Mk8XxRPKsfFBovjsG5r42WzoY6pCwu1t9QWxZS8uxmhMOPnsUd0dWWOCU2Fy4HqYtc39plz9i2tMNsGNyl93VWondmxh-xQLpddSGre3jyahHYRehGneaYxurcw9JAP41D4f9oIJsXcbpUs9dVYRJDGH-bkuKZpbfdR6ZOLU9uNEQfjDfXsgz0HXsNzBo56gXVtlMkmv0V9Y4dYx4T8rdrBxJ1sLwmK6poOcIloWzyr-cSigfv7mqiGhvyty8O5ixu8McyD4kmwEzVb6-PJwg',
-            //   })
-            // credential
-            // JSON.stringify({ type: 'nativeFbUser', data: credential.toJSON() })
             JSON.stringify({ type: 'nativeFbUser', data: fbUser })
           )
         }
@@ -144,7 +125,7 @@ export default function App() {
     } else if (nativeEvent.data === 'signOut') {
       console.log('signOut')
       setFbUser(null)
-      !isExpoClient && CookieManager.clearAll()
+      !isExpoClient && CookieManager.clearAll(useWebKit)
     } else {
       console.log('nativeEvent.data', nativeEvent.data)
     }
@@ -161,7 +142,6 @@ export default function App() {
         onMessage={handleMessage}
         onNavigationStateChange={async (navState) => {
           if (!navState.loading && !hasInjectedVariable && webview.current) {
-            // @ts-ignore
             webview.current.injectJavaScript('window.isNative = true')
             setHasInjectedVariable(true)
           }
