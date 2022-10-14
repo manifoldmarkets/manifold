@@ -95,6 +95,10 @@ function DreamTab(props: {
 
   return (
     <Col className="gap-2">
+      <AlertBox
+        title="Dreaming is currently broken 😴"
+        text="Follow updates here: https://github.com/vpzomtrrfrt/stability-client/issues/9"
+      />
       <Row className="gap-2">
         <input
           autoFocus
