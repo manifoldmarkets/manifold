@@ -102,7 +102,7 @@ export function AuthProvider(props: {
     )
   }, [setAuthUser])
 
-  const uid = authUser?.user.id
+  const uid = authUser ? authUser.user.id : authUser
   useEffect(() => {
     if (uid) {
       identifyUser(uid)
@@ -123,6 +123,7 @@ export function AuthProvider(props: {
     } else if (uid === null) {
       identifyUser(null)
     }
+    console.log('uid', uid)
   }, [uid, setAuthUser])
 
   const username = authUser?.user.username
