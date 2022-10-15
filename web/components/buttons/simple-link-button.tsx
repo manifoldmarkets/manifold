@@ -24,7 +24,7 @@ export const SimpleLinkButton = (props: {
         onClick={() => {
           copyToClipboard(getShareUrl(contract, user))
           toast.success('Link copied!')
-          track('copy market link')
+          track('copy share link')
         }}
       >
         <Col className={'items-center gap-x-2 sm:flex-row'}>
