@@ -96,7 +96,7 @@ export function ContractInfoDialog(props: {
     !contract.resolution &&
     CHALLENGES_ENABLED
 
-  const shareUrl = getShareUrl(contract, user)
+  const shareUrl = getShareUrl(contract, user?.username)
 
   return (
     <>
