@@ -20,7 +20,7 @@ export function CreatePost(props: { group?: Group }) {
 
   const { group } = props
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     key: `post ${group?.id || ''}`,
   })
 
@@ -87,7 +87,7 @@ export function CreatePost(props: { group?: Group }) {
                 Content<span className={'text-red-700'}> *</span>
               </span>
             </label>
-            <TextEditor editor={editor} upload={upload} />
+            <TextEditor editor={editor} />
             <Spacer h={6} />
 
             <Button
@@ -95,7 +95,7 @@ export function CreatePost(props: { group?: Group }) {
               color="green"
               size="xl"
               loading={isSubmitting}
-              disabled={!isValid || upload.isLoading}
+              disabled={!isValid || editor.storage.upload.mutation.isLoading}
               onClick={async () => {
                 setIsSubmitting(true)
                 await savePost(title)

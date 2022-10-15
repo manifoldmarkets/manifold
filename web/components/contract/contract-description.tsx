@@ -46,7 +46,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     // key: `description ${contract.id}`,
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
@@ -59,7 +59,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
 
   return editing ? (
     <>
-      <TextEditor editor={editor} upload={upload} />
+      <TextEditor editor={editor} />
       <Spacer h={2} />
       <Row className="gap-2">
         <Button

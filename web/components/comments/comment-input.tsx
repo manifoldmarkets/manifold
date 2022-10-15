@@ -37,7 +37,7 @@ export function CommentInput(props: {
   } = props
   const user = useUser()
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     key: `comment ${pageId} ${parentCommentId ?? parentAnswerOutcome ?? ''}`,
     simple: true,
     max: MAX_COMMENT_LENGTH,
@@ -69,7 +69,6 @@ export function CommentInput(props: {
       <div className="min-w-0 flex-1 pl-0.5 text-sm">
         <CommentInputTextArea
           editor={editor}
-          upload={upload}
           replyTo={replyTo}
           user={user}
           submitComment={submitComment}
@@ -128,11 +127,10 @@ export function CommentInputTextArea(props: {
   user: User | undefined | null
   replyTo?: { id: string; username: string }
   editor: Editor | null
-  upload: Parameters<typeof TextEditor>[0]['upload']
   submitComment: () => void
   isSubmitting: boolean
 }) {
-  const { user, editor, upload, submitComment, isSubmitting, replyTo } = props
+  const { user, editor, submitComment, isSubmitting, replyTo } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -181,22 +179,18 @@ export function CommentInputTextArea(props: {
   }, [editor])
 
   return (
-    <>
-      <TextEditor editor={editor} upload={upload}>
-        {user && !isSubmitting && (
-          <button
-            className="px-2 text-gray-400 hover:text-gray-500 disabled:bg-inherit disabled:text-gray-300"
-            disabled={!editor || editor.isEmpty}
-            onClick={submit}
-          >
-            <PaperAirplaneIcon className="m-0 h-[25px] min-w-[22px] rotate-90 p-0" />
-          </button>
-        )}
+    <TextEditor editor={editor}>
+      {user && !isSubmitting && (
+        <button
+          className="hover:text-greyscale-6 active:bg-greyscale-3 px-4 text-gray-400 transition-colors disabled:text-gray-300"
+          disabled={!editor || editor.isEmpty}
+          onClick={submit}
+        >
+          <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+        </button>
+      )}
 
-        {isSubmitting && (
-          <LoadingIndicator spinnerClassName="border-gray-500" />
-        )}
-      </TextEditor>
-    </>
+      {isSubmitting && <LoadingIndicator spinnerClassName="border-gray-500" />}
+    </TextEditor>
   )
 }
