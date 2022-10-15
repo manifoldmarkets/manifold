@@ -3,7 +3,7 @@ import { Col } from '../layout/col'
 import { ContractChart } from 'web/components/charts/contract'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
-import { Linkify } from '../linkify'
+import { Linkify } from '../widgets/linkify'
 import {
   BinaryResolutionOrChance,
   FreeResponseResolutionOrChance,
@@ -11,7 +11,7 @@ import {
   PseudoNumericResolutionOrExpectation,
 } from './contract-card'
 import { Bet } from 'common/bet'
-import BetButton, { BinaryMobileBetting } from '../bet-button'
+import BetButton, { BinaryMobileBetting } from '../bet/bet-button'
 import {
   Contract,
   CPMMContract,

@@ -4,11 +4,11 @@ import { User } from 'common/user'
 import { Fragment, useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { Menu, Transition } from '@headlessui/react'
-import { Avatar } from 'web/components/avatar'
+import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
 import { searchInAny } from 'common/util/parse'
-import { UserLink } from 'web/components/user-link'
-import { Input } from './input'
+import { UserLink } from 'web/components/widgets/user-link'
+import { Input } from './widgets/input'
 
 export function FilterSelectUsers(props: {
   setSelectedUsers: (users: User[]) => void

@@ -3,12 +3,12 @@ import dayjs from 'dayjs'
 import { BETTOR, User } from 'common/user'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar, EmptyAvatar } from 'web/components/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import React from 'react'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { UserLink } from 'web/components/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 
 export function FeedLiquidity(props: {
   className?: string

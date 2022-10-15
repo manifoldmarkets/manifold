@@ -7,7 +7,7 @@ import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { manaToUSD } from '../../../common/util/format'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
-import { Card } from '../card'
+import { Card } from '../widgets/card'
 
 export function CharityCard(props: { charity: Charity; match?: number }) {
   const { charity } = props

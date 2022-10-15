@@ -1,6 +1,6 @@
 import { Group } from 'common/group'
 import { Combobox } from '@headlessui/react'
-import { InfoTooltip } from 'web/components/info-tooltip'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import {
   CheckIcon,
   PlusCircleIcon,

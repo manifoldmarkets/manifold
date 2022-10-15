@@ -1,7 +1,7 @@
 import { Editor } from '@tiptap/react'
 import { Contract } from 'common/contract'
 import { SelectMarketsModal } from '../contract-select-modal'
-import { embedContractCode } from '../share-embed-button'
+import { embedContractCode } from '../buttons/share-embed-button'
 import { insertContent } from './utils'
 
 export function MarketModal(props: {

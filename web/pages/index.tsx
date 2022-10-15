@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import Router from 'next/router'
 
 import { Contract, getTrendingContracts } from 'web/lib/firebase/contracts'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { LandingPagePanel } from 'web/components/landing-page-panel'
 import { Col } from 'web/components/layout/col'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'

@@ -5,7 +5,7 @@ import { CurrencyDollarIcon } from '@heroicons/react/outline'
 import { Contract } from 'common/contract'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { Tooltip } from 'web/components/tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { CommentBountyDialog } from './comment-bounty-dialog'
 
 export function BountiedContractBadge() {

@@ -5,7 +5,7 @@ import {
   ReactNodeViewRenderer,
 } from '@tiptap/react'
 import clsx from 'clsx'
-import { Linkify } from '../linkify'
+import { Linkify } from '../widgets/linkify'
 import { mentionSuggestion } from './mention-suggestion'
 
 const name = 'mention-component'

@@ -2,15 +2,15 @@ import { sortBy } from 'lodash'
 import React, { useRef } from 'react'
 
 import { Col } from 'web/components/layout/col'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { Group } from 'common/group'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { withTracking } from 'web/lib/service/analytics'
 
 export default function GroupSelectorDialog(props: {

@@ -2,11 +2,11 @@ import clsx from 'clsx'
 import { useFollows } from 'web/hooks/use-follows'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { follow, unfollow } from 'web/lib/firebase/users'
-import { Avatar } from './avatar'
-import { FollowButton } from './follow-button'
+import { Avatar } from './widgets/avatar'
+import { FollowButton } from './buttons/follow-button'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import { UserLink } from 'web/components/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 
 export function FollowList(props: { userIds: string[] }) {
   const { userIds } = props

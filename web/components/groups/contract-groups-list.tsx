@@ -3,7 +3,7 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { GroupLinkItem } from 'web/pages/groups'
 import { XIcon } from '@heroicons/react/outline'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import {
   addContractToGroup,
@@ -11,7 +11,7 @@ import {
 } from 'web/lib/firebase/groups'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { useGroupsWithContract, useMemberGroupIds } from 'web/hooks/use-group'
 import { Group } from 'common/group'
 

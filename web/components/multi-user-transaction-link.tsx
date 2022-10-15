@@ -3,9 +3,9 @@ import { Row } from 'web/components/layout/row'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { formatMoney } from 'common/util/format'
-import { Avatar } from 'web/components/avatar'
-import { UserLink } from 'web/components/user-link'
-import { Button } from 'web/components/button'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { Button } from 'web/components/buttons/button'
 
 export type MultiUserLinkInfo = {
   name: string

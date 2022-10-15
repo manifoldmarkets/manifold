@@ -2,9 +2,9 @@ import { manaToUSD } from 'common/util/format'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
-import { Button } from './button'
+import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
-import { FundsSelector } from './yes-no-selector'
+import { FundsSelector } from './bet/yes-no-selector'
 
 export function AddFundsModal(props: {
   open: boolean

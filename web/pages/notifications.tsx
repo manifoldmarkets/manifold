@@ -7,16 +7,16 @@ import {
   Notification,
   notification_source_types,
 } from 'common/notification'
-import { Avatar, EmptyAvatar } from 'web/components/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
+import { Page } from 'web/components/layout/page'
+import { Title } from 'web/components/widgets/title'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { MANIFOLD_AVATAR_URL, PAST_BETS, PrivateUser } from 'common/user'
 import clsx from 'clsx'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Linkify } from 'web/components/linkify'
+import { Linkify } from 'web/components/widgets/linkify'
 import {
   BinaryOutcomeLabel,
   CancelLabel,
@@ -39,15 +39,15 @@ import {
 } from 'common/economy'
 import { groupBy, sum, uniqBy } from 'lodash'
 import { track } from '@amplitude/analytics-browser'
-import { Pagination } from 'web/components/pagination'
+import { Pagination } from 'web/components/widgets/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { SEO } from 'web/components/SEO'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { UserLink } from 'web/components/user-link'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { UserLink } from 'web/components/widgets/user-link'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import {
   MultiUserLinkInfo,
   MultiUserTransactionLink,

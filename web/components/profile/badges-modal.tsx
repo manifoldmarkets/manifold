@@ -12,9 +12,9 @@ import {
 } from 'common/badge'
 import { groupBy } from 'lodash'
 import { Row } from 'web/components/layout/row'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { contractPathWithoutContract } from 'web/lib/firebase/contracts'
-import { Tooltip } from 'web/components/tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   bronzeClassName,
   goldClassName,

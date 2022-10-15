@@ -5,7 +5,7 @@ import {
 } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import React, { useState } from 'react'
-import { Tooltip } from '../tooltip'
+import { Tooltip } from '../widgets/tooltip'
 import { EmbedModal } from './embed-modal'
 import { ImageModal } from './image-modal'
 import { MarketModal } from './market-modal'
