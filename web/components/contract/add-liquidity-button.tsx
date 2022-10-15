@@ -29,7 +29,7 @@ export function AddLiquidityButton(props: {
       onClick={() => setOpen(true)}
       target="_blank"
     >
-      <div>💧 Add liquidity</div>
+      <div>💧 Subsidize</div>
       <LiquidityModal contract={contract} isOpen={open} setOpen={setOpen} />
     </a>
   )
