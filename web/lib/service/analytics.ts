@@ -56,7 +56,7 @@ export const withTracking =
     await promise
   }
 
-export async function identifyUser(userId: string | undefined) {
+export async function identifyUser(userId: string | null) {
   if (userId) {
     setUserId(userId)
     Sprig.setUserId(userId)
