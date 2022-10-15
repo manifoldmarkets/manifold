@@ -1,7 +1,7 @@
-import { track } from '@amplitude/analytics-browser'
 import { Editor } from '@tiptap/core'
 import { sum } from 'lodash'
 import clsx from 'clsx'
+import { track } from 'web/lib/service/analytics'
 import { PostComment } from 'common/comment'
 import { Post } from 'common/post'
 import { Dictionary } from 'lodash'

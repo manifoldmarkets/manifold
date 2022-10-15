@@ -24,8 +24,8 @@ import {
   PostComment,
 } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
-import { track } from '@amplitude/analytics-browser'
 import { JSONContent } from '@tiptap/react'
+import { track } from '../service/analytics'
 
 export type { Comment }
 
