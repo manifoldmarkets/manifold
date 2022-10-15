@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
+import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 import { Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -19,10 +20,16 @@ import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
-import { IconButton } from '../buttons/button'
+import { Button, IconButton } from '../buttons/button'
 import { AddLiquidityButton } from './add-liquidity-button'
 import { Tooltip } from '../widgets/tooltip'
 import { Table } from '../widgets/table'
+import { ShareEmbedButton } from '../buttons/share-embed-button'
+import { CreateChallengeModal } from '../challenges/create-challenge-modal'
+import { CHALLENGES_ENABLED } from 'common/challenge'
+import { withTracking } from 'web/lib/service/analytics'
+import { QRCode } from '../widgets/qr-code'
+import { getShareUrl } from 'common/util/share'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -80,6 +87,16 @@ export function ContractInfoDialog(props: {
       setFeatured(false)
     }
   }
+
+  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
+    useState(false)
+  const showChallenge =
+    user &&
+    outcomeType === 'BINARY' &&
+    !contract.resolution &&
+    CHALLENGES_ENABLED
+
+  const shareUrl = getShareUrl(contract, user)
 
   return (
     <>
@@ -241,12 +258,47 @@ export function ContractInfoDialog(props: {
               </tbody>
             </Table>
 
-            <Row className="flex-wrap">
+            <Row className="flex-wrap gap-2">
               {mechanism === 'cpmm-1' && (
-                <AddLiquidityButton contract={contract} className="mr-2" />
+                <AddLiquidityButton contract={contract} />
               )}
+
               <DuplicateContractButton contract={contract} />
+
+              <ShareEmbedButton contract={contract} />
+
+              {showChallenge && (
+                <Button
+                  size="2xs"
+                  color="override"
+                  className="gap-1 border-2  border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white"
+                  onClick={withTracking(
+                    () => setOpenCreateChallengeModal(true),
+                    'click challenge button'
+                  )}
+                >
+                  <ChallengeIcon className="h-4 w-4" /> Challenge
+                  <CreateChallengeModal
+                    isOpen={openCreateChallengeModal}
+                    setOpen={(open) => {
+                      if (!open) {
+                        setOpenCreateChallengeModal(false)
+                        setOpen(false)
+                      } else setOpenCreateChallengeModal(open)
+                    }}
+                    user={user}
+                    contract={contract}
+                  />
+                </Button>
+              )}
             </Row>
+
+            <QRCode
+              url={shareUrl}
+              className="self-center sm:hidden"
+              width={150}
+              height={150}
+            />
           </Col>
         </Modal>
       </Tooltip>
