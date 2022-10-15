@@ -1,55 +1,38 @@
 import CharacterCount from '@tiptap/extension-character-count'
-import Placeholder from '@tiptap/extension-placeholder'
-import {
-  useEditor,
-  BubbleMenu,
-  EditorContent,
-  JSONContent,
-  Content,
-  Editor,
-  mergeAttributes,
-  Extensions,
-} from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
+import Placeholder from '@tiptap/extension-placeholder'
+import {
+  Content,
+  Editor,
+  EditorContent,
+  Extensions,
+  JSONContent,
+  mergeAttributes,
+  useEditor,
+} from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { useCallback, useEffect, useState } from 'react'
-import { Linkify } from './linkify'
-import { uploadImage } from 'web/lib/firebase/storage'
-import { useMutation } from 'react-query'
-import { linkClass } from './site-link'
-import { DisplayMention } from '../editor/mention'
+import { useCallback, useEffect } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
+import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
 import StaticReactEmbedComponent from '../editor/tiptap-static-react-embed'
-
+import { Linkify } from './linkify'
+import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
-import TiptapTweet from '../editor/tiptap-tweet'
-import { EmbedModal } from '../editor/embed-modal'
-import {
-  CheckIcon,
-  CodeIcon,
-  EyeOffIcon,
-  PhotographIcon,
-  PresentationChartLineIcon,
-  TrashIcon,
-} from '@heroicons/react/solid'
-import { MarketModal } from '../editor/market-modal'
-import { insertContent } from '../editor/utils'
-import { Tooltip } from './tooltip'
-import BoldIcon from 'web/lib/icons/bold-icon'
-import ItalicIcon from 'web/lib/icons/italic-icon'
-import LinkIcon from 'web/lib/icons/link-icon'
-import { getUrl } from 'common/util/parse'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
-import { ImageModal } from '../editor/image-modal'
+import { debounce } from 'lodash'
 import {
   storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { debounce } from 'lodash'
+import { FloatingFormatMenu } from '../editor/floating-format-menu'
+import { StickyFormatMenu } from '../editor/sticky-format-menu'
+import TiptapTweet from '../editor/tiptap-tweet'
+import { Upload, useUploadMutation } from '../editor/upload-extension'
+import { insertContent } from '../editor/utils'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -88,6 +71,7 @@ export const editorExtensions = (simple = false): Extensions => [
   TiptapSpoiler.configure({
     spoilerOpenClass: 'rounded-sm bg-greyscale-2',
   }),
+  Upload,
 ]
 
 const proseClass = clsx(
@@ -117,8 +101,9 @@ export function useTextEditor(props: {
 
   const editorClass = clsx(
     proseClass,
-    !simple && 'min-h-[6em]',
-    'outline-none pt-2 px-4',
+    simple ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + 13/8 em * line count
+    'max-h-[69vh] overflow-auto',
+    'outline-none py-[.5em] px-4',
     'prose-img:select-auto',
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, embeds
   )
@@ -141,8 +126,10 @@ export function useTextEditor(props: {
   })
 
   const upload = useUploadMutation(editor)
+  if (!editor) return null
+  editor.storage.upload.mutation = upload
 
-  editor?.setOptions({
+  editor.setOptions({
     editorProps: {
       handlePaste(view, event) {
         const imageFiles = getImages(event.clipboardData)
@@ -170,7 +157,7 @@ export function useTextEditor(props: {
     },
   })
 
-  return { editor, upload }
+  return editor
 }
 
 const getImages = (data: DataTransfer | null) =>
@@ -180,149 +167,20 @@ function isValidIframe(text: string) {
   return /^<iframe.*<\/iframe>$/.test(text)
 }
 
-function FloatingMenu(props: { editor: Editor | null }) {
-  const { editor } = props
-
-  const [url, setUrl] = useState<string | null>(null)
-
-  if (!editor) return null
-
-  // current selection
-  const isBold = editor.isActive('bold')
-  const isItalic = editor.isActive('italic')
-  const isLink = editor.isActive('link')
-  const isSpoiler = editor.isActive('spoiler')
-
-  const setLink = () => {
-    const href = url && getUrl(url)
-    if (href) {
-      editor.chain().focus().extendMarkRange('link').setLink({ href }).run()
-    }
-  }
-
-  const unsetLink = () => editor.chain().focus().unsetLink().run()
-
-  return (
-    <BubbleMenu
-      editor={editor}
-      className="flex gap-2 rounded-sm bg-slate-700 p-1 text-white"
-    >
-      {url === null ? (
-        <>
-          <button onClick={() => editor.chain().focus().toggleBold().run()}>
-            <BoldIcon className={clsx('h-5', isBold && 'text-indigo-200')} />
-          </button>
-          <button onClick={() => editor.chain().focus().toggleItalic().run()}>
-            <ItalicIcon
-              className={clsx('h-5', isItalic && 'text-indigo-200')}
-            />
-          </button>
-          <button onClick={() => (isLink ? unsetLink() : setUrl(''))}>
-            <LinkIcon className={clsx('h-5', isLink && 'text-indigo-200')} />
-          </button>
-          <button onClick={() => editor.chain().focus().toggleSpoiler().run()}>
-            <EyeOffIcon
-              className={clsx('h-5', isSpoiler && 'text-indigo-200')}
-            />
-          </button>
-        </>
-      ) : (
-        <>
-          <input
-            type="text"
-            className="h-5 border-0 bg-inherit text-sm !shadow-none !ring-0"
-            placeholder="Type or paste a link"
-            onChange={(e) => setUrl(e.target.value)}
-          />
-          <button onClick={() => (setLink(), setUrl(null))}>
-            <CheckIcon className="h-5 w-5" />
-          </button>
-          <button onClick={() => (unsetLink(), setUrl(null))}>
-            <TrashIcon className="h-5 w-5" />
-          </button>
-        </>
-      )}
-    </BubbleMenu>
-  )
-}
-
 export function TextEditor(props: {
   editor: Editor | null
-  upload: ReturnType<typeof useUploadMutation>
   children?: React.ReactNode // additional toolbar buttons
 }) {
-  const { editor, upload, children } = props
-  const [imageOpen, setImageOpen] = useState(false)
-  const [iframeOpen, setIframeOpen] = useState(false)
-  const [marketOpen, setMarketOpen] = useState(false)
+  const { editor, children } = props
+  const upload = editor?.storage.upload.mutation ?? {}
 
   return (
     <>
-      {/* hide placeholder when focused */}
-      <div className="relative w-full [&:focus-within_p.is-empty]:before:content-none">
-        {/* matches input styling */}
-        <div className="rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-          <FloatingMenu editor={editor} />
-          <EditorContent editor={editor} />
-          {/* Toolbar, with buttons for images and embeds */}
-          <div className="flex h-9 items-center gap-5 pl-4 pr-1">
-            <Tooltip text="Add image" noTap noFade>
-              <button
-                type="button"
-                onClick={() => setImageOpen(true)}
-                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-              >
-                <ImageModal
-                  editor={editor}
-                  upload={upload}
-                  open={imageOpen}
-                  setOpen={setImageOpen}
-                />
-                <PhotographIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </Tooltip>
-            <Tooltip text="Add embed" noTap noFade>
-              <button
-                type="button"
-                onClick={() => setIframeOpen(true)}
-                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-              >
-                <EmbedModal
-                  editor={editor}
-                  open={iframeOpen}
-                  setOpen={setIframeOpen}
-                />
-                <CodeIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </Tooltip>
-            <Tooltip text="Add market" noTap noFade>
-              <button
-                type="button"
-                onClick={() => setMarketOpen(true)}
-                className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-              >
-                <MarketModal
-                  editor={editor}
-                  open={marketOpen}
-                  setOpen={setMarketOpen}
-                />
-                <PresentationChartLineIcon
-                  className="h-5 w-5"
-                  aria-hidden="true"
-                />
-              </button>
-            </Tooltip>
-            {/* Spacer that also focuses editor on click */}
-            <div
-              className="grow cursor-text self-stretch"
-              onMouseDown={() =>
-                editor?.chain().focus('end').createParagraphNear().run()
-              }
-              aria-hidden
-            />
-            {children}
-          </div>
-        </div>
+      {/* matches input styling */}
+      <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+        <FloatingFormatMenu editor={editor} />
+        <EditorContent editor={editor} />
+        <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
       </div>
       {upload.isLoading && <span className="text-xs">Uploading image...</span>}
       {upload.isError && (
@@ -331,24 +189,6 @@ export function TextEditor(props: {
     </>
   )
 }
-
-const useUploadMutation = (editor: Editor | null) =>
-  useMutation(
-    (files: File[]) =>
-      // TODO: Images should be uploaded under a particular username
-      Promise.all(files.map((file) => uploadImage('default', file))),
-    {
-      onSuccess(urls) {
-        if (!editor) return
-        let trans = editor.chain().focus()
-        urls.forEach((src) => {
-          trans = trans.createParagraphNear()
-          trans = trans.setImage({ src })
-        })
-        trans.run()
-      },
-    }
-  )
 
 export function RichContent(props: {
   content: JSONContent | string
