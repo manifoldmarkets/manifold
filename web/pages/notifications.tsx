@@ -38,7 +38,6 @@ import {
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { groupBy, sum, uniqBy } from 'lodash'
-import { track } from '@amplitude/analytics-browser'
 import { Pagination } from 'web/components/widgets/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -53,6 +52,7 @@ import {
   MultiUserTransactionLink,
 } from 'web/components/multi-user-transaction-link'
 import { Col } from 'web/components/layout/col'
+import { track } from 'web/lib/service/analytics'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'

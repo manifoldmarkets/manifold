@@ -1,4 +1,3 @@
-import { track } from '@amplitude/analytics-browser'
 import { DocumentIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Post } from 'common/post'
@@ -11,6 +10,7 @@ import { CardHighlightOptions } from '../contract/contracts-grid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { UserLink } from '../widgets/user-link'
+import { track } from 'web/lib/service/analytics'
 
 export function PostCard(props: {
   post: Post
