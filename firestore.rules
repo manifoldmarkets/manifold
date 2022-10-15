@@ -44,6 +44,9 @@ service cloud.firestore {
                           && !(userId == request.resource.data.referredByUserId);
                           // quid pro quos enabled (only once though so nbd) - bc I can't make this work:
                           // && (get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId == resource.data.id);
+      match /events/{eventId} {
+        allow create: if request.auth == null && userId == 'NO_USER' || userId == request.auth.uid;
+      }
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {

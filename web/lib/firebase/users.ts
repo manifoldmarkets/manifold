@@ -329,7 +329,7 @@ export function saveUserEvent(
   eventName: string,
   eventProperties?: any
 ) {
-  const eventDoc = doc(collection(users, userId ?? '[NO_USER]', 'events'))
+  const eventDoc = doc(collection(users, userId ?? 'NO_USER', 'events'))
 
   return setDoc(eventDoc, {
     timestamp: Date.now(),

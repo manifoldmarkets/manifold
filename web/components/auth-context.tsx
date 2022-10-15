@@ -104,8 +104,8 @@ export function AuthProvider(props: {
 
   const uid = authUser?.user.id
   useEffect(() => {
+    identifyUser(uid)
     if (uid) {
-      identifyUser(uid)
       const userListener = listenForUser(uid, (user) => {
         setAuthUser((currAuthUser) =>
           currAuthUser && user ? { ...currAuthUser, user } : null
