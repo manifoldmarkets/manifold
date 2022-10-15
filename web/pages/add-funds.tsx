@@ -37,7 +37,7 @@ export default function AddFundsPage() {
             className="mb-6 block self-center"
             src="/welcome/manipurple.png"
             width={200}
-            height={200}
+            height={158}
           />
 
           <div className="mb-6 text-gray-500">
