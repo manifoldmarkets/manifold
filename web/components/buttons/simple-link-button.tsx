@@ -22,7 +22,7 @@ export const SimpleLinkButton = (props: {
       <IconButton
         size="2xs"
         onClick={() => {
-          copyToClipboard(getShareUrl(contract, user))
+          copyToClipboard(getShareUrl(contract, user?.username))
           toast.success('Link copied!')
           track('copy share link')
         }}
