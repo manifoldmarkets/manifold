@@ -84,7 +84,7 @@ export function MiscDetails(props: {
       ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
         <Row className={'shrink-0'}>
           <UserGroupIcon className="mr-1 h-4 w-4" />
-          {uniqueBettorCount} trader{uniqueBettorCount !== 1 ? 's' : ''}
+          {uniqueBettorCount || '0'} trader{uniqueBettorCount !== 1 ? 's' : ''}
         </Row>
       ) : (
         <NewContractBadge />
