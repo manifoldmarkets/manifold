@@ -47,6 +47,7 @@ import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
 import { needsAdminToResolve } from 'web/lib/util/admin'
+import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -194,7 +195,13 @@ export function ContractPageContent(
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <ContractOverview contract={contract} bets={nonChallengeBets} />
-        <ContractDescription className="mb-6 px-2" contract={contract} />
+        <ContractDescription className="mb-2 px-2" contract={contract} />
+
+        {isCreator ? (
+          <CreatorSharePanel contract={contract} />
+        ) : (
+          <Spacer h={4} />
+        )}
 
         {outcomeType === 'NUMERIC' && (
           <AlertBox
