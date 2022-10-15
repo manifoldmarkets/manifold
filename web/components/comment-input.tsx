@@ -179,22 +179,18 @@ export function CommentInputTextArea(props: {
   }, [editor])
 
   return (
-    <>
-      <TextEditor editor={editor}>
-        {user && !isSubmitting && (
-          <button
-            className="px-2 text-gray-400 hover:text-gray-500 disabled:bg-inherit disabled:text-gray-300"
-            disabled={!editor || editor.isEmpty}
-            onClick={submit}
-          >
-            <PaperAirplaneIcon className="m-0 h-[25px] min-w-[22px] rotate-90 p-0" />
-          </button>
-        )}
+    <TextEditor editor={editor}>
+      {user && !isSubmitting && (
+        <button
+          className="hover:text-greyscale-6 active:bg-greyscale-3 px-4 text-gray-400 transition-colors disabled:text-gray-300"
+          disabled={!editor || editor.isEmpty}
+          onClick={submit}
+        >
+          <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+        </button>
+      )}
 
-        {isSubmitting && (
-          <LoadingIndicator spinnerClassName="border-gray-500" />
-        )}
-      </TextEditor>
-    </>
+      {isSubmitting && <LoadingIndicator spinnerClassName="border-gray-500" />}
+    </TextEditor>
   )
 }

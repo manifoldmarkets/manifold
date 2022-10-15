@@ -1,10 +1,10 @@
 import {
-  PhotographIcon,
   CodeIcon,
+  PhotographIcon,
   PresentationChartLineIcon,
 } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Tooltip } from '../tooltip'
 import { EmbedModal } from './embed-modal'
 import { ImageModal } from './image-modal'
@@ -23,59 +23,51 @@ export function StickyFormatMenu(props: {
   const [marketOpen, setMarketOpen] = useState(false)
 
   return (
-    <div className="flex h-9 items-center gap-5 pl-4 pr-1">
-      <Tooltip text="Add image" noTap noFade>
-        <button
-          type="button"
-          onClick={() => setImageOpen(true)}
-          className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-        >
-          <ImageModal
-            editor={editor}
-            upload={upload}
-            open={imageOpen}
-            setOpen={setImageOpen}
-          />
-          <PhotographIcon className="h-5 w-5" aria-hidden="true" />
-        </button>
-      </Tooltip>
-      <Tooltip text="Add embed" noTap noFade>
-        <button
-          type="button"
-          onClick={() => setIframeOpen(true)}
-          className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-        >
-          <EmbedModal
-            editor={editor}
-            open={iframeOpen}
-            setOpen={setIframeOpen}
-          />
-          <CodeIcon className="h-5 w-5" aria-hidden="true" />
-        </button>
-      </Tooltip>
-      <Tooltip text="Add market" noTap noFade>
-        <button
-          type="button"
-          onClick={() => setMarketOpen(true)}
-          className="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-        >
-          <MarketModal
-            editor={editor}
-            open={marketOpen}
-            setOpen={setMarketOpen}
-          />
-          <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
-        </button>
-      </Tooltip>
-      {/* Spacer that also focuses editor on click */}
-      <div
-        className="grow cursor-text self-stretch"
-        onMouseDown={() =>
-          editor?.chain().focus('end').createParagraphNear().run()
-        }
-        aria-hidden
-      />
+    <div className="text flex h-9 items-stretch border-t">
+      <ToolbarButton label="Add image" onClick={() => setImageOpen(true)}>
+        <ImageModal
+          editor={editor}
+          upload={upload}
+          open={imageOpen}
+          setOpen={setImageOpen}
+        />
+        <PhotographIcon className="h-5 w-5" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton label="Add embed" onClick={() => setIframeOpen(true)}>
+        <EmbedModal editor={editor} open={iframeOpen} setOpen={setIframeOpen} />
+        <CodeIcon className="h-5 w-5" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton label="Add market" onClick={() => setMarketOpen(true)}>
+        <MarketModal
+          editor={editor}
+          open={marketOpen}
+          setOpen={setMarketOpen}
+        />
+        <PresentationChartLineIcon className="h-5 w-5" aria-hidden="true" />
+      </ToolbarButton>
+
+      <div className="grow" />
       {children}
     </div>
+  )
+}
+
+function ToolbarButton(props: {
+  label: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  const { label, onClick, children } = props
+
+  return (
+    <Tooltip text={label} noTap noFade>
+      <button
+        type="button"
+        onClick={onClick}
+        className="active:bg-greyscale-3 hover:text-greyscale-6 flex h-full w-12 items-center justify-center text-gray-400 transition-colors"
+      >
+        {children}
+      </button>
+    </Tooltip>
   )
 }

@@ -101,8 +101,9 @@ export function useTextEditor(props: {
 
   const editorClass = clsx(
     proseClass,
-    !simple && 'min-h-[6em]',
-    'outline-none pt-2 px-4',
+    simple ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + 13/8 em * line count
+    'max-h-[69vh] overflow-auto',
+    'outline-none py-[.5em] px-4',
     'prose-img:select-auto',
     '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-indigo-300' // selected img, embeds
   )
@@ -175,14 +176,11 @@ export function TextEditor(props: {
 
   return (
     <>
-      {/* hide placeholder when focused */}
-      <div className="relative w-full [&:focus-within_p.is-empty]:before:content-none">
-        {/* matches input styling */}
-        <div className="rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-          <FloatingFormatMenu editor={editor} />
-          <EditorContent editor={editor} />
-          <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
-        </div>
+      {/* matches input styling */}
+      <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+        <FloatingFormatMenu editor={editor} />
+        <EditorContent editor={editor} />
+        <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
       </div>
       {upload.isLoading && <span className="text-xs">Uploading image...</span>}
       {upload.isError && (
