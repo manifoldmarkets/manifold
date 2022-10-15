@@ -123,7 +123,6 @@ export function AuthProvider(props: {
     } else if (uid === null) {
       identifyUser(null)
     }
-    console.log('uid', uid)
   }, [uid, setAuthUser])
 
   const username = authUser?.user.username
