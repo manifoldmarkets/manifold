@@ -79,11 +79,11 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     <>
       <Content content={contract.description} />
       <Spacer h={2} />
-      <Row className="items-center gap-2">
-        {isAdmin && 'Admin: '}
+      <Row className="items-center gap-2 text-xs">
+        {isAdmin && 'Admin '}
         <Button
           color="gray"
-          size="xs"
+          size="2xs"
           onClick={() => {
             setEditing(true)
             editor?.commands.focus('end')
@@ -92,7 +92,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
         >
           Edit description
         </Button>
-        <Button color="gray" size="xs" onClick={() => setEditingQ(true)}>
+        <Button color="gray" size="2xs" onClick={() => setEditingQ(true)}>
           Edit question
         </Button>
       </Row>
