@@ -27,8 +27,8 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
-import { track } from '@amplitude/analytics-browser'
 import { Like } from 'common/like'
+import { track } from '../service/analytics'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')

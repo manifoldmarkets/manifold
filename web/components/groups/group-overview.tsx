@@ -1,4 +1,3 @@
-import { track } from '@amplitude/analytics-browser'
 import {
   ArrowSmRightIcon,
   PlusCircleIcon,
@@ -41,6 +40,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import { CreatePost } from '../posts/create-post'
 import { Modal } from '../layout/modal'
+import { track } from 'web/lib/service/analytics'
 
 const MAX_TRENDING_POSTS = 6
 

@@ -4,10 +4,10 @@ import toast from 'react-hot-toast'
 import { transact } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
 import { Like, LIKE_TIP_AMOUNT } from 'common/like'
-import { track } from '@amplitude/analytics-browser'
 import { User } from 'common/user'
 import { Post } from 'common/post'
 import { Contract } from 'common/contract'
+import { track } from '../service/analytics'
 
 function getLikesCollection(userId: string) {
   return collection(db, 'users', userId, 'likes')

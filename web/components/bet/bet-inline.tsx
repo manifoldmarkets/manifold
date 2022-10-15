@@ -1,4 +1,3 @@
-import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { useMutation } from 'react-query'
 import { XIcon } from '@heroicons/react/solid'
@@ -18,6 +17,7 @@ import { BetSignUpPrompt } from '../sign-up-prompt'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Col } from '../layout/col'
 import { formatMoney } from 'common/util/format'
+import { track } from 'web/lib/service/analytics'
 
 // adapted from bet-panel.ts
 export function BetInline(props: {
