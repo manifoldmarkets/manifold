@@ -1,18 +1,36 @@
 import {
   init,
-  track,
+  track as amplitudeTrack,
   identify,
   setUserId,
+  getUserId,
+  getDeviceId,
+  getSessionId,
   Identify,
 } from '@amplitude/analytics-browser'
 
 import * as Sprig from 'web/lib/service/sprig'
 
 import { ENV_CONFIG } from 'common/envs/constants'
+import { saveUserEvent } from '../firebase/users'
+import { removeUndefinedProps } from 'common/util/object'
 
 init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, { includeReferrer: true })
 
-export { track }
+export function track(eventName: string, eventProperties?: any) {
+  amplitudeTrack(eventName, eventProperties)
+
+  const deviceId = getDeviceId()
+  const sessionId = getSessionId()
+  const props = removeUndefinedProps({
+    ...eventProperties,
+    deviceId,
+    sessionId,
+  })
+
+  const userId = getUserId()
+  saveUserEvent(userId, eventName, props)
+}
 
 // Convenience functions:
 

@@ -323,3 +323,17 @@ export function listenForLikes(
   const likes = collection(users, userId, 'likes')
   return listenForValues<Like>(likes, (docs) => setLikes(docs))
 }
+
+export function saveUserEvent(
+  userId: string | undefined,
+  eventName: string,
+  eventProperties?: any
+) {
+  const eventDoc = doc(collection(users, userId ?? '[NO_USER]', 'events'))
+
+  return setDoc(eventDoc, {
+    timestamp: Date.now(),
+    name: eventName,
+    ...eventProperties,
+  })
+}
