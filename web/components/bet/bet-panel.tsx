@@ -3,7 +3,11 @@ import React, { useState } from 'react'
 import { clamp, partition, sumBy } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
-import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  CPMMContract,
+  PseudoNumericContract,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
@@ -851,24 +855,33 @@ export function SellPanel(props: {
   const { contract, shares, sharesOutcome, userBets, user, onSellSuccess } =
     props
 
-  const [amount, setAmount] = useState<number | undefined>(shares)
-  const [error, setError] = useState<string | undefined>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [wasSubmitted, setWasSubmitted] = useState(false)
-
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
   )
+
+  const [amount, setAmount] = useState<number | undefined>(() => {
+    const probChange = getProbChange(
+      contract,
+      shares,
+      sharesOutcome,
+      unfilledBets,
+      balanceByUserId
+    )
+    return probChange > 0.2 ? undefined : shares
+  })
+  const [error, setError] = useState<string | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wasSubmitted, setWasSubmitted] = useState(false)
 
   const betDisabled = isSubmitting || !amount || error !== undefined
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)
 
-  const sellQuantity = isSellingAllShares ? shares : amount
+  const sellQuantity = isSellingAllShares ? shares : amount ?? 0
 
   const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
-  const soldShares = Math.min(sellQuantity ?? 0, shares)
+  const soldShares = Math.min(sellQuantity, shares)
   const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
 
@@ -915,7 +928,7 @@ export function SellPanel(props: {
   const initialProb = getProbability(contract)
   const { cpmmState, saleValue } = calculateCpmmSale(
     contract,
-    sellQuantity ?? 0,
+    sellQuantity,
     sharesOutcome,
     unfilledBets,
     balanceByUserId
@@ -1001,7 +1014,7 @@ export function SellPanel(props: {
         {loanPaid !== 0 && (
           <>
             <Row className="mt-6 items-center justify-between gap-2 text-gray-500">
-              Loan payment
+              Loan repayment
               <span className="text-gray-700">{formatMoney(-loanPaid)}</span>
             </Row>
             <Row className="items-center justify-between gap-2 text-gray-500">
@@ -1029,4 +1042,25 @@ export function SellPanel(props: {
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
     </>
   )
+}
+
+const getProbChange = (
+  contract: CPMMContract,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) => {
+  const initialProb = getProbability(contract)
+  const { cpmmState } = calculateCpmmSale(
+    contract,
+    shares,
+    outcome,
+    unfilledBets,
+    balanceByUserId
+  )
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+
+  const getValue = getMappedValue(contract)
+  return Math.abs(getValue(resultProb) - getValue(initialProb))
 }
