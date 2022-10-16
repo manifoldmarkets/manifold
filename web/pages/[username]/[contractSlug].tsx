@@ -328,7 +328,7 @@ const RecommendedContractsWidget = memo(
     }
     return (
       <Col className="mt-2 gap-2 px-2 sm:px-1">
-        <Title className="text-gray-700" text="Related" />
+        <Title className="text-gray-700" text="Related markets" />
         <ContractsGrid contracts={recommendations} trackingPostfix=" related" />
       </Col>
     )
