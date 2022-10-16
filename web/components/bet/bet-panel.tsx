@@ -67,7 +67,7 @@ export function BetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+        className={'bg-greyscale-1.5 rounded-t-md px-4 py-5'}
       />
       <Col
         className={clsx(
@@ -130,7 +130,7 @@ export function SimpleBetPanel(props: {
       <SellRow
         contract={contract}
         user={user}
-        className={'rounded-t-md bg-gray-100 px-4 py-5'}
+        className={'bg-greyscale-1.5 rounded-t-md px-4 py-5'}
       />
       <Col
         className={clsx(
