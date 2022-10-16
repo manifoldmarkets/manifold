@@ -195,7 +195,7 @@ export function ContractPageContent(
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <ContractOverview contract={contract} bets={nonChallengeBets} />
-        <ContractDescription className="mb-2 px-2" contract={contract} />
+        <ContractDescription className="mt-6 mb-2 px-2" contract={contract} />
 
         {isCreator ? (
           <CreatorSharePanel contract={contract} />

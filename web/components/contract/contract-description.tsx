@@ -27,7 +27,7 @@ export function ContractDescription(props: {
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
   return (
-    <div className={clsx('mt-2 text-gray-700', className)}>
+    <div className={clsx('text-gray-700', className)}>
       {isCreator || isAdmin ? (
         <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
       ) : (
@@ -78,7 +78,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   ) : (
     <>
       <Content content={contract.description} />
-      <Spacer h={2} />
+      <Spacer h={4} />
       <Row className="items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
         <Button
