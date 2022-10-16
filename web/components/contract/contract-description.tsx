@@ -87,7 +87,6 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
           onClick={() => {
             setEditing(true)
             editor?.commands.focus('end')
-            insertContent(editor, `<p>${editTimestamp()}</p>`)
           }}
         >
           Edit description
