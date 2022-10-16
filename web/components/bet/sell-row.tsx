@@ -33,40 +33,38 @@ export function SellRow(props: {
 
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
-      <div>
-        <Col className={className}>
-          <Row className="items-center justify-between gap-2 ">
-            <div>
-              You have {formatWithCommas(shares)}{' '}
-              <OutcomeLabel
-                outcome={sharesOutcome}
-                contract={contract}
-                truncate={'short'}
-              />{' '}
-              shares
-            </div>
+      <Col className={className}>
+        <Row className="items-center justify-between gap-2 ">
+          <div>
+            You have {formatWithCommas(shares)}{' '}
+            <OutcomeLabel
+              outcome={sharesOutcome}
+              contract={contract}
+              truncate={'short'}
+            />{' '}
+            shares
+          </div>
 
-            <Button
-              className="my-auto"
-              size="xs"
-              color="gray-outline"
-              onClick={() => setShowSellModal(true)}
-            >
-              Sell
-            </Button>
-          </Row>
-        </Col>
-        {showSellModal && (
-          <SellSharesModal
-            contract={contract}
-            user={user}
-            userBets={userBets ?? []}
-            shares={shares}
-            sharesOutcome={sharesOutcome}
-            setOpen={setShowSellModal}
-          />
-        )}
-      </div>
+          <Button
+            className="my-auto"
+            size="xs"
+            color="gray-outline"
+            onClick={() => setShowSellModal(true)}
+          >
+            Sell
+          </Button>
+          {showSellModal && (
+            <SellSharesModal
+              contract={contract}
+              user={user}
+              userBets={userBets ?? []}
+              shares={shares}
+              sharesOutcome={sharesOutcome}
+              setOpen={setShowSellModal}
+            />
+          )}
+        </Row>
+      </Col>
     )
   }
 
