@@ -50,10 +50,13 @@ export const useRecentComments = () => {
 }
 
 export const useLiveComments = (count: number) => {
-  const [comments, setComments] = usePersistentState<Comment[] | undefined>(undefined, {
-    store: inMemoryStore(),
-    key: `liveComments-${count}`,
-  })
+  const [comments, setComments] = usePersistentState<Comment[] | undefined>(
+    undefined,
+    {
+      store: inMemoryStore(),
+      key: `liveComments-${count}`,
+    }
+  )
 
   useEffect(() => {
     return listenForLiveComments(count, setComments)
