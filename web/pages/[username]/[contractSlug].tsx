@@ -56,17 +56,16 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-  const bets = contractId ? await listAllBets(contractId) : []
-  const comments = contractId ? await listAllComments(contractId) : []
+  const bets = contractId ? await listAllBets(contractId, 5000) : []
+  const comments = contractId ? await listAllComments(contractId, 1000) : []
 
   return {
     props: {
       contract,
-      // Limit the data sent to the client. Client will still load all bets/comments directly.
-      bets: bets.slice(0, 5000),
-      comments: comments.slice(0, 1000),
+      bets,
+      comments,
     },
-    revalidate: 5, // regenerate after five seconds
+    revalidate: 60, // Regenerate after 60 seconds
   }
 }
 

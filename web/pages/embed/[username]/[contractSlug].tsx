@@ -32,7 +32,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
-  const bets = contractId ? await listAllBets(contractId) : []
+  const bets = contractId ? await listAllBets(contractId, 5000) : []
 
   return {
     props: { contract, bets },

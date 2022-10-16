@@ -9,6 +9,7 @@ import {
   where,
   DocumentData,
   DocumentReference,
+  limit,
 } from 'firebase/firestore'
 
 import { getValues, listenForValues } from './utils'
@@ -139,10 +140,16 @@ function getCommentsOnPostCollection(postId: string) {
   return collection(db, 'posts', postId, 'comments')
 }
 
-export async function listAllComments(contractId: string) {
-  return await getValues<ContractComment>(
-    query(getCommentsCollection(contractId), orderBy('createdTime', 'desc'))
+export async function listAllComments(
+  contractId: string,
+  maxCount: number | undefined = undefined
+) {
+  const q = query(
+    getCommentsCollection(contractId),
+    orderBy('createdTime', 'desc')
   )
+  const limitedQ = maxCount ? query(q, limit(maxCount)) : q
+  return await getValues<ContractComment>(limitedQ)
 }
 
 export async function listAllCommentsOnGroup(groupId: string) {
