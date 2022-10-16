@@ -213,7 +213,7 @@ export function MarketSubheader(props: {
           />
           {!isMobile && (
             <Row className={'gap-1'}>
-              <BountiedContractSmallBadge contract={contract} />
+              {!disabled && <BountiedContractSmallBadge contract={contract} />}
               <MarketGroups contract={contract} disabled={disabled} />
             </Row>
           )}
