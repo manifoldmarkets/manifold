@@ -67,6 +67,7 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
+import { ActivityLog } from 'web/components/activity-log'
 
 export default function Home() {
   const user = useUser()
@@ -190,6 +191,8 @@ export default function Home() {
               globalConfig,
               pinned
             )}
+
+            <ActivitySection />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -557,6 +560,15 @@ export function DailyProfit(props: { user: User | null | undefined }) {
         <ProfitBadge profitPercent={profitPercent * 100} />
       </Row>
     </SiteLink>
+  )
+}
+
+function ActivitySection() {
+  return (
+    <Col>
+      <SectionHeader label="Live" href="/live" />
+      <ActivityLog count={6} />
+    </Col>
   )
 }
 

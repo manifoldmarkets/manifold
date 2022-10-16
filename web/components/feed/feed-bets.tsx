@@ -19,15 +19,21 @@ import { BETTOR } from 'common/user'
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
   bet: Bet
+  avatarSize?: number | 'xxs' | 'xs' | 'sm'
+  className?: string
 }) {
-  const { contract, bet } = props
+  const { contract, bet, avatarSize, className } = props
   const { userAvatarUrl, userUsername, createdTime } = bet
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
 
   return (
-    <Row className="items-center gap-2 pt-3">
+    <Row className={clsx(className, 'items-center gap-2 pt-3')}>
       {showUser ? (
-        <Avatar avatarUrl={userAvatarUrl} username={userUsername} />
+        <Avatar
+          size={avatarSize}
+          avatarUrl={userAvatarUrl}
+          username={userUsername}
+        />
       ) : (
         <EmptyAvatar className="mx-1" />
       )}

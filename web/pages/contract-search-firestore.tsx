@@ -3,7 +3,7 @@ import { Answer } from 'common/answer'
 import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { useContracts } from 'web/hooks/use-contracts'
+import { useAllContracts } from 'web/hooks/use-contracts'
 import {
   usePersistentState,
   urlParamStore,
@@ -23,7 +23,7 @@ export default function ContractSearchFirestore(props: {
   }
 }) {
   const { additionalFilter } = props
-  const contracts = useContracts()
+  const contracts = useAllContracts()
   const router = useRouter()
   const store = urlParamStore(router)
   const [query, setQuery] = usePersistentState('', { key: 'q', store })
