@@ -223,3 +223,15 @@ export const getUserCommentsQuery = (userId: string) =>
     where('commentType', '==', 'contract'),
     orderBy('createdTime', 'desc')
   ) as Query<ContractComment>
+
+export function listenForLiveComments(
+  count: number,
+  setComments: (comments: Comment[]) => void
+) {
+  const commentsQuery = query(
+    collectionGroup(db, 'comments'),
+    orderBy('createdTime', 'desc'),
+    limit(count)
+  )
+  return listenForValues<Comment>(commentsQuery, setComments)
+}
