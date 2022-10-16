@@ -258,6 +258,7 @@ export function ContractPageContent(
         </div>
       </Col>
       {!isCreator && <RecommendedContractsWidget contract={contract} />}
+      <Spacer className="xl:hidden" h={10} />
       <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
     </Page>
   )
