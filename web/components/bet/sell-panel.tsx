@@ -165,7 +165,11 @@ export function SellPanel(props: {
     <>
       <AmountInput
         amount={
-          amount ? (Math.round(amount) === 0 ? 0 : Math.floor(amount)) : 0
+          amount === undefined
+            ? undefined
+            : Math.round(amount) === 0
+            ? 0
+            : Math.floor(amount)
         }
         onChange={onAmountChange}
         label="Qty"
