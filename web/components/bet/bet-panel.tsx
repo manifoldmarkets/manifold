@@ -1,11 +1,10 @@
 import clsx from 'clsx'
 import React, { useState } from 'react'
-import { clamp, partition, sumBy } from 'lodash'
+import { clamp } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
 import {
   CPMMBinaryContract,
-  CPMMContract,
   PseudoNumericContract,
 } from 'common/contract'
 import { Col } from '../layout/col'
@@ -15,13 +14,12 @@ import {
   formatLargeNumber,
   formatMoney,
   formatPercent,
-  formatWithCommas,
 } from 'common/util/format'
 import { getBinaryBetStats, getBinaryCpmmBetInfo } from 'common/new-bet'
 import { User } from 'web/lib/firebase/users'
-import { Bet, LimitBet } from 'common/bet'
-import { APIError, placeBet, sellShares } from 'web/lib/firebase/api'
-import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
+import { LimitBet } from 'common/bet'
+import { APIError, placeBet } from 'web/lib/firebase/api'
+import { BuyAmountInput } from '../widgets/amount-input'
 import {
   BinaryOutcomeLabel,
   HigherLabel,
@@ -29,10 +27,10 @@ import {
   NoLabel,
   YesLabel,
 } from '../outcome-label'
-import { getContractBetMetrics, getProbability } from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { SellRow } from './sell-row'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
