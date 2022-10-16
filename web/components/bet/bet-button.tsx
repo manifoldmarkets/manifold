@@ -121,7 +121,7 @@ export function SignedInBinaryMobileBetting(props: {
           contract={contract}
           user={user}
           className={
-            'border-greyscale-3 bg-greyscale-1 rounded-md border-2 px-4 py-2'
+            'border-greyscale-2 bg-greyscale-0 rounded-md border-2 px-4 py-2'
           }
         />
       </Col>
