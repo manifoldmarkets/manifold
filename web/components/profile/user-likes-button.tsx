@@ -1,13 +1,13 @@
 import { User } from 'common/user'
 import { useState } from 'react'
-import { TextButton } from 'web/components/text-button'
+import { TextButton } from 'web/components/buttons/text-button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { useUserLikedContracts } from 'web/hooks/use-likes'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { Row } from 'web/components/layout/row'
 import { XIcon } from '@heroicons/react/outline'
-import { unLikeContract } from 'web/lib/firebase/likes'
+import { unLikeItem } from 'web/lib/firebase/likes'
 import { contractPath } from 'web/lib/firebase/contracts'
 
 export function UserLikesButton(props: { user: User; className?: string }) {
@@ -36,7 +36,7 @@ export function UserLikesButton(props: { user: User; className?: string }) {
                 </SiteLink>
                 <XIcon
                   className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
-                  onClick={() => unLikeContract(user.id, likedContract.id)}
+                  onClick={() => unLikeItem(user.id, likedContract.id)}
                 />
               </Row>
             ))}

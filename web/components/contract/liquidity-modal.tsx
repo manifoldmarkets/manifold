@@ -4,13 +4,13 @@ import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { addSubsidy } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
-import { AmountInput } from '../amount-input'
-import { Button } from '../button'
-import { InfoTooltip } from '../info-tooltip'
+import { AmountInput } from '../widgets/amount-input'
+import { Button } from '../buttons/button'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { Title } from '../title'
+import { Title } from '../widgets/title'
 
 export function LiquidityModal(props: {
   contract: CPMMContract

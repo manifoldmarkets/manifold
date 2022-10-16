@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { fromNow } from 'web/lib/util/time'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
-import { getColor } from './quick-bet'
+import { getColor } from '../bet/quick-bet'
 import { useIsClient } from 'web/hooks/use-is-client'
 
 export function ContractMention(props: { contract: Contract }) {

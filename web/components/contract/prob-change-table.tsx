@@ -5,7 +5,7 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from '../layout/col'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractCardProbChange } from './contract-card'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 

@@ -10,7 +10,7 @@ import {
   resolution,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
-import { Tooltip } from './tooltip'
+import { Tooltip } from './widgets/tooltip'
 
 export function OutcomeLabel(props: {
   contract: Contract

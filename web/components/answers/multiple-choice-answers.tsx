@@ -2,7 +2,7 @@ import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { XIcon } from '@heroicons/react/solid'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { ExpandingInput } from '../expanding-input'
+import { ExpandingInput } from '../widgets/expanding-input'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]

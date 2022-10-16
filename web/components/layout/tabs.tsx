@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
 import { ReactNode, useState } from 'react'
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
-import { Tooltip } from 'web/components/tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { Row } from 'web/components/layout/row'
 
 type Tab = {

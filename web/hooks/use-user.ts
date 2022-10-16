@@ -1,9 +1,10 @@
-import { useContext } from 'react'
+import { useContext, useRef } from 'react'
 import {
   useFirestoreDocumentData,
   useFirestoreQueryData,
 } from '@react-query-firebase/firestore'
 import { useQuery, useQueryClient } from 'react-query'
+import { sortBy } from 'lodash'
 
 import { doc, DocumentData } from 'firebase/firestore'
 import { getUser, User, users } from 'web/lib/firebase/users'
@@ -58,15 +59,22 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
   )
 
   const metrics = buildArray(positiveResult.data, negativeResult.data)
-  const contractIds = metrics.map((m) => m.contractId)
+  const contractIds = sortBy(metrics.map((m) => m.contractId))
 
   const contractResult = useQuery(['contracts', contractIds], () =>
     Promise.all(contractIds.map(getContractFromId))
   )
   const contracts = contractResult.data
 
-  if (!positiveResult.data || !negativeResult.data || !contracts)
+  const prevResult = useRef<{
+    contracts: CPMMBinaryContract[]
+    metrics: ContractMetrics[]
+  }>()
+
+  if (!positiveResult.data || !negativeResult.data || !contracts) {
+    if (prevResult.current) return prevResult.current
     return undefined
+  }
 
   const filteredContracts = filterDefined(contracts).filter(
     (c) => !c.isResolved
@@ -75,7 +83,9 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
     .filter((m) => m.from && Math.abs(m.from.day.profit) >= 0.5)
     .filter((m) => filteredContracts.find((c) => c.id === m.contractId))
 
-  return { contracts: filteredContracts, metrics: filteredMetrics }
+  const result = { contracts: filteredContracts, metrics: filteredMetrics }
+  prevResult.current = result
+  return result
 }
 
 export const useUserContractMetrics = (userId = '_', contractId: string) => {

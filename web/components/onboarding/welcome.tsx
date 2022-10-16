@@ -13,7 +13,7 @@ import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { Title } from '../title'
+import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 
 export default function Welcome() {

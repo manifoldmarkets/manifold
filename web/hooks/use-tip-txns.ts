@@ -33,14 +33,14 @@ export function useTipTxns(on: {
   }, [txns])
 }
 
-export function useMarketTipTxns(contractId: string): TipTxn[] {
+export function useItemTipTxns(itemId: string): TipTxn[] {
   const [txns, setTxns] = useState<TipTxn[]>([])
 
   useEffect(() => {
-    return listenForTipTxns(contractId, (txns) => {
+    return listenForTipTxns(itemId, (txns) => {
       setTxns(txns.filter((txn) => !txn.data.commentId))
     })
-  }, [contractId])
+  }, [itemId])
 
   return txns
 }

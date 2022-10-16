@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const defaultTheme = require('tailwindcss/defaultTheme')
 const plugin = require('tailwindcss/plugin')
 
@@ -15,6 +16,15 @@ module.exports = {
       }
     ),
     extend: {
+      keyframes: {
+        progress: {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' },
+        },
+      },
+      animation: {
+        'progress-loading': 'progress 2s linear',
+      },
       colors: {
         primary: '#11b981',
         'primary-focus': '#069668',

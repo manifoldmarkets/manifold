@@ -9,10 +9,10 @@ import Image, { ImageProps, StaticImageData } from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import { ContractCard } from 'web/components/contract/contract-card'
-import { DateTimeTooltip } from 'web/components/datetime-tooltip'
+import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { tournamentContractsByGroupSlugQuery } from 'web/lib/firebase/contracts'
 import { getGroup, groupPath } from 'web/lib/firebase/groups'
@@ -20,11 +20,12 @@ import elon_pic from './_cspi/Will_Elon_Buy_Twitter.png'
 import china_pic from './_cspi/Chinese_Military_Action_against_Taiwan.png'
 import mpox_pic from './_cspi/Monkeypox_Cases.png'
 import race_pic from './_cspi/Supreme_Court_Ban_Race_in_College_Admissions.png'
-import { SiteLink } from 'web/components/site-link'
-import { Carousel } from 'web/components/carousel'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { Carousel } from 'web/components/widgets/carousel'
 import { usePagination } from 'web/hooks/use-pagination'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import { Title } from 'web/components/title'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Title } from 'web/components/widgets/title'
+import { useTracking } from 'web/hooks/use-tracking'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -170,6 +171,9 @@ export default function TournamentPage(props: { sections: SectionInfo[] }) {
 
   const description = `Win real prizes (including cash!) by participating in forecasting
             tournaments on current events, sports, science, and more.`
+
+  useTracking('view tournaments')
+
   return (
     <Page>
       <SEO title="Tournaments" description={description} />

@@ -4,7 +4,7 @@ import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import { ContractsGrid } from '../contract/contracts-grid'
 
 import { useContractsFromIds } from 'web/hooks/use-contract'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export default Node.create({
   name: 'gridCardsComponent',

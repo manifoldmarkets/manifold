@@ -1,4 +1,3 @@
-import { track } from '@amplitude/analytics-browser'
 import {
   ArrowSmRightIcon,
   PlusCircleIcon,
@@ -20,27 +19,28 @@ import Masonry from 'react-masonry-css'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { SiteLink } from '../site-link'
+import { SiteLink } from '../widgets/site-link'
 import { GroupOverviewPost } from './group-overview-post'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { groupPath, updateGroup } from 'web/lib/firebase/groups'
 import { PinnedSelectModal } from '../pinned-select-modal'
-import { Button } from '../button'
+import { Button } from '../buttons/button'
 import { User } from 'common/user'
-import { UserLink } from '../user-link'
+import { UserLink } from '../widgets/user-link'
 import { EditGroupButton } from './edit-group-button'
 import { JoinOrLeaveGroupButton } from './groups-button'
-import { Linkify } from '../linkify'
+import { Linkify } from '../widgets/linkify'
 import { ChoicesToggleGroup } from '../choices-toggle-group'
-import { CopyLinkButton } from '../copy-link-button'
+import { CopyLinkButton } from '../buttons/copy-link-button'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import toast from 'react-hot-toast'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { PostCard, PostCardList } from '../post-card'
-import { LoadingIndicator } from '../loading-indicator'
+import { PostCard, PostCardList } from '../posts/post-card'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
-import { CreatePost } from '../create-post'
+import { CreatePost } from '../posts/create-post'
 import { Modal } from '../layout/modal'
+import { track } from 'web/lib/service/analytics'
 
 const MAX_TRENDING_POSTS = 6
 

@@ -1,18 +1,41 @@
 import {
   init,
-  track,
+  track as amplitudeTrack,
   identify,
   setUserId,
+  getUserId,
+  getDeviceId,
+  getSessionId,
   Identify,
 } from '@amplitude/analytics-browser'
 
 import * as Sprig from 'web/lib/service/sprig'
 
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { saveUserEvent } from '../firebase/users'
+import { removeUndefinedProps } from 'common/util/object'
 
 init(ENV_CONFIG.amplitudeApiKey ?? '', undefined, { includeReferrer: true })
 
-export { track }
+export function track(eventName: string, eventProperties?: any) {
+  amplitudeTrack(eventName, eventProperties)
+
+  const deviceId = getDeviceId()
+  const sessionId = getSessionId()
+  const props = removeUndefinedProps({
+    ...eventProperties,
+    deviceId,
+    sessionId,
+  })
+
+  const userId = getUserId()
+  saveUserEvent(userId, eventName, props)
+
+  if (ENV !== 'PROD') {
+    if (eventProperties) console.log(eventName, eventProperties)
+    else console.log(eventName)
+  }
+}
 
 // Convenience functions:
 
@@ -33,9 +56,13 @@ export const withTracking =
     await promise
   }
 
-export async function identifyUser(userId: string) {
-  setUserId(userId)
-  Sprig.setUserId(userId)
+export async function identifyUser(userId: string | null) {
+  if (userId) {
+    setUserId(userId)
+    Sprig.setUserId(userId)
+  } else {
+    setUserId(null as any)
+  }
 }
 
 export async function setUserProperty(property: string, value: string) {

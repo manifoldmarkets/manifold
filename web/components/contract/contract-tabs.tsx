@@ -1,18 +1,18 @@
 import { memo, useState } from 'react'
-import { Pagination } from 'web/components/pagination'
+import { Pagination } from 'web/components/widgets/pagination'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedLiquidity } from '../feed/feed-liquidity'
-import { CommentsAnswer } from '../feed/feed-answer-comment-group'
+import { FreeResponseComments } from '../feed/feed-answer-comment-group'
 import { FeedCommentThread, ContractCommentInput } from '../feed/feed-comments'
 import { groupBy, sortBy, sum } from 'lodash'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { AnyContractType, Contract } from 'common/contract'
 import { PAST_BETS } from 'common/user'
-import { ContractBetsTable } from '../bets-list'
+import { ContractBetsTable } from '../bet/bets-list'
 import { Spacer } from '../layout/spacer'
 import { Tabs } from '../layout/tabs'
 import { Col } from '../layout/col'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useTipTxns } from 'web/hooks/use-tip-txns'
@@ -26,7 +26,7 @@ import { ContractComment } from 'common/comment'
 
 import { MINUTE_MS } from 'common/util/time'
 import { useUser } from 'web/hooks/use-user'
-import { Tooltip } from 'web/components/tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Row } from '../layout/row'
 import {
@@ -35,9 +35,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { safeLocalStorage } from 'web/lib/util/local'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon'
-import Curve from 'web/public/custom-components/curve'
 import { Answer } from 'common/answer'
-import { AnswerCommentInput } from '../comment-input'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -139,95 +137,27 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
   const topLevelComments = commentsByParent['_'] ?? []
 
-  const sortRow = comments.length > 0 && (
-    <Row className="mb-4 items-center justify-end gap-4">
-      <BountiedContractSmallBadge contract={contract} showAmount />
-      <Row className="items-center gap-1">
-        <div className="text-greyscale-4 text-sm">Sort by:</div>
-        <button
-          className="text-greyscale-6 w-20 text-sm"
-          onClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
-        >
-          <Tooltip
-            text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
-          >
-            <Row className="items-center gap-1">
-              {sort}
-              <TriangleDownFillIcon className=" h-2 w-2" />
-            </Row>
-          </Tooltip>
-        </button>
-      </Row>
-    </Row>
-  )
-  if (contract.outcomeType === 'FREE_RESPONSE') {
-    return (
-      <>
-        <ContractCommentInput className="mb-5" contract={contract} />
-        {sortRow}
-        {answerResponse && (
-          <AnswerCommentInput
-            contract={contract}
-            answerResponse={answerResponse}
-            onCancelAnswerResponse={onCancelAnswerResponse}
-          />
-        )}
-        {topLevelComments.map((parent) => {
-          if (parent.answerOutcome === undefined) {
-            return (
-              <FeedCommentThread
-                key={parent.id}
-                contract={contract}
-                parentComment={parent}
-                threadComments={sortBy(
-                  commentsByParent[parent.id] ?? [],
-                  (c) => c.createdTime
-                )}
-                tips={tips}
-              />
-            )
-          }
-          const answer = contract.answers.find(
-            (answer) => answer.id === parent.answerOutcome
-          )
-          if (answer === undefined) {
-            console.error('Could not find answer that matches ID')
-            return <></>
-          }
-          return (
-            <>
-              <Row className="gap-2">
-                <CommentsAnswer answer={answer} contract={contract} />
-              </Row>
-              <Row>
-                <div className="ml-1">
-                  <Curve size={28} strokeWidth={1} color="#D8D8EB" />
-                </div>
-                <div className="w-full pt-1">
-                  <FeedCommentThread
-                    key={parent.id}
-                    contract={contract}
-                    parentComment={parent}
-                    threadComments={sortBy(
-                      commentsByParent[parent.id] ?? [],
-                      (c) => c.createdTime
-                    )}
-                    tips={tips}
-                  />
-                </div>
-              </Row>
-            </>
-          )
-        })}
-      </>
-    )
-  } else {
-    return (
-      <>
-        <ContractCommentInput className="mb-5" contract={contract} />
-        {sortRow}
-
-        {topLevelComments.map((parent) => (
+  return (
+    <>
+      <ContractCommentInput className="mb-5" contract={contract} />
+      <SortRow
+        comments={comments}
+        contract={contract}
+        sort={sort}
+        onSortClick={() => setSort(sort === 'Newest' ? 'Best' : 'Newest')}
+      />
+      {contract.outcomeType === 'FREE_RESPONSE' && (
+        <FreeResponseComments
+          contract={contract}
+          answerResponse={answerResponse}
+          onCancelAnswerResponse={onCancelAnswerResponse}
+          topLevelComments={topLevelComments}
+          commentsByParent={commentsByParent}
+          tips={tips}
+        />
+      )}
+      {contract.outcomeType !== 'FREE_RESPONSE' &&
+        topLevelComments.map((parent) => (
           <FeedCommentThread
             key={parent.id}
             contract={contract}
@@ -239,9 +169,8 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
             tips={tips}
           />
         ))}
-      </>
-    )
-  }
+    </>
+  )
 })
 
 const BetsTabContent = memo(function BetsTabContent(props: {
@@ -310,3 +239,33 @@ const BetsTabContent = memo(function BetsTabContent(props: {
     </>
   )
 })
+
+export function SortRow(props: {
+  comments: ContractComment[]
+  contract: Contract<AnyContractType>
+  sort: 'Best' | 'Newest'
+  onSortClick: () => void
+}) {
+  const { comments, contract, sort, onSortClick } = props
+  if (comments.length <= 0) {
+    return <></>
+  }
+  return (
+    <Row className="mb-4 items-center justify-end gap-4">
+      <BountiedContractSmallBadge contract={contract} showAmount />
+      <Row className="items-center gap-1">
+        <div className="text-greyscale-4 text-sm">Sort by:</div>
+        <button className="text-greyscale-6 w-20 text-sm" onClick={onSortClick}>
+          <Tooltip
+            text={sort === 'Best' ? 'Highest tips + bounties first.' : ''}
+          >
+            <Row className="items-center gap-1">
+              {sort}
+              <TriangleDownFillIcon className=" h-2 w-2" />
+            </Row>
+          </Tooltip>
+        </button>
+      </Row>
+    </Row>
+  )
+}

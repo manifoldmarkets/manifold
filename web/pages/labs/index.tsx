@@ -2,10 +2,10 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import { DOMAIN } from 'common/envs/constants'
 import Masonry from 'react-masonry-css'
 import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { SiteLink } from 'web/components/site-link'
-import { Title } from 'web/components/title'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { Title } from 'web/components/widgets/title'
 
 export default function LabsPage() {
   return (

@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { findBestMatch } from 'string-similarity'
 
 import { FreeResponseContract } from 'common/contract'
-import { BuyAmountInput } from '../amount-input'
+import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, createAnswer } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
@@ -12,7 +12,7 @@ import {
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { InfoTooltip } from '../info-tooltip'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { useUser } from 'web/hooks/use-user'
 import {
   calculateDpmShares,
@@ -24,8 +24,8 @@ import { Bet } from 'common/bet'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { lowerCase } from 'lodash'
-import { Button } from '../button'
-import { ExpandingInput } from '../expanding-input'
+import { Button } from '../buttons/button'
+import { ExpandingInput } from '../widgets/expanding-input'
 
 export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
   const { contract } = props

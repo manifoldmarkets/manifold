@@ -6,8 +6,8 @@ import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
 import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from 'common/economy'
-import { InfoTooltip } from 'web/components/info-tooltip'
-import { Page } from 'web/components/page'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -24,20 +24,20 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
-import { TextEditor, useTextEditor } from 'web/components/editor'
-import { Checkbox } from 'web/components/checkbox'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { Checkbox } from 'web/components/widgets/checkbox'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
-import { SiteLink } from 'web/components/site-link'
-import { Button } from 'web/components/button'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { Input } from 'web/components/input'
-import { ExpandingInput } from 'web/components/expanding-input'
+import { Input } from 'web/components/widgets/input'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -223,7 +223,7 @@ export function NewContract(props: {
       ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
       : `e.g. I will choose the answer according to...`
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     key: 'create market',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
@@ -278,7 +278,7 @@ export function NewContract(props: {
 
   return (
     <div>
-      <label className="px-1 pt-2 pb-3">Answer type</label>
+      <label className="flex px-1 pt-2 pb-3">Answer type</label>
       <Row>
         <ChoicesToggleGroup
           currentChoice={outcomeType}
@@ -464,7 +464,7 @@ export function NewContract(props: {
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <TextEditor editor={editor} upload={upload} />
+        <TextEditor editor={editor} />
       </div>
 
       <Spacer h={6} />
@@ -517,7 +517,7 @@ export function NewContract(props: {
           type="submit"
           color="green"
           loading={isSubmitting}
-          disabled={!isValid || upload.isLoading}
+          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()

@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
-import { Avatar } from '../avatar'
+import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 
 export function ProfileSummary(props: { user: User }) {

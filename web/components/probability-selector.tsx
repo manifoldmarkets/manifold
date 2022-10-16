@@ -1,4 +1,4 @@
-import { Input } from './input'
+import { Input } from './widgets/input'
 
 export function ProbabilitySelector(props: {
   probabilityInt: number
