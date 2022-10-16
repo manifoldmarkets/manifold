@@ -3,10 +3,7 @@ import React, { useState } from 'react'
 import { clamp } from 'lodash'
 
 import { useUser } from 'web/hooks/use-user'
-import {
-  CPMMBinaryContract,
-  PseudoNumericContract,
-} from 'common/contract'
+import { CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'

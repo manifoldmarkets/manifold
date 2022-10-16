@@ -1,4 +1,8 @@
-import { BinaryContract, CPMMBinaryContract, PseudoNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMBinaryContract,
+  PseudoNumericContract,
+} from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { Col } from '../layout/col'
