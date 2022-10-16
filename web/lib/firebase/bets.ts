@@ -27,10 +27,13 @@ function getBetsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'bets')
 }
 
-export async function listAllBets(contractId: string) {
-  return await getValues<Bet>(
-    query(getBetsCollection(contractId), orderBy('createdTime', 'desc'))
-  )
+export async function listAllBets(
+  contractId: string,
+  maxCount: number | undefined = undefined
+) {
+  const q = query(getBetsCollection(contractId), orderBy('createdTime', 'desc'))
+  const limitedQ = maxCount ? query(q, limit(maxCount)) : q
+  return await getValues<Bet>(limitedQ)
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
