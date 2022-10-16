@@ -41,7 +41,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gray' &&
       'bg-greyscale-1 text-greyscale-6 hover:bg-greyscale-2 disabled:opacity-50',
     color === 'gray-outline' &&
-      'ring-2 ring-greyscale-4 text-greyscale-4 hover:bg-greyscale-4 hover:text-white disabled:opacity-50',
+      'ring-2 ring-greyscale-5 text-greyscale-5 hover:bg-greyscale-5 hover:text-white disabled:opacity-50',
     color === 'gradient' &&
       'disabled:bg-greyscale-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
     color === 'gray-white' &&
