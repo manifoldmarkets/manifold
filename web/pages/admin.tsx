@@ -5,7 +5,7 @@ import { html } from 'gridjs'
 import dayjs from 'dayjs'
 import { usePrivateUsers, useUsers } from 'web/hooks/use-users'
 import Custom404 from './404'
-import { useContracts } from 'web/hooks/use-contracts'
+import { useAllContracts } from 'web/hooks/use-contracts'
 import { mapKeys } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
@@ -114,7 +114,7 @@ function UsersTable() {
 }
 
 function ContractsTable() {
-  const contracts = useContracts() ?? []
+  const contracts = useAllContracts() ?? []
 
   // Sort users by createdTime descending, by default
   const displayContracts = contracts
