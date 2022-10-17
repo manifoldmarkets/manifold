@@ -46,7 +46,7 @@ export function FeedCommentThread(props: {
   })
 
   return (
-    <Col className="relative w-full items-stretch gap-3 pb-3">
+    <Col className="relative w-full items-stretch gap-3 pb-2">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
