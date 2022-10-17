@@ -1,5 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
+import { BOT_USERNAMES } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { keyBy, range, groupBy, sortBy } from 'lodash'
 import { memo } from 'react'
@@ -17,7 +18,9 @@ import { UserLink } from './widgets/user-link'
 
 export function ActivityLog(props: { count: number }) {
   const { count } = props
-  const bets = useLiveBets(count * 2) ?? []
+  const bets = (useLiveBets(count * 2) ?? []).filter(
+    (bet) => !BOT_USERNAMES.includes(bet.userUsername)
+  )
   const comments = (useLiveComments(count * 2) ?? []).filter(
     (c) => c.commentType === 'contract'
   ) as ContractComment[]
