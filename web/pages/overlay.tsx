@@ -137,7 +137,6 @@ class Application {
 
     const questionLength = this.currentMarket.question.length;
     const questionDiv = document.getElementById('question');
-    console.log(questionLength);
     if (questionLength < 60) {
       questionDiv.style.fontSize = '1.3em';
     } else if (questionLength < 150) {
