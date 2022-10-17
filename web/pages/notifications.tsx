@@ -1,6 +1,6 @@
 import { ControlledTabs } from 'web/components/layout/tabs'
 import React, { useEffect, useMemo, useState } from 'react'
-import Router, { useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import {
   BetFillData,
   ContractResolutionData,
