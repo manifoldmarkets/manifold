@@ -15,7 +15,6 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
 import { SiteLink } from '../widgets/site-link'
 import { firestoreConsolePath } from 'common/envs/constants'
-import { deleteField } from 'firebase/firestore'
 import ShortToggle from '../widgets/short-toggle'
 import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
@@ -39,9 +38,6 @@ export function ContractInfoDialog(props: {
   const { contract, className, user } = props
 
   const [open, setOpen] = useState(false)
-  const [featured, setFeatured] = useState(
-    (contract?.featuredOnHomeRank ?? 0) > 0
-  )
   const isDev = useDev()
   const isAdmin = useAdmin()
   const isCreator = user?.id === contract.creatorId
@@ -72,21 +68,6 @@ export function ContractInfoDialog(props: {
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
       : 'Numeric'
-
-  const onFeaturedToggle = async (enabled: boolean) => {
-    if (
-      enabled &&
-      (contract.featuredOnHomeRank === 0 || !contract?.featuredOnHomeRank)
-    ) {
-      await updateContract(id, { featuredOnHomeRank: 1 })
-      setFeatured(true)
-    } else if (!enabled && (contract?.featuredOnHomeRank ?? 0) > 0) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      await updateContract(id, { featuredOnHomeRank: deleteField() })
-      setFeatured(false)
-    }
-  }
 
   const [openCreateChallengeModal, setOpenCreateChallengeModal] =
     useState(false)
@@ -219,18 +200,6 @@ export function ContractInfoDialog(props: {
                       <SiteLink href={firestoreConsolePath(id)}>
                         Console link
                       </SiteLink>
-                    </td>
-                  </tr>
-                )}
-                {isAdmin && (
-                  <tr>
-                    <td>[ADMIN] Featured</td>
-                    <td>
-                      <ShortToggle
-                        on={featured}
-                        setOn={setFeatured}
-                        onChange={onFeaturedToggle}
-                      />
                     </td>
                   </tr>
                 )}

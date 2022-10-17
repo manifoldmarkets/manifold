@@ -61,7 +61,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   popularityScore?: number
   dailyScore?: number
   followerCount?: number
-  featuredOnHomeRank?: number
   likedByUserIds?: string[]
   likedByUserCount?: number
   flaggedByUsernames?: string[]

@@ -29,7 +29,6 @@ import { getGroupLinkToDisplay, groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
-import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink } from 'common/group'
@@ -77,8 +76,6 @@ export function MiscDetails(props: {
           {'Resolved '}
           {fromNow(resolutionTime)}
         </Row>
-      ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
-        <FeaturedContractBadge />
       ) : (contract.openCommentBounties ?? 0) > 0 ? (
         <BountiedContractBadge />
       ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
