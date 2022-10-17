@@ -35,6 +35,7 @@
     "@tiptap/suggestion": "2.0.0-beta.199",
     "cors": "2.8.5",
     "dayjs": "1.11.4",
+    "expo-server-sdk": "3.6.0",
     "express": "4.18.1",
     "firebase-admin": "10.0.0",
     "firebase-functions": "3.21.2",

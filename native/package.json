@@ -18,6 +18,8 @@
     "expo-application": "^4.2.2",
     "expo-auth-session": "~3.7.1",
     "expo-dev-client": "~1.3.0",
+    "expo-device": "^4.3.0",
+    "expo-notifications": "^0.16.1",
     "expo-random": "~12.3.0",
     "expo-splash-screen": "~0.16.2",
     "expo-status-bar": "~1.4.0",
