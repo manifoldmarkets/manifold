@@ -30,7 +30,7 @@ const NumericChartTooltip = (
   const amount = xScale.invert(x)
   return (
     <>
-      <span className="text-semibold">{formatLargeNumber(amount)}</span>
+      <span className="text-semibold mr-2">{formatLargeNumber(amount)}</span>
       <span className="text-greyscale-6">{formatPct(data.y, 2)}</span>
     </>
   )
