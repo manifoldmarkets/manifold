@@ -566,7 +566,7 @@ export function DailyProfit(props: { user: User | null | undefined }) {
 function ActivitySection() {
   return (
     <Col>
-      <SectionHeader label="Live" href="/live" />
+      <SectionHeader label="Live feed" href="/live" />
       <ActivityLog count={6} />
     </Col>
   )
