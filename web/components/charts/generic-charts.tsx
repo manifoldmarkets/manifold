@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { bisector } from 'd3-array'
 import { axisBottom, axisLeft } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
@@ -29,7 +29,6 @@ import {
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 import { formatMoney } from 'common/util/format'
-import { nanoid } from 'nanoid'
 
 export type MultiPoint<T = unknown> = Point<Date, number[], T>
 export type HistoryPoint<T = unknown> = Point<Date, number, T>
@@ -349,7 +348,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     }
   })
 
-  const gradientId = useMemo(() => nanoid(), [])
+  const gradientId = useId()
   const stops = useMemo(
     () =>
       typeof color !== 'string' ? computeColorStops(data, color, px) : null,
