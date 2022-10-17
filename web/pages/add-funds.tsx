@@ -8,10 +8,8 @@ import { checkoutURL } from 'web/lib/service/stripe'
 import { Page } from 'web/components/layout/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
-import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { Button } from 'web/components/buttons/button'
-
-export const getServerSideProps = redirectIfLoggedOut('/')
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function AddFundsPage() {
   const user = useUser()
@@ -20,6 +18,7 @@ export default function AddFundsPage() {
     2500
   )
 
+  useRedirectIfSignedOut()
   useTracking('view add funds')
 
   return (

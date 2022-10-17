@@ -68,23 +68,18 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { ActivityLog } from 'web/components/activity-log'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function Home() {
   const user = useUser()
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig()
 
+  useRedirectIfSignedOut()
   useTracking('view home')
 
   useSaveReferral()
   usePrefetch(user?.id)
-
-  useEffect(() => {
-    if (user === null) {
-      // Go to landing page if not logged in.
-      Router.push('/')
-    }
-  })
 
   const { sections } = getHomeItems(user?.homeSections ?? [])
 

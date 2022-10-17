@@ -1,5 +1,5 @@
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { DateDoc } from 'common/post'
 import { useTextEditor, TextEditor } from 'web/components/widgets/editor'
 import { Page } from 'web/components/layout/page'
@@ -17,13 +17,12 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { removeUndefinedProps } from 'common/util/object'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export default function CreateDateDocPage() {
   const user = useUser()
 
-  useEffect(() => {
-    if (user === null) Router.push('/date')
-  })
+  useRedirectIfSignedOut()
 
   const title = `${user?.name}'s Date Doc`
   const subtitle = 'Manifold dating docs'
