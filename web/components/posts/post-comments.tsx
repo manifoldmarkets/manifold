@@ -126,7 +126,7 @@ export function PostComment(props: {
       className={clsx(
         'relative',
         indent ? 'ml-6' : '',
-        highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
+        highlighted ? `bg-indigo-50` : ''
       )}
     >
       {/*draw a gray line from the comment to the left:*/}
