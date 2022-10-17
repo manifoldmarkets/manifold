@@ -79,6 +79,13 @@ const Salem = {
 
 const tourneys: Tourney[] = [
   {
+    title: '2022 US Midterm Elections',
+    blurb: 'Forecast the outcome of the 2022 US Midterm Elections.',
+    award: 'US$500',
+    endTime: toDate('Nov 8, 2022'),
+    groupId: 'y2e0hHBab86vdAkUJx9w',
+  },
+  {
     title: 'CCP 20th National Party Congress',
     blurb:
       "Forecast the outcome of the Chinese Communist Party's 20th National Party Congress.",
