@@ -12,6 +12,7 @@ type Tab = {
   stackedTabIcon?: ReactNode
   inlineTabIcon?: ReactNode
   tooltip?: string
+  className?: string
 }
 
 type TabProps = {
@@ -73,7 +74,13 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         ))}
       </nav>
       {tabs.map((tab, i) => (
-        <div key={i} className={i === activeIndex ? 'block' : 'hidden'}>
+        <div
+          key={i}
+          className={clsx(
+            i === activeIndex ? 'block' : 'hidden',
+            tab.className
+          )}
+        >
           {tab.content}
         </div>
       ))}
