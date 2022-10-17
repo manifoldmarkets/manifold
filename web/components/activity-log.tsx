@@ -21,7 +21,10 @@ import { UserLink } from './widgets/user-link'
 export function ActivityLog(props: { count: number; showPills: boolean }) {
   const { count, showPills } = props
   const bets = (useLiveBets(count * 2) ?? []).filter(
-    (bet) => !BOT_USERNAMES.includes(bet.userUsername)
+    (bet) =>
+      !BOT_USERNAMES.includes(bet.userUsername) &&
+      !bet.isRedemption &&
+      !bet.isAnte
   )
   const comments = (useLiveComments(count * 2) ?? []).filter(
     (c) => c.commentType === 'contract'

@@ -567,7 +567,7 @@ function ActivitySection() {
   return (
     <Col>
       <SectionHeader label="Live feed" href="/live" />
-      <ActivityLog count={6} showPills={false} />
+      <ActivityLog count={6} showPills />
     </Col>
   )
 }
