@@ -109,7 +109,6 @@ export default function ChallengePage(props: {
         description={ogCardProps.description}
         url={getChallengeUrl(challenge).replace('https://', '')}
         ogCardProps={ogCardProps}
-        challenge={challenge}
       />
       {challenge.acceptances.length >= challenge.maxUses ? (
         <ClosedChallengeContent

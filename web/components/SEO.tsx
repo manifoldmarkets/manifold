@@ -1,6 +1,5 @@
 import { ReactNode } from 'react'
 import Head from 'next/head'
-import { Challenge } from 'common/challenge'
 import { buildCardUrl, OgCardProps } from 'common/contract-details'
 
 export function SEO(props: {
@@ -9,9 +8,15 @@ export function SEO(props: {
   url?: string
   children?: ReactNode
   ogCardProps?: OgCardProps
-  challenge?: Challenge
+  image?: string
 }) {
-  const { title, description, url, children, ogCardProps, challenge } = props
+  const { title, description, url, children, image, ogCardProps } = props
+
+  const imageUrl = image
+    ? image
+    : ogCardProps
+    ? buildCardUrl(ogCardProps)
+    : undefined
 
   return (
     <Head>
@@ -39,19 +44,11 @@ export function SEO(props: {
         />
       )}
 
-      {ogCardProps && (
+      {imageUrl && (
         <>
-          <meta
-            property="og:image"
-            content={buildCardUrl(ogCardProps, challenge)}
-            key="image1"
-          />
+          <meta property="og:image" content={imageUrl} key="image1" />
           <meta name="twitter:card" content="summary_large_image" key="card" />
-          <meta
-            name="twitter:image"
-            content={buildCardUrl(ogCardProps, challenge)}
-            key="image2"
-          />
+          <meta name="twitter:image" content={imageUrl} key="image2" />
         </>
       )}
 
