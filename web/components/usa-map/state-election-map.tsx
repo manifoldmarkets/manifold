@@ -72,6 +72,8 @@ export function StateElectionMap(props: {
             newTab
             contract={hoveredContract}
             key={hoveredContract.id}
+            hideQuickBet
+            className="w-[300px]"
           />
         )}
       </div>
