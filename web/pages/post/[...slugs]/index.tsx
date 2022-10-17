@@ -80,7 +80,7 @@ export default function PostPage(props: {
     <Page>
       <SEO
         title={post.title}
-        description={'A post by ' + creator.username}
+        description={post.subtitle}
         url={'/post/' + post.slug}
       />
       <div className="mx-auto w-full max-w-3xl ">
