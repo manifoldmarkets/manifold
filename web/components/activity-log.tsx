@@ -14,6 +14,7 @@ import { Row } from './layout/row'
 import { RelativeTimestamp } from './relative-timestamp'
 import { Avatar } from './widgets/avatar'
 import { Content } from './widgets/editor'
+import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 
 export function ActivityLog(props: { count: number }) {
@@ -38,7 +39,10 @@ export function ActivityLog(props: { count: number }) {
     ) ?? 0
 
   const itemsSubset = items.slice(startIndex, startIndex + count)
-  const allLoaded = itemsSubset.every((b) => contractsById[b.contractId])
+  const allLoaded =
+    bets.length > 0 &&
+    comments.length > 0 &&
+    itemsSubset.every((b) => contractsById[b.contractId])
 
   const groups = Object.entries(groupBy(itemsSubset, (b) => b.contractId)).map(
     ([contractId, items]) => ({
@@ -47,30 +51,31 @@ export function ActivityLog(props: { count: number }) {
     })
   )
 
+  if (!allLoaded) return <LoadingIndicator />
+
   return (
     <Col className="divide-y border">
-      {allLoaded &&
-        groups.map(({ contractId, items }) => {
-          const contract = contractsById[contractId] as Contract
-          return (
-            <Col key={contractId} className="gap-2 bg-white px-6 py-4 ">
-              <ContractMention contract={contract} />
-              {items.map((item) =>
-                'amount' in item ? (
-                  <FeedBet
-                    className="!pt-0"
-                    key={item.id}
-                    contract={contract}
-                    bet={item}
-                    avatarSize="xs"
-                  />
-                ) : (
-                  <CommentLog key={item.id} comment={item} />
-                )
-              )}
-            </Col>
-          )
-        })}
+      {groups.map(({ contractId, items }) => {
+        const contract = contractsById[contractId] as Contract
+        return (
+          <Col key={contractId} className="gap-2 bg-white px-6 py-4 ">
+            <ContractMention contract={contract} />
+            {items.map((item) =>
+              'amount' in item ? (
+                <FeedBet
+                  className="!pt-0"
+                  key={item.id}
+                  contract={contract}
+                  bet={item}
+                  avatarSize="xs"
+                />
+              ) : (
+                <CommentLog key={item.id} comment={item} />
+              )
+            )}
+          </Col>
+        )
+      })}
     </Col>
   )
 }
