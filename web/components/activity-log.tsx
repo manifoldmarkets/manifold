@@ -3,10 +3,11 @@ import { Contract } from 'common/contract'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
 import { keyBy, range, groupBy, sortBy } from 'lodash'
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
 import { useContracts } from 'web/hooks/use-contracts'
+import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
 import { Col } from './layout/col'
@@ -17,8 +18,8 @@ import { Content } from './widgets/editor'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserLink } from './widgets/user-link'
 
-export function ActivityLog(props: { count: number }) {
-  const { count } = props
+export function ActivityLog(props: { count: number; showPills: boolean }) {
+  const { count, showPills } = props
   const bets = (useLiveBets(count * 2) ?? []).filter(
     (bet) => !BOT_USERNAMES.includes(bet.userUsername)
   )
@@ -26,19 +27,29 @@ export function ActivityLog(props: { count: number }) {
     (c) => c.commentType === 'contract'
   ) as ContractComment[]
 
+  const [pill, setPill] = useState<'all' | 'comments' | 'trades'>('all')
+
+  const items = sortBy(
+    pill === 'all'
+      ? [...bets, ...comments]
+      : pill === 'comments'
+      ? comments
+      : bets,
+    (i) => i.createdTime
+  ).reverse()
+
   const contracts = filterDefined([
     ...useContracts(bets.map((b) => b.contractId)),
     ...useContracts(comments.map((c) => c.contractId)),
   ])
-  const items = sortBy([...bets, ...comments], (i) => i.createdTime).reverse()
-
   const contractsById = keyBy(contracts, 'id')
+
   const startIndex =
     range(0, items.length - count).find((i) =>
       items.slice(i, i + count).every((item) => contractsById[item.contractId])
     ) ?? 0
-
   const itemsSubset = items.slice(startIndex, startIndex + count)
+
   const allLoaded =
     bets.length > 0 &&
     comments.length > 0 &&
@@ -54,28 +65,49 @@ export function ActivityLog(props: { count: number }) {
   if (!allLoaded) return <LoadingIndicator />
 
   return (
-    <Col className="divide-y border">
-      {groups.map(({ contractId, items }) => {
-        const contract = contractsById[contractId] as Contract
-        return (
-          <Col key={contractId} className="gap-2 bg-white px-6 py-4 ">
-            <ContractMention contract={contract} />
-            {items.map((item) =>
-              'amount' in item ? (
-                <FeedBet
-                  className="!pt-0"
-                  key={item.id}
-                  contract={contract}
-                  bet={item}
-                  avatarSize="xs"
-                />
-              ) : (
-                <CommentLog key={item.id} comment={item} />
-              )
-            )}
-          </Col>
-        )
-      })}
+    <Col className="gap-4">
+      {showPills && (
+        <Row className="gap-2">
+          <PillButton selected={pill === 'all'} onSelect={() => setPill('all')}>
+            All
+          </PillButton>
+          <PillButton
+            selected={pill === 'comments'}
+            onSelect={() => setPill('comments')}
+          >
+            Comments
+          </PillButton>
+          <PillButton
+            selected={pill === 'trades'}
+            onSelect={() => setPill('trades')}
+          >
+            Trades
+          </PillButton>
+        </Row>
+      )}
+      <Col className="divide-y border">
+        {groups.map(({ contractId, items }) => {
+          const contract = contractsById[contractId] as Contract
+          return (
+            <Col key={contractId} className="gap-2 bg-white px-6 py-4 ">
+              <ContractMention contract={contract} />
+              {items.map((item) =>
+                'amount' in item ? (
+                  <FeedBet
+                    className="!pt-0"
+                    key={item.id}
+                    contract={contract}
+                    bet={item}
+                    avatarSize="xs"
+                  />
+                ) : (
+                  <CommentLog key={item.id} comment={item} />
+                )
+              )}
+            </Col>
+          )
+        })}
+      </Col>
     </Col>
   )
 }
