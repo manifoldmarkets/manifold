@@ -1,5 +1,5 @@
 import { useCallback, useId, useMemo, useState } from 'react'
-import { bisector } from 'd3-array'
+import { bisector, extent } from 'd3-array'
 import { axisBottom, axisLeft } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
@@ -275,12 +275,15 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { data, w, h, color, margin, yScale, yKind, Tooltip } = props
+  const { data, w, h, color, margin, yKind, Tooltip } = props
   const curve = props.curve ?? curveLinear
 
   const [mouse, setMouse] = useState<TooltipParams<P> & SliceExtent>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
+  const [viewYScale, setViewYScale] =
+    useState<ScaleContinuousNumeric<number, number>>()
   const xScale = viewXScale ?? props.xScale
+  const yScale = viewYScale ?? props.yScale
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(0)
@@ -334,26 +337,31 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
-      const newViewXScale = xScale
-        .copy()
-        .domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
+      const xMin = xScale.invert(mouseX0)
+      const xMax = xScale.invert(mouseX1)
+      const newViewXScale = xScale.copy().domain([xMin, xMax])
       setViewXScale(() => newViewXScale)
 
-      const dataInView = data.filter((p) => {
-        const x = newViewXScale(p.x)
-        return x >= 0 && x <= w
-      })
-      const yMin = Math.min(...dataInView.map((p) => p.y))
-      const yMax = Math.max(...dataInView.map((p) => p.y))
+      const bisect = bisector((p: P) => p.x)
+      const iMin = bisect.left(data, xMin)
+      const iMax = bisect.left(data, xMax)
+      const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
+      const [yMin, yMax] = extent(visibleYs) as [number, number]
 
-      // Prevents very small selections from being too zoomed in
-      if (yMax - yMin > 0.05) {
+      // don't zoom axis if they selected an area with only one value
+      if (yMin != yMax) {
         // adds a little padding to the top and bottom of the selection
-        yScale.domain([yMin - (yMax - yMin) * 0.1, yMax + (yMax - yMin) * 0.1])
+        const padding = (yMax - yMin) * 0.1
+        setViewYScale(() =>
+          yScale
+            .copy()
+            .domain([yMin - padding, yMax + padding])
+            .nice()
+        )
       }
     } else {
       setViewXScale(undefined)
-      yScale.domain([0, 1])
+      setViewYScale(undefined)
     }
   })
 
