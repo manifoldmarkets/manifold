@@ -41,7 +41,7 @@ export function AwardBountyButton(prop: {
     >
       <button
         className={
-          'rounded-full border border-indigo-400 bg-indigo-50 py-0.5 px-2 text-xs text-indigo-400 transition-colors hover:bg-indigo-400 hover:text-white'
+          'mx-2 rounded-full border border-indigo-400 bg-indigo-50 py-0.5 px-2 text-xs text-indigo-400 transition-colors hover:bg-indigo-400 hover:text-white'
         }
         onClick={submit}
       >
