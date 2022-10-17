@@ -134,8 +134,8 @@ export function ParentFeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'hover:bg-greyscale-1 ml-3 gap-2 transition-colors',
-        highlighted ? `bg-indigo-50` : ''
+        'ml-3 gap-2 transition-colors',
+        highlighted ? `bg-indigo-50` : 'hover:bg-greyscale-1'
       )}
     >
       <Col className="-ml-3.5">
@@ -225,8 +225,8 @@ export const FeedComment = memo(function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'hover:bg-greyscale-1 ml-10 gap-2 transition-colors',
-        highlighted ? `bg-indigo-50` : ''
+        'ml-10 gap-2 transition-colors',
+        highlighted ? `bg-indigo-50` : 'hover:bg-greyscale-1'
       )}
     >
       <Col className="-ml-3">
