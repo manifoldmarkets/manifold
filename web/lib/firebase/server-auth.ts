@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http'
-import { Auth as FirebaseAuth, User as FirebaseUser } from 'firebase/auth'
+import { User as FirebaseUser } from 'firebase/auth'
 import { AUTH_COOKIE_NAME } from 'common/envs/constants'
 import { getCookies } from 'web/lib/util/cookie'
 import {
@@ -10,7 +10,8 @@ import {
 
 // client firebase SDK
 import { app as clientApp } from './init'
-import { getAuth, updateCurrentUser } from 'firebase/auth'
+
+import { setFirebaseUserViaJson } from 'common/firebase-auth'
 
 type RequestContext = {
   req: IncomingMessage
@@ -44,40 +45,14 @@ type RequestContext = {
 // Persistence manager: https://github.com/firebase/firebase-js-sdk/blob/39f4635ebc07316661324145f1b8c27f9bd7aedb/packages/auth/src/core/persistence/persistence_user_manager.ts#L64
 // Token manager: https://github.com/firebase/firebase-js-sdk/blob/39f4635ebc07316661324145f1b8c27f9bd7aedb/packages/auth/src/core/user/token_manager.ts#L76
 
-export interface FirebaseAuthInternal extends FirebaseAuth {
-  persistenceManager: {
-    fullUserKey: string
-    getCurrentUser: () => Promise<FirebaseUser | null>
-    persistence: {
-      _set: (k: string, obj: Record<string, unknown>) => Promise<void>
-    }
-  }
-}
-
 export const authenticateOnServer = async (ctx: RequestContext) => {
   const user = getCookies(ctx.req.headers.cookie ?? '')[AUTH_COOKIE_NAME]
-  console.log('user in cookie', user?.slice(0, 20))
   if (user == null) {
     console.debug('User is unauthenticated.')
     return null
   }
-  try {
-    const deserializedUser = JSON.parse(user)
-    console.log('deserialized user', deserializedUser)
-    const clientAuth = getAuth(clientApp) as FirebaseAuthInternal
-    const persistenceManager = clientAuth.persistenceManager
-    const persistence = persistenceManager.persistence
-    await persistence._set(persistenceManager.fullUserKey, deserializedUser)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const fbUser = (await persistenceManager.getCurrentUser())!
-    await fbUser.getIdToken() // forces a refresh if necessary
-    await updateCurrentUser(clientAuth, fbUser)
-    console.debug('Signed in with user from cookie.')
-    return fbUser
-  } catch (e) {
-    console.error('deserializing', e)
-    return null
-  }
+  const deserializedUser = JSON.parse(user)
+  return setFirebaseUserViaJson(deserializedUser, clientApp)
 }
 
 // note that we might want to define these types more generically if we want better

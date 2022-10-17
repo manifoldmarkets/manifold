@@ -1,22 +1,27 @@
 import {
-  doc,
-  setDoc,
-  getDoc,
   collection,
-  query,
-  where,
-  limit,
-  getDocs,
-  orderBy,
-  updateDoc,
-  deleteDoc,
   collectionGroup,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
   onSnapshot,
+  orderBy,
+  query,
   Query,
+  setDoc,
+  updateDoc,
+  where,
 } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
-import { PortfolioMetrics, PrivateUser, User } from 'common/user'
+import {
+  PortfolioMetrics,
+  PrivateUser,
+  User,
+  UserAndPrivateUser,
+} from 'common/user'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
@@ -24,17 +29,15 @@ import { addUserToGroupViaId } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-dayjs.extend(utc)
-
 import { Like } from 'common/like'
 import { track } from '../service/analytics'
+
+dayjs.extend(utc)
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
 
 export type { User }
-
-export type UserAndPrivateUser = { user: User; privateUser: PrivateUser }
 
 export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 

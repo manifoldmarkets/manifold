@@ -6,16 +6,31 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
 } from 'firebase/auth'
-import { initializeApp } from 'firebase/app'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
 import 'expo-dev-client'
 import CookieManager from '@react-native-cookies/cookies'
-import { AUTH_COOKIE_NAME, ENV_CONFIG } from 'common/envs/constants'
+import {
+  AUTH_COOKIE_NAME,
+  ENV_CONFIG,
+  FIREBASE_CONFIG,
+} from 'common/envs/constants'
+import {
+  doc,
+  getFirestore,
+  getDoc,
+  updateDoc,
+  deleteField,
+} from 'firebase/firestore'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import { Text, View, Button, Platform } from 'react-native'
 import { Notification } from 'expo-notifications'
 import { Subscription } from 'expo-modules-core'
+import { TEN_YEARS_SECS } from 'common/envs/constants'
+import { PrivateUser } from 'common/user'
+import { setFirebaseUserViaJson } from 'common/firebase-auth'
+import { getApp, getApps, initializeApp } from 'firebase/app'
+import { removeUndefinedProps } from 'common/util/object'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -24,50 +39,38 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 })
-const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 const isExpoClient =
   Constants.ExecutionEnvironment === ExecutionEnvironment.StoreClient
+
 // Initialize Firebase
-console.log('using ', process.env.NEXT_PUBLIC_FIREBASE_ENV, 'env')
+console.log('using', process.env.NEXT_PUBLIC_FIREBASE_ENV, 'env')
 console.log('env not switching? run `expo start --clear` and then try again')
-const isDev = process.env.NEXT_PUBLIC_FIREBASE_ENV === 'DEV'
-const app = initializeApp(ENV_CONFIG.firebaseConfig)
+const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
+const firestore = getFirestore(app)
+const auth = getAuth(app)
+
 // no other uri works for API requests due to CORS
-const uri = 'http://localhost:3000/'
+// const uri = 'http://localhost:3000/'
+const uri = 'https://88ad-181-41-206-31.ngrok.io'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
+  const [privateUser, setPrivateUser] = useState<string | null>()
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
-    isDev
-      ? {
-          //dev:
-          iosClientId:
-            '134303100058-pe0f0oc28cv4u7o3tf3m0021utva0u55.apps.googleusercontent.com',
-          expoClientId:
-            '134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com',
-        }
-      : {
-          //prod:
-          iosClientId:
-            '128925704902-6ci48vjqud9ddcl436go5ma3m9ceei4k.apps.googleusercontent.com',
-          clientId:
-            '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
-        }
+    ENV_CONFIG.expoConfig
   )
   const webview = useRef<WebView>()
   const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
   const useWebKit = true
-  const [expoPushToken, setExpoPushToken] = useState('')
   const [notification, setNotification] = useState<Notification | false>(false)
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token) => setExpoPushToken(token))
-
     // This listener is fired whenever a notification is received while the app is foregrounded
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
+        // TODO: pass this to the webview so we can navigate to the correct page
         setNotification(notification)
       })
 
@@ -87,7 +90,6 @@ export default function App() {
   useEffect(() => {
     if (response?.type === 'success') {
       const { id_token } = response.params
-      const auth = getAuth(app)
       const credential = GoogleAuthProvider.credential(id_token)
       signInWithCredential(auth, credential).then((result) => {
         const fbUser = result.user.toJSON()
@@ -96,7 +98,6 @@ export default function App() {
             JSON.stringify({ type: 'nativeFbUser', data: fbUser })
           )
         }
-        setFbUser(JSON.stringify(fbUser))
       })
     }
   }, [response])
@@ -119,21 +120,113 @@ export default function App() {
     }
   }, [])
 
-  // Add this
-  const handleMessage = ({ nativeEvent }) => {
-    if (nativeEvent.data === 'googleLoginClicked') {
-      console.log('googleLoginClicked')
-      promptAsync()
-    } else if (nativeEvent.data.includes('user')) {
-      // on reload the fb user from webview cache, set the fb user
-      console.log('setting fb user from webciew cache')
-      setFbUser(nativeEvent.data)
-    } else if (nativeEvent.data === 'signOut') {
-      console.log('signOut')
-      setFbUser(null)
-      !isExpoClient && CookieManager.clearAll(useWebKit)
+  const setPushToken = async (userId: string, pushToken: string) => {
+    console.log('setting push token', pushToken)
+    const userDoc = doc(firestore, 'private-users', userId)
+    const privateUserDoc = (await getDoc(userDoc)).data() as PrivateUser
+    await updateDoc(
+      doc(firestore, 'private-users', userId),
+      removeUndefinedProps({
+        ...privateUserDoc,
+        pushToken,
+        rejectedPushNotificationsOn: privateUserDoc.rejectedPushNotificationsOn
+          ? deleteField()
+          : undefined,
+      })
+    )
+  }
+
+  const setPushTokenRequestDenied = async (userId: string) => {
+    console.log('push token denied', userId)
+    const userDoc = doc(firestore, 'private-users', userId)
+    const privateUserDoc = (await getDoc(userDoc)).data() as PrivateUser
+    await updateDoc(doc(firestore, 'private-users', userId), {
+      ...privateUserDoc,
+      rejectedPushNotificationsOn: Date.now(),
+    })
+  }
+
+  const registerForPushNotificationsAsync = async () => {
+    if (Device.isDevice) {
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync()
+      let finalStatus = existingStatus
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync()
+        finalStatus = status
+      }
+      if (finalStatus !== 'granted' && privateUser) {
+        setPushTokenRequestDenied(JSON.parse(privateUser).id)
+        return
+      }
+      const appConfig = require('./app.json')
+      const projectId = appConfig?.expo?.extra?.eas?.projectId
+      const token = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data
+      console.log(token)
+      return token
     } else {
-      console.log('nativeEvent.data', nativeEvent.data)
+      alert('Must use physical device for Push Notifications')
+    }
+
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      })
+    }
+
+    return null
+  }
+
+  const handleMessageFromWebview = ({ nativeEvent }) => {
+    // Time to log in to firebase
+    if (nativeEvent.data === 'googleLoginClicked') {
+      promptAsync()
+      return
+    }
+    // User needs to enable push notifications
+    else if (
+      nativeEvent.data === 'promptEnablePushNotifications' &&
+      privateUser
+    ) {
+      const privateUserObj = JSON.parse(privateUser) as PrivateUser
+      if (!privateUserObj?.pushToken) {
+        registerForPushNotificationsAsync().then((token) => {
+          token && setPushToken(privateUserObj.id, token)
+        })
+      }
+      return
+    } else if (nativeEvent.data === 'signOut') {
+      console.log('signOut called')
+      auth.signOut()
+      setFbUser(null)
+      setPrivateUser(null)
+      !isExpoClient && CookieManager.clearAll(useWebKit)
+      return
+    }
+    try {
+      const fbUserAndPrivateUser = JSON.parse(nativeEvent.data)
+      // Passing us a signed-in user object
+      if (
+        fbUserAndPrivateUser &&
+        fbUserAndPrivateUser.fbUser &&
+        fbUserAndPrivateUser.privateUser
+      ) {
+        console.log('Signing in fb user from webview cache')
+        setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app)
+        setFbUser(JSON.stringify(fbUserAndPrivateUser.fbUser))
+        setPrivateUser(JSON.stringify(fbUserAndPrivateUser.privateUser))
+        return
+      }
+    } catch (e) {
+      // Not a user object
+      console.log('Unhandled nativeEvent.data: ', nativeEvent.data)
     }
   }
 
@@ -145,7 +238,7 @@ export default function App() {
         sharedCookiesEnabled={true}
         source={{ uri }}
         ref={webview}
-        onMessage={handleMessage}
+        onMessage={handleMessageFromWebview}
         onNavigationStateChange={async (navState) => {
           if (!navState.loading && !hasInjectedVariable && webview.current) {
             webview.current.injectJavaScript('window.isNative = true')
@@ -175,42 +268,4 @@ export default function App() {
       {/*)}*/}
     </>
   )
-}
-
-async function registerForPushNotificationsAsync() {
-  let token
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync()
-    let finalStatus = existingStatus
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync()
-      finalStatus = status
-    }
-    if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!')
-      return
-    }
-    const appConfig = require('./app.json')
-    const projectId = appConfig?.expo?.extra?.eas?.projectId
-    const token = (
-      await Notifications.getExpoPushTokenAsync({
-        projectId,
-      })
-    ).data
-    console.log(token)
-    return token
-  } else {
-    alert('Must use physical device for Push Notifications')
-  }
-
-  if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    })
-  }
-
-  return token
 }

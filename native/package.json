@@ -2,8 +2,8 @@
   "name": "manifold",
   "version": "1.0.0",
   "scripts": {
-    "ios:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV yarn ios",
-    "ios:prod": "NEXT_PUBLIC_FIREBASE_ENV=PROD yarn ios",
+    "ios:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV yarn ios -d",
+    "ios:prod": "NEXT_PUBLIC_FIREBASE_ENV=PROD yarn ios -d",
     "start": "expo start",
     "start:dev": "expo start --dev-client",
     "android": "expo run:android",
