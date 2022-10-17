@@ -9,8 +9,10 @@ import {
   listenForCommentsOnContract,
   listenForCommentsOnGroup,
   listenForCommentsOnPost,
+  listenForLiveComments,
   listenForRecentComments,
 } from 'web/lib/firebase/comments'
+import { usePersistentState, inMemoryStore } from './use-persistent-state'
 
 export const useComments = (contractId: string) => {
   const [comments, setComments] = useState<ContractComment[] | undefined>()
@@ -45,4 +47,20 @@ export const useRecentComments = () => {
   const [recentComments, setRecentComments] = useState<Comment[] | undefined>()
   useEffect(() => listenForRecentComments(setRecentComments), [])
   return recentComments
+}
+
+export const useLiveComments = (count: number) => {
+  const [comments, setComments] = usePersistentState<Comment[] | undefined>(
+    undefined,
+    {
+      store: inMemoryStore(),
+      key: `liveComments-${count}`,
+    }
+  )
+
+  useEffect(() => {
+    return listenForLiveComments(count, setComments)
+  }, [count, setComments])
+
+  return comments
 }

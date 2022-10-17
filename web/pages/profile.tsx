@@ -3,15 +3,17 @@ import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
 import React, { useState } from 'react'
-import { ConfirmationButton } from 'web/components/confirmation-button'
-import { ExpandingInput } from 'web/components/expanding-input'
-import { Input } from 'web/components/input'
+import { buttonClass } from 'web/components/buttons/button'
+import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { Input } from 'web/components/widgets/input'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { SiteLink } from 'web/components/site-link'
-import { Title } from 'web/components/title'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { Title } from 'web/components/widgets/title'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
@@ -41,7 +43,7 @@ function EditUserField(props: {
 
   return (
     <div>
-      <label className="label">{label}</label>
+      <label className="px-1 py-2">{label}</label>
 
       {field === 'bio' ? (
         <ExpandingInput
@@ -129,14 +131,17 @@ export default function ProfilePage(props: {
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="justify-between">
           <Title className="!mt-0" text="Edit Profile" />
-          <SiteLink className="btn btn-primary" href={`/${user.username}`}>
+          <SiteLink
+            className={buttonClass('md', 'green')}
+            href={`/${user.username}`}
+          >
             Done
           </SiteLink>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
             {avatarLoading ? (
-              <button className="btn btn-ghost btn-lg btn-circle loading"></button>
+              <LoadingIndicator />
             ) : (
               <>
                 <img
@@ -151,7 +156,7 @@ export default function ProfilePage(props: {
           </Row>
 
           <div>
-            <label className="label">Display name</label>
+            <label className="px-1 py-2">Display name</label>
             <Input
               type="text"
               placeholder="Display name"
@@ -162,7 +167,7 @@ export default function ProfilePage(props: {
           </div>
 
           <div>
-            <label className="label">Username</label>
+            <label className="px-1 py-2">Username</label>
             <Input
               type="text"
               placeholder="Username"
@@ -188,15 +193,15 @@ export default function ProfilePage(props: {
           ))}
 
           <div>
-            <label className="label">Email</label>
+            <label className="px-1 py-2">Email</label>
             <div className="ml-1 text-gray-500">
               {privateUser.email ?? '\u00a0'}
             </div>
           </div>
 
           <div>
-            <label className="label">API key</label>
-            <div className="input-group w-full">
+            <label className="px-1 py-2">API key</label>
+            <div className="flex w-full items-stretch">
               <Input
                 type="text"
                 placeholder="Click refresh to generate key"

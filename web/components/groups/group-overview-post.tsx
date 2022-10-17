@@ -1,7 +1,7 @@
 import { Row } from '../layout/row'
-import { Content } from '../editor'
-import { TextEditor, useTextEditor } from 'web/components/editor'
-import { Button } from '../button'
+import { Content } from '../widgets/editor'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { Group } from 'common/group'
 import { deleteFieldFromGroup, updateGroup } from 'web/lib/firebase/groups'
@@ -33,11 +33,9 @@ export function GroupOverviewPost(props: {
 function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   const { group, post } = props
   const [editing, setEditing] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     defaultValue: post?.content,
-    disabled: isSubmitting,
   })
 
   async function savePost() {
@@ -71,15 +69,13 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
 
   return editing ? (
     <>
-      <TextEditor editor={editor} upload={upload} />
+      <TextEditor editor={editor} />
       <Spacer h={2} />
       <Row className="gap-2">
         <Button
           onClick={async () => {
-            setIsSubmitting(true)
             await savePost()
             setEditing(false)
-            setIsSubmitting(false)
           }}
         >
           Save

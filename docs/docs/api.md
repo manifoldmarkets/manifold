@@ -680,6 +680,17 @@ $ curl https://manifold.markets/api/v0/market/{marketId}/sell -X POST \
     --data-raw '{"outcome": "YES", "shares": 10}'
 ```
 
+### `POST /v0/comment`
+
+Creates a comment in the specified market. Only supports top-level comments for now.
+
+Parameters:
+
+- `contractId`: Required. The ID of the market to comment on.
+- `content`: The comment to post, formatted as [TipTap json](https://tiptap.dev/guide/output#option-1-json), OR
+- `html`: The comment to post, formatted as an HTML string, OR
+- `markdown`: The comment to post, formatted as a markdown string.
+
 ### `GET /v0/bets`
 
 Gets a list of bets, ordered by creation date descending.

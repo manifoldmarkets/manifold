@@ -4,15 +4,15 @@ import { PrivateUser, User } from 'common/user'
 import { MouseEventHandler, ReactNode, useEffect, useState } from 'react'
 
 import toast from 'react-hot-toast'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { LoadingIndicator } from 'web/components/loading-indicator'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -121,7 +121,7 @@ function TwitchPlaysManifoldMarkets(props: {
           <Button
             size="xl"
             color="green"
-            className="btn-disabled my-4 self-center !border-none"
+            className="my-4 self-center !border-none"
           >
             Account connected: {twitchUser}
           </Button>
@@ -331,25 +331,18 @@ function BotConnectButton(props: {
         <Button
           color="red"
           onClick={updateBotConnected(false)}
-          className={clsx(loading && '!btn-disabled', 'border-none')}
+          loading={loading}
         >
-          {loading ? (
-            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
-          ) : (
-            'Remove bot from channel'
-          )}
+          Remove bot from channel
         </Button>
       ) : (
         <Button
           color="green"
           onClick={updateBotConnected(true)}
-          className={clsx(loading && '!btn-disabled', 'border-none')}
+          loading={loading}
+          className="border-none"
         >
-          {loading ? (
-            <LoadingIndicator spinnerClassName="!h-5 !w-5 border-white !border-2" />
-          ) : (
-            'Add bot to your channel'
-          )}
+          Add bot to your channel
         </Button>
       )}
     </>

@@ -14,6 +14,7 @@ const beginsWith = (text: string, query: string) =>
 export const contractMentionSuggestion: Suggestion = {
   char: '%',
   allowSpaces: true,
+  allowedPrefixes: [' '],
   pluginKey: new PluginKey('contract-mention'),
   items: async ({ query }) =>
     orderBy(

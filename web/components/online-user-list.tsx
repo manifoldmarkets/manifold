@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Avatar } from './avatar'
+import { Avatar } from './widgets/avatar'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { User } from 'common/user'
@@ -8,7 +8,7 @@ import { useUsers } from 'web/hooks/use-users'
 import { partition } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { useState } from 'react'
-import { UserLink } from 'web/components/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 
 const isOnline = (user?: User) =>
   user && user.lastPingTime && user.lastPingTime > Date.now() - 5 * 60 * 1000

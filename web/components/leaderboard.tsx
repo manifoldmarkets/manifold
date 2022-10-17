@@ -1,8 +1,9 @@
 import clsx from 'clsx'
-import { Avatar } from './avatar'
+import { Avatar } from './widgets/avatar'
 import { Row } from './layout/row'
-import { SiteLink } from './site-link'
-import { Title } from './title'
+import { SiteLink } from './widgets/site-link'
+import { Table } from './widgets/table'
+import { Title } from './widgets/title'
 
 interface LeaderboardEntry {
   username: string
@@ -31,9 +32,9 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
         <div className="ml-2 text-gray-500">None yet</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="table-zebra table-compact table w-full text-gray-500">
+          <Table>
             <thead>
-              <tr className="p-2">
+              <tr>
                 <th>#</th>
                 <th>Name</th>
                 {columns.map((column) => (
@@ -59,7 +60,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
     </div>

@@ -27,10 +27,13 @@ function getBetsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'bets')
 }
 
-export async function listAllBets(contractId: string) {
-  return await getValues<Bet>(
-    query(getBetsCollection(contractId), orderBy('createdTime', 'desc'))
-  )
+export async function listAllBets(
+  contractId: string,
+  maxCount: number | undefined = undefined
+) {
+  const q = query(getBetsCollection(contractId), orderBy('createdTime', 'desc'))
+  const limitedQ = maxCount ? query(q, limit(maxCount)) : q
+  return await getValues<Bet>(limitedQ)
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -171,4 +174,16 @@ export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
   }
 
   return bets?.filter((bet) => !bet.isAnte) ?? []
+}
+
+export function listenForLiveBets(
+  count: number,
+  setBets: (bets: Bet[]) => void
+) {
+  const betsQuery = query(
+    collectionGroup(db, 'bets'),
+    orderBy('createdTime', 'desc'),
+    limit(count)
+  )
+  return listenForValues<Bet>(betsQuery, setBets)
 }

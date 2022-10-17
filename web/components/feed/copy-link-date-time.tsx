@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { copyToClipboard } from 'web/lib/util/copy'
-import { DateTimeTooltip } from 'web/components/datetime-tooltip'
+import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import Link from 'next/link'
 import { fromNow } from 'web/lib/util/time'
-import { ToastClipboard } from 'web/components/toast-clipboard'
+import { ToastClipboard } from 'web/components/widgets/toast-clipboard'
 import { LinkIcon } from '@heroicons/react/outline'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export function CopyLinkDateTimeComponent(props: {
   prefix: string
@@ -14,6 +15,7 @@ export function CopyLinkDateTimeComponent(props: {
   className?: string
 }) {
   const { prefix, slug, elementId, createdTime, className } = props
+  const isClient = useIsClient()
   const [showToast, setShowToast] = useState(false)
 
   function copyLinkToComment(
@@ -36,7 +38,7 @@ export function CopyLinkDateTimeComponent(props: {
             'text-greyscale-4 hover:bg-greyscale-1.5 mx-1 whitespace-nowrap rounded-sm px-1 text-xs transition-colors'
           }
         >
-          {fromNow(createdTime)}
+          {isClient && fromNow(createdTime)}
           {showToast && <ToastClipboard />}
           <LinkIcon className="ml-1 mb-0.5 inline" height={13} />
         </a>

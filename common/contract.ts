@@ -10,6 +10,7 @@ export type AnyOutcomeType =
   | PseudoNumeric
   | FreeResponse
   | Numeric
+
 export type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
@@ -60,7 +61,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   popularityScore?: number
   dailyScore?: number
   followerCount?: number
-  featuredOnHomeRank?: number
   likedByUserIds?: string[]
   likedByUserCount?: number
   flaggedByUsernames?: string[]

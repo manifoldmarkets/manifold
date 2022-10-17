@@ -6,17 +6,17 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { Content } from '../editor'
+import { Content } from '../widgets/editor'
 import {
   TextEditor,
   editorExtensions,
   useTextEditor,
-} from 'web/components/editor'
-import { Button } from '../button'
+} from 'web/components/widgets/editor'
+import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
-import { ExpandingInput } from '../expanding-input'
+import { ExpandingInput } from '../widgets/expanding-input'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -27,7 +27,7 @@ export function ContractDescription(props: {
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
   return (
-    <div className={clsx('mt-2 text-gray-700', className)}>
+    <div className={clsx('text-gray-700', className)}>
       {isCreator || isAdmin ? (
         <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
       ) : (
@@ -45,13 +45,11 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   const { contract, isAdmin } = props
   const [editing, setEditing] = useState(false)
   const [editingQ, setEditingQ] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     // key: `description ${contract.id}`,
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
-    disabled: isSubmitting,
   })
 
   async function saveDescription() {
@@ -61,15 +59,13 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
 
   return editing ? (
     <>
-      <TextEditor editor={editor} upload={upload} />
+      <TextEditor editor={editor} />
       <Spacer h={2} />
       <Row className="gap-2">
         <Button
           onClick={async () => {
-            setIsSubmitting(true)
             await saveDescription()
             setEditing(false)
-            setIsSubmitting(false)
           }}
         >
           Save
@@ -82,21 +78,20 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   ) : (
     <>
       <Content content={contract.description} />
-      <Spacer h={2} />
-      <Row className="items-center gap-2">
-        {isAdmin && 'Admin: '}
+      <Spacer h={4} />
+      <Row className="items-center gap-2 text-xs">
+        {isAdmin && 'Admin '}
         <Button
           color="gray"
-          size="xs"
+          size="2xs"
           onClick={() => {
             setEditing(true)
             editor?.commands.focus('end')
-            insertContent(editor, `<p>${editTimestamp()}</p>`)
           }}
         >
           Edit description
         </Button>
-        <Button color="gray" size="xs" onClick={() => setEditingQ(true)}>
+        <Button color="gray" size="2xs" onClick={() => setEditingQ(true)}>
           Edit question
         </Button>
       </Row>

@@ -5,22 +5,22 @@ import { Group } from 'common/group'
 import { CreateGroupButton } from 'web/components/groups/create-group-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
+import { Page } from 'web/components/layout/page'
+import { Title } from 'web/components/widgets/title'
 import { useGroups, useMemberGroupIds } from 'web/hooks/use-group'
 import { groupPath, listAllGroups } from 'web/lib/firebase/groups'
 import { getUser, getUserAndPrivateUser, User } from 'web/lib/firebase/users'
 import { Tabs } from 'web/components/layout/tabs'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
-import { Avatar } from 'web/components/avatar'
+import { Avatar } from 'web/components/widgets/avatar'
 import { JoinOrLeaveGroupButton } from 'web/components/groups/groups-button'
 import { searchInAny } from 'common/util/parse'
 import { SEO } from 'web/components/SEO'
 import { GetServerSideProps } from 'next'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useUser } from 'web/hooks/use-user'
-import { Input } from 'web/components/input'
+import { Input } from 'web/components/widgets/input'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -228,7 +228,7 @@ function GroupMembersList(props: { group: Group }) {
   const { totalMembers } = group
   if (totalMembers === 1) return <div />
   return (
-    <div className="text-neutral flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1 text-gray-700">
       <span>{totalMembers} members</span>
     </div>
   )

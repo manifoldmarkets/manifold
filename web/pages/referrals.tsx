@@ -1,14 +1,14 @@
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { CopyLinkButton } from 'web/components/copy-link-button'
+import { CopyLinkButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { InfoBox } from 'web/components/info-box'
-import { QRCode } from 'web/components/qr-code'
+import { InfoBox } from 'web/components/widgets/info-box'
+import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
@@ -50,7 +50,7 @@ export default function ReferralsPage() {
           <CopyLinkButton
             url={url}
             tracking="copy referral link"
-            buttonClassName="btn-md rounded-l-none"
+            buttonClassName="rounded-l-none"
             toastClassName={'-left-28 mt-1'}
           />
 

@@ -4,11 +4,10 @@ import { useState } from 'react'
 import { addCommentBounty } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { COMMENT_BOUNTY_AMOUNT } from 'common/economy'
-import { Button } from 'web/components/button'
-import { Title } from '../title'
+import { Button } from 'web/components/buttons/button'
+import { Title } from '../widgets/title'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 
@@ -64,7 +63,7 @@ export function CommentBountyDialog(props: {
 
         <Row className={'items-center gap-2'}>
           <Button
-            className={clsx('ml-2', isLoading && 'btn-disabled')}
+            className="ml-2"
             onClick={submit}
             disabled={isLoading}
             color={'blue'}

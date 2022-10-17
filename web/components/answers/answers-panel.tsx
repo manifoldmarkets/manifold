@@ -1,5 +1,6 @@
 import { sortBy, partition, sum } from 'lodash'
 import { useEffect, useState } from 'react'
+import { ChatIcon } from '@heroicons/react/outline'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
@@ -18,14 +19,20 @@ import { formatPercent } from 'common/util/format'
 import { Modal } from 'web/components/layout/modal'
 import { AnswerBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
-import { Linkify } from 'web/components/linkify'
-import { Button } from 'web/components/button'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Linkify } from 'web/components/widgets/linkify'
+import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
-import { needsAdminToResolve } from 'web/pages/[username]/[contractSlug]'
 import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
-import { ChatIcon } from '@heroicons/react/outline'
+import { needsAdminToResolve } from 'web/lib/util/admin'
+
+export function getAnswerColor(answer: Answer, answersArray: string[]) {
+  const colorIndex = answersArray.indexOf(answer.text)
+  return colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
+    ? CHOICE_ANSWER_COLORS[colorIndex]
+    : '#B1B1C7'
+}
 
 export function AnswersPanel(props: {
   contract: FreeResponseContract | MultipleChoiceContract
@@ -107,8 +114,8 @@ export function AnswersPanel(props: {
     ? 'checkbox'
     : undefined
 
-  const colorSortedAnswer = useChartAnswers(contract).map(
-    (value, _index) => value.text
+  const answersArray = useChartAnswers(contract).map(
+    (answer, _index) => answer.text
   )
 
   return (
@@ -139,8 +146,8 @@ export function AnswersPanel(props: {
               key={item.id}
               answer={item}
               contract={contract}
-              colorIndex={colorSortedAnswer.indexOf(item.text)}
               onAnswerCommentClick={onAnswerCommentClick}
+              color={getAnswerColor(item, answersArray)}
             />
           ))}
           {hasZeroBetAnswers && !showAllAnswers && (
@@ -185,18 +192,14 @@ export function AnswersPanel(props: {
 function OpenAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   answer: Answer
-  colorIndex: number | undefined
+  color: string
   onAnswerCommentClick: (answer: Answer) => void
 }) {
-  const { answer, contract, colorIndex, onAnswerCommentClick } = props
+  const { answer, contract, onAnswerCommentClick, color } = props
   const { username, avatarUrl, text } = answer
   const prob = getDpmOutcomeProbability(contract.totalShares, answer.id)
   const probPercent = formatPercent(prob)
   const [open, setOpen] = useState(false)
-  const color =
-    colorIndex != undefined && colorIndex < CHOICE_ANSWER_COLORS.length
-      ? CHOICE_ANSWER_COLORS[colorIndex] + '55' // semi-transparent
-      : '#B1B1C755'
   const colorWidth = 100 * Math.max(prob, 0.01)
 
   return (
@@ -217,7 +220,7 @@ function OpenAnswer(props: {
           tradingAllowed(contract) ? 'text-greyscale-7' : 'text-greyscale-5'
         )}
         style={{
-          background: `linear-gradient(to right, ${color} ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
+          background: `linear-gradient(to right, ${color}90 ${colorWidth}%, #FBFBFF ${colorWidth}%)`,
         }}
       >
         <Row className="z-20 -mb-1 justify-between gap-2 py-2 px-3">
@@ -227,10 +230,7 @@ function OpenAnswer(props: {
               username={username}
               avatarUrl={avatarUrl}
             />
-            <Linkify
-              className="text-md cursor-pointer whitespace-pre-line"
-              text={text}
-            />
+            <Linkify className="text-md whitespace-pre-line" text={text} />
           </Row>
           <Row className="gap-2">
             <div className="my-auto text-xl">{probPercent}</div>

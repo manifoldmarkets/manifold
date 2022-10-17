@@ -89,6 +89,17 @@ export const historyStore = <T>(prefix = '__manifold'): PersistentStore<T> => ({
   },
 })
 
+const store: Record<string, any> = {}
+
+export const inMemoryStore = <T>(): PersistentStore<T> => ({
+  get: (k: string) => {
+    return store[k]
+  },
+  set: (k: string, v: T | undefined) => {
+    store[k] = v
+  },
+})
+
 export const usePersistentState = <T>(
   initial: T,
   persist?: PersistenceOptions<T>
@@ -103,6 +114,7 @@ export const usePersistentState = <T>(
     if (key != null && store != null) {
       store.set(key, state)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, state])
 
   if (store?.readsUrl) {
@@ -116,6 +128,7 @@ export const usePersistentState = <T>(
         const savedValue = key != null ? store.get(key) : undefined
         setState(savedValue ?? initial)
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router.isReady])
   }
 

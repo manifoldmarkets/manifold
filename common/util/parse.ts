@@ -1,4 +1,5 @@
-import { generateText, JSONContent } from '@tiptap/core'
+import { generateText, JSONContent, Node } from '@tiptap/core'
+import { generateJSON } from '@tiptap/html'
 // Tiptap starter extensions
 import { Blockquote } from '@tiptap/extension-blockquote'
 import { Bold } from '@tiptap/extension-bold'
@@ -51,6 +52,26 @@ export function parseMentions(data: JSONContent): string[] {
   return uniq(mentions)
 }
 
+// TODO: this is a hack to get around the fact that tiptap doesn't have a
+// way to add a node view without bundling in tsx
+function skippableComponent(name: string): Node<any, any> {
+  return Node.create({
+    name,
+
+    group: 'block',
+
+    content: 'inline*',
+
+    parseHTML() {
+      return [
+        {
+          tag: 'grid-cards-component',
+        },
+      ]
+    },
+  })
+}
+
 const stringParseExts = [
   // StarterKit extensions
   Blockquote,
@@ -78,6 +99,8 @@ const stringParseExts = [
     renderText: ({ node }) =>
       '[embed]' + node.attrs.src ? `(${node.attrs.src})` : '',
   }),
+  skippableComponent('gridCardsComponent'),
+  skippableComponent('staticReactEmbedComponent'),
   TiptapTweet.extend({ renderText: () => '[tweet]' }),
   TiptapSpoiler.extend({ renderHTML: () => ['span', '[spoiler]', 0] }),
 ]
@@ -85,4 +108,8 @@ const stringParseExts = [
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
   return generateText(text, stringParseExts)
+}
+
+export function htmlToRichText(html: string) {
+  return generateJSON(html, stringParseExts)
 }

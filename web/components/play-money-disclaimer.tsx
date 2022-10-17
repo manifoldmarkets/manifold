@@ -1,4 +1,4 @@
-import { InfoBox } from './info-box'
+import { InfoBox } from './widgets/info-box'
 
 export const PlayMoneyDisclaimer = () => (
   <InfoBox

@@ -14,20 +14,20 @@ import { User } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
-import { Page } from './page'
-import { linkClass, SiteLink } from './site-link'
-import { Avatar } from './avatar'
+import { Page } from './layout/page'
+import { linkClass, SiteLink } from './widgets/site-link'
+import { Avatar } from './widgets/avatar'
 import { Col } from './layout/col'
-import { Linkify } from './linkify'
+import { Linkify } from './widgets/linkify'
 import { Spacer } from './layout/spacer'
 import { Row } from './layout/row'
 import { genHash } from 'common/util/random'
 import { QueryUncontrolledTabs } from './layout/tabs'
-import { UserCommentsList } from './comments-list'
-import { FullscreenConfetti } from 'web/components/fullscreen-confetti'
-import { BetsList } from './bets-list'
-import { FollowersButton, FollowingButton } from './following-button'
-import { UserFollowButton } from './follow-button'
+import { UserCommentsList } from './comments/comments-list'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { BetsList } from './bet/bets-list'
+import { FollowersButton, FollowingButton } from './buttons/following-button'
+import { UserFollowButton } from './buttons/follow-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { formatMoney } from 'common/util/format'
@@ -95,7 +95,7 @@ export function UserPage(props: { user: User }) {
           )}
 
           <Col className="w-full gap-4 pl-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
               <Col>
                 <span className="break-anywhere text-lg font-bold sm:text-2xl">
                   {user.name}
@@ -291,7 +291,7 @@ export function ProfilePrivateStats(props: {
       <Row className={'justify-between gap-4 sm:justify-end'}>
         <Col className={'text-greyscale-4 text-md sm:text-lg'}>
           <span
-            className={clsx(profit >= 0 ? 'text-green-600' : 'text-red-400')}
+            className={clsx(profit >= 0 ? 'text-teal-600' : 'text-red-400')}
           >
             {formatMoney(profit)}
           </span>

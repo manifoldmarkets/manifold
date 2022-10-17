@@ -6,13 +6,13 @@ import Confetti from 'react-confetti'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
-import { BuyAmountInput } from 'web/components/amount-input'
+import { Page } from 'web/components/layout/page'
+import { Title } from 'web/components/widgets/title'
+import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Spacer } from 'web/components/layout/spacer'
 import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
-import { Linkify } from 'web/components/linkify'
+import { Linkify } from 'web/components/widgets/linkify'
 import { transact } from 'web/lib/firebase/api'
 import { charities, Charity } from 'common/charity'
 import { useRouter } from 'next/router'
@@ -23,6 +23,7 @@ import { Donation } from 'web/components/charity/feed-items'
 import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
+import { Button } from 'web/components/buttons/button'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -126,15 +127,13 @@ function Blurb({ text }: { text: string }) {
       >
         {text}
       </div>
-      <button
+      <Button
+        color="indigo"
         onClick={() => setOpen(!open)}
-        className={clsx(
-          'btn btn-link capitalize-none my-3 normal-case text-indigo-700',
-          hideExpander && 'invisible'
-        )}
+        className={clsx('my-3', hideExpander && 'invisible')}
       >
         {open ? 'Hide' : 'Read more'}
-      </button>
+      </Button>
     </>
   )
 }
@@ -175,7 +174,7 @@ function DonationBox(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>()
 
-  const donateDisabled = isSubmitting || !amount || error
+  const donateDisabled = isSubmitting || !amount || !!error
 
   const onSubmit: React.FormEventHandler = async (e) => {
     if (!user || donateDisabled) return
@@ -230,16 +229,15 @@ function DonationBox(props: {
         <Spacer h={8} />
 
         {user && (
-          <button
+          <Button
             type="submit"
-            className={clsx(
-              'btn w-full',
-              donateDisabled ? 'btn-disabled' : 'btn-primary',
-              isSubmitting && 'loading'
-            )}
+            color="green"
+            className="w-full"
+            disabled={donateDisabled}
+            loading={isSubmitting}
           >
             Donate
-          </button>
+          </Button>
         )}
       </form>
     </div>

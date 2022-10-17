@@ -5,7 +5,7 @@ import { useUser } from 'web/hooks/use-user'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { useMemberGroups, useMemberIds } from 'web/hooks/use-group'
-import { TextButton } from 'web/components/text-button'
+import { TextButton } from 'web/components/buttons/text-button'
 import { Group } from 'common/group'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -13,7 +13,7 @@ import { joinGroup, leaveGroup } from 'web/lib/firebase/groups'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { GroupLinkItem } from 'web/pages/groups'
 import toast from 'react-hot-toast'
-import { Button } from '../button'
+import { Button } from '../buttons/button'
 
 export function GroupsButton(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -125,9 +125,9 @@ export function JoinOrLeaveGroupButton(props: {
   if (isMember) {
     return (
       <Button
-        size="xs"
-        color="gray-white"
-        className={`${className}  border-greyscale-4 border !border-solid`}
+        size="sm"
+        color="gray-outline"
+        className={className}
         onClick={withTracking(onLeaveGroup, 'leave group')}
       >
         Unfollow
@@ -139,8 +139,8 @@ export function JoinOrLeaveGroupButton(props: {
     return <div className={clsx(className, 'text-gray-500')}>Closed</div>
   return (
     <Button
-      size="xs"
-      color="blue"
+      size="sm"
+      color="indigo"
       className={className}
       onClick={withTracking(onJoinGroup, 'join group')}
     >

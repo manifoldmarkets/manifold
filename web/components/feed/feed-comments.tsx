@@ -9,22 +9,22 @@ import { Contract } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/avatar'
+import { Avatar } from 'web/components/widgets/avatar'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { createCommentOnContract } from 'web/lib/firebase/comments'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
-import { Tipper } from '../tipper'
+import { Tipper } from '../widgets/tipper'
 import { CommentTipMap } from 'web/hooks/use-tip-txns'
 import { useEvent } from 'web/hooks/use-event'
-import { Content } from '../editor'
-import { UserLink } from 'web/components/user-link'
-import { CommentInput } from '../comment-input'
-import { AwardBountyButton } from 'web/components/award-bounty-button'
+import { Content } from '../widgets/editor'
+import { UserLink } from 'web/components/widgets/user-link'
+import { CommentInput } from '../comments/comment-input'
+import { AwardBountyButton } from 'web/components/buttons/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
-import { Button } from '../button'
+import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 
 export type ReplyTo = { id: string; username: string }
@@ -37,7 +37,7 @@ export function FeedCommentThread(props: {
 }) {
   const { contract, threadComments, tips, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
-  const [seeReplies, setSeeReplies] = useState(false)
+  const [seeReplies, setSeeReplies] = useState(true)
 
   const user = useUser()
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
@@ -46,7 +46,7 @@ export function FeedCommentThread(props: {
   })
 
   return (
-    <Col className="relative w-full items-stretch gap-3 pb-4">
+    <Col className="relative w-full items-stretch gap-3 pb-2 sm:pb-0">
       <ParentFeedComment
         key={parentComment.id}
         contract={contract}
@@ -135,7 +135,7 @@ export function ParentFeedComment(props: {
       id={comment.id}
       className={clsx(
         'hover:bg-greyscale-1 ml-3 gap-2 transition-colors',
-        highlighted ? `-m-1.5 rounded bg-indigo-500/[0.2] p-1.5` : ''
+        highlighted ? `-m-1.5 mb-2 rounded bg-indigo-500/[0.2] p-1.5 pl-5` : ''
       )}
     >
       <Col className="-ml-3.5">
@@ -154,32 +154,42 @@ export function ParentFeedComment(props: {
             numComments={numComments}
             onClick={onSeeReplyClick}
           />
-          <Row className="grow justify-end gap-2">
-            {onReplyClick && (
-              <Button
-                size={'sm'}
-                className={clsx(
-                  'hover:bg-greyscale-2 mt-0 mb-1 max-w-xs px-0 py-0'
-                )}
-                color={'gray-white'}
-                onClick={() => onReplyClick(comment)}
-              >
-                <ReplyIcon className="h-5 w-5" />
-              </Button>
-            )}
-            {showTip && (
-              <Tipper
-                comment={comment}
-                myTip={myTip ?? 0}
-                totalTip={totalTip ?? 0}
-              />
-            )}
-            {(contract.openCommentBounties ?? 0) > 0 && (
-              <AwardBountyButton comment={comment} contract={contract} />
-            )}
-          </Row>
+          <CommentActions
+            onReplyClick={onReplyClick}
+            comment={comment}
+            showTip={showTip}
+            myTip={myTip}
+            totalTip={totalTip}
+            contract={contract}
+          />
         </Row>
       </Col>
+    </Row>
+  )
+}
+
+export function CommentActions(props: {
+  onReplyClick?: (comment: ContractComment) => void
+  comment: ContractComment
+  showTip?: boolean
+  myTip?: number
+  totalTip?: number
+  contract: Contract
+}) {
+  const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
+  return (
+    <Row className="grow justify-end">
+      {onReplyClick && (
+        <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
+          <ReplyIcon className="h-5 w-5" />
+        </IconButton>
+      )}
+      {showTip && (
+        <Tipper comment={comment} myTip={myTip ?? 0} totalTip={totalTip ?? 0} />
+      )}
+      {(contract.openCommentBounties ?? 0) > 0 && (
+        <AwardBountyButton comment={comment} contract={contract} />
+      )}
     </Row>
   )
 }
@@ -233,30 +243,14 @@ export const FeedComment = memo(function FeedComment(props: {
           content={content || text}
           smallImage
         />
-        <Row className="grow justify-end gap-2">
-          {onReplyClick && (
-            <Button
-              size={'sm'}
-              className={clsx(
-                'hover:bg-greyscale-2 mt-0 mb-1 max-w-xs px-0 py-0'
-              )}
-              color={'gray-white'}
-              onClick={() => onReplyClick(comment)}
-            >
-              <ReplyIcon className="h-5 w-5" />
-            </Button>
-          )}
-          {showTip && (
-            <Tipper
-              comment={comment}
-              myTip={myTip ?? 0}
-              totalTip={totalTip ?? 0}
-            />
-          )}
-          {(contract.openCommentBounties ?? 0) > 0 && (
-            <AwardBountyButton comment={comment} contract={contract} />
-          )}
-        </Row>
+        <CommentActions
+          onReplyClick={onReplyClick}
+          comment={comment}
+          showTip={showTip}
+          myTip={myTip}
+          totalTip={totalTip}
+          contract={contract}
+        />
       </Col>
     </Row>
   )

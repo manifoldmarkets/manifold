@@ -13,7 +13,7 @@ import { updateUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { Title } from '../title'
+import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
 
 export default function Welcome() {
@@ -54,47 +54,48 @@ export default function Welcome() {
   if (isTwitch || !user || (!user.shouldShowWelcome && !groupSelectorOpen))
     return <></>
 
-  return (
-    <>
+  if (groupSelectorOpen)
+    return (
       <GroupSelectorDialog
         open={groupSelectorOpen}
         setOpen={() => setGroupSelectorOpen(false)}
       />
+    )
 
-      <Modal open={open} setOpen={toggleOpen}>
-        <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
-          {page === 0 && <Page0 />}
-          {page === 1 && <Page1 />}
-          {page === 2 && <Page2 />}
-          {page === 3 && <Page3 />}
-          <Col>
-            <Row className="place-content-between">
-              <ChevronLeftIcon
-                className={clsx(
-                  'h-10 w-10 text-gray-400 hover:text-gray-500',
-                  page === 0 ? 'disabled invisible' : ''
-                )}
-                onClick={decreasePage}
-              />
-              <PageIndicator page={page} totalpages={TOTAL_PAGES} />
-              <ChevronRightIcon
-                className={clsx(
-                  'h-10 w-10 text-indigo-500 hover:text-indigo-600',
-                  page === TOTAL_PAGES - 1 ? 'disabled invisible' : ''
-                )}
-                onClick={increasePage}
-              />
-            </Row>
-            <u
-              className="self-center text-xs text-gray-500"
-              onClick={() => toggleOpen(false)}
-            >
-              I got the gist, exit welcome
-            </u>
-          </Col>
+  return (
+    <Modal open={open} setOpen={toggleOpen}>
+      <Col className="h-[32rem] place-content-between rounded-md bg-white px-8 py-6 text-sm font-light md:h-[40rem] md:text-lg">
+        {page === 0 && <Page0 />}
+        {page === 1 && <Page1 />}
+        {page === 2 && <Page2 />}
+        {page === 3 && <Page3 />}
+        <Col>
+          <Row className="place-content-between">
+            <ChevronLeftIcon
+              className={clsx(
+                'h-10 w-10 text-gray-400 hover:text-gray-500',
+                page === 0 ? 'disabled invisible' : ''
+              )}
+              onClick={decreasePage}
+            />
+            <PageIndicator page={page} totalpages={TOTAL_PAGES} />
+            <ChevronRightIcon
+              className={clsx(
+                'h-10 w-10 text-indigo-500 hover:text-indigo-600',
+                page === TOTAL_PAGES - 1 ? 'disabled invisible' : ''
+              )}
+              onClick={increasePage}
+            />
+          </Row>
+          <u
+            className="self-center text-xs text-gray-500"
+            onClick={() => toggleOpen(false)}
+          >
+            I got the gist, exit welcome
+          </u>
         </Col>
-      </Modal>
-    </>
+      </Col>
+    </Modal>
   )
 }
 
@@ -117,6 +118,7 @@ function PageIndicator(props: { page: number; totalpages: number }) {
     <Row>
       {[...Array(totalpages)].map((e, i) => (
         <div
+          key={i}
           className={clsx(
             'mx-1.5 my-auto h-1.5 w-1.5 rounded-full',
             i === page ? 'bg-indigo-500' : 'bg-gray-300'

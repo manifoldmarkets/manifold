@@ -3,9 +3,9 @@ import React, { useState } from 'react'
 
 import { Col } from './layout/col'
 import { User } from 'web/lib/firebase/users'
-import { YesNoCancelSelector } from './yes-no-selector'
+import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
-import { ResolveConfirmationButton } from './confirmation-button'
+import { ResolveConfirmationButton } from './buttons/confirmation-button'
 import { APIError, resolveMarket } from 'web/lib/firebase/api'
 import { ProbabilitySelector } from './probability-selector'
 import { getProbability } from 'common/calculate'
@@ -72,7 +72,6 @@ export function ResolutionPanel(props: {
         className="mx-auto my-2"
         selected={outcome}
         onSelect={setOutcome}
-        btnClassName={isSubmitting ? 'btn-disabled' : ''}
       />
       <Spacer h={4} />
       <div>

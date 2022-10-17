@@ -3,6 +3,7 @@ import {
   ExclamationIcon,
   PencilIcon,
   PlusCircleIcon,
+  UserGroupIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
@@ -11,35 +12,35 @@ import Link from 'next/link'
 import { Row } from '../layout/row'
 import { formatMoney } from 'common/util/format'
 import { Contract, updateContract } from 'web/lib/firebase/contracts'
-import { DateTimeTooltip } from '../datetime-tooltip'
+import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
-import { Avatar } from '../avatar'
+import { Avatar } from '../widgets/avatar'
 import { useState } from 'react'
 import NewContractBadge from '../new-contract-badge'
-import { MiniUserFollowButton } from '../follow-button'
+import { MiniUserFollowButton } from '../buttons/follow-button'
 import { DAY_MS } from 'common/util/time'
 import { useUser, useUserById } from 'web/hooks/use-user'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
-import { linkClass } from 'web/components/site-link'
+import { linkClass } from 'web/components/widgets/site-link'
 import { getGroupLinkToDisplay, groupPath } from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
-import { UserLink } from 'web/components/user-link'
-import { FeaturedContractBadge } from 'web/components/contract/featured-contract-badge'
-import { Tooltip } from 'web/components/tooltip'
+import { UserLink } from 'web/components/widgets/user-link'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink } from 'common/group'
-import { Subtitle } from '../subtitle'
+import { Subtitle } from '../widgets/subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useIsClient } from 'web/hooks/use-is-client'
 import {
   BountiedContractBadge,
   BountiedContractSmallBadge,
 } from 'web/components/contract/bountied-contract-badge'
-import { Input } from '../input'
-import { editorExtensions } from '../editor'
+import { Input } from '../widgets/input'
+import { editorExtensions } from '../widgets/editor'
 
 export type ShowTime = 'resolve-date' | 'close-date'
 
@@ -49,32 +50,39 @@ export function MiscDetails(props: {
   hideGroupLink?: boolean
 }) {
   const { contract, showTime, hideGroupLink } = props
-  const { volume, closeTime, isResolved, createdTime, resolutionTime } =
-    contract
+  const {
+    closeTime,
+    isResolved,
+    createdTime,
+    resolutionTime,
+    uniqueBettorCount,
+  } = contract
 
+  const isClient = useIsClient()
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
     <Row className="items-center gap-3 truncate text-sm text-gray-400">
-      {showTime === 'close-date' ? (
+      {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
           {(closeTime || 0) < Date.now() ? 'Closed' : 'Closes'}{' '}
           {fromNow(closeTime || 0)}
         </Row>
-      ) : showTime === 'resolve-date' && resolutionTime !== undefined ? (
+      ) : isClient && showTime === 'resolve-date' && resolutionTime ? (
         <Row className="gap-0.5">
           <ClockIcon className="h-5 w-5" />
           {'Resolved '}
-          {fromNow(resolutionTime || 0)}
+          {fromNow(resolutionTime)}
         </Row>
-      ) : (contract?.featuredOnHomeRank ?? 0) > 0 ? (
-        <FeaturedContractBadge />
       ) : (contract.openCommentBounties ?? 0) > 0 ? (
         <BountiedContractBadge />
-      ) : volume > 0 || !isNew ? (
-        <Row className={'shrink-0'}>{formatMoney(volume)} bet</Row>
+      ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
+        <Row className={'shrink-0'}>
+          <UserGroupIcon className="mr-1 h-4 w-4" />
+          {uniqueBettorCount || '0'} trader{uniqueBettorCount !== 1 ? 's' : ''}
+        </Row>
       ) : (
         <NewContractBadge />
       )}
@@ -202,7 +210,7 @@ export function MarketSubheader(props: {
           />
           {!isMobile && (
             <Row className={'gap-1'}>
-              <BountiedContractSmallBadge contract={contract} />
+              {!disabled && <BountiedContractSmallBadge contract={contract} />}
               <MarketGroups contract={contract} disabled={disabled} />
             </Row>
           )}
@@ -390,6 +398,7 @@ function EditableCloseDate(props: {
 }) {
   const { closeTime, contract, isCreator, disabled } = props
 
+  const isClient = useIsClient()
   const dayJsCloseTime = dayjs(closeTime)
   const dayJsNow = dayjs()
 
@@ -452,7 +461,7 @@ function EditableCloseDate(props: {
               className="w-full shrink-0 sm:w-fit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setCloseDate(e.target.value)}
-              min={Date.now()}
+              min={isClient ? Date.now() : undefined}
               value={closeDate}
             />
             <Input
@@ -479,14 +488,18 @@ function EditableCloseDate(props: {
         </Col>
       </Modal>
       <DateTimeTooltip
-        text={closeTime > Date.now() ? 'Trading ends:' : 'Trading ended:'}
+        text={
+          isClient && closeTime <= Date.now()
+            ? 'Trading ended:'
+            : 'Trading ends:'
+        }
         time={closeTime}
       >
         <Row
           className={clsx(!disabled && isCreator ? 'cursor-pointer' : '')}
           onClick={() => !disabled && isCreator && setIsEditingCloseTime(true)}
         >
-          {isSameDay ? (
+          {isSameDay && isClient ? (
             <span className={'capitalize'}> {fromNow(closeTime)}</span>
           ) : isSameYear ? (
             dayJsCloseTime.format('MMM D')

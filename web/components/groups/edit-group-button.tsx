@@ -10,7 +10,8 @@ import { Modal } from 'web/components/layout/modal'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
 import { User } from 'common/user'
 import { useMemberIds } from 'web/hooks/use-group'
-import { Input } from '../input'
+import { Input } from '../widgets/input'
+import { Button } from '../buttons/button'
 
 export function EditGroupButton(props: { group: Group; className?: string }) {
   const { group, className } = props
@@ -40,18 +41,18 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
 
   return (
     <div className={clsx('flex p-1', className)}>
-      <div
-        className={clsx(
-          'btn-ghost cursor-pointer whitespace-nowrap rounded-md p-1 text-sm text-gray-700'
-        )}
+      <Button
+        size="sm"
+        color="gray-white"
+        className="whitespace-nowrap"
         onClick={() => updateOpen(!open)}
       >
         <PencilIcon className="inline h-4 w-4" /> Edit
-      </div>
+      </Button>
       <Modal open={open} setOpen={updateOpen}>
         <div className="h-full rounded-md bg-white p-8">
-          <div className="form-control w-full">
-            <label className="label">
+          <div className="flex w-full flex-col">
+            <label className="px-1 py-2">
               <span className="mb-1">Group name</span>
             </label>
 
@@ -65,8 +66,8 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
 
           <Spacer h={4} />
 
-          <div className="form-control w-full">
-            <label className="label">
+          <div className="flex w-full flex-col">
+            <label className="px-1 py-2">
               <span className="mb-0">Add members</span>
             </label>
             <FilterSelectUsers
@@ -76,9 +77,10 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
             />
           </div>
 
-          <div className="modal-action">
-            <label
-              htmlFor="edit"
+          <div className="flex">
+            <Button
+              color="red"
+              size="xs"
               onClick={() => {
                 if (confirm('Are you sure you want to delete this group?')) {
                   deleteGroup(group)
@@ -86,30 +88,24 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
                   router.replace('/groups')
                 }
               }}
-              className={clsx(
-                'btn btn-sm btn-outline mr-auto self-center hover:border-red-500 hover:bg-red-500'
-              )}
             >
               Delete
-            </label>
-            <label
-              htmlFor="edit"
-              className={'btn'}
+            </Button>
+            <Button
+              color="gray-white"
+              size="xs"
               onClick={() => updateOpen(false)}
             >
               Cancel
-            </label>
-            <label
-              className={clsx(
-                'btn',
-                saveDisabled ? 'btn-disabled' : 'btn-primary',
-                isSubmitting && 'loading'
-              )}
-              htmlFor="edit"
+            </Button>
+            <Button
+              color="green"
+              disabled={saveDisabled}
+              loading={isSubmitting}
               onClick={onSubmit}
             >
               Save
-            </label>
+            </Button>
           </div>
         </div>
       </Modal>

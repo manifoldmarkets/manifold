@@ -61,6 +61,6 @@ export default async function handler(
 
   const bets = await getBets({ userId, contractId, limit, before })
 
-  res.setHeader('Cache-Control', 'max-age=0')
+  res.setHeader('Cache-Control', 'maxage=15')
   return res.status(200).json(bets)
 }

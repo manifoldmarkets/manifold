@@ -8,10 +8,10 @@ import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
-import { ShareIconButton } from './share-icon-button'
-import { contractDetailsButtonClassName } from './contract/contract-info-dialog'
+import { ShareIconButton } from './buttons/share-icon-button'
 import { useUserById } from 'web/hooks/use-user'
 import getManalinkUrl from 'web/get-manalink-url'
+import { IconButton } from './buttons/button'
 
 export type ManalinkInfo = {
   expiresTime: number | null
@@ -123,7 +123,7 @@ export function ManalinkCardFromView(props: {
             src="/logo-white.svg"
           />
         </Col>
-        <Row className="relative w-full gap-1 rounded-b-lg bg-white px-4 py-2 text-lg">
+        <Row className="relative w-full rounded-b-lg bg-white px-4 py-2 align-middle text-lg">
           <div
             className={clsx(
               'my-auto mb-1 w-full',
@@ -133,32 +133,23 @@ export function ManalinkCardFromView(props: {
             {formatMoney(amount)}
           </div>
 
-          <button
-            onClick={() => (window.location.href = qrUrl)}
-            className={clsx(contractDetailsButtonClassName)}
-          >
+          <IconButton size="2xs" onClick={() => (window.location.href = qrUrl)}>
             <QrcodeIcon className="h-6 w-6" />
-          </button>
+          </IconButton>
 
           <ShareIconButton
             toastClassName={'-left-48 min-w-[250%]'}
-            buttonClassName={'transition-colors'}
-            onCopyButtonClassName={
-              'bg-gray-200 text-gray-600 transition-none hover:bg-gray-200 hover:text-gray-600'
-            }
             copyPayload={getManalinkUrl(link.slug)}
           />
-          <button
+          <IconButton
+            size="xs"
             onClick={() => setShowDetails(!showDetails)}
             className={clsx(
-              contractDetailsButtonClassName,
-              showDetails
-                ? 'bg-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-600'
-                : ''
+              showDetails ? ' text-indigo-600 hover:text-indigo-700' : ''
             )}
           >
-            <DotsHorizontalIcon className="h-[24px] w-5" />
-          </button>
+            <DotsHorizontalIcon className="h-5 w-5" />
+          </IconButton>
         </Row>
       </Col>
       <div className="mt-2 mb-4 text-xs text-gray-500 md:text-sm">

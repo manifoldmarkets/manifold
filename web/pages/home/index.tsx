@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from 'react'
+import React, { ReactNode, useEffect } from 'react'
 import Router from 'next/router'
 import {
   AdjustmentsIcon,
@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import { toast, Toaster } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { useTracking } from 'web/hooks/use-tracking'
@@ -18,7 +18,7 @@ import { track } from 'web/lib/service/analytics'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import {
   usePrivateUser,
   useUser,
@@ -28,7 +28,7 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -50,12 +50,12 @@ import {
   useNewContracts,
 } from 'web/hooks/use-contracts'
 import { ProfitBadge } from 'web/components/profit-badge'
-import { LoadingIndicator } from 'web/components/loading-indicator'
-import { Input } from 'web/components/input'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Input } from 'web/components/widgets/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
 import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
 import { getPost } from 'web/lib/firebase/posts'
-import { PostCard } from 'web/components/post-card'
+import { PostCard } from 'web/components/posts/post-card'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Post } from 'common/post'
@@ -63,6 +63,11 @@ import { useAllPosts } from 'web/hooks/use-post'
 import { useGlobalConfig } from 'web/hooks/use-global-config'
 import { useAdmin } from 'web/hooks/use-admin'
 import { GlobalConfig } from 'common/globalConfig'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
+import { ActivityLog } from 'web/components/activity-log'
 
 export default function Home() {
   const user = useUser()
@@ -91,8 +96,7 @@ export default function Home() {
   }, [user, sections])
 
   const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_',
-    3
+    user?.id ?? '_'
   )
 
   const trendingContracts = useTrendingContracts(6)
@@ -105,7 +109,10 @@ export default function Home() {
     groups?.map((g) => g.slug)
   )
 
-  const [pinned, setPinned] = useState<JSX.Element[] | null>(null)
+  const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
+    store: inMemoryStore(),
+    key: 'home-pinned',
+  })
 
   useEffect(() => {
     const pinnedItems = globalConfig?.pinnedItems
@@ -139,7 +146,7 @@ export default function Home() {
       }
     }
     getPinned()
-  }, [globalConfig])
+  }, [globalConfig, setPinned])
 
   const isLoading =
     !user ||
@@ -184,6 +191,8 @@ export default function Home() {
               globalConfig,
               pinned
             )}
+
+            <ActivitySection />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -277,6 +286,7 @@ function renderSections(
         if (id === 'featured') {
           return (
             <FeaturedSection
+              key={id}
               globalConfig={globalConfig}
               pinned={pinned}
               isAdmin={isAdmin}
@@ -479,14 +489,17 @@ function DailyMoversSection(props: {
 }) {
   const { contracts, metrics } = props
 
-  if (contracts.length === 0) {
+  const hasProfit = metrics.some((m) => m.from && m.from.day.profit > 0)
+  const hasLoss = metrics.some((m) => m.from && m.from.day.profit < 0)
+
+  if (!hasProfit || !hasLoss) {
     return null
   }
 
   return (
     <Col className="gap-2">
       <SectionHeader label="Daily movers" href="/daily-movers" />
-      <ProfitChangeTable contracts={contracts} metrics={metrics} />
+      <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
   )
 }
@@ -522,8 +535,7 @@ export function DailyProfit(props: { user: User | null | undefined }) {
   const { user } = props
 
   const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_',
-    100
+    user?.id ?? '_'
   )
   const profit = sum(
     contractMetricsByProfit?.metrics.map((m) =>
@@ -548,6 +560,15 @@ export function DailyProfit(props: { user: User | null | undefined }) {
         <ProfitBadge profitPercent={profitPercent * 100} />
       </Row>
     </SiteLink>
+  )
+}
+
+function ActivitySection() {
+  return (
+    <Col>
+      <SectionHeader label="Live feed" href="/live" />
+      <ActivityLog count={6} showPills={false} />
+    </Col>
   )
 }
 

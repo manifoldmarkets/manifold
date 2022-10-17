@@ -29,18 +29,18 @@ import { fromPropz, usePropz } from 'web/hooks/use-propz'
 
 import { ContractSearch } from 'web/components/contract-search'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { listAllCommentsOnGroup } from 'web/lib/firebase/comments'
 import { GroupComment } from 'common/comment'
 import { getPost, listPosts } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
 import { usePost, usePosts } from 'web/hooks/use-post'
 import { useAdmin } from 'web/hooks/use-admin'
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Tabs } from 'web/components/layout/tabs'
 import { GroupOverview } from 'web/components/groups/group-overview'
 
@@ -386,14 +386,9 @@ function JoinGroupButton(props: {
 
   return (
     <div>
-      <button
-        onClick={follow}
-        className={
-          'btn-md btn-outline btn w-full whitespace-nowrap normal-case'
-        }
-      >
+      <Button onClick={follow} color="blue">
         Follow
-      </button>
+      </Button>
     </div>
   )
 }

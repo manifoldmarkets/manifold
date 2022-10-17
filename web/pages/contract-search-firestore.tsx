@@ -3,13 +3,14 @@ import { Answer } from 'common/answer'
 import { searchInAny } from 'common/util/parse'
 import { sortBy } from 'lodash'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { useContracts } from 'web/hooks/use-contracts'
+import { useAllContracts } from 'web/hooks/use-contracts'
 import {
   usePersistentState,
   urlParamStore,
 } from 'web/hooks/use-persistent-state'
 import { PAST_BETS } from 'common/user'
-import { Input } from 'web/components/input'
+import { Input } from 'web/components/widgets/input'
+import { Select } from 'web/components/widgets/select'
 
 const MAX_CONTRACTS_RENDERED = 100
 
@@ -22,7 +23,7 @@ export default function ContractSearchFirestore(props: {
   }
 }) {
   const { additionalFilter } = props
-  const contracts = useContracts()
+  const contracts = useAllContracts()
   const router = useRouter()
   const store = urlParamStore(router)
   const [query, setQuery] = usePersistentState('', { key: 'q', store })
@@ -96,17 +97,13 @@ export default function ContractSearchFirestore(props: {
           placeholder="Search markets"
           className="w-full"
         />
-        <select
-          className="select select-bordered"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
+        <Select value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="score">Trending</option>
           <option value="newest">Newest</option>
           <option value="most-traded">Most ${PAST_BETS}</option>
           <option value="24-hour-vol">24h volume</option>
           <option value="close-date">Closing soon</option>
-        </select>
+        </Select>
       </div>
       <ContractsGrid contracts={matches} showTime={showTime} />
     </div>
