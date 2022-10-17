@@ -60,7 +60,7 @@ export function StateElectionMap(props: {
   const config = Object.fromEntries(stateInfo) as Customize
 
   return (
-    <div>
+    <div className="w-full">
       <div
         id="tooltip"
         className="pointer-events-none fixed z-[999] ml-auto rounded-[6px] p-[10px]"
