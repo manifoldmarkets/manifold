@@ -37,6 +37,15 @@ export function NotificationSettings(props: {
   navigateToSection: string | undefined
   privateUser: PrivateUser
 }) {
+  useEffect(() => {
+    console.log((window as any).isNative, 'isNative')
+    if ((window as any).isNative && privateUser && !privateUser.pushToken) {
+      console.log('Notifications: no push token, requesting')
+      ;(window as any).ReactNativeWebView.postMessage(
+        'promptEnablePushNotifications'
+      )
+    }
+  }, [])
   const { navigateToSection, privateUser } = props
   const [showWatchModal, setShowWatchModal] = useState(false)
 

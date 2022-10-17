@@ -1,32 +1,30 @@
-import { ReactNode, createContext, useEffect } from 'react'
+import { createContext, ReactNode, useEffect } from 'react'
 import {
   GoogleAuthProvider,
   onIdTokenChanged,
   signInWithCredential,
   signInWithCustomToken,
-  updateCurrentUser,
 } from 'firebase/auth'
 import {
-  UserAndPrivateUser,
   auth,
-  listenForUser,
-  listenForPrivateUser,
   getUserAndPrivateUser,
+  listenForPrivateUser,
+  listenForUser,
   setCachedReferralInfoForUser,
 } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
-import { AUTH_COOKIE_NAME } from 'common/envs/constants'
+import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
 import { setCookie } from 'web/lib/util/cookie'
-import { FirebaseAuthInternal } from 'web/lib/firebase/server-auth'
+import { UserAndPrivateUser } from 'common/user'
+import { setFirebaseUserViaJson } from 'common/firebase-auth'
+import { app } from 'web/lib/firebase/init'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
 export type AuthUser = undefined | null | UserAndPrivateUser
-
-const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
 
 // Proxy localStorage in case it's not available (eg in incognito iframe)
@@ -59,7 +57,6 @@ export const setUserCookie = (cookie: string | undefined) => {
 }
 
 export const AuthContext = createContext<AuthUser>(undefined)
-
 export function AuthProvider(props: {
   children: ReactNode
   serverUser?: AuthUser
@@ -71,7 +68,7 @@ export function AuthProvider(props: {
     try {
       const event = JSON.parse(e.data)
       const data = event.data
-      setFbUser(data)
+      setFirebaseUserViaJson(data, app)
       // signInWithIdToken(data)
       // signInWithToken(data)
     } catch (e) {
@@ -95,46 +92,19 @@ export function AuthProvider(props: {
     )
   }
 
-  const setFbUser = async (deserializedUser: any) => {
-    try {
-      ;(window as any).ReactNativeWebView.postMessage('received fbUser')
-      const clientAuth = auth as FirebaseAuthInternal
-      const persistenceManager = clientAuth.persistenceManager
-      const persistence = persistenceManager.persistence
-      await persistence._set(persistenceManager.fullUserKey, deserializedUser)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const fbUser = (await persistenceManager.getCurrentUser())!
-      ;(window as any).ReactNativeWebView.postMessage(`called fbuser ${fbUser}`)
-      await fbUser?.getIdToken() // forces a refresh if necessary
-      await updateCurrentUser(auth, fbUser)
-    } catch (e) {
-      ;(window as any).ReactNativeWebView.postMessage(
-        `error setting fb user ${e}`
-      )
-      console.error('deserializing', e)
-      return null
-    }
-  }
   useEffect(() => {
-    // if ((window as any).isNative) {
     document.addEventListener('message', handleNativeMessage)
     window.addEventListener('message', handleNativeMessage)
     return () => {
       document.removeEventListener('message', handleNativeMessage)
       window.removeEventListener('message', handleNativeMessage)
     }
-    // }
   }, [])
 
   useEffect(() => {
     if (serverUser === undefined) {
       const cachedUser = localStorage.getItem(CACHED_USER_KEY)
       setAuthUser(cachedUser && JSON.parse(cachedUser))
-      if ((window as any).isNative) {
-        // TODO: also communicate sign out
-        // Post the message back to expo
-        ;(window as any).ReactNativeWebView.postMessage(cachedUser)
-      }
     }
   }, [setAuthUser, serverUser])
 
@@ -161,10 +131,20 @@ export function AuthProvider(props: {
             setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)
+          if ((window as any).isNative) {
+            ;(window as any).ReactNativeWebView.postMessage(
+              JSON.stringify({
+                fbUser: fbUser.toJSON(),
+                privateUser: current.privateUser,
+              })
+            )
+          }
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)
           setAuthUser(null)
+          ;(window as any).isNative &&
+            (window as any).ReactNativeWebView.postMessage('signOut')
         }
       },
       (e) => {

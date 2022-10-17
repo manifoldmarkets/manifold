@@ -5,13 +5,13 @@ import {
   getUserByUsername,
   getUserAndPrivateUser,
   User,
-  UserAndPrivateUser,
 } from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
 import Custom404 from '../404'
 import { useTracking } from 'web/hooks/use-tracking'
 import { GetServerSideProps } from 'next'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
+import { UserAndPrivateUser } from 'common/user'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)

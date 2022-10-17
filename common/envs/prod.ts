@@ -23,7 +23,10 @@ export type EnvConfig = {
   faviconPath?: string // Should be a file in /public
   navbarLogoPath?: string
   newQuestionPlaceholders: string[]
-
+  expoConfig?: {
+    iosClientId?: string
+    expoClientId?: string
+  }
   economy?: Economy
 }
 
@@ -98,4 +101,11 @@ export const PROD_CONFIG: EnvConfig = {
     'Will any cryptocurrency eclipse Bitcoin by market cap this year?',
     'Will the Democrats win the 2024 presidential election?',
   ],
+  expoConfig: {
+    //prod:
+    iosClientId:
+      '128925704902-6ci48vjqud9ddcl436go5ma3m9ceei4k.apps.googleusercontent.com',
+    expoClientId:
+      '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
+  },
 }
