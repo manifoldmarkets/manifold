@@ -4,13 +4,13 @@ import { Answer } from 'common/answer'
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Avatar } from '../avatar'
-import { SiteLink } from '../site-link'
+import { Avatar } from '../widgets/avatar'
+import { SiteLink } from '../widgets/site-link'
 import { formatPercent } from 'common/util/format'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
-import { Linkify } from '../linkify'
-import { Input } from '../input'
+import { Linkify } from '../widgets/linkify'
+import { Input } from '../widgets/input'
 
 export function AnswerItem(props: {
   answer: Answer
@@ -100,8 +100,8 @@ export function AnswerItem(props: {
             </div>
           ))}
         {showChoice ? (
-          <div className="form-control py-1">
-            <label className="label cursor-pointer gap-3">
+          <div className="flex flex-col py-1">
+            <label className="cursor-pointer gap-3 px-1 py-2">
               <span className="">Choose this answer</span>
               {showChoice === 'radio' && (
                 <input

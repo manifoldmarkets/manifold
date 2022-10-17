@@ -14,6 +14,7 @@ const beginsWith = (text: string, query: string) =>
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const mentionSuggestion: Suggestion = {
+  allowedPrefixes: [' '],
   items: async ({ query }) =>
     orderBy(
       (await getCachedUsers()).filter((u) =>

@@ -9,6 +9,7 @@ import {
   where,
   DocumentData,
   DocumentReference,
+  limit,
 } from 'firebase/firestore'
 
 import { getValues, listenForValues } from './utils'
@@ -24,8 +25,8 @@ import {
   PostComment,
 } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
-import { track } from '@amplitude/analytics-browser'
 import { JSONContent } from '@tiptap/react'
+import { track } from '../service/analytics'
 
 export type { Comment }
 
@@ -139,10 +140,16 @@ function getCommentsOnPostCollection(postId: string) {
   return collection(db, 'posts', postId, 'comments')
 }
 
-export async function listAllComments(contractId: string) {
-  return await getValues<ContractComment>(
-    query(getCommentsCollection(contractId), orderBy('createdTime', 'desc'))
+export async function listAllComments(
+  contractId: string,
+  maxCount: number | undefined = undefined
+) {
+  const q = query(
+    getCommentsCollection(contractId),
+    orderBy('createdTime', 'desc')
   )
+  const limitedQ = maxCount ? query(q, limit(maxCount)) : q
+  return await getValues<ContractComment>(limitedQ)
 }
 
 export async function listAllCommentsOnGroup(groupId: string) {
@@ -216,3 +223,15 @@ export const getUserCommentsQuery = (userId: string) =>
     where('commentType', '==', 'contract'),
     orderBy('createdTime', 'desc')
   ) as Query<ContractComment>
+
+export function listenForLiveComments(
+  count: number,
+  setComments: (comments: Comment[]) => void
+) {
+  const commentsQuery = query(
+    collectionGroup(db, 'comments'),
+    orderBy('createdTime', 'desc'),
+    limit(count)
+  )
+  return listenForValues<Comment>(commentsQuery, setComments)
+}

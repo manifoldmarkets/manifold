@@ -8,6 +8,7 @@ import {
   getUserBetContracts,
   getUserBetContractsQuery,
   listAllContracts,
+  listenForContract,
 } from 'web/lib/firebase/contracts'
 import { QueryClient, useQuery, useQueryClient } from 'react-query'
 import { MINUTE_MS, sleep } from 'common/util/time'
@@ -17,9 +18,10 @@ import {
   trendingIndex,
 } from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
-import { zipObject } from 'lodash'
+import { Dictionary, zipObject } from 'lodash'
+import { useForceUpdate } from './use-force-update'
 
-export const useContracts = () => {
+export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   useEffect(() => {
@@ -129,4 +131,32 @@ export const useUserBetContracts = (userId: string) => {
     getUserBetContractsQuery(userId)
   )
   return result.data
+}
+
+const contractsStore: Dictionary<Contract | null> = {}
+const contractIdsListeningTo: Dictionary<true> = {}
+
+export const useContracts = (contractIds: string[]) => {
+  const forceUpdate = useForceUpdate()
+
+  useEffect(() => {
+    for (const id of contractIds) {
+      if (!contractIdsListeningTo[id]) {
+        contractIdsListeningTo[id] = true
+        listenForContract(id, (c) => {
+          if (c) contractsStore[id] = c
+          else contractsStore[id] = null
+
+          // Update after all have loaded, and on every subsequent update.
+          if (contractIds.every((id) => contractsStore[id] !== undefined)) {
+            forceUpdate()
+          }
+        })
+      }
+    }
+  }, [contractIds, forceUpdate])
+
+  return contractIds.map(
+    (id) => contractsStore[id] as Contract | null | undefined
+  )
 }

@@ -1,6 +1,6 @@
 import { Group } from 'common/group'
 import { Combobox } from '@headlessui/react'
-import { InfoTooltip } from 'web/components/info-tooltip'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import {
   CheckIcon,
   PlusCircleIcon,
@@ -72,7 +72,7 @@ export function GroupSelector(props: {
     )
   }
   return (
-    <div className="form-control items-start">
+    <div className="flex flex-col items-start">
       <Combobox
         as="div"
         value={selectedGroup}
@@ -83,7 +83,7 @@ export function GroupSelector(props: {
         {() => (
           <>
             {showLabel && (
-              <Combobox.Label className="label justify-start gap-2 text-base">
+              <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
                 Add to Group
                 <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
               </Combobox.Label>

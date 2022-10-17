@@ -5,15 +5,16 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from '../layout/col'
-import { LoadingIndicator } from '../loading-indicator'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractCardProbChange } from './contract-card'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 
 export function ProfitChangeTable(props: {
   contracts: CPMMBinaryContract[]
   metrics: ContractMetrics[]
+  maxRows?: number
 }) {
-  const { contracts, metrics } = props
+  const { contracts, metrics, maxRows } = props
 
   const contractProfit = metrics.map(
     (m) => [m.contractId, m.from?.day.profit ?? 0] as const
@@ -27,7 +28,7 @@ export function ProfitChangeTable(props: {
     positiveProfit.map(([contractId]) =>
       contracts.find((c) => c.id === contractId)
     )
-  )
+  ).slice(0, maxRows)
 
   const negativeProfit = sortBy(
     contractProfit.filter(([, profit]) => profit < 0),
@@ -37,7 +38,7 @@ export function ProfitChangeTable(props: {
     negativeProfit.map(([contractId]) =>
       contracts.find((c) => c.id === contractId)
     )
-  )
+  ).slice(0, maxRows)
 
   if (positive.length === 0 && negative.length === 0)
     return <div className="px-4 text-gray-500">None</div>

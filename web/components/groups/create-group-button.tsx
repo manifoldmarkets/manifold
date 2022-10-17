@@ -1,14 +1,14 @@
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { groupPath } from 'web/lib/firebase/groups'
-import { ConfirmationButton } from '../confirmation-button'
+import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Spacer } from '../layout/spacer'
-import { Title } from '../title'
+import { Title } from '../widgets/title'
 import { User } from 'common/user'
 import { MAX_GROUP_NAME_LENGTH } from 'common/group'
 import { createGroup } from 'web/lib/firebase/api'
-import { Input } from '../input'
+import { Input } from '../widgets/input'
 
 export function CreateGroupButton(props: {
   user: User
@@ -103,7 +103,7 @@ export function CreateGroupButton(props: {
       </Col>
       {errorText && <div className={'text-error'}>{errorText}</div>}
 
-      <div className="form-control w-full">
+      <div className="flex w-full flex-col">
         <label className="mb-2 ml-1 mt-0">Group name</label>
         <Input
           placeholder={'Your group name'}

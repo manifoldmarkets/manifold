@@ -2,8 +2,7 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { useEffect, useState } from 'react'
-import { BetInline } from 'web/components/bet-inline'
-import { Button } from 'web/components/button'
+import { BetInline } from 'web/components/bet/bet-inline'
 import {
   BinaryResolutionOrChance,
   ContractCard,
@@ -16,16 +15,12 @@ import { ContractChart } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { listAllBets } from 'web/lib/firebase/bets'
-import {
-  contractPath,
-  getContractFromSlug,
-  tradingAllowed,
-} from 'web/lib/firebase/contracts'
+import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
 
@@ -37,7 +32,7 @@ export async function getStaticPropz(props: {
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
 
-  const bets = contractId ? await listAllBets(contractId) : []
+  const bets = contractId ? await listAllBets(contractId, 5000) : []
 
   return {
     props: { contract, bets },
@@ -138,14 +133,6 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
       <Spacer h={3} />
       <Row className="items-center justify-between gap-4 px-2">
         <MarketSubheader contract={contract} disabled />
-
-        {(isBinary || isPseudoNumeric) &&
-          tradingAllowed(contract) &&
-          !betPanelOpen && (
-            <Button color="gradient" onClick={() => setBetPanelOpen(true)}>
-              Predict
-            </Button>
-          )}
       </Row>
 
       <Spacer h={2} />

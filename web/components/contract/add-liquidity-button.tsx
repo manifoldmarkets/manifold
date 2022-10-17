@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 
-import { buttonClass } from 'web/components/button'
+import { buttonClass } from 'web/components/buttons/button'
 import { CPMMContract } from 'common/contract'
 import { LiquidityModal } from './liquidity-modal'
 
@@ -29,7 +29,7 @@ export function AddLiquidityButton(props: {
       onClick={() => setOpen(true)}
       target="_blank"
     >
-      <div>💧 Add liquidity</div>
+      <div>💧 Subsidize</div>
       <LiquidityModal contract={contract} isOpen={open} setOpen={setOpen} />
     </a>
   )

@@ -1,4 +1,4 @@
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { ContractSearch } from 'web/components/contract-search'
 import { useTracking } from 'web/hooks/use-tracking'

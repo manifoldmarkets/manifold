@@ -1,31 +1,39 @@
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 
 import { postPath, getPostBySlug, updatePost } from 'web/lib/firebase/posts'
 import { Post } from 'common/post'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
-import { Content, TextEditor, useTextEditor } from 'web/components/editor'
+import {
+  Content,
+  TextEditor,
+  useTextEditor,
+} from 'web/components/widgets/editor'
 import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon, ShareIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { SharePostModal } from 'web/components/share-post-modal'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
-import { UserLink } from 'web/components/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 import { listAllCommentsOnPost } from 'web/lib/firebase/comments'
 import { PostComment } from 'common/comment'
 import { CommentTipMap, useTipTxns } from 'web/hooks/use-tip-txns'
 import { groupBy, sortBy } from 'lodash'
-import { PostCommentInput, PostCommentThread } from 'web/posts/post-comments'
+import {
+  PostCommentInput,
+  PostCommentThread,
+} from 'web/components/posts/post-comments'
 import { useCommentsOnPost } from 'web/hooks/use-comments'
 import { useUser } from 'web/hooks/use-user'
 import { usePost } from 'web/hooks/use-post'
 import { SEO } from 'web/components/SEO'
-import { Subtitle } from 'web/components/subtitle'
+import { Subtitle } from 'web/components/widgets/subtitle'
+import { LikeItemButton } from 'web/components/contract/like-item-button'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
@@ -81,43 +89,47 @@ export default function PostPage(props: {
           <br />
           <Subtitle className="!mt-2 px-2 pb-4" text={post.subtitle} />
         </div>
-        <Row>
+        <Row className="items-center">
           <Col className="flex-1 px-2">
             <div className={'inline-flex'}>
               <div className="mr-1 text-gray-500">Created by</div>
               <UserLink
-                className="text-neutral"
+                className="text-gray-700"
                 name={creator.name}
                 username={creator.username}
               />
             </div>
           </Col>
-          <Col className="px-2">
-            <Button
-              size="lg"
-              color="gray-white"
-              className={'flex'}
-              onClick={() => {
-                setShareOpen(true)
-              }}
-            >
-              <ShareIcon
-                className={clsx('mr-2 h-[24px] w-5')}
-                aria-hidden="true"
-              />
-              Share
-              <SharePostModal
-                isOpen={isShareOpen}
-                setOpen={setShareOpen}
-                shareUrl={shareUrl}
-              />
-            </Button>
-          </Col>
+          <Row className="items-center">
+            <LikeItemButton item={post} user={user} itemType={'post'} />
+
+            <Col className="px-2">
+              <Button
+                size="lg"
+                color="gray-white"
+                className={'flex'}
+                onClick={() => {
+                  setShareOpen(true)
+                }}
+              >
+                <ShareIcon
+                  className={clsx('mr-2 h-[24px] w-5')}
+                  aria-hidden="true"
+                />
+                Share
+                <SharePostModal
+                  isOpen={isShareOpen}
+                  setOpen={setShareOpen}
+                  shareUrl={shareUrl}
+                />
+              </Button>
+            </Col>
+          </Row>
         </Row>
 
         <Spacer h={2} />
         <div className="rounded-lg bg-white px-6 py-4 sm:py-0">
-          <div className="form-control w-full py-2">
+          <div className="flex w-full flex-col py-2">
             {user && user.id === post.creatorId ? (
               <RichEditPost post={post} />
             ) : (
@@ -172,9 +184,7 @@ export function RichEditPost(props: { post: Post }) {
   const { post } = props
   const [editing, setEditing] = useState(false)
 
-  const { editor, upload } = useTextEditor({
-    defaultValue: post.content,
-  })
+  const editor = useTextEditor({ defaultValue: post.content })
 
   async function savePost() {
     if (!editor) return
@@ -186,7 +196,7 @@ export function RichEditPost(props: { post: Post }) {
 
   return editing ? (
     <>
-      <TextEditor editor={editor} upload={upload} />
+      <TextEditor editor={editor} />
       <Spacer h={2} />
       <Row className="gap-2">
         <Button

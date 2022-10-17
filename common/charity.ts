@@ -595,7 +595,8 @@ In addition to housing impact litigation, we provide free legal aid, education a
     photo:
       'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2Fci2h3hStFM.47?alt=media&token=0d2cdc3d-e4d8-4f5e-8f23-4a586b6ff637',
     preview: 'Donate supplies to soldiers in Ukraine',
-    description: 'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
+    description:
+      'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

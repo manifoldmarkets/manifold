@@ -8,10 +8,10 @@ import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
-import { ShareIconButton } from './share-icon-button'
+import { ShareIconButton } from './buttons/share-icon-button'
 import { useUserById } from 'web/hooks/use-user'
 import getManalinkUrl from 'web/get-manalink-url'
-import { IconButton } from './button'
+import { IconButton } from './buttons/button'
 
 export type ManalinkInfo = {
   expiresTime: number | null

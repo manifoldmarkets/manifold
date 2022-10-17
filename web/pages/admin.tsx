@@ -1,17 +1,17 @@
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { Grid, _ as r } from 'gridjs-react'
 import 'gridjs/dist/theme/mermaid.css'
 import { html } from 'gridjs'
 import dayjs from 'dayjs'
 import { usePrivateUsers, useUsers } from 'web/hooks/use-users'
 import Custom404 from './404'
-import { useContracts } from 'web/hooks/use-contracts'
+import { useAllContracts } from 'web/hooks/use-contracts'
 import { mapKeys } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
 import { contractPath } from 'web/lib/firebase/contracts'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { firestoreConsolePath } from 'common/envs/constants'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -114,7 +114,7 @@ function UsersTable() {
 }
 
 function ContractsTable() {
-  const contracts = useContracts() ?? []
+  const contracts = useAllContracts() ?? []
 
   // Sort users by createdTime descending, by default
   const displayContracts = contracts

@@ -13,6 +13,9 @@ export type Post = {
   creatorName: string
   creatorUsername: string
   creatorAvatarUrl?: string
+
+  likedByUserIds?: string[]
+  likedByUserCount?: number
 }
 
 export type DateDoc = Post & {

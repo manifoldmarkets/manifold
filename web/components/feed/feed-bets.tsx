@@ -4,30 +4,36 @@ import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar, EmptyAvatar } from 'web/components/avatar'
+import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { formatNumericProbability } from 'common/pseudo-numeric'
-import { SiteLink } from 'web/components/site-link'
+import { SiteLink } from 'web/components/widgets/site-link'
 import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
-import { UserLink } from 'web/components/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 import { BETTOR } from 'common/user'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
   bet: Bet
+  avatarSize?: number | 'xxs' | 'xs' | 'sm'
+  className?: string
 }) {
-  const { contract, bet } = props
+  const { contract, bet, avatarSize, className } = props
   const { userAvatarUrl, userUsername, createdTime } = bet
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
 
   return (
-    <Row className="items-center gap-2 pt-3">
+    <Row className={clsx(className, 'items-center gap-2 pt-3')}>
       {showUser ? (
-        <Avatar avatarUrl={userAvatarUrl} username={userUsername} />
+        <Avatar
+          size={avatarSize}
+          avatarUrl={userAvatarUrl}
+          username={userUsername}
+        />
       ) : (
         <EmptyAvatar className="mx-1" />
       )}

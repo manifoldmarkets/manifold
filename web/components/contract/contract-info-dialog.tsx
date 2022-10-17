@@ -3,25 +3,33 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
+import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 import { Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { contractPool, updateContract } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
-import { Title } from '../title'
-import { InfoTooltip } from '../info-tooltip'
+import { Title } from '../widgets/title'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
-import { SiteLink } from '../site-link'
+import { SiteLink } from '../widgets/site-link'
 import { firestoreConsolePath } from 'common/envs/constants'
 import { deleteField } from 'firebase/firestore'
 import ShortToggle from '../widgets/short-toggle'
-import { DuplicateContractButton } from '../duplicate-contract-button'
+import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
 import { Row } from '../layout/row'
 import { BETTORS, User } from 'common/user'
-import { IconButton } from '../button'
+import { Button, IconButton } from '../buttons/button'
 import { AddLiquidityButton } from './add-liquidity-button'
-import { Tooltip } from '../tooltip'
+import { Tooltip } from '../widgets/tooltip'
+import { Table } from '../widgets/table'
+import { ShareEmbedButton } from '../buttons/share-embed-button'
+import { CreateChallengeModal } from '../challenges/create-challenge-modal'
+import { CHALLENGES_ENABLED } from 'common/challenge'
+import { withTracking } from 'web/lib/service/analytics'
+import { QRCode } from '../widgets/qr-code'
+import { getShareUrl } from 'common/util/share'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -80,6 +88,16 @@ export function ContractInfoDialog(props: {
     }
   }
 
+  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
+    useState(false)
+  const showChallenge =
+    user &&
+    outcomeType === 'BINARY' &&
+    !contract.resolution &&
+    CHALLENGES_ENABLED
+
+  const shareUrl = getShareUrl(contract, user?.username)
+
   return (
     <>
       <Tooltip text="Market details" placement="bottom" noTap noFade>
@@ -98,7 +116,7 @@ export function ContractInfoDialog(props: {
           <Col className="gap-4 rounded bg-white p-6">
             <Title className="!mt-0 !mb-0" text="This Market" />
 
-            <table className="table-compact table-zebra table w-full text-gray-500">
+            <Table>
               <tbody>
                 <tr>
                   <td>Type</td>
@@ -238,14 +256,49 @@ export function ContractInfoDialog(props: {
                   </tr>
                 )}
               </tbody>
-            </table>
+            </Table>
 
-            <Row className="flex-wrap">
+            <Row className="flex-wrap gap-2">
               {mechanism === 'cpmm-1' && (
-                <AddLiquidityButton contract={contract} className="mr-2" />
+                <AddLiquidityButton contract={contract} />
               )}
+
               <DuplicateContractButton contract={contract} />
+
+              <ShareEmbedButton contract={contract} />
+
+              {showChallenge && (
+                <Button
+                  size="2xs"
+                  color="override"
+                  className="gap-1 border-2  border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white"
+                  onClick={withTracking(
+                    () => setOpenCreateChallengeModal(true),
+                    'click challenge button'
+                  )}
+                >
+                  <ChallengeIcon className="h-4 w-4" /> Challenge
+                  <CreateChallengeModal
+                    isOpen={openCreateChallengeModal}
+                    setOpen={(open) => {
+                      if (!open) {
+                        setOpenCreateChallengeModal(false)
+                        setOpen(false)
+                      } else setOpenCreateChallengeModal(open)
+                    }}
+                    user={user}
+                    contract={contract}
+                  />
+                </Button>
+              )}
             </Row>
+
+            <QRCode
+              url={shareUrl}
+              className="self-center sm:hidden"
+              width={150}
+              height={150}
+            />
           </Col>
         </Modal>
       </Tooltip>

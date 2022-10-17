@@ -38,10 +38,11 @@ import {
 } from 'web/lib/service/algolia'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AdjustmentsIcon } from '@heroicons/react/solid'
-import { Button } from './button'
+import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
-import { Title } from './title'
-import { Input } from './input'
+import { Title } from './widgets/title'
+import { Input } from './widgets/input'
+import { Select } from './widgets/select'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
@@ -437,7 +438,7 @@ function ContractSearchControls(props: {
   }
 
   return (
-    <Col className={clsx('bg-base-200 top-0 z-20 gap-3 pb-3', className)}>
+    <Col className={clsx('bg-greyscale-1 top-0 z-20 gap-3 pb-3', className)}>
       <Row className="gap-1 sm:gap-2">
         <Input
           type="text"
@@ -543,8 +544,7 @@ export function SearchFilters(props: {
 
   return (
     <div className={className}>
-      <select
-        className="select select-bordered"
+      <Select
         value={filter}
         onChange={(e) => selectFilter(e.target.value as filter)}
       >
@@ -552,10 +552,9 @@ export function SearchFilters(props: {
         <option value="closed">Closed</option>
         <option value="resolved">Resolved</option>
         <option value="all">All</option>
-      </select>
+      </Select>
       {!hideOrderSelector && (
-        <select
-          className="select select-bordered"
+        <Select
           value={sort}
           onChange={(e) => selectSort(e.target.value as Sort)}
         >
@@ -564,7 +563,7 @@ export function SearchFilters(props: {
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       )}
     </div>
   )

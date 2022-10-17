@@ -6,8 +6,8 @@ import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
 import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from 'common/economy'
-import { InfoTooltip } from 'web/components/info-tooltip'
-import { Page } from 'web/components/page'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -24,20 +24,20 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { GroupSelector } from 'web/components/groups/group-selector'
 import { User } from 'common/user'
-import { TextEditor, useTextEditor } from 'web/components/editor'
-import { Checkbox } from 'web/components/checkbox'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { Checkbox } from 'web/components/widgets/checkbox'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { Title } from 'web/components/title'
+import { Title } from 'web/components/widgets/title'
 import { SEO } from 'web/components/SEO'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
-import { SiteLink } from 'web/components/site-link'
-import { Button } from 'web/components/button'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { Input } from 'web/components/input'
-import { ExpandingInput } from 'web/components/expanding-input'
+import { Input } from 'web/components/widgets/input'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -96,11 +96,9 @@ export default function Create(props: { auth: { user: User } }) {
           <Title className="!mt-0" text="Create a market" />
 
           <form>
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="mb-1">
-                  Question<span className={'text-red-700'}>*</span>
-                </span>
+            <div className="flex w-full flex-col">
+              <label className="px-1 pt-2 pb-3">
+                Question<span className={'text-red-700'}>*</span>
               </label>
 
               <ExpandingInput
@@ -225,7 +223,7 @@ export function NewContract(props: {
       ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
       : `e.g. I will choose the answer according to...`
 
-  const { editor, upload } = useTextEditor({
+  const editor = useTextEditor({
     key: 'create market',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: descriptionPlaceholder,
@@ -280,9 +278,7 @@ export function NewContract(props: {
 
   return (
     <div>
-      <label className="label">
-        <span className="mb-1">Answer type</span>
-      </label>
+      <label className="flex px-1 pt-2 pb-3">Answer type</label>
       <Row>
         <ChoicesToggleGroup
           currentChoice={outcomeType}
@@ -318,8 +314,8 @@ export function NewContract(props: {
 
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <>
-          <div className="form-control mb-2 items-start">
-            <label className="label gap-2">
+          <div className="mb-2 flex flex-col items-start">
+            <label className="gap-2 px-1 py-2">
               <span className="mb-1">Range</span>
               <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             </label>
@@ -363,8 +359,8 @@ export function NewContract(props: {
               </div>
             )}
           </div>
-          <div className="form-control mb-2 items-start">
-            <label className="label gap-2">
+          <div className="mb-2 flex flex-col items-start">
+            <label className="gap-2 px-1 py-2">
               <span className="mb-1">Initial value</span>
               <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
             </label>
@@ -410,7 +406,7 @@ export function NewContract(props: {
         )}
       </Row>
 
-      <Row className="form-control my-2 items-center gap-2 text-sm">
+      <Row className="my-2 items-center gap-2 text-sm">
         <span>Display this market on homepage</span>
         <ShortToggle
           on={visibility === 'public'}
@@ -420,8 +416,8 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <div className="form-control mb-1 items-start">
-        <label className="label mb-1 gap-2">
+      <div className="mb-1 flex flex-col items-start">
+        <label className="mb-1 gap-2 px-1 py-2">
           <span>Question closes in</span>
           <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
         </label>
@@ -463,35 +459,35 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <div className="form-control mb-1 items-start gap-1">
-        <label className="label gap-2">
+      <div className="mb-1 flex flex-col items-start gap-1">
+        <label className="gap-2 px-1 py-2">
           <span className="mb-1">Description</span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
-        <TextEditor editor={editor} upload={upload} />
+        <TextEditor editor={editor} />
       </div>
 
       <Spacer h={6} />
       <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
-        <div className="form-control mb-1 items-start">
-          <label className="label mb-1 gap-2">
+        <div className="mb-1 flex flex-col items-start">
+          <label className="mb-1 gap-2 px-1 py-2">
             <span>Cost</span>
             <InfoTooltip
               text={`Cost to create your question. This amount is used to subsidize predictions.`}
             />
           </label>
           {!deservesFreeMarket ? (
-            <div className="label-text text-neutral pl-1">
+            <div className="pl-1 text-sm text-gray-700">
               {formatMoney(ante)}
             </div>
           ) : (
-            <Row>
-              <div className="label-text text-neutral pl-1 line-through">
+            <Row className="text-sm">
+              <div className="pl-1 text-gray-700 line-through">
                 {formatMoney(ante)}
               </div>
-              <div className="label-text text-primary pl-1">FREE </div>
-              <div className="label-text pl-1 text-gray-500">
+              <div className="text-primary pl-1">FREE </div>
+              <div className="pl-1 text-gray-500">
                 (You have{' '}
                 {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
                 free markets left)
@@ -521,7 +517,7 @@ export function NewContract(props: {
           type="submit"
           color="green"
           loading={isSubmitting}
-          disabled={!isValid || upload.isLoading}
+          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
           onClick={(e) => {
             e.preventDefault()
             submit()

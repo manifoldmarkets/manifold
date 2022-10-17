@@ -171,12 +171,12 @@ export const resolveMarket = async (
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
   const loanPayouts = getLoanPayouts(openBets)
 
-  const payouts = [
+  const payoutsWithoutLoans = [
     { userId: creatorId, payout: creatorPayout, deposit: creatorPayout },
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
     ...traderPayouts,
-    ...loanPayouts,
   ]
+  const payouts = [...payoutsWithoutLoans, ...loanPayouts]
 
   if (!isProd())
     console.log(
@@ -208,7 +208,7 @@ export const resolveMarket = async (
   await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
   await revalidateStaticProps(getContractPath(contract))
 
-  const userPayoutsWithoutLoans = groupPayoutsByUser(payouts)
+  const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
 
   const userInvestments = mapValues(
     groupBy(bets, (bet) => bet.userId),

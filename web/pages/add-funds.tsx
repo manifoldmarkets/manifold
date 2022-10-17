@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { SEO } from 'web/components/SEO'
-import { Title } from 'web/components/title'
-import { FundsSelector } from 'web/components/yes-no-selector'
+import { Title } from 'web/components/widgets/title'
+import { FundsSelector } from 'web/components/bet/yes-no-selector'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
-import { Page } from 'web/components/page'
+import { Page } from 'web/components/layout/page'
 import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -37,7 +37,7 @@ export default function AddFundsPage() {
             className="mb-6 block self-center"
             src="/welcome/manipurple.png"
             width={200}
-            height={200}
+            height={158}
           />
 
           <div className="mb-6 text-gray-500">

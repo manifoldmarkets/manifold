@@ -26,8 +26,8 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
-import { track } from '@amplitude/analytics-browser'
 import { Like } from 'common/like'
+import { track } from '../service/analytics'
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
@@ -332,4 +332,18 @@ export function listenForLikes(
 ) {
   const likes = collection(users, userId, 'likes')
   return listenForValues<Like>(likes, (docs) => setLikes(docs))
+}
+
+export function saveUserEvent(
+  userId: string | undefined,
+  eventName: string,
+  eventProperties?: any
+) {
+  const eventDoc = doc(collection(users, userId ?? 'NO_USER', 'events'))
+
+  return setDoc(eventDoc, {
+    timestamp: Date.now(),
+    name: eventName,
+    ...eventProperties,
+  })
 }

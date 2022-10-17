@@ -1,13 +1,13 @@
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
 import { DateDoc } from 'common/post'
-import { useTextEditor, TextEditor } from 'web/components/editor'
-import { Page } from 'web/components/page'
-import { Title } from 'web/components/title'
+import { useTextEditor, TextEditor } from 'web/components/widgets/editor'
+import { Page } from 'web/components/layout/page'
+import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
 import { createPost } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
-import { Button } from 'web/components/button'
+import { Button } from 'web/components/buttons/button'
 import dayjs from 'dayjs'
 import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
@@ -15,8 +15,8 @@ import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { NoSEO } from 'web/components/NoSEO'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { removeUndefinedProps } from 'common/util/object'
-import { Input } from 'web/components/input'
-import { ExpandingInput } from 'web/components/expanding-input'
+import { Input } from 'web/components/widgets/input'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
 
 export default function CreateDateDocPage() {
   const user = useUser()
@@ -35,7 +35,7 @@ export default function CreateDateDocPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { editor, upload } = useTextEditor({})
+  const editor = useTextEditor({})
 
   const birthdayTime = birthday ? dayjs(birthday).valueOf() : undefined
   const isValid =
@@ -83,7 +83,8 @@ export default function CreateDateDocPage() {
             <Title className="!my-0 text-blue-500" text="Your Date Doc" />
             <Button
               type="submit"
-              disabled={isSubmitting || !isValid || upload.isLoading}
+              loading={isSubmitting}
+              disabled={!isValid || editor.storage.upload.mutation.isLoading}
               onClick={async () => {
                 setIsSubmitting(true)
                 await saveDateDoc()
@@ -112,7 +113,7 @@ export default function CreateDateDocPage() {
               <div className="">
                 Tell us about you! What are you looking for?
               </div>
-              <TextEditor editor={editor} upload={upload} />
+              <TextEditor editor={editor} />
             </Col>
 
             <Col className="gap-4">

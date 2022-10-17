@@ -28,7 +28,7 @@ export function groupConsecutive<T, U>(xs: T[], key: (x: T) => U) {
   let curr = { key: key(xs[0]), items: [xs[0]] }
   for (const x of xs.slice(1)) {
     const k = key(x)
-    if (!isEqual(key, curr.key)) {
+    if (!isEqual(k, curr.key)) {
       result.push(curr)
       curr = { key: k, items: [x] }
     } else {

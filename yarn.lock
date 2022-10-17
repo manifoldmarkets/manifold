@@ -1303,6 +1303,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.10.1", "@babel/runtime@^7.18.3":
+  version "7.19.4"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.19.4.tgz#a42f814502ee467d55b38dd1c256f53a7b885c78"
+  integrity sha512-EXpLCrk55f+cYqmHsSR+yD/0gAIMxxA9QK9lnQWzhMCvt+YmoBN7Zx94s++Kv0+unHk39vxNO8t+CMA2WSS3wA==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/runtime@^7.10.3", "@babel/runtime@^7.12.1", "@babel/runtime@^7.12.13", "@babel/runtime@^7.17.2", "@babel/runtime@^7.8.4":
   version "7.18.3"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.3.tgz#c7b654b57f6f63cf7f8b418ac9ca04408c4579f4"
@@ -5474,11 +5481,6 @@ d3-transition@3:
     d3-ease "1 - 3"
     d3-interpolate "1 - 3"
     d3-timer "1 - 3"
-
-daisyui@1.16.4:
-  version "1.16.4"
-  resolved "https://registry.yarnpkg.com/daisyui/-/daisyui-1.16.4.tgz#52773401c0962e37ef40507d29f0e513c7f2856f"
-  integrity sha512-bpPUlIR6PJdnaM+Vj+Rd0ljMwbdwjvFAW9E/bhxCRDEU48OnmpKQxnkwNGAtXbwWWATS6I1dEIlLdM8zCbV3uQ==
 
 damerau-levenshtein@^1.0.7:
   version "1.0.8"
@@ -10229,6 +10231,25 @@ raw-body@2.5.1, raw-body@^2.2.0:
     iconv-lite "0.4.24"
     unpipe "1.0.0"
 
+rc-slider@10.0.1:
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/rc-slider/-/rc-slider-10.0.1.tgz#7058c68ff1e1aa4e7c3536e5e10128bdbccb87f9"
+  integrity sha512-igTKF3zBet7oS/3yNiIlmU8KnZ45npmrmHlUUio8PNbIhzMcsh+oE/r2UD42Y6YD2D/s+kzCQkzQrPD6RY435Q==
+  dependencies:
+    "@babel/runtime" "^7.10.1"
+    classnames "^2.2.5"
+    rc-util "^5.18.1"
+    shallowequal "^1.1.0"
+
+rc-util@^5.18.1:
+  version "5.24.4"
+  resolved "https://registry.yarnpkg.com/rc-util/-/rc-util-5.24.4.tgz#a4126f01358c86f17c1bf380a1d83d6c9155ae65"
+  integrity sha512-2a4RQnycV9eV7lVZPEJ7QwJRPlZNc06J7CwcwZo4vIHr3PfUqtYgl1EkUV9ETAc6VRRi8XZOMFhYG63whlIC9Q==
+  dependencies:
+    "@babel/runtime" "^7.18.3"
+    react-is "^16.12.0"
+    shallowequal "^1.1.0"
+
 rc@^1.2.8:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/rc/-/rc-1.2.8.tgz#cd924bf5200a075b83c188cd6b9e211b7fc0d3ed"
@@ -10359,7 +10380,7 @@ react-instantsearch-hooks@6.24.1:
     dequal "^2.0.0"
     instantsearch.js "^4.40.1"
 
-react-is@^16.13.1, react-is@^16.6.0, react-is@^16.7.0:
+react-is@^16.12.0, react-is@^16.13.1, react-is@^16.6.0, react-is@^16.7.0:
   version "16.13.1"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
   integrity sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==
@@ -11363,10 +11384,10 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-stability-client@1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/stability-client/-/stability-client-1.5.0.tgz#f221420a297c808f209c469a0df8fa2401f8f6ae"
-  integrity sha512-hXuDK6QW/msf50pu8M4L1hTCYG4w5ZrhLgxirigUrSZEARupIPT88O7qz4YSmUbbp9nKlzS8UJ6NjYUH7qy45w==
+stability-client@1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/stability-client/-/stability-client-1.6.1.tgz#960250c8083119227d25972db662c873333f9a26"
+  integrity sha512-N5igY8YH1vT6T0p++GWbr1KHqeAyYO+/WGgrgsTeKk7bCTXLeQng8B9OWYOOAczb95iyvFXDdUCRj5Cry00iaA==
   dependencies:
     "@improbable-eng/grpc-web" "^0.15.0"
     "@improbable-eng/grpc-web-node-http-transport" "^0.15.0"
