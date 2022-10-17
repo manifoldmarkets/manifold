@@ -1,8 +1,9 @@
-import { Bet, FullMarket, LiteMarket, LiteUser } from 'common/manifold-defs';
 import { getOutcomeForString } from 'common/outcome';
 import * as Packet from 'common/packet-ids';
 import { PacketResolved } from 'common/packets';
-import { FullBet } from 'common/transaction';
+import { AbstractMarket, abstractMarketFromFullMarket, NamedBet } from 'common/types/manifold-abstract-types';
+import { LiteUser } from 'common/types/manifold-api-types';
+import { Bet } from 'common/types/manifold-internal-types';
 import { default as lodash, default as _ } from 'lodash';
 import moment from 'moment';
 import App from './app';
@@ -19,12 +20,12 @@ export class Market {
   private userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
   private pollTask: () => void;
 
-  public readonly allBets: FullBet[] = [];
-  public data: FullMarket;
+  public readonly allBets: NamedBet[] = [];
+  public data: AbstractMarket;
   public resolveData: PacketResolved = null;
   public continuePolling = false;
 
-  constructor(app: App, data: FullMarket, twitchChannel: string) {
+  constructor(app: App, data: AbstractMarket, twitchChannel: string) {
     this.app = app;
     this.data = data;
 
@@ -57,7 +58,7 @@ export class Market {
   }
 
   private async resolve() {
-    this.data = await Manifold.getFullMarketByID(this.data.id);
+    this.data = abstractMarketFromFullMarket(await Manifold.getFullMarketByID(this.data.id));
 
     const resolutionOutcome = getOutcomeForString(this.data.resolution);
     const winners = (await this.calculateWinners()).filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
@@ -104,7 +105,7 @@ export class Market {
 
   async loadInitialBets() {
     let numLoadedBets = 0;
-    let mostRecentBet: FullBet = undefined;
+    let mostRecentBet: NamedBet = undefined;
     const betsToAdd = [];
     // Bets are in oldest-first order, so must iterate backwards to get most recent bets:
     for (let betIndex = this.data.bets.length - 1; betIndex >= 0; betIndex--) {
@@ -112,7 +113,7 @@ export class Market {
       if (bet.isRedemption || bet.shares === 0) {
         continue;
       }
-      let fullBet: FullBet;
+      let fullBet: NamedBet;
       if (numLoadedBets < 3) {
         fullBet = await this.betToFullBet(bet);
       } else {
@@ -138,7 +139,7 @@ export class Market {
     this.app.io.to(this.twitchChannel).emit(Packet.MARKET_LOAD_COMPLETE);
   }
 
-  calculateFixedPayout(contract: LiteMarket, bet: Bet, outcome: string) {
+  calculateFixedPayout(contract: AbstractMarket, bet: Bet, outcome: string) {
     if (outcome === 'CANCEL') return this.calculateFixedCancelPayout(bet);
     if (outcome === 'MKT') return this.calculateFixedMktPayout(contract, bet);
 
@@ -155,7 +156,7 @@ export class Market {
     return shares;
   }
 
-  getProbability(contract: LiteMarket) {
+  getProbability(contract: AbstractMarket) {
     if (contract.mechanism === 'cpmm-1') {
       return this.getCpmmProbability(contract.pool, contract.p);
     }
@@ -167,7 +168,7 @@ export class Market {
     return (p * NO) / ((1 - p) * YES + p * NO);
   }
 
-  calculateFixedMktPayout(contract: LiteMarket, bet: Bet) {
+  calculateFixedMktPayout(contract: AbstractMarket, bet: Bet) {
     const { resolutionProbability } = contract;
     const p = resolutionProbability !== undefined ? resolutionProbability : this.getProbability(contract);
 
@@ -178,7 +179,7 @@ export class Market {
     return betP * shares;
   }
 
-  resolvedPayout(contract: LiteMarket, bet: Bet) {
+  resolvedPayout(contract: AbstractMarket, bet: Bet) {
     const outcome = contract.resolution;
     if (!outcome) throw new Error('Contract not resolved');
 
@@ -228,10 +229,7 @@ export class Market {
     return slug;
   }
 
-  private addBet(bet: FullBet, transmit = true) {
-    // if (this.bets.length >= 3) {
-    //   this.bets.shift();
-    // }
+  private addBet(bet: NamedBet, transmit = true) {
     this.allBets.push(bet);
 
     if (transmit) {
@@ -245,7 +243,7 @@ export class Market {
     );
   }
 
-  private async betToFullBet(bet: Bet): Promise<FullBet> {
+  private async betToFullBet(bet: Bet): Promise<NamedBet> {
     const username = await this.getDisplayNameForUserID(bet.userId);
     return {
       ...bet,

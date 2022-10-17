@@ -1,9 +1,9 @@
 import { Transition } from '@headlessui/react';
 import clsx from 'clsx';
 import { Group } from 'common/group';
-import { LiteMarket, LiteUser } from 'common/manifold-defs';
 import * as Packets from 'common/packet-ids';
 import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
+import { LiteMarket, LiteUser } from 'common/types/manifold-api-types';
 import Head from 'next/head';
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import Textarea from 'react-expanding-textarea';

@@ -1,7 +1,7 @@
 import { InformationCircleIcon, TrendingUpIcon } from '@heroicons/react/outline';
 import { SparklesIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
-import { LiteMarket } from 'common/manifold-defs';
+import { LiteMarket } from 'common/types/manifold-api-types';
 import { DAY_MS, formatMoney } from 'web/lib/utils';
 import { Avatar } from './avatar';
 import { ConfirmationButton } from './confirmation-button';

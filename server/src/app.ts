@@ -1,6 +1,7 @@
 import * as Packet from 'common/packet-ids';
 import { UNFEATURE_MARKET } from 'common/packet-ids';
 import { PacketSelectMarket } from 'common/packets';
+import { abstractMarketFromFullMarket } from 'common/types/manifold-abstract-types';
 import cors from 'cors';
 import express, { Express } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -84,7 +85,7 @@ export default class App {
     this.unfeatureCurrentMarket(channel, sourceDock);
 
     if (id) {
-      const marketData = await Manifold.getFullMarketByID(id);
+      const marketData = abstractMarketFromFullMarket(await Manifold.getFullMarketByID(id));
       if (!marketData || marketData.isResolved) throw new Error('Attempted to feature invalid market');
       const market = new Market(this, marketData, channel);
       await market.load();

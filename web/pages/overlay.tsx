@@ -14,17 +14,16 @@ import io, { Socket } from 'socket.io-client';
 import { Col } from 'web/components/layout/col';
 import { Row } from 'web/components/layout/row';
 
-import * as Manifold from 'common/manifold-defs';
 import { ResolutionOutcome } from 'common/outcome';
 import * as Packet from 'common/packet-ids';
 import { PacketResolved, PacketSelectMarket } from 'common/packets';
-import { FullBet } from 'common/transaction';
+import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
 import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
 import { LoadingOverlay } from 'web/components/loading-overlay';
 import { ConnectionState } from 'web/lib/connection-state';
 
 class BetElement {
-  bet: FullBet;
+  bet: NamedBet;
   element: HTMLDivElement;
 }
 
@@ -38,7 +37,7 @@ class Application {
   currentProbability_percent = 0;
   animatedProbability_percent: number = this.currentProbability_percent;
 
-  currentMarket: Manifold.FullMarket = null;
+  currentMarket: AbstractMarket = null;
 
   constructor() {
     this.transactionTemplate = document.getElementById('transaction-template');
@@ -89,7 +88,7 @@ class Application {
   }
 
   registerPacketHandlers() {
-    this.socket.on(Packet.ADD_BETS, (bets: FullBet[]) => {
+    this.socket.on(Packet.ADD_BETS, (bets: NamedBet[]) => {
       try {
         for (const bet of bets) {
           this.addBet(bet);
@@ -170,7 +169,7 @@ class Application {
     }
   }
 
-  addBet(bet: FullBet, options = { addToChart: true, animateHeight: true }) {
+  addBet(bet: NamedBet, options = { addToChart: true, animateHeight: true }) {
     const name = bet.username;
 
     const betAmountMagnitude = Math.abs(Math.ceil(bet.amount));

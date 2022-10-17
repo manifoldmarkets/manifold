@@ -1,8 +1,9 @@
 import fetch, { Response } from 'node-fetch';
 
 import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException } from 'common/exceptions';
-import * as ManifoldAPI from 'common/manifold-defs';
 import { ResolutionOutcome } from 'common/outcome';
+import * as ManifoldAPITypes from 'common/types/manifold-api-types';
+import * as ManifoldInternalTypes from 'common/types/manifold-internal-types';
 import { MANIFOLD_API_BASE_URL } from './envs';
 import log from './logger';
 
@@ -59,15 +60,15 @@ async function get(url: string): Promise<Response> {
   }
 }
 
-export async function getUserByID(userID: string): Promise<ManifoldAPI.LiteUser> {
-  return <Promise<ManifoldAPI.LiteUser>>(await get(`${MANIFOLD_API_BASE_URL}user/by-id/${userID}`)).json();
+export async function getUserByID(userID: string): Promise<ManifoldAPITypes.LiteUser> {
+  return <Promise<ManifoldAPITypes.LiteUser>>(await get(`${MANIFOLD_API_BASE_URL}user/by-id/${userID}`)).json();
 }
 
 /**
  * @deprecated Username is volatile. Aim to use user ID instead.
  */
-export async function getUserByManifoldUsername(manifoldUsername: string): Promise<ManifoldAPI.LiteUser> {
-  return <Promise<ManifoldAPI.LiteUser>>(await get(`${MANIFOLD_API_BASE_URL}user/${manifoldUsername}`)).json();
+export async function getUserByManifoldUsername(manifoldUsername: string): Promise<ManifoldAPITypes.LiteUser> {
+  return <Promise<ManifoldAPITypes.LiteUser>>(await get(`${MANIFOLD_API_BASE_URL}user/${manifoldUsername}`)).json();
 }
 
 /**
@@ -75,7 +76,7 @@ export async function getUserByManifoldUsername(manifoldUsername: string): Promi
  */
 export async function getUsersStakeInMarket_shares(marketSlug: string, manifoldUsername: string): Promise<{ shares: number; outcome: 'YES' | 'NO' }> {
   return fetch(`${MANIFOLD_API_BASE_URL}bets?market=${marketSlug}&username=${manifoldUsername}`)
-    .then((r) => <Promise<ManifoldAPI.Bet[]>>r.json())
+    .then((r) => <Promise<ManifoldInternalTypes.Bet[]>>r.json())
     .then((bets) => {
       let total = 0;
       for (const bet of bets) {
@@ -101,7 +102,7 @@ export async function createBinaryMarket(
   description: string,
   initialProb_percent: number,
   options?: { visibility?: 'public' | 'unlisted'; groupID?: string }
-): Promise<ManifoldAPI.LiteMarket> {
+): Promise<ManifoldAPITypes.LiteMarket> {
   const { visibility = 'public', groupID } = options;
 
   const outcomeType: 'BINARY' | 'FREE_RESPONSE' | 'NUMERIC' = 'BINARY';
@@ -132,7 +133,7 @@ export async function createBinaryMarket(
     ...(groupID && { groupId: groupID }),
     visibility,
   };
-  return <Promise<ManifoldAPI.LiteMarket>>(await post(`${MANIFOLD_API_BASE_URL}market`, APIKey, requestData)).json();
+  return <Promise<ManifoldAPITypes.LiteMarket>>(await post(`${MANIFOLD_API_BASE_URL}market`, APIKey, requestData)).json();
 }
 
 export async function resolveBinaryMarket(marketID: string, APIKey: string, outcome: ResolutionOutcome): Promise<Response> {
@@ -157,26 +158,26 @@ export async function verifyAPIKey(APIKey: string): Promise<boolean> {
   return true;
 }
 
-export async function getLatestMarketBets(marketSlug: string, numBetsToLoad?: number): Promise<ManifoldAPI.Bet[]> {
-  return <Promise<ManifoldAPI.Bet[]>>(await get(`${MANIFOLD_API_BASE_URL}bets?market=${marketSlug}${numBetsToLoad ? `&limit=${numBetsToLoad}` : ''}`)).json();
+export async function getLatestMarketBets(marketSlug: string, numBetsToLoad?: number): Promise<ManifoldInternalTypes.Bet[]> {
+  return <Promise<ManifoldInternalTypes.Bet[]>>(await get(`${MANIFOLD_API_BASE_URL}bets?market=${marketSlug}${numBetsToLoad ? `&limit=${numBetsToLoad}` : ''}`)).json();
 }
 
-export async function getMarketBySlug(marketSlug: string): Promise<ManifoldAPI.LiteMarket> {
-  return <Promise<ManifoldAPI.LiteMarket>>(await get(`${MANIFOLD_API_BASE_URL}slug/${marketSlug}`)).json();
+export async function getMarketBySlug(marketSlug: string): Promise<ManifoldAPITypes.LiteMarket> {
+  return <Promise<ManifoldAPITypes.LiteMarket>>(await get(`${MANIFOLD_API_BASE_URL}slug/${marketSlug}`)).json();
 }
 
-export async function getFullMarketByID(marketID: string): Promise<ManifoldAPI.FullMarket> {
-  const fullMarket = <ManifoldAPI.FullMarket>await (await get(`${MANIFOLD_API_BASE_URL}market/${marketID}`)).json();
+export async function getFullMarketByID(marketID: string): Promise<ManifoldAPITypes.FullMarket> {
+  const fullMarket = <ManifoldAPITypes.FullMarket>await (await get(`${MANIFOLD_API_BASE_URL}market/${marketID}`)).json();
   fullMarket.bets.sort((a, b) => a.createdTime - b.createdTime); // Ensure that bets are oldest-first. The Manifold API doesn't consistently order them.
   return fullMarket;
 }
 
-export async function getLiteMarketByID(marketID: string): Promise<ManifoldAPI.LiteMarket> {
-  return <Promise<ManifoldAPI.LiteMarket>>(await get(`${MANIFOLD_API_BASE_URL}market/${marketID}/lite`)).json();
+export async function getLiteMarketByID(marketID: string): Promise<ManifoldAPITypes.LiteMarket> {
+  return <Promise<ManifoldAPITypes.LiteMarket>>(await get(`${MANIFOLD_API_BASE_URL}market/${marketID}/lite`)).json();
 }
 
-export async function getGroupBySlug(groupSlug: string): Promise<ManifoldAPI.Group> {
-  return <Promise<ManifoldAPI.Group>>(await get(`${MANIFOLD_API_BASE_URL}group/${groupSlug}`)).json();
+export async function getGroupBySlug(groupSlug: string): Promise<ManifoldInternalTypes.Group> {
+  return <Promise<ManifoldInternalTypes.Group>>(await get(`${MANIFOLD_API_BASE_URL}group/${groupSlug}`)).json();
 }
 
 export async function saveTwitchDetails(APIKey: string, twitchName: string, controlToken: string): Promise<void> {

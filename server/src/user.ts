@@ -1,5 +1,5 @@
-import * as ManifoldAPI from 'common/manifold-defs';
 import { ResolutionOutcome } from 'common/outcome';
+import { LiteMarket } from 'common/types/manifold-api-types';
 import { Response } from 'node-fetch';
 import * as Manifold from './manifold-api';
 
@@ -32,12 +32,7 @@ export default class User {
     return Manifold.sellShares(marketID, this.data.APIKey);
   }
 
-  public async createBinaryMarket(
-    question: string,
-    description: string,
-    initialProb_percent: number,
-    options?: { visibility?: 'public' | 'unlisted'; groupID?: string }
-  ): Promise<ManifoldAPI.LiteMarket> {
+  public async createBinaryMarket(question: string, description: string, initialProb_percent: number, options?: { visibility?: 'public' | 'unlisted'; groupID?: string }): Promise<LiteMarket> {
     return Manifold.createBinaryMarket(this.data.APIKey, question, description, initialProb_percent, options);
   }
 
