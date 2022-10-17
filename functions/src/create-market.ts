@@ -65,10 +65,12 @@ const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
   description: descScehma.or(z.string()).optional(),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
-  closeTime: zTimestamp().refine(
-    (date) => date.getTime() > new Date().getTime(),
-    'Close time must be in the future.'
-  ),
+  closeTime: zTimestamp()
+    .refine(
+      (date) => date.getTime() > new Date().getTime(),
+      'Close time must be in the future.'
+    )
+    .optional(),
   outcomeType: z.enum(OUTCOME_TYPES),
   groupId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
   visibility: z.enum(VISIBILITIES).optional(),
@@ -101,7 +103,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     question,
     description,
     tags,
-    closeTime,
+    // Default to one week after now, if closeTime not specified
+    closeTime = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
     outcomeType,
     groupId,
     visibility = 'public',
