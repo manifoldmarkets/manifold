@@ -19,6 +19,10 @@ service cloud.firestore {
       ]
     }
 
+    function isAuthed() {
+      return request.auth != null
+    }
+
     match /stats/stats {
       allow read;
     }
@@ -30,7 +34,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read;
+      allow read: if isAuthed()
       allow update: if userId == request.auth.uid
                        && request.resource.data.diff(resource.data).affectedKeys()
                                                                     .hasOnly(['bio', 'bannerUrl', 'website', 'twitterHandle', 'discordHandle', 'followedCategories', 'lastPingTime','shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections']);
@@ -111,7 +115,7 @@ service cloud.firestore {
     }
 
     match /contracts/{contractId} {
-      allow read;
+      allow read: if isAuthed()
       allow update: if request.resource.data.diff(resource.data).affectedKeys()
                                                                  .hasOnly(['tags', 'lowercaseTags', 'groupSlugs', 'groupLinks', 'flaggedByUsernames']);
      allow update: if request.resource.data.diff(resource.data).affectedKeys()
@@ -141,11 +145,11 @@ service cloud.firestore {
     }
 
     match /{somePath=**}/comments/{commentId} {
-      allow read;
+      allow read: if isAuthed();
     }
 
     match /{somePath=**}/answers/{answerId} {
-      allow read;
+      allow read: if isAuthed();
     }
 
 
