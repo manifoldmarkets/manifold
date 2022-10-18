@@ -1,15 +1,15 @@
 {
   "project_info": {
-    "project_number": "128925704902",
-    "project_id": "mantic-markets",
-    "storage_bucket": "mantic-markets.appspot.com"
+    "project_number": "134303100058",
+    "project_id": "dev-mantic-markets",
+    "storage_bucket": "dev-mantic-markets.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:128925704902:android:2f9207f92f6e48cf642dc7",
+        "mobilesdk_app_id": "1:134303100058:android:05fbc2e4176a225ff80323",
         "android_client_info": {
-          "package_name": "com.markets.manifold"
+          "package_name": "markets.manifold"
         }
       },
       "oauth_client": [
@@ -22,27 +22,27 @@
           }
         },
         {
-          "client_id": "128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com",
+          "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBtBF0n3q4XgHE2DWmAsMcsk0wmB1pcNss"
+          "current_key": "AIzaSyCt982NE8yMv1t7DG28Zx1-ddNfPZfzoq8"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "128925704902-b9hug0habghrqtr7nbne1k88rs5qpjqp.apps.googleusercontent.com",
+              "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "128925704902-n0ic4j1s5tk51t2vu8anu8glh3t5jimo.apps.googleusercontent.com",
+              "client_id": "134303100058-pe0f0oc28cv4u7o3tf3m0021utva0u55.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.markets.manifold"
+                "bundle_id": "markets.manifold"
               }
             }
           ]

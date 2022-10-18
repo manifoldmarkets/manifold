@@ -7,7 +7,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "gradleCommand": ":app:assembleDebug"
+        "gradleCommand": ":app:assembleDebug",
+        "credentialsSource": "remote"
       },
       "ios": {
         "buildConfiguration": "Debug"
@@ -15,7 +16,14 @@
     },
     "preview": {
       "distribution": "internal",
-      "ios": {"simulator": true}
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "developmentClient": true
+      }
     },
     "production": {}
   },

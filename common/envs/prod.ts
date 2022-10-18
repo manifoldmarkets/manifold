@@ -26,6 +26,7 @@ export type EnvConfig = {
   expoConfig?: {
     iosClientId?: string
     expoClientId?: string
+    androidClientId?: string
   }
   economy?: Economy
 }
@@ -107,5 +108,7 @@ export const PROD_CONFIG: EnvConfig = {
       '128925704902-6ci48vjqud9ddcl436go5ma3m9ceei4k.apps.googleusercontent.com',
     expoClientId:
       '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
+    androidClientId:
+      '128925704902-sfvojb6tva32ob8ror2m9oe1cjc0fgei.apps.googleusercontent.com',
   },
 }

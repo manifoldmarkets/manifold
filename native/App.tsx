@@ -51,7 +51,7 @@ const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const uri = 'https://88ad-181-41-206-31.ngrok.io'
+const uri = 'https://0142-181-41-206-22.ngrok.io'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
@@ -61,7 +61,8 @@ export default function App() {
   )
   const webview = useRef<WebView>()
   const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
-  const useWebKit = true
+  const isIOS = Platform.OS === 'ios'
+  const useWebKit = isIOS
   const [notification, setNotification] = useState<Notification | false>(false)
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
@@ -121,11 +122,12 @@ export default function App() {
   }, [])
 
   const setPushToken = async (userId: string, pushToken: string) => {
-    console.log('setting push token', pushToken)
+    console.log('setting push token', pushToken, 'for user', userId)
+    if (!userId || !pushToken) return
     const userDoc = doc(firestore, 'private-users', userId)
     const privateUserDoc = (await getDoc(userDoc)).data() as PrivateUser
     await updateDoc(
-      doc(firestore, 'private-users', userId),
+      userDoc,
       removeUndefinedProps({
         ...privateUserDoc,
         pushToken,
@@ -136,55 +138,49 @@ export default function App() {
     )
   }
 
-  const setPushTokenRequestDenied = async (userId: string) => {
-    console.log('push token denied', userId)
-    const userDoc = doc(firestore, 'private-users', userId)
-    const privateUserDoc = (await getDoc(userDoc)).data() as PrivateUser
-    await updateDoc(doc(firestore, 'private-users', userId), {
-      ...privateUserDoc,
-      rejectedPushNotificationsOn: Date.now(),
-    })
-  }
-
   const registerForPushNotificationsAsync = async () => {
-    if (Device.isDevice) {
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync()
-      let finalStatus = existingStatus
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync()
-        finalStatus = status
-      }
-      if (finalStatus !== 'granted' && privateUser) {
-        setPushTokenRequestDenied(JSON.parse(privateUser).id)
-        return
-      }
-      const appConfig = require('./app.json')
-      const projectId = appConfig?.expo?.extra?.eas?.projectId
-      const token = (
-        await Notifications.getExpoPushTokenAsync({
-          projectId,
-        })
-      ).data
-      console.log(token)
-      return token
-    } else {
+    if (!Device.isDevice) {
       alert('Must use physical device for Push Notifications')
+      return null
     }
-
     if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      })
+      // Notifications arewn't working on android rn :(
+      return null
+      // android tip: https://github.com/expo/expo/issues/19043
+      // TODO: reenable this to test android push notifications
+      // await Notifications.setNotificationChannelAsync('default', {
+      //   name: 'default',
+      //   importance: Notifications.AndroidImportance.MAX,
+      //   vibrationPattern: [0, 250, 250, 250],
+      //   lightColor: '#FF231F7C',
+      // })
     }
 
-    return null
+    const { status: existingStatus } = await Notifications.getPermissionsAsync()
+    let finalStatus = existingStatus
+    console.log('existing status of push notifications', existingStatus)
+    if (existingStatus !== 'granted') {
+      console.log('requesting permission')
+      const { status } = await Notifications.requestPermissionsAsync()
+      finalStatus = status
+    }
+    if (finalStatus !== 'granted') {
+      return
+    }
+    const appConfig = require('./app.json')
+    const projectId = appConfig?.expo?.extra?.eas?.projectId
+    console.log('project id', projectId)
+    const token = (
+      await Notifications.getExpoPushTokenAsync({
+        projectId,
+      })
+    ).data
+    console.log(token)
+    return token
   }
 
   const handleMessageFromWebview = ({ nativeEvent }) => {
+    console.log('Received nativeEvent.data: ', nativeEvent.data.slice(0, 50))
     // Time to log in to firebase
     if (nativeEvent.data === 'googleLoginClicked') {
       promptAsync()
@@ -196,7 +192,7 @@ export default function App() {
       privateUser
     ) {
       const privateUserObj = JSON.parse(privateUser) as PrivateUser
-      if (!privateUserObj?.pushToken) {
+      if (!privateUserObj?.pushToken && privateUserObj.id) {
         registerForPushNotificationsAsync().then((token) => {
           token && setPushToken(privateUserObj.id, token)
         })
@@ -225,7 +221,6 @@ export default function App() {
         return
       }
     } catch (e) {
-      // Not a user object
       console.log('Unhandled nativeEvent.data: ', nativeEvent.data)
     }
   }
@@ -233,7 +228,7 @@ export default function App() {
   return (
     <>
       <WebView
-        style={{ marginTop: 20, marginBottom: 15 }}
+        style={{ marginTop: isIOS ? 30 : 0, marginBottom: isIOS ? 15 : 0 }}
         allowsBackForwardNavigationGestures={true}
         sharedCookiesEnabled={true}
         source={{ uri }}
@@ -246,26 +241,6 @@ export default function App() {
           }
         }}
       />
-
-      {/*{!fbUser && (*/}
-      {/*  <View*/}
-      {/*    style={{*/}
-      {/*      alignItems: 'center',*/}
-      {/*      width: 400,*/}
-      {/*      height: 200,*/}
-      {/*      marginTop: 40,*/}
-      {/*    }}*/}
-      {/*  >*/}
-      {/*    <Button*/}
-      {/*      disabled={!request}*/}
-      {/*      title="Login"*/}
-      {/*      color={'black'}*/}
-      {/*      onPress={() => {*/}
-      {/*        promptAsync()*/}
-      {/*      }}*/}
-      {/*    />*/}
-      {/*  </View>*/}
-      {/*)}*/}
     </>
   )
 }
