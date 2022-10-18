@@ -7,7 +7,7 @@
     "android:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV yarn android -d",
     "android:prod": "NEXT_PUBLIC_FIREBASE_ENV=PROD yarn android -d",
     "clear": "expo start --clear",
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "start:dev": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios"
