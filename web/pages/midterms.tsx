@@ -264,7 +264,7 @@ const App = (props: {
         <SEO
           title="2022 US Midterm Elections on Manifold"
           description="Manifold's midterm forecast using prediction markets. Bet on elections and win up to $500 in our tournament."
-          image="/midterms2022.png"
+          image="https://manifold.markets/midterms2022.png"
         />
 
         <Title className="mt-2">
