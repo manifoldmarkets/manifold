@@ -1,4 +1,4 @@
-package markets.manifold.newarchitecture;
+package com.markets.manifold.newarchitecture;
 
 import android.app.Application;
 import androidx.annotation.NonNull;
@@ -20,9 +20,9 @@ import com.facebook.react.fabric.EmptyReactNativeConfig;
 import com.facebook.react.fabric.FabricJSIModuleProvider;
 import com.facebook.react.fabric.ReactNativeConfig;
 import com.facebook.react.uimanager.ViewManagerRegistry;
-import markets.manifold.BuildConfig;
-import markets.manifold.newarchitecture.components.MainComponentsRegistry;
-import markets.manifold.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
+import com.markets.manifold.BuildConfig;
+import com.markets.manifold.newarchitecture.components.MainComponentsRegistry;
+import com.markets.manifold.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
 import java.util.ArrayList;
 import java.util.List;
 

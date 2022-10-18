@@ -1,4 +1,4 @@
-package markets.manifold;
+package com.markets.manifold;
 
 import android.os.Build;
 import android.os.Bundle;

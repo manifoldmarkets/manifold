@@ -19,14 +19,16 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
   return (
     <>
       <Col className="mb-6 rounded-xl sm:m-12 sm:mt-0">
-        <Image
-          height={250}
-          width={250}
-          className="self-center"
-          alt="Manifold logo"
-          src="/flappy-logo.gif"
-        />
-        <div className="m-4 max-w-[550px] self-center">
+        <Col className={'items-center'}>
+          <Image
+            height={200}
+            width={200}
+            className="self-center"
+            alt="Manifold logo"
+            src="/logo.png"
+          />
+        </Col>
+        <div className="m-4 self-center">
           <h1 className="text-3xl sm:text-6xl xl:text-6xl">
             <div className="font-semibold sm:mb-2">
               A{' '}
