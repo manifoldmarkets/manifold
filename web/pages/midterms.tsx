@@ -269,7 +269,7 @@ const App = (props: {
         <Tabs
           tabs={[
             { title: 'Senate', content: senateTab, className: 'w-full' },
-            { title: 'Govenors', content: governorTab, className: 'w-full' },
+            { title: 'Governors', content: governorTab, className: 'w-full' },
             { title: 'House', content: houseTab, className: 'w-full' },
           ]}
         />
