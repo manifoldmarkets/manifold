@@ -13,8 +13,9 @@ import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
 import { Answer } from './answer'
 
+// TODO: Move these into the env config file
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
-export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
+export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '3nBadwEGkgfh2SE8qmaj1oMCAUx2' // akrolsmir@'s id on alvea-manifold
 export const UNIQUE_BETTOR_LIQUIDITY_AMOUNT = 20
 
 type NormalizedBet<T extends Bet = Bet> = Omit<
