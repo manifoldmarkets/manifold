@@ -15,8 +15,11 @@ import { Tabs } from 'web/components/layout/tabs'
 import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
+import { fromPropz, usePropz } from 'web/hooks/use-propz'
 
-export async function getStaticProps() {
+export const getStaticProps = fromPropz(getStaticPropz)
+
+export async function getStaticPropz() {
   const props = await fetchProps()
 
   return {
@@ -59,6 +62,11 @@ type leaderboard = {
   topCreators: User[]
 }
 
+const EMPTY_LEADERBOARD = {
+  topTraders: [],
+  topCreators: [],
+}
+
 export default function Leaderboards(_props: {
   allTime: leaderboard
   monthly: leaderboard
@@ -66,7 +74,15 @@ export default function Leaderboards(_props: {
   daily: leaderboard
   topFollowed: User[]
 }) {
-  const [props, setProps] = useState<Parameters<typeof Leaderboards>[0]>(_props)
+  const [props, setProps] = useState<Parameters<typeof Leaderboards>[0]>(
+    usePropz(_props, getStaticPropz) ?? {
+      allTime: EMPTY_LEADERBOARD,
+      monthly: EMPTY_LEADERBOARD,
+      weekly: EMPTY_LEADERBOARD,
+      daily: EMPTY_LEADERBOARD,
+      topFollowed: [],
+    }
+  )
   useEffect(() => {
     fetchProps().then((props) => setProps(props))
   }, [])

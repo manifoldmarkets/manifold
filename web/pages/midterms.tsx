@@ -10,6 +10,7 @@ import {
 } from 'web/components/usa-map/state-election-map'
 import { useTracking } from 'web/hooks/use-tracking'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { fromPropz, usePropz } from 'web/hooks/use-propz'
 
 const senateMidterms: StateElectionMarket[] = [
   {
@@ -179,7 +180,9 @@ const governorMidterms: StateElectionMarket[] = [
   },
 ]
 
-export async function getStaticProps() {
+export const getStaticProps = fromPropz(getStaticPropz)
+
+export async function getStaticPropz() {
   const senateContracts = await Promise.all(
     senateMidterms.map((m) =>
       getContractFromSlug(m.slug).then((c) => c ?? null)
@@ -202,7 +205,13 @@ const App = (props: {
   senateContracts: CPMMBinaryContract[]
   governorContracts: CPMMBinaryContract[]
 }) => {
-  const { senateContracts, governorContracts } = props
+  const { senateContracts, governorContracts } = usePropz(
+    props,
+    getStaticPropz
+  ) ?? {
+    senateContracts: [],
+    governorContracts: [],
+  }
 
   useTracking('view midterms 2022')
 
