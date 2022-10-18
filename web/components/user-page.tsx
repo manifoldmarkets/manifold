@@ -7,6 +7,7 @@ import {
   FolderIcon,
   PencilIcon,
   ScaleIcon,
+  DocumentIcon,
 } from '@heroicons/react/outline'
 import toast from 'react-hot-toast'
 
@@ -37,6 +38,9 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { DOMAIN } from 'common/envs/constants'
 import { BadgeDisplay } from 'web/components/badge-display'
+import { PostCardList } from './posts/post-card'
+import { usePostsByUser } from 'web/hooks/use-post'
+import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -44,6 +48,7 @@ export function UserPage(props: { user: User }) {
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id
   const [showConfetti, setShowConfetti] = useState(false)
+  const userPosts = usePostsByUser(user.id)
 
   useEffect(() => {
     const claimedMana = router.query['claimed-mana'] === 'yes'
@@ -247,6 +252,30 @@ export function UserPage(props: { user: User }) {
                     <Spacer h={4} />
                     <Col>
                       <UserCommentsList user={user} />
+                    </Col>
+                  </>
+                ),
+              },
+              {
+                title: 'Posts',
+                stackedTabIcon: <DocumentIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <Col>
+                      {userPosts ? (
+                        userPosts.length > 0 ? (
+                          <PostCardList posts={userPosts} />
+                        ) : (
+                          <div className="text-greyscale-4 text-center">
+                            No posts yet
+                          </div>
+                        )
+                      ) : (
+                        <div className="text-greyscale-4 text-center">
+                          <LoadingIndicator />
+                        </div>
+                      )}
                     </Col>
                   </>
                 ),
