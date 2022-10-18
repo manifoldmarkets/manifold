@@ -1,5 +1,5 @@
 import { RefreshIcon } from '@heroicons/react/outline'
-import { TrashIcon, UserRemoveIcon } from '@heroicons/react/solid'
+import { TrashIcon } from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
@@ -75,6 +75,7 @@ export default function ProfilePage(props: {
   const [name, setName] = useState(user.name)
   const [username, setUsername] = useState(user.username)
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
+  const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
 
   const updateDisplayName = async () => {
     const newName = cleanDisplayName(name)
@@ -265,10 +266,17 @@ export default function ProfilePage(props: {
                 }}
                 submitBtn={{
                   label: 'Deactivate account',
+                  color:
+                    deleteAccountConfirmation == 'delete my account'
+                      ? 'red'
+                      : 'gray',
                 }}
                 onSubmitWithSuccess={async () => {
-                  deleteAccount()
-                  return true
+                  if (deleteAccountConfirmation == 'delete my account') {
+                    deleteAccount()
+                    return true
+                  }
+                  return false
                 }}
               >
                 <Col>
@@ -278,6 +286,15 @@ export default function ProfilePage(props: {
                     to use your account. You will lose access to all of your
                     data.
                   </div>
+                  <Input
+                    type="text"
+                    placeholder="Type 'delete my account' to confirm"
+                    className="w-full"
+                    value={deleteAccountConfirmation}
+                    onChange={(e) =>
+                      setDeleteAccountConfirmation(e.target.value)
+                    }
+                  />
                 </Col>
               </ConfirmationButton>
             </div>
