@@ -343,13 +343,13 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       setViewXScale(() => newViewXScale)
 
       const bisect = bisector((p: P) => p.x)
-      const iMin = bisect.left(data, xMin)
+      const iMin = bisect.right(data, xMin)
       const iMax = bisect.left(data, xMax)
-      const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
-      const [yMin, yMax] = extent(visibleYs) as [number, number]
 
       // don't zoom axis if they selected an area with only one value
-      if (yMin != yMax) {
+      if (iMin != iMax) {
+        const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
+        const [yMin, yMax] = extent(visibleYs) as [number, number]
         // adds a little padding to the top and bottom of the selection
         const padding = (yMax - yMin) * 0.1
         setViewYScale(() =>
