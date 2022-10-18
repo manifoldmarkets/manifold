@@ -148,6 +148,7 @@ export default function App() {
       return null
       // android tip: https://github.com/expo/expo/issues/19043
       // TODO: reenable this to test android push notifications
+      // if android expo pn won't work, do FCM manually: https://docs.expo.dev/push-notifications/sending-notifications-custom/
       // await Notifications.setNotificationChannelAsync('default', {
       //   name: 'default',
       //   importance: Notifications.AndroidImportance.MAX,

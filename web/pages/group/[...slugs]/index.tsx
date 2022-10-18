@@ -375,9 +375,9 @@ function JoinGroupButton(props: {
 
   const follow = async () => {
     track('join group')
-    const userId = user ? user.id : (await firebaseLogin()).user.uid
+    if (!user) return await firebaseLogin()
 
-    toast.promise(joinGroup(group, userId), {
+    toast.promise(joinGroup(group, user.id), {
       loading: 'Following group...',
       success: 'Followed',
       error: "Couldn't follow group, try again?",
