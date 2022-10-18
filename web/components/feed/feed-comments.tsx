@@ -51,6 +51,7 @@ export function FeedCommentThread(props: {
     }
   }, [router.asPath])
 
+  const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
   const onReplyClick = useEvent((comment: ContractComment) => {
     setReplyTo({ id: comment.id, username: comment.userUsername })
@@ -68,13 +69,8 @@ export function FeedCommentThread(props: {
         showTip={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
-        onSeeReplyClick={() => setSeeReplies(!seeReplies)}
-        onReplyClick={() =>
-          setReplyTo({
-            id: parentComment.id,
-            username: parentComment.userUsername,
-          })
-        }
+        onSeeReplyClick={onSeeRepliesClick}
+        onReplyClick={onReplyClick}
       />
       {seeReplies &&
         threadComments.map((comment, _commentIdx) => (
