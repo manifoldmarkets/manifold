@@ -230,7 +230,7 @@ export function PinnedItems(props: {
   return pinned.length > 0 || isEditable ? (
     <div>
       <Row className=" items-center justify-between">
-        <SectionHeader label={'Featured'} href={`#`} />
+        <SectionHeader label={'Featured'} />
         {isEditable && (
           <Button
             color="gray"
@@ -314,15 +314,6 @@ function SectionHeader(props: {
   children?: ReactNode
 }) {
   const { label, href, children } = props
-  const content = (
-    <>
-      {label}{' '}
-      <ArrowSmRightIcon
-        className="mb-0.5 inline h-6 w-6 text-gray-500"
-        aria-hidden="true"
-      />
-    </>
-  )
 
   return (
     <Row className="mb-3 items-center justify-between">
@@ -332,10 +323,14 @@ function SectionHeader(props: {
           href={href}
           onClick={() => track('group click section header', { section: href })}
         >
-          {content}
+          {label}
+          <ArrowSmRightIcon
+            className="mb-0.5 inline h-6 w-6 text-gray-500"
+            aria-hidden="true"
+          />
         </SiteLink>
       ) : (
-        <span className="text-xl">{content}</span>
+        <span className="text-xl">{label}</span>
       )}
       {children}
     </Row>
