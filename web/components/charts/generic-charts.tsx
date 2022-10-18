@@ -35,6 +35,12 @@ export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'm$' | 'percent' | 'amount'
 
+const MIN_Y_AXIS_SIZE: Record<ValueKind, number> = {
+  m$: 10,
+  percent: 0.04,
+  amount: 0.04,
+}
+
 type SliceExtent = { y0: number; y1: number }
 
 const interpolateY = (
@@ -53,6 +59,12 @@ const interpolateY = (
   } else if (curve === curveStepBefore) {
     return y1
   }
+}
+
+const clampExtent = ([start, end]: [number, number], minSize: number) => {
+  const size = end - start
+  const padding = Math.max(0, minSize - size) / 2
+  return [start - padding, end + padding]
 }
 
 const getTickValues = (min: number, max: number, n: number) => {
@@ -275,7 +287,8 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { data, w, h, color, margin, yKind, Tooltip } = props
+  const { data, w, h, color, margin, Tooltip } = props
+  const yKind = props.yKind ?? 'amount'
   const curve = props.curve ?? curveLinear
 
   const [mouse, setMouse] = useState<TooltipParams<P> & SliceExtent>()
@@ -349,15 +362,15 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       // don't zoom axis if they selected an area with only one value
       if (iMin != iMax) {
         const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
+        // pad out the top and bottom a little, and make sure the y-axis
+        // isn't so short that we can't make useful ticks
         const [yMin, yMax] = extent(visibleYs) as [number, number]
-        // adds a little padding to the top and bottom of the selection
         const padding = (yMax - yMin) * 0.1
-        setViewYScale(() =>
-          yScale
-            .copy()
-            .domain([yMin - padding, yMax + padding])
-            .nice()
+        const domain = clampExtent(
+          [yMin - padding, yMax + padding],
+          MIN_Y_AXIS_SIZE[yKind]
         )
+        setViewYScale(() => yScale.copy().domain(domain).nice())
       }
     } else {
       setViewXScale(undefined)
