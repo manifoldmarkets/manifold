@@ -66,6 +66,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   flaggedByUsernames?: string[]
   openCommentBounties?: number
   unlistedById?: string
+
+  dreamImageUrl?: string
 } & T
 
 export type BinaryContract = Contract & Binary
