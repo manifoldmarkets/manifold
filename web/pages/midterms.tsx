@@ -16,6 +16,12 @@ import { Row } from 'web/components/layout/row'
 
 const senateMidterms: StateElectionMarket[] = [
   {
+    state: 'WA',
+    creatorUsername: 'BTE',
+    slug: 'will-patty-murray-be-reelected-to-t',
+    isWinRepublican: false,
+  },
+  {
     state: 'AZ',
     creatorUsername: 'BTE',
     slug: 'will-blake-masters-win-the-arizona',
@@ -85,6 +91,12 @@ const senateMidterms: StateElectionMarket[] = [
 
 const governorMidterms: StateElectionMarket[] = [
   {
+    state: 'OK',
+    creatorUsername: 'NicholasCharette73b6',
+    slug: 'will-kevin-stitt-win-the-2022-oklah',
+    isWinRepublican: true,
+  },
+  {
     state: 'TX',
     creatorUsername: 'LarsDoucet',
     slug: 'republicans-will-win-the-2022-texas',
@@ -100,12 +112,6 @@ const governorMidterms: StateElectionMarket[] = [
     state: 'FL',
     creatorUsername: 'Tetraspace',
     slug: 'if-charlie-crist-is-the-democratic',
-    isWinRepublican: false,
-  },
-  {
-    state: 'PA',
-    creatorUsername: 'JonathanMast',
-    slug: 'will-josh-shapiro-win-the-2022-penn',
     isWinRepublican: false,
   },
   {
@@ -145,12 +151,6 @@ const governorMidterms: StateElectionMarket[] = [
     isWinRepublican: true,
   },
   {
-    state: 'AZ',
-    creatorUsername: 'SG',
-    slug: 'will-a-republican-win-the-2022-ariz',
-    isWinRepublican: true,
-  },
-  {
     state: 'WI',
     creatorUsername: 'SG',
     slug: 'will-a-democrat-win-the-2022-wiscon',
@@ -169,15 +169,27 @@ const governorMidterms: StateElectionMarket[] = [
     isWinRepublican: false,
   },
   {
-    state: 'NV',
+    state: 'ME',
+    creatorUsername: 'SG',
+    slug: 'will-a-democrat-win-the-2022-maine',
+    isWinRepublican: false,
+  },
+  {
+    state: 'NM',
     creatorUsername: 'SG',
     slug: 'will-a-democrat-win-the-2022-new-me',
     isWinRepublican: false,
   },
   {
-    state: 'ME',
+    state: 'MN',
+    creatorUsername: 'BRTD',
+    slug: 'will-tim-walz-be-reelected-as-gover',
+    isWinRepublican: false,
+  },
+  {
+    state: 'MI',
     creatorUsername: 'SG',
-    slug: 'will-a-democrat-win-the-2022-maine',
+    slug: 'will-a-democrat-win-the-2022-michig',
     isWinRepublican: false,
   },
 ]
