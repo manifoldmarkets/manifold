@@ -22,7 +22,7 @@ import {
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
 import { track, trackCallback } from 'web/lib/service/analytics'
-import ContractSearchFirestore from 'web/pages/contract-search-firestore'
+import ContractSearchFirestore from 'web/pages/_contract-search-firestore'
 import { useMemberGroups } from 'web/hooks/use-group'
 import { NEW_USER_GROUP_SLUGS } from 'common/group'
 import { PillButton } from './buttons/pill-button'
