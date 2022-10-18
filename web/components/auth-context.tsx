@@ -1,10 +1,5 @@
 import { createContext, ReactNode, useEffect } from 'react'
-import {
-  GoogleAuthProvider,
-  onIdTokenChanged,
-  signInWithCredential,
-  signInWithCustomToken,
-} from 'firebase/auth'
+import { onIdTokenChanged } from 'firebase/auth'
 import {
   auth,
   getUserAndPrivateUser,
@@ -69,27 +64,10 @@ export function AuthProvider(props: {
       const event = JSON.parse(e.data)
       const data = event.data
       setFirebaseUserViaJson(data, app)
-      // signInWithIdToken(data)
-      // signInWithToken(data)
     } catch (e) {
       console.log('error parsing native message', e)
       return
     }
-    // const cred = OAuthCredential.fromJSON(data)
-    // const cred = GoogleAuthProvider.credential(data)
-    // if (cred) signInWithCredential(auth, cred)
-  }
-  const signInWithIdToken = async (token: any) => {
-    ;(window as any).ReactNativeWebView.postMessage('received credential!')
-    const credential = GoogleAuthProvider.credential(token)
-    await signInWithCredential(auth, credential)
-  }
-  const signInWithToken = async (token: any) => {
-    ;(window as any).ReactNativeWebView.postMessage('received custom token!')
-    await signInWithCustomToken(
-      auth,
-      'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2lkZW50aXR5dG9vbGtpdC5nb29nbGVhcGlzLmNvbS9nb29nbGUuaWRlbnRpdHkuaWRlbnRpdHl0b29sa2l0LnYxLklkZW50aXR5VG9vbGtpdCIsImlhdCI6MTY2NTc1OTIzNSwiZXhwIjoxNjY1NzYyODM1LCJpc3MiOiJmaXJlYmFzZS1hZG1pbnNkay1zaXI1bUBkZXYtbWFudGljLW1hcmtldHMuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1zaXI1bUBkZXYtbWFudGljLW1hcmtldHMuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJ1aWQiOiI2aEhwenZSRzBwTXE4UE5KczdSWmoycWxaR24yIn0.OP3RlXe8JXicZFzT6oQu0DrmsfrHewk2kSRsY0RMvkSl7NxXaX7JOhcZqoFAtOuk7Mk8XxRPKsfFBovjsG5r42WzoY6pCwu1t9QWxZS8uxmhMOPnsUd0dWWOCU2Fy4HqYtc39plz9i2tMNsGNyl93VWondmxh-xQLpddSGre3jyahHYRehGneaYxurcw9JAP41D4f9oIJsXcbpUs9dVYRJDGH-bkuKZpbfdR6ZOLU9uNEQfjDfXsgz0HXsNzBo56gXVtlMkmv0V9Y4dYx4T8rdrBxJ1sLwmK6poOcIloWzyr-cSigfv7mqiGhvyty8O5ixu8McyD4kmwEzVb6-PJwg'
-    )
   }
 
   useEffect(() => {

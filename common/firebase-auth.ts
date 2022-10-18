@@ -22,6 +22,7 @@ export const setFirebaseUserViaJson = async (
 ) => {
   try {
     if (typeof window !== 'undefined') {
+      //eslint-disable-next-line
       ;(window as any).isNative &&
         (window as any).ReactNativeWebView.postMessage('received fbUser')
     }
@@ -36,6 +37,7 @@ export const setFirebaseUserViaJson = async (
     return fbUser
   } catch (e) {
     if (typeof window !== 'undefined') {
+      //eslint-disable-next-line
       ;(window as any).isNative &&
         (window as any).ReactNativeWebView.postMessage(
           `error setting fb user ${e}`
