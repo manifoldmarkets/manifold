@@ -11,6 +11,7 @@ import 'expo-dev-client'
 import CookieManager from '@react-native-cookies/cookies'
 import {
   AUTH_COOKIE_NAME,
+  ENV,
   ENV_CONFIG,
   FIREBASE_CONFIG,
 } from 'common/envs/constants'
@@ -43,7 +44,7 @@ const isExpoClient =
   Constants.ExecutionEnvironment === ExecutionEnvironment.StoreClient
 
 // Initialize Firebase
-console.log('using', process.env.NEXT_PUBLIC_FIREBASE_ENV, 'env')
+console.log('using', ENV, 'env')
 console.log('env not switching? run `expo start --clear` and then try again')
 const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 const firestore = getFirestore(app)
@@ -51,7 +52,10 @@ const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const uri = 'https://dev-git-react-native-mantic.vercel.app/'
+const uri =
+  ENV === 'DEV'
+    ? 'https://dev-git-react-native-mantic.vercel.app/'
+    : 'https://prod-git-react-native-mantic.vercel.app/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()

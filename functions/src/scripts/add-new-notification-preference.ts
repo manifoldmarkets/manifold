@@ -2,17 +2,18 @@ import * as admin from 'firebase-admin'
 
 import { initAdmin } from './script-init'
 initAdmin()
-import { getPrivateUser } from 'functions/src/utils'
+import { getAllPrivateUsers } from 'functions/src/utils'
 import { notification_preference } from 'common/user-notification-preferences'
-import { filterDefined } from 'common/util/array'
 
 const firestore = admin.firestore()
 async function main() {
-  // const privateUsers = await getAllPrivateUsers()
-  const privateUsers = filterDefined([
-    await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'),
-    await getPrivateUser('eHn5FXMK1leAsVoEjqg6Mh9tGqn2'),
-  ])
+  const privateUsers = await getAllPrivateUsers()
+
+  // const privateUsers = filterDefined([
+  //   await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2'),
+  //   await getPrivateUser('eHn5FXMK1leAsVoEjqg6Mh9tGqn2'),
+  // ])
+
   await Promise.all(
     privateUsers.map((privateUser) => {
       if (!privateUser.id) return Promise.resolve()
