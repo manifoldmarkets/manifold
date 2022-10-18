@@ -100,12 +100,14 @@ export function PostCardList(props: {
   return (
     <div className="w-full">
       {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          onPostClick={onPostClick}
-          highlightOptions={highlightOptions}
-        />
+        <div className="mb-1" key={post.id}>
+          <PostCard
+            key={post.id}
+            post={post}
+            onPostClick={onPostClick}
+            highlightOptions={highlightOptions}
+          />
+        </div>
       ))}
     </div>
   )
