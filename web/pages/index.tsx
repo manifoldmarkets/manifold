@@ -12,8 +12,8 @@ import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
-  const hotContracts = await getTrendingContracts()
-  return { props: { hotContracts } }
+  // const hotContracts = await getTrendingContracts()
+  return { props: { hotContracts: [] } }
 })
 
 export default function Home(props: { hotContracts: Contract[] }) {

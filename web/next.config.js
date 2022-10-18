@@ -35,6 +35,11 @@ module.exports = {
   async redirects() {
     return [
       {
+        source: '/home',
+        destination: '/search',
+        permanent: false,
+      },
+      {
         source: '/api',
         destination: API_DOCS_URL,
         permanent: false,

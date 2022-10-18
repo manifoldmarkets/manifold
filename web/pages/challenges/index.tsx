@@ -72,16 +72,10 @@ export default function ChallengesListPage() {
       <Col className="w-full px-8">
         <Row className="items-center justify-between">
           <Title text="Challenges" />
-          {CHALLENGES_ENABLED && (
-            <Button size="lg" color="gradient" onClick={() => setOpen(true)}>
-              Create Challenge
-              <CreateChallengeModal
-                isOpen={open}
-                setOpen={setOpen}
-                user={user}
-              />
-            </Button>
-          )}
+          <Button size="lg" color="gradient" onClick={() => setOpen(true)}>
+            Create Challenge
+            <CreateChallengeModal isOpen={open} setOpen={setOpen} user={user} />
+          </Button>
         </Row>
         <p>
           Want to create your own challenge?

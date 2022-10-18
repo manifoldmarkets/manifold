@@ -109,8 +109,9 @@ const logout = async () => {
 
 function getDesktopNavigation() {
   return [
-    { name: 'Home', href: '/home', icon: HomeIcon },
+    // { name: 'Home', href: '/home', icon: HomeIcon },
     { name: 'Search', href: '/search', icon: SearchIcon },
+    { name: 'Challenge bet', href: '/challenges', icon: TrophyIcon },
     {
       name: 'Notifications',
       href: `/notifications`,
