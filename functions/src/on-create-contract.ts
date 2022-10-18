@@ -40,9 +40,9 @@ export const onCreateContract = functions
     )
     await handleMarketCreatorBadgeAward(contractCreator)
 
-    const dreamImageUrl = await dreamWithDefaultParams(contract.question)
+    const coverImageUrl = await dreamWithDefaultParams(contract.question)
     await snapshot.ref.update({
-      dreamImageUrl,
+      coverImageUrl,
     })
   })
 
