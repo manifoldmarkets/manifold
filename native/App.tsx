@@ -23,7 +23,7 @@ import {
 } from 'firebase/firestore'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
-import { Text, View, Button, Platform } from 'react-native'
+import { Platform } from 'react-native'
 import { Notification } from 'expo-notifications'
 import { Subscription } from 'expo-modules-core'
 import { TEN_YEARS_SECS } from 'common/envs/constants'
@@ -51,7 +51,7 @@ const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const uri = 'https://0142-181-41-206-22.ngrok.io'
+const uri = 'https://dev-git-react-native-mantic.vercel.app/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
@@ -124,18 +124,23 @@ export default function App() {
   const setPushToken = async (userId: string, pushToken: string) => {
     console.log('setting push token', pushToken, 'for user', userId)
     if (!userId || !pushToken) return
-    const userDoc = doc(firestore, 'private-users', userId)
-    const privateUserDoc = (await getDoc(userDoc)).data() as PrivateUser
-    await updateDoc(
-      userDoc,
-      removeUndefinedProps({
-        ...privateUserDoc,
-        pushToken,
-        rejectedPushNotificationsOn: privateUserDoc.rejectedPushNotificationsOn
-          ? deleteField()
-          : undefined,
-      })
-    )
+    try {
+      const userDoc = doc(firestore, 'private-users', userId)
+      const privateUserDoc = (await getDoc(userDoc)).data() as PrivateUser
+      await updateDoc(
+        userDoc,
+        removeUndefinedProps({
+          ...privateUserDoc,
+          pushToken,
+          rejectedPushNotificationsOn:
+            privateUserDoc.rejectedPushNotificationsOn
+              ? deleteField()
+              : undefined,
+        })
+      )
+    } catch (e) {
+      console.error('error setting user push token', e)
+    }
   }
 
   const registerForPushNotificationsAsync = async () => {
@@ -144,17 +149,12 @@ export default function App() {
       return null
     }
     if (Platform.OS === 'android') {
-      // Notifications arewn't working on android rn :(
-      return null
-      // android tip: https://github.com/expo/expo/issues/19043
-      // TODO: reenable this to test android push notifications
-      // if android expo pn won't work, do FCM manually: https://docs.expo.dev/push-notifications/sending-notifications-custom/
-      // await Notifications.setNotificationChannelAsync('default', {
-      //   name: 'default',
-      //   importance: Notifications.AndroidImportance.MAX,
-      //   vibrationPattern: [0, 250, 250, 250],
-      //   lightColor: '#FF231F7C',
-      // })
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      })
     }
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync()

@@ -29,7 +29,7 @@
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "markets.manifold"
+      "package": "com.markets.manifold"
     },
     "web": {
       "favicon": "./assets/favicon.png"

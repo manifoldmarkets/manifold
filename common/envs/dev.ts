@@ -25,6 +25,6 @@ export const DEV_CONFIG: EnvConfig = {
     expoClientId:
       '134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com',
     androidClientId:
-      '134303100058-41bpjoel3n6uv2kttj8djnfsogq3elh7.apps.googleusercontent.com',
+      '134303100058-mu6dbubhks8khpqi3dq0fokqnkbputiq.apps.googleusercontent.com',
   },
 }

@@ -12,11 +12,14 @@ const path = require('path')
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common'),
 }
-const watchFolders = [path.resolve(__dirname + '/../common')]
+const watchFolders = defaultConfig.watchFolders.concat([
+  path.resolve(__dirname + '/../common'),
+])
 
 module.exports = {
   ...defaultConfig,
   transformer: {
+    ...defaultConfig.transformer,
     getTransformOptions: async () => ({
       transform: {
         experimentalImportSupport: false,
@@ -25,6 +28,7 @@ module.exports = {
     }),
   },
   resolver: {
+    ...defaultConfig.resolver,
     extraNodeModules: new Proxy(extraNodeModules, {
       get: (target, name) =>
         //redirects dependencies referenced from common/ to local node_modules

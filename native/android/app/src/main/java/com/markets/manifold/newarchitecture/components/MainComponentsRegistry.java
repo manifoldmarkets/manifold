@@ -1,4 +1,4 @@
-package markets.manifold.newarchitecture.components;
+package com.markets.manifold.newarchitecture.components;
 
 import com.facebook.jni.HybridData;
 import com.facebook.proguard.annotations.DoNotStrip;
