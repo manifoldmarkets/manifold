@@ -35,10 +35,16 @@ export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'm$' | 'percent' | 'amount'
 
-const MIN_Y_AXIS_SIZE: Record<ValueKind, number> = {
-  m$: 10,
-  percent: 0.04,
-  amount: 0.04,
+type AxisConstraints = {
+  min?: number
+  max?: number
+  minExtent?: number
+}
+
+const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
+  percent: { min: 0, max: 1, minExtent: 0.04 },
+  m$: { minExtent: 10 },
+  amount: { minExtent: 0.04 },
 }
 
 type SliceExtent = { y0: number; y1: number }
@@ -61,10 +67,36 @@ const interpolateY = (
   }
 }
 
-const clampExtent = ([start, end]: [number, number], minSize: number) => {
+const constrainExtent = (
+  extent: [number, number],
+  constraints: AxisConstraints
+) => {
+  // first clamp the extent to our min and max
+  const min = constraints.min ?? -Infinity
+  const max = constraints.max ?? Infinity
+  const minExtent = constraints.minExtent ?? 0
+  const start = Math.max(extent[0], min)
+  const end = Math.min(extent[1], max)
   const size = end - start
-  const padding = Math.max(0, minSize - size) / 2
-  return [start - padding, end + padding]
+  if (size >= minExtent) {
+    return [start, end]
+  } else {
+    // compute how much padding we need to get to the min extent
+    const halfPad = Math.max(0, minExtent - size) / 2
+    const paddedStart = start - halfPad
+    const paddedEnd = end + halfPad
+    // we would like to return [start - halfPad, end + halfPad], but if our padding
+    // is making us go past the min and max, we need to readjust it to the other end
+    if (paddedStart < min) {
+      const underflow = min - paddedStart
+      return [min, paddedEnd + underflow]
+    } else if (paddedEnd > max) {
+      const overflow = paddedEnd - max
+      return [paddedStart - overflow, max]
+    } else {
+      return [paddedStart, paddedEnd]
+    }
+  }
 }
 
 const getTickValues = (min: number, max: number, n: number) => {
@@ -362,13 +394,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       // don't zoom axis if they selected an area with only one value
       if (iMin != iMax) {
         const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
-        // pad out the top and bottom a little, and make sure the y-axis
-        // isn't so short that we can't make useful ticks
         const [yMin, yMax] = extent(visibleYs) as [number, number]
+        // try to add extra space on top and bottom before constraining
         const padding = (yMax - yMin) * 0.1
-        const domain = clampExtent(
+        const domain = constrainExtent(
           [yMin - padding, yMax + padding],
-          MIN_Y_AXIS_SIZE[yKind]
+          Y_AXIS_CONSTRAINTS[yKind]
         )
         setViewYScale(() => yScale.copy().domain(domain).nice())
       }
