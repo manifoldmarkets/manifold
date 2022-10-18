@@ -1,9 +1,8 @@
-import { ReactNode, SVGProps, memo, useRef, useEffect, useMemo } from 'react'
+import { ReactNode, SVGProps, memo, useId, useRef, useEffect } from 'react'
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
 import { area, line, CurveFactory } from 'd3-shape'
-import { nanoid } from 'nanoid'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
 
@@ -168,7 +167,7 @@ export const SVGChart = <X, TT>(props: {
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - (margin.left + margin.right)
   const innerH = h - (margin.top + margin.bottom)
-  const clipPathId = useMemo(() => nanoid(), [])
+  const clipPathId = useId()
   const isMobile = useIsMobile()
 
   const justSelected = useRef(false)
