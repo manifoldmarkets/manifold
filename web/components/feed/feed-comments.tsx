@@ -99,7 +99,7 @@ export function FeedCommentThread(props: {
   )
 }
 
-export function ParentFeedComment(props: {
+export const ParentFeedComment = memo(function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
   highlighted?: boolean
@@ -169,7 +169,7 @@ export function ParentFeedComment(props: {
       </Col>
     </Row>
   )
-}
+})
 
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
