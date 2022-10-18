@@ -102,13 +102,12 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_'
-  )
-
   const trendingContracts = useTrendingContracts(6)
   const newContracts = useNewContracts(6)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
+  const contractMetricsByProfit = useUserContractMetricsByProfit(
+    user?.id ?? '_'
+  )
 
   const groups = useMemberGroupsSubscription(user)
   const trendingGroups = useTrendingGroups()
@@ -141,7 +140,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   const isLoading =
     !user ||
-    !contractMetricsByProfit ||
     !trendingContracts ||
     !newContracts ||
     !dailyTrendingContracts ||
@@ -249,10 +247,12 @@ export const getHomeItems = (sections: string[]) => {
 function renderSections(
   sections: { id: string; label: string }[],
   sectionContracts: {
-    'daily-movers': {
-      contracts: CPMMBinaryContract[]
-      metrics: ContractMetrics[]
-    }
+    'daily-movers':
+      | {
+          contracts: CPMMBinaryContract[]
+          metrics: ContractMetrics[]
+        }
+      | undefined
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
@@ -271,7 +271,7 @@ function renderSections(
           label: string
         }
         if (id === 'daily-movers') {
-          return <DailyMoversSection key={id} {...sectionContracts[id]} />
+          return <DailyMoversSection key={id} data={sectionContracts[id]} />
         }
 
         if (id === 'featured') {
@@ -495,10 +495,20 @@ function GroupSection(props: {
 }
 
 function DailyMoversSection(props: {
-  contracts: CPMMBinaryContract[]
-  metrics: ContractMetrics[]
+  data:
+    | {
+        contracts: CPMMBinaryContract[]
+        metrics: ContractMetrics[]
+      }
+    | undefined
 }) {
-  const { contracts, metrics } = props
+  const user = useUser()
+
+  const { data } = props
+
+  if (!user || !data) return null
+
+  const { contracts, metrics } = data
 
   const hasProfit = metrics.some((m) => m.from && m.from.day.profit > 0)
   const hasLoss = metrics.some((m) => m.from && m.from.day.profit < 0)
