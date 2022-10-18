@@ -8,21 +8,23 @@
       "distribution": "internal",
       "android": {
         "gradleCommand": ":app:assembleDebug",
-        "credentialsSource": "remote"
+        "credentialsSource": "remote",
+        "buildType": "apk"
       },
       "ios": {
         "buildConfiguration": "Debug"
       }
     },
     "preview": {
+      "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleRelease",
+        "credentialsSource": "remote",
+        "buildType": "app-bundle"
+      },
       "ios": {
         "simulator": true
-      },
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
-        "developmentClient": true
       }
     },
     "production": {}

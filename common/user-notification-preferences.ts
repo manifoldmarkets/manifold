@@ -4,7 +4,7 @@ import { getFunctionUrl } from './api'
 import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
 
-export type notification_destination_types = 'email' | 'browser'
+export type notification_destination_types = 'email' | 'browser' | 'mobile'
 export type notification_preference = keyof notification_preferences
 export type notification_preferences = {
   // Watched Markets
@@ -63,70 +63,106 @@ export const getDefaultNotificationPreferences = (
   privateUser?: PrivateUser,
   noEmails?: boolean
 ) => {
-  const constructPref = (browserIf: boolean, emailIf: boolean) => {
+  const constructPref = (
+    browserIf: boolean,
+    emailIf: boolean,
+    mobileIf: boolean
+  ) => {
     const browser = browserIf ? 'browser' : undefined
     const email = noEmails ? undefined : emailIf ? 'email' : undefined
-    return filterDefined([browser, email]) as notification_destination_types[]
+    const mobile = mobileIf ? 'mobile' : undefined
+    return filterDefined([
+      browser,
+      email,
+      mobile,
+    ]) as notification_destination_types[]
   }
   const defaults: notification_preferences = {
     // Watched Markets
-    all_comments_on_watched_markets: constructPref(true, false),
-    all_answers_on_watched_markets: constructPref(true, false),
+    all_comments_on_watched_markets: constructPref(true, false, false),
+    all_answers_on_watched_markets: constructPref(true, false, false),
 
     // Comments
-    tips_on_your_comments: constructPref(true, true),
-    comments_by_followed_users_on_watched_markets: constructPref(true, true),
-    all_replies_to_my_comments_on_watched_markets: constructPref(true, true),
-    all_replies_to_my_answers_on_watched_markets: constructPref(true, true),
+    tips_on_your_comments: constructPref(true, true, false),
+    comments_by_followed_users_on_watched_markets: constructPref(
+      true,
+      true,
+      false
+    ),
+    all_replies_to_my_comments_on_watched_markets: constructPref(
+      true,
+      true,
+      true
+    ),
+    all_replies_to_my_answers_on_watched_markets: constructPref(
+      true,
+      true,
+      true
+    ),
     all_comments_on_contracts_with_shares_in_on_watched_markets: constructPref(
       true,
+      false,
       false
     ),
 
     // Answers
-    answers_by_followed_users_on_watched_markets: constructPref(true, true),
-    answers_by_market_creator_on_watched_markets: constructPref(true, true),
+    answers_by_followed_users_on_watched_markets: constructPref(
+      true,
+      true,
+      false
+    ),
+    answers_by_market_creator_on_watched_markets: constructPref(
+      true,
+      true,
+      false
+    ),
     all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
+      true,
+      true,
+      false
+    ),
+
+    // On users' markets
+    your_contract_closed: constructPref(true, true, false), // High priority
+    all_comments_on_my_markets: constructPref(true, true, false),
+    all_answers_on_my_markets: constructPref(true, true, false),
+    subsidized_your_market: constructPref(true, true, false),
+
+    // Market updates
+    resolutions_on_watched_markets: constructPref(true, false, true),
+    market_updates_on_watched_markets: constructPref(true, false, false),
+    market_updates_on_watched_markets_with_shares_in: constructPref(
+      true,
+      false,
+      false
+    ),
+    resolutions_on_watched_markets_with_shares_in: constructPref(
+      true,
       true,
       true
     ),
 
-    // On users' markets
-    your_contract_closed: constructPref(true, true), // High priority
-    all_comments_on_my_markets: constructPref(true, true),
-    all_answers_on_my_markets: constructPref(true, true),
-    subsidized_your_market: constructPref(true, true),
-
-    // Market updates
-    resolutions_on_watched_markets: constructPref(true, false),
-    market_updates_on_watched_markets: constructPref(true, false),
-    market_updates_on_watched_markets_with_shares_in: constructPref(
-      true,
-      false
-    ),
-    resolutions_on_watched_markets_with_shares_in: constructPref(true, true),
-
     //Balance Changes
-    loan_income: constructPref(true, false),
-    betting_streaks: constructPref(true, false),
-    referral_bonuses: constructPref(true, true),
-    unique_bettors_on_your_contract: constructPref(true, true),
-    tipped_comments_on_watched_markets: constructPref(true, true),
-    tips_on_your_markets: constructPref(true, true),
-    limit_order_fills: constructPref(true, false),
+    loan_income: constructPref(true, false, false),
+    betting_streaks: constructPref(true, false, false),
+    referral_bonuses: constructPref(true, true, false),
+    unique_bettors_on_your_contract: constructPref(true, true, false),
+    tipped_comments_on_watched_markets: constructPref(true, true, false),
+    tips_on_your_markets: constructPref(true, true, false),
+    limit_order_fills: constructPref(true, false, false),
 
     // General
-    tagged_user: constructPref(true, true),
-    on_new_follow: constructPref(true, true),
-    contract_from_followed_user: constructPref(true, true),
-    trending_markets: constructPref(false, true),
-    profit_loss_updates: constructPref(false, true),
-    probability_updates_on_watched_markets: constructPref(true, false),
-    thank_you_for_purchases: constructPref(false, false),
-    onboarding_flow: constructPref(false, false),
+    tagged_user: constructPref(true, true, false),
+    on_new_follow: constructPref(true, true, false),
+    contract_from_followed_user: constructPref(true, true, true),
+    trending_markets: constructPref(false, true, false),
+    profit_loss_updates: constructPref(false, true, false),
+    probability_updates_on_watched_markets: constructPref(true, false, true),
+    thank_you_for_purchases: constructPref(false, false, false),
+    onboarding_flow: constructPref(false, false, false),
 
     opt_out_all: [],
-    badges_awarded: constructPref(true, false),
+    badges_awarded: constructPref(true, false, false),
   }
   return defaults
 }
@@ -201,9 +237,11 @@ export const getNotificationDestinationsForUser = (
     const optedOutOfBrowser =
       optOutOfAllSettings.includes('browser') &&
       subscriptionType !== 'your_contract_closed'
+    const optedOutOfPush = !privateUser.pushToken
     return {
       sendToEmail: destinations.includes('email') && !optedOutOfEmail,
       sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
+      sendToMobile: destinations.includes('mobile') && !optedOutOfPush,
       unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${subscriptionType}`,
       urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${subscriptionType}`,
     }
@@ -215,6 +253,7 @@ export const getNotificationDestinationsForUser = (
     return {
       sendToEmail: false,
       sendToBrowser: false,
+      sendToMobile: false,
       unsubscribeUrl: '',
       urlToManageThisNotification: '',
     }

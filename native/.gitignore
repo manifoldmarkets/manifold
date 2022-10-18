@@ -12,5 +12,6 @@ web-build/
 credentials.json
 credentials/
 *.apk
+*.aab
 # macOS
 .DS_Store

@@ -4,29 +4,45 @@ import {
   ExpoPushSuccessTicket,
   ExpoPushTicket,
 } from 'expo-server-sdk'
+import { Notification } from 'common/notification'
+import { PrivateUser } from 'common/user'
+import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { log } from './utils'
+import * as admin from 'firebase-admin'
+import { partition } from 'lodash'
+import { PushTicket } from 'common/push-ticket'
+const firestore = admin.firestore()
 
-export const createPushNotification = async () => {
-  // Create a new Expo SDK client
-  // optionally providing an access token if you have enabled push security
+export const createPushNotification = async (
+  notification: Notification,
+  privateUser: PrivateUser,
+  title: string,
+  body: string
+) => {
   const expo = new Expo()
-  const somePushTokens = ['ExponentPushToken[8FM0FRCL3E2JUwncv-aAnd]']
+  const { sendToMobile } = getNotificationDestinationsForUser(
+    privateUser,
+    notification.reason
+  )
+  if (!sendToMobile) return
+  const somePushTokens = [privateUser.pushToken]
   // Create the messages that you want to send to clients
   const messages = [] as ExpoPushMessage[]
   for (const pushToken of somePushTokens) {
-    // Each push token looks like ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
-
     // Check that all your push tokens appear to be valid Expo push tokens
     if (!Expo.isExpoPushToken(pushToken)) {
-      console.error(`Push token ${pushToken} is not a valid Expo push token`)
+      log(`Push token ${pushToken} is not a valid Expo push token`)
       continue
     }
 
     // Construct a message (see https://docs.expo.io/push-notifications/sending-notifications/)
     messages.push({
       to: pushToken,
+      channelId: 'default',
       sound: 'default',
-      body: 'This is a test notification',
-      data: { withSome: 'data' },
+      title,
+      body,
+      data: notification,
     })
   }
 
@@ -44,21 +60,45 @@ export const createPushNotification = async () => {
     for (const chunk of chunks) {
       try {
         const ticketChunk = await expo.sendPushNotificationsAsync(chunk)
-        console.log(ticketChunk)
+        log(ticketChunk)
         tickets.push(...ticketChunk)
         // NOTE: If a ticket contains an error code in ticket.details.error, you
         // must handle it appropriately. The error codes are listed in the Expo
         // documentation:
         // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
       } catch (error) {
-        console.error(error)
+        log(error)
       }
     }
   }
   await sendChunkedPNs()
+  // write successful tickets to db
+  const [successTickets, errorTickets] = partition(
+    tickets,
+    (ticket) => ticket.status === 'ok'
+  )
+  await Promise.all(
+    (successTickets as ExpoPushSuccessTicket[]).map(async (ticket) =>
+      firestore
+        .collection('pushNotificationTickets')
+        .doc(ticket.id)
+        .set({
+          ...ticket,
+          createdTime: Date.now(),
+          receiptStatus: 'not-checked',
+        } as PushTicket)
+    )
+  )
+  errorTickets.forEach((ticket) =>
+    log('Error generating push notification, ticket:', ticket)
+  )
+}
 
+// TODO: run regularly to check for receipts
+export const checkPushNotificationReceipts = async () => {
+  const expo = new Expo()
   // Later, after the Expo push notification service has delivered the
-  // notifications to Apple or Google (usually quickly, but allow the the service
+  // notifications to Apple or Google (usually quickly, but allow the service
   // up to 30 minutes when under load), a "receipt" for each notification is
   // created. The receipts will be available for at least a day; stale receipts
   // are deleted.
@@ -72,49 +112,43 @@ export const createPushNotification = async () => {
   // notifications to devices that have blocked notifications or have uninstalled
   // your app. Expo does not control this policy and sends back the feedback from
   // Apple and Google so you can handle it appropriately.
-  const receiptIds = []
-  for (const ticket of tickets) {
-    // NOTE: Not all tickets have IDs; for example, tickets for notifications
-    // that could not be enqueued will have error information and no receipt ID.
-    const successTicket = ticket as ExpoPushSuccessTicket
-    if (successTicket && successTicket.id) {
-      receiptIds.push(successTicket.id)
-    }
-  }
+  const tickets = (
+    await firestore
+      .collection('pushNotificationTickets')
+      // .where('createdTime', '>', Date.now() - MINUTE_MS * 30)
+      .get()
+  ).docs.map((doc) => doc.data() as PushTicket)
+
+  const receiptIds = tickets.map((ticket) => ticket.id)
 
   const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds)
-  const getReceipts = async () => {
-    // Like sending notifications, there are different strategies you could use
-    // to retrieve batches of receipts from the Expo service.
-    for (const chunk of receiptIdChunks) {
-      try {
-        const receipts = await expo.getPushNotificationReceiptsAsync(chunk)
-        console.log(receipts)
+  // Like sending notifications, there are different strategies you could use
+  // to retrieve batches of receipts from the Expo service.
+  for (const chunk of receiptIdChunks) {
+    try {
+      const receipts = await expo.getPushNotificationReceiptsAsync(chunk)
+      log(receipts)
 
-        // The receipts specify whether Apple or Google successfully received the
-        // notification and information about an error, if one occurred.
-        for (const receiptId in receipts) {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          const { status, message, details } = receipts[receiptId]
-          if (status === 'ok') {
-            continue
-          } else if (status === 'error') {
-            console.error(
-              `There was an error sending a notification: ${message}`
-            )
-            if (details && details.error) {
-              // The error codes are listed in the Expo documentation:
-              // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
-              // You must handle the errors appropriately.
-              console.error(`The error code is ${details.error}`)
-            }
+      // The receipts specify whether Apple or Google successfully received the
+      // notification and information about an error, if one occurred.
+      for (const receiptId in receipts) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const { status, message, details } = receipts[receiptId]
+        if (status === 'ok') {
+          continue
+        } else if (status === 'error') {
+          log(`There was an error sending a notification: ${message}`)
+          if (details && details.error) {
+            // The error codes are listed in the Expo documentation:
+            // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
+            // You must handle the errors appropriately.
+            log(`The error code is ${details.error}`)
           }
         }
-      } catch (error) {
-        console.error(error)
       }
+    } catch (error) {
+      log(error)
     }
   }
-  await getReceipts()
 }

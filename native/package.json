@@ -10,7 +10,7 @@
     "start": "expo start",
     "start:dev": "expo start --dev-client",
     "android": "expo run:android",
-    "ios": "expo run:ios",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@babel/runtime": "^7.19.4",

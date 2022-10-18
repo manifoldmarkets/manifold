@@ -4,7 +4,7 @@ export type Notification = {
   id: string
   userId: string
   reasonText?: string
-  reason?: notification_reason_types | notification_preference
+  reason: notification_reason_types | notification_preference
   createdTime: number
   viewTime?: number
   isSeen: boolean
