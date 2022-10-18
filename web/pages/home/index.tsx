@@ -53,7 +53,10 @@ import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Input } from 'web/components/widgets/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
-import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
+import {
+  getGlobalConfig,
+  updateGlobalConfig,
+} from 'web/lib/firebase/globalConfig'
 import { getPost } from 'web/lib/firebase/posts'
 import { PostCard } from 'web/components/posts/post-card'
 import { getContractFromId } from 'web/lib/firebase/contracts'
@@ -70,10 +73,19 @@ import {
 import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
-export default function Home() {
+export async function getStaticProps() {
+  const globalConfig = await getGlobalConfig()
+
+  return {
+    props: { globalConfig },
+    revalidate: 60, // regenerate after a minute
+  }
+}
+
+export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const isAdmin = useAdmin()
-  const globalConfig = useGlobalConfig()
+  const globalConfig = useGlobalConfig() ?? props.globalConfig
 
   useRedirectIfSignedOut()
   useTracking('view home')
@@ -111,36 +123,20 @@ export default function Home() {
 
   useEffect(() => {
     const pinnedItems = globalConfig?.pinnedItems
-
-    async function getPinned() {
-      if (pinnedItems == null) {
-        if (globalConfig != null) {
-          updateGlobalConfig(globalConfig, { pinnedItems: [] })
+    if (pinnedItems) {
+      const itemComponents = pinnedItems.map((element) => {
+        if (element.type === 'post') {
+          return <PostCard post={element.item as Post} />
+        } else if (element.type === 'contract') {
+          return <ContractCard contract={element.item as Contract} />
         }
-      } else {
-        const itemComponents = await Promise.all(
-          pinnedItems.map(async (element) => {
-            if (element.type === 'post') {
-              const post = await getPost(element.itemId)
-              if (post) {
-                return <PostCard post={post as Post} />
-              }
-            } else if (element.type === 'contract') {
-              const contract = await getContractFromId(element.itemId)
-              if (contract) {
-                return <ContractCard contract={contract as Contract} />
-              }
-            }
-          })
-        )
-        setPinned(
-          itemComponents.filter(
-            (element) => element != undefined
-          ) as JSX.Element[]
-        )
-      }
+      })
+      setPinned(
+        itemComponents.filter(
+          (element) => element != undefined
+        ) as JSX.Element[]
+      )
     }
-    getPinned()
   }, [globalConfig, setPinned])
 
   const isLoading =
@@ -412,10 +408,30 @@ function FeaturedSection(props: {
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
     if (globalConfig == null) return
+    const pinnedItems = await Promise.all(
+      selectedItems
+        .map(async (item) => {
+          if (item.type === 'post') {
+            const post = await getPost(item.itemId)
+            if (post == null) return null
+
+            return { item: post, type: 'post' }
+          } else if (item.type === 'contract') {
+            const contract = await getContractFromId(item.itemId)
+            if (contract == null) return null
+
+            return { item: contract, type: 'contract' }
+          }
+        })
+        .filter((item) => item != null)
+    )
     await updateGlobalConfig(globalConfig, {
       pinnedItems: [
         ...(globalConfig?.pinnedItems ?? []),
-        ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
+        ...(pinnedItems as {
+          item: Contract | Post
+          type: 'contract' | 'post'
+        }[]),
       ],
     })
   }
@@ -423,7 +439,7 @@ function FeaturedSection(props: {
   function onDeleteClicked(index: number) {
     if (globalConfig == null) return
     const newPinned = globalConfig.pinnedItems.filter((item) => {
-      return item.itemId !== globalConfig.pinnedItems[index].itemId
+      return item.item.id !== globalConfig.pinnedItems[index].item.id
     })
     updateGlobalConfig(globalConfig, { pinnedItems: newPinned })
   }
