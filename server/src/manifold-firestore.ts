@@ -1,7 +1,8 @@
-import { Bet, Contract, User } from 'common/types/manifold-internal-types';
-import { initializeApp } from 'firebase/app';
-import { collection, CollectionReference, doc, DocumentReference, DocumentSnapshot, getFirestore, onSnapshot } from 'firebase/firestore';
-import { MANIFOLD_FIREBASE_CONFIG } from './envs';
+import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
+import { Bet, Contract, CPMMBinaryContract, User } from 'common/types/manifold-internal-types';
+import { initializeApp, onLog } from 'firebase/app';
+import { collection, CollectionReference, doc, DocumentReference, DocumentSnapshot, getDoc, getDocs, getFirestore, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { MANIFOLD_API_BASE_URL, MANIFOLD_FIREBASE_CONFIG } from './envs';
 import log from './logger';
 
 const timers: { [k: string]: number } = {};
@@ -30,16 +31,45 @@ export default class ManifoldFirestore {
   private allUsers: { [k: string]: User } = {};
 
   constructor() {
+    process.stderr.write = (() => {
+      const write = process.stderr.write;
+      return function (...rest: any[]) {
+        if (!(rest[0] as string).includes('@firebase/firestore')) {
+          return write.apply(process.stderr, rest);
+        }
+      };
+    })();
+
     const app = initializeApp(MANIFOLD_FIREBASE_CONFIG, 'manifold');
     const db = getFirestore(app);
+    onLog((l) => {
+      switch (l.level) {
+        case 'debug':
+          log.debug(l.message, l.args);
+          break;
+        case 'error':
+          log.error(l.message, l.args);
+          break;
+        case 'warn':
+          log.warn(l.message, l.args);
+          break;
+        default:
+          log.info(l.message, l.args);
+      }
+    });
     this.contracts = <CollectionReference<Contract>>collection(db, 'contracts');
     this.users = <CollectionReference<User>>collection(db, 'users');
+  }
 
-    log.info('Accessing Manifold Firestore...');
-
-    this.loadAllUsers();
-
-    // this.test();
+  async validateConnection() {
+    const message = 'Accessing Manifold Firestore...';
+    try {
+      await getDoc(doc(this.contracts, 'dummy'));
+    } catch (e) {
+      log.info(message + ' failed.');
+      throw new Error('Failed to contact Manifold Firestore: ' + e.message);
+    }
+    log.info(message + ' success.');
   }
 
   async loadAllUsers() {
@@ -57,44 +87,104 @@ export default class ManifoldFirestore {
     return this.allUsers[manifoldID];
   }
 
-  // async getFullMarketByID(marketID: string): Promise<AbstractMarket> {
-  //   const contract = (await getDoc(doc(this.contracts, marketID))).data();
-  //   const betsQuery = await getDocs(query(collection(this.contracts, marketID, 'bets'), orderBy('createdTime', 'desc')));
-  //   const bets = <Bet[]> betsQuery.docs.map((d) => d.data());
+  async getFullMarketByID(marketID: string, onResolve?: () => void, onNewBet?: (b: Bet) => void): Promise<AbstractMarket> {
+    ts('mkt' + marketID);
+    const contract = (await getDoc(doc(this.contracts, marketID))).data();
+    const betCollection = <CollectionReference<Bet>>collection(this.contracts, marketID, 'bets');
+    const betsQuery = await getDocs(query(betCollection, orderBy('createdTime', 'asc')));
+    const bets = <NamedBet[]>betsQuery.docs.map((d) => {
+      const bet = d.data();
+      return <NamedBet>{ ...bet, username: bet.userName };
+    });
 
-  //   const { id, creatorUsername, creatorName, creatorId, createdTime, closeTime, question, slug, isResolved, resolutionTime, resolution } = contract;
+    if (contract.mechanism != 'cpmm-1') {
+      log.error(`Contract with ID '${marketID}' has an invalid mechanism.`);
+      return;
+    }
 
-  //   const abstractMarket = {
-  //     id,
-  //     creatorUsername,
-  //     creatorName,
-  //     creatorId,
-  //     createdTime,
-  //     closeTime,
-  //     question,
-  //     description: undefined,
-  //     url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
-  //     probability: contract.outcomeType === 'BINARY' ? this.getProbability(contract) : undefined,
-  //     isResolved,
-  //     resolutionTime,
-  //     resolution,
-  //     bets,
-  //   };
+    let betUpdateUnsubscribe = undefined;
+    if (onNewBet) {
+      betUpdateUnsubscribe = onSnapshot(betCollection, (update) => {
+        for (const changedBet of update.docChanges()) {
+          if (changedBet.type === 'added') {
+            onNewBet(changedBet.doc.data());
+          }
+        }
+      });
+    }
 
-  //   return abstractMarket;
-  // }
+    if (onResolve) {
+      const unsubscribe = onSnapshot(doc(this.contracts, marketID), (update) => {
+        const contract = update.data();
+        if (contract.isResolved) {
+          log.info(`Detected resolution for market ${contract.question}.`);
+          onResolve();
+          unsubscribe();
+          if (betUpdateUnsubscribe) {
+            betUpdateUnsubscribe();
+          }
+        }
+      });
+    }
 
-  // getProbability(contract: Contract) {
-  //   if (contract.mechanism === 'cpmm-1') {
-  //     return this.getCpmmProbability(contract.pool, contract.p);
-  //   }
-  //   throw new Error('DPM probability not supported.');
-  // }
+    const binaryContract = <CPMMBinaryContract>contract;
 
-  // getCpmmProbability(pool: { [outcome: string]: number }, p: number) {
-  //   const { YES, NO } = pool;
-  //   return (p * NO) / ((1 - p) * YES + p * NO);
-  // }
+    const {
+      id,
+      creatorUsername,
+      creatorName,
+      creatorId,
+      createdTime,
+      closeTime,
+      question,
+      slug,
+      isResolved,
+      resolutionTime,
+      resolution,
+      description,
+      p,
+      mechanism,
+      outcomeType,
+      pool,
+      resolutionProbability,
+    } = binaryContract;
+
+    log.debug('Loaded contract ' + marketID + ' in ' + te('mkt' + marketID));
+
+    return {
+      id,
+      creatorUsername,
+      creatorName,
+      creatorId,
+      createdTime,
+      closeTime,
+      question,
+      description,
+      url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
+      probability: contract.outcomeType === 'BINARY' ? this.getProbability(contract) : undefined,
+      isResolved,
+      resolutionTime,
+      resolution,
+      bets,
+      p,
+      mechanism,
+      outcomeType,
+      pool,
+      resolutionProbability,
+    };
+  }
+
+  getProbability(contract: Contract) {
+    if (contract.mechanism === 'cpmm-1') {
+      return this.getCpmmProbability(contract.pool, contract.p);
+    }
+    throw new Error('DPM probability not supported.');
+  }
+
+  getCpmmProbability(pool: { [outcome: string]: number }, p: number) {
+    const { YES, NO } = pool;
+    return (p * NO) / ((1 - p) * YES + p * NO);
+  }
 
   async test() {
     ts('contracts');
@@ -106,7 +196,9 @@ export default class ManifoldFirestore {
     // })
 
     ts('contract');
-    // console.log(await this.getFullMarketByID('ta1Drot634OoAi2AkXCj'));
+    const market = await this.getFullMarketByID('ta1Drot634OoAi2AkXCj');
+    // console.log(market);
+    log.info('Found in ' + te('contract'));
     registerChangeListener(doc(this.contracts, 'ta1Drot634OoAi2AkXCj'), (s) => {
       log.info('Contract info updated.');
       // console.log(s.data());
@@ -138,6 +230,5 @@ export default class ManifoldFirestore {
         log.info(data.amount + ' of ' + data.outcome);
       });
     });
-    log.info('Found in ' + te('contract'));
   }
 }

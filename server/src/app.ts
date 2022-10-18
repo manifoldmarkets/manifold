@@ -1,7 +1,6 @@
 import * as Packet from 'common/packet-ids';
 import { UNFEATURE_MARKET } from 'common/packet-ids';
 import { PacketSelectMarket } from 'common/packets';
-import { abstractMarketFromFullMarket } from 'common/types/manifold-abstract-types';
 import cors from 'cors';
 import express, { Express } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -16,7 +15,6 @@ import OverlayClient from './clients/overlay';
 import { IS_DEV, PORT } from './envs';
 import AppFirestore from './firestore';
 import log from './logger';
-import * as Manifold from './manifold-api';
 import ManifoldFirestore from './manifold-firestore';
 import { Market } from './market';
 import TwitchBot from './twitch-bot';
@@ -28,6 +26,8 @@ export default class App {
   readonly bot: TwitchBot;
   readonly firestore: AppFirestore;
   readonly manifoldFirestore: ManifoldFirestore;
+
+  readonly userIdToNameMap: { [k: string]: string } = {};
 
   selectedMarketMap: { [twitchChannel: string]: Market } = {};
 
@@ -69,6 +69,27 @@ export default class App {
       .catch(() => {});
   }
 
+  public async getDisplayNameForUserID(userID: string) {
+    if (this.userIdToNameMap[userID]) {
+      return this.userIdToNameMap[userID];
+    }
+    let displayName: string;
+    try {
+      const user = await this.firestore.getUserForManifoldID(userID);
+      displayName = user.data.twitchLogin;
+    } catch {
+      try {
+        const user = this.manifoldFirestore.getManifoldUserByManifoldID(userID);
+        displayName = user.name;
+      } catch (e) {
+        log.warn(e);
+        displayName = 'A trader';
+      }
+    }
+    log.info(`Cached display name for user '${displayName}'.`);
+    return (this.userIdToNameMap[userID] = displayName);
+  }
+
   public getMarketForTwitchChannel(channel: string): Market | null {
     return this.selectedMarketMap[channel];
   }
@@ -85,7 +106,7 @@ export default class App {
     this.unfeatureCurrentMarket(channel, sourceDock);
 
     if (id) {
-      const marketData = abstractMarketFromFullMarket(await Manifold.getFullMarketByID(id));
+      const marketData = await this.manifoldFirestore.getFullMarketByID(id);
       if (!marketData || marketData.isResolved) throw new Error('Attempted to feature invalid market');
       const market = new Market(this, marketData, channel);
       await market.load();
@@ -100,6 +121,7 @@ export default class App {
         this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
         this.io.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
       }
+      log.debug('Sent market data to overlay');
       return market;
     }
   }
@@ -138,6 +160,9 @@ export default class App {
 
   async launch() {
     await this.bot.connect();
+    await this.manifoldFirestore.validateConnection();
+    await this.manifoldFirestore.loadAllUsers();
+    await this.manifoldFirestore.test(); //!!! REMOVE
 
     const server = this.app.listen(PORT, () => {
       const addressInfo = <AddressInfo>server.address();

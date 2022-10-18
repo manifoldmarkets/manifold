@@ -17,7 +17,6 @@ export class Market {
   private readonly app: App;
   private readonly twitchChannel: string;
   private latestLoadedBetId: string = null;
-  private userIdToNameMap: Record<string, string> = {}; //!!! This should really be shared between markets
   private pollTask: () => void;
 
   public readonly allBets: NamedBet[] = [];
@@ -134,7 +133,7 @@ export class Market {
     log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
     if (mostRecentBet) {
       this.latestLoadedBetId = mostRecentBet.id;
-      log.debug(`Latest loaded bet: ${this.userIdToNameMap[mostRecentBet.userId]} : ${mostRecentBet.id}`);
+      log.debug(`Latest loaded bet: ${this.app.getDisplayNameForUserID(mostRecentBet.userId)} : ${mostRecentBet.id}`);
     }
     this.app.io.to(this.twitchChannel).emit(Packet.MARKET_LOAD_COMPLETE);
   }
@@ -244,32 +243,11 @@ export class Market {
   }
 
   private async betToFullBet(bet: Bet): Promise<NamedBet> {
-    const username = await this.getDisplayNameForUserID(bet.userId);
+    const username = await this.app.getDisplayNameForUserID(bet.userId);
     return {
       ...bet,
       username,
     };
-  }
-
-  private async getDisplayNameForUserID(userID: string) {
-    if (this.userIdToNameMap[userID]) {
-      return this.userIdToNameMap[userID];
-    }
-    let name: string;
-    try {
-      const user = await this.app.firestore.getUserForManifoldID(userID);
-      name = user.data.twitchLogin;
-    } catch {
-      try {
-        const user = this.app.manifoldFirestore.getManifoldUserByManifoldID(userID); //!!! To remove: await Manifold.getUserByID(userID);
-        name = user.name;
-      } catch (e) {
-        log.warn(e);
-        name = 'A trader';
-      }
-    }
-    log.info(`Loaded user ${name}`);
-    return (this.userIdToNameMap[userID] = name);
   }
 
   async pollBets(numBetsToLoad = 10) {

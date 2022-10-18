@@ -332,7 +332,7 @@ export default class TwitchBot {
   public async connect() {
     if (IS_DEV) {
       if (DEBUG_TWITCH_ACCOUNT) {
-        log.info(`Connecting to debug Twitch account '${DEBUG_TWITCH_ACCOUNT}'`);
+        log.info(`Using debug Twitch account '${DEBUG_TWITCH_ACCOUNT}'`);
         this.client.getOptions().channels = [DEBUG_TWITCH_ACCOUNT];
       }
     } else {
