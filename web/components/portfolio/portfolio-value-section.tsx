@@ -96,6 +96,7 @@ export const PortfolioValueSection = memo(
         <SizedContainer fullHeight={200} mobileHeight={100}>
           {(width, height) => (
             <PortfolioGraph
+              key={graphMode} // we need to reset axis scale state if mode changes
               mode={graphMode}
               history={portfolioHistory}
               width={width}
