@@ -6,6 +6,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
+      },
       "android": {
         "gradleCommand": ":app:assembleDebug",
         "credentialsSource": "remote",
@@ -18,6 +21,9 @@
     "preview": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+      },
       "android": {
         "gradleCommand": ":app:assembleRelease",
         "credentialsSource": "remote",
