@@ -56,7 +56,12 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-  const bets = contractId ? await listAllBets(contractId, 2500) : []
+  const opts = {
+    filterRedemptions: true,
+    filterChallenges: true,
+    filterZeroes: true,
+  }
+  const bets = contractId ? await listAllBets(contractId, opts, 2500) : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
   return {
@@ -118,15 +123,18 @@ export function ContractPageContent(
     true
   )
 
-  const bets = useBets(contract.id) ?? props.bets
-  const nonChallengeBets = useMemo(
-    () => bets.filter((b) => !b.challengeSlug),
-    [bets]
-  )
+  const betOpts = useRef({
+    filterRedemptions: true,
+    filterChallenges: true,
+    filterZeroes: true,
+  }).current
+  const bets = useBets(contract.id, betOpts) ?? props.bets
 
-  const userBets = user
-    ? bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
-    : []
+  const userBetOpts = useMemo(
+    () => ({ userId: user?.id ?? '_', filterAntes: true }),
+    [user?.id]
+  )
+  const userBets = useBets(contract.id, userBetOpts) ?? []
 
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -193,7 +201,7 @@ export function ContractPageContent(
         />
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        <ContractOverview contract={contract} bets={nonChallengeBets} />
+        <ContractOverview contract={contract} bets={bets} />
         <ContractDescription className="mt-6 mb-2 px-2" contract={contract} />
 
         {isCreator ? (

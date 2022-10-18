@@ -23,15 +23,44 @@ import { getContractFromId } from './contracts'
 import { filterDefined } from 'common/util/array'
 export type { Bet }
 
+export type BetFilter = {
+  userId?: string
+  filterChallenges?: boolean
+  filterRedemptions?: boolean
+  filterZeroes?: boolean
+  filterAntes?: boolean
+}
+
 function getBetsCollection(contractId: string) {
   return collection(db, 'contracts', contractId, 'bets')
 }
 
+const getContractBetsQuery = (contractId: string, options?: BetFilter) => {
+  let q = query(getBetsCollection(contractId))
+  if (options?.userId) {
+    q = query(q, where('userId', '==', options.userId))
+  }
+  if (options?.filterZeroes) {
+    q = query(q, where('amount', '!=', 0))
+  }
+  if (options?.filterChallenges) {
+    q = query(q, where('challengeSlug', '==', null))
+  }
+  if (options?.filterAntes) {
+    q = query(q, where('isAnte', '==', false))
+  }
+  if (options?.filterRedemptions) {
+    q = query(q, where('isRedemption', '==', false))
+  }
+  return q
+}
+
 export async function listAllBets(
   contractId: string,
-  maxCount: number | undefined = undefined
+  options?: BetFilter,
+  maxCount?: number
 ) {
-  const q = query(getBetsCollection(contractId), orderBy('createdTime', 'desc'))
+  const q = getContractBetsQuery(contractId, options)
   const limitedQ = maxCount ? query(q, limit(maxCount)) : q
   return await getValues<Bet>(limitedQ)
 }
@@ -65,12 +94,11 @@ export async function getRecentContractBets(contractId: string) {
 
 export function listenForBets(
   contractId: string,
-  setBets: (bets: Bet[]) => void
+  setBets: (bets: Bet[]) => void,
+  options?: BetFilter
 ) {
-  return listenForValues<Bet>(
-    query(getBetsCollection(contractId), orderBy('createdTime', 'desc')),
-    setBets
-  )
+  const q = getContractBetsQuery(contractId, options)
+  return listenForValues<Bet>(q, setBets)
 }
 
 export async function getUserBets(userId: string) {
@@ -133,19 +161,6 @@ export async function getContractsOfUserBets(userId: string) {
     contractIds.map((contractId) => getContractFromId(contractId))
   )
   return filterDefined(contracts)
-}
-
-export function listenForUserContractBets(
-  userId: string,
-  contractId: string,
-  setBets: (bets: Bet[]) => void
-) {
-  const betsQuery = query(
-    collection(db, 'contracts', contractId, 'bets'),
-    where('userId', '==', userId),
-    orderBy('createdTime', 'desc')
-  )
-  return listenForValues<Bet>(betsQuery, setBets)
 }
 
 export function listenForUnfilledBets(

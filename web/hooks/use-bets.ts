@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Contract } from 'common/contract'
 import {
   Bet,
+  BetFilter,
   listenForBets,
   listenForLiveBets,
   listenForRecentBets,
@@ -12,27 +13,18 @@ import { LimitBet } from 'common/bet'
 import { getUser } from 'web/lib/firebase/users'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
-export const useBets = (
-  contractId: string,
-  options?: { filterChallenges: boolean; filterRedemptions: boolean }
-) => {
+export const useBets = (contractId: string, options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
-  const filterChallenges = !!options?.filterChallenges
-  const filterRedemptions = !!options?.filterRedemptions
   useEffect(() => {
     if (contractId)
-      return listenForBets(contractId, (bets) => {
-        if (filterChallenges || filterRedemptions)
-          setBets(
-            bets.filter(
-              (bet) =>
-                (filterChallenges ? !bet.challengeSlug : true) &&
-                (filterRedemptions ? !bet.isRedemption : true)
-            )
-          )
-        else setBets(bets)
-      })
-  }, [contractId, filterChallenges, filterRedemptions])
+      return listenForBets(
+        contractId,
+        (bets) => {
+          setBets(bets.sort((b) => b.createdTime))
+        },
+        options
+      )
+  }, [contractId, options])
 
   return bets
 }
@@ -41,10 +33,9 @@ export const useBetsWithoutAntes = (contract: Contract, initialBets: Bet[]) => {
   const [bets, setBets] = useState<Bet[]>(
     withoutAnteBets(contract, initialBets)
   )
-
   useEffect(() => {
     return listenForBets(contract.id, (bets) => {
-      setBets(withoutAnteBets(contract, bets))
+      setBets(withoutAnteBets(contract, bets).sort((b) => b.createdTime))
     })
   }, [contract])
 
