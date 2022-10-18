@@ -218,8 +218,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
 const HOME_SECTIONS = [
   { label: 'Featured', id: 'featured' },
-  { label: 'Daily trending', id: 'daily-trending' },
-  { label: 'Daily movers', id: 'daily-movers' },
+  { label: 'Daily changed', id: 'daily-trending' },
+  { label: 'Your daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
 ] as const
@@ -509,7 +509,7 @@ function DailyMoversSection(props: {
 
   return (
     <Col className="gap-2">
-      <SectionHeader label="Daily movers" href="/daily-movers" />
+      <SectionHeader label="Your daily movers" href="/daily-movers" />
       <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
   )
