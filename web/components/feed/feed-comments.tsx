@@ -38,8 +38,19 @@ export function FeedCommentThread(props: {
   const { contract, threadComments, tips, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(true)
-
+  const [highlightedId, setHighlightedId] = useState<string>()
   const user = useUser()
+
+  const router = useRouter()
+  useEffect(() => {
+    const parts = router.asPath.split('#')
+    if (parts.length > 1 && parts[1] != null) {
+      setHighlightedId(parts[1])
+    } else {
+      setHighlightedId(undefined)
+    }
+  }, [router.asPath])
+
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
   const onReplyClick = useEvent((comment: ContractComment) => {
     setReplyTo({ id: comment.id, username: comment.userUsername })
@@ -51,6 +62,7 @@ export function FeedCommentThread(props: {
         key={parentComment.id}
         contract={contract}
         comment={parentComment}
+        highlighted={highlightedId === parentComment.id}
         myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
         totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
         showTip={true}
@@ -70,6 +82,7 @@ export function FeedCommentThread(props: {
             key={comment.id}
             contract={contract}
             comment={comment}
+            highlighted={highlightedId === comment.id}
             myTip={user ? tips[comment.id]?.[user.id] : undefined}
             totalTip={sum(Object.values(tips[comment.id] ?? {}))}
             showTip={true}
@@ -93,6 +106,7 @@ export function FeedCommentThread(props: {
 export function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
+  highlighted?: boolean
   showTip?: boolean
   myTip?: number
   totalTip?: number
@@ -104,6 +118,7 @@ export function ParentFeedComment(props: {
   const {
     contract,
     comment,
+    highlighted,
     myTip,
     totalTip,
     showTip,
@@ -113,22 +128,14 @@ export function ParentFeedComment(props: {
     numComments,
   } = props
   const { text, content, userUsername, userAvatarUrl } = comment
-
-  const { isReady, asPath } = useRouter()
-  const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (isReady && asPath.endsWith(`#${comment.id}`)) {
-      setHighlighted(true)
-    }
-  }, [isReady, asPath, comment.id])
 
   useEffect(() => {
     if (highlighted && commentRef.current) {
       commentRef.current.scrollIntoView(true)
     }
   }, [highlighted])
+
   return (
     <Row
       ref={commentRef}
@@ -197,22 +204,23 @@ export function CommentActions(props: {
 export const FeedComment = memo(function FeedComment(props: {
   contract: Contract
   comment: ContractComment
+  highlighted?: boolean
   showTip?: boolean
   myTip?: number
   totalTip?: number
   onReplyClick?: (comment: ContractComment) => void
 }) {
-  const { contract, comment, myTip, totalTip, showTip, onReplyClick } = props
+  const {
+    contract,
+    comment,
+    highlighted,
+    myTip,
+    totalTip,
+    showTip,
+    onReplyClick,
+  } = props
   const { text, content, userUsername, userAvatarUrl } = comment
-  const { isReady, asPath } = useRouter()
-  const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (isReady && asPath.endsWith(`#${comment.id}`)) {
-      setHighlighted(true)
-    }
-  }, [isReady, asPath, comment.id])
 
   useEffect(() => {
     if (highlighted && commentRef.current) {
