@@ -115,7 +115,10 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     }
   })
 
-  const onMouseLeave = useEvent(() => setTTParams(undefined))
+  const onMouseLeave = useEvent(() => {
+    props.onMouseOver?.(undefined)
+    setTTParams(undefined)
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -214,7 +217,10 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     }
   })
 
-  const onMouseLeave = useEvent(() => setTTParams(undefined))
+  const onMouseLeave = useEvent(() => {
+    props.onMouseOver?.(undefined)
+    setTTParams(undefined)
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -321,7 +327,10 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     }
   })
 
-  const onMouseLeave = useEvent(() => setMouse(undefined))
+  const onMouseLeave = useEvent(() => {
+    props.onMouseOver?.(undefined)
+    setMouse(undefined)
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
