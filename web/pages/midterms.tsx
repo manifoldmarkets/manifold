@@ -263,7 +263,7 @@ const App = (props: {
       <Col className="items-center justify-center">
         <SEO
           title="2022 US Midterm Elections on Manifold"
-          description="Manifold's midterm forecast using prediction markets. Bet on elections and win up to $500 in our tournament."
+          description="Manifold's midterm forecast using prediction markets. Bet on elections and win up to $1,000 in our tournament."
           image="https://manifold.markets/midterms2022.png"
         />
 
@@ -274,7 +274,7 @@ const App = (props: {
         <div className="mx-8 mb-4 text-base text-gray-500">
           Manifold's midterm forecast. Bet on elections and{' '}
           <SiteLink href="/group/us-2022-midterms/about">
-            win up to $500 USD in our tournament
+            win up to $1,000 USD in our tournament
           </SiteLink>
           .
         </div>
