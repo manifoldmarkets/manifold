@@ -45,9 +45,10 @@ export function NotificationSettings(props: {
     })
   }
 
+  // TODO: After the user has a few notifs, show a user a modal to ask for push
+  //  notifications for market resolves
   useEffect(() => {
     console.log('notification settings mounted')
-    // TODO: show a user a modal to ask for push notifications for market resolves
     console.log((window as any).isNative, 'isNative')
     if ((window as any).isNative && privateUser && !privateUser.pushToken) {
       console.log('Notifications: no push token, requesting')
@@ -101,6 +102,17 @@ export function NotificationSettings(props: {
     'profit_loss_updates',
     'onboarding_flow',
     'thank_you_for_purchases',
+  ]
+
+  const pushEnabled: Array<notification_preference> = [
+    'resolutions_on_watched_markets',
+    'resolutions_on_watched_markets_with_shares_in',
+    // TODO: add these
+    // 'all_replies_to_my_comments_on_watched_markets',
+    // 'all_replies_to_my_answers_on_watched_markets',
+    // 'limit_order_fills',
+    // 'contract_from_followed_user',
+    // 'probability_updates_on_watched_markets',
   ]
 
   type SectionData = {
@@ -194,15 +206,17 @@ export function NotificationSettings(props: {
     const { description, subscriptionTypeKey, destinations, optOutAll } = props
     const previousInAppValue = destinations.includes('browser')
     const previousEmailValue = destinations.includes('email')
+    const previousMobileValue = destinations.includes('mobile')
     const [inAppEnabled, setInAppEnabled] = useState(previousInAppValue)
     const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
+    const [mobileEnabled, setMobileEnabled] = useState(previousMobileValue)
     const [error, setError] = useState<string>('')
     const loading = 'Changing Notifications Settings'
     const success = 'Changed Notification Settings!'
     const highlight = navigateToSection === subscriptionTypeKey
 
     const attemptToChangeSetting = (
-      setting: 'browser' | 'email',
+      setting: 'browser' | 'email' | 'mobile',
       newValue: boolean
     ) => {
       const necessaryError =
@@ -226,11 +240,15 @@ export function NotificationSettings(props: {
         setError(necessaryError)
         return
       }
+      // Mobile notifications not included in necessary destinations yet
 
       changeSetting(setting, newValue)
     }
 
-    const changeSetting = (setting: 'browser' | 'email', newValue: boolean) => {
+    const changeSetting = (
+      setting: 'browser' | 'email' | 'mobile',
+      newValue: boolean
+    ) => {
       toast
         .promise(
           updatePrivateUser(privateUser.id, {
@@ -250,8 +268,10 @@ export function NotificationSettings(props: {
         .then(() => {
           if (setting === 'browser') {
             setInAppEnabled(newValue)
-          } else {
+          } else if (setting === 'email') {
             setEmailEnabled(newValue)
+          } else if (setting === 'mobile') {
+            setMobileEnabled(newValue)
           }
         })
     }
@@ -282,6 +302,14 @@ export function NotificationSettings(props: {
                 onChange={(newVal) => attemptToChangeSetting('email', newVal)}
                 label={'Email'}
                 disabled={optOutAll.includes('email')}
+              />
+            )}
+            {pushEnabled.includes(subscriptionTypeKey) && (
+              <SwitchSetting
+                checked={mobileEnabled}
+                onChange={(newVal) => attemptToChangeSetting('mobile', newVal)}
+                label={'Mobile'}
+                disabled={optOutAll.includes('mobile')}
               />
             )}
           </Row>

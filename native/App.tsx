@@ -126,16 +126,15 @@ export default function App() {
     if (!userId || !pushToken) return
     try {
       const userDoc = doc(firestore, 'private-users', userId)
-      const privateUserDoc = (await getDoc(userDoc)).data() as PrivateUser
+      const privateUser = (await getDoc(userDoc)).data() as PrivateUser
       await updateDoc(
         userDoc,
         removeUndefinedProps({
-          ...privateUserDoc,
+          ...privateUser,
           pushToken,
-          rejectedPushNotificationsOn:
-            privateUserDoc.rejectedPushNotificationsOn
-              ? deleteField()
-              : undefined,
+          rejectedPushNotificationsOn: privateUser.rejectedPushNotificationsOn
+            ? deleteField()
+            : undefined,
         })
       )
     } catch (e) {
