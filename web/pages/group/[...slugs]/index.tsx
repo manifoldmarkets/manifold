@@ -157,85 +157,8 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   const isCreator = user && group && user.id === group.creatorId
-  const isMember = user && memberIds.includes(user.id)
+  const isMember = user ? memberIds.includes(user.id) : undefined
   const maxLeaderboardSize = 50
-
-  const leaderboardTab = (
-    <Col>
-      <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
-        <GroupLeaderboard
-          topUsers={topTraders}
-          title={`🏅 Top ${BETTORS}`}
-          header="Profit"
-          maxToShow={maxLeaderboardSize}
-        />
-        <GroupLeaderboard
-          topUsers={topCreators}
-          title="🏅 Top creators"
-          header="Market volume"
-          maxToShow={maxLeaderboardSize}
-        />
-      </div>
-    </Col>
-  )
-
-  const overviewPage = (
-    <>
-      <GroupOverview
-        group={group}
-        posts={groupPosts}
-        isEditable={!!isCreator || isAdmin}
-        aboutPost={aboutPost}
-        creator={creator}
-        user={user}
-        memberIds={memberIds}
-      />
-    </>
-  )
-
-  const questionsTab = (
-    <>
-      <div className={'flex justify-end '}>
-        <div
-          className={
-            'flex items-end justify-self-end px-2 md:absolute md:top-0 md:pb-2'
-          }
-        >
-          <div>
-            <JoinOrAddQuestionsButtons
-              group={group}
-              user={user}
-              isMember={!!isMember}
-            />
-          </div>
-        </div>
-      </div>
-      <ContractSearch
-        headerClassName="md:sticky"
-        user={user}
-        defaultSort={'score'}
-        defaultFilter={suggestedFilter}
-        additionalFilter={{ groupSlug: group.slug }}
-        persistPrefix={`group-${group.slug}`}
-        includeProbSorts
-      />
-    </>
-  )
-
-  const tabs = [
-    {
-      title: 'Overview',
-      content: overviewPage,
-    },
-    {
-      title: 'Markets',
-      content: questionsTab,
-    },
-    {
-      title: 'Leaderboards',
-      content: leaderboardTab,
-    },
-  ]
 
   return (
     <Page logoSubheading={group.name}>
@@ -244,32 +167,102 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      <TopGroupNavBar group={group} />
-      <div className={'relative p-1 pt-0 md:pt-2'}>
+      <TopGroupNavBar group={group} isMember={isMember} />
+      <div className="relative hidden justify-self-end md:flex">
+        <div className="absolute right-0 top-0 z-10">
+          <JoinOrAddQuestionsButtons
+            group={group}
+            user={user}
+            isMember={!!isMember}
+          />
+        </div>
+      </div>
+      <div className={'relative p-1 pt-0'}>
         {/* TODO: Switching tabs should also update the group path */}
-        <Tabs className={'mb-2'} tabs={tabs} defaultIndex={tabIndex} />
+        <Tabs
+          className={'mb-2'}
+          tabs={[
+            {
+              title: 'Overview',
+              content: (
+                <GroupOverview
+                  group={group}
+                  posts={groupPosts}
+                  isEditable={!!isCreator || isAdmin}
+                  aboutPost={aboutPost}
+                  creator={creator}
+                  user={user}
+                  memberIds={memberIds}
+                />
+              ),
+            },
+            {
+              title: 'Markets',
+              content: (
+                <ContractSearch
+                  headerClassName="md:sticky"
+                  user={user}
+                  defaultSort={'score'}
+                  defaultFilter={suggestedFilter}
+                  additionalFilter={{ groupSlug: group.slug }}
+                  persistPrefix={`group-${group.slug}`}
+                  includeProbSorts
+                />
+              ),
+            },
+            {
+              title: 'Leaderboards',
+              content: (
+                <Col>
+                  <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
+                    <GroupLeaderboard
+                      topUsers={topTraders}
+                      title={`🏅 Top ${BETTORS}`}
+                      header="Profit"
+                      maxToShow={maxLeaderboardSize}
+                    />
+                    <GroupLeaderboard
+                      topUsers={topCreators}
+                      title="🏅 Top creators"
+                      header="Market volume"
+                      maxToShow={maxLeaderboardSize}
+                    />
+                  </div>
+                </Col>
+              ),
+            },
+          ]}
+          defaultIndex={tabIndex}
+        />
       </div>
     </Page>
   )
 }
 
-export function TopGroupNavBar(props: { group: Group }) {
+export function TopGroupNavBar(props: {
+  group: Group
+  isMember: boolean | undefined
+}) {
+  const { group, isMember } = props
+  const user = useUser()
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
-      <div className="flex items-center   bg-white  px-4">
-        <div className="flex-shrink-0">
-          <Link href="/">
-            <a className="text-indigo-700 hover:text-gray-500 ">
-              <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
-            </a>
-          </Link>
-        </div>
-        <div className="ml-3">
-          <h1 className="text-lg font-medium text-indigo-700">
-            {props.group.name}
-          </h1>
-        </div>
-      </div>
+      <Row className="items-center justify-between gap-2 bg-white px-2">
+        <Link href="/">
+          <a className="py-4 px-2 text-indigo-700 hover:text-gray-500">
+            <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+          </a>
+        </Link>
+        <h1 className="truncate text-lg font-medium text-indigo-700">
+          {props.group.name}
+        </h1>
+        <JoinOrAddQuestionsButtons
+          group={group}
+          user={user}
+          isMember={isMember}
+        />
+      </Row>
     </header>
   )
 }
@@ -277,19 +270,19 @@ export function TopGroupNavBar(props: { group: Group }) {
 function JoinOrAddQuestionsButtons(props: {
   group: Group
   user: User | null | undefined
-  isMember: boolean
-  className?: string
+  isMember: boolean | undefined
 }) {
   const { group, user, isMember } = props
+
+  if (user === undefined || isMember === undefined) return <div />
+
   return user && isMember ? (
-    <Row className={'mb-2 w-full self-start md:mt-2 '}>
-      <AddContractButton group={group} user={user} />
-    </Row>
+    <AddContractButton group={group} user={user} />
   ) : group.anyoneCanJoin ? (
-    <div className="mb-2 md:mb-0">
-      <JoinGroupButton group={group} user={user} />
-    </div>
-  ) : null
+    <JoinGroupButton group={group} user={user} />
+  ) : (
+    <div />
+  )
 }
 
 function GroupLeaderboard(props: {
@@ -331,16 +324,14 @@ function AddContractButton(props: { group: Group; user: User }) {
 
   return (
     <>
-      <div className={'flex w-full justify-center'}>
-        <Button
-          className="w-full whitespace-nowrap"
-          size="md"
-          color="indigo"
-          onClick={() => setOpen(true)}
-        >
-          Add market
-        </Button>
-      </div>
+      <Button
+        className="whitespace-nowrap"
+        size="md"
+        color="indigo"
+        onClick={() => setOpen(true)}
+      >
+        Add markets
+      </Button>
 
       <SelectMarketsModal
         open={open}
