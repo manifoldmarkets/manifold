@@ -45,7 +45,9 @@ const isExpoClient =
 
 // Initialize Firebase
 console.log('using', ENV, 'env')
-console.log('env not switching? run `expo start --clear` and then try again')
+console.log(
+  'env not switching? run `npx expo start --clear` and then try again'
+)
 const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 const firestore = getFirestore(app)
 const auth = getAuth(app)
