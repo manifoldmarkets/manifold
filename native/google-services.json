@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "134303100058",
+    "project_id": "dev-mantic-markets",
+    "storage_bucket": "dev-mantic-markets.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:134303100058:android:05fbc2e4176a225ff80323",
+        "android_client_info": {
+          "package_name": "markets.manifold"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCt982NE8yMv1t7DG28Zx1-ddNfPZfzoq8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "134303100058-pe0f0oc28cv4u7o3tf3m0021utva0u55.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "markets.manifold"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
