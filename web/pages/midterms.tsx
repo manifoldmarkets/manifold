@@ -225,7 +225,7 @@ const App = (props: {
     <>
       <StateElectionMap markets={senateMidterms} contracts={senateContracts} />
       <iframe
-        src="https://manifold.markets/TomShlomi/will-the-gop-control-the-us-senate"
+        src="https://manifold.markets/embed/TomShlomi/will-the-gop-control-the-us-senate"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
@@ -239,7 +239,7 @@ const App = (props: {
         contracts={governorContracts}
       />
       <iframe
-        src="https://manifold.markets/ManifoldMarkets/democrats-go-down-at-least-one-gove"
+        src="https://manifold.markets/embed/ManifoldMarkets/democrats-go-down-at-least-one-gove"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
@@ -249,7 +249,7 @@ const App = (props: {
   const houseTab = (
     <div className="w-full">
       <iframe
-        src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of"
+        src="https://manifold.markets/embed/BoltonBailey/will-democrats-maintain-control-of"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
