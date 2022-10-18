@@ -1,12 +1,19 @@
 import { auth } from './users'
 import { APIError, getFunctionUrl } from 'common/api'
 import { JSONContent } from '@tiptap/core'
+import { isWhitelisted } from 'common/envs/constants'
+import { signOut } from 'firebase/auth'
 export { APIError } from 'common/api'
 
 export async function call(url: string, method: string, params: any) {
   const user = auth.currentUser
   if (user == null) {
     throw new Error('Must be signed in to make API calls.')
+  }
+  // Fairly hacky system to keep non whitelisted users from participating
+  if (!isWhitelisted(user.email)) {
+    await signOut(auth)
+    throw new Error('Not authorized to make API calls; signing out now')
   }
   const token = await user.getIdToken()
   const req = new Request(url, {

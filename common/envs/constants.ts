@@ -15,7 +15,7 @@ const CONFIGS: { [env: string]: EnvConfig } = {
 
 export const ENV_CONFIG = CONFIGS[ENV]
 
-export function isWhitelisted(email?: string) {
+export function isWhitelisted(email?: string | null) {
   if (!ENV_CONFIG.whitelistEmail) {
     return true
   }
