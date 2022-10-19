@@ -249,11 +249,11 @@ export default function ProfilePage(props: {
             </div>
           </div>
           <div>
-            <label className="px-1 py-2">Deactivate Account</label>
+            <label className="px-1 py-2">Delete Account</label>
             <div className="flex w-full items-stretch space-x-1">
               <Input
                 type="text"
-                placeholder="Click to permanently deactivate this account"
+                placeholder="Click to permanently delete this account"
                 readOnly
                 className="w-full"
               />
@@ -265,7 +265,7 @@ export default function ProfilePage(props: {
                   color: 'red',
                 }}
                 submitBtn={{
-                  label: 'Deactivate account',
+                  label: 'Delete account',
                   color:
                     deleteAccountConfirmation == 'delete my account'
                       ? 'red'
