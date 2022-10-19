@@ -42,7 +42,7 @@
               "client_id": "128925704902-6ci48vjqud9ddcl436go5ma3m9ceei4k.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "markets.manifold"
+                "bundle_id": "com.markets.manifold"
               }
             }
           ]

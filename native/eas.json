@@ -30,7 +30,6 @@
       "env": {
       "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
       },
-      "distribution": "internal",
       "android": {"credentialsSource": "local"},
       "ios": {}}
   },

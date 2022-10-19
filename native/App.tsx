@@ -56,8 +56,8 @@ const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const uri =
   ENV === 'DEV'
-    ? 'https://dev-git-react-native-mantic.vercel.app/'
-    : 'https://prod-git-react-native-mantic.vercel.app/'
+    ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
+    : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
