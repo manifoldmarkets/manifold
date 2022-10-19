@@ -1,7 +1,8 @@
-import { ReactNode } from 'react'
 import clsx from 'clsx'
 import { Spacer } from '../layout/spacer'
 import { Row } from '../layout/row'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
+import { ReactNode } from 'react'
 
 export function PaginationNextPrev(props: {
   className?: string
@@ -35,6 +36,7 @@ export function PaginationNextPrev(props: {
     </Row>
   )
 }
+
 export function Pagination(props: {
   page: number
   itemsPerPage: number
@@ -42,49 +44,116 @@ export function Pagination(props: {
   setPage: (page: number) => void
   scrollToTop?: boolean
   className?: string
-  nextTitle?: string
-  prevTitle?: string
 }) {
-  const {
-    page,
-    itemsPerPage,
-    totalItems,
-    setPage,
-    scrollToTop,
-    nextTitle,
-    prevTitle,
-    className,
-  } = props
+  const { page, itemsPerPage, totalItems, setPage, scrollToTop, className } =
+    props
 
   const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
 
   if (maxPage <= 0) return <Spacer h={4} />
 
+  const pageNumbers = getPageNumbers(maxPage, page)
+  console.log('page', page)
   return (
     <nav
       className={clsx(
-        'flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6',
+        'mx-auto flex w-full items-center gap-4 bg-white pt-2 pb-6',
         className
       )}
       aria-label="Pagination"
     >
-      <div className="hidden sm:block">
-        <p className="text-sm text-gray-700">
-          Showing <span className="font-medium">{page * itemsPerPage + 1}</span>{' '}
-          to{' '}
-          <span className="font-medium">
-            {Math.min(totalItems, (page + 1) * itemsPerPage)}
-          </span>{' '}
-          of <span className="font-medium">{totalItems}</span> results
-        </p>
-      </div>
-      <PaginationNextPrev
-        prev={page > 0 ? prevTitle ?? 'Previous' : null}
-        next={page < maxPage ? nextTitle ?? 'Next' : null}
-        onClickPrev={() => setPage(page - 1)}
-        onClickNext={() => setPage(page + 1)}
+      <PaginationArrow
         scrollToTop={scrollToTop}
+        onClick={() => setPage(page - 1)}
+        disabled={page <= 0}
+        nextOrPrev="prev"
+      />
+      <Row className="gap-2">
+        {pageNumbers.map((pageNumber) => (
+          <PageNumbers pageNumber={pageNumber} setPage={setPage} page={page} />
+        ))}
+      </Row>
+      <PaginationArrow
+        scrollToTop={scrollToTop}
+        onClick={() => setPage(page + 1)}
+        disabled={page >= maxPage}
+        nextOrPrev="next"
       />
     </nav>
   )
+}
+
+export function PaginationArrow(props: {
+  scrollToTop?: boolean
+  onClick: () => void
+  disabled: boolean
+  nextOrPrev: 'next' | 'prev'
+}) {
+  const { scrollToTop, onClick, disabled, nextOrPrev } = props
+  return (
+    <a
+      href={scrollToTop ? '#' : undefined}
+      onClick={onClick}
+      className={clsx(
+        'rounded-lg transition-colors',
+        disabled
+          ? 'text-greyscale-2 pointer-events-none'
+          : 'hover:bg-greyscale-1.5 cursor-pointer text-indigo-700'
+      )}
+    >
+      {nextOrPrev === 'prev' && (
+        <ChevronLeftIcon className="h-[24px] w-[24px]" />
+      )}
+      {nextOrPrev === 'next' && (
+        <ChevronRightIcon className="h-[24px] w-[24px]" />
+      )}
+    </a>
+  )
+}
+
+export function PageNumbers(props: {
+  pageNumber: pageNumbers
+  setPage: (page: number) => void
+  page: number
+}) {
+  const { pageNumber, setPage, page } = props
+  if (pageNumber === '...') {
+    return <div className="text-greyscale-4 select-none">...</div>
+  }
+  return (
+    <button
+      onClick={() => setPage(pageNumber)}
+      className={clsx(
+        'select-none rounded-lg px-2',
+        page === pageNumber
+          ? 'bg-indigo-100 text-indigo-700'
+          : 'text-greyscale-4 hover:bg-greyscale-1.5'
+      )}
+    >
+      {pageNumber + 1}
+    </button>
+  )
+}
+
+type pageNumbers = number | '...'
+
+export function getPageNumbers(
+  maxPage: number,
+  page: number
+): Array<pageNumbers> {
+  if (maxPage <= 7) {
+    return Array.from({ length: maxPage + 1 }, (_, index) => index)
+  }
+  if (page < 4) {
+    return Array.from<unknown, pageNumbers>(
+      { length: 5 },
+      (_, index) => index
+    ).concat(['...', maxPage])
+  }
+  if (page >= maxPage - 3) {
+    return [0, '...'].concat(
+      Array.from({ length: 5 }, (_, index) => index + maxPage - 4)
+    )
+  }
+  return [0, '...', page - 1, page, page + 1, '...', maxPage]
 }

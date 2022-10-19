@@ -20,6 +20,7 @@ export function LikeItemButton(props: {
   const { item, user, itemType } = props
 
   const tips = useItemTipTxns(item.id)
+  const [tempTip, setTempTip] = useState(0)
 
   const totalTipped = useMemo(() => {
     return sum(tips.map((tip) => tip.amount))
@@ -37,9 +38,12 @@ export function LikeItemButton(props: {
     if (!user) return firebaseLogin()
 
     setIsLiking(true)
+    setTempTip((tempTip) => tempTip + LIKE_TIP_AMOUNT)
 
     const timeoutId = setTimeout(() => {
-      likeItem(user, item, itemType).catch(() => setIsLiking(false))
+      likeItem(user, item, itemType)
+        .then(() => setTempTip((tempTip) => tempTip - LIKE_TIP_AMOUNT))
+        .catch(() => setIsLiking(false))
     }, 3000)
     toast.custom(
       () => (
@@ -47,6 +51,7 @@ export function LikeItemButton(props: {
           userName={item.creatorUsername}
           onUndoClick={() => {
             clearTimeout(timeoutId)
+            setTempTip((tempTip) => tempTip - LIKE_TIP_AMOUNT)
           }}
         />
       ),
@@ -58,7 +63,7 @@ export function LikeItemButton(props: {
     <TipButton
       onClick={onLike}
       tipAmount={LIKE_TIP_AMOUNT}
-      totalTipped={totalTipped}
+      totalTipped={totalTipped + tempTip}
       userTipped={
         !!user &&
         (isLiking ||

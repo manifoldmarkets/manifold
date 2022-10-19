@@ -119,7 +119,7 @@ function ManalinksDisplay(props: {
           itemsPerPage={LINKS_PER_PAGE}
           totalItems={unclaimedLinks.length}
           setPage={setPage}
-          className="mt-4 bg-transparent"
+          className="bg-transparent"
           scrollToTop
         />
       </>

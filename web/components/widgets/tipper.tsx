@@ -89,7 +89,7 @@ export function Tipper(prop: {
     <Row className="items-center gap-0.5">
       <TipButton
         tipAmount={LIKE_TIP_AMOUNT}
-        totalTipped={totalTip}
+        totalTipped={totalTip + tempTip}
         onClick={() => addTip(+LIKE_TIP_AMOUNT)}
         userTipped={tempTip > 0 || myTip > 0}
         disabled={!canUp}
@@ -112,33 +112,25 @@ export function TipToast(props: { userName: string; onUndoClick: () => void }) {
     return <></>
   }
   return (
-    <div className="relative overflow-hidden rounded-lg bg-white drop-shadow-md">
-      <div
-        className={clsx(
-          'animate-progress-loading absolute bottom-0 z-10 h-1 w-full bg-indigo-600',
-          cancelled ? 'hidden' : ''
-        )}
-      />
-      <Row className="text-greyscale-6 items-center gap-4 px-4 py-2 text-sm">
-        <div className={clsx(cancelled ? 'hidden' : 'inline')}>
-          Tipping {userName} {formatMoney(LIKE_TIP_AMOUNT)}...
-        </div>
-        <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
-          Cancelled tipping
-        </div>
-        <Button
-          className={clsx(cancelled ? 'hidden' : 'inline')}
-          size="xs"
-          color="gray-outline"
-          onClick={() => {
-            onUndoClick()
-            setCancelled(true)
-          }}
-          disabled={cancelled}
-        >
-          Cancel
-        </Button>
-      </Row>
-    </div>
+    <Row className="text-greyscale-6 items-center gap-4 rounded-lg bg-white px-4 py-2 text-sm drop-shadow-md">
+      <div className={clsx(cancelled ? 'hidden' : 'inline')}>
+        Tipping {userName} {formatMoney(LIKE_TIP_AMOUNT)}...
+      </div>
+      <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
+        Cancelled tipping
+      </div>
+      <Button
+        className={clsx(cancelled ? 'hidden' : 'inline')}
+        size="xs"
+        color="gray-outline"
+        onClick={() => {
+          onUndoClick()
+          setCancelled(true)
+        }}
+        disabled={cancelled}
+      >
+        Cancel
+      </Button>
+    </Row>
   )
 }
