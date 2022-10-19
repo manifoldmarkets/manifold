@@ -25,7 +25,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>markets.manifold</string>
+          <string>com.markets.manifold</string>
         </array>
       </dict>
       <dict>

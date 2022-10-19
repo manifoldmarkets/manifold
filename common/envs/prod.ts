@@ -105,7 +105,7 @@ export const PROD_CONFIG: EnvConfig = {
   expoConfig: {
     //prod:
     iosClientId:
-      '128925704902-6ci48vjqud9ddcl436go5ma3m9ceei4k.apps.googleusercontent.com',
+      '128925704902-n0ic4j1s5tk51t2vu8anu8glh3t5jimo.apps.googleusercontent.com',
     expoClientId:
       '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
     androidClientId:
