@@ -43,13 +43,15 @@ export function FeedCommentThread(props: {
 
   const router = useRouter()
   useEffect(() => {
-    const parts = router.asPath.split('#')
-    if (parts.length > 1 && parts[1] != null) {
-      setHighlightedId(parts[1])
-    } else {
-      setHighlightedId(undefined)
+    if (router.isReady) {
+      const parts = router.asPath.split('#')
+      if (parts.length > 1 && parts[1] != null) {
+        setHighlightedId(parts[1])
+      } else {
+        setHighlightedId(undefined)
+      }
     }
-  }, [router.asPath])
+  }, [router.isReady, router.asPath])
 
   const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
