@@ -18,6 +18,8 @@ import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
+const ZOOM_SPEED = 1.5
+
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 
 export interface ContinuousScale<T> extends AxisScale<T> {
@@ -160,6 +162,7 @@ export const SVGChart = <X, TT>(props: {
   yAxis: Axis<number>
   ttParams: TooltipParams<TT> | undefined
   onSelect?: (ev: D3BrushEvent<any>) => void
+  onZoom?: (centerX: number, centerY: number, delta: number) => void
   onMouseOver?: (mouseX: number, mouseY: number) => void
   onMouseLeave?: () => void
   Tooltip?: TooltipComponent<X, TT>
@@ -173,6 +176,7 @@ export const SVGChart = <X, TT>(props: {
     yAxis,
     ttParams,
     onSelect,
+    onZoom,
     onMouseOver,
     onMouseLeave,
     Tooltip,
@@ -235,6 +239,15 @@ export const SVGChart = <X, TT>(props: {
     onMouseLeave?.()
   }
 
+  const onWheel = (ev: React.WheelEvent) => {
+    if (ev.ctrlKey) {
+      // indicates pinch zoom on touch devices
+      const [x, y] = pointer(ev)
+      const k = Math.pow(1 + ZOOM_SPEED / 100, -ev.deltaY)
+      onZoom?.(x, y, k)
+    }
+  }
+
   return (
     <div className="relative overflow-hidden">
       {ttParams && Tooltip && (
@@ -276,6 +289,7 @@ export const SVGChart = <X, TT>(props: {
               height={innerH}
               fill="none"
               pointerEvents="all"
+              onWheel={onWheel}
               onPointerEnter={onPointerMove}
               onPointerMove={onPointerMove}
               onPointerLeave={onPointerLeave}

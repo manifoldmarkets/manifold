@@ -79,7 +79,7 @@ const constrainExtent = (
   const end = Math.min(extent[1], max)
   const size = end - start
   if (size >= minExtent) {
-    return [start, end]
+    return [start, end] as const
   } else {
     // compute how much padding we need to get to the min extent
     const halfPad = Math.max(0, minExtent - size) / 2
@@ -89,12 +89,12 @@ const constrainExtent = (
     // is making us go past the min and max, we need to readjust it to the other end
     if (paddedStart < min) {
       const underflow = min - paddedStart
-      return [min, paddedEnd + underflow]
+      return [min, paddedEnd + underflow] as const
     } else if (paddedEnd > max) {
       const overflow = paddedEnd - max
-      return [paddedStart - overflow, max]
+      return [paddedStart - overflow, max] as const
     } else {
-      return [paddedStart, paddedEnd]
+      return [paddedStart, paddedEnd] as const
     }
   }
 }
@@ -379,30 +379,55 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     setMouse(undefined)
   })
 
+  const zoomTo = (start: Date, end: Date) => {
+    const [globalMin, globalMax] = props.xScale.domain() as [Date, Date]
+    const [xMin, xMax] = constrainExtent([start.valueOf(), end.valueOf()], {
+      min: globalMin.valueOf(),
+      max: globalMax.valueOf(),
+      minExtent: 1000, // ms
+    }).map((n) => new Date(n))
+    const newViewXScale = xScale.copy().domain([xMin, xMax])
+    setViewXScale(() => newViewXScale)
+
+    // if they are looking at all data points, use the default y-axis;
+    // otherwise, if they are looking at more than one data point, zoom
+    // into an appropriate y-axis span for the visible data points
+    const bisect = bisector((p: P) => p.x)
+    const iMin = bisect.right(data, xMin)
+    const iMax = bisect.left(data, xMax)
+    if (iMin == 0 && iMax == data.length) {
+      setViewYScale(undefined)
+    } else if (iMin != iMax) {
+      const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
+      const [yMin, yMax] = extent(visibleYs) as [number, number]
+      // try to add extra space on top and bottom before constraining
+      const padding = (yMax - yMin) * 0.1
+      const domain = constrainExtent(
+        [yMin - padding, yMax + padding],
+        Y_AXIS_CONSTRAINTS[yKind]
+      )
+      setViewYScale(() => yScale.copy().domain(domain).nice())
+    }
+  }
+
+  const onZoom = useEvent((centerX: number, centerY: number, delta: number) => {
+    const [xMin, xMax] = xScale.domain()
+    // we want a new min and max such that the center stays put, but the total
+    // length is scaled from the current scale by delta
+    const centerDate = xScale.invert(centerX)
+    const xDistance = (xScale(xMin) + centerX) / xScale(xMax)
+    const newLength = (xMax.valueOf() - xMin.valueOf()) * delta
+    const newMin = new Date(centerDate.valueOf() - xDistance * newLength)
+    const newMax = new Date(centerDate.valueOf() + (1 - xDistance) * newLength)
+    zoomTo(newMin, newMax)
+  })
+
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
       const xMin = xScale.invert(mouseX0)
       const xMax = xScale.invert(mouseX1)
-      const newViewXScale = xScale.copy().domain([xMin, xMax])
-      setViewXScale(() => newViewXScale)
-
-      const bisect = bisector((p: P) => p.x)
-      const iMin = bisect.right(data, xMin)
-      const iMax = bisect.left(data, xMax)
-
-      // don't zoom axis if they selected an area with only one value
-      if (iMin != iMax) {
-        const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
-        const [yMin, yMax] = extent(visibleYs) as [number, number]
-        // try to add extra space on top and bottom before constraining
-        const padding = (yMax - yMin) * 0.1
-        const domain = constrainExtent(
-          [yMin - padding, yMax + padding],
-          Y_AXIS_CONSTRAINTS[yKind]
-        )
-        setViewYScale(() => yScale.copy().domain(domain).nice())
-      }
+      zoomTo(xMin, xMax)
     } else {
       setViewXScale(undefined)
       setViewYScale(undefined)
@@ -427,6 +452,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         mouse ? { x: mouse.x, y: mouse.y, data: mouse.data } : undefined
       }
       onSelect={onSelect}
+      onZoom={onZoom}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
       Tooltip={Tooltip}
