@@ -251,16 +251,10 @@ export default function ProfilePage(props: {
           <div>
             <label className="px-1 py-2">Delete Account</label>
             <div className="flex w-full items-stretch space-x-1">
-              <Input
-                type="text"
-                placeholder="Click to permanently delete this account"
-                readOnly
-                className="w-full"
-              />
               <ConfirmationButton
                 openModalBtn={{
                   className: 'p-2',
-                  label: '',
+                  label: 'Click to permanently delete this account',
                   icon: <TrashIcon className="h-5 w-5" />,
                   color: 'red',
                 }}
@@ -282,9 +276,8 @@ export default function ProfilePage(props: {
                 <Col>
                   <Title text={'Are you sure?'} />
                   <div>
-                    Deactivating your account means you will no longer be able
-                    to use your account. You will lose access to all of your
-                    data.
+                    Deleting your account means you will no longer be able to
+                    use your account. You will lose access to all of your data.
                   </div>
                   <Input
                     type="text"
