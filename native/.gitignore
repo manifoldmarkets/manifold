@@ -16,6 +16,8 @@ credentials/
 *.ipa
 project.pbxproj
 ios/Manifold/GoogleService-Info.plist
+ios/Manifold.xcodeproj/project.pbxproj
+android/app/google-services.json
 /google-services.json
 # macOS
 .DS_Store
