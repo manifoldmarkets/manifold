@@ -4,7 +4,6 @@ import { PacketSelectMarket } from 'common/packets';
 import cors from 'cors';
 import express, { Express } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import moment from 'moment';
 import { AddressInfo } from 'net';
 import fetch from 'node-fetch';
 import path from 'path';
@@ -41,25 +40,6 @@ export default class App {
     this.bot = new TwitchBot(this);
     this.firestore = new AppFirestore();
     this.manifoldFirestore = new ManifoldFirestore();
-
-    moment.updateLocale('en', {
-      relativeTime: {
-        future: 'in %s',
-        past: '%s ago',
-        s: '<1m',
-        ss: '%ss',
-        m: '1m',
-        mm: '%dm',
-        h: '1h',
-        hh: '%dh',
-        d: '1d',
-        dd: '%dd',
-        M: '1m',
-        MM: '%dM',
-        y: '1y',
-        yy: '%dY',
-      },
-    });
 
     fetch('http://metadata.google.internal/computeMetadata/v1/instance/id', { headers: { 'Metadata-Flavor': 'Google' } })
       .then(async (r) => {
@@ -106,23 +86,24 @@ export default class App {
     this.unfeatureCurrentMarket(channel, sourceDock);
 
     if (id) {
-      const marketData = await this.manifoldFirestore.getFullMarketByID(id);
-      if (!marketData || marketData.isResolved) throw new Error('Attempted to feature invalid market');
-      const market = new Market(this, marketData, channel);
-      await market.load();
-      this.selectedMarketMap[channel] = market;
-      log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
-      const initialBetIndex = Math.max(0, market.allBets.length - 3);
-      const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.allBets, initialBets: market.allBets.slice(initialBetIndex) };
-      if (sourceDock) {
-        sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-        sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
-      } else {
-        this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-        this.io.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
+      try {
+        const market = await Market.loadFromManifoldID(this, id, channel);
+        this.selectedMarketMap[channel] = market;
+        log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
+        const initialBetIndex = Math.max(0, market.allBets.length - 3);
+        const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.allBets, initialBets: market.allBets.slice(initialBetIndex) };
+        if (sourceDock) {
+          sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+          sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
+        } else {
+          this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
+          this.io.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
+        }
+        log.debug('Sent market data to overlay');
+        return market;
+      } catch (e) {
+        throw new Error('Failed to feature market: ' + e.message);
       }
-      log.debug('Sent market data to overlay');
-      return market;
     }
   }
 
@@ -134,7 +115,7 @@ export default class App {
 
     const existingMarket = this.getMarketForTwitchChannel(channel);
     if (existingMarket) {
-      existingMarket.continuePolling = false;
+      existingMarket.unfeature();
       delete this.selectedMarketMap[channel];
     }
 
@@ -162,7 +143,7 @@ export default class App {
     await this.bot.connect();
     await this.manifoldFirestore.validateConnection();
     await this.manifoldFirestore.loadAllUsers();
-    await this.manifoldFirestore.test(); //!!! REMOVE
+    // await this.manifoldFirestore.test(); //!!! REMOVE
 
     const server = this.app.listen(PORT, () => {
       const addressInfo = <AddressInfo>server.address();

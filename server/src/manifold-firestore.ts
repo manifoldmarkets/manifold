@@ -1,8 +1,8 @@
-import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
-import { Bet, Contract, CPMMBinaryContract, User } from 'common/types/manifold-internal-types';
+import { NamedBet } from 'common/types/manifold-abstract-types';
+import { AnyContractType, Bet, Contract, User } from 'common/types/manifold-internal-types';
 import { initializeApp, onLog } from 'firebase/app';
 import { collection, CollectionReference, doc, DocumentReference, DocumentSnapshot, getDoc, getDocs, getFirestore, onSnapshot, orderBy, query } from 'firebase/firestore';
-import { MANIFOLD_API_BASE_URL, MANIFOLD_FIREBASE_CONFIG } from './envs';
+import { MANIFOLD_FIREBASE_CONFIG } from './envs';
 import log from './logger';
 
 const timers: { [k: string]: number } = {};
@@ -87,9 +87,10 @@ export default class ManifoldFirestore {
     return this.allUsers[manifoldID];
   }
 
-  async getFullMarketByID(marketID: string, onResolve?: () => void, onNewBet?: (b: Bet) => void): Promise<AbstractMarket> {
+  async getFullMarketByID(marketID: string, onResolve?: () => void, onNewBet?: (b: Bet) => void): Promise<[DocumentReference<Contract<AnyContractType>>, CollectionReference<Bet>]> {
     ts('mkt' + marketID);
-    const contract = (await getDoc(doc(this.contracts, marketID))).data();
+    const contractDoc = doc(this.contracts, marketID);
+    const contract = (await getDoc(contractDoc)).data();
     const betCollection = <CollectionReference<Bet>>collection(this.contracts, marketID, 'bets');
     const betsQuery = await getDocs(query(betCollection, orderBy('createdTime', 'asc')));
     const bets = <NamedBet[]>betsQuery.docs.map((d) => {
@@ -97,81 +98,83 @@ export default class ManifoldFirestore {
       return <NamedBet>{ ...bet, username: bet.userName };
     });
 
-    if (contract.mechanism != 'cpmm-1') {
-      log.error(`Contract with ID '${marketID}' has an invalid mechanism.`);
-      return;
-    }
+    if (contract.mechanism != 'cpmm-1') throw new Error(`Contract with ID '${marketID}' has an invalid mechanism.`);
 
-    let betUpdateUnsubscribe = undefined;
-    if (onNewBet) {
-      betUpdateUnsubscribe = onSnapshot(betCollection, (update) => {
-        for (const changedBet of update.docChanges()) {
-          if (changedBet.type === 'added') {
-            onNewBet(changedBet.doc.data());
-          }
-        }
-      });
-    }
+    // let betUpdateUnsubscribe = undefined;
+    // if (onNewBet) {
+    //   let initialUpdate = true;
+    //   betUpdateUnsubscribe = onSnapshot(betCollection, (update) => {
+    //     if (initialUpdate) {
+    //       initialUpdate = false;
+    //       return;
+    //     }
+    //     for (const changedBet of update.docChanges()) {
+    //       if (changedBet.type === 'added') {
+    //         onNewBet(changedBet.doc.data());
+    //       }
+    //     }
+    //   });
+    // }
 
-    if (onResolve) {
-      const unsubscribe = onSnapshot(doc(this.contracts, marketID), (update) => {
-        const contract = update.data();
-        if (contract.isResolved) {
-          log.info(`Detected resolution for market ${contract.question}.`);
-          onResolve();
-          unsubscribe();
-          if (betUpdateUnsubscribe) {
-            betUpdateUnsubscribe();
-          }
-        }
-      });
-    }
-
-    const binaryContract = <CPMMBinaryContract>contract;
-
-    const {
-      id,
-      creatorUsername,
-      creatorName,
-      creatorId,
-      createdTime,
-      closeTime,
-      question,
-      slug,
-      isResolved,
-      resolutionTime,
-      resolution,
-      description,
-      p,
-      mechanism,
-      outcomeType,
-      pool,
-      resolutionProbability,
-    } = binaryContract;
-
+    // if (onResolve) {
+    //   const unsubscribe = onSnapshot(doc(this.contracts, marketID), (update) => {
+    //     const contract = update.data();
+    //     if (contract.isResolved) {
+    //       log.info(`Detected resolution for market ${contract.question}.`);
+    //       onResolve();
+    //       unsubscribe();
+    //       if (betUpdateUnsubscribe) {
+    //         betUpdateUnsubscribe();
+    //       }
+    //     }
+    //   });
+    // }
     log.debug('Loaded contract ' + marketID + ' in ' + te('mkt' + marketID));
 
-    return {
-      id,
-      creatorUsername,
-      creatorName,
-      creatorId,
-      createdTime,
-      closeTime,
-      question,
-      description,
-      url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
-      probability: contract.outcomeType === 'BINARY' ? this.getProbability(contract) : undefined,
-      isResolved,
-      resolutionTime,
-      resolution,
-      bets,
-      p,
-      mechanism,
-      outcomeType,
-      pool,
-      resolutionProbability,
-    };
+    return [contractDoc, betCollection];
+
+    // const binaryContract = <CPMMBinaryContract>contract;
+    // const {
+    //   id,
+    //   creatorUsername,
+    //   creatorName,
+    //   creatorId,
+    //   createdTime,
+    //   closeTime,
+    //   question,
+    //   slug,
+    //   isResolved,
+    //   resolutionTime,
+    //   resolution,
+    //   description,
+    //   p,
+    //   mechanism,
+    //   outcomeType,
+    //   pool,
+    //   resolutionProbability,
+    // } = binaryContract;
+
+    // return {
+    //   id,
+    //   creatorUsername,
+    //   creatorName,
+    //   creatorId,
+    //   createdTime,
+    //   closeTime,
+    //   question,
+    //   description,
+    //   url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
+    //   probability: contract.outcomeType === 'BINARY' ? this.getProbability(contract) : undefined,
+    //   isResolved,
+    //   resolutionTime,
+    //   resolution,
+    //   bets,
+    //   p,
+    //   mechanism,
+    //   outcomeType,
+    //   pool,
+    //   resolutionProbability,
+    // };
   }
 
   getProbability(contract: Contract) {

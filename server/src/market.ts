@@ -3,10 +3,11 @@ import * as Packet from 'common/packet-ids';
 import { PacketResolved } from 'common/packets';
 import { AbstractMarket, abstractMarketFromFullMarket, NamedBet } from 'common/types/manifold-abstract-types';
 import { LiteUser } from 'common/types/manifold-api-types';
-import { Bet } from 'common/types/manifold-internal-types';
+import { Bet, CPMMBinaryContract } from 'common/types/manifold-internal-types';
+import { onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { default as lodash, default as _ } from 'lodash';
-import moment from 'moment';
 import App from './app';
+import { MANIFOLD_API_BASE_URL } from './envs';
 import log from './logger';
 import * as Manifold from './manifold-api';
 import User from './user';
@@ -16,44 +17,101 @@ const { keyBy, mapValues, sumBy, groupBy } = lodash;
 export class Market {
   private readonly app: App;
   private readonly twitchChannel: string;
-  private latestLoadedBetId: string = null;
-  private pollTask: () => void;
+  private readonly firestoreSubscriptions: Unsubscribe[] = [];
 
   public readonly allBets: NamedBet[] = [];
   public data: AbstractMarket;
   public resolveData: PacketResolved = null;
-  public continuePolling = false;
 
-  constructor(app: App, data: AbstractMarket, twitchChannel: string) {
+  private constructor(app: App, twitchChannel: string) {
     this.app = app;
-    this.data = data;
-
     this.twitchChannel = twitchChannel;
   }
 
-  async load() {
-    this.pollTask = async () => {
-      try {
-        this.pollBets();
-        if (await this.detectResolution()) {
-          this.continuePolling = false;
-          await this.resolve();
-        }
-      } catch (e) {
-        log.trace(e);
-      } finally {
-        if (this.continuePolling) {
-          setTimeout(this.pollTask, 1000);
-        } else {
-          log.info('Market poll task terminated.');
-        }
-      }
-    };
+  static async loadFromManifoldID(app: App, manifoldID: string, twitchChannel: string) {
+    const market = new Market(app, twitchChannel);
+    const [contractDoc, betCollection] = await app.manifoldFirestore.getFullMarketByID(manifoldID);
+    await new Promise<void>((r) =>
+      market.firestoreSubscriptions.push(
+        onSnapshot(contractDoc, (update) => {
+          const contract = update.data();
+          const binaryContract = <CPMMBinaryContract>contract;
+          const {
+            id,
+            creatorUsername,
+            creatorName,
+            creatorId,
+            createdTime,
+            closeTime,
+            question,
+            slug,
+            isResolved,
+            resolutionTime,
+            resolution,
+            description,
+            p,
+            mechanism,
+            outcomeType,
+            pool,
+            resolutionProbability,
+          } = binaryContract;
 
-    await this.loadInitialBets().then(() => {
-      this.continuePolling = true;
-      setTimeout(this.pollTask, 1000);
-    });
+          market.data = {
+            ...market.data,
+            id,
+            creatorUsername,
+            creatorName,
+            creatorId,
+            createdTime,
+            closeTime,
+            question,
+            description,
+            url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
+            probability: contract.outcomeType === 'BINARY' ? Market.getProbability(binaryContract) : undefined,
+            isResolved,
+            resolutionTime,
+            resolution,
+            p,
+            mechanism,
+            outcomeType,
+            pool,
+            resolutionProbability,
+          };
+          if (update.data().isResolved) {
+            market.resolve();
+          }
+          r();
+        })
+      )
+    );
+    let initialUpdate = true;
+    await new Promise<void>((r) =>
+      market.firestoreSubscriptions.push(
+        onSnapshot(betCollection, async (update) => {
+          if (initialUpdate) {
+            initialUpdate = false;
+            await Promise.all(_.uniq(update.docs.map((b) => b.data().userId)).map(async (id) => await app.getDisplayNameForUserID(id)));
+            await Promise.all(update.docs.map(async (b) => <NamedBet>{ ...b.data(), username: await app.getDisplayNameForUserID(b.data().userId) })).then((bets) => (market.data.bets = bets));
+            r();
+            return;
+          }
+          const changes = update.docChanges();
+          for (const changedBet of changes) {
+            if (changedBet.type === 'added') {
+              market.onNewBet(changedBet.doc.data());
+            }
+          }
+        })
+      )
+    );
+    await market.loadInitialBets();
+    return market;
+  }
+
+  async onNewBet(bet: Bet) {
+    if (!bet.isRedemption && bet.shares !== 0) {
+      this.addBet(await this.betToFullBet(bet));
+    }
   }
 
   private async resolve() {
@@ -104,7 +162,6 @@ export class Market {
 
   async loadInitialBets() {
     let numLoadedBets = 0;
-    let mostRecentBet: NamedBet = undefined;
     const betsToAdd = [];
     // Bets are in oldest-first order, so must iterate backwards to get most recent bets:
     for (let betIndex = this.data.bets.length - 1; betIndex >= 0; betIndex--) {
@@ -118,9 +175,6 @@ export class Market {
       } else {
         fullBet = { ...bet, username: 'A trader' }; // TODO: this is a crude optimization. Should cache all users in App
       }
-      if (!mostRecentBet) {
-        mostRecentBet = fullBet;
-      }
       betsToAdd.push(fullBet);
       numLoadedBets++;
     }
@@ -131,43 +185,39 @@ export class Market {
     }
 
     log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
-    if (mostRecentBet) {
-      this.latestLoadedBetId = mostRecentBet.id;
-      log.debug(`Latest loaded bet: ${this.app.getDisplayNameForUserID(mostRecentBet.userId)} : ${mostRecentBet.id}`);
-    }
     this.app.io.to(this.twitchChannel).emit(Packet.MARKET_LOAD_COMPLETE);
   }
 
-  calculateFixedPayout(contract: AbstractMarket, bet: Bet, outcome: string) {
+  static calculateFixedPayout(contract: AbstractMarket, bet: Bet, outcome: string) {
     if (outcome === 'CANCEL') return this.calculateFixedCancelPayout(bet);
     if (outcome === 'MKT') return this.calculateFixedMktPayout(contract, bet);
 
     return this.calculateStandardFixedPayout(bet, outcome);
   }
 
-  calculateFixedCancelPayout(bet: Bet) {
+  static calculateFixedCancelPayout(bet: Bet) {
     return bet.amount;
   }
 
-  calculateStandardFixedPayout(bet: Bet, outcome: string) {
+  static calculateStandardFixedPayout(bet: Bet, outcome: string) {
     const { outcome: betOutcome, shares } = bet;
     if (betOutcome !== outcome) return 0;
     return shares;
   }
 
-  getProbability(contract: AbstractMarket) {
+  static getProbability(contract: { pool: { [outcome: string]: number }; p: number; mechanism: string }) {
     if (contract.mechanism === 'cpmm-1') {
       return this.getCpmmProbability(contract.pool, contract.p);
     }
     throw new Error('DPM probability not supported.');
   }
 
-  getCpmmProbability(pool: { [outcome: string]: number }, p: number) {
+  static getCpmmProbability(pool: { [outcome: string]: number }, p: number) {
     const { YES, NO } = pool;
     return (p * NO) / ((1 - p) * YES + p * NO);
   }
 
-  calculateFixedMktPayout(contract: AbstractMarket, bet: Bet) {
+  static calculateFixedMktPayout(contract: AbstractMarket, bet: Bet) {
     const { resolutionProbability } = contract;
     const p = resolutionProbability !== undefined ? resolutionProbability : this.getProbability(contract);
 
@@ -178,7 +228,7 @@ export class Market {
     return betP * shares;
   }
 
-  resolvedPayout(contract: AbstractMarket, bet: Bet) {
+  static resolvedPayout(contract: AbstractMarket, bet: Bet) {
     const outcome = contract.resolution;
     if (!outcome) throw new Error('Contract not resolved');
 
@@ -202,13 +252,13 @@ export class Market {
         profitById[bet.id] = profit;
         profitById[originalBet.id] = profit;
       } else {
-        profitById[bet.id] = this.resolvedPayout(this.data, bet) - bet.amount;
+        profitById[bet.id] = Market.resolvedPayout(this.data, bet) - bet.amount;
       }
     }
 
     const openBets = bets.filter((bet) => !bet.isSold && !bet.sale);
     const betsByUser = groupBy(openBets, 'userId');
-    const userProfits = mapValues(betsByUser, (bets) => sumBy(bets, (bet) => this.resolvedPayout(this.data, bet) - bet.amount));
+    const userProfits = mapValues(betsByUser, (bets) => sumBy(bets, (bet) => Market.resolvedPayout(this.data, bet) - bet.amount));
 
     const userObjectProfits: { user: LiteUser; profit: number }[] = [];
 
@@ -219,27 +269,12 @@ export class Market {
     return userObjectProfits;
   }
 
-  /**
-   * @deprecated The market ID should be used instead of the slug wherever possible
-   */
-  public getSlug() {
-    const url = this.data.url;
-    const slug = url.substring(url.lastIndexOf('/') + 1);
-    return slug;
-  }
-
   private addBet(bet: NamedBet, transmit = true) {
     this.allBets.push(bet);
 
     if (transmit) {
       this.app.io.to(this.twitchChannel).emit(Packet.ADD_BETS, [bet]);
     }
-
-    log.info(
-      `${bet.username} ${bet.amount > 0 ? 'bought' : 'sold'} M$${Math.floor(Math.abs(bet.amount)).toFixed(0)} of ${bet.outcome} at ${(100 * bet.probAfter).toFixed(0)}% ${moment(
-        bet.createdTime
-      ).fromNow()}`
-    );
   }
 
   private async betToFullBet(bet: Bet): Promise<NamedBet> {
@@ -250,43 +285,7 @@ export class Market {
     };
   }
 
-  async pollBets(numBetsToLoad = 10) {
-    try {
-      const bets = await Manifold.getLatestMarketBets(this.getSlug(), numBetsToLoad);
-      if (bets.length == 0) return;
-
-      const newBets: Bet[] = [];
-
-      let foundPreviouslyLoadedBet = this.latestLoadedBetId == null;
-      for (const bet of bets) {
-        try {
-          if (bet.id == this.latestLoadedBetId) {
-            foundPreviouslyLoadedBet = true;
-            break;
-          }
-
-          newBets.push(bet);
-        } catch (e) {
-          // Empty
-        }
-      }
-      newBets.reverse();
-      for (const bet of newBets) {
-        if (bet.isRedemption || bet.shares === 0) continue;
-        this.addBet(await this.betToFullBet(bet));
-      }
-      if (!foundPreviouslyLoadedBet) {
-        log.info('Failed to find previously loaded bet. Expanding search...');
-        this.pollBets(10); //!!! Need to test
-      }
-      this.latestLoadedBetId = bets[0].id;
-    } catch (e) {
-      log.trace(e);
-    }
-  }
-
-  async detectResolution() {
-    const liteMarket = await Manifold.getLiteMarketByID(this.data.id);
-    return liteMarket.isResolved;
+  public unfeature(): void {
+    this.firestoreSubscriptions.forEach((unsubscribe) => unsubscribe());
   }
 }

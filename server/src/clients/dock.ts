@@ -92,7 +92,7 @@ export default class DockClient {
     });
 
     this.socket.on('disconnect', () => {
-      log.info(`Dock socket for Twitch user ${connectedTwitchStream} disconnected (SID: ${this.socket.id})`);
+      log.debug(`Dock socket for Twitch user ${connectedTwitchStream} disconnected (SID: ${this.socket.id})`);
     });
   }
 }

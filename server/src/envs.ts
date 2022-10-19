@@ -14,7 +14,7 @@ export const TWITCH_BOT_OAUTH_TOKEN = process.env.TWITCH_BOT_OAUTH_TOKEN;
 
 export const TWITCH_BOT_FIREBASE_KEY = process.env.TWITCH_BOT_FIREBASE_KEY;
 
-export const TARGET = process.env.TARGET || 'LOCAL';
+export const TARGET = process.env.TARGET || 'DEV';
 
 export const DEBUG_TWITCH_ACCOUNT = process.env.DEBUG_TWITCH_ACCOUNT;
 
