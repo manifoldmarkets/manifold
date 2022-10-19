@@ -208,17 +208,45 @@ function determineIfSkip(card) {
       }
     } else if (whichGuesser == 'watermark') {
       if (
-        card.name === 'Set' ||
-        card.name === 'Planeswalker' ||
-        card.name === 'Flavor' ||
-        card.name === 'Conspiracy' ||
-        card.name === 'Foretell' ||
-        card.name === 'Tarkir' ||
-        card.name === 'Wotc' ||
-        card.set === 'h17' ||
-        card.set === 'ptg' ||
-        card.set === 'htr18' ||
-        card.set_type === 'promo'
+        !(
+          card.name === 'Prismari' ||
+          card.name === 'Atarka' ||
+          card.name === 'Obscura' ||
+          card.name === 'Dimir' ||
+          card.name === 'Lorehold' ||
+          card.name === 'Orzhov' ||
+          card.name === 'Cabaretti' ||
+          card.name === 'Orderofthewidget' ||
+          card.name === 'Kolaghan' ||
+          card.name === 'Temur' ||
+          card.name === 'Golgari' ||
+          card.name === 'Dromoka' ||
+          card.name === 'Azorius' ||
+          card.name === 'Phyrexian' ||
+          card.name === 'Mirran' ||
+          card.name === 'Crossbreedlabs' ||
+          card.name === 'Agentsofsneak' ||
+          card.name === 'Boros' ||
+          card.name === 'Goblinexplosioneers' ||
+          card.name === 'Witherbloom' ||
+          card.name === 'Ojutai' ||
+          card.name === 'Izzet' ||
+          card.name === 'Selesnya' ||
+          card.name === 'Simic' ||
+          card.name === 'Mardu' ||
+          card.name === 'Rakdos' ||
+          card.name === 'Quandrix' ||
+          card.name === 'Leagueofdastardlydoom' ||
+          card.name === 'Silverquill' ||
+          card.name === 'Maestros' ||
+          card.name === 'Sultai' ||
+          card.name === 'Riveteers' ||
+          card.name === 'Abzan' ||
+          card.name === 'Jeskai' ||
+          card.name === 'Brokers' ||
+          card.name === 'Gruul' ||
+          card.name === 'Silumgar'
+        )
       ) {
         return true
       }
@@ -304,7 +332,7 @@ function setUpNewGame() {
   const randomImages = Object.keys(artDict)
   shuffleArray(randomImages)
   const namesList = Array.from(sampledData[1]).sort((a, b) =>
-    removeSymbol(a).localeCompare(removeSymbol(b))
+    removeSpecialCharacters(a).localeCompare(removeSpecialCharacters(b))
   )
   // fill in the new cards and names
   for (let cardIndex = 1; cardIndex <= k; cardIndex++) {
@@ -324,9 +352,14 @@ function setUpNewGame() {
   document.querySelectorAll('.temporary-name-holder').forEach((x) => x.remove())
 }
 
-function removeSymbol(name) {
-  const arr = name.split('>')
-  return arr[arr.length - 1]
+function removeSpecialCharacters(name) {
+  if (whichGuesser === 'basic') {
+    const arr = name.split('>')
+    arr.shift()
+    name = arr.join('>')
+  }
+  const arr = name.split('&')
+  return arr.join('sdfjlkasdcjoixs')
 }
 
 function checkAnswers() {
@@ -341,8 +374,8 @@ function checkAnswers() {
         currCard.dataset.name
       ).innerHTML
       const ansWithSymbol = artDict[currCard.dataset.url][0]
-      const guess = removeSymbol(guessWithSymbol)
-      const ans = removeSymbol(ansWithSymbol)
+      const guess = removeSpecialCharacters(guessWithSymbol)
+      const ans = removeSpecialCharacters(ansWithSymbol)
       incorrect = ans !== guess
       // decide if their guess was correct
       // window.console.log(ans, guess, incorrect)

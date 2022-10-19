@@ -364,6 +364,10 @@ def write_image_uris(card_image_uris):
     return image_uris
 
 
+# def effective_hp(hp, hpp, defense, defp, spdef, spp):
+#     return hp * (1+hpp*0.01) * (1200 + defense * (1+0.01*defp) + spdef * (1+0.01*spp)) / 1200.0
+
+
 if __name__ == "__main__":
     # uncomment this once in a while, but it's expensive to run
     fetch_and_write_initial_artist_query()
