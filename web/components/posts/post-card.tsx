@@ -11,13 +11,22 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { UserLink } from '../widgets/user-link'
 import { track } from 'web/lib/service/analytics'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChatIcon } from '@heroicons/react/outline'
+import TipJar from 'web/public/custom-components/tipJar'
+import { useItemTipTxns } from 'web/hooks/use-tip-txns'
+import { sum } from 'lodash'
 
 export function PostCard(props: {
   post: Post
   onPostClick?: (post: Post) => void
   highlightOptions?: CardHighlightOptions
 }) {
+  const tips = useItemTipTxns(props.post.id)
+  const totalTipped = useMemo(() => {
+    return sum(tips.map((tip) => tip.amount))
+  }, [tips])
+
   const { post, onPostClick, highlightOptions } = props
   const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
 
@@ -56,6 +65,18 @@ export function PostCard(props: {
           <div className="font-small text-md break-words text-gray-500">
             {post.subtitle}
           </div>
+          <Row className="space-x-2 pt-1">
+            <Row className="space-x-1">
+              <ChatIcon className="h-5 w-5 text-gray-400" />
+              <div className="text-sm text-gray-400">
+                {post.commentCount ?? 0}
+              </div>
+            </Row>
+            <Row className="space-x-1">
+              <TipJar size={18} />
+              <div className="text-sm text-gray-400">{totalTipped / 10}</div>
+            </Row>
+          </Row>
         </Col>
       </Row>
       {onPostClick ? (
