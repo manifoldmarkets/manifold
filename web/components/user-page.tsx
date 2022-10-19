@@ -110,14 +110,6 @@ export function UserPage(props: { user: User }) {
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
-              {isCurrentUser && (
-                <ProfilePrivateStats
-                  currentUser={currentUser}
-                  profit={profit}
-                  user={user}
-                  router={router}
-                />
-              )}
               {!isCurrentUser && <UserFollowButton userId={user.id} />}
             </div>
             <ProfilePublicStats
