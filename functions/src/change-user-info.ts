@@ -18,15 +18,19 @@ const bodySchema = z.object({
   username: z.string().optional(),
   name: z.string().optional(),
   avatarUrl: z.string().optional(),
+  userDeleted: z.boolean().optional(),
 })
 
 export const changeuserinfo = newEndpoint({}, async (req, auth) => {
-  const { username, name, avatarUrl } = validate(bodySchema, req.body)
+  const { username, name, avatarUrl, userDeleted } = validate(
+    bodySchema,
+    req.body
+  )
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(400, 'User not found')
 
-  await changeUser(user, { username, name, avatarUrl })
+  await changeUser(user, { username, name, avatarUrl, userDeleted })
   return { message: 'Successfully changed user info.' }
 })
 
@@ -36,6 +40,7 @@ export const changeUser = async (
     username?: string
     name?: string
     avatarUrl?: string
+    userDeleted?: boolean
   }
 ) => {
   // Update contracts, comments, and answers outside of a transaction to avoid contention.

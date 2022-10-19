@@ -63,6 +63,7 @@ export type User = {
       badges: StreakerBadge[]
     }
   }
+  userDeleted?: boolean
 }
 
 export type PrivateUser = {

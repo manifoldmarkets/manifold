@@ -1,4 +1,5 @@
 import { RefreshIcon } from '@heroicons/react/outline'
+import { TrashIcon } from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
@@ -19,6 +20,7 @@ import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
 import {
+  deletePrivateUser,
   getUserAndPrivateUser,
   updatePrivateUser,
   updateUser,
@@ -73,6 +75,7 @@ export default function ProfilePage(props: {
   const [name, setName] = useState(user.name)
   const [username, setUsername] = useState(user.username)
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
+  const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
 
   const updateDisplayName = async () => {
     const newName = cleanDisplayName(name)
@@ -105,6 +108,11 @@ export default function ProfilePage(props: {
     await updatePrivateUser(privateUser.id, {
       twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
     })
+  }
+
+  const deleteAccount = async () => {
+    await changeUserInfo({ userDeleted: true })
+    await deletePrivateUser(privateUser.id)
   }
 
   const fileHandler = async (event: any) => {
@@ -201,7 +209,7 @@ export default function ProfilePage(props: {
 
           <div>
             <label className="px-1 py-2">API key</label>
-            <div className="flex w-full items-stretch">
+            <div className="flex w-full items-stretch space-x-1">
               <Input
                 type="text"
                 placeholder="Click refresh to generate key"
@@ -236,6 +244,57 @@ export default function ProfilePage(props: {
                     </Link>{' '}
                     to relink your account.
                   </div>
+                </Col>
+              </ConfirmationButton>
+            </div>
+          </div>
+          <div>
+            <label className="px-1 py-2">Deactivate Account</label>
+            <div className="flex w-full items-stretch space-x-1">
+              <Input
+                type="text"
+                placeholder="Click to permanently deactivate this account"
+                readOnly
+                className="w-full"
+              />
+              <ConfirmationButton
+                openModalBtn={{
+                  className: 'p-2',
+                  label: '',
+                  icon: <TrashIcon className="h-5 w-5" />,
+                  color: 'red',
+                }}
+                submitBtn={{
+                  label: 'Deactivate account',
+                  color:
+                    deleteAccountConfirmation == 'delete my account'
+                      ? 'red'
+                      : 'gray',
+                }}
+                onSubmitWithSuccess={async () => {
+                  if (deleteAccountConfirmation == 'delete my account') {
+                    deleteAccount()
+                    return true
+                  }
+                  return false
+                }}
+              >
+                <Col>
+                  <Title text={'Are you sure?'} />
+                  <div>
+                    Deactivating your account means you will no longer be able
+                    to use your account. You will lose access to all of your
+                    data.
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Type 'delete my account' to confirm"
+                    className="w-full"
+                    value={deleteAccountConfirmation}
+                    onChange={(e) =>
+                      setDeleteAccountConfirmation(e.target.value)
+                    }
+                  />
                 </Col>
               </ConfirmationButton>
             </div>

@@ -92,6 +92,7 @@ service cloud.firestore {
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['apiKey', 'notificationPreferences', 'twitchInfo']);
+      allow delete: if (userId == request.auth.uid || isAdmin());              
     }
 
     match /private-users/{userId}/views/{viewId} {
