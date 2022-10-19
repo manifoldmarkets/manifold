@@ -14,6 +14,6 @@ credentials/
 *.apk
 *.aab
 project.pbxproj
-./google-services.json
+/google-services.json
 # macOS
 .DS_Store
