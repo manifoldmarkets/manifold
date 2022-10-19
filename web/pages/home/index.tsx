@@ -58,7 +58,7 @@ import {
   updateGlobalConfig,
 } from 'web/lib/firebase/globalConfig'
 import { getPost } from 'web/lib/firebase/posts'
-import { PostCard, PostCardList } from 'web/components/posts/post-card'
+import { PostCard } from 'web/components/posts/post-card'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { ContractCard } from 'web/components/contract/contract-card'
 import { Post } from 'common/post'
@@ -72,7 +72,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import Masonry from 'react-masonry-css'
+import { LatestPosts } from '../latestposts'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -116,7 +116,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug)
   )
-  const latestPosts = useAllPosts(6)
+  const latestPosts = useAllPosts(4)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -182,11 +182,12 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               },
               isAdmin,
               globalConfig,
-              pinned,
-              latestPosts
+              pinned
             )}
 
             <ActivitySection />
+
+            <LatestPostsSection latestPosts={latestPosts} />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -225,7 +226,6 @@ const HOME_SECTIONS = [
   { label: 'Daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
-  { label: 'Latest Posts', id: 'latest-posts' },
 ] as const
 
 export const getHomeItems = (sections: string[]) => {
@@ -263,8 +263,7 @@ function renderSections(
   },
   isAdmin: boolean,
   globalConfig: GlobalConfig,
-  pinned: JSX.Element[],
-  latestPosts: Post[]
+  pinned: JSX.Element[]
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -288,10 +287,6 @@ function renderSections(
               isAdmin={isAdmin}
             />
           )
-        }
-
-        if (id === 'latest-posts') {
-          return <LatestPostsSection key={id} posts={latestPosts} />
         }
 
         const contracts = sectionContracts[id]
@@ -407,23 +402,12 @@ function SearchSection(props: {
   )
 }
 
-function LatestPostsSection(props: { posts: Post[] }) {
-  const { posts } = props
+function LatestPostsSection(props: { latestPosts: Post[] }) {
+  const { latestPosts } = props
   return (
-    <Col>
-      <SectionHeader label={'Latest Posts'} href={''} />
-      <Masonry
-        // Show only 1 column on tailwind's md breakpoint (768px)
-        breakpointCols={{ default: 2, 768: 1 }}
-        className="-ml-4 flex w-auto"
-        columnClassName="pl-4 bg-clip-padding"
-      >
-        {posts.map((post) => (
-          <div className="mb-1" key={post.id}>
-            <PostCard key={post.id} post={post} />
-          </div>
-        ))}
-      </Masonry>
+    <Col className="pt-4">
+      <SectionHeader label={'Latest Posts'} href="/latestposts" />
+      <LatestPosts latestPosts={latestPosts} />
     </Col>
   )
 }
