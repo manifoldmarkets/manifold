@@ -134,24 +134,45 @@ export const useUserBetContracts = (userId: string) => {
 }
 
 const contractsStore: Dictionary<Contract | null> = {}
-const contractIdsListeningTo: Dictionary<true> = {}
+const contractListeners: Dictionary<((contract: Contract | null) => void)[]> =
+  {}
+
+const updateContract = (contractId: string, contract: Contract | null) => {
+  contractsStore[contractId] = contract
+  contractListeners[contractId]?.forEach((l) => l(contract))
+}
 
 export const useContracts = (contractIds: string[]) => {
   const forceUpdate = useForceUpdate()
 
   useEffect(() => {
     for (const id of contractIds) {
-      if (!contractIdsListeningTo[id]) {
-        contractIdsListeningTo[id] = true
-        listenForContract(id, (c) => {
-          if (c) contractsStore[id] = c
-          else contractsStore[id] = null
+      if (!contractListeners[id]) {
+        contractListeners[id] = []
+        listenForContract(id, (c) => updateContract(id, c))
+      }
+    }
 
-          // Update after all have loaded, and on every subsequent update.
-          if (contractIds.every((id) => contractsStore[id] !== undefined)) {
-            forceUpdate()
-          }
-        })
+    const listeners = contractIds.map(
+      (id) =>
+        [
+          id,
+          () => {
+            // Update after all have loaded, and on every subsequent update.
+            if (contractIds.every((id) => contractsStore[id] !== undefined)) {
+              forceUpdate()
+            }
+          },
+        ] as const
+    )
+    for (const [id, listener] of listeners) {
+      contractListeners[id].push(listener)
+    }
+    return () => {
+      for (const [id, listener] of listeners) {
+        contractListeners[id] = contractListeners[id].filter(
+          (l) => l !== listener
+        )
       }
     }
   }, [contractIds, forceUpdate])
