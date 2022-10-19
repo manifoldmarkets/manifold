@@ -32,8 +32,10 @@ export function AmountInput(props: {
     inputRef,
   } = props
 
+  const parse = (str: string) => parseInt(str.replace(/\D/g, ''))
+
   const onAmountChange = (str: string) => {
-    const amount = parseInt(str.replace(/\D/g, ''))
+    const amount = parse(str)
     const isInvalid = !str || isNaN(amount)
     onChange(isInvalid ? undefined : amount)
   }
@@ -59,6 +61,13 @@ export function AmountInput(props: {
             error={!!error}
             disabled={disabled}
             onChange={(e) => onAmountChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp') {
+                onChange((amount ?? 0) + 5)
+              } else if (e.key === 'ArrowDown') {
+                onChange(Math.max(0, (amount ?? 0) - 5))
+              }
+            }}
           />
         </label>
 
