@@ -20,7 +20,7 @@
     },
     "preview": {
       "env": {
-        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+        "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
       },
       "android": {
         "gradleCommand": ":app:assembleDebug",
