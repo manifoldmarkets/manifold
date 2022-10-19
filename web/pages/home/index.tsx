@@ -72,6 +72,7 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { LatestPosts } from '../latestposts'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -114,6 +115,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug)
   )
+  const latestPosts = useAllPosts(4)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -182,6 +184,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
             )}
 
             <ActivitySection />
+
+            <LatestPostsSection latestPosts={latestPosts} />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -394,6 +398,16 @@ function SearchSection(props: {
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
       />
       <ContractsGrid contracts={contracts} cardUIOptions={{ showProbChange }} />
+    </Col>
+  )
+}
+
+function LatestPostsSection(props: { latestPosts: Post[] }) {
+  const { latestPosts } = props
+  return (
+    <Col className="pt-4">
+      <SectionHeader label={'Latest Posts'} href="/latestposts" />
+      <LatestPosts latestPosts={latestPosts} />
     </Col>
   )
 }

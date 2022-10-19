@@ -43,12 +43,12 @@ export const usePosts = (postIds: string[]) => {
     .sort((a, b) => b.createdTime - a.createdTime)
 }
 
-export const useAllPosts = () => {
+export const useAllPosts = (limit?: number) => {
   const [posts, setPosts] = useState<Post[]>([])
   useEffect(() => {
     getAllPosts().then(setPosts)
   }, [])
-  return posts.sort((a, b) => b.createdTime - a.createdTime)
+  return posts.sort((a, b) => b.createdTime - a.createdTime).slice(0, limit)
 }
 
 export const useDateDocs = () => {

@@ -44,11 +44,11 @@ export function PostCard(props: {
               />
               <span className="mx-1 text-gray-400">•</span>
               <span className="text-gray-400">{fromNow(post.createdTime)}</span>
+              <div className="right-0 mx-2 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white">
+                <DocumentIcon className={'h3 w-3'} />
+                Post
+              </div>
             </Row>
-            <div className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-indigo-300 px-2 py-0.5 text-xs font-medium text-white">
-              <DocumentIcon className={'h3 w-3'} />
-              Post
-            </div>
           </Row>
           <div className="break-words text-lg font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2">
             {post.title}
