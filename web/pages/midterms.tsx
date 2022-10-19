@@ -192,6 +192,12 @@ const governorMidterms: StateElectionMarket[] = [
     slug: 'will-a-democrat-win-the-2022-michig',
     isWinRepublican: false,
   },
+  {
+    state: 'NY',
+    creatorUsername: 'GeorgeSchifini',
+    slug: 'will-hochul-win-new-york-governor-r',
+    isWinRepublican: false,
+  },
 ]
 
 export async function getStaticProps() {
