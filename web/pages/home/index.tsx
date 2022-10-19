@@ -19,11 +19,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { SiteLink } from 'web/components/widgets/site-link'
-import {
-  usePrivateUser,
-  useUser,
-  useUserContractMetricsByProfit,
-} from 'web/hooks/use-user'
+import { useUser, useUserContractMetricsByProfit } from 'web/hooks/use-user'
 import {
   useMemberGroupsSubscription,
   useTrendingGroups,
@@ -32,10 +28,7 @@ import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { formatMoney } from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
@@ -49,7 +42,6 @@ import {
   useTrendingContracts,
   useNewContracts,
 } from 'web/hooks/use-contracts'
-import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Input } from 'web/components/widgets/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
@@ -73,6 +65,7 @@ import {
 import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { LatestPosts } from '../latestposts'
+import { DailyStats } from './daily-stats'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -536,65 +529,6 @@ function DailyMoversSection(props: {
       <SectionHeader label="Your daily movers" href="/daily-movers" />
       <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
-  )
-}
-
-function DailyStats(props: { user: User | null | undefined }) {
-  const { user } = props
-
-  const privateUser = usePrivateUser()
-  const streaks = privateUser?.notificationPreferences?.betting_streaks ?? []
-  const streaksHidden = streaks.length === 0
-
-  return (
-    <Row className={'flex-shrink-0 gap-4'}>
-      <DailyProfit user={user} />
-      {!streaksHidden && (
-        <Col>
-          <div className="text-gray-500">Streak</div>
-          <Row
-            className={clsx(
-              'items-center text-lg',
-              user && !hasCompletedStreakToday(user) && 'grayscale'
-            )}
-          >
-            <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-          </Row>
-        </Col>
-      )}
-    </Row>
-  )
-}
-
-export function DailyProfit(props: { user: User | null | undefined }) {
-  const { user } = props
-
-  const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_'
-  )
-  const profit = sum(
-    contractMetricsByProfit?.metrics.map((m) =>
-      m.from ? m.from.day.profit : 0
-    ) ?? []
-  )
-
-  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
-  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
-
-  let profitPercent = 0
-  if (first && last) {
-    // profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-    profitPercent = profit / first.investmentValue
-  }
-
-  return (
-    <SiteLink className="flex flex-col" href="/daily-movers">
-      <div className="text-gray-500">Daily profit</div>
-      <Row className="items-center text-lg">
-        <span>{formatMoney(profit)}</span>{' '}
-        <ProfitBadge profitPercent={profitPercent * 100} />
-      </Row>
-    </SiteLink>
   )
 }
 

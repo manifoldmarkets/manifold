@@ -1,8 +1,9 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { NextRouter, useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import {
+  ChatIcon,
   FolderIcon,
   PencilIcon,
   ScaleIcon,
@@ -30,9 +31,6 @@ import { FollowersButton, FollowingButton } from './buttons/following-button'
 import { UserFollowButton } from './buttons/follow-button'
 import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
-import { formatMoney } from 'common/util/format'
-
-import { LoansModal } from './profile/loans-modal'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
 import { DOMAIN } from 'common/envs/constants'
@@ -40,7 +38,7 @@ import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
-import { SectionHeader } from './groups/group-overview'
+import { DailyStats } from 'web/pages/home/daily-stats'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -69,7 +67,6 @@ export function UserPage(props: { user: User }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const profit = user.profitCached.allTime
   const referralUrl = `https://${DOMAIN}?referrer=${user?.username}`
 
   return (
@@ -110,6 +107,7 @@ export function UserPage(props: { user: User }) {
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
+              {isCurrentUser && <DailyStats user={user} showLoans />}
               {!isCurrentUser && <UserFollowButton userId={user.id} />}
             </div>
             <ProfilePublicStats
@@ -237,17 +235,27 @@ export function UserPage(props: { user: User }) {
                 ),
               },
               {
+                title: 'Comments',
+                stackedTabIcon: <ChatIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <Col>
+                      <UserCommentsList user={user} />
+                    </Col>
+                  </>
+                ),
+              },
+              {
                 title: 'Posts',
                 stackedTabIcon: <DocumentIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
-                    <SectionHeader label={'Posts'} href={''} />
-
                     <Col>
                       {userPosts ? (
                         userPosts.length > 0 ? (
-                          <PostCardList posts={userPosts} limit={6} />
+                          <PostCardList posts={userPosts} />
                         ) : (
                           <div className="text-greyscale-4 text-center">
                             No posts yet
@@ -258,11 +266,6 @@ export function UserPage(props: { user: User }) {
                           <LoadingIndicator />
                         </div>
                       )}
-                    </Col>
-                    <Spacer h={4} />
-                    <SectionHeader label={'Comments'} href={''} />
-                    <Col>
-                      <UserCommentsList user={user} />
                     </Col>
                   </>
                 ),
@@ -286,50 +289,6 @@ export function defaultBannerUrl(userId: string) {
     'https://images.unsplash.com/photo-1603399587513-136aa9398f2d?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1467&q=80',
   ]
   return defaultBanner[genHash(userId)() % defaultBanner.length]
-}
-
-export function ProfilePrivateStats(props: {
-  currentUser: User | null | undefined
-  profit: number
-  user: User
-  router: NextRouter
-}) {
-  const { profit, user, router } = props
-  const [showLoansModal, setShowLoansModal] = useState(false)
-
-  useEffect(() => {
-    const showLoansModel = router.query['show'] === 'loans'
-    setShowLoansModal(showLoansModel)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  return (
-    <>
-      <Row className={'justify-between gap-4 sm:justify-end'}>
-        <Col className={'text-greyscale-4 text-md sm:text-lg'}>
-          <span
-            className={clsx(profit >= 0 ? 'text-teal-600' : 'text-red-400')}
-          >
-            {formatMoney(profit)}
-          </span>
-          <span className="mx-auto text-xs sm:text-sm">profit</span>
-        </Col>
-        <Col
-          className={
-            'text-greyscale-4 text-md flex-shrink-0 cursor-pointer sm:text-lg'
-          }
-          onClick={() => setShowLoansModal(true)}
-        >
-          <span className="text-teal-600">
-            🏦 {formatMoney(user.nextLoanCached ?? 0)}
-          </span>
-          <span className="mx-auto text-xs sm:text-sm">next loan</span>
-        </Col>
-      </Row>
-      {showLoansModal && (
-        <LoansModal isOpen={showLoansModal} setOpen={setShowLoansModal} />
-      )}
-    </>
-  )
 }
 
 export function ProfilePublicStats(props: { user: User; className?: string }) {
