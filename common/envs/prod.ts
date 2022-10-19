@@ -109,6 +109,6 @@ export const PROD_CONFIG: EnvConfig = {
     expoClientId:
       '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
     androidClientId:
-      '128925704902-sfvojb6tva32ob8ror2m9oe1cjc0fgei.apps.googleusercontent.com',
+      '128925704902-ur9hevfika2rs0sni6ju236u82hbct3i.apps.googleusercontent.com',
   },
 }
