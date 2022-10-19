@@ -47,7 +47,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
   const [editingQ, setEditingQ] = useState(false)
 
   const editor = useTextEditor({
-    // key: `description ${contract.id}`,
+    key: `description ${contract.id}`,
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: contract.description,
   })

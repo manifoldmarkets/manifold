@@ -35,6 +35,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
+    key: `about ${group.id}`,
     defaultValue: post?.content,
   })
 
