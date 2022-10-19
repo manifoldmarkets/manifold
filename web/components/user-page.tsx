@@ -38,7 +38,7 @@ import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
-import { DailyStats } from 'web/pages/home/daily-stats'
+import { DailyStats } from 'web/components/daily-stats'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
