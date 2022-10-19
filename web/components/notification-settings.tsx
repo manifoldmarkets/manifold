@@ -104,9 +104,10 @@ export function NotificationSettings(props: {
     'thank_you_for_purchases',
   ]
 
-  const pushEnabled: Array<notification_preference> = [
+  const mobilePushEnabled: Array<notification_preference> = [
     'resolutions_on_watched_markets',
     'resolutions_on_watched_markets_with_shares_in',
+    'opt_out_all',
     // TODO: add these
     // 'all_replies_to_my_comments_on_watched_markets',
     // 'all_replies_to_my_answers_on_watched_markets',
@@ -304,7 +305,7 @@ export function NotificationSettings(props: {
                 disabled={optOutAll.includes('email')}
               />
             )}
-            {pushEnabled.includes(subscriptionTypeKey) && (
+            {mobilePushEnabled.includes(subscriptionTypeKey) && (
               <SwitchSetting
                 checked={mobileEnabled}
                 onChange={(newVal) => attemptToChangeSetting('mobile', newVal)}

@@ -58,18 +58,14 @@ export type notification_preferences = {
   // When adding a new notification preference, use add-new-notification-preference.ts to existing users
 }
 
-export const getDefaultNotificationPreferences = (
-  userId: string,
-  privateUser?: PrivateUser,
-  noEmails?: boolean
-) => {
+export const getDefaultNotificationPreferences = (isDev?: boolean) => {
   const constructPref = (
     browserIf: boolean,
     emailIf: boolean,
     mobileIf: boolean
   ) => {
     const browser = browserIf ? 'browser' : undefined
-    const email = noEmails ? undefined : emailIf ? 'email' : undefined
+    const email = isDev ? undefined : emailIf ? 'email' : undefined
     const mobile = mobileIf ? 'mobile' : undefined
     return filterDefined([
       browser,
@@ -237,7 +233,8 @@ export const getNotificationDestinationsForUser = (
     const optedOutOfBrowser =
       optOutOfAllSettings.includes('browser') &&
       subscriptionType !== 'your_contract_closed'
-    const optedOutOfPush = !privateUser.pushToken
+    const optedOutOfPush =
+      !privateUser.pushToken || optOutOfAllSettings.includes('mobile')
     return {
       sendToEmail: destinations.includes('email') && !optedOutOfEmail,
       sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
