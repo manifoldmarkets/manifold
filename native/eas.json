@@ -22,14 +22,9 @@
       "env": {
         "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
       },
-      "android": {
-        "gradleCommand": ":app:assembleDebug",
-        "credentialsSource": "remote",
-        "buildType": "apk"
-      },
-      "ios": {
-        "simulator": true
-      }
+      "distribution": "internal",
+      "android": {},
+      "ios": {}
     },
     "production": {}
   },
