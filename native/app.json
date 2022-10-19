@@ -20,7 +20,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "markets.manifold",
+      "bundleIdentifier": "com.markets.manifold",
       "buildNumber": "1.0.0"
     },
     "android": {
