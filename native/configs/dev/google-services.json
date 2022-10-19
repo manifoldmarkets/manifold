@@ -39,10 +39,10 @@
               "client_type": 3
             },
             {
-              "client_id": "134303100058-pe0f0oc28cv4u7o3tf3m0021utva0u55.apps.googleusercontent.com",
+              "client_id": "134303100058-lioqb7auc8minvqt9iamuit2pg10pubt.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "markets.manifold"
+                "bundle_id": "com.markets.manifold"
               }
             }
           ]
