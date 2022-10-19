@@ -133,18 +133,6 @@ export function BuyAmountInput(props: {
     }
   }
 
-  const parseRaw = (x: number) => {
-    if (x <= 100) return x
-    if (x <= 130) return 100 + (x - 100) * 5
-    return 250 + (x - 130) * 10
-  }
-
-  const getRaw = (x: number) => {
-    if (x <= 100) return x
-    if (x <= 250) return 100 + (x - 100) / 5
-    return 130 + (x - 250) / 10
-  }
-
   return (
     <>
       <Row className="items-center gap-4">
@@ -161,9 +149,9 @@ export function BuyAmountInput(props: {
         {showSlider && (
           <Slider
             min={0}
-            max={205}
-            value={getRaw(amount ?? 0)}
-            onChange={(value) => onAmountChange(parseRaw(value as number))}
+            max={100}
+            value={amount ?? 0}
+            onChange={(value) => onAmountChange(value as number)}
             className="mx-4 !h-4 xl:hidden [&>.rc-slider-rail]:bg-gray-200 [&>.rc-slider-track]:bg-indigo-400 [&>.rc-slider-handle]:bg-indigo-400"
             railStyle={{ height: 16, top: 0, left: 0 }}
             trackStyle={{ height: 16, top: 0 }}
