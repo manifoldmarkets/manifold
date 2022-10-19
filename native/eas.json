@@ -23,7 +23,7 @@
         "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
       },
       "distribution": "internal",
-      "android": {"credentialsSource": "remote"},
+      "android": {"credentialsSource": "local"},
       "ios": {}
     },
     "production": {
@@ -31,7 +31,6 @@
       "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
       },
       "distribution": "internal",
-
       "android": {"credentialsSource": "local"},
       "ios": {}}
   },
