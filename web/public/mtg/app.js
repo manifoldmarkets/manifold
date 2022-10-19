@@ -358,8 +358,8 @@ function removeSpecialCharacters(name) {
     arr.shift()
     name = arr.join('>')
   }
-  const arr = name.split('&')
-  return arr.join('sdfjlkasdcjoixs')
+  const arr = name.split('amp;')
+  return arr.join('')
 }
 
 function checkAnswers() {
