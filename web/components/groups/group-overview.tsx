@@ -308,7 +308,7 @@ export function PinnedItems(props: {
   )
 }
 
-function SectionHeader(props: {
+export function SectionHeader(props: {
   label: string
   href?: string
   children?: ReactNode

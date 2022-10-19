@@ -11,6 +11,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { UserLink } from '../widgets/user-link'
 import { track } from 'web/lib/service/analytics'
+import { useEffect, useState } from 'react'
 
 export function PostCard(props: {
   post: Post
@@ -95,11 +96,20 @@ export function PostCardList(props: {
   posts: Post[]
   highlightOptions?: CardHighlightOptions
   onPostClick?: (post: Post) => void
+  limit?: number
 }) {
-  const { posts, onPostClick, highlightOptions } = props
+  const { posts, onPostClick, highlightOptions, limit } = props
+
+  const [shownPosts, setShownPosts] = useState<Post[]>(posts)
+  useEffect(() => {
+    if (limit) {
+      setShownPosts(posts.slice(0, limit))
+    }
+  }, [posts, limit])
+
   return (
     <div className="w-full">
-      {posts.map((post) => (
+      {shownPosts.map((post) => (
         <div className="mb-1" key={post.id}>
           <PostCard
             key={post.id}
@@ -109,6 +119,16 @@ export function PostCardList(props: {
           />
         </div>
       ))}
+      {limit && posts.length > limit && (
+        <div className="flex justify-center">
+          <button
+            className="text-sm font-semibold text-indigo-700"
+            onClick={() => setShownPosts(posts)}
+          >
+            Show all
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -41,6 +41,7 @@ import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
+import { SectionHeader } from './groups/group-overview'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -245,27 +246,17 @@ export function UserPage(props: { user: User }) {
                 ),
               },
               {
-                title: 'Comments',
-                stackedTabIcon: <ChatIcon className="h-5" />,
-                content: (
-                  <>
-                    <Spacer h={4} />
-                    <Col>
-                      <UserCommentsList user={user} />
-                    </Col>
-                  </>
-                ),
-              },
-              {
                 title: 'Posts',
                 stackedTabIcon: <DocumentIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
+                    <SectionHeader label={'Posts'} href={''} />
+
                     <Col>
                       {userPosts ? (
                         userPosts.length > 0 ? (
-                          <PostCardList posts={userPosts} />
+                          <PostCardList posts={userPosts} limit={6} />
                         ) : (
                           <div className="text-greyscale-4 text-center">
                             No posts yet
@@ -276,6 +267,11 @@ export function UserPage(props: { user: User }) {
                           <LoadingIndicator />
                         </div>
                       )}
+                    </Col>
+                    <Spacer h={4} />
+                    <SectionHeader label={'Comments'} href={''} />
+                    <Col>
+                      <UserCommentsList user={user} />
                     </Col>
                   </>
                 ),
