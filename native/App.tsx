@@ -133,6 +133,10 @@ export default function App() {
     try {
       const userDoc = doc(firestore, 'private-users', userId)
       const privateUser = (await getDoc(userDoc)).data() as PrivateUser
+      const prefs = privateUser.notificationPreferences
+      // TODO: check if this works
+      prefs.opt_out_all = prefs.opt_out_all.filter((p) => p !== 'mobile')
+      privateUser.notificationPreferences = prefs
       await updateDoc(
         userDoc,
         removeUndefinedProps({
