@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
 import toast from 'react-hot-toast'
@@ -11,6 +11,7 @@ import { TipButton } from './tip-button'
 import { Contract } from 'common/contract'
 import { Post } from 'common/post'
 import { TipToast } from '../widgets/tipper'
+import { formatMoney } from 'common/util/format'
 
 export function LikeItemButton(props: {
   item: Contract | Post
@@ -37,21 +38,13 @@ export function LikeItemButton(props: {
     if (!user) return firebaseLogin()
 
     setIsLiking(true)
-
-    const timeoutId = setTimeout(() => {
-      likeItem(user, item, itemType).catch(() => setIsLiking(false))
-    }, 3000)
-    toast.custom(
-      () => (
-        <TipToast
-          userName={item.creatorUsername}
-          onUndoClick={() => {
-            clearTimeout(timeoutId)
-          }}
-        />
-      ),
-      { duration: TIP_UNDO_DURATION }
-    )
+    likeItem(user, item, itemType)
+      .then(() =>
+        toast(`Tipped ${item.creatorUsername} ${formatMoney(LIKE_TIP_AMOUNT)}`)
+      )
+      .catch(() => {
+        setIsLiking(false)
+      })
   }
 
   return (

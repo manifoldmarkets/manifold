@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import { Comment } from 'common/comment'
@@ -20,10 +20,8 @@ export function Tipper(prop: {
 }) {
   const { comment, myTip, totalTip } = prop
 
-  // This is a temporary tipping amount before it actually gets confirmed. This is so tha we dont accidentally tip more than you have
-  const [tempTip, setTempTip] = useState(0)
-
   const me = useUser()
+  const [tempTip, setTempTip] = useState(0)
 
   const [saveTip] = useState(
     () => async (user: User, comment: Comment, change: number) => {
@@ -62,28 +60,19 @@ export function Tipper(prop: {
 
   const addTip = (delta: number) => {
     setTempTip((tempTip) => tempTip + delta)
-    const timeoutId = setTimeout(() => {
-      me &&
-        saveTip(me, comment, delta)
-          .then(() => setTempTip((tempTip) => tempTip - delta))
-          .catch((e) => console.error(e))
-    }, TIP_UNDO_DURATION + 1000)
-    toast.custom(
-      () => (
-        <TipToast
-          userName={comment.userName}
-          onUndoClick={() => {
-            clearTimeout(timeoutId)
-            setTempTip((tempTip) => tempTip - delta)
-          }}
-        />
-      ),
-      { duration: TIP_UNDO_DURATION }
-    )
+    me &&
+      saveTip(me, comment, delta)
+        .then(() => {
+          setTempTip((tempTip) => tempTip - delta)
+          toast(`Tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}`)
+        })
+        .catch((e) => console.error(e))
   }
 
   const canUp =
     me && comment.userId !== me.id && me.balance - tempTip >= LIKE_TIP_AMOUNT
+
+  console.log('disabled', !canUp)
 
   return (
     <Row className="items-center gap-0.5">
@@ -103,25 +92,11 @@ export function TipToast(props: { userName: string; onUndoClick: () => void }) {
   const { userName, onUndoClick } = props
   const [cancelled, setCancelled] = useState(false)
 
-  // There is a strange bug with toast where sometimes if you interact with one popup, the others will not dissappear at the right time, overriding it for now with this
-  const [timedOut, setTimedOut] = useState(false)
-  setTimeout(() => {
-    setTimedOut(true)
-  }, TIP_UNDO_DURATION)
-  if (timedOut) {
-    return <></>
-  }
   return (
     <div className="relative overflow-hidden rounded-lg bg-white drop-shadow-md">
-      <div
-        className={clsx(
-          'animate-progress-loading absolute bottom-0 z-10 h-1 w-full bg-indigo-600',
-          cancelled ? 'hidden' : ''
-        )}
-      />
       <Row className="text-greyscale-6 items-center gap-4 px-4 py-2 text-sm">
         <div className={clsx(cancelled ? 'hidden' : 'inline')}>
-          Tipping {userName} {formatMoney(LIKE_TIP_AMOUNT)}...
+          Tipped {userName} {formatMoney(LIKE_TIP_AMOUNT)}
         </div>
         <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
           Cancelled tipping
