@@ -15,6 +15,7 @@ import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BETTOR } from 'common/user'
+import { floatingEqual } from 'common/util/math'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -51,10 +52,9 @@ export function BetStatusText(props: {
   contract: Contract
   bet: Bet
   hideUser?: boolean
-  hideOutcome?: boolean
   className?: string
 }) {
-  const { bet, contract, hideUser, hideOutcome, className } = props
+  const { bet, contract, hideUser, className } = props
   const { outcomeType } = contract
   const self = useUser()
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -71,10 +71,13 @@ export function BetStatusText(props: {
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const money = formatMoney(Math.abs(amount))
-  const outOfTotalAmount =
+  const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined
-      ? ` of ${bet.isCancelled ? money : formatMoney(bet.orderAmount)}`
+      ? formatMoney(bet.orderAmount)
       : ''
+  const filled = floatingEqual(amount, bet.orderAmount ?? amount)
+    ? '(filled)'
+    : `(${money} filled${bet.isCancelled ? ', cancelled' : ''})`
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -106,11 +109,20 @@ export function BetStatusText(props: {
       ) : (
         <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
       )}{' '}
-      {bought} {money}
-      {outOfTotalAmount}
-      {!hideOutcome && (
+      {orderAmount ? (
         <>
-          {' '}
+          set a limit order for {orderAmount}{' '}
+          <OutcomeLabel
+            outcome={outcome}
+            value={(bet as any).value}
+            contract={contract}
+            truncate="short"
+          />{' '}
+          at {toProb} {filled}
+        </>
+      ) : (
+        <>
+          {bought} {money}{' '}
           <OutcomeLabel
             outcome={outcome}
             value={(bet as any).value}
@@ -120,15 +132,15 @@ export function BetStatusText(props: {
           {fromProb === toProb
             ? `at ${fromProb}`
             : `from ${fromProb} to ${toProb}`}
-          {challengeSlug && (
-            <SiteLink
-              href={challenge ? getChallengeUrl(challenge) : ''}
-              className={'mx-1'}
-            >
-              [challenge]
-            </SiteLink>
-          )}
         </>
+      )}{' '}
+      {challengeSlug && (
+        <SiteLink
+          href={challenge ? getChallengeUrl(challenge) : ''}
+          className={'mx-1'}
+        >
+          [challenge]
+        </SiteLink>
       )}
       <RelativeTimestamp time={createdTime} />
     </div>

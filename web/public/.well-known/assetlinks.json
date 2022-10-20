@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.markets.manifold",
+      "sha256_cert_fingerprints": [
+        "7A:C2:76:06:DD:30:1C:38:E3:5D:BB:DA:A1:EC:39:DF:0F:9D:EC:16:79:CB:FD:E1:1A:11:D2:29:74:A1:3E:15"
+      ]
+    }
+  }
+]

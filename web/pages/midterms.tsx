@@ -14,7 +14,7 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import { Row } from 'web/components/layout/row'
 
-const senateMidterms: StateElectionMarket[] = [
+export const senateMidterms: StateElectionMarket[] = [
   {
     state: 'WA',
     creatorUsername: 'BTE',
@@ -87,9 +87,15 @@ const senateMidterms: StateElectionMarket[] = [
     slug: 'will-michael-bennet-win-the-2022-co',
     isWinRepublican: false,
   },
+  {
+    state: 'MO',
+    creatorUsername: 'Tetraspace',
+    slug: 'if-trudy-valentine-is-the-2022-miss',
+    isWinRepublican: false,
+  },
 ]
 
-const governorMidterms: StateElectionMarket[] = [
+export const governorMidterms: StateElectionMarket[] = [
   {
     state: 'OK',
     creatorUsername: 'NicholasCharette73b6',
@@ -196,6 +202,12 @@ const governorMidterms: StateElectionMarket[] = [
     state: 'NY',
     creatorUsername: 'GeorgeSchifini',
     slug: 'will-hochul-win-new-york-governor-r',
+    isWinRepublican: false,
+  },
+  {
+    state: 'RI',
+    creatorUsername: 'Tetraspace',
+    slug: 'if-dan-mckee-is-the-democratic-nomi',
     isWinRepublican: false,
   },
 ]
