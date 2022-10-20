@@ -24,7 +24,7 @@ import {
 } from 'firebase/firestore'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
-import { Platform } from 'react-native'
+import { Platform, BackHandler } from 'react-native'
 import { Notification } from 'expo-notifications'
 import { Subscription } from 'expo-modules-core'
 import { TEN_YEARS_SECS } from 'common/envs/constants'
@@ -72,6 +72,26 @@ export default function App() {
   const [notification, setNotification] = useState<Notification | false>(false)
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
+
+  const handleBackButtonPress = () => {
+    try {
+      webview.current?.goBack()
+      return true
+    } catch (err) {
+      console.log('[handleBackButtonPress] Error : ', err.message)
+      return false
+    }
+  }
+
+  useEffect(() => {
+    BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
+    return () => {
+      BackHandler.removeEventListener(
+        'hardwareBackPress',
+        handleBackButtonPress
+      )
+    }
+  }, [])
 
   useEffect(() => {
     // This listener is fired whenever a notification is received while the app is foregrounded
