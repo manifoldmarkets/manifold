@@ -179,7 +179,7 @@ export function TextEditor(props: {
     <>
       {/* matches input styling */}
       <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-        <FloatingFormatMenu editor={editor} />
+        <FloatingFormatMenu editor={editor} advanced={!children} />
         <EditorContent editor={editor} />
         <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
       </div>
