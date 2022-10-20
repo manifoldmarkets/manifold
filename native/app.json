@@ -45,7 +45,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.markets.manifold",
-      "versionCode": 4
+      "versionCode": 5
     },
     "web": {
       "favicon": "./assets/favicon.png"
