@@ -27,6 +27,8 @@ export function LikeItemButton(props: {
 
   const [localTotalTip, setLocalTotalTip] = useState(0)
   const [cachedTotalTipped, setCachedTotalTipped] = useState(totalTipped)
+  // This is so we can update the local tip amount if the first render does not capture it, default is 0
+  // Will only update if user has not attempted to tip yet
   useEffect(() => {
     if (cachedTotalTipped === 0 && totalTipped != 0 && localTotalTip === 0) {
       setLocalTotalTip(totalTipped)

@@ -118,19 +118,11 @@ export function TipToast(props: { userName: string; onUndoClick: () => void }) {
   const { userName, onUndoClick } = props
   const [cancelled, setCancelled] = useState(false)
 
-  // There is a strange bug with toast where sometimes if you interact with one popup, the others will not dissappear at the right time, overriding it for now with this
-  // const [timedOut, setTimedOut] = useState(false)
-  // setTimeout(() => {
-  //   setTimedOut(true)
-  // }, TIP_UNDO_DURATION)
-  // if (timedOut) {
-  //   return <></>
-  // }
   return (
     <div className="relative overflow-hidden rounded-lg bg-white drop-shadow-md">
       <Row className="text-greyscale-6 items-center gap-4 px-4 py-2 text-sm">
         <div className={clsx(cancelled ? 'hidden' : 'inline')}>
-          Tipped {userName} {formatMoney(LIKE_TIP_AMOUNT)}...
+          Tipped {userName} {formatMoney(LIKE_TIP_AMOUNT)}
         </div>
         <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
           Cancelled tipping
