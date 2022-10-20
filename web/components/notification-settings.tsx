@@ -37,27 +37,6 @@ export function NotificationSettings(props: {
   navigateToSection: string | undefined
   privateUser: PrivateUser
 }) {
-  //eslint-disable-next-line
-  const setPushTokenRequestDenied = async (userId: string) => {
-    console.log('push token denied', userId)
-    updatePrivateUser(userId, {
-      rejectedPushNotificationsOn: Date.now(),
-    })
-  }
-
-  // TODO: After the user has a few notifs, show a user a modal to ask for push
-  //  notifications for market resolves
-  useEffect(() => {
-    console.log('notification settings mounted')
-    console.log((window as any).isNative, 'isNative')
-    if ((window as any).isNative && privateUser && !privateUser.pushToken) {
-      console.log('Notifications: no push token, requesting')
-      ;(window as any).ReactNativeWebView.postMessage(
-        'promptEnablePushNotifications'
-      )
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
   const { navigateToSection, privateUser } = props
   const [showWatchModal, setShowWatchModal] = useState(false)
 

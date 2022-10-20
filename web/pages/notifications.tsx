@@ -54,6 +54,7 @@ import {
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -158,6 +159,8 @@ function RenderNotificationGroups(props: {
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
   const [page, setPage] = useState(0)
+  const [showPushNotificationsModal, setShowPushNotificationsModal] =
+    useState(false)
   const allGroupedNotifications = useGroupedNotifications(privateUser)
   const unseenGroupedNotifications = useUnseenGroupedNotification(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
@@ -198,6 +201,14 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           more.
         </div>
       )}
+      <PushNotificationsModal
+        isOpen={showPushNotificationsModal}
+        setOpen={setShowPushNotificationsModal}
+        privateUser={privateUser}
+        notifications={
+          allGroupedNotifications.map((ng) => ng.notifications).flat().length
+        }
+      />
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}
