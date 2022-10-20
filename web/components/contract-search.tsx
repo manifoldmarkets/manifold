@@ -47,7 +47,7 @@ import { Select } from './widgets/select'
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: 'Daily trending', value: 'daily-score' },
+  { label: 'Daily changed', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Most popular', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },

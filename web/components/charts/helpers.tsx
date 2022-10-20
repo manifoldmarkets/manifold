@@ -1,9 +1,16 @@
-import { ReactNode, SVGProps, memo, useRef, useEffect, useMemo } from 'react'
+import {
+  ReactNode,
+  SVGProps,
+  useDeferredValue,
+  useId,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react'
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
 import { brushX, D3BrushEvent } from 'd3-brush'
 import { area, line, CurveFactory } from 'd3-shape'
-import { nanoid } from 'nanoid'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
 
@@ -60,7 +67,7 @@ export const YAxis = <Y,>(props: { w: number; h: number; axis: Axis<Y> }) => {
   return <g ref={axisRef} />
 }
 
-const LinePathInternal = <P,>(
+export const LinePath = <P,>(
   props: {
     data: P[]
     px: number | ((p: P) => number)
@@ -68,14 +75,17 @@ const LinePathInternal = <P,>(
     curve: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
-  const { data, px, py, curve, ...rest } = props
-  const d3Line = line<P>(px, py).curve(curve)
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return <path {...rest} fill="none" d={d3Line(data)!} />
+  const { px, py, curve, ...rest } = props
+  const data = useDeferredValue(props.data)
+  const d = useMemo(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    () => line<P>(px, py).curve(curve)(data)!,
+    [px, py, curve, data]
+  )
+  return <path {...rest} fill="none" d={d} />
 }
-export const LinePath = memo(LinePathInternal) as typeof LinePathInternal
 
-const AreaPathInternal = <P,>(
+export const AreaPath = <P,>(
   props: {
     data: P[]
     px: number | ((p: P) => number)
@@ -84,12 +94,15 @@ const AreaPathInternal = <P,>(
     curve: CurveFactory
   } & SVGProps<SVGPathElement>
 ) => {
-  const { data, px, py0, py1, curve, ...rest } = props
-  const d3Area = area<P>(px, py0, py1).curve(curve)
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return <path {...rest} d={d3Area(data)!} />
+  const { px, py0, py1, curve, ...rest } = props
+  const data = useDeferredValue(props.data)
+  const d = useMemo(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    () => area<P>(px, py0, py1).curve(curve)(data)!,
+    [px, py0, py1, curve, data]
+  )
+  return <path {...rest} d={d} />
 }
-export const AreaPath = memo(AreaPathInternal) as typeof AreaPathInternal
 
 export const AreaWithTopStroke = <P,>(props: {
   data: P[]
@@ -168,7 +181,7 @@ export const SVGChart = <X, TT>(props: {
   const overlayRef = useRef<SVGGElement>(null)
   const innerW = w - (margin.left + margin.right)
   const innerH = h - (margin.top + margin.bottom)
-  const clipPathId = useMemo(() => nanoid(), [])
+  const clipPathId = useId()
   const isMobile = useIsMobile()
 
   const justSelected = useRef(false)

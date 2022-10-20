@@ -3,12 +3,14 @@ import { Contract } from 'common/contract'
 import {
   Bet,
   listenForBets,
+  listenForLiveBets,
   listenForRecentBets,
   listenForUnfilledBets,
   withoutAnteBets,
 } from 'web/lib/firebase/bets'
 import { LimitBet } from 'common/bet'
 import { getUser } from 'web/lib/firebase/users'
+import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const useBets = (
   contractId: string,
@@ -90,4 +92,17 @@ export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
     })
   }, [contractId])
   return data
+}
+
+export const useLiveBets = (count: number) => {
+  const [bets, setBets] = usePersistentState<Bet[] | undefined>(undefined, {
+    store: inMemoryStore(),
+    key: `liveBets-${count}`,
+  })
+
+  useEffect(() => {
+    return listenForLiveBets(count, setBets)
+  }, [count, setBets])
+
+  return bets
 }

@@ -175,3 +175,15 @@ export function withoutAnteBets(contract: Contract, bets?: Bet[]) {
 
   return bets?.filter((bet) => !bet.isAnte) ?? []
 }
+
+export function listenForLiveBets(
+  count: number,
+  setBets: (bets: Bet[]) => void
+) {
+  const betsQuery = query(
+    collectionGroup(db, 'bets'),
+    orderBy('createdTime', 'desc'),
+    limit(count)
+  )
+  return listenForValues<Bet>(betsQuery, setBets)
+}

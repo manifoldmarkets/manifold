@@ -8,6 +8,7 @@ import {
   getUserBetContracts,
   getUserBetContractsQuery,
   listAllContracts,
+  listenForContract,
 } from 'web/lib/firebase/contracts'
 import { QueryClient, useQuery, useQueryClient } from 'react-query'
 import { MINUTE_MS, sleep } from 'common/util/time'
@@ -17,9 +18,10 @@ import {
   trendingIndex,
 } from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
-import { zipObject } from 'lodash'
+import { Dictionary, zipObject } from 'lodash'
+import { useForceUpdate } from './use-force-update'
 
-export const useContracts = () => {
+export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
 
   useEffect(() => {
@@ -129,4 +131,53 @@ export const useUserBetContracts = (userId: string) => {
     getUserBetContractsQuery(userId)
   )
   return result.data
+}
+
+const contractsStore: Dictionary<Contract | null> = {}
+const contractListeners: Dictionary<((contract: Contract | null) => void)[]> =
+  {}
+
+const updateContract = (contractId: string, contract: Contract | null) => {
+  contractsStore[contractId] = contract
+  contractListeners[contractId]?.forEach((l) => l(contract))
+}
+
+export const useContracts = (contractIds: string[]) => {
+  const forceUpdate = useForceUpdate()
+
+  useEffect(() => {
+    for (const id of contractIds) {
+      if (!contractListeners[id]) {
+        contractListeners[id] = []
+        listenForContract(id, (c) => updateContract(id, c))
+      }
+    }
+
+    const listeners = contractIds.map(
+      (id) =>
+        [
+          id,
+          () => {
+            // Update after all have loaded, and on every subsequent update.
+            if (contractIds.every((id) => contractsStore[id] !== undefined)) {
+              forceUpdate()
+            }
+          },
+        ] as const
+    )
+    for (const [id, listener] of listeners) {
+      contractListeners[id].push(listener)
+    }
+    return () => {
+      for (const [id, listener] of listeners) {
+        contractListeners[id] = contractListeners[id].filter(
+          (l) => l !== listener
+        )
+      }
+    }
+  }, [contractIds, forceUpdate])
+
+  return contractIds.map(
+    (id) => contractsStore[id] as Contract | null | undefined
+  )
 }

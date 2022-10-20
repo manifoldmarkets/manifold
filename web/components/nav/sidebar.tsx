@@ -5,6 +5,7 @@ import {
   BookOpenIcon,
   CashIcon,
   HeartIcon,
+  FlagIcon,
   ChatIcon,
   ChartBarIcon,
 } from '@heroicons/react/outline'
@@ -108,7 +109,7 @@ const logout = async () => {
 }
 
 function getDesktopNavigation() {
-  return [
+  return buildArray(
     { name: 'Home', href: '/home', icon: HomeIcon },
     { name: 'Search', href: '/search', icon: SearchIcon },
     {
@@ -117,13 +118,11 @@ function getDesktopNavigation() {
       icon: NotificationsIcon,
     },
 
-    ...(IS_PRIVATE_MANIFOLD
-      ? []
-      : [
-          { name: 'Get M$', href: '/add-funds', icon: CashIcon },
-          { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
-        ]),
-  ]
+    !IS_PRIVATE_MANIFOLD && [
+      { name: 'Midterms', href: '/midterms', icon: FlagIcon },
+      { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+    ]
+  )
 }
 
 function getMoreDesktopNavigation(user?: User | null) {
@@ -141,6 +140,7 @@ function getMoreDesktopNavigation(user?: User | null) {
   if (!user) {
     // Signed out "More"
     return buildArray(
+      { name: 'Tournaments', href: '/tournaments' },
       { name: 'Leaderboards', href: '/leaderboards' },
       { name: 'Groups', href: '/groups' },
       { name: 'Tournaments', href: '/tournaments' },
@@ -154,6 +154,7 @@ function getMoreDesktopNavigation(user?: User | null) {
 
   // Signed in "More"
   return buildArray(
+    { name: 'Tournaments', href: '/tournaments' },
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Groups', href: '/groups' },
     { name: 'Refer a friend', href: '/referrals' },
@@ -172,6 +173,7 @@ function getMoreDesktopNavigation(user?: User | null) {
 const signedOutDesktopNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Explore', href: '/search', icon: SearchIcon },
+  { name: 'Midterms', href: '/midterms', icon: FlagIcon },
   {
     name: 'Help & About',
     href: 'https://help.manifold.markets/',
@@ -185,25 +187,28 @@ const signedOutMobileNavigation = [
     href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
   },
+  { name: 'Midterms', href: '/midterms', icon: FlagIcon },
   { name: 'Charity', href: '/charity', icon: HeartIcon },
   { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
   { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
   { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
 ]
 
-const signedInMobileNavigation = [
+const signedInMobileNavigation = buildArray(
   { name: 'Search', href: '/search', icon: SearchIcon },
-  { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-  ...(IS_PRIVATE_MANIFOLD
-    ? []
-    : [{ name: 'Get M$', href: '/add-funds', icon: CashIcon }]),
+
+  !IS_PRIVATE_MANIFOLD && [
+    { name: 'Midterms', href: '/midterms', icon: FlagIcon },
+    { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
+    { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
+    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+  ],
   {
     name: 'Help & About',
     href: 'https://help.manifold.markets/',
     icon: BookOpenIcon,
-  },
-]
+  }
+)
 
 function getMoreMobileNav() {
   const signOut = {

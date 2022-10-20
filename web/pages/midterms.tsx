@@ -1,6 +1,5 @@
 import { CPMMBinaryContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
-import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
@@ -10,8 +9,18 @@ import {
 } from 'web/components/usa-map/state-election-map'
 import { useTracking } from 'web/hooks/use-tracking'
 import { getContractFromSlug } from 'web/lib/firebase/contracts'
+import { Tabs } from 'web/components/layout/tabs'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { ArrowRightIcon } from '@heroicons/react/outline'
+import { Row } from 'web/components/layout/row'
 
 const senateMidterms: StateElectionMarket[] = [
+  {
+    state: 'WA',
+    creatorUsername: 'BTE',
+    slug: 'will-patty-murray-be-reelected-to-t',
+    isWinRepublican: false,
+  },
   {
     state: 'AZ',
     creatorUsername: 'BTE',
@@ -82,6 +91,12 @@ const senateMidterms: StateElectionMarket[] = [
 
 const governorMidterms: StateElectionMarket[] = [
   {
+    state: 'OK',
+    creatorUsername: 'NicholasCharette73b6',
+    slug: 'will-kevin-stitt-win-the-2022-oklah',
+    isWinRepublican: true,
+  },
+  {
     state: 'TX',
     creatorUsername: 'LarsDoucet',
     slug: 'republicans-will-win-the-2022-texas',
@@ -97,12 +112,6 @@ const governorMidterms: StateElectionMarket[] = [
     state: 'FL',
     creatorUsername: 'Tetraspace',
     slug: 'if-charlie-crist-is-the-democratic',
-    isWinRepublican: false,
-  },
-  {
-    state: 'PA',
-    creatorUsername: 'JonathanMast',
-    slug: 'will-josh-shapiro-win-the-2022-penn',
     isWinRepublican: false,
   },
   {
@@ -142,12 +151,6 @@ const governorMidterms: StateElectionMarket[] = [
     isWinRepublican: true,
   },
   {
-    state: 'AZ',
-    creatorUsername: 'SG',
-    slug: 'will-a-republican-win-the-2022-ariz',
-    isWinRepublican: true,
-  },
-  {
     state: 'WI',
     creatorUsername: 'SG',
     slug: 'will-a-democrat-win-the-2022-wiscon',
@@ -166,15 +169,33 @@ const governorMidterms: StateElectionMarket[] = [
     isWinRepublican: false,
   },
   {
-    state: 'NV',
+    state: 'ME',
+    creatorUsername: 'SG',
+    slug: 'will-a-democrat-win-the-2022-maine',
+    isWinRepublican: false,
+  },
+  {
+    state: 'NM',
     creatorUsername: 'SG',
     slug: 'will-a-democrat-win-the-2022-new-me',
     isWinRepublican: false,
   },
   {
-    state: 'ME',
+    state: 'MN',
+    creatorUsername: 'BRTD',
+    slug: 'will-tim-walz-be-reelected-as-gover',
+    isWinRepublican: false,
+  },
+  {
+    state: 'MI',
     creatorUsername: 'SG',
-    slug: 'will-a-democrat-win-the-2022-maine',
+    slug: 'will-a-democrat-win-the-2022-michig',
+    isWinRepublican: false,
+  },
+  {
+    state: 'NY',
+    creatorUsername: 'GeorgeSchifini',
+    slug: 'will-hochul-win-new-york-governor-r',
     isWinRepublican: false,
   },
 ]
@@ -206,70 +227,79 @@ const App = (props: {
 
   useTracking('view midterms 2022')
 
+  const senateTab = (
+    <>
+      <StateElectionMap markets={senateMidterms} contracts={senateContracts} />
+      <iframe
+        src="https://manifold.markets/embed/TomShlomi/will-the-gop-control-the-us-senate"
+        frameBorder="0"
+        className="mt-8 flex h-96 w-full sm:px-12"
+      ></iframe>
+    </>
+  )
+
+  const governorTab = (
+    <div className="w-full">
+      <StateElectionMap
+        markets={governorMidterms}
+        contracts={governorContracts}
+      />
+      <iframe
+        src="https://manifold.markets/embed/ManifoldMarkets/democrats-go-down-at-least-one-gove"
+        frameBorder="0"
+        className="mt-8 flex h-96 w-full sm:px-12"
+      ></iframe>
+    </div>
+  )
+
+  const houseTab = (
+    <div className="w-full">
+      <iframe
+        src="https://manifold.markets/embed/BoltonBailey/will-democrats-maintain-control-of"
+        frameBorder="0"
+        className="mt-8 flex h-96 w-full sm:px-12"
+      ></iframe>
+    </div>
+  )
+
+  const flourish = <span className="hidden sm:inline">🇺🇸🗳️</span>
+
   return (
     <Page className="">
       <Col className="items-center justify-center">
-        <Title text="2022 US Midterm Elections" className="mt-2" />
         <SEO
-          title="2022 US Midterm Elections"
-          description="Bet on the midterm elections using prediction markets. See Manifold's state-by-state breakdown of senate and governor races."
+          title="2022 US Midterm Elections on Manifold"
+          description="Manifold's midterm forecast using prediction markets. Bet on elections and win up to $1,000 in our tournament."
+          image="https://manifold.markets/midterms2022.png"
         />
-        <div className="mt-2 text-2xl">Senate</div>
-        <StateElectionMap
-          markets={senateMidterms}
-          contracts={senateContracts}
+
+        <Title className="mt-2">
+          {flourish} 2022 US Midterm Elections {flourish}
+        </Title>
+
+        <div className="mx-8 mb-4 text-base text-gray-500">
+          Manifold's midterm forecast. Bet on elections and{' '}
+          <SiteLink href="/group/us-2022-midterms/about">
+            win up to $1,000 USD in our tournament
+          </SiteLink>
+          .
+        </div>
+        <Tabs
+          tabs={[
+            { title: 'Senate', content: senateTab, className: 'w-full' },
+            { title: 'Governors', content: governorTab, className: 'w-full' },
+            { title: 'House', content: houseTab, className: 'w-full' },
+          ]}
         />
-        <iframe
-          src="https://manifold.markets/TomShlomi/will-the-gop-control-the-us-senate"
-          frameBorder="0"
-          className="mt-8 flex h-96 w-full"
-        ></iframe>
-        <Spacer h={8} />
-
-        <div className="mt-8 text-2xl">Governors</div>
-        <StateElectionMap
-          markets={governorMidterms}
-          contracts={governorContracts}
-        />
-        <iframe
-          src="https://manifold.markets/ManifoldMarkets/democrats-go-down-at-least-one-gove"
-          frameBorder="0"
-          className="mt-8 flex h-96 w-full"
-        ></iframe>
-        <Spacer h={8} />
-
-        <div className="mt-8 text-2xl">House</div>
-        <iframe
-          src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of"
-          frameBorder="0"
-          className="mt-8 flex h-96 w-full"
-        ></iframe>
-        <Spacer h={8} />
-
-        <div className="mt-8 text-2xl">Related markets</div>
-        <iframe
-          src="https://manifold.markets/BoltonBailey/balance-of-power-in-us-congress-aft"
-          frameBorder="0"
-          className="mt-8 flex h-96 w-full"
-        ></iframe>
-        <iframe
-          src="https://manifold.markets/SG/will-a-democrat-win-the-2024-us-pre"
-          frameBorder="0"
-          className="mt-8 flex h-96 w-full"
-        ></iframe>
-        <iframe
-          src="https://manifold.markets/Ibozz91/will-the-2022-alaska-house-general"
-          title="Will the 2022 Alaska House General Nonspecial Election result in a Condorcet failure?"
-          frameBorder="0"
-          className="mt-8 flex h-96 w-full"
-        ></iframe>
-
-        <iframe
-          src="https://manifold.markets/NathanpmYoung/how-many-supreme-court-justices-wil-1e597c3853ad"
-          title="Will the 2022 Alaska House General Nonspecial Election result in a Condorcet failure?"
-          frameBorder="0"
-          className="mt-8 flex h-96 w-full"
-        ></iframe>
+        <Row className="mt-8 mb-8 text-base text-gray-500">
+          <SiteLink
+            href="/group/us-2022-midterms/markets"
+            className="flex items-center"
+          >
+            See all midterm election markets{' '}
+            <ArrowRightIcon className="ml-1 h-5 w-5" />
+          </SiteLink>
+        </Row>
       </Col>
     </Page>
   )

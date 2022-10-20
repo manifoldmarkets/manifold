@@ -8,6 +8,7 @@ admin.initializeApp()
 export * from './on-create-user'
 export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
+export * from './on-create-comment-on-post'
 export * from './on-view'
 export { scheduleUpdateMetrics } from './update-metrics'
 export * from './update-stats'

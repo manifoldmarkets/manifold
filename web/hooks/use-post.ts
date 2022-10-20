@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { DateDoc, Post } from 'common/post'
 import {
   getAllPosts,
+  getPostsByUser,
   listenForDateDocs,
   listenForPost,
 } from 'web/lib/firebase/posts'
@@ -42,12 +43,12 @@ export const usePosts = (postIds: string[]) => {
     .sort((a, b) => b.createdTime - a.createdTime)
 }
 
-export const useAllPosts = () => {
+export const useAllPosts = (limit?: number) => {
   const [posts, setPosts] = useState<Post[]>([])
   useEffect(() => {
     getAllPosts().then(setPosts)
   }, [])
-  return posts
+  return posts.sort((a, b) => b.createdTime - a.createdTime).slice(0, limit)
 }
 
 export const useDateDocs = () => {
@@ -58,4 +59,14 @@ export const useDateDocs = () => {
   }, [])
 
   return dateDocs
+}
+
+export const usePostsByUser = (userId: string) => {
+  const [posts, setPosts] = useState<Post[] | null>(null)
+
+  useEffect(() => {
+    getPostsByUser(userId).then(setPosts)
+  }, [userId])
+
+  return posts?.sort((a, b) => b.createdTime - a.createdTime)
 }

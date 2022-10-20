@@ -8,6 +8,9 @@ import { Customize, USAMap } from './usa-map'
 import { listenForContract } from 'web/lib/firebase/contracts'
 import { interpolateColor } from 'common/util/color'
 import { track } from 'web/lib/service/analytics'
+import { ContractCard } from '../contract/contract-card'
+import { Row } from '../layout/row'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export interface StateElectionMarket {
   creatorUsername: string
@@ -22,6 +25,9 @@ export function StateElectionMap(props: {
 }) {
   const { markets } = props
   const [contracts, setContracts] = useState(props.contracts)
+  const [coordinate, setCoordinate] = useState({ top: 0, left: 0 })
+  const [hoveredContract, setHoveredContract] =
+    useState<CPMMBinaryContract | null>(null)
   useUpdateContracts(contracts, setContracts)
 
   const probs = contracts.map((c) =>
@@ -32,23 +38,68 @@ export function StateElectionMap(props: {
     number
   ][]
 
+  const isMobile = useIsMobile()
+
   const stateInfo = marketsWithProbs.map(([market, prob]) => [
     market.state,
     {
       fill: probToColor(prob, market.isWinRepublican),
       clickHandler: () => {
-        Router.push(`/${market.creatorUsername}/${market.slug}`)
+        if (isMobile) setHoveredContract(contracts[markets.indexOf(market)])
+        else Router.push(`/${market.creatorUsername}/${market.slug}`)
+
         track('state election map click', {
           state: market.state,
           slug: market.slug,
         })
+      },
+      mouseEnterHandler: (e: React.MouseEvent<SVGPathElement, MouseEvent>) => {
+        setHoveredContract(contracts[markets.indexOf(market)])
+        setCoordinate({ top: e.clientY, left: e.clientX })
+      },
+      mouseLeaveHandler: () => {
+        if (isMobile) return
+        setHoveredContract(null)
       },
     },
   ])
 
   const config = Object.fromEntries(stateInfo) as Customize
 
-  return <USAMap customize={config} />
+  return (
+    <div className="w-full">
+      <div
+        id="tooltip"
+        className="pointer-events-none fixed z-[999] ml-auto hidden rounded-[6px] p-[10px] sm:inline"
+        style={{ top: `${coordinate.top}px`, left: `${coordinate.left}px` }}
+      >
+        {hoveredContract && (
+          <ContractCard
+            noLinkAvatar
+            newTab
+            contract={hoveredContract}
+            key={hoveredContract.id}
+            hideQuickBet
+            className="w-[300px]"
+          />
+        )}
+      </div>
+
+      <USAMap customize={config} />
+
+      <Row className="-mt-8 items-center justify-center sm:hidden">
+        {hoveredContract && (
+          <ContractCard
+            noLinkAvatar
+            contract={hoveredContract}
+            key={hoveredContract.id}
+            hideQuickBet
+            className="align-center w-[300px]"
+          />
+        )}
+      </Row>
+    </div>
+  )
 }
 
 const probToColor = (prob: number, isWinRepublican: boolean) => {

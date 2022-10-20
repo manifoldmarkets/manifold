@@ -16,6 +16,8 @@ export type Post = {
 
   likedByUserIds?: string[]
   likedByUserCount?: number
+
+  commentCount?: number
 }
 
 export type DateDoc = Post & {

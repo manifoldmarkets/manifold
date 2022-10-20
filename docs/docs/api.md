@@ -561,8 +561,9 @@ Parameters:
 - `question`: Required. The headline question for the market.
 - `description`: Required. A long description describing the rules for the market.
   - Note: string descriptions do **not** turn into links, mentions, formatted text. Instead, rich text descriptions must be in [TipTap json](https://tiptap.dev/guide/output#option-1-json).
-- `closeTime`: Required. The time at which the market will close, represented as milliseconds since the epoch.
-- `tags`: Optional. An array of string tags for the market.
+- `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch. Defaults to 7 days from now.
+- `visibility`: Optional. One of `public` (default) or `unlisted`. Controls whether the market is shown on the homepage.
+- `groupId`: Optional. A group to create this market under.
 
 For binary markets, you must also provide:
 
@@ -780,6 +781,7 @@ Requires no authorization.
 
 ## Changelog
 
+- 2022-10-17: Update /market POST to allow `visibility` and `groupId`; mark `closeTime` as optional; remove `tags`
 - 2022-09-24: Expand market POST docs to include new market types (`PSEUDO_NUMERIC`, `MULTIPLE_CHOICE`)
 - 2022-07-15: Add user by username and user by ID APIs
 - 2022-06-08: Add paging to markets endpoint

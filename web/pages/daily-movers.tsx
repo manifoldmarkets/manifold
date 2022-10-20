@@ -6,7 +6,7 @@ import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser, useUserContractMetricsByProfit } from 'web/hooks/use-user'
-import { DailyProfit } from './home'
+import { DailyProfit } from '../components/daily-stats'
 
 export default function DailyMovers() {
   const user = useUser()
@@ -16,7 +16,10 @@ export default function DailyMovers() {
     <Page>
       <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
         <Row className="mt-4 items-start justify-between sm:mt-0">
-          <Title className="mx-4 !mb-0 !mt-0 sm:mx-0" text="Daily movers" />
+          <Title
+            className="mx-4 !mb-0 !mt-0 sm:mx-0"
+            text="Your daily movers"
+          />
           <DailyProfit user={user} />
         </Row>
         {user && <ProbChangesWrapper userId={user.id} />}

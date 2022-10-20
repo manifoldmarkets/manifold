@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 
-export function Title(props: { text: string; className?: string }) {
-  const { text, className } = props
+export function Title(props: {
+  text?: string
+  className?: string
+  children?: any
+}) {
+  const { text, children, className } = props
   return (
     <h1
       className={clsx(
@@ -10,6 +14,7 @@ export function Title(props: { text: string; className?: string }) {
       )}
     >
       {text}
+      {children}
     </h1>
   )
 }

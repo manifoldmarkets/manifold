@@ -33,5 +33,5 @@ export default function UserProfile(props: { user: User | null }) {
 
   useTracking('view user profile', { username })
 
-  return user ? <UserPage user={user} /> : <Custom404 />
+  return user && !user.userDeleted ? <UserPage user={user} /> : <Custom404 />
 }

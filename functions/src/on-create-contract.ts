@@ -15,6 +15,7 @@ import {
   MarketCreatorBadge,
   marketCreatorBadgeRarityThresholds,
 } from '../../common/badge'
+import { dreamWithDefaultParams } from './dream-utils'
 
 export const onCreateContract = functions
   .runWith({ secrets: ['MAILGUN_KEY'] })
@@ -38,6 +39,11 @@ export const onCreateContract = functions
       mentioned
     )
     await handleMarketCreatorBadgeAward(contractCreator)
+
+    const coverImageUrl = await dreamWithDefaultParams(contract.question)
+    await snapshot.ref.update({
+      coverImageUrl,
+    })
   })
 
 const firestore = admin.firestore()

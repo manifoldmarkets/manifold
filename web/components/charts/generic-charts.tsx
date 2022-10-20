@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
-import { bisector } from 'd3-array'
+import { useCallback, useId, useMemo, useState } from 'react'
+import { bisector, extent } from 'd3-array'
 import { axisBottom, axisLeft } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
@@ -29,12 +29,23 @@ import {
 } from './helpers'
 import { useEvent } from 'web/hooks/use-event'
 import { formatMoney } from 'common/util/format'
-import { nanoid } from 'nanoid'
 
 export type MultiPoint<T = unknown> = Point<Date, number[], T>
 export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'm$' | 'percent' | 'amount'
+
+type AxisConstraints = {
+  min?: number
+  max?: number
+  minExtent?: number
+}
+
+const Y_AXIS_CONSTRAINTS: Record<ValueKind, AxisConstraints> = {
+  percent: { min: 0, max: 1, minExtent: 0.04 },
+  m$: { minExtent: 10 },
+  amount: { minExtent: 0.04 },
+}
 
 type SliceExtent = { y0: number; y1: number }
 
@@ -53,6 +64,38 @@ const interpolateY = (
     return y0
   } else if (curve === curveStepBefore) {
     return y1
+  }
+}
+
+const constrainExtent = (
+  extent: [number, number],
+  constraints: AxisConstraints
+) => {
+  // first clamp the extent to our min and max
+  const min = constraints.min ?? -Infinity
+  const max = constraints.max ?? Infinity
+  const minExtent = constraints.minExtent ?? 0
+  const start = Math.max(extent[0], min)
+  const end = Math.min(extent[1], max)
+  const size = end - start
+  if (size >= minExtent) {
+    return [start, end]
+  } else {
+    // compute how much padding we need to get to the min extent
+    const halfPad = Math.max(0, minExtent - size) / 2
+    const paddedStart = start - halfPad
+    const paddedEnd = end + halfPad
+    // we would like to return [start - halfPad, end + halfPad], but if our padding
+    // is making us go past the min and max, we need to readjust it to the other end
+    if (paddedStart < min) {
+      const underflow = min - paddedStart
+      return [min, paddedEnd + underflow]
+    } else if (paddedEnd > max) {
+      const overflow = paddedEnd - max
+      return [paddedStart - overflow, max]
+    } else {
+      return [paddedStart, paddedEnd]
+    }
   }
 }
 
@@ -115,7 +158,10 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     }
   })
 
-  const onMouseLeave = useEvent(() => setTTParams(undefined))
+  const onMouseLeave = useEvent(() => {
+    props.onMouseOver?.(undefined)
+    setTTParams(undefined)
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -214,7 +260,10 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     }
   })
 
-  const onMouseLeave = useEvent(() => setTTParams(undefined))
+  const onMouseLeave = useEvent(() => {
+    props.onMouseOver?.(undefined)
+    setTTParams(undefined)
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
@@ -270,12 +319,16 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { data, w, h, color, margin, yScale, yKind, Tooltip } = props
+  const { data, w, h, color, margin, Tooltip } = props
+  const yKind = props.yKind ?? 'amount'
   const curve = props.curve ?? curveLinear
 
   const [mouse, setMouse] = useState<TooltipParams<P> & SliceExtent>()
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
+  const [viewYScale, setViewYScale] =
+    useState<ScaleContinuousNumeric<number, number>>()
   const xScale = viewXScale ?? props.xScale
+  const yScale = viewYScale ?? props.yScale
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(0)
@@ -321,35 +374,42 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     }
   })
 
-  const onMouseLeave = useEvent(() => setMouse(undefined))
+  const onMouseLeave = useEvent(() => {
+    props.onMouseOver?.(undefined)
+    setMouse(undefined)
+  })
 
   const onSelect = useEvent((ev: D3BrushEvent<P>) => {
     if (ev.selection) {
       const [mouseX0, mouseX1] = ev.selection as [number, number]
-      const newViewXScale = xScale
-        .copy()
-        .domain([xScale.invert(mouseX0), xScale.invert(mouseX1)])
+      const xMin = xScale.invert(mouseX0)
+      const xMax = xScale.invert(mouseX1)
+      const newViewXScale = xScale.copy().domain([xMin, xMax])
       setViewXScale(() => newViewXScale)
 
-      const dataInView = data.filter((p) => {
-        const x = newViewXScale(p.x)
-        return x >= 0 && x <= w
-      })
-      const yMin = Math.min(...dataInView.map((p) => p.y))
-      const yMax = Math.max(...dataInView.map((p) => p.y))
+      const bisect = bisector((p: P) => p.x)
+      const iMin = bisect.right(data, xMin)
+      const iMax = bisect.left(data, xMax)
 
-      // Prevents very small selections from being too zoomed in
-      if (yMax - yMin > 0.05) {
-        // adds a little padding to the top and bottom of the selection
-        yScale.domain([yMin - (yMax - yMin) * 0.1, yMax + (yMax - yMin) * 0.1])
+      // don't zoom axis if they selected an area with only one value
+      if (iMin != iMax) {
+        const visibleYs = range(iMin - 1, iMax).map((i) => data[i].y)
+        const [yMin, yMax] = extent(visibleYs) as [number, number]
+        // try to add extra space on top and bottom before constraining
+        const padding = (yMax - yMin) * 0.1
+        const domain = constrainExtent(
+          [yMin - padding, yMax + padding],
+          Y_AXIS_CONSTRAINTS[yKind]
+        )
+        setViewYScale(() => yScale.copy().domain(domain).nice())
       }
     } else {
       setViewXScale(undefined)
-      yScale.domain([0, 1])
+      setViewYScale(undefined)
     }
   })
 
-  const gradientId = useMemo(() => nanoid(), [])
+  const gradientId = useId()
   const stops = useMemo(
     () =>
       typeof color !== 'string' ? computeColorStops(data, color, px) : null,

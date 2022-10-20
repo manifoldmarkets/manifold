@@ -1,11 +1,13 @@
 import clsx from 'clsx'
-import { ClickHandler } from './usa-map'
+import { ClickHandler, MouseEventHandler } from './usa-map'
 
 type USAStateProps = {
   state: string
   dimensions: string
   fill: string
   onClickState?: ClickHandler
+  onMouseEnter?: MouseEventHandler
+  onMouseLeave?: MouseEventHandler
   stateName: string
   hideStateTitle?: boolean
 }
@@ -14,8 +16,8 @@ export const USAState = ({
   dimensions,
   fill,
   onClickState,
-  stateName,
-  hideStateTitle,
+  onMouseEnter,
+  onMouseLeave,
 }: USAStateProps) => {
   return (
     <path
@@ -26,9 +28,9 @@ export const USAState = ({
         !!onClickState && 'hover:cursor-pointer hover:contrast-125'
       )}
       onClick={onClickState}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       id={state}
-    >
-      {hideStateTitle ? null : <title>{stateName}</title>}
-    </path>
+    ></path>
   )
 }

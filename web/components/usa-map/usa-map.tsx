@@ -2,6 +2,7 @@
 // MIT License
 
 import clsx from 'clsx'
+
 import { DATA } from './data'
 import { USAState } from './usa-state'
 
@@ -9,9 +10,20 @@ export type ClickHandler<E = SVGPathElement | SVGCircleElement, R = any> = (
   e: React.MouseEvent<E, MouseEvent>
 ) => R
 export type GetClickHandler = (stateKey: string) => ClickHandler | undefined
+
+export type MouseEventHandler<
+  E = SVGPathElement | SVGCircleElement,
+  R = any
+> = (e: React.MouseEvent<E, MouseEvent>) => R
+export type GetMouseEventHandler = (
+  stateKey: string
+) => MouseEventHandler | undefined
+
 export type CustomizeObj = {
   fill?: string
   clickHandler?: ClickHandler
+  mouseEnterHandler?: MouseEventHandler
+  mouseLeaveHandler?: MouseEventHandler
 }
 export interface Customize {
   [key: string]: CustomizeObj
@@ -21,11 +33,15 @@ export type StatesProps = {
   hideStateTitle?: boolean
   fillStateColor: (stateKey: string) => string
   stateClickHandler: GetClickHandler
+  stateMouseEnterHandler: GetMouseEventHandler
+  stateMouseLeaveHandler: GetMouseEventHandler
 }
 const States = ({
   hideStateTitle,
   fillStateColor,
   stateClickHandler,
+  stateMouseEnterHandler,
+  stateMouseLeaveHandler,
 }: StatesProps) =>
   Object.entries(DATA).map(([stateKey, data]) => (
     <USAState
@@ -36,6 +52,8 @@ const States = ({
       state={stateKey}
       fill={fillStateColor(stateKey)}
       onClickState={stateClickHandler(stateKey)}
+      onMouseEnter={stateMouseEnterHandler(stateKey)}
+      onMouseLeave={stateMouseLeaveHandler(stateKey)}
     />
   ))
 
@@ -43,7 +61,6 @@ type USAMapPropTypes = {
   onClick?: ClickHandler
   width?: number
   height?: number
-  title?: string
   defaultFill?: string
   customize?: Customize
   hideStateTitle?: boolean
@@ -54,7 +71,6 @@ export const USAMap = ({
   onClick = (e) => {
     console.log(e.currentTarget.dataset.name)
   },
-  title = 'US states map',
   defaultFill = '#d3d3d3',
   customize,
   hideStateTitle,
@@ -64,6 +80,10 @@ export const USAMap = ({
     customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
 
   const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
+  const stateMouseEnterHandler = (state: string) =>
+    customize?.[state]?.mouseEnterHandler
+  const stateMouseLeaveHandler = (state: string) =>
+    customize?.[state]?.mouseLeaveHandler
 
   return (
     <svg
@@ -71,12 +91,13 @@ export const USAMap = ({
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 959 593"
     >
-      <title>{title}</title>
       <g className="outlines">
         {States({
           hideStateTitle,
           fillStateColor,
           stateClickHandler,
+          stateMouseEnterHandler,
+          stateMouseLeaveHandler,
         })}
         <g className="DC state">
           <path

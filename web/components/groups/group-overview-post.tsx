@@ -6,7 +6,7 @@ import { Spacer } from '../layout/spacer'
 import { Group } from 'common/group'
 import { deleteFieldFromGroup, updateGroup } from 'web/lib/firebase/groups'
 import PencilIcon from '@heroicons/react/solid/PencilIcon'
-import { TrashIcon } from '@heroicons/react/solid'
+import { PlusIcon, TrashIcon } from '@heroicons/react/solid'
 import { createPost } from 'web/lib/firebase/api'
 import { Post } from 'common/post'
 import { deletePost, updatePost } from 'web/lib/firebase/posts'
@@ -35,6 +35,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
+    key: `about ${group.id}`,
     defaultValue: post?.content,
   })
 
@@ -88,12 +89,10 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
   ) : (
     <>
       {post == null ? (
-        <div className="text-center text-gray-500">
-          <p className="text-sm">
-            No post has been added yet.
-            <Spacer h={2} />
-            <Button onClick={() => setEditing(true)}>Add a post</Button>
-          </p>
+        <div className="flex justify-center">
+          <Button onClick={() => setEditing(true)}>
+            <PlusIcon className="mr-3 h-5" /> Add about section
+          </Button>
         </div>
       ) : (
         <Col>

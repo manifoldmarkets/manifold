@@ -1,6 +1,6 @@
 import { ControlledTabs } from 'web/components/layout/tabs'
 import React, { useEffect, useMemo, useState } from 'react'
-import Router, { useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import {
   BetFillData,
   ContractResolutionData,
@@ -53,6 +53,7 @@ import {
 } from 'web/components/multi-user-transaction-link'
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -63,9 +64,7 @@ export default function Notifications() {
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const [activeIndex, setActiveIndex] = useState(0)
 
-  useEffect(() => {
-    if (privateUser === null) Router.push('/')
-  })
+  useRedirectIfSignedOut()
 
   useEffect(() => {
     const query = { ...router.query }

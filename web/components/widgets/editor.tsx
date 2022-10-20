@@ -136,6 +136,7 @@ export function useTextEditor(props: {
         if (imageFiles.length) {
           event.preventDefault()
           upload.mutate(imageFiles)
+          return true // Prevent image in text/html from getting pasted again
         }
 
         // If the pasted content is iframe code, directly inject it
@@ -145,7 +146,7 @@ export function useTextEditor(props: {
           return true // Prevent the code from getting pasted as text
         }
 
-        return // Otherwise, use default paste handler
+        // Otherwise, use default paste handler
       },
       handleDrop(_view, event, _slice, moved) {
         // if dragged from outside

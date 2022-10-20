@@ -1,3 +1,6 @@
+import { Contract } from './contract'
+import { Post } from './post'
+
 export type GlobalConfig = {
-  pinnedItems: { itemId: string; type: 'post' | 'contract' }[]
+  pinnedItems: { item: Post | Contract; type: 'post' | 'contract' }[]
 }
