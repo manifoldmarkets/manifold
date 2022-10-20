@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { User } from 'common/user'
 import { useUserLikes } from 'web/hooks/use-likes'
 import toast from 'react-hot-toast'
@@ -25,6 +25,14 @@ export function LikeItemButton(props: {
     return sum(tips.map((tip) => tip.amount))
   }, [tips])
 
+  const [localTotalTip, setLocalTotalTip] = useState(0)
+  const [cachedTotalTipped, setCachedTotalTipped] = useState(totalTipped)
+  useEffect(() => {
+    if (cachedTotalTipped === 0 && totalTipped != 0 && localTotalTip === 0) {
+      setLocalTotalTip(totalTipped)
+      setCachedTotalTipped(totalTipped)
+    }
+  }, [totalTipped])
   const likes = useUserLikes(user?.id)
 
   const [isLiking, setIsLiking] = useState(false)
@@ -37,9 +45,12 @@ export function LikeItemButton(props: {
     if (!user) return firebaseLogin()
 
     setIsLiking(true)
-
+    setLocalTotalTip((localTotalTip) => localTotalTip + LIKE_TIP_AMOUNT)
     const timeoutId = setTimeout(() => {
-      likeItem(user, item, itemType).catch(() => setIsLiking(false))
+      likeItem(user, item, itemType).catch(() => {
+        setLocalTotalTip((localTotalTip) => localTotalTip - LIKE_TIP_AMOUNT)
+        setIsLiking(false)
+      })
     }, 3000)
     toast.custom(
       () => (
@@ -47,6 +58,7 @@ export function LikeItemButton(props: {
           userName={item.creatorUsername}
           onUndoClick={() => {
             clearTimeout(timeoutId)
+            setLocalTotalTip((localTotalTip) => localTotalTip - LIKE_TIP_AMOUNT)
           }}
         />
       ),
@@ -58,7 +70,7 @@ export function LikeItemButton(props: {
     <TipButton
       onClick={onLike}
       tipAmount={LIKE_TIP_AMOUNT}
-      totalTipped={totalTipped}
+      totalTipped={localTotalTip}
       userTipped={
         !!user &&
         (isLiking ||
