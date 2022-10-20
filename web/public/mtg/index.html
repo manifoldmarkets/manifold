@@ -41,6 +41,16 @@
         min-height: 200px;
       }
 
+      .logo {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.15s;
+      }
+
+      .logo:hover {
+        transform: rotate(12deg);
+      }
+
       h1,
       h3 {
         font-family: Verdana, Geneva, Tahoma, sans-serif;
@@ -303,17 +313,9 @@
         <a
           class="group flex flex-shrink-0 flex-row gap-4 pt-6"
           href="https://manifold.markets/home"
-          ><img
-            class="transition-all group-hover:rotate-12"
-            src="../logo.svg"
-            width="45"
-            height="45"
-            alt=""
-          />
-          <div class="font-major-mono mt-1 text-lg lowercase text-gray-900">
-            Manifold<br />Markets
-          </div></a
-        >
+          style="vertical-align: top; position: absolute; top: 30px; left: 30px"
+          ><img class="logo" src="../logo.svg" width="45" height="45" alt="" />
+        </a>
 
         <details id="addl-options">
           <summary>
