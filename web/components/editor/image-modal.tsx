@@ -1,54 +1,24 @@
-import { UploadIcon } from '@heroicons/react/outline'
 import { Editor } from '@tiptap/react'
 import { useState } from 'react'
 import { AlertBox } from '../widgets/alert-box'
 import { Button } from '../buttons/button'
-import { FileUploadButton } from '../buttons/file-upload-button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { Tabs } from '../layout/tabs'
 
 const MODIFIERS =
   '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
 
-export function ImageModal(props: {
+export function DreamModal(props: {
   editor: Editor | null
-  // TODO: Type this correctly?
-  upload: any
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { upload, open, setOpen } = props
+  const { open, setOpen } = props
+
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className="gap-2 rounded bg-white p-6">
-        <Tabs
-          tabs={[
-            {
-              title: 'Upload file',
-              content: (
-                <FileUploadButton
-                  onFiles={(files) => {
-                    setOpen(false)
-                    upload.mutate(files)
-                  }}
-                  className="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <span className="mt-2 block text-sm font-medium text-gray-400">
-                    Upload an image file
-                  </span>
-                </FileUploadButton>
-              ),
-            },
-            {
-              title: 'Dream',
-              content: <DreamTab {...props} />,
-            },
-          ]}
-        />
-      </Col>
+      <Dream {...props} />
     </Modal>
   )
 }
@@ -57,7 +27,7 @@ export function ImageModal(props: {
 // and injected on Vercel.
 const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
 
-function DreamTab(props: {
+function Dream(props: {
   editor: Editor | null
   open: boolean
   setOpen: (open: boolean) => void
@@ -94,7 +64,7 @@ function DreamTab(props: {
   }
 
   return (
-    <Col className="gap-2">
+    <Col className="gap-2 rounded bg-white p-6">
       <Row className="gap-2">
         <input
           autoFocus

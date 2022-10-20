@@ -173,21 +173,14 @@ export function TextEditor(props: {
   children?: React.ReactNode // additional toolbar buttons
 }) {
   const { editor, children } = props
-  const upload = editor?.storage.upload.mutation ?? {}
 
   return (
-    <>
-      {/* matches input styling */}
-      <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-        <FloatingFormatMenu editor={editor} />
-        <EditorContent editor={editor} />
-        <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
-      </div>
-      {upload.isLoading && <span className="text-xs">Uploading image...</span>}
-      {upload.isError && (
-        <span className="text-error text-xs">Error uploading image :(</span>
-      )}
-    </>
+    // matches input styling
+    <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+      <FloatingFormatMenu editor={editor} advanced={!children} />
+      <EditorContent editor={editor} />
+      <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
+    </div>
   )
 }
 
