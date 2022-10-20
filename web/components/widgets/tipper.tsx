@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 
 import { Comment } from 'common/comment'
@@ -8,10 +8,8 @@ import { transact } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { TipButton } from '../contract/tip-button'
 import { Row } from '../layout/row'
-import { LIKE_TIP_AMOUNT, TIP_UNDO_DURATION } from 'common/like'
+import { LIKE_TIP_AMOUNT } from 'common/like'
 import { formatMoney } from 'common/util/format'
-import { Button } from '../buttons/button'
-import clsx from 'clsx'
 
 export function Tipper(prop: {
   comment: Comment
@@ -72,8 +70,6 @@ export function Tipper(prop: {
   const canUp =
     me && comment.userId !== me.id && me.balance - tempTip >= LIKE_TIP_AMOUNT
 
-  console.log('disabled', !canUp)
-
   return (
     <Row className="items-center gap-0.5">
       <TipButton
@@ -85,35 +81,5 @@ export function Tipper(prop: {
         isCompact
       />
     </Row>
-  )
-}
-
-export function TipToast(props: { userName: string; onUndoClick: () => void }) {
-  const { userName, onUndoClick } = props
-  const [cancelled, setCancelled] = useState(false)
-
-  return (
-    <div className="relative overflow-hidden rounded-lg bg-white drop-shadow-md">
-      <Row className="text-greyscale-6 items-center gap-4 px-4 py-2 text-sm">
-        <div className={clsx(cancelled ? 'hidden' : 'inline')}>
-          Tipped {userName} {formatMoney(LIKE_TIP_AMOUNT)}
-        </div>
-        <div className={clsx('py-1', cancelled ? 'inline' : 'hidden')}>
-          Cancelled tipping
-        </div>
-        <Button
-          className={clsx(cancelled ? 'hidden' : 'inline')}
-          size="xs"
-          color="gray-outline"
-          onClick={() => {
-            onUndoClick()
-            setCancelled(true)
-          }}
-          disabled={cancelled}
-        >
-          Cancel
-        </Button>
-      </Row>
-    </div>
   )
 }
