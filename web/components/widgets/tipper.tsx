@@ -64,9 +64,9 @@ export function Tipper(prop: {
       saveTip(me, comment, delta)
         .then(() => {
           setTempTip((tempTip) => tempTip - delta)
-          toast(`Tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}`)
         })
         .catch((e) => console.error(e))
+    toast(`Tipped ${comment.userName} ${formatMoney(LIKE_TIP_AMOUNT)}`)
   }
 
   const canUp =

@@ -43,11 +43,11 @@ export function LikeItemButton(props: {
     likeItem(user, item, itemType)
       .then(() => {
         setTempTip((tempTip) => tempTip - LIKE_TIP_AMOUNT)
-        toast(`Tipped ${item.creatorUsername} ${formatMoney(LIKE_TIP_AMOUNT)}`)
       })
       .catch(() => {
         setIsLiking(false)
       })
+    toast(`Tipped ${item.creatorUsername} ${formatMoney(LIKE_TIP_AMOUNT)}`)
   }
 
   return (
