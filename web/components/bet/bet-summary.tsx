@@ -25,8 +25,10 @@ export function BetsSummary(props: {
   const isBinary = outcomeType === 'BINARY'
 
   const bets = props.userBets.filter((b) => !b.isAnte)
-  const { profitPercent, payout, profit, invested, hasShares } =
-    getContractBetMetrics(contract, bets)
+  const { profitPercent, payout, profit, invested } = getContractBetMetrics(
+    contract,
+    bets
+  )
 
   const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
   const yesWinnings = sumBy(excludeSales, (bet) =>
@@ -37,7 +39,7 @@ export function BetsSummary(props: {
   )
 
   const position = yesWinnings - noWinnings
-  const outcome = hasShares ? (position > 0 ? 'YES' : 'NO') : undefined
+  const exampleOutcome = position < 0 ? 'NO' : 'YES'
 
   const prob = isBinary ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
@@ -60,7 +62,7 @@ export function BetsSummary(props: {
             <div className="whitespace-nowrap text-sm text-gray-500">
               Position{' '}
               <InfoTooltip
-                text={`Number of shares you own on net. 1 ${outcome} share = M$1 if the market resolves ${outcome}.`}
+                text={`Number of shares you own on net. 1 ${exampleOutcome} share = M$1 if the market resolves ${exampleOutcome}.`}
               />
             </div>
             <div className="whitespace-nowrap">
