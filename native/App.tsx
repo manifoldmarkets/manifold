@@ -25,7 +25,7 @@ import {
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import { Platform, BackHandler } from 'react-native'
-import { Notification } from 'expo-notifications'
+import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
 import { TEN_YEARS_SECS } from 'common/envs/constants'
 import { PrivateUser } from 'common/user'
@@ -54,7 +54,7 @@ const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const uri =
+const homeUri =
   ENV === 'DEV'
     ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
     : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
@@ -69,9 +69,25 @@ export default function App() {
   const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
   const isIOS = Platform.OS === 'ios'
   const useWebKit = isIOS
-  const [notification, setNotification] = useState<Notification | false>(false)
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
+  const url = Linking.useURL()
+
+  if (url) {
+    const { hostname, path, queryParams } = Linking.parse(url)
+    console.log(
+      `Linked to app with hostname: ${hostname}, path: ${path} and data: ${JSON.stringify(
+        queryParams
+      )}`
+    )
+    if (hostname)
+      webview.current.postMessage(
+        JSON.stringify({
+          type: 'link',
+          data: path,
+        })
+      )
+  }
 
   const handleBackButtonPress = () => {
     try {
@@ -97,8 +113,7 @@ export default function App() {
     // This listener is fired whenever a notification is received while the app is foregrounded
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
-        // TODO: pass this to the webview so we can navigate to the correct page
-        setNotification(notification)
+        console.log('notification received', notification)
       })
 
     // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
@@ -139,7 +154,7 @@ export default function App() {
     if (fbUser) {
       !isExpoClient &&
         CookieManager.set(
-          uri,
+          homeUri,
           {
             name: AUTH_COOKIE_NAME,
             value: encodeURIComponent(fbUser),
@@ -265,7 +280,7 @@ export default function App() {
         style={{ marginTop: isIOS ? 30 : 0, marginBottom: isIOS ? 15 : 0 }}
         allowsBackForwardNavigationGestures={true}
         sharedCookiesEnabled={true}
-        source={{ uri }}
+        source={{ uri: homeUri }}
         ref={webview}
         onMessage={handleMessageFromWebview}
         onNavigationStateChange={async (navState) => {
