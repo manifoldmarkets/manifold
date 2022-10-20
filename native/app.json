@@ -31,8 +31,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "*.manifold.markets",
-              "pathPrefix": "/records"
+              "host": "manifold.markets"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
