@@ -21,6 +21,7 @@ export function LikeItemButton(props: {
   const { item, user, itemType } = props
 
   const tips = useItemTipTxns(item.id)
+  const [tempTip, setTempTip] = useState(0)
 
   const totalTipped = useMemo(() => {
     return sum(tips.map((tip) => tip.amount))
@@ -36,12 +37,14 @@ export function LikeItemButton(props: {
 
   const onLike = async () => {
     if (!user) return firebaseLogin()
+    setTempTip((tempTip) => tempTip + LIKE_TIP_AMOUNT)
 
     setIsLiking(true)
     likeItem(user, item, itemType)
-      .then(() =>
+      .then(() => {
+        setTempTip((tempTip) => tempTip - LIKE_TIP_AMOUNT)
         toast(`Tipped ${item.creatorUsername} ${formatMoney(LIKE_TIP_AMOUNT)}`)
-      )
+      })
       .catch(() => {
         setIsLiking(false)
       })
@@ -58,7 +61,11 @@ export function LikeItemButton(props: {
           userLikedItemIds?.includes(item.id) ||
           (!likes && !!item.likedByUserIds?.includes(user.id)))
       }
-      disabled={item.creatorId === user?.id}
+      disabled={
+        !user ||
+        item.creatorId === user?.id ||
+        user.balance - tempTip < LIKE_TIP_AMOUNT
+      }
     />
   )
 }
