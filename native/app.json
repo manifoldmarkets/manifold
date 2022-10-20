@@ -7,6 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
+    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround"],
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
@@ -44,7 +45,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.markets.manifold",
-      "versionCode": 6
+      "versionCode": 8
     },
     "web": {
       "favicon": "./assets/favicon.png"

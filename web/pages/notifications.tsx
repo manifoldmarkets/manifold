@@ -5,7 +5,6 @@ import {
   BetFillData,
   ContractResolutionData,
   Notification,
-  notification_source_types,
 } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
@@ -55,6 +54,10 @@ import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
+import {
+  getSourceIdForLinkComponent,
+  getSourceUrl,
+} from 'web/lib/firebase/notifications'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -870,7 +873,7 @@ function NotificationFrame(props: {
     >
       <div className={'relative cursor-pointer'}>
         <SiteLink
-          href={getSourceUrl(notification) ?? ''}
+          href={getSourceUrl(notification)}
           className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
           onClick={() =>
             track('Notification Clicked', {
@@ -1200,57 +1203,6 @@ function QuestionOrGroupLink(props: {
       {sourceContractTitle || sourceTitle}
     </SiteLink>
   )
-}
-
-function getSourceUrl(notification: Notification) {
-  const {
-    sourceType,
-    sourceId,
-    sourceUserUsername,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-  } = notification
-  if (sourceType === 'follow') return `/${sourceUserUsername}`
-  if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
-  // User referral via contract:
-  if (
-    sourceContractCreatorUsername &&
-    sourceContractSlug &&
-    sourceType === 'user'
-  )
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-  // User referral:
-  if (sourceType === 'user' && !sourceContractSlug)
-    return `/${sourceUserUsername}`
-  if (sourceType === 'challenge') return `${sourceSlug}`
-  if (sourceContractCreatorUsername && sourceContractSlug)
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
-      sourceId ?? '',
-      sourceType
-    )}`
-  else if (sourceSlug)
-    return `${
-      sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
-    }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
-}
-
-function getSourceIdForLinkComponent(
-  sourceId: string,
-  sourceType?: notification_source_types
-) {
-  switch (sourceType) {
-    case 'answer':
-      return `answer-${sourceId}`
-    case 'comment':
-      return sourceId
-    case 'contract':
-      return ''
-    case 'bet':
-      return ''
-    default:
-      return sourceId
-  }
 }
 
 function NotificationTextLabel(props: {

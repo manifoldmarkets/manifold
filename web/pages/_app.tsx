@@ -6,6 +6,7 @@ import Script from 'next/script'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import Welcome from 'web/components/onboarding/welcome'
+import { NativeMessageListener } from 'web/components/native-message-listener'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -77,6 +78,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
+        <NativeMessageListener />
         <QueryClientProvider client={queryClient}>
           <Welcome />
           <Component {...pageProps} />

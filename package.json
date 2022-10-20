@@ -5,8 +5,7 @@
     "common",
     "docs",
     "functions",
-    "web",
-    "native"
+    "web"
   ],
   "scripts": {
     "verify": "(cd web && yarn verify:dir); (cd functions && yarn verify:dir)",

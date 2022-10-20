@@ -14,8 +14,10 @@ import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
 import { setCookie } from 'web/lib/util/cookie'
 import { UserAndPrivateUser } from 'common/user'
-import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import { app } from 'web/lib/firebase/init'
+import {
+  webviewPassUsers,
+  webviewSignOut,
+} from 'web/lib/native/webview-messages'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -59,26 +61,6 @@ export function AuthProvider(props: {
   const { children, serverUser } = props
   const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
 
-  const handleNativeMessage = (e: any) => {
-    try {
-      const event = JSON.parse(e.data)
-      const data = event.data
-      setFirebaseUserViaJson(data, app)
-    } catch (e) {
-      console.log('error parsing native message', e)
-      return
-    }
-  }
-
-  useEffect(() => {
-    document.addEventListener('message', handleNativeMessage)
-    window.addEventListener('message', handleNativeMessage)
-    return () => {
-      document.removeEventListener('message', handleNativeMessage)
-      window.removeEventListener('message', handleNativeMessage)
-    }
-  }, [])
-
   useEffect(() => {
     if (serverUser === undefined) {
       const cachedUser = localStorage.getItem(CACHED_USER_KEY)
@@ -109,20 +91,17 @@ export function AuthProvider(props: {
             setCachedReferralInfoForUser(current.user)
           }
           setAuthUser(current)
-          if ((window as any).isNative) {
-            ;(window as any).ReactNativeWebView.postMessage(
-              JSON.stringify({
-                fbUser: fbUser.toJSON(),
-                privateUser: current.privateUser,
-              })
-            )
-          }
+          webviewPassUsers(
+            JSON.stringify({
+              fbUser: fbUser.toJSON(),
+              privateUser: current.privateUser,
+            })
+          )
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)
           setAuthUser(null)
-          ;(window as any).isNative &&
-            (window as any).ReactNativeWebView.postMessage('signOut')
+          webviewSignOut()
         }
       },
       (e) => {

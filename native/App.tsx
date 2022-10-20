@@ -56,7 +56,7 @@ const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const uri =
   ENV === 'DEV'
-    ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
+    ? 'https://d826-181-214-166-162.ngrok.io'
     : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
@@ -84,7 +84,12 @@ export default function App() {
     // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response)
+        webview.current.postMessage(
+          JSON.stringify({
+            type: 'notification',
+            data: response.notification.request.content.data,
+          })
+        )
       })
 
     return () => {
@@ -134,7 +139,6 @@ export default function App() {
       const userDoc = doc(firestore, 'private-users', userId)
       const privateUser = (await getDoc(userDoc)).data() as PrivateUser
       const prefs = privateUser.notificationPreferences
-      // TODO: check if this works
       prefs.opt_out_all = prefs.opt_out_all.filter((p) => p !== 'mobile')
       privateUser.notificationPreferences = prefs
       await updateDoc(
