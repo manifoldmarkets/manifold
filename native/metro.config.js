@@ -45,5 +45,4 @@ module.exports = {
     }),
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
   },
-  watchFolders,
 }
