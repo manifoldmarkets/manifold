@@ -1,6 +1,5 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
 const { getDefaultConfig } = require('expo/metro-config')
-const defaultConfig = getDefaultConfig(__dirname)
 
 /**
  * Metro configuration for React Native
@@ -9,13 +8,21 @@ const defaultConfig = getDefaultConfig(__dirname)
  * @format
  */
 const path = require('path')
+const projectRoot = __dirname
+const defaultConfig = getDefaultConfig(projectRoot)
+const workspaceRoot = path.resolve(projectRoot, '../')
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common'),
 }
-const watchFolders = defaultConfig.watchFolders.concat([
+defaultConfig.watchFolders = [
   path.resolve(__dirname + '/../common'),
-])
-
+  workspaceRoot,
+]
+defaultConfig.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(workspaceRoot, 'node_modules'),
+]
+defaultConfig.resolver.disableHierarchicalLookup = true
 module.exports = {
   ...defaultConfig,
   transformer: {
