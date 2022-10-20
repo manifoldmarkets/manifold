@@ -67,7 +67,7 @@ export function FeedCommentThread(props: {
         comment={parentComment}
         highlighted={highlightedId === parentComment.id}
         myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
-        totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
+        totalTip={sum(Object.values(tips[parentComment.id] ?? { undefined }))}
         showTip={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
@@ -82,7 +82,7 @@ export function FeedCommentThread(props: {
             comment={comment}
             highlighted={highlightedId === comment.id}
             myTip={user ? tips[comment.id]?.[user.id] : undefined}
-            totalTip={sum(Object.values(tips[comment.id] ?? {}))}
+            totalTip={sum(Object.values(tips[comment.id] ?? { undefined }))}
             showTip={true}
             onReplyClick={onReplyClick}
           />
@@ -164,7 +164,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
             comment={comment}
             showTip={showTip}
             myTip={myTip}
-            totalTip={totalTip}
+            totalTip={totalTip ?? undefined}
             contract={contract}
           />
         </Row>
@@ -178,7 +178,7 @@ export function CommentActions(props: {
   comment: ContractComment
   showTip?: boolean
   myTip?: number
-  totalTip?: number
+  totalTip?: number | undefined
   contract: Contract
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
@@ -190,7 +190,11 @@ export function CommentActions(props: {
         </IconButton>
       )}
       {showTip && (
-        <Tipper comment={comment} myTip={myTip ?? 0} totalTip={totalTip ?? 0} />
+        <Tipper
+          comment={comment}
+          myTip={myTip ?? 0}
+          totalTip={totalTip ?? undefined}
+        />
       )}
       {(contract.openCommentBounties ?? 0) > 0 && (
         <AwardBountyButton comment={comment} contract={contract} />

@@ -168,7 +168,7 @@ export function PostComment(props: {
           <Tipper
             comment={comment}
             myTip={me ? tips?.[me.id] ?? 0 : 0}
-            totalTip={sum(Object.values(tips ?? {}))}
+            totalTip={sum(Object.values(tips ?? { undefined }))}
           />
         </Row>
       </div>
