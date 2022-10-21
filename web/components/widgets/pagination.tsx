@@ -101,7 +101,7 @@ export function PaginationArrow(props: {
       href={scrollToTop ? '#' : undefined}
       onClick={onClick}
       className={clsx(
-        'rounded-lg transition-colors',
+        'select-none rounded-lg transition-colors',
         disabled
           ? 'text-greyscale-2 pointer-events-none'
           : 'hover:bg-greyscale-1.5 cursor-pointer text-indigo-700'

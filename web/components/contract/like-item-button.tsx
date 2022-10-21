@@ -53,7 +53,7 @@ export function LikeItemButton(props: {
     <TipButton
       onClick={onLike}
       tipAmount={LIKE_TIP_AMOUNT}
-      totalTipped={totalTipped + tempTip}
+      totalTipped={totalTipped}
       userTipped={
         !!user &&
         (isLiking ||
