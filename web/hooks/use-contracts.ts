@@ -20,6 +20,7 @@ import {
 import { CPMMBinaryContract } from 'common/contract'
 import { Dictionary, zipObject } from 'lodash'
 import { useForceUpdate } from './use-force-update'
+import { useEffectCheckEquality } from './use-effect-check-equality'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -145,7 +146,7 @@ const updateContract = (contractId: string, contract: Contract | null) => {
 export const useContracts = (contractIds: string[]) => {
   const forceUpdate = useForceUpdate()
 
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     for (const id of contractIds) {
       if (!contractListeners[id]) {
         contractListeners[id] = []

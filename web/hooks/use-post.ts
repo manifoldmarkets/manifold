@@ -6,6 +6,7 @@ import {
   listenForDateDocs,
   listenForPost,
 } from 'web/lib/firebase/posts'
+import { useEffectCheckEquality } from './use-effect-check-equality'
 
 export const usePost = (postId: string | undefined) => {
   const [post, setPost] = useState<Post | null | undefined>()
@@ -19,7 +20,7 @@ export const usePost = (postId: string | undefined) => {
 
 export const usePosts = (postIds: string[]) => {
   const [posts, setPosts] = useState<Post[]>([])
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     if (postIds.length === 0) return
     setPosts([])
 
