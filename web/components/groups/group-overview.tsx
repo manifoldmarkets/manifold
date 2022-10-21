@@ -38,7 +38,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { PostCard, PostCardList } from '../posts/post-card'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
-import { CreatePost } from '../posts/create-post'
+import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 
@@ -103,7 +103,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
   const createPost = (
     <Modal size="xl" open={showCreatePost} setOpen={setShowCreatePost}>
       <div className="w-full bg-white py-10">
-        <CreatePost group={group} />
+        <CreatePostForm group={group} />
       </div>
     </Modal>
   )

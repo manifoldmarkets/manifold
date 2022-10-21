@@ -39,6 +39,7 @@ import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-overview'
+import { Button } from './buttons/button'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -240,7 +241,27 @@ export function UserPage(props: { user: User }) {
                 content: (
                   <>
                     <Spacer h={4} />
-                    <SectionHeader label={'Posts'} href={''} />
+
+                    <Row className="flex items-center justify-between">
+                      <Col>
+                        <SectionHeader label={'Posts'} href={''} />
+                      </Col>
+                      <Col>
+                        {currentUser && (
+                          <SiteLink
+                            className="mb-3 text-xl"
+                            href={'/create-post'}
+                            onClick={() =>
+                              track('home click create post', {
+                                section: 'create-post',
+                              })
+                            }
+                          >
+                            <Button>Create Post</Button>
+                          </SiteLink>
+                        )}
+                      </Col>
+                    </Row>
 
                     <Col>
                       {userPosts ? (
