@@ -316,7 +316,7 @@ export function NewContract(props: {
         <>
           <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Range</span>
+              <span className="mb-1">Range </span>
               <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             </label>
 
@@ -361,7 +361,7 @@ export function NewContract(props: {
           </div>
           <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Initial value</span>
+              <span className="mb-1">Initial value </span>
               <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
             </label>
 
@@ -418,7 +418,7 @@ export function NewContract(props: {
 
       <div className="mb-1 flex flex-col items-start">
         <label className="mb-1 gap-2 px-1 py-2">
-          <span>Question closes in</span>
+          <span>Question closes in </span>
           <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
@@ -461,7 +461,7 @@ export function NewContract(props: {
 
       <div className="mb-1 flex flex-col items-start gap-1">
         <label className="gap-2 px-1 py-2">
-          <span className="mb-1">Description</span>
+          <span className="mb-1">Description </span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
         <TextEditor editor={editor} />
@@ -472,7 +472,7 @@ export function NewContract(props: {
       <Row className="items-end justify-between">
         <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
-            <span>Cost</span>
+            <span>Cost </span>
             <InfoTooltip
               text={`Cost to create your question. This amount is used to subsidize predictions.`}
             />
