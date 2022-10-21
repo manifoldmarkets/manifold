@@ -341,7 +341,7 @@ export function FeedCommentHeader(props: {
   const totalAwarded = bountiesAwarded ?? 0
   return (
     <Row>
-      <div className="text-greyscale-6 mt-0.5 text-xs">
+      <div className="text-greyscale-6 mt-0.5 text-sm">
         <UserLink username={userUsername} name={userName} />{' '}
         <span className="text-greyscale-4">
           {comment.betId == null &&
