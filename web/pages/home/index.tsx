@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { toast, Toaster } from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
 import { Page } from 'web/components/layout/page'
@@ -143,8 +143,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   return (
     <Page>
-      <Toaster />
-
       <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
         <Row
           className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
