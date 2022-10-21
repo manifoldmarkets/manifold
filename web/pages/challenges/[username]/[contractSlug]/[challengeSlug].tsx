@@ -33,7 +33,7 @@ import { getOpenGraphProps } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contracts'
 
-export async function getStaticProp(props: {
+export async function getStaticProps(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
 }) {
   const { username, contractSlug, challengeSlug } = props.params
