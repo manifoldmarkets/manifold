@@ -83,7 +83,7 @@ function GroupItem(props: { group: Group; className?: string }) {
       <JoinOrLeaveGroupButton
         group={group}
         user={user}
-        isMember={user ? memberIds?.includes(user.id) : false}
+        isMember={user && memberIds ? memberIds.includes(user.id) : false}
       />
     </Row>
   )

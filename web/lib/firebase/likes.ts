@@ -40,7 +40,6 @@ export const likeItem = async (
       data: { contractId: item.id },
       description: `${user.name} liked ${itemType}${item.id} for M$ ${LIKE_TIP_AMOUNT} to ${item.creatorId} `,
     })
-    console.log('result', result)
   }
   // create new like in db under users collection
   const ref = doc(getLikesCollection(user.id), item.id)

@@ -1,6 +1,5 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 
-import { useContractWithPreload } from 'web/hooks/use-contract'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
@@ -48,6 +47,7 @@ import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
 import { needsAdminToResolve } from 'web/lib/util/admin'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
+import { useContract } from 'web/hooks/use-contracts'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -104,7 +104,7 @@ export function ContractPageContent(
   }
 ) {
   const { comments } = props
-  const contract = useContractWithPreload(props.contract) ?? props.contract
+  const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
   usePrefetch(user?.id)

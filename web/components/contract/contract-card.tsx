@@ -32,7 +32,6 @@ import {
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { getColor, ProbBar, QuickBet } from '../bet/quick-bet'
-import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser, useUserContractMetrics } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -43,6 +42,7 @@ import { ProbOrNumericChange } from './prob-change-table'
 import { Card } from '../widgets/card'
 import { floatingEqual } from 'common/util/math'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { useContract } from 'web/hooks/use-contracts'
 
 export function ContractCard(props: {
   contract: Contract
@@ -67,7 +67,7 @@ export function ContractCard(props: {
     noLinkAvatar,
     newTab,
   } = props
-  const contract = useContractWithPreload(props.contract) ?? props.contract
+  const contract = useContract(props.contract.id) ?? props.contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -83,21 +83,26 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <Card className={clsx('group relative flex gap-3', className)}>
+    <Card
+      className={clsx(
+        'font-readex-pro group relative flex gap-3 leading-normal',
+        className
+      )}
+    >
       <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
           className={'hidden md:inline-flex'}
           noLink={noLinkAvatar}
         />
-        <p
+        <div
           className={clsx(
             'break-anywhere font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
             questionClass
           )}
         >
           {question}
-        </p>
+        </div>
 
         {(outcomeType === 'FREE_RESPONSE' ||
           outcomeType === 'MULTIPLE_CHOICE') &&
@@ -405,7 +410,8 @@ export function ContractCardProbChange(props: {
   const noOutcomeLabel =
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
-  const contract = useContractWithPreload(props.contract) as CPMMBinaryContract
+  const contract = (useContract(props.contract.id) ??
+    props.contract) as CPMMBinaryContract
 
   const user = useUser()
   const metrics = useUserContractMetrics(user?.id, contract.id)

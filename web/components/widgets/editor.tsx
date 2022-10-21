@@ -75,8 +75,8 @@ export const editorExtensions = (simple = false): Extensions => [
 ]
 
 const proseClass = clsx(
-  'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
-  'font-light prose-a:font-light prose-blockquote:font-light prose-sm'
+  'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 max-w-none prose-quoteless leading-relaxed',
+  'prose-blockquote:font-light prose-blockquote:text-greyscale-6 font-light text-md'
 )
 
 export function useTextEditor(props: {
@@ -173,32 +173,26 @@ export function TextEditor(props: {
   children?: React.ReactNode // additional toolbar buttons
 }) {
   const { editor, children } = props
-  const upload = editor?.storage.upload.mutation ?? {}
 
   return (
-    <>
-      {/* matches input styling */}
-      <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
-        <FloatingFormatMenu editor={editor} />
-        <EditorContent editor={editor} />
-        <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
-      </div>
-      {upload.isLoading && <span className="text-xs">Uploading image...</span>}
-      {upload.isError && (
-        <span className="text-error text-xs">Error uploading image :(</span>
-      )}
-    </>
+    // matches input styling
+    <div className="w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm transition-colors focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
+      <FloatingFormatMenu editor={editor} advanced={!children} />
+      <EditorContent editor={editor} />
+      <StickyFormatMenu editor={editor}>{children}</StickyFormatMenu>
+    </div>
   )
 }
 
 export function RichContent(props: {
   content: JSONContent | string
   className?: string
+  proseClassName?: string
   smallImage?: boolean
 }) {
-  const { className, content, smallImage } = props
+  const { className, proseClassName, content, smallImage } = props
   const editor = useEditor({
-    editorProps: { attributes: { class: proseClass } },
+    editorProps: { attributes: { class: clsx(proseClass, proseClassName) } },
     extensions: [
       StarterKit,
       smallImage ? DisplayImage : Image,
@@ -231,18 +225,30 @@ export function RichContent(props: {
 export function Content(props: {
   content: JSONContent | string
   className?: string
+  proseClassName?: string
   smallImage?: boolean
 }) {
-  const { className, content } = props
+  const { className, proseClassName, content } = props
   return typeof content === 'string' ? (
     <Linkify
       className={clsx(
+        'whitespace-pre-line font-light leading-relaxed',
         className,
-        'whitespace-pre-line font-light leading-relaxed'
+        proseClassName
       )}
       text={content}
     />
   ) : (
     <RichContent {...props} />
+  )
+}
+
+export function PostContent(props: { content: JSONContent | string }) {
+  const { content } = props
+  return (
+    <Content
+      content={content}
+      className="prose-p:mb-4 prose-headings:font-readex-pro font-serif"
+    />
   )
 }

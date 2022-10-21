@@ -1,4 +1,5 @@
 import { RefreshIcon } from '@heroicons/react/outline'
+import { TrashIcon } from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import Link from 'next/link'
@@ -12,13 +13,13 @@ import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
 import {
+  deletePrivateUser,
   getUserAndPrivateUser,
   updatePrivateUser,
   updateUser,
@@ -43,7 +44,7 @@ function EditUserField(props: {
 
   return (
     <div>
-      <label className="px-1 py-2">{label}</label>
+      <label className="mb-1 block">{label}</label>
 
       {field === 'bio' ? (
         <ExpandingInput
@@ -73,6 +74,7 @@ export default function ProfilePage(props: {
   const [name, setName] = useState(user.name)
   const [username, setUsername] = useState(user.username)
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
+  const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
 
   const updateDisplayName = async () => {
     const newName = cleanDisplayName(name)
@@ -107,6 +109,11 @@ export default function ProfilePage(props: {
     })
   }
 
+  const deleteAccount = async () => {
+    await changeUserInfo({ userDeleted: true })
+    await deletePrivateUser(privateUser.id)
+  }
+
   const fileHandler = async (event: any) => {
     const file = event.target.files[0]
 
@@ -129,14 +136,11 @@ export default function ProfilePage(props: {
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
-        <Row className="justify-between">
+        <Row className="items-start justify-between">
           <Title className="!mt-0" text="Edit Profile" />
-          <SiteLink
-            className={buttonClass('md', 'green')}
-            href={`/${user.username}`}
-          >
-            Done
-          </SiteLink>
+          <Link href={`/${user.username}`}>
+            <a className={buttonClass('md', 'green')}>Done</a>
+          </Link>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
@@ -156,7 +160,7 @@ export default function ProfilePage(props: {
           </Row>
 
           <div>
-            <label className="px-1 py-2">Display name</label>
+            <label className="mb-1 block">Display name</label>
             <Input
               type="text"
               placeholder="Display name"
@@ -167,7 +171,7 @@ export default function ProfilePage(props: {
           </div>
 
           <div>
-            <label className="px-1 py-2">Username</label>
+            <label className="mb-1 block">Username</label>
             <Input
               type="text"
               placeholder="Username"
@@ -193,15 +197,13 @@ export default function ProfilePage(props: {
           ))}
 
           <div>
-            <label className="px-1 py-2">Email</label>
-            <div className="ml-1 text-gray-500">
-              {privateUser.email ?? '\u00a0'}
-            </div>
+            <label className="mb-1 block">Email</label>
+            <div className="text-gray-500">{privateUser.email ?? '\u00a0'}</div>
           </div>
 
           <div>
-            <label className="px-1 py-2">API key</label>
-            <div className="flex w-full items-stretch">
+            <label className="mb-1 block">API key</label>
+            <div className="flex w-full items-stretch space-x-1">
               <Input
                 type="text"
                 placeholder="Click refresh to generate key"
@@ -236,6 +238,50 @@ export default function ProfilePage(props: {
                     </Link>{' '}
                     to relink your account.
                   </div>
+                </Col>
+              </ConfirmationButton>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block">Delete Account</label>
+            <div className="flex w-full items-stretch space-x-1">
+              <ConfirmationButton
+                openModalBtn={{
+                  className: 'p-2',
+                  label: 'Permanently delete this account',
+                  icon: <TrashIcon className="mr-1 h-5 w-5" />,
+                  color: 'red',
+                }}
+                submitBtn={{
+                  label: 'Delete account',
+                  color:
+                    deleteAccountConfirmation == 'delete my account'
+                      ? 'red'
+                      : 'gray',
+                }}
+                onSubmitWithSuccess={async () => {
+                  if (deleteAccountConfirmation == 'delete my account') {
+                    deleteAccount()
+                    return true
+                  }
+                  return false
+                }}
+              >
+                <Col>
+                  <Title text={'Are you sure?'} />
+                  <div>
+                    Deleting your account means you will no longer be able to
+                    use your account. You will lose access to all of your data.
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Type 'delete my account' to confirm"
+                    className="w-full"
+                    value={deleteAccountConfirmation}
+                    onChange={(e) =>
+                      setDeleteAccountConfirmation(e.target.value)
+                    }
+                  />
                 </Col>
               </ConfirmationButton>
             </div>

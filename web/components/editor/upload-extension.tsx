@@ -1,4 +1,5 @@
 import { Editor, Extension } from '@tiptap/core'
+import toast from 'react-hot-toast'
 import { useMutation } from 'react-query'
 import { uploadImage } from 'web/lib/firebase/storage'
 
@@ -23,5 +24,10 @@ export const useUploadMutation = (editor: Editor | null) =>
         })
         trans.run()
       },
+      onError() {
+        toast('Failed to upload :(')
+      },
     }
   )
+
+export type UploadMutation = ReturnType<typeof useUploadMutation>

@@ -92,6 +92,7 @@ service cloud.firestore {
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['apiKey', 'notificationPreferences', 'twitchInfo']);
+      allow delete: if (userId == request.auth.uid || isAdmin());              
     }
 
     match /private-users/{userId}/views/{viewId} {
@@ -216,7 +217,7 @@ service cloud.firestore {
         allow update: if isAdmin() || request.auth.uid == resource.data.creatorId
                          && request.resource.data.diff(resource.data)
                          .affectedKeys()
-                         .hasOnly(['name', 'content']);
+                         .hasOnly(['name', 'content', 'isGroupAboutPost']);
         allow delete: if isAdmin() || request.auth.uid == resource.data.creatorId;
          match /comments/{commentId} {
           	allow read;

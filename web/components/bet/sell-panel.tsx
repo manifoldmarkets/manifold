@@ -15,7 +15,7 @@ import {
   formatWithCommas,
   formatMoney,
 } from 'common/util/format'
-import { sumBy, partition } from 'lodash'
+import { sumBy } from 'lodash'
 import { useState } from 'react'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { sellShares } from 'web/lib/firebase/api'
@@ -132,25 +132,13 @@ export function SellPanel(props: {
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
-  const openUserBets = userBets.filter((bet) => !bet.isSold && !bet.sale)
-  const [yesBets, noBets] = partition(
-    openUserBets,
-    (bet) => bet.outcome === 'YES'
-  )
-  const [yesShares, noShares] = [
-    sumBy(yesBets, (bet) => bet.shares),
-    sumBy(noBets, (bet) => bet.shares),
-  ]
-
-  const ownedShares = Math.round(yesShares) || Math.round(noShares)
-
   const onAmountChange = (amount: number | undefined) => {
     setAmount(amount)
 
     // Check for errors.
     if (amount !== undefined) {
-      if (amount > ownedShares) {
-        setError(`Maximum ${formatWithCommas(Math.floor(ownedShares))} shares`)
+      if (amount > shares) {
+        setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
       } else {
         setError(undefined)
       }

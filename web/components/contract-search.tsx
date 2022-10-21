@@ -43,11 +43,12 @@ import { Modal } from './layout/modal'
 import { Title } from './widgets/title'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
+import { SimpleLinkButton } from './buttons/simple-link-button'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Trending', value: 'score' },
-  { label: 'Daily trending', value: 'daily-score' },
+  { label: 'Daily changed', value: 'daily-score' },
   { label: '24h volume', value: '24-hour-vol' },
   { label: 'Most popular', value: 'most-popular' },
   { label: 'Liquidity', value: 'liquidity' },
@@ -439,7 +440,7 @@ function ContractSearchControls(props: {
 
   return (
     <Col className={clsx('bg-greyscale-1 top-0 z-20 gap-3 pb-3', className)}>
-      <Row className="gap-1 sm:gap-2">
+      <Row className="items-center gap-1 sm:gap-2">
         <Input
           type="text"
           value={query}
@@ -449,6 +450,12 @@ function ContractSearchControls(props: {
           className="w-full"
           autoFocus={autoFocus}
         />
+        {query && (
+          <SimpleLinkButton
+            getUrl={() => window.location.href}
+            tooltip="Copy link to search results"
+          />
+        )}
         {!isMobile && !query && (
           <SearchFilters
             filter={filter}

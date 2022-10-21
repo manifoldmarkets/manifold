@@ -136,7 +136,7 @@ export function useMembers(groupId: string | undefined) {
 }
 
 export function useMemberIds(groupId: string | null) {
-  const [memberIds, setMemberIds] = useState<string[]>([])
+  const [memberIds, setMemberIds] = useState<string[]>()
   useEffect(() => {
     if (groupId)
       return listenForValues<GroupMemberDoc>(groupMembers(groupId), (docs) => {

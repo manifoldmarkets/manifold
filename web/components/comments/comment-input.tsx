@@ -37,8 +37,12 @@ export function CommentInput(props: {
   } = props
   const user = useUser()
 
+  const key = `comment ${pageId} ${
+    parentCommentId ?? parentAnswerOutcome ?? ''
+  }`
+
   const editor = useTextEditor({
-    key: `comment ${pageId} ${parentCommentId ?? parentAnswerOutcome ?? ''}`,
+    key,
     simple: true,
     max: MAX_COMMENT_LENGTH,
     placeholder:
@@ -54,6 +58,9 @@ export function CommentInput(props: {
     setIsSubmitting(true)
     onSubmitComment?.(editor)
     setIsSubmitting(false)
+    editor?.commands.clearContent(true)
+    // force clear save, because it can fail if editor unrenders
+    localStorage.removeItem(`text ${key}`)
   }
 
   if (user?.isBannedFromPosting) return <></>
@@ -71,7 +78,7 @@ export function CommentInput(props: {
           editor={editor}
           replyTo={replyTo}
           user={user}
-          submitComment={submitComment}
+          submit={submitComment}
           isSubmitting={isSubmitting}
         />
       </div>
@@ -95,7 +102,7 @@ export function AnswerCommentInput(props: {
     <>
       <Col>
         <Row className="relative">
-          <div className="absolute -bottom-1 left-1.5">
+          <div className="absolute -bottom-1 left-1.5 z-20">
             <Curve size={32} strokeWidth={1} color="#D8D8EB" />
           </div>
           <div className="ml-[38px]">
@@ -127,18 +134,13 @@ export function CommentInputTextArea(props: {
   user: User | undefined | null
   replyTo?: { id: string; username: string }
   editor: Editor | null
-  submitComment: () => void
+  submit: () => void
   isSubmitting: boolean
 }) {
-  const { user, editor, submitComment, isSubmitting, replyTo } = props
+  const { user, editor, submit, isSubmitting, replyTo } = props
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
-
-  const submit = () => {
-    submitComment()
-    editor?.commands?.clearContent(true)
-  }
 
   useEffect(() => {
     if (!editor) {

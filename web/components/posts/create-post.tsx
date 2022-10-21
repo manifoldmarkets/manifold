@@ -11,7 +11,7 @@ import { Group } from 'common/group'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Button } from '../buttons/button'
 
-export function CreatePost(props: { group?: Group }) {
+export function CreatePostForm(props: { group?: Group }) {
   const [title, setTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
 

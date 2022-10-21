@@ -14,7 +14,13 @@ import { SiteLink } from 'web/components/widgets/site-link'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import { Row } from 'web/components/layout/row'
 
-const senateMidterms: StateElectionMarket[] = [
+export const senateMidterms: StateElectionMarket[] = [
+  {
+    state: 'WA',
+    creatorUsername: 'BTE',
+    slug: 'will-patty-murray-be-reelected-to-t',
+    isWinRepublican: false,
+  },
   {
     state: 'AZ',
     creatorUsername: 'BTE',
@@ -81,9 +87,21 @@ const senateMidterms: StateElectionMarket[] = [
     slug: 'will-michael-bennet-win-the-2022-co',
     isWinRepublican: false,
   },
+  {
+    state: 'MO',
+    creatorUsername: 'Tetraspace',
+    slug: 'if-trudy-valentine-is-the-2022-miss',
+    isWinRepublican: false,
+  },
 ]
 
-const governorMidterms: StateElectionMarket[] = [
+export const governorMidterms: StateElectionMarket[] = [
+  {
+    state: 'OK',
+    creatorUsername: 'NicholasCharette73b6',
+    slug: 'will-kevin-stitt-win-the-2022-oklah',
+    isWinRepublican: true,
+  },
   {
     state: 'TX',
     creatorUsername: 'LarsDoucet',
@@ -100,12 +118,6 @@ const governorMidterms: StateElectionMarket[] = [
     state: 'FL',
     creatorUsername: 'Tetraspace',
     slug: 'if-charlie-crist-is-the-democratic',
-    isWinRepublican: false,
-  },
-  {
-    state: 'PA',
-    creatorUsername: 'JonathanMast',
-    slug: 'will-josh-shapiro-win-the-2022-penn',
     isWinRepublican: false,
   },
   {
@@ -145,12 +157,6 @@ const governorMidterms: StateElectionMarket[] = [
     isWinRepublican: true,
   },
   {
-    state: 'AZ',
-    creatorUsername: 'SG',
-    slug: 'will-a-republican-win-the-2022-ariz',
-    isWinRepublican: true,
-  },
-  {
     state: 'WI',
     creatorUsername: 'SG',
     slug: 'will-a-democrat-win-the-2022-wiscon',
@@ -169,15 +175,39 @@ const governorMidterms: StateElectionMarket[] = [
     isWinRepublican: false,
   },
   {
-    state: 'NV',
+    state: 'ME',
+    creatorUsername: 'SG',
+    slug: 'will-a-democrat-win-the-2022-maine',
+    isWinRepublican: false,
+  },
+  {
+    state: 'NM',
     creatorUsername: 'SG',
     slug: 'will-a-democrat-win-the-2022-new-me',
     isWinRepublican: false,
   },
   {
-    state: 'ME',
+    state: 'MN',
+    creatorUsername: 'BRTD',
+    slug: 'will-tim-walz-be-reelected-as-gover',
+    isWinRepublican: false,
+  },
+  {
+    state: 'MI',
     creatorUsername: 'SG',
-    slug: 'will-a-democrat-win-the-2022-maine',
+    slug: 'will-a-democrat-win-the-2022-michig',
+    isWinRepublican: false,
+  },
+  {
+    state: 'NY',
+    creatorUsername: 'GeorgeSchifini',
+    slug: 'will-hochul-win-new-york-governor-r',
+    isWinRepublican: false,
+  },
+  {
+    state: 'RI',
+    creatorUsername: 'Tetraspace',
+    slug: 'if-dan-mckee-is-the-democratic-nomi',
     isWinRepublican: false,
   },
 ]
@@ -213,7 +243,7 @@ const App = (props: {
     <>
       <StateElectionMap markets={senateMidterms} contracts={senateContracts} />
       <iframe
-        src="https://manifold.markets/TomShlomi/will-the-gop-control-the-us-senate"
+        src="https://manifold.markets/embed/TomShlomi/will-the-gop-control-the-us-senate"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
@@ -227,7 +257,7 @@ const App = (props: {
         contracts={governorContracts}
       />
       <iframe
-        src="https://manifold.markets/ManifoldMarkets/democrats-go-down-at-least-one-gove"
+        src="https://manifold.markets/embed/ManifoldMarkets/democrats-go-down-at-least-one-gove"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
@@ -237,7 +267,7 @@ const App = (props: {
   const houseTab = (
     <div className="w-full">
       <iframe
-        src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of"
+        src="https://manifold.markets/embed/BoltonBailey/will-democrats-maintain-control-of"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
@@ -251,8 +281,8 @@ const App = (props: {
       <Col className="items-center justify-center">
         <SEO
           title="2022 US Midterm Elections on Manifold"
-          description="Manifold's midterm forecast using prediction markets. Bet on elections and win up to $500 in our tournament."
-          image="/midterms2022.png"
+          description="Manifold's midterm forecast using prediction markets. Bet on elections and win up to $1,000 in our tournament."
+          image="https://manifold.markets/midterms2022.png"
         />
 
         <Title className="mt-2">
@@ -262,7 +292,7 @@ const App = (props: {
         <div className="mx-8 mb-4 text-base text-gray-500">
           Manifold's midterm forecast. Bet on elections and{' '}
           <SiteLink href="/group/us-2022-midterms/about">
-            win up to $500 USD in our tournament
+            win up to $1,000 USD in our tournament
           </SiteLink>
           .
         </div>

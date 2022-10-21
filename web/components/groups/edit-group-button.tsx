@@ -21,7 +21,7 @@ export function EditGroupButton(props: { group: Group; className?: string }) {
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [addMemberUsers, setAddMemberUsers] = useState<User[]>([])
-  const memberIds = useMemberIds(group.id)
+  const memberIds = useMemberIds(group.id) ?? []
   function updateOpen(newOpen: boolean) {
     setAddMemberUsers([])
     setOpen(newOpen)

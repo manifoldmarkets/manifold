@@ -79,3 +79,8 @@ export async function getDateDoc(username: string) {
   const post = docs.length === 0 ? null : docs[0]
   return { post, user }
 }
+
+export function getPostsByUser(userId: string) {
+  const q = query(posts, where('creatorId', '==', userId))
+  return getValues<Post>(q)
+}

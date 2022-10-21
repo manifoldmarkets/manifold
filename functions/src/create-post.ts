@@ -42,6 +42,7 @@ const postSchema = z.object({
   title: z.string().min(1).max(MAX_POST_TITLE_LENGTH),
   subtitle: z.string().min(1).max(MAX_POST_SUBTITLE_LENGTH),
   content: contentSchema,
+  isGroupAboutPost: z.boolean().optional(),
   groupId: z.string().optional(),
 
   // Date doc fields:
@@ -53,8 +54,15 @@ const postSchema = z.object({
 
 export const createpost = newEndpoint({}, async (req, auth) => {
   const firestore = admin.firestore()
-  const { title, subtitle, content, groupId, question, ...otherProps } =
-    validate(postSchema, req.body)
+  const {
+    title,
+    subtitle,
+    content,
+    isGroupAboutPost,
+    groupId,
+    question,
+    ...otherProps
+  } = validate(postSchema, req.body)
 
   const creator = await getUser(auth.uid)
   if (!creator)
@@ -97,6 +105,7 @@ export const createpost = newEndpoint({}, async (req, auth) => {
     slug,
     title,
     subtitle,
+    isGroupAboutPost,
     createdTime: Date.now(),
     content: content,
     contractSlug,

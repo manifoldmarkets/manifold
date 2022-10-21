@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { toast, Toaster } from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
 import { Page } from 'web/components/layout/page'
@@ -19,11 +19,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { SiteLink } from 'web/components/widgets/site-link'
-import {
-  usePrivateUser,
-  useUser,
-  useUserContractMetricsByProfit,
-} from 'web/hooks/use-user'
+import { useUser, useUserContractMetricsByProfit } from 'web/hooks/use-user'
 import {
   useMemberGroupsSubscription,
   useTrendingGroups,
@@ -32,10 +28,7 @@ import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { formatMoney } from 'common/util/format'
 import { ContractMetrics } from 'common/calculate-metrics'
-import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
@@ -49,11 +42,13 @@ import {
   useTrendingContracts,
   useNewContracts,
 } from 'web/hooks/use-contracts'
-import { ProfitBadge } from 'web/components/profit-badge'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Input } from 'web/components/widgets/input'
 import { PinnedItems } from 'web/components/groups/group-overview'
-import { updateGlobalConfig } from 'web/lib/firebase/globalConfig'
+import {
+  getGlobalConfig,
+  updateGlobalConfig,
+} from 'web/lib/firebase/globalConfig'
 import { getPost } from 'web/lib/firebase/posts'
 import { PostCard } from 'web/components/posts/post-card'
 import { getContractFromId } from 'web/lib/firebase/contracts'
@@ -69,11 +64,22 @@ import {
 } from 'web/hooks/use-persistent-state'
 import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { LatestPosts } from '../latestposts'
+import { DailyStats } from '../../components/daily-stats'
 
-export default function Home() {
+export async function getStaticProps() {
+  const globalConfig = await getGlobalConfig()
+
+  return {
+    props: { globalConfig },
+    revalidate: 60, // regenerate after a minute
+  }
+}
+
+export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const isAdmin = useAdmin()
-  const globalConfig = useGlobalConfig()
+  const globalConfig = useGlobalConfig() ?? props.globalConfig
 
   useRedirectIfSignedOut()
   useTracking('view home')
@@ -90,19 +96,19 @@ export default function Home() {
     }
   }, [user, sections])
 
-  const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_'
-  )
-
   const trendingContracts = useTrendingContracts(6)
   const newContracts = useNewContracts(6)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
+  const contractMetricsByProfit = useUserContractMetricsByProfit(
+    user?.id ?? '_'
+  )
 
   const groups = useMemberGroupsSubscription(user)
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug)
   )
+  const latestPosts = useAllPosts(true, 2)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -111,41 +117,24 @@ export default function Home() {
 
   useEffect(() => {
     const pinnedItems = globalConfig?.pinnedItems
-
-    async function getPinned() {
-      if (pinnedItems == null) {
-        if (globalConfig != null) {
-          updateGlobalConfig(globalConfig, { pinnedItems: [] })
+    if (pinnedItems) {
+      const itemComponents = pinnedItems.map((element) => {
+        if (element.type === 'post') {
+          return <PostCard post={element.item as Post} />
+        } else if (element.type === 'contract') {
+          return <ContractCard contract={element.item as Contract} />
         }
-      } else {
-        const itemComponents = await Promise.all(
-          pinnedItems.map(async (element) => {
-            if (element.type === 'post') {
-              const post = await getPost(element.itemId)
-              if (post) {
-                return <PostCard post={post as Post} />
-              }
-            } else if (element.type === 'contract') {
-              const contract = await getContractFromId(element.itemId)
-              if (contract) {
-                return <ContractCard contract={contract as Contract} />
-              }
-            }
-          })
-        )
-        setPinned(
-          itemComponents.filter(
-            (element) => element != undefined
-          ) as JSX.Element[]
-        )
-      }
+      })
+      setPinned(
+        itemComponents.filter(
+          (element) => element != undefined
+        ) as JSX.Element[]
+      )
     }
-    getPinned()
   }, [globalConfig, setPinned])
 
   const isLoading =
     !user ||
-    !contractMetricsByProfit ||
     !trendingContracts ||
     !newContracts ||
     !dailyTrendingContracts ||
@@ -154,8 +143,6 @@ export default function Home() {
 
   return (
     <Page>
-      <Toaster />
-
       <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
         <Row
           className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
@@ -188,6 +175,8 @@ export default function Home() {
             )}
 
             <ActivitySection />
+
+            <LatestPostsSection latestPosts={latestPosts} user={user} />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -222,8 +211,8 @@ export default function Home() {
 
 const HOME_SECTIONS = [
   { label: 'Featured', id: 'featured' },
-  { label: 'Daily trending', id: 'daily-trending' },
-  { label: 'Daily movers', id: 'daily-movers' },
+  { label: 'Daily changed', id: 'daily-trending' },
+  { label: 'Your daily movers', id: 'daily-movers' },
   { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
 ] as const
@@ -253,10 +242,12 @@ export const getHomeItems = (sections: string[]) => {
 function renderSections(
   sections: { id: string; label: string }[],
   sectionContracts: {
-    'daily-movers': {
-      contracts: CPMMBinaryContract[]
-      metrics: ContractMetrics[]
-    }
+    'daily-movers':
+      | {
+          contracts: CPMMBinaryContract[]
+          metrics: ContractMetrics[]
+        }
+      | undefined
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
@@ -275,7 +266,7 @@ function renderSections(
           label: string
         }
         if (id === 'daily-movers') {
-          return <DailyMoversSection key={id} {...sectionContracts[id]} />
+          return <DailyMoversSection key={id} data={sectionContracts[id]} />
         }
 
         if (id === 'featured') {
@@ -402,6 +393,33 @@ function SearchSection(props: {
   )
 }
 
+function LatestPostsSection(props: { latestPosts: Post[]; user: User | null }) {
+  const { latestPosts, user } = props
+  return (
+    <Col className="pt-4">
+      <Row className="flex items-center justify-between">
+        <Col>
+          <SectionHeader label={'Latest Posts'} href="/latestposts" />
+        </Col>
+        <Col>
+          {user && (
+            <SiteLink
+              className="mb-3 text-xl"
+              href={'/create-post'}
+              onClick={() =>
+                track('home click create post', { section: 'create-post' })
+              }
+            >
+              <Button>Create Post</Button>
+            </SiteLink>
+          )}
+        </Col>
+      </Row>
+      <LatestPosts latestPosts={latestPosts} />
+    </Col>
+  )
+}
+
 function FeaturedSection(props: {
   globalConfig: GlobalConfig
   pinned: JSX.Element[]
@@ -412,10 +430,30 @@ function FeaturedSection(props: {
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
     if (globalConfig == null) return
+    const pinnedItems = await Promise.all(
+      selectedItems
+        .map(async (item) => {
+          if (item.type === 'post') {
+            const post = await getPost(item.itemId)
+            if (post == null) return null
+
+            return { item: post, type: 'post' }
+          } else if (item.type === 'contract') {
+            const contract = await getContractFromId(item.itemId)
+            if (contract == null) return null
+
+            return { item: contract, type: 'contract' }
+          }
+        })
+        .filter((item) => item != null)
+    )
     await updateGlobalConfig(globalConfig, {
       pinnedItems: [
         ...(globalConfig?.pinnedItems ?? []),
-        ...(selectedItems as { itemId: string; type: 'contract' | 'post' }[]),
+        ...(pinnedItems as {
+          item: Contract | Post
+          type: 'contract' | 'post'
+        }[]),
       ],
     })
   }
@@ -423,7 +461,7 @@ function FeaturedSection(props: {
   function onDeleteClicked(index: number) {
     if (globalConfig == null) return
     const newPinned = globalConfig.pinnedItems.filter((item) => {
-      return item.itemId !== globalConfig.pinnedItems[index].itemId
+      return item.item.id !== globalConfig.pinnedItems[index].item.id
     })
     updateGlobalConfig(globalConfig, { pinnedItems: newPinned })
   }
@@ -479,10 +517,20 @@ function GroupSection(props: {
 }
 
 function DailyMoversSection(props: {
-  contracts: CPMMBinaryContract[]
-  metrics: ContractMetrics[]
+  data:
+    | {
+        contracts: CPMMBinaryContract[]
+        metrics: ContractMetrics[]
+      }
+    | undefined
 }) {
-  const { contracts, metrics } = props
+  const user = useUser()
+
+  const { data } = props
+
+  if (!user || !data) return null
+
+  const { contracts, metrics } = data
 
   const hasProfit = metrics.some((m) => m.from && m.from.day.profit > 0)
   const hasLoss = metrics.some((m) => m.from && m.from.day.profit < 0)
@@ -493,68 +541,9 @@ function DailyMoversSection(props: {
 
   return (
     <Col className="gap-2">
-      <SectionHeader label="Daily movers" href="/daily-movers" />
+      <SectionHeader label="Your daily movers" href="/daily-movers" />
       <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
-  )
-}
-
-function DailyStats(props: { user: User | null | undefined }) {
-  const { user } = props
-
-  const privateUser = usePrivateUser()
-  const streaks = privateUser?.notificationPreferences?.betting_streaks ?? []
-  const streaksHidden = streaks.length === 0
-
-  return (
-    <Row className={'flex-shrink-0 gap-4'}>
-      <DailyProfit user={user} />
-      {!streaksHidden && (
-        <Col>
-          <div className="text-gray-500">Streak</div>
-          <Row
-            className={clsx(
-              'items-center text-lg',
-              user && !hasCompletedStreakToday(user) && 'grayscale'
-            )}
-          >
-            <span>🔥 {user?.currentBettingStreak ?? 0}</span>
-          </Row>
-        </Col>
-      )}
-    </Row>
-  )
-}
-
-export function DailyProfit(props: { user: User | null | undefined }) {
-  const { user } = props
-
-  const contractMetricsByProfit = useUserContractMetricsByProfit(
-    user?.id ?? '_'
-  )
-  const profit = sum(
-    contractMetricsByProfit?.metrics.map((m) =>
-      m.from ? m.from.day.profit : 0
-    ) ?? []
-  )
-
-  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
-  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
-
-  let profitPercent = 0
-  if (first && last) {
-    // profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-    profitPercent = profit / first.investmentValue
-  }
-
-  return (
-    <SiteLink className="flex flex-col" href="/daily-movers">
-      <div className="text-gray-500">Daily profit</div>
-      <Row className="items-center text-lg">
-        <span>{formatMoney(profit)}</span>{' '}
-        <ProfitBadge profitPercent={profitPercent * 100} />
-      </Row>
-    </SiteLink>
   )
 }
 

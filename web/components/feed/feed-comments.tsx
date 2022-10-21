@@ -38,8 +38,22 @@ export function FeedCommentThread(props: {
   const { contract, threadComments, tips, parentComment } = props
   const [replyTo, setReplyTo] = useState<ReplyTo>()
   const [seeReplies, setSeeReplies] = useState(true)
-
+  const [highlightedId, setHighlightedId] = useState<string>()
   const user = useUser()
+
+  const router = useRouter()
+  useEffect(() => {
+    if (router.isReady) {
+      const parts = router.asPath.split('#')
+      if (parts.length > 1 && parts[1] != null) {
+        setHighlightedId(parts[1])
+      } else {
+        setHighlightedId(undefined)
+      }
+    }
+  }, [router.isReady, router.asPath])
+
+  const onSeeRepliesClick = useEvent(() => setSeeReplies(!seeReplies))
   const onSubmitComment = useEvent(() => setReplyTo(undefined))
   const onReplyClick = useEvent((comment: ContractComment) => {
     setReplyTo({ id: comment.id, username: comment.userUsername })
@@ -51,18 +65,14 @@ export function FeedCommentThread(props: {
         key={parentComment.id}
         contract={contract}
         comment={parentComment}
+        highlighted={highlightedId === parentComment.id}
         myTip={user ? tips[parentComment.id]?.[user.id] : undefined}
         totalTip={sum(Object.values(tips[parentComment.id] ?? {}))}
         showTip={true}
         seeReplies={seeReplies}
         numComments={threadComments.length}
-        onSeeReplyClick={() => setSeeReplies(!seeReplies)}
-        onReplyClick={() =>
-          setReplyTo({
-            id: parentComment.id,
-            username: parentComment.userUsername,
-          })
-        }
+        onSeeReplyClick={onSeeRepliesClick}
+        onReplyClick={onReplyClick}
       />
       {seeReplies &&
         threadComments.map((comment, _commentIdx) => (
@@ -70,6 +80,7 @@ export function FeedCommentThread(props: {
             key={comment.id}
             contract={contract}
             comment={comment}
+            highlighted={highlightedId === comment.id}
             myTip={user ? tips[comment.id]?.[user.id] : undefined}
             totalTip={sum(Object.values(tips[comment.id] ?? {}))}
             showTip={true}
@@ -90,9 +101,10 @@ export function FeedCommentThread(props: {
   )
 }
 
-export function ParentFeedComment(props: {
+export const ParentFeedComment = memo(function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
+  highlighted?: boolean
   showTip?: boolean
   myTip?: number
   totalTip?: number
@@ -104,6 +116,7 @@ export function ParentFeedComment(props: {
   const {
     contract,
     comment,
+    highlighted,
     myTip,
     totalTip,
     showTip,
@@ -113,35 +126,27 @@ export function ParentFeedComment(props: {
     numComments,
   } = props
   const { text, content, userUsername, userAvatarUrl } = comment
-
-  const { isReady, asPath } = useRouter()
-  const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (isReady && asPath.endsWith(`#${comment.id}`)) {
-      setHighlighted(true)
-    }
-  }, [isReady, asPath, comment.id])
 
   useEffect(() => {
     if (highlighted && commentRef.current) {
       commentRef.current.scrollIntoView(true)
     }
   }, [highlighted])
+
+  const [hover, setHover] = useState(false)
   return (
     <Row
       ref={commentRef}
       id={comment.id}
-      className={clsx(
-        'ml-3 gap-2 transition-colors',
-        highlighted ? `bg-indigo-50` : 'hover:bg-greyscale-1'
-      )}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className={clsx('relative ml-3 gap-2')}
     >
-      <Col className="-ml-3.5">
+      <Col className="z-20 -ml-3.5">
         <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       </Col>
-      <Col className="w-full">
+      <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
         <Content
           className="text-greyscale-7 mt-2 grow text-[14px]"
@@ -164,9 +169,15 @@ export function ParentFeedComment(props: {
           />
         </Row>
       </Col>
+      <div
+        className={clsx(
+          'z-1 absolute -mt-1 -ml-5 h-full w-[calc(100%+2rem)] rounded-lg transition-colors',
+          highlighted ? 'bg-indigo-50' : hover ? 'bg-greyscale-1' : ''
+        )}
+      />
     </Row>
   )
-}
+})
 
 export function CommentActions(props: {
   onReplyClick?: (comment: ContractComment) => void
@@ -197,22 +208,23 @@ export function CommentActions(props: {
 export const FeedComment = memo(function FeedComment(props: {
   contract: Contract
   comment: ContractComment
+  highlighted?: boolean
   showTip?: boolean
   myTip?: number
   totalTip?: number
   onReplyClick?: (comment: ContractComment) => void
 }) {
-  const { contract, comment, myTip, totalTip, showTip, onReplyClick } = props
+  const {
+    contract,
+    comment,
+    highlighted,
+    myTip,
+    totalTip,
+    showTip,
+    onReplyClick,
+  } = props
   const { text, content, userUsername, userAvatarUrl } = comment
-  const { isReady, asPath } = useRouter()
-  const [highlighted, setHighlighted] = useState(false)
   const commentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (isReady && asPath.endsWith(`#${comment.id}`)) {
-      setHighlighted(true)
-    }
-  }, [isReady, asPath, comment.id])
 
   useEffect(() => {
     if (highlighted && commentRef.current) {
@@ -220,23 +232,20 @@ export const FeedComment = memo(function FeedComment(props: {
     }
   }, [highlighted])
 
+  const [hover, setHover] = useState(false)
+
   return (
     <Row
       ref={commentRef}
       id={comment.id}
-      className={clsx(
-        'ml-10 gap-2 transition-colors',
-        highlighted ? `bg-indigo-50` : 'hover:bg-greyscale-1'
-      )}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className={clsx('relative ml-12 gap-2 ')}
     >
-      <Col className="-ml-3">
+      <Col className="z-20 -ml-3">
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-        <span
-          className="bg-greyscale-3 mx-auto h-full w-[1.5px]"
-          aria-hidden="true"
-        />
       </Col>
-      <Col className="w-full">
+      <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
         <Content
           className="text-greyscale-7 mt-2 grow text-[14px]"
@@ -252,6 +261,12 @@ export const FeedComment = memo(function FeedComment(props: {
           contract={contract}
         />
       </Col>
+      <div
+        className={clsx(
+          'z-1 absolute -mt-1 -ml-5 h-full w-[calc(100%+2rem)] rounded-lg',
+          highlighted ? 'bg-indigo-50' : hover ? 'bg-greyscale-1' : ''
+        )}
+      />
     </Row>
   )
 })
@@ -335,7 +350,7 @@ export function FeedCommentHeader(props: {
   const totalAwarded = bountiesAwarded ?? 0
   return (
     <Row>
-      <div className="text-greyscale-6 mt-0.5 text-xs">
+      <div className="text-greyscale-6 mt-0.5 text-sm">
         <UserLink username={userUsername} name={userName} />{' '}
         <span className="text-greyscale-4">
           {comment.betId == null &&

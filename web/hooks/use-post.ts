@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { DateDoc, Post } from 'common/post'
 import {
   getAllPosts,
+  getPostsByUser,
   listenForDateDocs,
   listenForPost,
 } from 'web/lib/firebase/posts'
+import { useEffectCheckEquality } from './use-effect-check-equality'
 
 export const usePost = (postId: string | undefined) => {
   const [post, setPost] = useState<Post | null | undefined>()
@@ -18,7 +20,7 @@ export const usePost = (postId: string | undefined) => {
 
 export const usePosts = (postIds: string[]) => {
   const [posts, setPosts] = useState<Post[]>([])
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     if (postIds.length === 0) return
     setPosts([])
 
@@ -42,12 +44,16 @@ export const usePosts = (postIds: string[]) => {
     .sort((a, b) => b.createdTime - a.createdTime)
 }
 
-export const useAllPosts = () => {
+export const useAllPosts = (excludeAboutPosts?: boolean, limit?: number) => {
   const [posts, setPosts] = useState<Post[]>([])
   useEffect(() => {
     getAllPosts().then(setPosts)
   }, [])
+
   return posts
+    .filter((post) => (excludeAboutPosts ? !post.isGroupAboutPost : true))
+    .sort((a, b) => b.createdTime - a.createdTime)
+    .slice(0, limit)
 }
 
 export const useDateDocs = () => {
@@ -58,4 +64,14 @@ export const useDateDocs = () => {
   }, [])
 
   return dateDocs
+}
+
+export const usePostsByUser = (userId: string) => {
+  const [posts, setPosts] = useState<Post[] | null>(null)
+
+  useEffect(() => {
+    getPostsByUser(userId).then(setPosts)
+  }, [userId])
+
+  return posts?.sort((a, b) => b.createdTime - a.createdTime)
 }

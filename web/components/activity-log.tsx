@@ -20,7 +20,7 @@ import { UserLink } from './widgets/user-link'
 
 export function ActivityLog(props: { count: number; showPills: boolean }) {
   const { count, showPills } = props
-  const bets = (useLiveBets(count * 2) ?? []).filter(
+  const bets = (useLiveBets(count * 2 + 10) ?? []).filter(
     (bet) =>
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !bet.isRedemption &&

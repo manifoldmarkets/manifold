@@ -51,14 +51,14 @@ export const PortfolioValueSection = memo(
                   graphMode === 'profit'
                     ? graphDisplayNumber
                       ? graphDisplayNumber.toString().includes('-')
-                        ? 'text-red-600'
+                        ? 'text-gray-600'
                         : 'text-teal-500'
                       : totalProfit > 0
                       ? 'text-teal-500'
-                      : 'text-red-600'
+                      : 'text-gray-600'
                     : totalProfit > 0
                     ? 'text-teal-500'
-                    : 'text-red-600',
+                    : 'text-gray-600',
                   'text-lg sm:text-xl'
                 )}
               >
@@ -96,6 +96,7 @@ export const PortfolioValueSection = memo(
         <SizedContainer fullHeight={200} mobileHeight={100}>
           {(width, height) => (
             <PortfolioGraph
+              key={graphMode} // we need to reset axis scale state if mode changes
               mode={graphMode}
               history={portfolioHistory}
               width={width}

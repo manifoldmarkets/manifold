@@ -54,6 +54,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { ExclamationIcon } from '@heroicons/react/outline'
 import { Select } from '../widgets/select'
 import { Table } from '../widgets/table'
+import { SellRow } from './sell-row'
 
 type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
@@ -283,7 +284,9 @@ function ContractBets(props: {
   isYourBets: boolean
 }) {
   const { bets, contract, metric, isYourBets } = props
-  const { resolution, outcomeType } = contract
+  const { resolution, closeTime, outcomeType, isResolved } = contract
+
+  const user = useUser()
 
   const limitBets = bets.filter(
     (bet) => bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
@@ -293,6 +296,7 @@ function ContractBets(props: {
   const [collapsed, setCollapsed] = useState(true)
 
   const isBinary = outcomeType === 'BINARY'
+  const isClosed = closeTime && closeTime < Date.now()
 
   const { payout, profit, profitPercent } = getContractBetMetrics(
     contract,
@@ -367,6 +371,17 @@ function ContractBets(props: {
             contract={contract}
             userBets={bets}
           />
+
+          {isYourBets &&
+            !isResolved &&
+            !isClosed &&
+            contract.outcomeType === 'BINARY' && (
+              <SellRow
+                className="mt-4 items-start"
+                contract={contract}
+                user={user}
+              />
+            )}
 
           {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
             <div className="max-w-md">

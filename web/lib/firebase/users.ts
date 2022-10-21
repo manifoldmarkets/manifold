@@ -83,6 +83,10 @@ export async function updatePrivateUser(
   await updateDoc(doc(privateUsers, userId), { ...update })
 }
 
+export async function deletePrivateUser(userId: string) {
+  await deleteDoc(doc(privateUsers, userId))
+}
+
 export function listenForUser(
   userId: string,
   setUser: (user: User | null) => void

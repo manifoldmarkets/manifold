@@ -3,7 +3,7 @@ import {
   useFirestoreDocumentData,
   useFirestoreQueryData,
 } from '@react-query-firebase/firestore'
-import { useQuery, useQueryClient } from 'react-query'
+import { useQueryClient } from 'react-query'
 import { sortBy } from 'lodash'
 
 import { doc, DocumentData } from 'firebase/firestore'
@@ -11,9 +11,9 @@ import { getUser, User, users } from 'web/lib/firebase/users'
 import { AuthContext } from 'web/components/auth-context'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { getUserContractMetricsQuery } from 'web/lib/firebase/contract-metrics'
-import { getContractFromId } from 'web/lib/firebase/contracts'
 import { buildArray, filterDefined } from 'common/util/array'
 import { CPMMBinaryContract } from 'common/contract'
+import { useContracts } from './use-contracts'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -60,18 +60,18 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
 
   const metrics = buildArray(positiveResult.data, negativeResult.data)
   const contractIds = sortBy(metrics.map((m) => m.contractId))
-
-  const contractResult = useQuery(['contracts', contractIds], () =>
-    Promise.all(contractIds.map(getContractFromId))
-  )
-  const contracts = contractResult.data
+  const contracts = useContracts(contractIds)
 
   const prevResult = useRef<{
     contracts: CPMMBinaryContract[]
     metrics: ContractMetrics[]
   }>()
 
-  if (!positiveResult.data || !negativeResult.data || !contracts) {
+  if (
+    !positiveResult.data ||
+    !negativeResult.data ||
+    contracts.some((c) => c === undefined)
+  ) {
     if (prevResult.current) return prevResult.current
     return undefined
   }

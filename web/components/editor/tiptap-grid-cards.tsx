@@ -3,8 +3,9 @@ import React from 'react'
 import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import { ContractsGrid } from '../contract/contracts-grid'
 
-import { useContractsFromIds } from 'web/hooks/use-contract'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { useContracts } from 'web/hooks/use-contracts'
+import { filterDefined } from 'common/util/array'
 
 export default Node.create({
   name: 'gridCardsComponent',
@@ -38,13 +39,14 @@ export default Node.create({
 
 export function GridComponent(props: any) {
   const contractIds = props.node.attrs.contractIds
-  const contracts = useContractsFromIds(contractIds.split(','))
+  const contracts = useContracts(contractIds.split(','))
+  const loaded = contracts.every((c) => c !== undefined)
 
   return (
     <NodeViewWrapper className="grid-cards-component">
-      {contracts ? (
+      {loaded ? (
         <ContractsGrid
-          contracts={contracts}
+          contracts={filterDefined(contracts)}
           breakpointColumns={{ default: 2, 650: 1 }}
         />
       ) : (
