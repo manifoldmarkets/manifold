@@ -83,7 +83,12 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <Card className={clsx('group relative flex gap-3 font-readex-pro leading-normal', className)}>
+    <Card
+      className={clsx(
+        'font-readex-pro group relative flex gap-3 leading-normal',
+        className
+      )}
+    >
       <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
