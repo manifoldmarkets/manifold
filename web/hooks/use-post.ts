@@ -44,12 +44,16 @@ export const usePosts = (postIds: string[]) => {
     .sort((a, b) => b.createdTime - a.createdTime)
 }
 
-export const useAllPosts = (limit?: number) => {
+export const useAllPosts = (excludeAboutPosts?: boolean, limit?: number) => {
   const [posts, setPosts] = useState<Post[]>([])
   useEffect(() => {
     getAllPosts().then(setPosts)
   }, [])
-  return posts.sort((a, b) => b.createdTime - a.createdTime).slice(0, limit)
+
+  return posts
+    .filter((post) => (excludeAboutPosts ? !post.isGroupAboutPost : true))
+    .sort((a, b) => b.createdTime - a.createdTime)
+    .slice(0, limit)
 }
 
 export const useDateDocs = () => {

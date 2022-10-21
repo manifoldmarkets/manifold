@@ -15,7 +15,7 @@ import { Button } from 'web/components/buttons/button'
 
 export default function LatestPostsPage() {
   useTracking('view latest posts page')
-  const posts = useAllPosts()
+  const posts = useAllPosts(true)
   const user = useUser()
 
   return (

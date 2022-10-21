@@ -108,7 +108,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug)
   )
-  const latestPosts = useAllPosts(4)
+  const latestPosts = useAllPosts(true, 4)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),

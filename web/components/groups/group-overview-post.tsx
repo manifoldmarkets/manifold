@@ -45,6 +45,7 @@ function RichEditGroupAboutPost(props: { group: Group; post: Post | null }) {
       title: group.name,
       subtitle: 'About post for the group',
       content: editor.getJSON(),
+      isGroupAboutPost: true,
     }
 
     if (post == null) {
