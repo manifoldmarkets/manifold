@@ -76,7 +76,7 @@ export const editorExtensions = (simple = false): Extensions => [
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 max-w-none prose-quoteless leading-relaxed',
-  'prose-blockquote:font-light prose-blockquote:bg-slate-2 font-light'
+  'prose-blockquote:font-light prose-blockquote:text-greyscale-6 font-light text-md'
 )
 
 export function useTextEditor(props: {
