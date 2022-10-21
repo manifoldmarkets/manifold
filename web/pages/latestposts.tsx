@@ -8,16 +8,38 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Masonry from 'react-masonry-css'
 import { Post } from 'common/post'
 import { PostCard } from 'web/components/posts/post-card'
+import { useUser } from 'web/hooks/use-user'
+import { SiteLink } from 'web/components/widgets/site-link'
+import { track } from '@amplitude/analytics-browser'
+import { Button } from 'web/components/buttons/button'
 
 export default function LatestPostsPage() {
   useTracking('view latest posts page')
   const posts = useAllPosts()
+  const user = useUser()
 
   return (
     <Page>
       <Col className="pm:mx-10 gap-4 sm:px-4 sm:pb-4">
         <Row className="mt-4 items-start justify-between sm:mt-0">
-          <Title className="mx-4 !mb-0 !mt-0 sm:mx-0" text="Latest Posts" />
+          <Col>
+            <Title className="mx-4 !mb-0 !mt-0 sm:mx-0" text="Latest Posts" />
+          </Col>
+          <Col>
+            {user && (
+              <SiteLink
+                className="mb-3 text-xl"
+                href={'/create-post'}
+                onClick={() =>
+                  track('latest posts click create post', {
+                    section: 'create-post',
+                  })
+                }
+              >
+                <Button className="mx-2">Create Post</Button>
+              </SiteLink>
+            )}
+          </Col>
         </Row>
         {posts ? <LatestPosts latestPosts={posts} /> : <LoadingIndicator />}
       </Col>

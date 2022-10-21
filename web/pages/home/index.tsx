@@ -176,7 +176,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
             <ActivitySection />
 
-            <LatestPostsSection latestPosts={latestPosts} />
+            <LatestPostsSection latestPosts={latestPosts} user={user} />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -393,11 +393,28 @@ function SearchSection(props: {
   )
 }
 
-function LatestPostsSection(props: { latestPosts: Post[] }) {
-  const { latestPosts } = props
+function LatestPostsSection(props: { latestPosts: Post[]; user: User | null }) {
+  const { latestPosts, user } = props
   return (
     <Col className="pt-4">
-      <SectionHeader label={'Latest Posts'} href="/latestposts" />
+      <Row className="flex items-center justify-between">
+        <Col>
+          <SectionHeader label={'Latest Posts'} href="/latestposts" />
+        </Col>
+        <Col>
+          {user && (
+            <SiteLink
+              className="mb-3 text-xl"
+              href={'/create-post'}
+              onClick={() =>
+                track('home click create post', { section: 'create-post' })
+              }
+            >
+              <Button>Create Post</Button>
+            </SiteLink>
+          )}
+        </Col>
+      </Row>
       <LatestPosts latestPosts={latestPosts} />
     </Col>
   )
