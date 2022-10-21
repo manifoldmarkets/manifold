@@ -15,7 +15,7 @@ import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BETTOR } from 'common/user'
-import { floatingEqual } from 'common/util/math'
+import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -75,9 +75,8 @@ export function BetStatusText(props: {
     bet.limitProb !== undefined && bet.orderAmount !== undefined
       ? formatMoney(bet.orderAmount)
       : ''
-  const filled = floatingEqual(amount, bet.orderAmount ?? amount)
-    ? '(filled)'
-    : `(${money} filled${bet.isCancelled ? ', cancelled' : ''})`
+  const anyFilled = !floatingLesserEqual(amount, 0)
+  const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -111,14 +110,20 @@ export function BetStatusText(props: {
       )}{' '}
       {orderAmount ? (
         <>
-          set a limit order for {orderAmount}{' '}
+          {anyFilled ? (
+            <>
+              filled limit order {money}/{orderAmount}
+            </>
+          ) : (
+            <>created limit order for {orderAmount}</>
+          )}{' '}
           <OutcomeLabel
             outcome={outcome}
             value={(bet as any).value}
             contract={contract}
             truncate="short"
           />{' '}
-          at {toProb} {filled}
+          at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
         </>
       ) : (
         <>
