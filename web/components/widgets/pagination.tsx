@@ -4,6 +4,7 @@ import { Row } from '../layout/row'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import { ReactNode } from 'react'
 import { range } from 'lodash'
+export const PAGE_ELLIPSES = '...'
 
 export function PaginationNextPrev(props: {
   className?: string
@@ -122,8 +123,8 @@ export function PageNumbers(props: {
   page: number
 }) {
   const { pageNumber, setPage, page } = props
-  if (pageNumber === '...' || typeof pageNumber === 'string') {
-    return <div className="text-greyscale-4 select-none">...</div>
+  if (pageNumber === PAGE_ELLIPSES || typeof pageNumber === 'string') {
+    return <div className="text-greyscale-4 select-none">{PAGE_ELLIPSES}</div>
   }
   return (
     <button
@@ -153,15 +154,15 @@ export function getPageNumbers(
     return Array.from<unknown, pageNumbers>(
       { length: 5 },
       (_, index) => index
-    ).concat(['...', maxPage])
+    ).concat([PAGE_ELLIPSES, maxPage])
   }
   if (page >= maxPage - 3) {
-    return [0, '...'].concat(
+    return [0, PAGE_ELLIPSES].concat(
       Array.from<unknown, pageNumbers>(
         { length: 5 },
         (_, index) => index + maxPage - 4
       )
     )
   }
-  return [0, '...', page - 1, page, page + 1, '...', maxPage]
+  return [0, PAGE_ELLIPSES, page - 1, page, page + 1, PAGE_ELLIPSES, maxPage]
 }
