@@ -11,14 +11,14 @@ export function ReplyToggle(props: {
   return (
     <button
       className={clsx(
-        'text-left text-sm text-indigo-600',
+        'text-left text-sm text-gray-500',
         numComments === 0 ? 'hidden' : ''
       )}
       onClick={onClick}
     >
       <Row className="items-center gap-1">
         <div>
-          {numComments} {numComments === 1 ? 'Reply' : 'Replies'}
+          {numComments} {numComments === 1 ? 'reply' : 'replies'}
         </div>
         <TriangleDownFillIcon
           className={clsx('h-2 w-2', seeReplies ? 'rotate-180' : '')}
