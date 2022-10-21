@@ -32,7 +32,6 @@ import {
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { getColor, ProbBar, QuickBet } from '../bet/quick-bet'
-import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useUser, useUserContractMetrics } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -43,6 +42,7 @@ import { ProbOrNumericChange } from './prob-change-table'
 import { Card } from '../widgets/card'
 import { floatingEqual } from 'common/util/math'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { useContract } from 'web/hooks/use-contracts'
 
 export function ContractCard(props: {
   contract: Contract
@@ -67,7 +67,7 @@ export function ContractCard(props: {
     noLinkAvatar,
     newTab,
   } = props
-  const contract = useContractWithPreload(props.contract) ?? props.contract
+  const contract = useContract(props.contract.id) ?? props.contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -410,7 +410,8 @@ export function ContractCardProbChange(props: {
   const noOutcomeLabel =
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
-  const contract = useContractWithPreload(props.contract) as CPMMBinaryContract
+  const contract = (useContract(props.contract.id) ??
+    props.contract) as CPMMBinaryContract
 
   const user = useUser()
   const metrics = useUserContractMetrics(user?.id, contract.id)

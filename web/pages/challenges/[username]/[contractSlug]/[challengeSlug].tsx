@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Confetti from 'react-confetti'
 
-import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
-import { useContractWithPreload } from 'web/hooks/use-contract'
 import { DOMAIN } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { SiteLink } from 'web/components/widgets/site-link'
@@ -33,10 +31,9 @@ import { BinaryContract } from 'common/contract'
 import { Title } from 'web/components/widgets/title'
 import { getOpenGraphProps } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useContract } from 'web/hooks/use-contracts'
 
-export const getStaticProps = fromPropz(getStaticPropz)
-
-export async function getStaticPropz(props: {
+export async function getStaticProp(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }
 }) {
   const { username, contractSlug, challengeSlug } = props.params
@@ -73,16 +70,8 @@ export default function ChallengePage(props: {
   challenge: Challenge | null
   challengeSlug: string
 }) {
-  props = usePropz(props, getStaticPropz) ?? {
-    contract: null,
-    user: null,
-    challengeSlug: '',
-    bets: [],
-    challenge: null,
-    slug: '',
-  }
-  const contract = (useContractWithPreload(props.contract) ??
-    props.contract) as BinaryContract
+  const contract = (useContract(props.contract?.id) ??
+    props.contract) as BinaryContract | null
 
   const challenge =
     useChallenge(props.challengeSlug, contract?.id) ?? props.challenge

@@ -264,7 +264,7 @@ export function PinnedItems(props: {
             </div>
           )}
           {pinned.map((element, index) => (
-            <div className="relative mb-4" key={element.key}>
+            <div className="relative mb-4" key={index}>
               {element}
 
               {editMode && <CrossIcon onClick={() => onDeleteClicked(index)} />}

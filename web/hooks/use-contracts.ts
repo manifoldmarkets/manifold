@@ -18,7 +18,7 @@ import {
   trendingIndex,
 } from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
-import { Dictionary, zipObject } from 'lodash'
+import { Dictionary, isEqual, zipObject } from 'lodash'
 import { useForceUpdate } from './use-force-update'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 
@@ -139,6 +139,8 @@ const contractListeners: Dictionary<((contract: Contract | null) => void)[]> =
   {}
 
 const updateContract = (contractId: string, contract: Contract | null) => {
+  if (isEqual(contractsStore[contractId], contract)) return
+
   contractsStore[contractId] = contract
   contractListeners[contractId]?.forEach((l) => l(contract))
 }
@@ -181,4 +183,9 @@ export const useContracts = (contractIds: string[]) => {
   return contractIds.map(
     (id) => contractsStore[id] as Contract | null | undefined
   )
+}
+
+export const useContract = (contractId: string | undefined) => {
+  const [contract] = useContracts(contractId ? [contractId] : [])
+  return contract
 }
