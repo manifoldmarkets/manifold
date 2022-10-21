@@ -74,7 +74,7 @@ export function Tipper(prop: {
     <Row className="items-center gap-0.5">
       <TipButton
         tipAmount={LIKE_TIP_AMOUNT}
-        totalTipped={totalTip + tempTip}
+        totalTipped={totalTip}
         onClick={() => addTip(+LIKE_TIP_AMOUNT)}
         userTipped={tempTip > 0 || myTip > 0}
         disabled={!canUp}
