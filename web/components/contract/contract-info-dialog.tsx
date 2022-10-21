@@ -1,96 +1,69 @@
-import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
-import dayjs from 'dayjs'
-import { useState } from 'react'
-import { capitalize } from 'lodash'
-import ChallengeIcon from 'web/lib/icons/challenge-icon'
+import { DotsHorizontalIcon } from "@heroicons/react/outline";
+import clsx from "clsx";
+import dayjs from "dayjs";
+import { useState } from "react";
+import { capitalize } from "lodash";
+import ChallengeIcon from "web/lib/icons/challenge-icon";
 
-import { Contract } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
-import { contractPool, updateContract } from 'web/lib/firebase/contracts'
-import { Col } from '../layout/col'
-import { Modal } from '../layout/modal'
-import { Title } from '../widgets/title'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { useAdmin, useDev } from 'web/hooks/use-admin'
-import { SiteLink } from '../widgets/site-link'
-import { firestoreConsolePath } from 'common/envs/constants'
-import ShortToggle from '../widgets/short-toggle'
-import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
-import { Row } from '../layout/row'
-import { BETTORS, User } from 'common/user'
-import { Button, IconButton } from '../buttons/button'
-import { AddLiquidityButton } from './add-liquidity-button'
-import { Tooltip } from '../widgets/tooltip'
-import { Table } from '../widgets/table'
-import { ShareEmbedButton } from '../buttons/share-embed-button'
-import { CreateChallengeModal } from '../challenges/create-challenge-modal'
-import { CHALLENGES_ENABLED } from 'common/challenge'
-import { withTracking } from 'web/lib/service/analytics'
-import { QRCode } from '../widgets/qr-code'
-import { getShareUrl } from 'common/util/share'
+import { Contract } from "common/contract";
+import { formatMoney, formatPercent } from "common/util/format";
+import { contractPool, updateContract } from "web/lib/firebase/contracts";
+import { Col } from "../layout/col";
+import { Modal } from "../layout/modal";
+import { Title } from "../widgets/title";
+import { InfoTooltip } from "../widgets/info-tooltip";
+import { useAdmin, useDev } from "web/hooks/use-admin";
+import { SiteLink } from "../widgets/site-link";
+import { firestoreConsolePath } from "common/envs/constants";
+import ShortToggle from "../widgets/short-toggle";
+import { DuplicateContractButton } from "../buttons/duplicate-contract-button";
+import { Row } from "../layout/row";
+import { BETTORS, User } from "common/user";
+import { Button, IconButton } from "../buttons/button";
+import { AddLiquidityButton } from "./add-liquidity-button";
+import { Tooltip } from "../widgets/tooltip";
+import { Table } from "../widgets/table";
+import { ShareEmbedButton } from "../buttons/share-embed-button";
+import { CreateChallengeModal } from "../challenges/create-challenge-modal";
+import { CHALLENGES_ENABLED } from "common/challenge";
+import { withTracking } from "web/lib/service/analytics";
+import { QRCode } from "../widgets/qr-code";
+import { getShareUrl } from "common/util/share";
 
-export function ContractInfoDialog(props: {
-  contract: Contract
-  user: User | null | undefined
-  className?: string
-}) {
-  const { contract, className, user } = props
+export function ContractInfoDialog(props: { contract: Contract; user: User | null | undefined; className?: string }) {
+  const { contract, className, user } = props;
 
-  const [open, setOpen] = useState(false)
-  const isDev = useDev()
-  const isAdmin = useAdmin()
-  const isCreator = user?.id === contract.creatorId
-  const isUnlisted = contract.visibility === 'unlisted'
-  const wasUnlistedByCreator = contract.unlistedById
-    ? contract.unlistedById === contract.creatorId
-    : false
+  const [open, setOpen] = useState(false);
+  const isDev = useDev();
+  const isAdmin = useAdmin();
+  const isCreator = user?.id === contract.creatorId;
+  const isUnlisted = contract.visibility === "unlisted";
+  const wasUnlistedByCreator = contract.unlistedById ? contract.unlistedById === contract.creatorId : false;
 
-  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
+  const formatTime = (dt: number) => dayjs(dt).format("MMM DD, YYYY hh:mm a");
 
-  const {
-    createdTime,
-    closeTime,
-    resolutionTime,
-    uniqueBettorCount,
-    mechanism,
-    outcomeType,
-    id,
-    elasticity,
-    pool,
-  } = contract
+  const { createdTime, closeTime, resolutionTime, uniqueBettorCount, mechanism, outcomeType, id, elasticity, pool } =
+    contract;
 
   const typeDisplay =
-    outcomeType === 'BINARY'
-      ? 'YES / NO'
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'Free response'
-      : outcomeType === 'MULTIPLE_CHOICE'
-      ? 'Multiple choice'
-      : 'Numeric'
+    outcomeType === "BINARY"
+      ? "YES / NO"
+      : outcomeType === "FREE_RESPONSE"
+      ? "Free response"
+      : outcomeType === "MULTIPLE_CHOICE"
+      ? "Multiple choice"
+      : "Numeric";
 
-  const [openCreateChallengeModal, setOpenCreateChallengeModal] =
-    useState(false)
-  const showChallenge =
-    user &&
-    outcomeType === 'BINARY' &&
-    !contract.resolution &&
-    CHALLENGES_ENABLED
+  const [openCreateChallengeModal, setOpenCreateChallengeModal] = useState(false);
+  const showChallenge = user && outcomeType === "BINARY" && !contract.resolution && CHALLENGES_ENABLED;
 
-  const shareUrl = getShareUrl(contract, user?.username)
+  const shareUrl = getShareUrl(contract, user?.username);
 
   return (
     <>
       <Tooltip text="Market details" placement="bottom" noTap noFade>
-        <IconButton
-          size="2xs"
-          className={clsx(className)}
-          onClick={() => setOpen(true)}
-        >
-          <DotsHorizontalIcon
-            className={clsx('h-5 w-5 flex-shrink-0')}
-            aria-hidden="true"
-          />
+        <IconButton size="2xs" className={clsx(className)} onClick={() => setOpen(true)}>
+          <DotsHorizontalIcon className={clsx("h-5 w-5 flex-shrink-0")} aria-hidden="true" />
         </IconButton>
 
         <Modal open={open} setOpen={setOpen}>
@@ -107,15 +80,13 @@ export function ContractInfoDialog(props: {
                 <tr>
                   <td>Payout</td>
                   <td className="flex gap-1">
-                    {mechanism === 'cpmm-1' ? (
+                    {mechanism === "cpmm-1" ? (
                       <>
-                        Fixed{' '}
-                        <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
+                        Fixed <InfoTooltip text="Each YES share is worth M$1 if YES wins." />
                       </>
                     ) : (
                       <>
-                        Parimutuel{' '}
-                        <InfoTooltip text="Each share is a fraction of the pool. " />
+                        Parimutuel <InfoTooltip text="Each share is a fraction of the pool. " />
                       </>
                     )}
                   </td>
@@ -128,7 +99,7 @@ export function ContractInfoDialog(props: {
 
                 {closeTime && (
                   <tr>
-                    <td>Market close{closeTime > Date.now() ? 's' : 'd'}</td>
+                    <td>Market close{closeTime > Date.now() ? "s" : "d"}</td>
                     <td>{formatTime(closeTime)}</td>
                   </tr>
                 )}
@@ -142,15 +113,23 @@ export function ContractInfoDialog(props: {
 
                 <tr>
                   <td>
-                    <span className="mr-1">Volume</span>
+                    <span className="mr-1">Total Volume</span>
                     <InfoTooltip text="Total amount bought or sold" />
                   </td>
                   <td>{formatMoney(contract.volume)}</td>
                 </tr>
 
                 <tr>
+                  <td>
+                    <span className="mr-1">24 Hour Volume</span>
+                    <InfoTooltip text="The amount bought or sold in the last 24 hours" />
+                  </td>
+                  <td>{formatMoney(contract.volume24Hours)}</td>
+                </tr>
+
+                <tr>
                   <td>{capitalize(BETTORS)}</td>
-                  <td>{uniqueBettorCount ?? '0'}</td>
+                  <td>{uniqueBettorCount ?? "0"}</td>
                 </tr>
 
                 <tr>
@@ -159,9 +138,9 @@ export function ContractInfoDialog(props: {
                       <span className="mr-1">Elasticity</span>
                       <InfoTooltip
                         text={
-                          mechanism === 'cpmm-1'
-                            ? 'Probability change between a M$50 bet on YES and NO'
-                            : 'Probability change from a M$100 bet'
+                          mechanism === "cpmm-1"
+                            ? "Probability change between a M$50 bet on YES and NO"
+                            : "Probability change from a M$100 bet"
                         }
                       />
                     </Row>
@@ -171,23 +150,16 @@ export function ContractInfoDialog(props: {
 
                 <tr>
                   <td>Liquidity subsidies</td>
-                  <td>
-                    {mechanism === 'cpmm-1'
-                      ? formatMoney(contract.totalLiquidity)
-                      : formatMoney(100)}
-                  </td>
+                  <td>{mechanism === "cpmm-1" ? formatMoney(contract.totalLiquidity) : formatMoney(100)}</td>
                 </tr>
 
                 <tr>
                   <td>Pool</td>
                   <td>
-                    {mechanism === 'cpmm-1' && outcomeType === 'BINARY'
+                    {mechanism === "cpmm-1" && outcomeType === "BINARY"
                       ? `${Math.round(pool.YES)} YES, ${Math.round(pool.NO)} NO`
-                      : mechanism === 'cpmm-1' &&
-                        outcomeType === 'PSEUDO_NUMERIC'
-                      ? `${Math.round(pool.YES)} HIGHER, ${Math.round(
-                          pool.NO
-                        )} LOWER`
+                      : mechanism === "cpmm-1" && outcomeType === "PSEUDO_NUMERIC"
+                      ? `${Math.round(pool.YES)} HIGHER, ${Math.round(pool.NO)} LOWER`
                       : contractPool(contract)}
                   </td>
                 </tr>
@@ -197,27 +169,23 @@ export function ContractInfoDialog(props: {
                   <tr>
                     <td>[ADMIN] Firestore</td>
                     <td>
-                      <SiteLink href={firestoreConsolePath(id)}>
-                        Console link
-                      </SiteLink>
+                      <SiteLink href={firestoreConsolePath(id)}>Console link</SiteLink>
                     </td>
                   </tr>
                 )}
                 {user && (
                   <tr>
-                    <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
+                    <td>{isAdmin ? "[ADMIN]" : ""} Unlisted</td>
                     <td>
                       <ShortToggle
                         disabled={
-                          isUnlisted
-                            ? !(isAdmin || (isCreator && wasUnlistedByCreator))
-                            : !(isCreator || isAdmin)
+                          isUnlisted ? !(isAdmin || (isCreator && wasUnlistedByCreator)) : !(isCreator || isAdmin)
                         }
-                        on={contract.visibility === 'unlisted'}
+                        on={contract.visibility === "unlisted"}
                         setOn={(b) =>
                           updateContract(id, {
-                            visibility: b ? 'unlisted' : 'public',
-                            unlistedById: b ? user.id : '',
+                            visibility: b ? "unlisted" : "public",
+                            unlistedById: b ? user.id : "",
                           })
                         }
                       />
@@ -228,9 +196,7 @@ export function ContractInfoDialog(props: {
             </Table>
 
             <Row className="flex-wrap gap-2">
-              {mechanism === 'cpmm-1' && (
-                <AddLiquidityButton contract={contract} />
-              )}
+              {mechanism === "cpmm-1" && <AddLiquidityButton contract={contract} />}
 
               <DuplicateContractButton contract={contract} />
 
@@ -241,19 +207,16 @@ export function ContractInfoDialog(props: {
                   size="2xs"
                   color="override"
                   className="gap-1 border-2  border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white"
-                  onClick={withTracking(
-                    () => setOpenCreateChallengeModal(true),
-                    'click challenge button'
-                  )}
+                  onClick={withTracking(() => setOpenCreateChallengeModal(true), "click challenge button")}
                 >
                   <ChallengeIcon className="h-4 w-4" /> Challenge
                   <CreateChallengeModal
                     isOpen={openCreateChallengeModal}
                     setOpen={(open) => {
                       if (!open) {
-                        setOpenCreateChallengeModal(false)
-                        setOpen(false)
-                      } else setOpenCreateChallengeModal(open)
+                        setOpenCreateChallengeModal(false);
+                        setOpen(false);
+                      } else setOpenCreateChallengeModal(open);
                     }}
                     user={user}
                     contract={contract}
@@ -262,15 +225,10 @@ export function ContractInfoDialog(props: {
               )}
             </Row>
 
-            <QRCode
-              url={shareUrl}
-              className="self-center sm:hidden"
-              width={150}
-              height={150}
-            />
+            <QRCode url={shareUrl} className="self-center sm:hidden" width={150} height={150} />
           </Col>
         </Modal>
       </Tooltip>
     </>
-  )
+  );
 }
