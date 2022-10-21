@@ -142,7 +142,15 @@ export function ContractInfoDialog(props: {
 
                 <tr>
                   <td>
-                    <span className="mr-1">Volume</span>
+                    <span className="mr-1">24 Hour Volume</span>
+                    <InfoTooltip text="The amount bought or sold in the last 24 hours" />
+                  </td>
+                  <td>{formatMoney(contract.volume24Hours)}</td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <span className="mr-1">Total Volume</span>
                     <InfoTooltip text="Total amount bought or sold" />
                   </td>
                   <td>{formatMoney(contract.volume)}</td>
