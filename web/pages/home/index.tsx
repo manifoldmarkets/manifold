@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { toast, Toaster } from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
 import { Page } from 'web/components/layout/page'
