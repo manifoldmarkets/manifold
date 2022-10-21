@@ -40,11 +40,12 @@ export function PostCard(props: {
       <Row className="flex grow justify-between">
         <Col className="gap-2">
           <Row className="items-center justify-between">
-            <Row className="items-center text-sm">
+            <Row className="items-center gap-2 text-sm">
               <Avatar
                 className="mx-1 h-7 w-7"
                 username={post.creatorUsername}
                 avatarUrl={post.creatorAvatarUrl}
+                size={6}
               />
               <UserLink
                 className="text-gray-400"
