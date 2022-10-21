@@ -83,21 +83,21 @@ export function ContractCard(props: {
     !hideQuickBet
 
   return (
-    <Card className={clsx('group relative flex gap-3', className)}>
+    <Card className={clsx('group relative flex gap-3 font-readex-pro leading-normal', className)}>
       <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
         <AvatarDetails
           contract={contract}
           className={'hidden md:inline-flex'}
           noLink={noLinkAvatar}
         />
-        <p
+        <div
           className={clsx(
             'break-anywhere font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
             questionClass
           )}
         >
           {question}
-        </p>
+        </div>
 
         {(outcomeType === 'FREE_RESPONSE' ||
           outcomeType === 'MULTIPLE_CHOICE') &&

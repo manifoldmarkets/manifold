@@ -76,7 +76,7 @@ export const editorExtensions = (simple = false): Extensions => [
 
 const proseClass = clsx(
   'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 prose-blockquote:not-italic max-w-none prose-quoteless leading-relaxed',
-  'font-light prose-a:font-light prose-blockquote:font-light prose-sm'
+  'prose-blockquote:font-light'
 )
 
 export function useTextEditor(props: {
@@ -187,11 +187,12 @@ export function TextEditor(props: {
 export function RichContent(props: {
   content: JSONContent | string
   className?: string
+  proseClassName?: string
   smallImage?: boolean
 }) {
-  const { className, content, smallImage } = props
+  const { className, proseClassName, content, smallImage } = props
   const editor = useEditor({
-    editorProps: { attributes: { class: proseClass } },
+    editorProps: { attributes: { class: clsx(proseClass, proseClassName) } },
     extensions: [
       StarterKit,
       smallImage ? DisplayImage : Image,
@@ -224,18 +225,30 @@ export function RichContent(props: {
 export function Content(props: {
   content: JSONContent | string
   className?: string
+  proseClassName?: string
   smallImage?: boolean
 }) {
-  const { className, content } = props
+  const { className, proseClassName, content } = props
   return typeof content === 'string' ? (
     <Linkify
       className={clsx(
+        'whitespace-pre-line font-light leading-relaxed',
         className,
-        'whitespace-pre-line font-light leading-relaxed'
+        proseClassName
       )}
       text={content}
     />
   ) : (
     <RichContent {...props} />
+  )
+}
+
+export function PostContent(props: { content: JSONContent | string }) {
+  const { content } = props
+  return (
+    <Content
+      content={content}
+      className="prose-p:mb-4 prose-headings:font-readex-pro font-serif"
+    />
   )
 }
