@@ -241,7 +241,7 @@ export default function App() {
       privateUser
     ) {
       const privateUserObj = JSON.parse(privateUser) as PrivateUser
-      if (!privateUserObj?.pushToken && privateUserObj.id) {
+      if (privateUserObj.id) {
         registerForPushNotificationsAsync().then((token) => {
           token && setPushToken(privateUserObj.id, token)
         })
