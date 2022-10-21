@@ -43,8 +43,8 @@ export const userProfileItem = (user: User) => ({
   href: `/${user.username}?tab=portfolio`,
   icon: () => (
     <Avatar
-      className="mx-auto px-0.5 pb-1"
-      size="sm"
+      className="mx-auto mb-1"
+      size="xs"
       username={user.username}
       avatarUrl={user.avatarUrl}
       noLink
