@@ -3,6 +3,7 @@ import { Spacer } from '../layout/spacer'
 import { Row } from '../layout/row'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import { ReactNode } from 'react'
+import { range } from 'lodash'
 
 export function PaginationNextPrev(props: {
   className?: string
@@ -53,7 +54,6 @@ export function Pagination(props: {
   if (maxPage <= 0) return <Spacer h={4} />
 
   const pageNumbers = getPageNumbers(maxPage, page)
-  console.log('page', page)
   return (
     <nav
       className={clsx(
@@ -70,7 +70,12 @@ export function Pagination(props: {
       />
       <Row className="gap-2">
         {pageNumbers.map((pageNumber) => (
-          <PageNumbers pageNumber={pageNumber} setPage={setPage} page={page} />
+          <PageNumbers
+            key={pageNumber}
+            pageNumber={pageNumber}
+            setPage={setPage}
+            page={page}
+          />
         ))}
       </Row>
       <PaginationArrow
@@ -117,7 +122,7 @@ export function PageNumbers(props: {
   page: number
 }) {
   const { pageNumber, setPage, page } = props
-  if (pageNumber === '...') {
+  if (pageNumber === '...' || typeof pageNumber === 'string') {
     return <div className="text-greyscale-4 select-none">...</div>
   }
   return (
@@ -135,14 +140,14 @@ export function PageNumbers(props: {
   )
 }
 
-type pageNumbers = number | '...'
+type pageNumbers = number | string
 
 export function getPageNumbers(
   maxPage: number,
   page: number
 ): Array<pageNumbers> {
   if (maxPage <= 7) {
-    return Array.from({ length: maxPage + 1 }, (_, index) => index)
+    return range(0, maxPage + 1)
   }
   if (page < 4) {
     return Array.from<unknown, pageNumbers>(
@@ -152,7 +157,10 @@ export function getPageNumbers(
   }
   if (page >= maxPage - 3) {
     return [0, '...'].concat(
-      Array.from({ length: 5 }, (_, index) => index + maxPage - 4)
+      Array.from<unknown, pageNumbers>(
+        { length: 5 },
+        (_, index) => index + maxPage - 4
+      )
     )
   }
   return [0, '...', page - 1, page, page + 1, '...', maxPage]

@@ -12,7 +12,6 @@ import { Content } from '../widgets/editor'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Pagination, PaginationNextPrev } from '../widgets/pagination'
-// import { PaginationNextPrev } from 'web/components/widgets/pagination'
 
 type ContractKey = {
   contractId: string
