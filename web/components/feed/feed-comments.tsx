@@ -231,16 +231,16 @@ export const FeedComment = memo(function FeedComment(props: {
       ref={commentRef}
       id={comment.id}
       className={clsx(
-        'ml-10 gap-2 transition-colors',
+        'ml-12 gap-2 transition-colors',
         highlighted ? `bg-indigo-50` : 'hover:bg-greyscale-1'
       )}
     >
       <Col className="-ml-3">
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-        <span
+        {/* <span
           className="bg-greyscale-3 mx-auto h-full w-[1.5px]"
           aria-hidden="true"
-        />
+        /> */}
       </Col>
       <Col className="w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
