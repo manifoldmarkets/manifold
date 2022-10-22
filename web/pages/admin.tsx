@@ -113,7 +113,7 @@ function UsersTable() {
   )
 }
 
-function ContractsTable() {
+function _ContractsTable() {
   const contracts = useAllContracts() ?? []
 
   // Sort users by createdTime descending, by default
