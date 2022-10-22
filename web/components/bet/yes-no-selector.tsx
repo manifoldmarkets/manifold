@@ -54,10 +54,10 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'NO'
-              ? 'border-scarlet-500 bg-scarlet-500 text-white'
+              ? 'border-scarlet-300 bg-scarlet-300 text-white'
               : selected == 'YES'
-              ? 'border-greyscale-3 text-greyscale-3 hover:border-scarlet-500 hover:text-scarlet-500 bg-white'
-              : 'border-scarlet-500 text-scarlet-500 hover:bg-scarlet-50 bg-white',
+              ? 'border-greyscale-3 text-greyscale-3 hover:border-scarlet-300 hover:text-scarlet-300 bg-white'
+              : 'border-scarlet-300 text-scarlet-300 bg-white hover:bg-red-50',
             btnClassName
           )}
           onClick={() => onSelect('NO')}
@@ -245,7 +245,7 @@ function Button(props: {
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
         color === 'green' && 'bg-teal-500 text-white hover:bg-teal-500',
-        color === 'red' && 'bg-scarlet-500 hover:bg-scarlet-500 text-white',
+        color === 'red' && 'bg-scarlet-400 hover:bg-scarlet-400 text-white',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
         color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',

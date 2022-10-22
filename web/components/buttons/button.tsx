@@ -31,7 +31,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'green' &&
       'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-500',
     color === 'red' &&
-      'disabled:bg-greyscale-2 bg-scarlet-400 text-white hover:bg-scarlet-500',
+      'disabled:bg-greyscale-2 bg-scarlet-300 text-white hover:bg-scarlet-400',
     color === 'yellow' &&
       'disabled:bg-greyscale-2 bg-yellow-400 text-white hover:bg-yellow-500',
     color === 'blue' &&
