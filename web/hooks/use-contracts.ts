@@ -9,6 +9,7 @@ import {
   getUserBetContractsQuery,
   listAllContracts,
   listenForContract,
+  listenForLiveContracts,
 } from 'web/lib/firebase/contracts'
 import { QueryClient, useQuery, useQueryClient } from 'react-query'
 import { MINUTE_MS, sleep } from 'common/util/time'
@@ -21,6 +22,7 @@ import { CPMMBinaryContract } from 'common/contract'
 import { Dictionary, isEqual, zipObject } from 'lodash'
 import { useForceUpdate } from './use-force-update'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -132,6 +134,22 @@ export const useUserBetContracts = (userId: string) => {
     getUserBetContractsQuery(userId)
   )
   return result.data
+}
+
+export const useLiveContracts = (count: number) => {
+  const [contracts, setContracts] = usePersistentState<Contract[] | undefined>(
+    undefined,
+    {
+      store: inMemoryStore(),
+      key: `liveContracts-${count}`,
+    }
+  )
+
+  useEffect(() => {
+    return listenForLiveContracts(count, setContracts)
+  }, [count, setContracts])
+
+  return contracts
 }
 
 const contractsStore: Dictionary<Contract | null> = {}
