@@ -152,6 +152,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
             placeholder={'Search'}
             className="w-full"
             onClick={() => Router.push('/search')}
+            onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
           />
           <CustomizeButton justIcon />
           <DailyStats user={user} />
