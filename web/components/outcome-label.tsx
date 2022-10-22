@@ -144,7 +144,7 @@ export function NumericValueLabel(props: { value: number }) {
 }
 
 export function AnswerNumberLabel(props: { number: string }) {
-  return <span className="text-teal-600">#{props.number}</span>
+  return <span className="text-teal-500">#{props.number}</span>
 }
 
 export function AnswerLabel(props: {

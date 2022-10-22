@@ -75,7 +75,7 @@ export function OnlineUserAvatar(props: {
       )}
       {isOnline(user) && (
         <div className="absolute left-0 top-0 ">
-          <UserCircleIcon className="h-3 w-3 rounded-full border-2 border-white bg-teal-600 text-teal-600" />
+          <UserCircleIcon className="h-3 w-3 rounded-full border-2 border-white bg-teal-600 text-teal-500" />
         </div>
       )}
     </Row>

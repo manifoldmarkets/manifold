@@ -58,7 +58,7 @@ export function MultiUserTransactionLink(props: {
               key={userInfo.username + 'list'}
               className="w-full items-center gap-2"
             >
-              <span className="min-w-[3.5rem] text-teal-600">
+              <span className="min-w-[3.5rem] text-teal-500">
                 +{formatMoney(userInfo.amount)}
               </span>
               <Avatar

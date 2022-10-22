@@ -44,7 +44,7 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
         </div>
         <div class="flex flex-row grid grid-cols-3">
         <div class="flex flex-col justify-center items-center ${
-          creatorOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-500'
+          creatorOutcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'
         }">
         
 <!--      Creator user column-->
@@ -68,7 +68,7 @@ export function getChallengeHtml(parsedReq: ParsedRequest) {
         VS
         </div>
       <div class="flex flex-col justify-center items-center ${
-        challengerOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-500'
+        challengerOutcome === 'YES' ? 'text-teal-500' : 'text-scarlet-500'
       }">
 
 <!--     Unaccepted user column-->

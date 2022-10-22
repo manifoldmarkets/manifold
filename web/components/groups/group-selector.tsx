@@ -138,7 +138,7 @@ export function GroupSelector(props: {
                           <Row className={'items-center gap-1 truncate pl-5'}>
                             {memberGroupIds.includes(group.id) && (
                               <UserIcon
-                                className={'h-4 w-4 shrink-0 text-teal-600'}
+                                className={'h-4 w-4 shrink-0 text-teal-500'}
                               />
                             )}
                             {group.name}
@@ -168,7 +168,7 @@ export function GroupSelector(props: {
                   label={'Create a new Group'}
                   addGroupIdParamOnSubmit
                   icon={
-                    <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-600" />
+                    <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
                   }
                 />
               </Combobox.Options>

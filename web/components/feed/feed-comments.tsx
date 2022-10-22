@@ -388,7 +388,7 @@ export function FeedCommentHeader(props: {
           elementId={comment.id}
         />
         {totalAwarded > 0 && (
-          <span className=" ml-2 text-sm text-teal-600">
+          <span className=" ml-2 text-sm text-teal-500">
             +{formatMoney(totalAwarded)}
           </span>
         )}

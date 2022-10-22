@@ -74,7 +74,7 @@ export function getTemplateCss(theme: string, fontSize: string) {
       font-family: "Major Mono Display", monospace;
     }
 
-    .text-teal-600 {
+    .text-teal-500 {
       color: #11b981;
     }
     `

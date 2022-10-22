@@ -79,7 +79,7 @@ export function AcceptChallengeButton(props: {
                     Potential payout:
                   </span>{' '}
                   <Row className={'items-center justify-center'}>
-                    <span className={'text-teal-600'}>
+                    <span className={'text-teal-500'}>
                       {formatMoney(creatorAmount + acceptorAmount)}
                     </span>
                   </Row>

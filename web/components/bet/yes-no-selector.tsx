@@ -190,7 +190,7 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
     <button
       className={clsx(
         'hover:bg-teal-600-focus hover:border-teal-600-focus inline-flex flex-1 items-center  justify-center rounded-lg border-2 border-teal-600 p-2 hover:text-white',
-        'bg-transparent text-lg text-teal-600',
+        'bg-transparent text-lg text-teal-500',
         className
       )}
       onClick={onClick}

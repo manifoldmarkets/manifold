@@ -245,7 +245,7 @@ export function BuyPanel(props: {
         if (onBuySuccess) onBuySuccess()
         else {
           toast('Trade submitted!', {
-            icon: <CheckIcon className={'h-5 w-5 text-teal-600'} />,
+            icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
           })
         }
       })

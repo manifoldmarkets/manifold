@@ -486,7 +486,7 @@ export function NewContract(props: {
               <div className="pl-1 text-gray-700 line-through">
                 {formatMoney(ante)}
               </div>
-              <div className="pl-1 text-teal-600">FREE </div>
+              <div className="pl-1 text-teal-500">FREE </div>
               <div className="pl-1 text-gray-500">
                 (You have{' '}
                 {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
