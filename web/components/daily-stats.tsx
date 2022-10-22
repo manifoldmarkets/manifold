@@ -71,7 +71,7 @@ export function DailyStats(props: {
               user && !hasCompletedStreakToday(user) && 'grayscale'
             )}
           >
-            <span className="text-teal-600">
+            <span className="text-teal-500">
               🏦 {formatMoney(user?.nextLoanCached ?? 0)}
             </span>
           </Row>

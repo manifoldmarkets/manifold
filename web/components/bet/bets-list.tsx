@@ -343,7 +343,7 @@ function ContractBets(props: {
               </>
             ) : isBinary ? (
               <>
-                <div className="text-primary text-lg">
+                <div className="text-lg text-teal-500">
                   {getBinaryProbPercent(contract)}
                 </div>
                 <div>•</div>

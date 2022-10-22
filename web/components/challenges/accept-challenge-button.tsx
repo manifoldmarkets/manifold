@@ -69,7 +69,7 @@ export function AcceptChallengeButton(props: {
             <Col className="w-full items-center justify-start gap-2">
               <Row className={'w-full justify-start gap-20'}>
                 <span className={'min-w-[4rem] font-bold'}>Cost to you:</span>{' '}
-                <span className={'text-red-500'}>
+                <span className={'text-scarlet-500'}>
                   {formatMoney(acceptorAmount)}
                 </span>
               </Row>
@@ -79,7 +79,7 @@ export function AcceptChallengeButton(props: {
                     Potential payout:
                   </span>{' '}
                   <Row className={'items-center justify-center'}>
-                    <span className={'text-primary'}>
+                    <span className={'text-teal-500'}>
                       {formatMoney(creatorAmount + acceptorAmount)}
                     </span>
                   </Row>

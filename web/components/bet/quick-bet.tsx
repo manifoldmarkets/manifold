@@ -201,14 +201,14 @@ export function QuickBet(props: {
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',
-                downHover ? 'text-red-400' : 'text-gray-400'
+                downHover ? 'text-scarlet-500' : 'text-gray-400'
               )}
             />
           ) : (
             <TriangleDownFillIcon
               className={clsx(
                 'mx-auto h-5 w-5',
-                downHover ? 'text-red-400' : 'text-gray-200'
+                downHover ? 'text-scarlet-500' : 'text-gray-200'
               )}
             />
           )}
@@ -341,15 +341,10 @@ function getNumericScale(contract: NumericContract) {
 
 export function getColor(contract: Contract) {
   // TODO: Try injecting a gradient here
-  // return 'primary'
   const { resolution, outcomeType } = contract
 
   if (resolution) {
-    return (
-      OUTCOME_TO_COLOR[resolution as resolution] ??
-      // If resolved to a FR answer, use 'primary'
-      'teal-500'
-    )
+    return OUTCOME_TO_COLOR[resolution as resolution] ?? 'teal-500'
   }
 
   if (outcomeType === 'PSEUDO_NUMERIC') return 'blue-400'
@@ -358,6 +353,6 @@ export function getColor(contract: Contract) {
     return 'gray-400'
   }
 
-  // TODO: Not sure why eg green-400 doesn't work here; try upgrading Tailwind
+  // TODO: Not sure why eg teal-400 doesn't work here; try upgrading Tailwind
   return 'teal-500'
 }

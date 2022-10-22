@@ -44,7 +44,7 @@ export default function ClaimPage() {
         <ManalinkCard info={info} />
 
         {error && (
-          <section className="my-5 text-red-500">
+          <section className="text-scarlet-500 my-5">
             <p>Failed to claim manalink.</p>
             <p>{error}</p>
           </section>

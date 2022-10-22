@@ -47,11 +47,11 @@ export function AnswerItem(props: {
         wasResolvedTo
           ? resolution === 'MKT'
             ? 'mb-2 bg-blue-50'
-            : 'mb-10 bg-green-50'
+            : 'mb-10 bg-teal-50'
           : chosenProb === undefined
           ? 'bg-gray-50'
           : showChoice === 'radio'
-          ? 'bg-green-50'
+          ? 'bg-teal-50'
           : 'bg-blue-50'
       )}
     >
@@ -105,7 +105,7 @@ export function AnswerItem(props: {
               <span className="">Choose this answer</span>
               {showChoice === 'radio' && (
                 <input
-                  className={clsx('radio', chosenProb && '!bg-green-500')}
+                  className={clsx('radio', chosenProb && '!bg-teal-500')}
                   type="radio"
                   name="opt"
                   checked={isChosen}
@@ -144,7 +144,7 @@ export function AnswerItem(props: {
               <div
                 className={clsx(
                   'text-xl',
-                  resolution === 'MKT' ? 'text-blue-700' : 'text-teal-600'
+                  resolution === 'MKT' ? 'text-blue-700' : 'text-teal-500'
                 )}
               >
                 Chosen{' '}

@@ -49,7 +49,7 @@ export function NumberInput(props: {
       <Spacer h={4} />
 
       {error && (
-        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+        <div className="text-scarlet-500 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
           {error}
         </div>
       )}
