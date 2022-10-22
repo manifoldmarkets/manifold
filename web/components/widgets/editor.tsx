@@ -245,10 +245,5 @@ export function Content(props: {
 
 export function PostContent(props: { content: JSONContent | string }) {
   const { content } = props
-  return (
-    <Content
-      content={content}
-      className="prose-p:mb-4 prose-headings:font-readex-pro font-serif"
-    />
-  )
+  return <Content content={content} className="prose-p:mb-4" />
 }
