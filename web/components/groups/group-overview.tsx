@@ -229,7 +229,7 @@ export function PinnedItems(props: {
 
   return pinned.length > 0 || isEditable ? (
     <div>
-      <Row className=" items-center justify-between">
+      <Row className="items-center justify-between">
         <SectionHeader label={'Featured'} />
         {isEditable && (
           <Button
@@ -257,7 +257,10 @@ export function PinnedItems(props: {
           columnClassName="pl-4 bg-clip-padding"
         >
           {pinned.length == 0 && !editMode && (
-            <div className="flex flex-col items-center justify-center">
+            <div
+              className="flex flex-col items-center justify-center"
+              key="no-pinned"
+            >
               <p className="text-center text-gray-400">
                 No pinned items yet. Click the edit button to add some!
               </p>
@@ -271,7 +274,7 @@ export function PinnedItems(props: {
             </div>
           ))}
           {editMode && pinned.length < 6 && (
-            <div className=" py-2">
+            <div className="py-2" key="plus-circle">
               <Row
                 className={
                   'relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer hover:bg-gray-100'
