@@ -16,13 +16,13 @@ export function getHtml(parsedReq: ParsedRequest) {
   } = parsedReq
   const hideAvatar = creatorAvatarUrl ? '' : 'hidden'
 
-  let resolutionColor = 'text-primary'
+  let resolutionColor = 'text-teal-600'
   let resolutionString = 'YES'
   switch (resolution) {
     case 'YES':
       break
     case 'NO':
-      resolutionColor = 'text-red-500'
+      resolutionColor = 'text-scarlet-500'
       resolutionString = 'NO'
       break
     case 'CANCEL':
@@ -46,7 +46,7 @@ export function getHtml(parsedReq: ParsedRequest) {
         </span>`
 
   const probabilityDiv = `
-        <span class='text-primary text-center'>
+        <span class='text-teal-600 text-center'>
           <div class="text-8xl">${probability}</div>
           <div class="text-4xl">chance</div>
         </span>`

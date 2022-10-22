@@ -260,7 +260,7 @@ function BotSetupStep(props: {
 function CopyLinkButton(props: { link: string; text: string }) {
   const { link, text } = props
   const toastTheme = {
-    className: '!bg-primary !text-white',
+    className: '!bg-teal-600 !text-white',
     icon: <LinkIcon className="mr-2 h-6 w-6" aria-hidden="true" />,
   }
   const copyLinkCallback = async () => {
@@ -315,11 +315,11 @@ function BotConnectButton(props: {
         },
         success: {
           className:
-            '!bg-primary !transition-all !duration-500 !text-white !max-w-sm',
+            '!bg-teal-600 !transition-all !duration-500 !text-white !max-w-sm',
         },
         error: {
           className:
-            '!bg-red-400 !transition-all !duration-500 !text-white !max-w-sm',
+            '!bg-scarlet-400 !transition-all !duration-500 !text-white !max-w-sm',
         },
       }
     )

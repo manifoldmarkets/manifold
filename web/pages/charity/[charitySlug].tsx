@@ -148,11 +148,11 @@ function Details(props: {
   const { website } = charity
   return (
     <Col className="gap-1 text-right">
-      <div className="text-primary mb-2 text-4xl">
+      <div className="mb-2 text-4xl text-teal-600">
         {manaToUSD(totalRaised ?? 0)} raised
       </div>
       {userDonated > 0 && (
-        <div className="text-primary text-xl">
+        <div className="text-xl text-teal-600">
           {manaToUSD(userDonated)} from you!
         </div>
       )}

@@ -40,7 +40,7 @@ export const FollowMarketButton = (props: {
           if (followers?.includes(user.id)) {
             await unFollowContract(contract.id, user.id)
             toast("You'll no longer receive notifications from this market", {
-              icon: <CheckIcon className={'text-primary h-5 w-5'} />,
+              icon: <CheckIcon className={'h-5 w-5 text-teal-600'} />,
             })
             track('Unwatch Market', {
               slug: contract.slug,
@@ -48,7 +48,7 @@ export const FollowMarketButton = (props: {
           } else {
             await followContract(contract.id, user.id)
             toast("You'll now receive notifications from this market!", {
-              icon: <CheckIcon className={'text-primary h-5 w-5'} />,
+              icon: <CheckIcon className={'h-5 w-5 text-teal-600'} />,
             })
             track('Watch Market', {
               slug: contract.slug,

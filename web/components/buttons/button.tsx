@@ -29,9 +29,9 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     'font-md inline-flex items-center justify-center rounded-md ring-inset shadow-sm transition-colors disabled:cursor-not-allowed',
     sizeClasses[size],
     color === 'green' &&
-      'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-600',
+      'disabled:bg-greyscale-2 bg-teal-500 text-white hover:bg-teal-500',
     color === 'red' &&
-      'disabled:bg-greyscale-2 bg-red-400 text-white hover:bg-red-500',
+      'disabled:bg-greyscale-2 bg-scarlet-400 text-white hover:bg-scarlet-500',
     color === 'yellow' &&
       'disabled:bg-greyscale-2 bg-yellow-400 text-white hover:bg-yellow-500',
     color === 'blue' &&

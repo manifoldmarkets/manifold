@@ -26,10 +26,8 @@ module.exports = {
         'progress-loading': 'progress 2s linear',
       },
       colors: {
-        primary: '#11b981',
-        'primary-focus': '#069668',
         warning: '#F59E0B', // amber-500 TODO: change color
-        error: '#ff5724', // TODO: change color
+        error: '#ea580c', // TODO: change color
         'red-25': '#FDF7F6',
         'greyscale-1': '#FBFBFF',
         'greyscale-1.5': '#F4F4FB',
@@ -41,6 +39,18 @@ module.exports = {
         'greyscale-7': '#111140',
         'highlight-blue': '#5BCEFF',
         'hover-blue': '#90DEFF',
+        scarlet: {
+          50: '#ffece9',
+          100: '#FFD3CC',
+          200: '#FFA799',
+          300: '#FF7C66',
+          400: '#FF5033',
+          500: '#FF2400',
+          600: '#CC1D00',
+          700: '#991600',
+          800: '#660E00',
+          900: '#330700',
+        },
       },
       typography: {
         quoteless: {

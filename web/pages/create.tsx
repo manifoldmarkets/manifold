@@ -98,7 +98,7 @@ export default function Create(props: { auth: { user: User } }) {
           <form>
             <div className="flex w-full flex-col">
               <label className="px-1 pt-2 pb-3">
-                Question<span className={'text-red-700'}>*</span>
+                Question<span className={'text-scarlet-500'}>*</span>
               </label>
 
               <ExpandingInput
@@ -354,7 +354,7 @@ export function NewContract(props: {
             />
 
             {min !== undefined && max !== undefined && min >= max && (
-              <div className="mt-2 mb-2 text-sm text-red-500">
+              <div className="text-scarlet-500 mt-2 mb-2 text-sm">
                 The maximum value must be greater than the minimum.
               </div>
             )}
@@ -382,7 +382,7 @@ export function NewContract(props: {
               max !== undefined &&
               min < max &&
               (initialValue <= min || initialValue >= max) && (
-                <div className="mt-2 mb-2 text-sm text-red-500">
+                <div className="text-scarlet-500 mt-2 mb-2 text-sm">
                   Initial value must be in between {min} and {max}.{' '}
                 </div>
               )}
@@ -486,7 +486,7 @@ export function NewContract(props: {
               <div className="pl-1 text-gray-700 line-through">
                 {formatMoney(ante)}
               </div>
-              <div className="text-primary pl-1">FREE </div>
+              <div className="pl-1 text-teal-600">FREE </div>
               <div className="pl-1 text-gray-500">
                 (You have{' '}
                 {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
@@ -497,7 +497,9 @@ export function NewContract(props: {
 
           {ante > balance && !deservesFreeMarket && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-              <span className="mr-2 text-red-500">Insufficient balance</span>
+              <span className="text-scarlet-500 mr-2">
+                Insufficient balance
+              </span>
               <Button
                 size="xs"
                 color="green"

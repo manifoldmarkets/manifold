@@ -72,7 +72,7 @@ export function AmountInput(props: {
         </label>
 
         {error && (
-          <div className="absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          <div className="text-scarlet-500 absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide">
             {error === 'Insufficient balance' ? (
               <>
                 Not enough funds.

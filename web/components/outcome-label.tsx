@@ -99,8 +99,8 @@ export function FreeResponseOutcomeLabel(props: {
 }
 
 export const OUTCOME_TO_COLOR = {
-  YES: 'primary',
-  NO: 'red-400',
+  YES: 'teal-500',
+  NO: 'rose-400',
   CANCEL: 'yellow-400',
   MKT: 'blue-400',
 }
@@ -110,15 +110,15 @@ export function YesLabel() {
 }
 
 export function HigherLabel() {
-  return <span className="text-primary">HIGHER</span>
+  return <span className="text-teal-500">HIGHER</span>
 }
 
 export function LowerLabel() {
-  return <span className="text-red-400">LOWER</span>
+  return <span className="text-scarlet-400">LOWER</span>
 }
 
 export function NoLabel() {
-  return <span className="text-red-400">NO</span>
+  return <span className="text-scarlet-400">NO</span>
 }
 
 export function CancelLabel() {
@@ -144,7 +144,7 @@ export function NumericValueLabel(props: { value: number }) {
 }
 
 export function AnswerNumberLabel(props: { number: string }) {
-  return <span className="text-primary">#{props.number}</span>
+  return <span className="text-teal-600">#{props.number}</span>
 }
 
 export function AnswerLabel(props: {
