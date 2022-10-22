@@ -57,34 +57,33 @@ export function Pagination(props: {
   const pageNumbers = getPageNumbers(maxPage, page)
   return (
     <nav
-      className={clsx(
-        'mx-auto flex w-full items-center gap-4 bg-white pt-2 pb-6',
-        className
-      )}
+      className={clsx('flex w-full items-center bg-white pt-2 pb-4', className)}
       aria-label="Pagination"
     >
-      <PaginationArrow
-        scrollToTop={scrollToTop}
-        onClick={() => setPage(page - 1)}
-        disabled={page <= 0}
-        nextOrPrev="prev"
-      />
-      <Row className="gap-2">
-        {pageNumbers.map((pageNumber) => (
-          <PageNumbers
-            key={pageNumber}
-            pageNumber={pageNumber}
-            setPage={setPage}
-            page={page}
-          />
-        ))}
+      <Row className="mx-auto gap-4">
+        <PaginationArrow
+          scrollToTop={scrollToTop}
+          onClick={() => setPage(page - 1)}
+          disabled={page <= 0}
+          nextOrPrev="prev"
+        />
+        <Row className="gap-2">
+          {pageNumbers.map((pageNumber) => (
+            <PageNumbers
+              key={pageNumber}
+              pageNumber={pageNumber}
+              setPage={setPage}
+              page={page}
+            />
+          ))}
+        </Row>
+        <PaginationArrow
+          scrollToTop={scrollToTop}
+          onClick={() => setPage(page + 1)}
+          disabled={page >= maxPage}
+          nextOrPrev="next"
+        />
       </Row>
-      <PaginationArrow
-        scrollToTop={scrollToTop}
-        onClick={() => setPage(page + 1)}
-        disabled={page >= maxPage}
-        nextOrPrev="next"
-      />
     </nav>
   )
 }
