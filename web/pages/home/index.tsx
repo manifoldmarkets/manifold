@@ -210,10 +210,10 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
+  { label: 'Trending', id: 'score' },
   { label: 'Featured', id: 'featured' },
   { label: 'Daily changed', id: 'daily-trending' },
   { label: 'Your daily movers', id: 'daily-movers' },
-  { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
 ] as const
 
