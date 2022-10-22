@@ -172,6 +172,8 @@ export function SimpleBetPanel(props: {
   )
 }
 
+export type binaryOutcomes = 'YES' | 'NO' | undefined
+
 export function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
@@ -193,8 +195,7 @@ export function BuyPanel(props: {
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>()
+  const [outcome, setOutcome] = useState<binaryOutcomes>()
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -398,6 +399,7 @@ export function BuyPanel(props: {
           disabled={isSubmitting}
           inputRef={inputRef}
           showSliderOnMobile
+          binaryOutcome={outcome}
         />
 
         <Spacer h={8} />
