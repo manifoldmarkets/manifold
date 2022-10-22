@@ -215,7 +215,7 @@ export default function Admin() {
   return useAdmin() ? (
     <Page>
       <UsersTable />
-      <ContractsTable />
+      {/* <ContractsTable /> */}
     </Page>
   ) : (
     <Custom404 />
