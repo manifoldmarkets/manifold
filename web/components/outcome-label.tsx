@@ -100,7 +100,7 @@ export function FreeResponseOutcomeLabel(props: {
 
 export const OUTCOME_TO_COLOR = {
   YES: 'teal-500',
-  NO: 'rose-400',
+  NO: 'scarlet-300',
   CANCEL: 'yellow-400',
   MKT: 'blue-400',
 }

@@ -27,7 +27,7 @@ module.exports = {
       },
       colors: {
         warning: '#F59E0B', // amber-500 TODO: change color
-        error: '#ea580c', // TODO: change color
+        error: '#FF5033', // TODO: change color
         'red-25': '#FDF7F6',
         'greyscale-1': '#FBFBFF',
         'greyscale-1.5': '#F4F4FB',
