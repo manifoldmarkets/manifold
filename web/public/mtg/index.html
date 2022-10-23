@@ -41,6 +41,16 @@
         min-height: 200px;
       }
 
+      .logo {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.15s;
+      }
+
+      .logo:hover {
+        transform: rotate(12deg);
+      }
+
       h1,
       h3 {
         font-family: Verdana, Geneva, Tahoma, sans-serif;
@@ -163,10 +173,7 @@
             />
             <h3>Counterspell Guesser</h3></label
           >
-          <img
-            class="level-badge"
-            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/a8/Advanced_level.jpg"
-          />
+          <img class="level-badge" src="images/Advanced_level.webp" />
         </div>
         <br />
 
@@ -185,10 +192,7 @@
             />
             <h3>Match With Hot Singles</h3></label
           >
-          <img
-            class="level-badge"
-            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/a8/Advanced_level.jpg"
-          />
+          <img class="level-badge" src="images/Advanced_level.webp" />
         </div>
         <br />
 
@@ -207,10 +211,7 @@
             />
             <h3>Finding Fantastic Beasts</h3></label
           >
-          <img
-            class="level-badge"
-            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/a8/Advanced_level.jpg"
-          />
+          <img class="level-badge" src="images/Advanced_level.webp" />
         </div>
         <br />
 
@@ -220,7 +221,7 @@
             id="basic"
             name="whichguesser"
             value="basic"
-            onchange="updateSettingDefault(true, true, false, true, 'only expansions')"
+            onchange="updateSettingDefault(true, false, false, true, 'only expansions')"
           />
           <label class="radio-label" for="basic">
             <img
@@ -229,10 +230,7 @@
             />
             <h3>How Basic</h3></label
           >
-          <img
-            class="level-badge"
-            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/af/Expert_level.jpg"
-          />
+          <img class="level-badge" src="images/Expert_level.webp" />
         </div>
         <br />
 
@@ -251,10 +249,7 @@
             />
             <h3>General Knowledge</h3></label
           >
-          <img
-            class="level-badge"
-            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/0/00/Starter_level.jpg"
-          />
+          <img class="level-badge" src="images/Starter_level.webp" />
         </div>
         <br />
 
@@ -273,10 +268,7 @@
             />
             <h3>Watermark It</h3></label
           >
-          <img
-            class="level-badge"
-            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/0/00/Starter_level.jpg"
-          />
+          <img class="level-badge" src="images/Starter_level.webp" />
         </div>
         <br />
 
@@ -295,17 +287,40 @@
             />
             <h3>Aesthetic Consultation</h3></label
           >
-          <img
-            class="level-badge"
-            src="https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/a/af/Expert_level.jpg"
-          />
+          <img class="level-badge" src="images/Expert_level.webp" />
         </div>
         <br />
+
+        <div class="option-row">
+          <input
+            type="radio"
+            id="artifact"
+            name="whichguesser"
+            value="artifact"
+            onchange="updateSettingDefault(true, true, false, true, 'only first printing')"
+          />
+          <label class="radio-label" for="artifact">
+            <img
+              class="thumbnail"
+              src="https://cards.scryfall.io/art_crop/front/8/7/87809c72-055f-4055-85a7-86d41bd655f1.jpg?1562922385"
+            />
+            <h3>Archaeological Dating</h3></label
+          >
+          <img class="level-badge" src="images/Expert_level.webp" />
+        </div>
+        <br />
+
+        <a
+          class="group flex flex-shrink-0 flex-row gap-4 pt-6"
+          href="https://manifold.markets/home"
+          style="vertical-align: top; position: absolute; top: 30px; left: 30px"
+          ><img class="logo" src="../logo.svg" width="45" height="45" alt="" />
+        </a>
 
         <details id="addl-options">
           <summary>
             <img
-              src="https://mythicspoiler.com/images/buttons/ustset.png"
+              src="images/ustset.png"
               style="width: 32px; vertical-align: top"
             />
             Options
