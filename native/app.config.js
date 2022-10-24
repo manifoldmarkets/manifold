@@ -14,6 +14,7 @@ module.exports = {
   },
   updates: {
     fallbackToCacheTimeout: 0,
+    url: 'https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b',
   },
   runtimeVersion: {
     policy: 'sdkVersion',
