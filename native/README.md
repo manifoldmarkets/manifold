@@ -3,8 +3,8 @@
 `yarn ios:dev`  
 `yarn android:dev`  
 `yarn ios:prod`  
-**Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
-
+**Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.  
+**Note 2:** After changing anything in the `app.json` you'll want to run `npx expo prebuild` to clear the android and ios folders
 
 
 ## Building  

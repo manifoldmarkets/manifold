@@ -9,9 +9,9 @@
     "userInterfaceStyle": "light",
     "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround"],
     "splash": {
-      "image": "./assets/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#4337C9"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -41,8 +41,8 @@
       "useNextNotificationsApi": true,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4337C9"
       },
       "package": "com.markets.manifold",
       "versionCode": 10
