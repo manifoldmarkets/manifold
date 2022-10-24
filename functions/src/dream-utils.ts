@@ -4,10 +4,7 @@ import { DOMAIN } from '../../common/envs/constants'
 export const dreamWithDefaultParams = async (input: string) => {
   try {
     const API_KEY = process.env.DREAM_KEY
-    console.log(
-      'Logging process.env.NEXT_PUBLIC_DREAM_KEY',
-      process.env.NEXT_PUBLIC_DREAM_KEY
-    )
+    console.log('Logging process.env.DREAM_KEY', process.env.DREAM_KEY)
 
     const MODIFIERS =
       '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
