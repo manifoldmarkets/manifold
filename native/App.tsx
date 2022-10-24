@@ -70,8 +70,7 @@ const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? // ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
-      'https://ddbd-181-41-206-192.ngrok.io'
+    ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
     : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
