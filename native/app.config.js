@@ -15,6 +15,9 @@ module.exports = {
   updates: {
     fallbackToCacheTimeout: 0,
   },
+  runtimeVersion: {
+    policy: 'sdkVersion',
+  },
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,

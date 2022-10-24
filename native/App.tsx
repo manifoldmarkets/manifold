@@ -347,7 +347,7 @@ export default function App() {
     <View style={[styles.container]}>
       {isWebViewLoading && (
         <View style={[styles.horizontal]}>
-          <ActivityIndicator size={'large'} color={'indigo'} />
+          <ActivityIndicator size={'large'} color={'orange'} />
         </View>
       )}
       <WebView
