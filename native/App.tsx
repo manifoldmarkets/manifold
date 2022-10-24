@@ -24,9 +24,9 @@ import {
 } from 'firebase/firestore'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
-import { Platform, BackHandler } from 'react-native'
+import { Platform, BackHandler, NativeEventEmitter } from 'react-native'
 import * as Linking from 'expo-linking'
-import { Subscription } from 'expo-modules-core'
+import { NativeModulesProxy, Subscription } from 'expo-modules-core'
 import { TEN_YEARS_SECS } from 'common/envs/constants'
 import { PrivateUser } from 'common/user'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
@@ -72,21 +72,32 @@ export default function App() {
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
   const url = Linking.useURL()
+  // TODO: untested on ios
+  const eventEmitter = new NativeEventEmitter(
+    Platform.OS === 'ios' ? NativeModulesProxy.ExpoDevice : null
+  )
 
   if (url) {
     const { hostname, path, queryParams } = Linking.parse(url)
-    console.log(
-      `Linked to app with hostname: ${hostname}, path: ${path} and data: ${JSON.stringify(
-        queryParams
-      )}`
-    )
-    if (hostname)
+    if (path !== 'blank' && hostname) {
+      console.log(
+        `Linked to app with hostname: ${hostname}, path: ${path} and data: ${JSON.stringify(
+          queryParams
+        )}`
+      )
       webview.current.postMessage(
         JSON.stringify({
           type: 'link',
           data: path,
         })
       )
+      // If we don't clear the url, we won't reopen previously opened links
+      const clearUrlCacheEvent = {
+        hostname: 'manifold.markets',
+        url: 'blank',
+      }
+      eventEmitter.emit('url', clearUrlCacheEvent)
+    }
   }
 
   const handleBackButtonPress = () => {
