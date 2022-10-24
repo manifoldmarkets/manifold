@@ -30,7 +30,9 @@ export function PushNotificationsModal(props: {
 
   useEffect(() => {
     if (!(window as any).isNative) return
-
+    // TODO: if the user uninstalls the app the notification permission will be invalid
+    //  so we have to figure out if it's valid, and if not, re-request it. We maye just want
+    //  to set pushToken to null in case we get a pushReceipt with DeviceNotRegistered, see https://docs.expo.dev/push-notifications/sending-notifications/#push-receipt-errors
     if (
       !privateUser.pushToken &&
       !privateUser.rejectedPushNotificationsOn &&

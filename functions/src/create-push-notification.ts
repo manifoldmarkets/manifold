@@ -79,6 +79,7 @@ export const createPushNotification = async (
   )
   await Promise.all(
     (successTickets as ExpoPushSuccessTicket[]).map(async (ticket) =>
+      // TODO: let's move this to a subcollection of the user
       firestore
         .collection('pushNotificationTickets')
         .doc(ticket.id)
@@ -114,6 +115,7 @@ export const checkPushNotificationReceipts = async () => {
   // Apple and Google so you can handle it appropriately.
   const tickets = (
     await firestore
+      // TODO: let's move this to a subcollection of the user
       .collection('pushNotificationTickets')
       // .where('createdTime', '>', Date.now() - MINUTE_MS * 30)
       .get()
