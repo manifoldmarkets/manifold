@@ -3,20 +3,12 @@ import { DOMAIN } from '../../common/envs/constants'
 
 export const dreamWithDefaultParams = async (input: string) => {
   try {
-    const API_KEY = process.env.NEXT_PUBLIC_DREAM_KEY
+    const API_KEY = process.env.DREAM_KEY
     console.log(
       'Logging process.env.NEXT_PUBLIC_DREAM_KEY',
       process.env.NEXT_PUBLIC_DREAM_KEY
     )
 
-    console.log('Logging process.env', process.env)
-    console.log('Logging process.env.API_SECRET', process.env.API_SECRET)
-    console.log(
-      'Logging process.env.NEXT_PUBLIC_FIREBASE_ENV',
-      process.env.NEXT_PUBLIC_FIREBASE_ENV
-    )
-    console.log('Logging process.env.MAILGUN_KEY', process.env.MAILGUN_KEY)
-    console.log('Tempo Logging of prod calls APIKEY: ', API_KEY)
     const MODIFIERS =
       '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
     const data = {
