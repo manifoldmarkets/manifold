@@ -4,6 +4,7 @@
   },
   "build": {
     "development": {
+      "channel": "dev",
       "developmentClient": true,
       "distribution": "internal",
       "env": {
@@ -22,11 +23,13 @@
       "env": {
         "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
       },
+      "channel": "preview",
       "distribution": "internal",
       "android": {"credentialsSource": "local"},
       "ios": {}
     },
     "production": {
+      "channel": "default",
       "env": {
       "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
       },
