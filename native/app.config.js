@@ -3,7 +3,7 @@ export default (config) => ({
   name: 'Manifold',
   slug: 'manifold-markets',
   owner: 'iansp',
-  version: '2.0.2',
+  version: '2.0.3',
   orientation: 'portrait',
   icon: './assets/logo.png',
   userInterfaceStyle: 'light',
@@ -20,7 +20,7 @@ export default (config) => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.markets.manifold',
-    buildNumber: '1.0.0',
+    buildNumber: '1.0.1',
   },
   android: {
     intentFilters: [
@@ -43,7 +43,7 @@ export default (config) => ({
       backgroundColor: '#4337C9',
     },
     package: 'com.markets.manifold',
-    versionCode: 10,
+    versionCode: 11,
   },
   web: {
     favicon: './assets/favicon.png',

@@ -1,6 +1,9 @@
 PODS:
+  - ASN1Decoder (1.8.0)
   - boost (1.76.0)
   - DoubleConversion (1.1.6)
+  - EASClient (0.3.0):
+    - ExpoModulesCore
   - EXApplication (4.2.2):
     - ExpoModulesCore
   - EXConstants (13.2.4):
@@ -103,6 +106,15 @@ PODS:
     - ExpoModulesCore
   - EXSplashScreen (0.16.2):
     - ExpoModulesCore
+    - React-Core
+  - EXStructuredHeaders (2.2.1)
+  - EXUpdates (0.14.6):
+    - ASN1Decoder (~> 1.8)
+    - EASClient
+    - EXManifests
+    - ExpoModulesCore
+    - EXStructuredHeaders
+    - EXUpdatesInterface
     - React-Core
   - EXUpdatesInterface (0.7.0)
   - FBLazyVector (0.69.6)
@@ -394,11 +406,18 @@ PODS:
     - React-jsi (= 0.69.6)
     - React-logger (= 0.69.6)
     - React-perflogger (= 0.69.6)
+  - RNSentry (4.2.2):
+    - React-Core
+    - Sentry (= 7.22.0)
+  - Sentry (7.22.0):
+    - Sentry/Core (= 7.22.0)
+  - Sentry/Core (7.22.0)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
+  - EASClient (from `../node_modules/expo-eas-client/ios`)
   - EXApplication (from `../node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - EXDevice (from `../node_modules/expo-device/ios`)
@@ -418,6 +437,8 @@ DEPENDENCIES:
   - ExpoRandom (from `../node_modules/expo-random/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
+  - EXStructuredHeaders (from `../node_modules/expo-structured-headers/ios`)
+  - EXUpdates (from `../node_modules/expo-updates/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - FBReactNativeSpec (from `../node_modules/react-native/React/FBReactNativeSpec`)
@@ -451,17 +472,22 @@ DEPENDENCIES:
   - React-RCTVibration (from `../node_modules/react-native/Libraries/Vibration`)
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
   trunk:
+    - ASN1Decoder
     - fmt
+    - Sentry
 
 EXTERNAL SOURCES:
   boost:
     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
   DoubleConversion:
     :podspec: "../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec"
+  EASClient:
+    :path: "../node_modules/expo-eas-client/ios"
   EXApplication:
     :path: "../node_modules/expo-application/ios"
   EXConstants:
@@ -500,6 +526,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-web-browser/ios"
   EXSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
+  EXStructuredHeaders:
+    :path: "../node_modules/expo-structured-headers/ios"
+  EXUpdates:
+    :path: "../node_modules/expo-updates/ios"
   EXUpdatesInterface:
     :path: "../node_modules/expo-updates-interface/ios"
   FBLazyVector:
@@ -564,12 +594,16 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/runtimeexecutor"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNSentry:
+    :path: "../node_modules/@sentry/react-native"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
+  ASN1Decoder: 6110fdeacfdb41559b1481457a1645be716610aa
   boost: a7c83b31436843459a1961bfd74b96033dc77234
   DoubleConversion: 5189b271737e1565bdce30deb4a08d647e3f5f54
+  EASClient: a2581835cf9b97d0defd5d630fc6eb1bf77045e7
   EXApplication: e418d737a036e788510f2c4ad6c10a7d54d18586
   EXConstants: 7c44785d41d8e959d527d23d29444277a4d1ee73
   EXDevice: 7647ca9b1fd8b269dfd896a7643d659343358054
@@ -589,6 +623,8 @@ SPEC CHECKSUMS:
   ExpoRandom: f9f1faa299a40733867f344d6b7bfa2d1f4ab04d
   ExpoWebBrowser: 5804ac42a8269d0e534bc4461993005f72535649
   EXSplashScreen: 799bece80089219b2c989c1082d70f3b00995cda
+  EXStructuredHeaders: 5d86829469399370a9fc7cb1e4391b09de87681d
+  EXUpdates: 8afd5cff44d3936e08be0e1688f0ed118134433f
   EXUpdatesInterface: 2bbc11815dfa2ec3fc02e5534c7592c6b42b5327
   FBLazyVector: 739d2f9719faecb463c7aa191591af31c8c94182
   FBReactNativeSpec: 957de82f66e31f2f14bbec34e37242282fdd26de
@@ -622,6 +658,8 @@ SPEC CHECKSUMS:
   React-RCTVibration: 285f8538386c660e6b9497e204636acd93bf7fcc
   React-runtimeexecutor: 0af71c94f968fa10015bf0119951bccd2e4d8865
   ReactCommon: fe7580b9d10f00249facf25659e0ec051320cc8a
+  RNSentry: f03937a2cf86c7029ba31fbbf5618c55d223cd62
+  Sentry: 30b51086ca9aac23337880152e95538f7e177f7f
   Yoga: 75bf4b0131cfb46a659cd0c13309b79a6fcff66d
 
 PODFILE CHECKSUM: 31f57af6ba301465a7ede9bf59fc7ba6b1956b23
