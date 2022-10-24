@@ -217,9 +217,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       : undefined
   ).slice(start, end)
 
-  console.log(visibleLps)
-  console.log(visibleBets)
-
   return (
     <>
       <Col className="mb-4 gap-4">
