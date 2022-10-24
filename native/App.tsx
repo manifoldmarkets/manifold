@@ -40,7 +40,19 @@ import { PrivateUser } from 'common/user'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { removeUndefinedProps } from 'common/util/object'
+import * as Sentry from 'sentry-expo'
 
+console.log('using', ENV, 'env')
+console.log(
+  'env not switching? run `npx expo start --clear` and then try again'
+)
+
+// Initialization
+Sentry.init({
+  dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.sentry.io/4504040585494528',
+  enableInExpoDevelopment: true,
+  debug: true, // If `true`, Sentry will try to print out useful debugging information if something goes wrong with sending the event. Set it to `false` in production
+})
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -51,11 +63,8 @@ Notifications.setNotificationHandler({
 const isExpoClient =
   Constants.ExecutionEnvironment === ExecutionEnvironment.StoreClient
 
-// Initialize Firebase
-console.log('using', ENV, 'env')
-console.log(
-  'env not switching? run `npx expo start --clear` and then try again'
-)
+const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
+const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -66,8 +75,6 @@ const homeUri =
     : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
-  const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
-  const auth = getAuth(app)
   const [fbUser, setFbUser] = useState<string | null>()
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     ENV_CONFIG.expoConfig
@@ -115,6 +122,9 @@ export default function App() {
       webview.current?.goBack()
       return true
     } catch (err) {
+      Sentry.Native.captureException(err, {
+        extra: { message: 'back button press' },
+      })
       console.log('[handleBackButtonPress] Error : ', err.message)
       return false
     }
@@ -131,22 +141,29 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    // This listener is fired whenever a notification is received while the app is foregrounded
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        console.log('notification received', notification)
-      })
+    try {
+      // This listener is fired whenever a notification is received while the app is foregrounded
+      notificationListener.current =
+        Notifications.addNotificationReceivedListener((notification) => {
+          console.log('notification received', notification)
+        })
 
-    // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        webview.current.postMessage(
-          JSON.stringify({
-            type: 'notification',
-            data: response.notification.request.content.data,
-          })
-        )
+      // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
+      responseListener.current =
+        Notifications.addNotificationResponseReceivedListener((response) => {
+          webview.current.postMessage(
+            JSON.stringify({
+              type: 'notification',
+              data: response.notification.request.content.data,
+            })
+          )
+        })
+    } catch (err) {
+      Sentry.Native.captureException(err, {
+        extra: { message: 'notification listener' },
       })
+      console.log('[notification listener] Error : ', err.message)
+    }
 
     return () => {
       Notifications.removeNotificationSubscription(notificationListener.current)
@@ -156,34 +173,46 @@ export default function App() {
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params
-      const credential = GoogleAuthProvider.credential(id_token)
-      signInWithCredential(auth, credential).then((result) => {
-        const fbUser = result.user.toJSON()
-        if (webview.current) {
-          webview.current.postMessage(
-            JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-          )
-        }
+    try {
+      if (response?.type === 'success') {
+        const { id_token } = response.params
+        const credential = GoogleAuthProvider.credential(id_token)
+        signInWithCredential(auth, credential).then((result) => {
+          const fbUser = result.user.toJSON()
+          if (webview.current) {
+            webview.current.postMessage(
+              JSON.stringify({ type: 'nativeFbUser', data: fbUser })
+            )
+          }
+        })
+      }
+    } catch (err) {
+      Sentry.Native.captureException(err, {
+        extra: { message: 'google sign in' },
       })
+      console.log('[google sign in] Error : ', err.message)
     }
   }, [response])
 
   useEffect(() => {
-    if (fbUser && !isExpoClient) {
-      console.log('Setting cookie')
-      CookieManager.set(
-        homeUri,
-        {
-          name: AUTH_COOKIE_NAME,
-          value: encodeURIComponent(fbUser),
-          path: '/',
-          expires: new Date(TEN_YEARS_SECS).toISOString(),
-          secure: true,
-        },
-        useWebKit
-      )
+    try {
+      if (fbUser && !isExpoClient) {
+        console.log('Setting cookie')
+        CookieManager.set(
+          homeUri,
+          {
+            name: AUTH_COOKIE_NAME,
+            value: encodeURIComponent(fbUser),
+            path: '/',
+            expires: new Date(TEN_YEARS_SECS).toISOString(),
+            secure: true,
+          },
+          useWebKit
+        )
+      }
+    } catch (err) {
+      Sentry.Native.captureException(err, { extra: { message: 'set cookie' } })
+      console.log('[setCookie] Error : ', err.message)
     }
   }, [fbUser])
 
@@ -213,6 +242,9 @@ export default function App() {
         })
       )
     } catch (e) {
+      Sentry.Native.captureException(e, {
+        extra: { message: 'error setting user push token' },
+      })
       console.error('error setting user push token', e)
     }
   }
@@ -222,36 +254,45 @@ export default function App() {
       alert('Must use physical device for Push Notifications')
       return null
     }
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      })
-    }
+    try {
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        })
+      }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync()
-    let finalStatus = existingStatus
-    console.log('existing status of push notifications', existingStatus)
-    if (existingStatus !== 'granted') {
-      console.log('requesting permission')
-      const { status } = await Notifications.requestPermissionsAsync()
-      finalStatus = status
-    }
-    if (finalStatus !== 'granted') {
-      return
-    }
-    const appConfig = require('./app.json')
-    const projectId = appConfig?.expo?.extra?.eas?.projectId
-    console.log('project id', projectId)
-    const token = (
-      await Notifications.getExpoPushTokenAsync({
-        projectId,
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync()
+      let finalStatus = existingStatus
+      console.log('existing status of push notifications', existingStatus)
+      if (existingStatus !== 'granted') {
+        console.log('requesting permission')
+        const { status } = await Notifications.requestPermissionsAsync()
+        finalStatus = status
+      }
+      if (finalStatus !== 'granted') {
+        return
+      }
+      const appConfig = require('./app.json')
+      const projectId = appConfig?.expo?.extra?.eas?.projectId
+      console.log('project id', projectId)
+      const token = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data
+      console.log(token)
+      return token
+    } catch (e) {
+      Sentry.Native.captureException(e, {
+        extra: { message: 'error registering for push notifications' },
       })
-    ).data
-    console.log(token)
-    return token
+      console.error('error registering for push notifications', e)
+      return null
+    }
   }
 
   const handleMessageFromWebview = ({ nativeEvent }) => {
@@ -277,22 +318,30 @@ export default function App() {
       !isExpoClient && CookieManager.clearAll(useWebKit)
       return
     }
-    try {
-      const fbUserAndPrivateUser = JSON.parse(nativeEvent.data)
-      // Passing us a signed-in user object
-      if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
-        console.log('Signing in fb user from webview cache')
-        const jsonFbUser = fbUserAndPrivateUser.fbUser as User
-        setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app).then(
-          (userResult) =>
-            userResult && setFbUser(JSON.stringify(userResult.toJSON()))
-        )
-        return
+    if (
+      nativeEvent.data.includes('fbUser') ||
+      nativeEvent.data.includes('uid')
+    ) {
+      try {
+        const fbUserAndPrivateUser = JSON.parse(nativeEvent.data)
+        // Passing us a signed-in user object
+        if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
+          console.log('Signing in fb user from webview cache')
+          const jsonFbUser = fbUserAndPrivateUser.fbUser as User
+          setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app).then(
+            (userResult) =>
+              userResult && setFbUser(JSON.stringify(userResult.toJSON()))
+          )
+          return
+        }
+      } catch (e) {
+        Sentry.Native.captureException(e, {
+          extra: { message: 'error parsing nativeEvent.data' },
+        })
+        console.log('error parsing nativeEvent.data', e)
       }
-    } catch (e) {
-      console.log('error parsing nativeEvent.data', e)
-      console.log('Unhandled nativeEvent.data: ', nativeEvent.data)
     }
+    console.log('Unhandled nativeEvent.data: ', nativeEvent.data)
   }
 
   return (
