@@ -11,6 +11,7 @@ import { getStats } from 'web/lib/firebase/stats'
 import { Stats } from 'common/stats'
 import { PAST_BETS } from 'common/user'
 import { capitalize } from 'lodash'
+import { formatLargeNumber } from 'common/util/format'
 
 export default function Analytics() {
   const [stats, setStats] = useState<Stats | undefined>(undefined)
@@ -77,6 +78,9 @@ export function CustomAnalytics(props: Stats) {
     (weeklyActive, i) => weeklyActive / monthlyActiveUsers[i]
   )
 
+  const currentDAUs =
+    dailyActiveUsersWeeklyAvg[dailyActiveUsersWeeklyAvg.length - 1]
+
   return (
     <Col className="px-2 sm:px-0">
       <Title text="Active users" />
@@ -84,6 +88,12 @@ export function CustomAnalytics(props: Stats) {
         An active user is a user who has traded in, commented on, or created a
         market.
       </p>
+      <div className="mt-2 text-gray-500">
+        Current DAUs:
+        <span className="ml-2 font-mono font-bold text-gray-500">
+          {formatLargeNumber(currentDAUs)}
+        </span>
+      </div>
       <Spacer h={4} />
 
       <Tabs
