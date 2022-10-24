@@ -78,7 +78,8 @@ export function CustomAnalytics(props: Stats) {
     (weeklyActive, i) => weeklyActive / monthlyActiveUsers[i]
   )
 
-  const currentDAUs =
+  const currentDAUs = dailyActiveUsers[dailyActiveUsers.length - 1]
+  const avgDAUs =
     dailyActiveUsersWeeklyAvg[dailyActiveUsersWeeklyAvg.length - 1]
 
   return (
@@ -90,9 +91,10 @@ export function CustomAnalytics(props: Stats) {
       </p>
       <div className="mt-2 text-gray-500">
         Current DAUs:
-        <span className="ml-2 font-mono font-bold text-gray-500">
+        <span className="mx-2 font-bold text-gray-500">
           {formatLargeNumber(currentDAUs)}
         </span>
+        ({formatLargeNumber(avgDAUs)} avg)
       </div>
       <Spacer h={4} />
 
