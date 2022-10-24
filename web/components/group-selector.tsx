@@ -1,14 +1,55 @@
-import { Combobox } from '@headlessui/react';
+import { Combobox, Menu, Transition } from '@headlessui/react';
 import { CheckIcon, PlusCircleIcon, RefreshIcon, SelectorIcon } from '@heroicons/react/outline';
+import { ChevronDownIcon, QrcodeIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
 import { Group } from 'common/group';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { SelectedGroup } from 'web/lib/selected-group';
 
 async function fetchGroups(APIBase: string, userID: string): Promise<Group[]> {
   const r = await fetch(`${APIBase}groups?availableToUserId=${userID}`);
   const groups = (await r.json()) as Group[];
   return groups;
+}
+
+function AdditionalControlsDropdown() {
+  return (
+    <Menu>
+      <div>
+        <Menu.Button>
+          <button className={clsx('btn btn-primary p-0 rounded-md border-l-green-600')} style={{ borderTopLeftRadius: '0', borderBottomLeftRadius: '0' }}>
+            <ChevronDownIcon className="w-4 h-4 mt-5" />
+          </button>
+        </Menu.Button>
+      </div>
+      <Transition
+        as={Fragment}
+        enter="transition ease-out duration-100"
+        enterFrom="transform opacity-0 scale-95"
+        enterTo="transform opacity-100 scale-100"
+        leave="transition ease-in duration-75"
+        leaveFrom="transform opacity-100 scale-100"
+        leaveTo="transform opacity-0 scale-95"
+      >
+        <Menu.Items className="absolute right-0 mt-14 mr-2 max-w-[calc(100%-1rem)] origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+          <div className="px-1 py-1 ">
+            <Menu.Item>
+              {({ active }) => (
+                <button className={`${active ? 'bg-secondary text-white' : 'text-gray-900'} group flex w-full items-center rounded-md px-2 py-2 text-sm text-left`}>
+                  {active ? <QrcodeIcon className="mr-2 h-5 w-5" aria-hidden="true" /> : <QrcodeIcon className="mr-2 h-5 w-5" aria-hidden="true" />}
+                  Group control
+                </button>
+              )}
+            </Menu.Item>
+          </div>
+          <div className="px-1 py-1">
+            {/* TODO: Actually use git commit version */}
+            <div className="text-gray-300 font-thin text-xs px-2 py-1">{`Dock v0.2.1`}</div>
+          </div>
+        </Menu.Items>
+      </Transition>
+    </Menu>
+  );
 }
 
 export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Group | undefined; userID: string; setSelectedGroup: (group: Group) => void; onRefresh?: () => void; APIBase: string }) {
@@ -73,14 +114,14 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
           <div className="relative flex w-full justify-items-stretch">
             <Combobox.Input
               spellCheck="false"
-              className="w-full border rounded-md border-gray-300 bg-white pl-4 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
+              className="w-full border rounded-md border-gray-300 bg-white pl-4 h-12 pr-8 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none"
               onChange={(event) => setQuery(event.target.value)}
               displayValue={(group: Group) => (group ? group.name : previouslySelectedGroup && previouslySelectedGroup.groupName)}
               placeholder={'Group name'}
               style={{ borderTopRightRadius: '0', borderBottomRightRadius: '0' }}
             />
             <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-              <SelectorIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <SelectorIcon className="h-10 w-5 text-gray-400" aria-hidden="true" />
             </Combobox.Button>
 
             <Combobox.Options className="absolute z-50 mt-[3.2rem] max-h-96 w-full overflow-x-hidden rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
@@ -114,15 +155,12 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
               </div>
             </Combobox.Options>
           </div>
-          <button
-            className={clsx('btn btn-primary btn-square p-2 rounded-md', isRefreshingGroups ? 'loading' : '')}
-            onClick={refreshGroupList}
-            style={{ borderTopLeftRadius: '0', borderBottomLeftRadius: '0' }}
-          >
-            {!isRefreshingGroups && <RefreshIcon />}
-          </button>
         </div>
       </Combobox>
+      <button className={clsx('btn btn-primary btn-square p-2 rounded-none', isRefreshingGroups ? 'loading' : '')} onClick={refreshGroupList}>
+        {!isRefreshingGroups && <RefreshIcon />}
+      </button>
+      <AdditionalControlsDropdown />
     </div>
   );
 }

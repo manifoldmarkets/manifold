@@ -49,7 +49,7 @@ export default function ContractCard(props: { controlUserID: string; contract: L
           <Row className="items-center mt-2">
             {(isResolved || contract.outcomeType !== 'BINARY' || isClosed) && (
               <div
-                className="tooltip tooltip-right xs:tooltip pr-1 before:content-[attr(data-tip)] xs:before:max-w-[15em] before:max-w-[70vw] before:z-50 before:!transition-[opacity] before:duration-200"
+                className="tooltip tooltip-right xs:tooltip pr-1 before:content-[attr(data-tip)] xs:before:max-w-[15em] before:max-w-[calc(100vw-5rem)] before:z-50 before:!transition-[opacity] before:duration-200"
                 data-tip={isResolved ? 'This market has been resolved' : contract.outcomeType !== 'BINARY' ? 'This type of market is not currently supported' : 'This market is currently closed'}
               >
                 <InformationCircleIcon className="h-5 w-5 text-gray-500" />

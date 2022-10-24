@@ -6,6 +6,7 @@ export enum ResolutionOutcome {
 }
 
 export function getOutcomeForString(s: string): ResolutionOutcome {
+  if (!s) return undefined;
   s = s.toLocaleUpperCase();
   let outcome = ResolutionOutcome[s];
   if (s === 'NA' || s === 'N/A') {

@@ -402,11 +402,11 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
   const canResolveMarket = controlUserID === contract.creatorId;
 
   return (
-    <Col className={'bg-white rounded-md shadow-md px-8 py-6 cursor-default flex justify-end'} onClick={(e) => e.stopPropagation()}>
+    <Col className={'bg-white rounded-md shadow-md px-4 py-4 xs:px-8 xs:py-6 cursor-default flex justify-end'} onClick={(e) => e.stopPropagation()}>
       <Row className="justify-center items-center">
-        <div className="whitespace-nowrap text-2xl">Resolve market</div>
+        <div className="xs:whitespace-nowrap text-lg xs:text-2xl text-center xs:text-left">Resolve market</div>
         <div className="grow" />
-        <div className="min-h-10">{ping}ms</div>
+        <div className="min-h-10 hidden xs:block">{ping}ms</div>
       </Row>
 
       <p
@@ -426,7 +426,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
 
           <div className="my-2" />
 
-          <div>
+          <div className="xs:text-base text-xs">
             {outcome === 'YES' ? (
               <>
                 Winnings will be paid out to YES bettors.
@@ -451,7 +451,7 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
               //         You will earn {earnedFees}.
               //     </Col>
               // )
-              <p>Resolving this market will immediately pay out traders.</p>
+              <>Resolving this market will immediately pay out traders.</>
             )}
           </div>
 
