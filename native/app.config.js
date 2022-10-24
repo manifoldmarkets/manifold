@@ -1,5 +1,4 @@
-export default (config) => ({
-  ...config,
+module.exports = {
   name: 'Manifold',
   slug: 'manifold-markets',
   owner: 'iansp',
@@ -65,4 +64,4 @@ export default (config) => ({
       },
     ],
   },
-})
+}

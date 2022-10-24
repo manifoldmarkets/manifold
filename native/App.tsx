@@ -41,6 +41,7 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { removeUndefinedProps } from 'common/util/object'
 import * as Sentry from 'sentry-expo'
+import appConfig from 'app.config'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -275,8 +276,8 @@ export default function App() {
       if (finalStatus !== 'granted') {
         return
       }
-      const appConfig = require('./app.json')
-      const projectId = appConfig?.expo?.extra?.eas?.projectId
+      const appConfig = require('./app.config')
+      const projectId = appConfig.extra.eas.projectId
       console.log('project id', projectId)
       const token = (
         await Notifications.getExpoPushTokenAsync({
