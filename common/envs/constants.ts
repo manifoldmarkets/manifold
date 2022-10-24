@@ -57,7 +57,6 @@ export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
 export const BOT_USERNAMES = [
   'v',
   'acc',
-  'Charlie',
   'ArbitrageBot',
   'MarketManagerBot',
   'Botlab',
