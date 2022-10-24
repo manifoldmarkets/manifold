@@ -41,7 +41,6 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { removeUndefinedProps } from 'common/util/object'
 import * as Sentry from 'sentry-expo'
-import appConfig from 'app.config'
 
 console.log('using', ENV, 'env')
 console.log(
