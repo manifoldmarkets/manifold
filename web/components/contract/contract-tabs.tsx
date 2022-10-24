@@ -187,6 +187,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const visibleBets = bets.filter(
     (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
   )
+
   const visibleLps = lps.filter(
     (l) =>
       !l.isAnte &&
