@@ -187,6 +187,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const visibleBets = bets.filter(
     (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
   )
+
   const visibleLps = lps.filter(
     (l) =>
       !l.isAnte &&
@@ -215,6 +216,9 @@ const BetsTabContent = memo(function BetsTabContent(props: {
       ? -item.lp.createdTime
       : undefined
   ).slice(start, end)
+
+  console.log(visibleLps)
+  console.log(visibleBets)
 
   return (
     <>
