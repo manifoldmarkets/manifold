@@ -243,7 +243,7 @@ const App = (props: {
     <>
       <StateElectionMap markets={senateMidterms} contracts={senateContracts} />
       <iframe
-        src="https://manifold.markets/BoltonBailey/will-democrats-maintain-control-of-8d067eb38c33"
+        src="https://manifold.markets/embed/BoltonBailey/will-democrats-maintain-control-of-8d067eb38c33"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
@@ -257,7 +257,7 @@ const App = (props: {
         contracts={governorContracts}
       />
       <iframe
-        src="https://manifold.markets/SG/will-democrats-lose-at-least-one-go"
+        src="https://manifold.markets/embed/SG/will-democrats-lose-at-least-one-go"
         frameBorder="0"
         className="mt-8 flex h-96 w-full sm:px-12"
       ></iframe>
