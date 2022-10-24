@@ -77,7 +77,7 @@ export const PortfolioGraph = (props: {
       color={
         mode === 'value'
           ? '#4f46e5'
-          : (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#522')
+          : (p: HistoryPoint) => (p.y >= 0 ? '#14b8a6' : '#FFA799')
       }
     />
   )

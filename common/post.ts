@@ -18,6 +18,7 @@ export type Post = {
   likedByUserCount?: number
 
   commentCount?: number
+  isGroupAboutPost?: boolean
 }
 
 export type DateDoc = Post & {

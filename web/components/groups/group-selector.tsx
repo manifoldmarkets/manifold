@@ -84,7 +84,7 @@ export function GroupSelector(props: {
           <>
             {showLabel && (
               <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
-                Add to Group
+                Add to Group{' '}
                 <InfoTooltip text="Question will be displayed alongside the other questions in the group." />
               </Combobox.Label>
             )}
@@ -138,7 +138,7 @@ export function GroupSelector(props: {
                           <Row className={'items-center gap-1 truncate pl-5'}>
                             {memberGroupIds.includes(group.id) && (
                               <UserIcon
-                                className={'text-primary h-4 w-4 shrink-0'}
+                                className={'h-4 w-4 shrink-0 text-teal-500'}
                               />
                             )}
                             {group.name}
@@ -168,7 +168,7 @@ export function GroupSelector(props: {
                   label={'Create a new Group'}
                   addGroupIdParamOnSubmit
                   icon={
-                    <PlusCircleIcon className="text-primary mr-2 h-5 w-5" />
+                    <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
                   }
                 />
               </Combobox.Options>

@@ -5,7 +5,7 @@ import { Post } from 'common/post'
 import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
 import {
-  Content,
+  PostContent,
   TextEditor,
   useTextEditor,
 } from 'web/components/widgets/editor'
@@ -133,7 +133,7 @@ export default function PostPage(props: {
             {user && user.id === post.creatorId ? (
               <RichEditPost post={post} />
             ) : (
-              <Content content={post.content} />
+              <PostContent content={post.content} />
             )}
           </div>
         </div>
@@ -214,7 +214,7 @@ export function RichEditPost(props: { post: Post }) {
     </>
   ) : (
     <Col>
-      <Content content={post.content} />
+      <PostContent content={post.content} />
       <Row className="place-content-end">
         <Button
           color="gray-white"

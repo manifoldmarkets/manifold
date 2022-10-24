@@ -172,6 +172,8 @@ export function SimpleBetPanel(props: {
   )
 }
 
+export type binaryOutcomes = 'YES' | 'NO' | undefined
+
 export function BuyPanel(props: {
   contract: CPMMBinaryContract | PseudoNumericContract
   user: User | null | undefined
@@ -193,8 +195,7 @@ export function BuyPanel(props: {
 
   const initialProb = getProbability(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>()
+  const [outcome, setOutcome] = useState<binaryOutcomes>()
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -245,7 +246,7 @@ export function BuyPanel(props: {
         if (onBuySuccess) onBuySuccess()
         else {
           toast('Trade submitted!', {
-            icon: <CheckIcon className={'text-primary h-5 w-5'} />,
+            icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
           })
         }
       })
@@ -398,6 +399,7 @@ export function BuyPanel(props: {
           disabled={isSubmitting}
           inputRef={inputRef}
           showSliderOnMobile
+          binaryOutcome={outcome}
         />
 
         <Spacer h={8} />
@@ -658,12 +660,12 @@ function LimitOrderPanel(props: {
       </Row>
 
       {outOfRangeError && (
-        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+        <div className="text-scarlet-500 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
           Limit is out of range
         </div>
       )}
       {rangeError && !outOfRangeError && (
-        <div className="mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+        <div className="text-scarlet-500 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
           {isPseudoNumeric ? 'HIGHER' : 'YES'} limit must be less than{' '}
           {isPseudoNumeric ? 'LOWER' : 'NO'} limit
         </div>
@@ -671,7 +673,7 @@ function LimitOrderPanel(props: {
 
       <Row className="mt-1 mb-3 justify-between text-left text-sm text-gray-500">
         <span>
-          Max amount<span className="ml-1 text-red-500">*</span>
+          Max amount<span className="text-scarlet-500 ml-1">*</span>
         </span>
         <span className={'xl:hidden'}>
           Balance: {formatMoney(user?.balance ?? 0)}

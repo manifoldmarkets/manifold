@@ -62,7 +62,7 @@ export function ResolutionPanel(props: {
   return (
     <Col className={clsx('relative rounded-md bg-white px-8 py-6', className)}>
       {isAdmin && !isCreator && (
-        <span className="absolute right-4 top-4 rounded bg-red-200 p-1 text-xs text-red-600">
+        <span className="bg-scarlet-50 text-scarlet-500 absolute right-4 top-4 rounded p-1 text-xs">
           ADMIN
         </span>
       )}
@@ -111,7 +111,7 @@ export function ResolutionPanel(props: {
         )}
       </div>
       <Spacer h={4} />
-      {!!error && <div className="text-red-500">{error}</div>}
+      {!!error && <div className="text-scarlet-500">{error}</div>}
       <Row className={'justify-center'}>
         <ResolveConfirmationButton
           color={

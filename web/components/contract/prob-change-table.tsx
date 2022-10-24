@@ -134,7 +134,7 @@ export function ProbOrNumericChange(props: {
       ? formatNumericProbability(prob, contract)
       : null
 
-  const color = change >= 0 ? 'text-teal-500' : 'text-red-400'
+  const color = change >= 0 ? 'text-teal-500' : 'text-scarlet-400'
 
   return (
     <Col className={clsx('flex flex-col items-end', className)}>

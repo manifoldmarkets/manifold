@@ -134,19 +134,19 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     }
   }, [highlighted])
 
+  const [hover, setHover] = useState(false)
   return (
     <Row
       ref={commentRef}
       id={comment.id}
-      className={clsx(
-        'ml-3 gap-2 transition-colors',
-        highlighted ? `bg-indigo-50` : 'hover:bg-greyscale-1'
-      )}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className={clsx('relative ml-3 gap-2')}
     >
-      <Col className="-ml-3.5">
+      <Col className="z-20 -ml-3.5">
         <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
       </Col>
-      <Col className="w-full">
+      <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
         <Content
           className="text-greyscale-7 mt-2 grow text-[14px]"
@@ -169,6 +169,12 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
           />
         </Row>
       </Col>
+      <div
+        className={clsx(
+          'z-1 absolute -mt-1 -ml-5 h-full w-[calc(100%+2rem)] rounded-lg transition-colors',
+          highlighted ? 'bg-indigo-50' : hover ? 'bg-greyscale-1' : ''
+        )}
+      />
     </Row>
   )
 })
@@ -226,23 +232,20 @@ export const FeedComment = memo(function FeedComment(props: {
     }
   }, [highlighted])
 
+  const [hover, setHover] = useState(false)
+
   return (
     <Row
       ref={commentRef}
       id={comment.id}
-      className={clsx(
-        'ml-10 gap-2 transition-colors',
-        highlighted ? `bg-indigo-50` : 'hover:bg-greyscale-1'
-      )}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className={clsx('relative ml-12 gap-2 ')}
     >
-      <Col className="-ml-3">
+      <Col className="z-20 -ml-3">
         <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
-        <span
-          className="bg-greyscale-3 mx-auto h-full w-[1.5px]"
-          aria-hidden="true"
-        />
       </Col>
-      <Col className="w-full">
+      <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
         <Content
           className="text-greyscale-7 mt-2 grow text-[14px]"
@@ -258,6 +261,12 @@ export const FeedComment = memo(function FeedComment(props: {
           contract={contract}
         />
       </Col>
+      <div
+        className={clsx(
+          'z-1 absolute -mt-1 -ml-5 h-full w-[calc(100%+2rem)] rounded-lg',
+          highlighted ? 'bg-indigo-50' : hover ? 'bg-greyscale-1' : ''
+        )}
+      />
     </Row>
   )
 })
@@ -341,7 +350,7 @@ export function FeedCommentHeader(props: {
   const totalAwarded = bountiesAwarded ?? 0
   return (
     <Row>
-      <div className="text-greyscale-6 mt-0.5 text-xs">
+      <div className="text-greyscale-6 mt-0.5 text-sm">
         <UserLink username={userUsername} name={userName} />{' '}
         <span className="text-greyscale-4">
           {comment.betId == null &&
@@ -379,7 +388,7 @@ export function FeedCommentHeader(props: {
           elementId={comment.id}
         />
         {totalAwarded > 0 && (
-          <span className=" text-primary ml-2 text-sm">
+          <span className=" ml-2 text-sm text-teal-500">
             +{formatMoney(totalAwarded)}
           </span>
         )}

@@ -18,7 +18,7 @@ import {
 import { dreamWithDefaultParams } from './dream-utils'
 
 export const onCreateContract = functions
-  .runWith({ secrets: ['MAILGUN_KEY'] })
+  .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY'] })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
     const contract = snapshot.data() as Contract

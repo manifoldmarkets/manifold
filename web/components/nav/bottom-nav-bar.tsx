@@ -18,7 +18,6 @@ import { useRouter } from 'next/router'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
-import { User } from 'common/user'
 
 function getNavigation() {
   return [
@@ -36,21 +35,6 @@ const signedOutNavigation = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Explore', href: '/search', icon: SearchIcon },
 ]
-
-export const userProfileItem = (user: User) => ({
-  name: formatMoney(user.balance),
-  trackingEventName: 'profile',
-  href: `/${user.username}?tab=portfolio`,
-  icon: () => (
-    <Avatar
-      className="mx-auto my-1"
-      size="xs"
-      username={user.username}
-      avatarUrl={user.avatarUrl}
-      noLink
-    />
-  ),
-})
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar() {
@@ -70,7 +54,7 @@ export function BottomNavBar() {
     user === null ? signedOutNavigation : getNavigation()
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
       {navigationOptions.map((item) => (
         <NavBarItem key={item.name} item={item} currentPage={currentPage} />
       ))}
@@ -79,8 +63,20 @@ export function BottomNavBar() {
         <NavBarItem
           key={'profile'}
           currentPage={currentPage}
-          item={userProfileItem(user)}
-        />
+          item={{
+            name: formatMoney(user.balance),
+            trackingEventName: 'profile',
+            href: `/${user.username}?tab=portfolio`,
+          }}
+        >
+          <Avatar
+            className="mx-auto my-1 mb-1 h-6 w-6"
+            size="xs"
+            username={user.username}
+            avatarUrl={user.avatarUrl}
+            noLink
+          />
+        </NavBarItem>
       )}
       <div
         className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
@@ -98,8 +94,12 @@ export function BottomNavBar() {
   )
 }
 
-function NavBarItem(props: { item: Item; currentPage: string }) {
-  const { item, currentPage } = props
+function NavBarItem(props: {
+  item: Item
+  currentPage: string
+  children?: any
+}) {
+  const { item, currentPage, children } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
 
   return (
@@ -112,6 +112,7 @@ function NavBarItem(props: { item: Item; currentPage: string }) {
         onClick={track}
       >
         {item.icon && <item.icon className="my-1 mx-auto h-6 w-6" />}
+        {children}
         {item.name}
       </a>
     </Link>

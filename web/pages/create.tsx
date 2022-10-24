@@ -98,7 +98,7 @@ export default function Create(props: { auth: { user: User } }) {
           <form>
             <div className="flex w-full flex-col">
               <label className="px-1 pt-2 pb-3">
-                Question<span className={'text-red-700'}>*</span>
+                Question<span className={'text-scarlet-500'}>*</span>
               </label>
 
               <ExpandingInput
@@ -316,7 +316,7 @@ export function NewContract(props: {
         <>
           <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Range</span>
+              <span className="mb-1">Range </span>
               <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             </label>
 
@@ -354,14 +354,14 @@ export function NewContract(props: {
             />
 
             {min !== undefined && max !== undefined && min >= max && (
-              <div className="mt-2 mb-2 text-sm text-red-500">
+              <div className="text-scarlet-500 mt-2 mb-2 text-sm">
                 The maximum value must be greater than the minimum.
               </div>
             )}
           </div>
           <div className="mb-2 flex flex-col items-start">
             <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Initial value</span>
+              <span className="mb-1">Initial value </span>
               <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
             </label>
 
@@ -382,7 +382,7 @@ export function NewContract(props: {
               max !== undefined &&
               min < max &&
               (initialValue <= min || initialValue >= max) && (
-                <div className="mt-2 mb-2 text-sm text-red-500">
+                <div className="text-scarlet-500 mt-2 mb-2 text-sm">
                   Initial value must be in between {min} and {max}.{' '}
                 </div>
               )}
@@ -418,7 +418,7 @@ export function NewContract(props: {
 
       <div className="mb-1 flex flex-col items-start">
         <label className="mb-1 gap-2 px-1 py-2">
-          <span>Question closes in</span>
+          <span>Question closes in </span>
           <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
         </label>
         <Row className={'w-full items-center gap-2'}>
@@ -461,7 +461,7 @@ export function NewContract(props: {
 
       <div className="mb-1 flex flex-col items-start gap-1">
         <label className="gap-2 px-1 py-2">
-          <span className="mb-1">Description</span>
+          <span className="mb-1">Description </span>
           <InfoTooltip text="Optional. Describe how you will resolve this question." />
         </label>
         <TextEditor editor={editor} />
@@ -472,7 +472,7 @@ export function NewContract(props: {
       <Row className="items-end justify-between">
         <div className="mb-1 flex flex-col items-start">
           <label className="mb-1 gap-2 px-1 py-2">
-            <span>Cost</span>
+            <span>Cost </span>
             <InfoTooltip
               text={`Cost to create your question. This amount is used to subsidize predictions.`}
             />
@@ -486,7 +486,7 @@ export function NewContract(props: {
               <div className="pl-1 text-gray-700 line-through">
                 {formatMoney(ante)}
               </div>
-              <div className="text-primary pl-1">FREE </div>
+              <div className="pl-1 text-teal-500">FREE </div>
               <div className="pl-1 text-gray-500">
                 (You have{' '}
                 {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
@@ -497,7 +497,9 @@ export function NewContract(props: {
 
           {ante > balance && !deservesFreeMarket && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
-              <span className="mr-2 text-red-500">Insufficient balance</span>
+              <span className="text-scarlet-500 mr-2">
+                Insufficient balance
+              </span>
               <Button
                 size="xs"
                 color="green"

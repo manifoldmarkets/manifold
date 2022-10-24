@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { toast, Toaster } from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import { Dictionary, sortBy, sum } from 'lodash'
 
 import { Page } from 'web/components/layout/page'
@@ -108,7 +108,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug)
   )
-  const latestPosts = useAllPosts(4)
+  const latestPosts = useAllPosts(true, 2)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -143,8 +143,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   return (
     <Page>
-      <Toaster />
-
       <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
         <Row
           className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
@@ -154,6 +152,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
             placeholder={'Search'}
             className="w-full"
             onClick={() => Router.push('/search')}
+            onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
           />
           <CustomizeButton justIcon />
           <DailyStats user={user} />
@@ -178,7 +177,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
             <ActivitySection />
 
-            <LatestPostsSection latestPosts={latestPosts} />
+            <LatestPostsSection latestPosts={latestPosts} user={user} />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -212,10 +211,10 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
+  { label: 'Trending', id: 'score' },
   { label: 'Featured', id: 'featured' },
   { label: 'Daily changed', id: 'daily-trending' },
   { label: 'Your daily movers', id: 'daily-movers' },
-  { label: 'Trending', id: 'score' },
   { label: 'New', id: 'newest' },
 ] as const
 
@@ -395,11 +394,28 @@ function SearchSection(props: {
   )
 }
 
-function LatestPostsSection(props: { latestPosts: Post[] }) {
-  const { latestPosts } = props
+function LatestPostsSection(props: { latestPosts: Post[]; user: User | null }) {
+  const { latestPosts, user } = props
   return (
     <Col className="pt-4">
-      <SectionHeader label={'Latest Posts'} href="/latestposts" />
+      <Row className="flex items-center justify-between">
+        <Col>
+          <SectionHeader label={'Latest Posts'} href="/latestposts" />
+        </Col>
+        <Col>
+          {user && (
+            <SiteLink
+              className="mb-3 text-xl"
+              href={'/create-post'}
+              onClick={() =>
+                track('home click create post', { section: 'create-post' })
+              }
+            >
+              <Button>Create Post</Button>
+            </SiteLink>
+          )}
+        </Col>
+      </Row>
       <LatestPosts latestPosts={latestPosts} />
     </Col>
   )

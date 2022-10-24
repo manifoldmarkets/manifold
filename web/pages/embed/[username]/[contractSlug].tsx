@@ -16,13 +16,13 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useContractWithPreload } from 'web/hooks/use-contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { fromPropz, usePropz } from 'web/hooks/use-propz'
 import { listAllBets } from 'web/lib/firebase/bets'
 import { contractPath, getContractFromSlug } from 'web/lib/firebase/contracts'
 import Custom404 from '../../404'
 import { track } from 'web/lib/service/analytics'
+import { useContract } from 'web/hooks/use-contracts'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
@@ -50,7 +50,7 @@ export default function ContractEmbedPage(props: {
 }) {
   props = usePropz(props, getStaticPropz) ?? { contract: null, bets: [] }
 
-  const contract = useContractWithPreload(props.contract)
+  const contract = useContract(props.contract?.id) ?? props.contract
   const { bets } = props
 
   if (!contract) {

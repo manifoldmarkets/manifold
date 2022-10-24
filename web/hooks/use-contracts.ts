@@ -9,6 +9,7 @@ import {
   getUserBetContractsQuery,
   listAllContracts,
   listenForContract,
+  listenForLiveContracts,
 } from 'web/lib/firebase/contracts'
 import { QueryClient, useQuery, useQueryClient } from 'react-query'
 import { MINUTE_MS, sleep } from 'common/util/time'
@@ -18,8 +19,10 @@ import {
   trendingIndex,
 } from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
-import { Dictionary, zipObject } from 'lodash'
+import { Dictionary, isEqual, zipObject } from 'lodash'
 import { useForceUpdate } from './use-force-update'
+import { useEffectCheckEquality } from './use-effect-check-equality'
+import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -133,25 +136,64 @@ export const useUserBetContracts = (userId: string) => {
   return result.data
 }
 
+export const useLiveContracts = (count: number) => {
+  const [contracts, setContracts] = usePersistentState<Contract[] | undefined>(
+    undefined,
+    {
+      store: inMemoryStore(),
+      key: `liveContracts-${count}`,
+    }
+  )
+
+  useEffect(() => {
+    return listenForLiveContracts(count, setContracts)
+  }, [count, setContracts])
+
+  return contracts
+}
+
 const contractsStore: Dictionary<Contract | null> = {}
-const contractIdsListeningTo: Dictionary<true> = {}
+const contractListeners: Dictionary<((contract: Contract | null) => void)[]> =
+  {}
+
+const updateContract = (contractId: string, contract: Contract | null) => {
+  if (isEqual(contractsStore[contractId], contract)) return
+
+  contractsStore[contractId] = contract
+  contractListeners[contractId]?.forEach((l) => l(contract))
+}
 
 export const useContracts = (contractIds: string[]) => {
   const forceUpdate = useForceUpdate()
 
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     for (const id of contractIds) {
-      if (!contractIdsListeningTo[id]) {
-        contractIdsListeningTo[id] = true
-        listenForContract(id, (c) => {
-          if (c) contractsStore[id] = c
-          else contractsStore[id] = null
+      if (!contractListeners[id]) {
+        contractListeners[id] = []
+        listenForContract(id, (c) => updateContract(id, c))
+      }
+    }
 
-          // Update after all have loaded, and on every subsequent update.
-          if (contractIds.every((id) => contractsStore[id] !== undefined)) {
-            forceUpdate()
-          }
-        })
+    const listeners = contractIds.map(
+      (id) =>
+        [
+          id,
+          () => {
+            // Update after all have loaded, and on every subsequent update.
+            if (contractIds.every((id) => contractsStore[id] !== undefined)) {
+              forceUpdate()
+            }
+          },
+        ] as const
+    )
+    for (const [id, listener] of listeners) {
+      contractListeners[id].push(listener)
+    }
+    return () => {
+      for (const [id, listener] of listeners) {
+        contractListeners[id] = contractListeners[id].filter(
+          (l) => l !== listener
+        )
       }
     }
   }, [contractIds, forceUpdate])
@@ -159,4 +201,9 @@ export const useContracts = (contractIds: string[]) => {
   return contractIds.map(
     (id) => contractsStore[id] as Contract | null | undefined
   )
+}
+
+export const useContract = (contractId: string | undefined) => {
+  const [contract] = useContracts(contractId ? [contractId] : [])
+  return contract
 }

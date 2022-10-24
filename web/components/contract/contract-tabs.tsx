@@ -233,8 +233,6 @@ const BetsTabContent = memo(function BetsTabContent(props: {
         totalItems={items.length}
         setPage={setPage}
         scrollToTop
-        nextTitle={'Older'}
-        prevTitle={'Newer'}
       />
     </>
   )

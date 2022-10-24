@@ -217,7 +217,7 @@ function getManalinkAmountColor(amount: number) {
   } else if (amount >= 20 && amount < 50) {
     return 'text-fuchsia-600'
   } else if (amount >= 50 && amount < 100) {
-    return 'text-rose-600'
+    return 'text-scarlet-500'
   } else if (amount >= 100) {
     return 'text-amber-600'
   }

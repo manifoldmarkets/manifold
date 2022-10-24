@@ -12,6 +12,7 @@ wordsLeft = k + extra
 imagesLeft = k
 maxRounds = 20
 whichGuesser = 'counterspell'
+wordCategory = 'Unused Card Names: '
 un = false
 ub = false
 online = false
@@ -22,17 +23,17 @@ sets = {}
 
 window.console.log(sets)
 document.location.search.split('&').forEach((pair) => {
-  let v = pair.split('=')
-  if (v[0] === '?whichguesser') {
-    whichGuesser = v[1]
-  } else if (v[0] === 'un') {
-    un = v[1]
-  } else if (v[0] === 'digital') {
-    online = v[1]
-  } else if (v[0] === 'original') {
-    firstPrint = v[1]
-  } else if (v[0] === 'ub') {
-    ub = v[1]
+  const setting = pair.split('=')
+  if (setting[0] === '?whichguesser') {
+    whichGuesser = setting[1]
+  } else if (setting[0] === 'un') {
+    un = setting[1]
+  } else if (setting[0] === 'digital') {
+    online = setting[1]
+  } else if (setting[0] === 'original') {
+    firstPrint = setting[1]
+  } else if (setting[0] === 'ub') {
+    ub = setting[1]
   }
 })
 
@@ -48,7 +49,7 @@ if (whichGuesser === 'watermark') {
     .then((data) => (sets = data))
 }
 
-let firstFetch = fetch('jsons/' + whichGuesser + '.json')
+const firstFetch = fetch('jsons/' + whichGuesser + '.json')
 fetchToResponse(firstFetch)
 
 function putIntoMapAndFetch(data) {
@@ -70,12 +71,18 @@ function putIntoMapAndFetch(data) {
     document.getElementById('guess-type').innerText = 'Finding Fantastic Beasts'
   } else if (whichGuesser === 'basic') {
     document.getElementById('guess-type').innerText = 'How Basic'
+    wordCategory = 'Unused Set Names: '
   } else if (whichGuesser === 'commander') {
     document.getElementById('guess-type').innerText = 'General Knowledge'
   } else if (whichGuesser === 'watermark') {
     document.getElementById('guess-type').innerText = 'Watermark It'
+    wordCategory = 'Unused Watermarks: '
   } else if (whichGuesser === 'artist') {
     document.getElementById('guess-type').innerText = 'Aesthetic Consultation'
+    wordCategory = 'Unused Artist Names: '
+  } else if (whichGuesser === 'artifact') {
+    document.getElementById('guess-type').innerText = 'Archaeological Dating'
+    wordCategory = 'Unused Dates: '
   }
   window.console.log(whichGuesser)
   setUpNewGame()
@@ -96,8 +103,8 @@ function getKSamples() {
     } else {
       window.console.log(key)
       usedCounters.add(key)
-      let randIndex = Math.floor(Math.random() * value.length)
-      let arts = allData[key].splice(randIndex, 1)
+      const randIndex = Math.floor(Math.random() * value.length)
+      const arts = allData[key].splice(randIndex, 1)
       samples[arts[0].artImg] = [key, arts[0].normalImg]
       i++
       if (i >= k) {
@@ -201,15 +208,45 @@ function determineIfSkip(card) {
       }
     } else if (whichGuesser == 'watermark') {
       if (
-        card.name === 'Set' ||
-        card.name === 'Planeswalker' ||
-        card.name === 'Flavor' ||
-        card.name === 'Conspiracy' ||
-        card.name === 'Foretell' ||
-        card.name === 'Tarkir' ||
-        card.set === 'h17' ||
-        card.set === 'ptg' ||
-        card.set === 'htr18'
+        !(
+          card.name === 'Prismari' ||
+          card.name === 'Atarka' ||
+          card.name === 'Obscura' ||
+          card.name === 'Dimir' ||
+          card.name === 'Lorehold' ||
+          card.name === 'Orzhov' ||
+          card.name === 'Cabaretti' ||
+          card.name === 'Orderofthewidget' ||
+          card.name === 'Kolaghan' ||
+          card.name === 'Temur' ||
+          card.name === 'Golgari' ||
+          card.name === 'Dromoka' ||
+          card.name === 'Azorius' ||
+          card.name === 'Phyrexian' ||
+          card.name === 'Mirran' ||
+          card.name === 'Crossbreedlabs' ||
+          card.name === 'Agentsofsneak' ||
+          card.name === 'Boros' ||
+          card.name === 'Goblinexplosioneers' ||
+          card.name === 'Witherbloom' ||
+          card.name === 'Ojutai' ||
+          card.name === 'Izzet' ||
+          card.name === 'Selesnya' ||
+          card.name === 'Simic' ||
+          card.name === 'Mardu' ||
+          card.name === 'Rakdos' ||
+          card.name === 'Quandrix' ||
+          card.name === 'Leagueofdastardlydoom' ||
+          card.name === 'Silverquill' ||
+          card.name === 'Maestros' ||
+          card.name === 'Sultai' ||
+          card.name === 'Riveteers' ||
+          card.name === 'Abzan' ||
+          card.name === 'Jeskai' ||
+          card.name === 'Brokers' ||
+          card.name === 'Gruul' ||
+          card.name === 'Silumgar'
+        )
       ) {
         return true
       }
@@ -222,17 +259,13 @@ function determineIfSkip(card) {
       }
     }
   }
-  // reskinned card names show in art crop
-  if (card.flavor_name) {
-    return true
-  }
 
   return false
 }
 
 function putIntoMap(data) {
   for (let i = 0; i < data.length; i++) {
-    let card = data[i]
+    const card = data[i]
     if (determineIfSkip(card)) {
       continue
     }
@@ -274,8 +307,8 @@ function putIntoMap(data) {
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1))
-    let temp = array[i]
+    const j = Math.floor(Math.random() * (i + 1))
+    const temp = array[i]
     array[i] = array[j]
     array[j] = temp
   }
@@ -284,7 +317,7 @@ function shuffleArray(array) {
 function setUpNewGame() {
   wordsLeft = k + extra
   imagesLeft = k
-  let currentRound = totalSeen / k
+  const currentRound = totalSeen / k
   if (currentRound + 1 === maxRounds) {
     document.getElementById('round-number').innerText = 'Final Round'
   } else {
@@ -294,12 +327,12 @@ function setUpNewGame() {
 
   setWordsLeft()
   // select new cards
-  let sampledData = getKSamples()
+  const sampledData = getKSamples()
   artDict = sampledData[0]
-  let randomImages = Object.keys(artDict)
+  const randomImages = Object.keys(artDict)
   shuffleArray(randomImages)
-  let namesList = Array.from(sampledData[1]).sort((a, b) =>
-    removeSymbol(a).localeCompare(removeSymbol(b))
+  const namesList = Array.from(sampledData[1]).sort((a, b) =>
+    removeSpecialCharacters(a).localeCompare(removeSpecialCharacters(b))
   )
   // fill in the new cards and names
   for (let cardIndex = 1; cardIndex <= k; cardIndex++) {
@@ -319,9 +352,14 @@ function setUpNewGame() {
   document.querySelectorAll('.temporary-name-holder').forEach((x) => x.remove())
 }
 
-function removeSymbol(name) {
-  let arr = name.split('>')
-  return arr[arr.length - 1]
+function removeSpecialCharacters(name) {
+  if (whichGuesser === 'basic') {
+    const arr = name.split('>')
+    arr.shift()
+    name = arr.join('>')
+  }
+  const arr = name.split('amp;')
+  return arr.join('')
 }
 
 function checkAnswers() {
@@ -332,12 +370,12 @@ function checkAnswers() {
     let incorrect = true
     if (currCard.dataset.name) {
       // remove image text
-      let guessWithSymbol = document.getElementById(
+      const guessWithSymbol = document.getElementById(
         currCard.dataset.name
       ).innerHTML
-      let ansWithSymbol = artDict[currCard.dataset.url][0]
-      let guess = removeSymbol(guessWithSymbol)
-      let ans = removeSymbol(ansWithSymbol)
+      const ansWithSymbol = artDict[currCard.dataset.url][0]
+      const guess = removeSpecialCharacters(guessWithSymbol)
+      const ans = removeSpecialCharacters(ansWithSymbol)
       incorrect = ans !== guess
       // decide if their guess was correct
       // window.console.log(ans, guess, incorrect)
@@ -360,7 +398,7 @@ function checkAnswers() {
         document.getElementById(currCard.dataset.name).innerHTML = correctAns
       }
     } else {
-      answerCorrectionHolder = document.createElement('div')
+      let answerCorrectionHolder = document.createElement('div')
       answerCorrectionHolder.classList.add('name')
       answerCorrectionHolder.classList.add('temporary-name-holder')
 
@@ -475,7 +513,7 @@ function dropOnCard(id, data) {
     returnToNameBank(target.dataset.name)
   }
   // remove name data from a previous card if there is one
-  let prevContainer = document.querySelector('[data-name=' + data + ']')
+  const prevContainer = document.querySelector('[data-name=' + data + ']')
   if (prevContainer) {
     prevContainer.dataset.name = ''
   } else {
@@ -487,10 +525,6 @@ function dropOnCard(id, data) {
 }
 
 function setWordsLeft() {
-  cardName = 'Unused Card Names: '
-  if (whichGuesser === 'basic') {
-    cardName = 'Unused Set Names: '
-  }
   document.getElementById('words-left').innerText =
-    cardName + wordsLeft + '/Images: ' + imagesLeft
+    wordCategory + wordsLeft + '/Images: ' + imagesLeft
 }

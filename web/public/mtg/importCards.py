@@ -5,7 +5,7 @@ import math
 
 # queued categories: 'terror', 'wrath', 'zombie', 'artifact']
 # add category name here
-allCategories = ['counterspell', 'beast', 'burn', 'commander']
+allCategories = ['counterspell', 'beast', 'burn', 'commander', 'artifact']
 specialCategories = ['set', 'basic', 'watermark']
 artist_denylist = '-a%3A"jason+felix"+-a%3A“Harold+McNeill”+-a%3A"Terese+Nielsen"+-a%3A“Noah+Bradley”'
 artist_allowlist = {'David Martin', 'V\u00e9ronique Meignaud', 'Christopher Rush', 'Rebecca Guay', 'DiTerlizzi',
@@ -17,7 +17,7 @@ def generate_initial_query(category):
     if category == 'counterspell':
         string_query += 'otag%3Acounterspell+t%3Ainstant+not%3Aadventure+not%3Adfc'
     elif category == 'beast':
-        string_query += '-type%3Alegendary+type%3Abeast+-type%3Atoken+not%3Adfc'
+        string_query += '-t%3Alegendary+t%3Abeast+-t%3Atoken+not%3Adfc'
     # elif category == 'terror':
     #     string_query += 'otag%3Acreature-removal+o%3A%2Fdestroy+target.%2A+%28creature%7Cpermanent%29%2F+%28t' \
     #                     '%3Ainstant+or+t%3Asorcery%29+o%3Atarget+not%3Aadventure'
@@ -33,8 +33,8 @@ def generate_initial_query(category):
             '+or+legal%3Acommander+or+legal%3Abrawl%29'
     # elif category == 'zombie':
     #     string_query += '-type%3Alegendary+type%3Azombie+-type%3Atoken+not%3Adfc'
-    # elif category == 'artifact':
-        # string_query += 't%3Aartifact+not%3Adatestamped+not%3Adfc&order=released&dir=asc&unique=prints&page='
+    elif category == 'artifact':
+        string_query += 't%3Aartifact+not%3Adatestamped+-t%3Acreature+-t%3Atoken+-art%3Acreation-date+not%3Adfc'
     # add category string query here
     string_query += '+-%28set%3Asld+%28cn>%3D231+cn<%3D233+or+cn>%3D436+cn<%3D440+or+cn>%3D321+cn<%3D324+or' \
         '+cn>%3D185+cn<%3D189+or+cn>%3D138+cn<%3D142+or+cn>%3D364+cn<%3D368+or+cn%3A669+or+cn%3A670%29%29+' \
@@ -51,7 +51,7 @@ def generate_initial_special_query(category):
     elif category == 'basic':
         string_query += 't%3Abasic&order=released&dir=asc&unique=prints&page='
     elif category == 'watermark':
-        string_query += 'has%3Awatermark+not%3Apromo+-t%3Atoken+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
+        string_query += 'has%3Awatermark+-t%3Atoken+-st%3Amemorabilia+-set%3Aplist+-name%3A%2F%5EA-%2F&order=released&dir=asc&unique=prints&page='
     # add category string query here
     print(string_query)
     return string_query
@@ -59,7 +59,7 @@ def generate_initial_special_query(category):
 
 def generate_initial_artist_query():
     string_query = 'https://api.scryfall.com/cards/search?q=' + artist_denylist + \
-        '-atag%3Auniverses-beyond+-art%3Aartist-signature+artists%3D1+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
+        '-security_stamp%3Atriangle+-art%3Aartist-signature+artists%3D1+-st%3Afunny+not%3Aextra+not%3Adigital+-st%3Atoken+-t%3Avanguard+-st%3Amemorabilia+-t%3Ascheme+-t%3Aplane+-t%3APhenomenon&unique=art&as=grid&order=artist&page='
     print("artistList")
     print(string_query)
     return string_query
@@ -84,7 +84,7 @@ def fetch_and_write_all(category, query):
         response = fetch(query, count)
         will_repeat = response['has_more']
         count += 1
-        to_compact_write_form(all_cards, art_names, response)
+        to_compact_write_form(all_cards, art_names, response, category)
 
     with open('jsons/' + category + '.json', 'w') as f:
         json.dump(all_cards, f)
@@ -183,8 +183,8 @@ def write_art(art_names, id, index, card):
         art_names[id] = -1
 
 
-def to_compact_write_form(smallJson, art_names, response):
-    fieldsInCard = ['name', 'image_uris', 'flavor_name',
+def to_compact_write_form(smallJson, art_names, response, category):
+    fieldsInCard = ['name', 'image_uris',
                     'reprint', 'frame_effects', 'digital', 'set_type', 'security_stamp']
     data = smallJson['data']
     # write all fields needed in card
@@ -194,9 +194,9 @@ def to_compact_write_form(smallJson, art_names, response):
             continue
         write_card = dict()
         for field in fieldsInCard:
-            # if field == 'name' and category == 'artifact':
-            #     write_card['name'] = card['released_at'].split('-')[0]
-            if field == 'name' and 'card_faces' in card:
+            if field == 'name' and category == 'artifact':
+                write_card['name'] = card['released_at'].split('-')[0]
+            elif field == 'name' and 'card_faces' in card:
                 write_card['name'] = card['card_faces'][0]['name']
             elif field == 'image_uris':
                 if 'card_faces' in card and 'image_uris' in card['card_faces'][0]:
@@ -205,6 +205,8 @@ def to_compact_write_form(smallJson, art_names, response):
                 else:
                     write_card['image_uris'] = write_image_uris(
                         card['image_uris'])
+            elif category == 'commander' and field == 'set_type' and card[field] == 'funny' and (card['legalities']['commander'] == 'legal' or card['legalities']['brawl'] == 'legal'):
+                continue
             elif field in card and card[field]:
                 write_card[field] = card[field]
         if digital_holder != -1:
@@ -304,6 +306,9 @@ def filter_card(card, art_names, data):
     # do not include racist cards
     if 'content_warning' in card and card['content_warning'] == True:
         return False
+    # reskinned card names show in art crop
+    if 'flavor_name' in card:
+        return False
     # do not repeat art
     digital_holder = -1
     if 'card_faces' in card:
@@ -359,7 +364,14 @@ def write_image_uris(card_image_uris):
     return image_uris
 
 
+# def effective_hp(hp, hpp, defense, defp, spdef, spp):
+#     return hp * (1+hpp*0.01) * (1200 + defense * (1+0.01*defp) + spdef * (1+0.01*spp)) / 1200.0
+
+
 if __name__ == "__main__":
+    # uncomment this once in a while, but it's expensive to run
+    fetch_and_write_initial_artist_query()
+
     for category in allCategories:
         print(category)
         fetch_and_write_all(category, generate_initial_query(category))
@@ -367,6 +379,4 @@ if __name__ == "__main__":
         print(category)
         fetch_and_write_all_special(
             category, generate_initial_special_query(category))
-    # uncomment this once in a while, but it's expensive to run
-    fetch_and_write_initial_artist_query()
     fetch_and_write_all_artist()

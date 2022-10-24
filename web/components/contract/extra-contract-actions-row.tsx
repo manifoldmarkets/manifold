@@ -5,6 +5,7 @@ import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { LikeItemButton } from 'web/components/contract/like-item-button'
 import { ContractInfoDialog } from 'web/components/contract/contract-info-dialog'
 import { SimpleLinkButton } from '../buttons/simple-link-button'
+import { getShareUrl } from 'common/util/share'
 
 export function ExtraContractActionsRow(props: { contract: Contract }) {
   const { contract } = props
@@ -16,7 +17,7 @@ export function ExtraContractActionsRow(props: { contract: Contract }) {
 
       <LikeItemButton item={contract} user={user} itemType={'contract'} />
 
-      <SimpleLinkButton contract={contract} user={user} />
+      <SimpleLinkButton getUrl={() => getShareUrl(contract, user?.username)} />
 
       <ContractInfoDialog contract={contract} user={user} />
     </Row>

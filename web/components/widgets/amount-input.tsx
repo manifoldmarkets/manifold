@@ -9,6 +9,7 @@ import { AddFundsModal } from '../add-funds-modal'
 import { Input } from './input'
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
+import { binaryOutcomes } from '../bet/bet-panel'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -32,8 +33,10 @@ export function AmountInput(props: {
     inputRef,
   } = props
 
+  const parse = (str: string) => parseInt(str.replace(/\D/g, ''))
+
   const onAmountChange = (str: string) => {
-    const amount = parseInt(str.replace(/\D/g, ''))
+    const amount = parse(str)
     const isInvalid = !str || isNaN(amount)
     onChange(isInvalid ? undefined : amount)
   }
@@ -59,11 +62,18 @@ export function AmountInput(props: {
             error={!!error}
             disabled={disabled}
             onChange={(e) => onAmountChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp') {
+                onChange((amount ?? 0) + 5)
+              } else if (e.key === 'ArrowDown') {
+                onChange(Math.max(0, (amount ?? 0) - 5))
+              }
+            }}
           />
         </label>
 
         {error && (
-          <div className="absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide text-red-500">
+          <div className="text-scarlet-500 absolute -bottom-5 whitespace-nowrap text-xs font-medium tracking-wide">
             {error === 'Insufficient balance' ? (
               <>
                 Not enough funds.
@@ -100,6 +110,7 @@ export function BuyAmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
+  binaryOutcome?: binaryOutcomes
 }) {
   const {
     amount,
@@ -112,6 +123,7 @@ export function BuyAmountInput(props: {
     inputClassName,
     minimumAmount,
     inputRef,
+    binaryOutcome,
   } = props
 
   const user = useUser()
@@ -133,18 +145,6 @@ export function BuyAmountInput(props: {
     }
   }
 
-  const parseRaw = (x: number) => {
-    if (x <= 100) return x
-    if (x <= 130) return 100 + (x - 100) * 5
-    return 250 + (x - 130) * 10
-  }
-
-  const getRaw = (x: number) => {
-    if (x <= 100) return x
-    if (x <= 250) return 100 + (x - 100) / 5
-    return 130 + (x - 250) / 10
-  }
-
   return (
     <>
       <Row className="items-center gap-4">
@@ -161,19 +161,26 @@ export function BuyAmountInput(props: {
         {showSlider && (
           <Slider
             min={0}
-            max={205}
-            value={getRaw(amount ?? 0)}
-            onChange={(value) => onAmountChange(parseRaw(value as number))}
-            className="mx-4 !h-4 xl:hidden [&>.rc-slider-rail]:bg-gray-200 [&>.rc-slider-track]:bg-indigo-400 [&>.rc-slider-handle]:bg-indigo-400"
-            railStyle={{ height: 16, top: 0, left: 0 }}
-            trackStyle={{ height: 16, top: 0 }}
+            max={100}
+            value={amount ?? 0}
+            onChange={(value) => onAmountChange(value as number)}
+            className={clsx(
+              ' my-auto mx-2 !h-1 xl:hidden [&>.rc-slider-rail]:bg-gray-200',
+              binaryOutcome === 'YES'
+                ? '[&>.rc-slider-track]:bg-teal-600 [&>.rc-slider-handle]:bg-teal-500'
+                : binaryOutcome === 'NO'
+                ? '[&>.rc-slider-track]:bg-scarlet-600 [&>.rc-slider-handle]:bg-scarlet-300'
+                : '[&>.rc-slider-track]:bg-indigo-700 [&>.rc-slider-handle]:bg-indigo-500'
+            )}
+            railStyle={{ height: 4, top: 4, left: 0 }}
+            trackStyle={{ height: 4, top: 4 }}
             handleStyle={{
-              height: 32,
-              width: 32,
+              height: 24,
+              width: 24,
               opacity: 1,
               border: 'none',
               boxShadow: 'none',
-              top: -2,
+              top: -0.5,
             }}
             step={5}
           />

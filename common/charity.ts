@@ -18,10 +18,10 @@ export const charities: Charity[] = [
     name: 'Balsa Research',
     website: 'https://thezvi.substack.com/p/balsa-faq',
     preview:
-      'Balsa Research identifies the most important policy changes America should make, and making them happen.',
+      'Balsa Research identifies the most important policy changes America should make, and makes them happen.',
     photo:
       'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2Fq2ZgMOOn7c.png?alt=media&token=01921c11-b303-4fec-9736-93c6531ef14b',
-    description: `By Zvi Mowshowitz:
+    description: `(By Zvi Mowshowitz)
 
 If we do not address the deep dysfunctions of our government and its policies, we put our democracy and entire civilization at risk. People whose lives are getting worse, who have no hope and cannot envision a future, inevitably turn to authoritarianism. A focus on telling people how terrible and fascist Donald Trump is did not work well in 2016 or 2020 and is not the best way to keep him out of the White House in 2024. It will not help us prosper and overcome political differences. Even if he is kept out in 2024, either we turn things around or things will keep getting worse. 
 
@@ -629,6 +629,18 @@ In addition to housing impact litigation, we provide free legal aid, education a
     preview: 'Donate supplies to soldiers in Ukraine',
     description:
       'Donate supplies to soldiers in Ukraine, including tourniquets and plate carriers.',
+  },
+  {
+    name: 'The Society Library',
+    website: 'https://www.societylibrary.org/',
+    preview:
+      "The Society Library works to improve humanity's relationship to information.",
+    photo: 'https://i.imgur.com/jlrS3UA.png',
+    description: `At The Society Library, we recognize that a person’s relationship to information is one of the most fundamental, most important, and most powerful. We rely on information (whether that information is internal thoughts, instincts, and feelings - or external data, claims, and conversation) to make meaning of the world and make choices. Access to information can enable more enlightened, empowered, and emancipated decisions, just as deprivation of information can confine, control, and coerce our choices.
+
+    The Society Library is a nonpartisan, nonprofit institution dedicated to improving humanity’s relationship to information. We serve this mission by offering tools and services to support humanity’s ability to overcome the internal and external biasing forces that corrupt our ability to make more informed, inclusive, and free choices. External forces include information being inaccessible (due to echo chambers, de-platforming, agenda-setting, etc.), information being corrupted (mis/disinformation, propaganda, biased language, etc.), information being obfuscated (overwhelming technical complexity, jargon, etc.), and there simply being too much information scattered across the web and world to make sense of. Internal forces include our own cognitive biases and logically fallacious thinking processes that corrupt our sensemaking.
+
+    The Society Library dreams of a future when every human on earth inherits a library of the collective ideas, ideologies, and world-views of humanity, so they may more willfully choose to adopt or adapt beliefs, instead of more randomly or blindly inheriting ideas generationally based on limitations like geographic location, economic status, political socialization, and culture. We see a future in which freedom of thought and belief is deeply honored, and when people’s beliefs conflict, humanity has the tools to functionally negotiate those differences in a manner that maximizes freedom in being. People currently have the human right of freedom of thought and belief (Human Right #18 and #19), but to truly make that possible, we need to make information more accessible in every possible way. This is our mission and our work. This is the Society Library.`,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

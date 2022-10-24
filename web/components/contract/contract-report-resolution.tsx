@@ -32,8 +32,8 @@ export function ContractReportResolution(props: { contract: Contract }) {
   }
 
   const flagClass = clsx(
-    'mx-2 flex flex-col items-center gap-1  w-6 h-6  rounded-md !bg-gray-100 px-1 py-2 hover:bg-gray-300',
-    userReported ? '!text-red-500' : '!text-gray-500'
+    'mx-2 flex flex-col items-center gap-1 rounded-md !bg-gray-100 px-1 py-1 hover:bg-gray-300',
+    userReported ? '!text-scarlet-500' : '!text-gray-500'
   )
 
   return (
@@ -55,13 +55,13 @@ export function ContractReportResolution(props: { contract: Contract }) {
         disabled={userReported}
       >
         <div>
-          <Row className="items-center text-xl">
-            Flag this market as incorrectly resolved
+          <Row className="mb-4 items-center text-xl">Flag this market</Row>
+          <Row className="mb-1 text-sm text-gray-500">
+            Report this market for being incorrectly resolved.
           </Row>
           <Row className="text-sm text-gray-500">
-            Report that the market was not resolved according to its resolution
-            criteria. If a creator's markets get flagged too often, they'll be
-            marked as unreliable.
+            If a creator's markets get flagged too often, they'll be marked as
+            unreliable.
           </Row>
         </div>
       </ConfirmationButton>

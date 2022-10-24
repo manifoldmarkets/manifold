@@ -13,7 +13,6 @@ import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { SiteLink } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { changeUserInfo } from 'web/lib/firebase/api'
@@ -45,7 +44,7 @@ function EditUserField(props: {
 
   return (
     <div>
-      <label className="px-1 py-2">{label}</label>
+      <label className="mb-1 block">{label}</label>
 
       {field === 'bio' ? (
         <ExpandingInput
@@ -137,14 +136,11 @@ export default function ProfilePage(props: {
       <SEO title="Profile" description="User profile settings" url="/profile" />
 
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
-        <Row className="justify-between">
+        <Row className="items-start justify-between">
           <Title className="!mt-0" text="Edit Profile" />
-          <SiteLink
-            className={buttonClass('md', 'green')}
-            href={`/${user.username}`}
-          >
-            Done
-          </SiteLink>
+          <Link href={`/${user.username}`}>
+            <a className={buttonClass('md', 'green')}>Done</a>
+          </Link>
         </Row>
         <Col className="gap-4">
           <Row className="items-center gap-4">
@@ -164,7 +160,7 @@ export default function ProfilePage(props: {
           </Row>
 
           <div>
-            <label className="px-1 py-2">Display name</label>
+            <label className="mb-1 block">Display name</label>
             <Input
               type="text"
               placeholder="Display name"
@@ -175,7 +171,7 @@ export default function ProfilePage(props: {
           </div>
 
           <div>
-            <label className="px-1 py-2">Username</label>
+            <label className="mb-1 block">Username</label>
             <Input
               type="text"
               placeholder="Username"
@@ -201,14 +197,12 @@ export default function ProfilePage(props: {
           ))}
 
           <div>
-            <label className="px-1 py-2">Email</label>
-            <div className="ml-1 text-gray-500">
-              {privateUser.email ?? '\u00a0'}
-            </div>
+            <label className="mb-1 block">Email</label>
+            <div className="text-gray-500">{privateUser.email ?? '\u00a0'}</div>
           </div>
 
           <div>
-            <label className="px-1 py-2">API key</label>
+            <label className="mb-1 block">API key</label>
             <div className="flex w-full items-stretch space-x-1">
               <Input
                 type="text"
@@ -249,13 +243,13 @@ export default function ProfilePage(props: {
             </div>
           </div>
           <div>
-            <label className="px-1 py-2">Delete Account</label>
+            <label className="mb-1 block">Delete Account</label>
             <div className="flex w-full items-stretch space-x-1">
               <ConfirmationButton
                 openModalBtn={{
                   className: 'p-2',
-                  label: 'Click to permanently delete this account',
-                  icon: <TrashIcon className="h-5 w-5" />,
+                  label: 'Permanently delete this account',
+                  icon: <TrashIcon className="mr-1 h-5 w-5" />,
                   color: 'red',
                 }}
                 submitBtn={{

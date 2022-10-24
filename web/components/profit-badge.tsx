@@ -10,8 +10,8 @@ export function ProfitBadge(props: {
   if (!profitPercent) return null
   const colors =
     profitPercent > 0
-      ? 'bg-green-100 text-green-800'
-      : 'bg-red-100 text-red-800'
+      ? 'bg-teal-100 text-teal-700'
+      : 'bg-scarlet-50 text-scarlet-600'
 
   return (
     <span
@@ -37,8 +37,8 @@ export function ProfitBadgeMana(props: {
   const colors = gray
     ? 'bg-gray-100 text-gray-700'
     : amount > 0
-    ? 'bg-gray-100 text-green-800'
-    : 'bg-gray-100 text-red-800'
+    ? 'bg-gray-100 text-teal-700'
+    : 'bg-gray-100 text-scarlet-600'
 
   const formatted =
     ENV_CONFIG.moneyMoniker + (amount > 0 ? '+' : '') + amount.toFixed(0)

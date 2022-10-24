@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { LinkIcon } from '@heroicons/react/solid'
 import {
-  ChatIcon,
   FolderIcon,
   PencilIcon,
   ScaleIcon,
@@ -33,12 +32,15 @@ import { GroupsButton } from 'web/components/groups/groups-button'
 import { PortfolioValueSection } from './portfolio/portfolio-value-section'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { track } from 'web/lib/service/analytics'
-import { DOMAIN } from 'common/envs/constants'
+import { BOT_USERNAMES, DOMAIN } from 'common/envs/constants'
 import { BadgeDisplay } from 'web/components/badge-display'
 import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
+import { SectionHeader } from './groups/group-overview'
+import { Button } from './buttons/button'
+import { BotBadge } from './widgets/user-link'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -100,7 +102,8 @@ export function UserPage(props: { user: User }) {
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
               <Col>
                 <span className="break-anywhere text-lg font-bold sm:text-2xl">
-                  {user.name}
+                  {user.name}{' '}
+                  {BOT_USERNAMES.includes(user.username) && <BotBadge />}
                 </span>
                 <Row className="sm:text-md -mt-1 items-center gap-x-3 text-sm ">
                   <span className={' text-greyscale-4'}>@{user.username}</span>
@@ -235,27 +238,37 @@ export function UserPage(props: { user: User }) {
                 ),
               },
               {
-                title: 'Comments',
-                stackedTabIcon: <ChatIcon className="h-5" />,
-                content: (
-                  <>
-                    <Spacer h={4} />
-                    <Col>
-                      <UserCommentsList user={user} />
-                    </Col>
-                  </>
-                ),
-              },
-              {
                 title: 'Posts',
                 stackedTabIcon: <DocumentIcon className="h-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
+
+                    <Row className="flex items-center justify-between">
+                      <Col>
+                        <SectionHeader label={'Posts'} href={''} />
+                      </Col>
+                      <Col>
+                        {currentUser && (
+                          <SiteLink
+                            className="mb-3 text-xl"
+                            href={'/create-post'}
+                            onClick={() =>
+                              track('home click create post', {
+                                section: 'create-post',
+                              })
+                            }
+                          >
+                            <Button>Create Post</Button>
+                          </SiteLink>
+                        )}
+                      </Col>
+                    </Row>
+
                     <Col>
                       {userPosts ? (
                         userPosts.length > 0 ? (
-                          <PostCardList posts={userPosts} />
+                          <PostCardList posts={userPosts} limit={6} />
                         ) : (
                           <div className="text-greyscale-4 text-center">
                             No posts yet
@@ -266,6 +279,11 @@ export function UserPage(props: { user: User }) {
                           <LoadingIndicator />
                         </div>
                       )}
+                    </Col>
+                    <Spacer h={4} />
+                    <SectionHeader label={'Comments'} href={''} />
+                    <Col>
+                      <UserCommentsList user={user} />
                     </Col>
                   </>
                 ),

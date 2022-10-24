@@ -6,7 +6,7 @@ import { keyBy, range, groupBy, sortBy } from 'lodash'
 import { memo, useState } from 'react'
 import { useLiveBets } from 'web/hooks/use-bets'
 import { useLiveComments } from 'web/hooks/use-comments'
-import { useContracts } from 'web/hooks/use-contracts'
+import { useContracts, useLiveContracts } from 'web/hooks/use-contracts'
 import { PillButton } from './buttons/pill-button'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -20,50 +20,67 @@ import { UserLink } from './widgets/user-link'
 
 export function ActivityLog(props: { count: number; showPills: boolean }) {
   const { count, showPills } = props
-  const bets = (useLiveBets(count * 2) ?? []).filter(
+  const bets = (useLiveBets(count * 2 + 10) ?? []).filter(
     (bet) =>
       !BOT_USERNAMES.includes(bet.userUsername) &&
       !bet.isRedemption &&
       !bet.isAnte
   )
   const comments = (useLiveComments(count * 2) ?? []).filter(
-    (c) => c.commentType === 'contract'
+    (c) =>
+      c.commentType === 'contract' && !BOT_USERNAMES.includes(c.userUsername)
   ) as ContractComment[]
 
-  const [pill, setPill] = useState<'all' | 'comments' | 'trades'>('all')
+  const newContracts = useLiveContracts(count)
+
+  const [pill, setPill] = useState<'all' | 'markets' | 'comments' | 'trades'>(
+    'all'
+  )
 
   const items = sortBy(
     pill === 'all'
-      ? [...bets, ...comments]
+      ? [...bets, ...comments, ...(newContracts ?? [])]
       : pill === 'comments'
       ? comments
-      : bets,
+      : pill === 'trades'
+      ? bets
+      : newContracts ?? [],
     (i) => i.createdTime
   ).reverse()
 
-  const contracts = filterDefined([
-    ...useContracts(bets.map((b) => b.contractId)),
-    ...useContracts(comments.map((c) => c.contractId)),
-  ])
+  const contracts = filterDefined(
+    useContracts([
+      ...bets.map((b) => b.contractId),
+      ...comments.map((c) => c.contractId),
+    ])
+  ).concat(newContracts ?? [])
   const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
     range(0, items.length - count).find((i) =>
-      items.slice(i, i + count).every((item) => contractsById[item.contractId])
+      items
+        .slice(i, i + count)
+        .every((item) =>
+          'contractId' in item ? contractsById[item.contractId] : true
+        )
     ) ?? 0
   const itemsSubset = items.slice(startIndex, startIndex + count)
 
   const allLoaded =
     bets.length > 0 &&
     comments.length > 0 &&
-    itemsSubset.every((b) => contractsById[b.contractId])
+    itemsSubset.every((item) =>
+      'contractId' in item ? contractsById[item.contractId] : true
+    )
 
-  const groups = Object.entries(groupBy(itemsSubset, (b) => b.contractId)).map(
-    ([contractId, items]) => ({
-      contractId,
-      items,
-    })
-  )
+  const groups = Object.entries(
+    groupBy(itemsSubset, (item) =>
+      'contractId' in item ? item.contractId : item.id
+    )
+  ).map(([contractId, items]) => ({
+    contractId,
+    items,
+  }))
 
   if (!allLoaded) return <LoadingIndicator />
 
@@ -73,6 +90,12 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
         <Row className="gap-2">
           <PillButton selected={pill === 'all'} onSelect={() => setPill('all')}>
             All
+          </PillButton>
+          <PillButton
+            selected={pill === 'markets'}
+            onSelect={() => setPill('markets')}
+          >
+            Markets
           </PillButton>
           <PillButton
             selected={pill === 'comments'}
@@ -103,6 +126,8 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
                     bet={item}
                     avatarSize="xs"
                   />
+                ) : 'question' in item ? (
+                  <MarketCreatedLog key={item.id} contract={item} />
                 ) : (
                   <CommentLog key={item.id} comment={item} />
                 )
@@ -112,6 +137,25 @@ export function ActivityLog(props: { count: number; showPills: boolean }) {
         })}
       </Col>
     </Col>
+  )
+}
+export const MarketCreatedLog = (props: { contract: Contract }) => {
+  const { creatorAvatarUrl, creatorUsername, creatorName, createdTime } =
+    props.contract
+
+  return (
+    <Row className="items-center gap-2 text-sm text-gray-500">
+      <Avatar
+        avatarUrl={creatorAvatarUrl}
+        username={creatorUsername}
+        size="xs"
+      />
+      <UserLink name={creatorName} username={creatorUsername} />
+      <Row>
+        <div className="text-gray-400">created</div>
+        <RelativeTimestamp time={createdTime} />
+      </Row>
+    </Row>
   )
 }
 

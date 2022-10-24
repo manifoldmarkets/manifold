@@ -38,7 +38,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { PostCard, PostCardList } from '../posts/post-card'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
-import { CreatePost } from '../posts/create-post'
+import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 
@@ -103,7 +103,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
   const createPost = (
     <Modal size="xl" open={showCreatePost} setOpen={setShowCreatePost}>
       <div className="w-full bg-white py-10">
-        <CreatePost group={group} />
+        <CreatePostForm group={group} />
       </div>
     </Modal>
   )
@@ -229,7 +229,7 @@ export function PinnedItems(props: {
 
   return pinned.length > 0 || isEditable ? (
     <div>
-      <Row className=" items-center justify-between">
+      <Row className="items-center justify-between">
         <SectionHeader label={'Featured'} />
         {isEditable && (
           <Button
@@ -257,21 +257,24 @@ export function PinnedItems(props: {
           columnClassName="pl-4 bg-clip-padding"
         >
           {pinned.length == 0 && !editMode && (
-            <div className="flex flex-col items-center justify-center">
+            <div
+              className="flex flex-col items-center justify-center"
+              key="no-pinned"
+            >
               <p className="text-center text-gray-400">
                 No pinned items yet. Click the edit button to add some!
               </p>
             </div>
           )}
           {pinned.map((element, index) => (
-            <div className="relative mb-4" key={element.key}>
+            <div className="relative mb-4" key={index}>
               {element}
 
               {editMode && <CrossIcon onClick={() => onDeleteClicked(index)} />}
             </div>
           ))}
           {editMode && pinned.length < 6 && (
-            <div className=" py-2">
+            <div className="py-2" key="plus-circle">
               <Row
                 className={
                   'relative gap-3 rounded-lg border-4 border-dotted p-2 hover:cursor-pointer hover:bg-gray-100'

@@ -123,7 +123,7 @@ export function FreeResponseComments(props: {
         return (
           <>
             <Row className="relative">
-              <div className="absolute -bottom-1 left-1.5">
+              <div className="absolute -bottom-1 left-1.5 z-20">
                 <Curve size={32} strokeWidth={1} color="#D8D8EB" />
               </div>
               <div className="ml-[38px]">

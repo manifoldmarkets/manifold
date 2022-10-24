@@ -43,10 +43,15 @@ export function listenForValues<T>(
 ) {
   // Exclude cached snapshots so we only trigger on fresh data.
   // includeMetadataChanges ensures listener is called even when server data is the same as cached data.
-  return onSnapshot(query, { includeMetadataChanges: true }, (snapshot) => {
-    if (snapshot.metadata.fromCache) return
+  return onSnapshot(
+    query,
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      if (snapshot.metadata.fromCache) return
 
-    const values = snapshot.docs.map((doc) => doc.data() as T)
-    setValues(values)
-  })
+      const values = snapshot.docs.map((doc) => doc.data() as T)
+      setValues(values)
+    },
+    console.error
+  )
 }

@@ -91,7 +91,7 @@ export function AnswerResolvePanel(props: {
       <Row className="justify-between">
         <div>Resolve your market</div>
         {isAdmin && !isCreator && (
-          <span className="rounded bg-red-200 p-1 text-xs text-red-600">
+          <span className="bg-scarlet-50 text-scarlet-500 rounded p-1 text-xs">
             ADMIN
           </span>
         )}
@@ -145,7 +145,7 @@ export function AnswerResolvePanel(props: {
         </Row>
       </Col>
 
-      {!!error && <div className="text-red-500">{error}</div>}
+      {!!error && <div className="text-scarlet-500">{error}</div>}
       {!!warning && <div className="text-warning">{warning}</div>}
     </Col>
   )

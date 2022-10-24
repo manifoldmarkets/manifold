@@ -224,8 +224,6 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
             totalItems={allGroupedNotifications.length}
             setPage={setPage}
             scrollToTop
-            nextTitle={'Older'}
-            prevTitle={'Newer'}
           />
         )}
     </div>
@@ -351,7 +349,7 @@ function IncomeNotificationGroupItem(props: {
       )}
       <Row className={'items-center text-gray-500 sm:justify-start'}>
         <TrendingUpIcon
-          className={'text-primary ml-1 h-7 w-7 flex-shrink-0 sm:ml-2'}
+          className={'ml-1 h-7 w-7 flex-shrink-0 text-teal-500 sm:ml-2'}
         />
         <div
           className={'ml-2 flex w-full flex-row flex-wrap truncate'}
@@ -360,7 +358,7 @@ function IncomeNotificationGroupItem(props: {
           <div className={'flex w-full flex-row justify-between'}>
             <div>
               {'Daily Income Summary: '}
-              <span className={'text-primary'}>
+              <span className={'text-teal-500'}>
                 {'+' + formatMoney(totalIncome)}
               </span>
             </div>
@@ -508,7 +506,7 @@ function IncomeNotificationItem(props: {
 
   const incomeNotificationLabel = () => {
     return sourceText ? (
-      <span className="text-primary">
+      <span className="text-teal-500">
         {'+' + formatMoney(parseInt(sourceText))}
       </span>
     ) : (
@@ -956,9 +954,9 @@ function BetFillNotification(props: {
           className={clsx(
             'mx-1',
             creatorOutcome === 'YES'
-              ? 'text-primary'
+              ? 'text-teal-500'
               : creatorOutcome === 'NO'
-              ? 'text-red-500'
+              ? 'text-scarlet-500'
               : 'text-blue-500'
           )}
         >
@@ -977,7 +975,7 @@ function BetFillNotification(props: {
     return (
       <NotificationSummaryFrame notification={notification} subtitle={subtitle}>
         <Row className={'line-clamp-1'}>
-          <span className={'text-primary mr-1'}>{amount}</span>
+          <span className={'mr-1 text-teal-500'}>{amount}</span>
           <span>{description}</span>
         </Row>
       </NotificationSummaryFrame>
@@ -993,7 +991,7 @@ function BetFillNotification(props: {
     >
       <Row>
         <span>
-          <span className="text-primary mr-1">{amount}</span>
+          <span className="mr-1 text-teal-500">{amount}</span>
           {description}
         </span>
       </Row>
@@ -1107,11 +1105,11 @@ function ContractResolvedNotification(props: {
     userInvestment && userPayout !== undefined ? (
       <>
         Resolved: {resolutionDescription()} Invested:
-        <span className={'text-primary'}>{formatMoney(userInvestment)} </span>
+        <span className={'text-teal-500'}>{formatMoney(userInvestment)} </span>
         Payout:
         <span
           className={clsx(
-            profitable ? 'text-primary' : 'text-red-500',
+            profitable ? 'text-teal-500' : 'text-scarlet-500',
             'truncate text-ellipsis'
           )}
         >
@@ -1234,7 +1232,7 @@ function NotificationTextLabel(props: {
     return (
       <span>
         As a thank you, we sent you{' '}
-        <span className="text-primary">
+        <span className="text-teal-500">
           {formatMoney(parseInt(sourceText))}
         </span>
         !
@@ -1248,7 +1246,7 @@ function NotificationTextLabel(props: {
     return (
       <>
         <span> for </span>
-        <span className="text-primary">
+        <span className="text-teal-500">
           {formatMoney(parseInt(sourceText))}
         </span>
       </>

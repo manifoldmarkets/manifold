@@ -51,14 +51,14 @@ export const PortfolioValueSection = memo(
                   graphMode === 'profit'
                     ? graphDisplayNumber
                       ? graphDisplayNumber.toString().includes('-')
-                        ? 'text-gray-600'
+                        ? 'text-scarlet-500'
                         : 'text-teal-500'
                       : totalProfit > 0
                       ? 'text-teal-500'
-                      : 'text-gray-600'
+                      : 'text-scarlet-500'
                     : totalProfit > 0
                     ? 'text-teal-500'
-                    : 'text-gray-600',
+                    : 'text-scarlet-500',
                   'text-lg sm:text-xl'
                 )}
               >

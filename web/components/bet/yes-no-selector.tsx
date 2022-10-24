@@ -54,10 +54,10 @@ export function YesNoSelector(props: {
           className={clsx(
             commonClassNames,
             selected == 'NO'
-              ? 'border-red-400 bg-red-400 text-white'
+              ? 'border-scarlet-300 bg-scarlet-300 text-white'
               : selected == 'YES'
-              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-red-400 hover:text-red-400'
-              : 'border-red-400 bg-white text-red-400 hover:bg-red-50',
+              ? 'border-greyscale-3 text-greyscale-3 hover:border-scarlet-300 hover:text-scarlet-300 bg-white'
+              : 'border-scarlet-300 text-scarlet-300 bg-white hover:bg-red-50',
             btnClassName
           )}
           onClick={() => onSelect('NO')}
@@ -189,8 +189,8 @@ export function BuyButton(props: { className?: string; onClick?: () => void }) {
   return (
     <button
       className={clsx(
-        'hover:bg-primary-focus border-primary hover:border-primary-focus inline-flex flex-1  items-center justify-center rounded-lg border-2 p-2 hover:text-white',
-        'text-primary bg-transparent text-lg',
+        'hover:bg-teal-600-focus hover:border-teal-600-focus inline-flex flex-1 items-center  justify-center rounded-lg border-2 border-teal-600 p-2 hover:text-white',
+        'bg-transparent text-lg text-teal-500',
         className
       )}
       onClick={onClick}
@@ -244,8 +244,8 @@ function Button(props: {
       type="button"
       className={clsx(
         'inline-flex flex-1 items-center justify-center rounded-md border border-transparent px-8 py-3 font-medium shadow-sm',
-        color === 'green' && 'bg-teal-500 text-white hover:bg-teal-600',
-        color === 'red' && 'bg-red-400 text-white hover:bg-red-500',
+        color === 'green' && 'bg-teal-500 text-white hover:bg-teal-500',
+        color === 'red' && 'bg-scarlet-300 hover:bg-scarlet-400 text-white',
         color === 'yellow' && 'bg-yellow-400 text-white hover:bg-yellow-500',
         color === 'blue' && 'bg-blue-400 text-white hover:bg-blue-500',
         color === 'indigo' && 'bg-indigo-500 text-white hover:bg-indigo-600',
