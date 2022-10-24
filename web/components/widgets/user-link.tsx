@@ -1,6 +1,7 @@
 import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import { useWindowSize } from 'web/hooks/use-window-size'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 export function shortenName(name: string) {
   const firstName = name.split(' ')[0]
@@ -41,15 +42,6 @@ export function UserLink(props: {
     </SiteLink>
   )
 }
-
-const BOT_USERNAMES = [
-  'v',
-  'ArbitrageBot',
-  'MarketManagerBot',
-  'Botlab',
-  'JuniorBot',
-  'ManifoldDream',
-]
 
 export function BotBadge() {
   return (
