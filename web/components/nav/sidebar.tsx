@@ -158,7 +158,6 @@ function getMoreDesktopNavigation(user?: User | null) {
     { name: 'Leaderboards', href: '/leaderboards' },
     { name: 'Groups', href: '/groups' },
     { name: 'Refer a friend', href: '/referrals' },
-    { name: 'Create a Post', href: '/create-post' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
