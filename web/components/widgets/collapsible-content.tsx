@@ -97,7 +97,7 @@ export function CollapsibleContent(props: { content: JSONContent | string }) {
         setShouldTruncate(true)
       }
     }
-  })
+  }, [contentRef.current?.offsetHeight])
 
   return (
     <CollapsibleWrapper shouldCollapse={shouldTruncate}>
