@@ -58,12 +58,18 @@ const interpolateY = (
   y1: number
 ) => {
   if (curve === curveLinear) {
-    const p = (x - x0) / (x1 - x0)
-    return y0 * (1 - p) + y1 * p
+    if (x1 == x0) {
+      return y0
+    } else {
+      const p = (x - x0) / (x1 - x0)
+      return y0 * (1 - p) + y1 * p
+    }
   } else if (curve === curveStepAfter) {
     return y0
   } else if (curve === curveStepBefore) {
     return y1
+  } else {
+    return 0
   }
 }
 
@@ -356,12 +362,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onMouseOver = useEvent((mouseX: number) => {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
-    const x0 = p.prev ? xScale(p.prev.x) : xScale.range()[0]
-    const x1 = p.next ? xScale(p.next.x) : xScale.range()[1]
-    const y0 = p.prev ? yScale(p.prev.y) : yScale.range()[0]
-    const y1 = p.next ? yScale(p.next.y) : yScale.range()[1]
-    const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
-    if (p.prev && markerY) {
+    if (p.prev) {
+      const x0 = xScale(p.prev.x)
+      const x1 = p.next ? xScale(p.next.x) : x0
+      const y0 = yScale(p.prev.y)
+      const y1 = p.next ? yScale(p.next.y) : y0
+      const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
       setMouse({
         x: mouseX,
         y: markerY,
