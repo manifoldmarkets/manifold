@@ -29,11 +29,12 @@ import {
   Platform,
   BackHandler,
   NativeEventEmitter,
-  View,
   ActivityIndicator,
   StyleSheet,
   SafeAreaView,
   StatusBar as RNStatusBar,
+  Image,
+  Dimensions,
 } from 'react-native'
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
@@ -321,6 +322,7 @@ export default function App() {
       !isExpoClient && CookieManager.clearAll(useWebKit)
       return
     }
+    // Receiving cached firebase user from webview cache
     if (
       nativeEvent.data.includes('fbUser') ||
       nativeEvent.data.includes('uid')
@@ -346,8 +348,11 @@ export default function App() {
     console.log('Unhandled nativeEvent.data: ', nativeEvent.data)
   }
 
+  const width = Dimensions.get('window').width //full width
+  const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
+      display: isWebViewLoading ? 'none' : 'flex',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
@@ -363,41 +368,60 @@ export default function App() {
       marginTop: !isIOS ? RNStatusBar.currentHeight : 0,
       marginBottom: !isIOS ? 10 : 0,
     },
+    image: {
+      height,
+      width,
+      flex: 1,
+      justifyContent: 'center',
+      resizeMode: 'cover',
+    },
+    activityIndicator: {
+      position: 'absolute',
+      left: width / 2 - 20,
+      bottom: 100,
+    },
   })
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        animated={true}
-        backgroundColor="white"
-        style={'dark'}
-        hideTransitionAnimation={'none'}
-        hidden={false}
-      />
+    <>
       {isWebViewLoading && (
-        <View style={[styles.horizontal]}>
-          <ActivityIndicator size={'large'} color={'blue'} />
-        </View>
+        <>
+          <Image style={styles.image} source={require('./assets/splash.png')} />
+          <ActivityIndicator
+            style={styles.activityIndicator}
+            size={'large'}
+            color={'white'}
+          />
+        </>
       )}
-      <WebView
-        style={styles.webView}
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
-        overScrollMode={'never'}
-        decelerationRate={'normal'}
-        allowsBackForwardNavigationGestures={true}
-        onLoadEnd={() => isWebViewLoading && setIsWebViewLoading(false)}
-        sharedCookiesEnabled={true}
-        source={{ uri: homeUri }}
-        ref={webview}
-        onMessage={handleMessageFromWebview}
-        onNavigationStateChange={async (navState) => {
-          if (!navState.loading && !hasInjectedVariable && webview.current) {
-            webview.current.injectJavaScript('window.isNative = true')
-            setHasInjectedVariable(true)
-          }
-        }}
-      />
-    </SafeAreaView>
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          animated={true}
+          backgroundColor="white"
+          style={'dark'}
+          hideTransitionAnimation={'none'}
+          hidden={false}
+        />
+        <WebView
+          style={styles.webView}
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          overScrollMode={'never'}
+          decelerationRate={'normal'}
+          allowsBackForwardNavigationGestures={true}
+          onLoadEnd={() => isWebViewLoading && setIsWebViewLoading(false)}
+          sharedCookiesEnabled={true}
+          source={{ uri: homeUri }}
+          ref={webview}
+          onMessage={handleMessageFromWebview}
+          onNavigationStateChange={async (navState) => {
+            if (!navState.loading && !hasInjectedVariable && webview.current) {
+              webview.current.injectJavaScript('window.isNative = true')
+              setHasInjectedVariable(true)
+            }
+          }}
+        />
+      </SafeAreaView>
+    </>
   )
 }
