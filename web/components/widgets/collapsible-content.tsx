@@ -71,6 +71,10 @@ export function CollapsibleWrapper(props: {
                 className="mr-2 flex"
                 onClick={() => {
                   setIsCollapsed(true)
+                  window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth',
+                  })
                 }}
                 isCollapsed={isCollapsed}
               />
