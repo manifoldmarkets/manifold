@@ -389,7 +389,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
 
       const bisect = bisector((p: P) => p.x)
       const iMin = bisect.right(data, xMin)
-      const iMax = bisect.left(data, xMax)
+      const iMax = bisect.right(data, xMax)
 
       // don't zoom axis if they selected an area with only one value
       if (iMin != iMax) {
