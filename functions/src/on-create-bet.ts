@@ -40,7 +40,7 @@ import {
   StreakerBadge,
   streakerBadgeRarityThresholds,
 } from '../../common/badge'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { BOT_USERNAMES } from '../../common/envs/constants'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
