@@ -17,6 +17,7 @@ import { Spacer } from '../layout/spacer'
 import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
+import { CollapsibleContent } from '../widgets/collapsible-content'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -31,7 +32,7 @@ export function ContractDescription(props: {
       {isCreator || isAdmin ? (
         <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
       ) : (
-        <Content content={contract.description} />
+        <CollapsibleContent content={contract.description} />
       )}
     </div>
   )
@@ -77,7 +78,7 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     </>
   ) : (
     <>
-      <Content content={contract.description} />
+      <CollapsibleContent content={contract.description} />
       <Spacer h={4} />
       <Row className="items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
