@@ -32,6 +32,8 @@ import {
   View,
   ActivityIndicator,
   StyleSheet,
+  SafeAreaView,
+  StatusBar as RNStatusBar,
 } from 'react-native'
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
@@ -42,6 +44,7 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import { removeUndefinedProps } from 'common/util/object'
 import * as Sentry from 'sentry-expo'
+import { StatusBar } from 'expo-status-bar'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -327,7 +330,6 @@ export default function App() {
         // Passing us a signed-in user object
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           console.log('Signing in fb user from webview cache')
-          const jsonFbUser = fbUserAndPrivateUser.fbUser as User
           setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app).then(
             (userResult) =>
               userResult && setFbUser(JSON.stringify(userResult.toJSON()))
@@ -344,19 +346,41 @@ export default function App() {
     console.log('Unhandled nativeEvent.data: ', nativeEvent.data)
   }
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    horizontal: {
+      height: '100%',
+      justifyContent: 'space-around',
+      padding: 10,
+    },
+    webView: {
+      display: isWebViewLoading ? 'none' : 'flex',
+      overflow: 'hidden',
+      marginTop: !isIOS ? RNStatusBar.currentHeight : 0,
+      marginBottom: !isIOS ? 10 : 0,
+    },
+  })
+
   return (
-    <View style={[styles.container]}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        animated={true}
+        backgroundColor="white"
+        style={'dark'}
+        hideTransitionAnimation={'none'}
+        hidden={false}
+      />
       {isWebViewLoading && (
         <View style={[styles.horizontal]}>
           <ActivityIndicator size={'large'} color={'orange'} />
         </View>
       )}
       <WebView
-        style={{
-          display: isWebViewLoading ? 'none' : 'flex',
-          marginTop: isIOS ? 30 : 0,
-          marginBottom: isIOS ? 15 : 0,
-        }}
+        style={styles.webView}
         allowsBackForwardNavigationGestures={true}
         onLoadEnd={() => isWebViewLoading && setIsWebViewLoading(false)}
         sharedCookiesEnabled={true}
@@ -370,19 +394,6 @@ export default function App() {
           }
         }}
       />
-    </View>
+    </SafeAreaView>
   )
 }
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  horizontal: {
-    height: '100%',
-    justifyContent: 'space-around',
-    padding: 10,
-  },
-})
