@@ -75,6 +75,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           key="image2"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="manifest" href="manifest.json" />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
         <QueryClientProvider client={queryClient}>
