@@ -1,11 +1,9 @@
 import { APIError, newEndpoint } from './api'
 import { getPrivateUser, isProd } from './utils'
-import {
-  checkPushNotificationReceipts,
-  createPushNotification,
-} from './create-push-notification'
+import { createPushNotification } from './create-push-notification'
 import { Notification } from 'common/notification'
 import * as admin from 'firebase-admin'
+import { checkPushNotificationReceipts } from 'functions/src/check-push-notification-receipts'
 
 // Function for testing scheduled functions locally
 export const testscheduledfunction = newEndpoint(
