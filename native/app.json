@@ -27,7 +27,7 @@
       "url": "https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b"
     },
     "android": {
-      "runtimeVersion": "46.0.16",
+      "runtimeVersion": "46.0.0",
       "intentFilters": [
         {
           "action": "VIEW",
