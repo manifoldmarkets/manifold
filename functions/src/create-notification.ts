@@ -37,7 +37,7 @@ import { filterDefined } from '../../common/util/array'
 import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
 import { Badge } from 'common/badge'
-import { createPushNotification } from 'functions/src/create-push-notification'
+import { createPushNotification } from './create-push-notification'
 const firestore = admin.firestore()
 
 type recipients_to_reason_texts = {

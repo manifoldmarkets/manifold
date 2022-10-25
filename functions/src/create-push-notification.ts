@@ -1,9 +1,4 @@
-import {
-  Expo,
-  ExpoPushMessage,
-  ExpoPushSuccessTicket,
-  ExpoPushTicket,
-} from 'expo-server-sdk'
+import { Expo, ExpoPushMessage, ExpoPushSuccessTicket } from 'expo-server-sdk'
 import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
@@ -11,7 +6,11 @@ import { log } from './utils'
 import * as admin from 'firebase-admin'
 import { partition } from 'lodash'
 import { PushTicket } from 'common/push-ticket'
+import { removeUndefinedProps } from 'common/util/object'
 const firestore = admin.firestore()
+type ExpoPushMessageWithNotification = ExpoPushMessage & {
+  data: { notification: Notification }
+}
 
 export const createPushNotification = async (
   notification: Notification,
@@ -27,7 +26,7 @@ export const createPushNotification = async (
   if (!sendToMobile) return
   const somePushTokens = [privateUser.pushToken]
   // Create the messages that you want to send to clients
-  const messages = [] as ExpoPushMessage[]
+  const messages: ExpoPushMessageWithNotification[] = []
   for (const pushToken of somePushTokens) {
     // Check that all your push tokens appear to be valid Expo push tokens
     if (!Expo.isExpoPushToken(pushToken)) {
@@ -42,36 +41,10 @@ export const createPushNotification = async (
       sound: 'default',
       title,
       body,
-      data: notification,
+      data: { notification: notification },
     })
   }
-
-  // The Expo push notification service accepts batches of notifications so
-  // that you don't need to send 1000 requests to send 1000 notifications. We
-  // recommend you batch your notifications to reduce the number of requests
-  // and to compress them (notifications with similar content will get
-  // compressed).
-  const chunks = expo.chunkPushNotifications(messages)
-  const tickets = [] as ExpoPushTicket[]
-  const sendChunkedPNs = async () => {
-    // Send the chunks to the Expo push notification service. There are
-    // different strategies you could use. A simple one is to send one chunk at a
-    // time, which nicely spreads the load out over time:
-    for (const chunk of chunks) {
-      try {
-        const ticketChunk = await expo.sendPushNotificationsAsync(chunk)
-        log(ticketChunk)
-        tickets.push(...ticketChunk)
-        // NOTE: If a ticket contains an error code in ticket.details.error, you
-        // must handle it appropriately. The error codes are listed in the Expo
-        // documentation:
-        // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
-      } catch (error) {
-        log(error)
-      }
-    }
-  }
-  await sendChunkedPNs()
+  const tickets = await expo.sendPushNotificationsAsync(messages)
   // write successful tickets to db
   const [successTickets, errorTickets] = partition(
     tickets,
@@ -79,19 +52,33 @@ export const createPushNotification = async (
   )
   await Promise.all(
     (successTickets as ExpoPushSuccessTicket[]).map(async (ticket) =>
-      // TODO: let's move this to a subcollection of the user
       firestore
-        .collection('pushNotificationTickets')
+        .collection(`users/${privateUser.id}/pushNotificationTickets`)
         .doc(ticket.id)
         .set({
           ...ticket,
+          userId: privateUser.id,
+          notificationId: notification.id,
           createdTime: Date.now(),
           receiptStatus: 'not-checked',
         } as PushTicket)
     )
   )
-  errorTickets.forEach((ticket) =>
-    log('Error generating push notification, ticket:', ticket)
+  await Promise.all(
+    errorTickets.map(async (ticket) => {
+      if (ticket.status === 'error') {
+        log('Error generating push notification, ticket:', ticket)
+        if (ticket.details?.error === 'DeviceNotRegistered') {
+          // set private user pushToken to null
+          await firestore
+            .collection('private-users')
+            .doc(privateUser.id)
+            .update({
+              pushToken: admin.firestore.FieldValue.delete(),
+            })
+        }
+      }
+    })
   )
 }
 
@@ -115,8 +102,8 @@ export const checkPushNotificationReceipts = async () => {
   // Apple and Google so you can handle it appropriately.
   const tickets = (
     await firestore
-      // TODO: let's move this to a subcollection of the user
-      .collection('pushNotificationTickets')
+      .collectionGroup('pushNotificationTickets')
+      .where('receiptStatus', '==', 'not-checked')
       // .where('createdTime', '>', Date.now() - MINUTE_MS * 30)
       .get()
   ).docs.map((doc) => doc.data() as PushTicket)
@@ -130,25 +117,46 @@ export const checkPushNotificationReceipts = async () => {
     try {
       const receipts = await expo.getPushNotificationReceiptsAsync(chunk)
       log(receipts)
-
-      // The receipts specify whether Apple or Google successfully received the
-      // notification and information about an error, if one occurred.
-      for (const receiptId in receipts) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        const { status, message, details } = receipts[receiptId]
-        if (status === 'ok') {
-          continue
-        } else if (status === 'error') {
-          log(`There was an error sending a notification: ${message}`)
-          if (details && details.error) {
-            // The error codes are listed in the Expo documentation:
-            // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
-            // You must handle the errors appropriately.
-            log(`The error code is ${details.error}`)
+      await Promise.all(
+        Object.entries(receipts).map(async ([receiptId, receipt]) => {
+          const ticket = tickets.find((ticket) => ticket.id === receiptId)
+          if (!ticket) {
+            log(`Could not find ticket for receiptId ${receiptId}`)
+            return
           }
-        }
-      }
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          const { status, message, details } = receipts[receiptId]
+          let error: string | undefined
+          if (status === 'error') {
+            log(`There was an error sending a notification: ${message}`)
+            if (details && details.error) {
+              error = details.error
+              // The error codes are listed in the Expo documentation:
+              // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
+              log(`The error code is ${error}`)
+              if (error === 'DeviceNotRegistered') {
+                // set private user pushToken to null
+                await firestore
+                  .collection('private-users')
+                  .doc(ticket.userId)
+                  .update({
+                    pushToken: admin.firestore.FieldValue.delete(),
+                  })
+              }
+            }
+          }
+          await firestore
+            .collection(`users/${ticket.userId}/pushNotificationTickets`)
+            .doc(ticket.id)
+            .update(
+              removeUndefinedProps({
+                receiptStatus: receipt.status,
+                receiptError: error,
+              })
+            )
+        })
+      )
     } catch (error) {
       log(error)
     }
