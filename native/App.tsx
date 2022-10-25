@@ -279,7 +279,7 @@ export default function App() {
       if (finalStatus !== 'granted') {
         return
       }
-      const appConfig = require('./app.config')
+      const appConfig = require('app.config')
       const projectId = appConfig.extra.eas.projectId
       console.log('project id', projectId)
       const token = (

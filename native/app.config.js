@@ -1,7 +1,5 @@
-module.exports = {
-  name: 'Manifold',
-  slug: 'manifold-markets',
-  owner: 'iansp',
+export default ({ config }) => ({
+  ...config,
   version: '2.0.4',
   orientation: 'portrait',
   icon: './assets/logo.png',
@@ -12,49 +10,9 @@ module.exports = {
     resizeMode: 'cover',
     backgroundColor: '#4337C9',
   },
-  updates: {
-    fallbackToCacheTimeout: 0,
-    url: 'https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b',
-  },
-  runtimeVersion: {
-    policy: 'sdkVersion',
-  },
   assetBundlePatterns: ['**/*'],
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: 'com.markets.manifold',
-    buildNumber: '1.0.1',
-  },
-  android: {
-    intentFilters: [
-      {
-        action: 'VIEW',
-        autoVerify: true,
-        data: [
-          {
-            scheme: 'https',
-            host: 'manifold.markets',
-          },
-        ],
-        category: ['BROWSABLE', 'DEFAULT'],
-      },
-    ],
-    useNextNotificationsApi: true,
-    googleServicesFile: './google-services.json',
-    adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#4337C9',
-    },
-    package: 'com.markets.manifold',
-    versionCode: 12,
-  },
   web: {
     favicon: './assets/favicon.png',
-  },
-  extra: {
-    eas: {
-      projectId: '0ce454fc-3885-4eab-88b6-787b1691973b',
-    },
   },
   hooks: {
     postPublish: [
@@ -68,4 +26,4 @@ module.exports = {
       },
     ],
   },
-}
+})
