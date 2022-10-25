@@ -5,26 +5,19 @@
   "build": {
     "development": {
       "channel": "dev",
-      "developmentClient": true,
       "distribution": "internal",
       "env": {
         "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
       },
-      "android": {
-        "gradleCommand": ":app:assembleDebug",
-        "credentialsSource": "remote",
-        "buildType": "apk"
-      },
-      "ios": {
-        "buildConfiguration": "Debug"
-      }
+      "android": {"credentialsSource": "local"},
+      "ios": {}
     },
     "preview": {
-      "env": {
-        "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
-      },
       "channel": "preview",
       "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+      },
       "android": {"credentialsSource": "local"},
       "ios": {}
     },
@@ -34,7 +27,8 @@
       "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
       },
       "android": {"credentialsSource": "local"},
-      "ios": {}}
+      "ios": {}
+    }
   },
   "submit": {
     "production": {}
