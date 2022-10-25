@@ -13,7 +13,14 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { useCallback, useEffect } from 'react'
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -221,6 +228,37 @@ export function RichContent(props: {
   return <EditorContent className={className} editor={editor} />
 }
 
+// export function CollapsibleContent(props: { content: JSONContent | string }) {
+//   const { content } = props
+//   const [contentHeight, setContentHeight] = useState(0)
+//   const contentRef = useRef(null)
+
+//   console.log(content)
+//   if (contentHeight <= 24) {
+//     return (
+//       <div ref={contentRef}>
+//         <Content content={content} />
+//       </div>
+//     )
+//   }
+
+//   if (type of content===)
+
+//   return (
+//     <div className="relative h-24 overflow-hidden">
+//       <div ref={contentRef}>
+//         <Content content={content} />
+//       </div>
+
+//       <div className="absolute bottom-0 w-full">
+//         <div className="h-2 bg-gradient-to-t from-white" />
+//         <div className="h-6 bg-white" />
+//       </div>
+//       <button className="font-md absolute right-4 bottom-0">Show More</button>
+//     </div>
+//   )
+// }
+
 // backwards compatibility: we used to store content as strings
 export function Content(props: {
   content: JSONContent | string
@@ -229,6 +267,26 @@ export function Content(props: {
   smallImage?: boolean
 }) {
   const { className, proseClassName, content } = props
+  const [tooLong, setTooLong] = useState(false)
+  const [characterCount, setCharacterCount] = useState(0)
+
+  if (typeof content != 'string' && content.content) {
+    const contentArray = content.content
+    console.log(contentArray)
+    if (contentArray.length >= 3) {
+      setTooLong(true)
+    } else {
+      for (const contentChild of contentArray) {
+        if (contentChild.type === 'iframe') {
+          setTooLong(true)
+          break
+        }
+        if (contentChild.type === 'paragraph') {
+          console.log(contentChild.content)
+        }
+      }
+    }
+  }
   return typeof content === 'string' ? (
     <Linkify
       className={clsx(
