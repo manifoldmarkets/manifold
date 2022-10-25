@@ -2,7 +2,7 @@ module.exports = {
   name: 'Manifold',
   slug: 'manifold-markets',
   owner: 'iansp',
-  version: '2.0.3',
+  version: '2.0.4',
   orientation: 'portrait',
   icon: './assets/logo.png',
   userInterfaceStyle: 'light',
@@ -46,7 +46,7 @@ module.exports = {
       backgroundColor: '#4337C9',
     },
     package: 'com.markets.manifold',
-    versionCode: 11,
+    versionCode: 12,
   },
   web: {
     favicon: './assets/favicon.png',

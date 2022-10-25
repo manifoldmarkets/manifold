@@ -33,8 +33,9 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native'
+import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
-import { NativeModulesProxy, Subscription } from 'expo-modules-core'
+import { Subscription } from 'expo-modules-core'
 import { TEN_YEARS_SECS } from 'common/envs/constants'
 import { PrivateUser } from 'common/user'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
@@ -88,7 +89,7 @@ export default function App() {
   const url = Linking.useURL()
   // TODO: untested on ios
   const eventEmitter = new NativeEventEmitter(
-    Platform.OS === 'ios' ? NativeModulesProxy.ExpoDevice : null
+    Platform.OS === 'ios' ? LinkingManager.default : null
   )
 
   useEffect(() => {
@@ -377,6 +378,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   horizontal: {
     height: '100%',
