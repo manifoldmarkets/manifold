@@ -279,8 +279,8 @@ export default function App() {
       if (finalStatus !== 'granted') {
         return
       }
-      const appConfig = require('app.config')
-      const projectId = appConfig.extra.eas.projectId
+      const appConfig = require('./app.json')
+      const projectId = appConfig.expo.extra.eas.projectId
       console.log('project id', projectId)
       const token = (
         await Notifications.getExpoPushTokenAsync({
