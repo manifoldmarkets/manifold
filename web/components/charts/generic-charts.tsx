@@ -120,7 +120,8 @@ const dataAtPointSelector = <X, Y, P extends Point<X, Y>>(
     const i = bisect.left(data, x)
     const prev = data[i - 1] as P | undefined
     const next = data[i] as P | undefined
-    return { prev, next, x: posX }
+    const nearest = data[bisect.center(data, x)]
+    return { prev, next, nearest, x: posX }
   }
 }
 
@@ -158,7 +159,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
     if (p.prev) {
-      setTTParams({ x: mouseX, y: mouseY, data: p.prev })
+      setTTParams({ ...p, x: mouseX, y: mouseY })
     } else {
       setTTParams(undefined)
     }
@@ -260,7 +261,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
     if (p.prev) {
-      setTTParams({ x: mouseX, y: mouseY, data: p.prev })
+      setTTParams({ ...p, x: mouseX, y: mouseY })
     } else {
       setTTParams(undefined)
     }
@@ -368,13 +369,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       const y0 = yScale(p.prev.y)
       const y1 = p.next ? yScale(p.next.y) : y0
       const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
-      setMouse({
-        x: mouseX,
-        y: markerY,
-        y0: py0,
-        y1: markerY,
-        data: p.prev,
-      })
+      setMouse({ ...p, x: mouseX, y: markerY, y0: py0, y1: markerY })
     } else {
       setMouse(undefined)
     }
@@ -429,9 +424,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
-      ttParams={
-        mouse ? { x: mouse.x, y: mouse.y, data: mouse.data } : undefined
-      }
+      ttParams={mouse}
       onSelect={onSelect}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}

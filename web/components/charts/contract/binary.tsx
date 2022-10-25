@@ -31,14 +31,15 @@ const getBetPoints = (bets: Bet[]) => {
 }
 
 const BinaryChartTooltip = (props: TooltipProps<Date, HistoryPoint<Bet>>) => {
-  const { data, x, xScale } = props
+  const { prev, x, xScale } = props
   const [start, end] = xScale.domain()
   const d = xScale.invert(x)
+  if (!prev) return null
   return (
     <Row className="items-center gap-2">
-      {data.obj && <Avatar size="xs" avatarUrl={data.obj.userAvatarUrl} />}
+      {prev.obj && <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />}
       <span className="font-semibold">{formatDateInRange(d, start, end)}</span>
-      <span className="text-greyscale-6">{formatPct(data.y)}</span>
+      <span className="text-greyscale-6">{formatPct(prev.y)}</span>
     </Row>
   )
 }
