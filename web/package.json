@@ -36,6 +36,7 @@
     "@tiptap/react": "2.0.0-beta.199",
     "@tiptap/starter-kit": "2.0.0-beta.199",
     "@tiptap/suggestion": "2.0.0-beta.199",
+    "@vercel/analytics": "0.1.1",
     "algoliasearch": "4.13.0",
     "browser-image-compression": "2.0.0",
     "clsx": "1.1.1",
