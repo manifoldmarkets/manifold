@@ -12,11 +12,11 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#4337C9",
+      "backgroundColor": "#4337C9"
     },
     "assetBundlePatterns": ["**/*"],
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/favicon.png"
     },
     "platforms": [
       "ios",
