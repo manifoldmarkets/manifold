@@ -21,7 +21,15 @@ export const useBets = (contractId: string, options?: BetFilter) => {
       return listenForBets(
         contractId,
         (bets) => {
-          setBets(bets.sort((b) => b.createdTime))
+          // we can't do this stuff in firestore because we can't query for
+          // when a field doesn't exist
+          const filteredBets = bets.filter(
+            (b) =>
+              (!options?.filterChallenges || !b.challengeSlug) &&
+              (!options?.filterAntes || !b.isAnte) &&
+              (!options?.filterRedemptions || !b.isRedemption)
+          )
+          setBets(filteredBets.sort((b) => b.createdTime))
         },
         options
       )
