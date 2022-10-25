@@ -4,7 +4,7 @@ const econ = ENV_CONFIG.economy
 
 export const FIXED_ANTE = econ?.FIXED_ANTE ?? 100
 
-export const STARTING_BALANCE = econ?.STARTING_BALANCE ?? 1000
+export const STARTING_BALANCE = econ?.STARTING_BALANCE ?? 500
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = econ?.SUS_STARTING_BALANCE ?? 10
 export const REFERRAL_AMOUNT = econ?.REFERRAL_AMOUNT ?? 250
