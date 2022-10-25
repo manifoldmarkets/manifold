@@ -3,18 +3,21 @@ import { Socket } from 'socket.io';
 import { getOutcomeForString } from 'common/outcome';
 import * as Packet from 'common/packet-ids';
 
-import { PacketCreateMarket, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
+import { PacketCreateMarket, PacketGroupControlFields, PacketHandshakeComplete, PacketMarketCreated } from 'common/packets';
 import App from '../app';
 import { MANIFOLD_API_BASE_URL } from '../envs';
 import log from '../logger';
 import * as ManifoldAPI from '../manifold-api';
 import User from '../user';
+import { getParamsFromURL } from '../utils';
 
 export default class DockClient {
   readonly socket: Socket;
   readonly app: App;
   connectedUser: User;
   connectedTwitchStream: string;
+
+  additionalTwitchStreams: string[] = [];
 
   constructor(app: App, socket: Socket) {
     this.app = app;
@@ -89,6 +92,33 @@ export default class DockClient {
 
     this.socket.on(Packet.PING, () => {
       this.socket.emit(Packet.PONG);
+    });
+
+    this.socket.on(Packet.GROUP_CONTROL_FIELDS, async (p: PacketGroupControlFields) => {
+      this.additionalTwitchStreams = [];
+      try {
+        for (const f of p.fields) {
+          // if (!f.valid) {
+          //   f.valid = undefined;
+          // }
+          const params = getParamsFromURL(f.url);
+          const controlToken = params['t'];
+          const user = await this.app.firestore.getUserForControlToken(<string>controlToken);
+          if (user) {
+            f.valid = true;
+            const additionalTwitchStream = user.data.twitchLogin;
+            if (this.additionalTwitchStreams.indexOf(additionalTwitchStream) < 0 && additionalTwitchStream !== this.connectedUser.data.twitchLogin) {
+              this.additionalTwitchStreams.push(additionalTwitchStream);
+              log.info(`User ${this.connectedUser.data.twitchLogin} now has control of ${additionalTwitchStream}'s stream.`);
+            }
+          } else {
+            f.valid = false;
+          }
+        }
+        this.socket.emit(Packet.GROUP_CONTROL_FIELDS, p);
+      } catch (e) {
+        log.trace(e);
+      }
     });
 
     this.socket.on('disconnect', () => {

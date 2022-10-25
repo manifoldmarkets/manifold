@@ -9,6 +9,7 @@ import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import Textarea from 'react-expanding-textarea';
 import io, { Socket } from 'socket.io-client';
 import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
+import { AdditionalControlsDropdown } from 'web/components/additional-controls-dropdown';
 import ContractCard from 'web/components/contract-card';
 import { InfoTooltip } from 'web/components/info-tooltip';
 import { Col } from 'web/components/layout/col';
@@ -255,7 +256,10 @@ export default () => {
         <div className="flex justify-center">
           <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
             <div className="p-2">
-              <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} APIBase={APIBase} />
+              <div className="flex flex-row justify-center">
+                <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} APIBase={APIBase} />
+                <AdditionalControlsDropdown socket={socket} />
+              </div>
               <div className="w-full flex justify-center">
                 <ConfirmationButton
                   openModalBtn={{

@@ -12,3 +12,4 @@ export const HANDSHAKE_COMPLETE = 'handshakecomplete';
 export const SELECT_MARKET = 'selectmarket';
 export const PING = 'ping';
 export const PONG = 'pong';
+export const GROUP_CONTROL_FIELDS = 'groupcontrolfields';

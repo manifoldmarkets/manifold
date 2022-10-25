@@ -35,3 +35,7 @@ export type PacketHandshakeComplete = {
 export type PacketSelectMarket = AbstractMarket & {
   initialBets: NamedBet[];
 };
+
+export type PacketGroupControlFields = {
+  fields: [{ url: string; valid: boolean }];
+};

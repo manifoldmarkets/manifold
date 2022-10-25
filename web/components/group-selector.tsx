@@ -1,55 +1,14 @@
-import { Combobox, Menu, Transition } from '@headlessui/react';
+import { Combobox } from '@headlessui/react';
 import { CheckIcon, PlusCircleIcon, RefreshIcon, SelectorIcon } from '@heroicons/react/outline';
-import { ChevronDownIcon, QrcodeIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
 import { Group } from 'common/group';
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SelectedGroup } from 'web/lib/selected-group';
 
 async function fetchGroups(APIBase: string, userID: string): Promise<Group[]> {
   const r = await fetch(`${APIBase}groups?availableToUserId=${userID}`);
   const groups = (await r.json()) as Group[];
   return groups;
-}
-
-function AdditionalControlsDropdown() {
-  return (
-    <Menu>
-      <div>
-        <Menu.Button>
-          <button className={clsx('btn btn-primary p-0 rounded-md border-l-green-600')} style={{ borderTopLeftRadius: '0', borderBottomLeftRadius: '0' }}>
-            <ChevronDownIcon className="w-4 h-4 mt-5" />
-          </button>
-        </Menu.Button>
-      </div>
-      <Transition
-        as={Fragment}
-        enter="transition ease-out duration-100"
-        enterFrom="transform opacity-0 scale-95"
-        enterTo="transform opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="transform opacity-100 scale-100"
-        leaveTo="transform opacity-0 scale-95"
-      >
-        <Menu.Items className="absolute right-0 mt-14 mr-2 max-w-[calc(100%-1rem)] origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-          <div className="px-1 py-1 ">
-            <Menu.Item>
-              {({ active }) => (
-                <button className={`${active ? 'bg-secondary text-white' : 'text-gray-900'} group flex w-full items-center rounded-md px-2 py-2 text-sm text-left`}>
-                  {active ? <QrcodeIcon className="mr-2 h-5 w-5" aria-hidden="true" /> : <QrcodeIcon className="mr-2 h-5 w-5" aria-hidden="true" />}
-                  Group control
-                </button>
-              )}
-            </Menu.Item>
-          </div>
-          <div className="px-1 py-1">
-            {/* TODO: Actually use git commit version */}
-            <div className="text-gray-300 font-thin text-xs px-2 py-1">{`Dock v0.2.1`}</div>
-          </div>
-        </Menu.Items>
-      </Transition>
-    </Menu>
-  );
 }
 
 export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Group | undefined; userID: string; setSelectedGroup: (group: Group) => void; onRefresh?: () => void; APIBase: string }) {
@@ -108,7 +67,7 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
     }) || [];
 
   return (
-    <div className="flex flex-row justify-center">
+    <>
       <Combobox as="div" value={selectedGroup} onChange={setSelectedGroup} nullable={true} className={'text-sm w-full'} disabled={isRefreshingGroups}>
         <div className="flex grow" style={{ ...(isRefreshingGroups && { pointerEvents: 'none' }) }}>
           <div className="relative flex w-full justify-items-stretch">
@@ -160,7 +119,6 @@ export function GroupSelector(props: { refreshSignal?: number; selectedGroup: Gr
       <button className={clsx('btn btn-primary btn-square p-2 rounded-none', isRefreshingGroups ? 'loading' : '')} onClick={refreshGroupList}>
         {!isRefreshingGroups && <RefreshIcon />}
       </button>
-      <AdditionalControlsDropdown />
-    </div>
+    </>
   );
 }
