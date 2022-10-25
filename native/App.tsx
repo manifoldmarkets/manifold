@@ -376,11 +376,15 @@ export default function App() {
       />
       {isWebViewLoading && (
         <View style={[styles.horizontal]}>
-          <ActivityIndicator size={'large'} color={'blue'} />
+          <ActivityIndicator size={'large'} color={'orange'} />
         </View>
       )}
       <WebView
         style={styles.webView}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        overScrollMode={'never'}
+        decelerationRate={'normal'}
         allowsBackForwardNavigationGestures={true}
         onLoadEnd={() => isWebViewLoading && setIsWebViewLoading(false)}
         sharedCookiesEnabled={true}
