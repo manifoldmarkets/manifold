@@ -6,7 +6,6 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { Content } from '../widgets/editor'
 import {
   TextEditor,
   editorExtensions,

@@ -13,15 +13,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import {
-  MutableRefObject,
-  ReactNode,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -41,11 +33,6 @@ import { StickyFormatMenu } from '../editor/sticky-format-menu'
 import TiptapTweet from '../editor/tiptap-tweet'
 import { Upload, useUploadMutation } from '../editor/upload-extension'
 import { insertContent } from '../editor/utils'
-import {
-  ChevronDoubleDownIcon,
-  ChevronDoubleUpIcon,
-} from '@heroicons/react/solid'
-import { Row } from '../layout/row'
 
 const DisplayImage = Image.configure({
   HTMLAttributes: {
@@ -242,27 +229,6 @@ export function Content(props: {
   smallImage?: boolean
 }) {
   const { className, proseClassName, content } = props
-  // const [tooLong, setTooLong] = useState(false)
-  // const [characterCount, setCharacterCount] = useState(0)
-
-  // if (typeof content != 'string' && content.content) {
-  //   const contentArray = content.content
-  //   console.log(contentArray)
-  //   if (contentArray.length >= 3) {
-  //     setTooLong(true)
-  //   }
-  //   else {
-  //     for (const contentChild of contentArray) {
-  //       if (contentChild.type === 'iframe') {
-  //         setTooLong(true)
-  //         break
-  //       }
-  //       if (contentChild.type === 'paragraph') {
-  //         console.log(contentChild.content)
-  //       }
-  //     }
-  //   }
-  // }
   return typeof content === 'string' ? (
     <Linkify
       className={clsx(
