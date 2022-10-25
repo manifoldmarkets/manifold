@@ -77,7 +77,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         <div
           key={i}
           className={clsx(
-            i === activeIndex ? 'block' : 'hidden',
+            i === activeIndex ? 'contents' : 'hidden',
             tab.className
           )}
         >
