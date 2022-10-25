@@ -1,5 +1,9 @@
+import { FC } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 
 export default function StylePage() {
@@ -10,7 +14,7 @@ export default function StylePage() {
         A reference for all the common widgets we use on our site. For instance,
         the component above is <code>Title</code>.
       </div>
-      <h2 className="mt-6 mb-4 text-2xl text-indigo-700">Buttons</h2>
+      <Sub>Buttons</Sub>
       <div className="mb-4 flex flex-wrap gap-2">
         <Button>indigo</Button>
         <Button color="gradient">gradient</Button>
@@ -79,6 +83,31 @@ export default function StylePage() {
           2xl
         </Button>
       </div>
+      <Sub>Inputs</Sub>
+      TODO: number input
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Input placeholder="Input" />
+        <Input disabled placeholder="Input disabled=true" />
+        <Input error placeholder="Input error=true" />
+      </div>
+      <ExpandingInput
+        className="mb-4 w-full"
+        placeholder="ExpandingInput (try typing a lot)"
+      />
+      <EditorExample />
+      <Sub>Other stuff</Sub>
+      TODO
     </Page>
   )
+}
+
+const Sub: FC<any> = ({ children }) => (
+  <h2 className="mt-6 mb-4 text-2xl text-indigo-700">{children}</h2>
+)
+
+function EditorExample() {
+  const editor = useTextEditor({
+    defaultValue: 'Rich text editor from editor.tsx',
+  })
+  return <TextEditor editor={editor} />
 }
