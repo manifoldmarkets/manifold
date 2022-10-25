@@ -5,7 +5,7 @@ import {
   Bet,
   getUserBets,
   getUserBetsQuery,
-  listenForUserContractBets,
+  listenForBets,
 } from 'web/lib/firebase/bets'
 import { MINUTE_MS, sleep } from 'common/util/time'
 
@@ -34,7 +34,11 @@ export const useUserContractBets = (
 
   useEffect(() => {
     if (userId && contractId)
-      return listenForUserContractBets(userId, contractId, setBets)
+      return listenForBets(
+        contractId,
+        (bets) => setBets(bets.sort((b) => b.createdTime)),
+        { userId: userId }
+      )
   }, [userId, contractId])
 
   return bets
