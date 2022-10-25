@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
+import React, { memo, useEffect, useRef, useState } from 'react'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
@@ -49,6 +49,12 @@ import { needsAdminToResolve } from 'web/lib/util/admin'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 
+const CONTRACT_BET_LOADING_OPTS = {
+  filterRedemptions: true,
+  filterChallenges: true,
+  filterZeroes: true,
+}
+
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
@@ -56,12 +62,9 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-  const opts = {
-    filterRedemptions: true,
-    filterChallenges: true,
-    filterZeroes: true,
-  }
-  const bets = contractId ? await listAllBets(contractId, opts, 2500) : []
+  const bets = contractId
+    ? await listAllBets(contractId, CONTRACT_BET_LOADING_OPTS, 2500)
+    : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
   return {
@@ -123,18 +126,11 @@ export function ContractPageContent(
     true
   )
 
-  const betOpts = useRef({
-    filterRedemptions: true,
-    filterChallenges: true,
-    filterZeroes: true,
-  }).current
-  const bets = useBets(contract.id, betOpts) ?? props.bets
+  const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
+  console.log(props.bets)
 
-  const userBetOpts = useMemo(
-    () => ({ userId: user?.id ?? '_', filterAntes: true }),
-    [user?.id]
-  )
-  const userBets = useBets(contract.id, userBetOpts) ?? []
+  const userBets =
+    useBets(contract.id, { userId: user?.id ?? '_', filterAntes: true }) ?? []
 
   const [showConfetti, setShowConfetti] = useState(false)
 

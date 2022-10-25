@@ -12,10 +12,11 @@ import {
 import { LimitBet } from 'common/bet'
 import { getUser } from 'web/lib/firebase/users'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
 export const useBets = (contractId: string, options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     if (contractId)
       return listenForBets(
         contractId,
