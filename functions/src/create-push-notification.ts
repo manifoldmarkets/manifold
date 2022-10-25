@@ -1,12 +1,12 @@
 import { Expo, ExpoPushMessage, ExpoPushSuccessTicket } from 'expo-server-sdk'
-import { Notification } from 'common/notification'
-import { PrivateUser } from 'common/user'
-import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { Notification } from '../../common/notification'
+import { PrivateUser } from '../../common/user'
+import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 import { log } from './utils'
 import * as admin from 'firebase-admin'
 import { partition } from 'lodash'
-import { PushTicket } from 'common/push-ticket'
-import { removeUndefinedProps } from 'common/util/object'
+import { PushTicket } from '../../common/push-ticket'
+import { removeUndefinedProps } from '../../common/util/object'
 const firestore = admin.firestore()
 type ExpoPushMessageWithNotification = ExpoPushMessage & {
   data: { notification: Notification }

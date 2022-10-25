@@ -36,7 +36,7 @@ import {
 import { filterDefined } from '../../common/util/array'
 import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
-import { Badge } from 'common/badge'
+import { Badge } from '../../common/badge'
 import { createPushNotification } from './create-push-notification'
 const firestore = admin.firestore()
 

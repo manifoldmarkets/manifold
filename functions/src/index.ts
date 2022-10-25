@@ -54,6 +54,7 @@ export * from './mana-bonus-email'
 export * from './close-market'
 export * from './update-comment-bounty'
 export * from './add-subsidy'
+export * from './test-scheduled-function'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -79,6 +80,7 @@ import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
 import { updatemetrics } from './update-metrics'
 import { addsubsidy } from './add-subsidy'
+import { testscheduledfunction } from './test-scheduled-function'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -109,6 +111,7 @@ const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
 const updateMetricsFunction = toCloudFunction(updatemetrics)
+const testScheduledFunction = toCloudFunction(testscheduledfunction)
 
 export {
   healthFunction as health,
@@ -137,4 +140,5 @@ export {
   addCommentBounty as addcommentbounty,
   awardCommentBounty as awardcommentbounty,
   updateMetricsFunction as updatemetrics,
+  testScheduledFunction as testscheduledfunction,
 }
