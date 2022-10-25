@@ -41,9 +41,9 @@ export function buttonClass(size: SizeType, color: ColorType | 'override') {
     color === 'gray' &&
       'bg-greyscale-1 text-greyscale-6 hover:bg-greyscale-2 disabled:opacity-50',
     color === 'gray-outline' &&
-      'ring-2 ring-greyscale-5 text-greyscale-5 hover:bg-greyscale-5 hover:text-white disabled:opacity-50',
+      'ring-2 ring-greyscale-5 text-greyscale-5 enabled:hover:bg-greyscale-5 enabled:hover:text-white disabled:opacity-50',
     color === 'gradient' &&
-      'disabled:bg-greyscale-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
+      'disabled:bg-greyscale-2 enabled:bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-700 hover:to-blue-700',
     color === 'gray-white' &&
       'text-greyscale-6 hover:bg-greyscale-2 shadow-none disabled:opacity-50'
   )
@@ -77,7 +77,12 @@ export function Button(props: {
       disabled={disabled || loading}
       onClick={onClick}
     >
-      {loading && <LoadingIndicator className={'mr-2 border-gray-500'} />}
+      {loading && (
+        <LoadingIndicator
+          className="mr-2 w-fit self-stretch"
+          spinnerClassName="!h-full !w-[unset] aspect-square"
+        />
+      )}
       {children}
     </button>
   )
