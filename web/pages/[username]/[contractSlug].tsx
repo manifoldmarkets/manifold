@@ -166,6 +166,7 @@ export function ContractPageContent(
 
   return (
     <Page
+      className="touch-pan-y"
       rightSidebar={
         user || user === null ? (
           <>

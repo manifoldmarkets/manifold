@@ -375,6 +375,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   })
 
   const onMouseLeave = useEvent(() => {
+    console.error('mouse leave')
     props.onMouseOver?.(undefined)
     setMouse(undefined)
   })

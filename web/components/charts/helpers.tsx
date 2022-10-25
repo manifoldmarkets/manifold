@@ -17,6 +17,7 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { PinchDetector } from './pinch-zoom'
 
 const ZOOM_SPEED = 1.5
 
@@ -187,26 +188,39 @@ export const SVGChart = <X, TT>(props: {
   const innerH = h - (margin.top + margin.bottom)
   const clipPathId = useId()
   const isMobile = useIsMobile()
+  const usedTouch = useRef(false)
 
-  const justSelected = useRef(false)
+  const pinchDetector = useRef<PinchDetector>(
+    new PinchDetector((ev) => {
+      const k = Math.pow(1 + ZOOM_SPEED / 100, ev.deltaX)
+      onZoom?.(ev.centerX, ev.centerY, k)
+    })
+  ).current
+
   useEffect(() => {
     if (onSelect != null && overlayRef.current) {
-      const brush = brushX().extent([
-        [0, 0],
-        [innerW, innerH],
-      ])
-      brush.on('end', (ev) => {
+      const brush = brushX()
+        .touchable(false)
+        .extent([
+          [0, 0],
+          [innerW, innerH],
+        ])
+      brush.on('end', (ev: D3BrushEvent<any>) => {
         // when we clear the brush after a selection, that would normally cause
-        // another 'end' event, so we have to suppress it with this flag
-        if (!justSelected.current) {
-          justSelected.current = true
-          onSelect(ev)
-          onMouseLeave?.()
-          if (overlayRef.current) {
-            select(overlayRef.current).call(brush.clear)
-          }
-        } else {
-          justSelected.current = false
+        // another 'end' event, so we have to suppress handling of things that
+        // didn't come from a DOM event
+        if (ev.sourceEvent == undefined) {
+          return
+        }
+        // if we see any touches, assume they are on a touchscreen and don't
+        // want to ever use the mouse brush
+        if (usedTouch.current) {
+          return
+        }
+        onSelect(ev)
+        onMouseLeave?.()
+        if (overlayRef.current) {
+          select(overlayRef.current).call(brush.clear)
         }
       })
       // mqp: shape-rendering null overrides the default d3-brush shape-rendering
@@ -219,24 +233,34 @@ export const SVGChart = <X, TT>(props: {
     }
   }, [innerW, innerH, onSelect, onMouseLeave])
 
+  const onPointerDown = (ev: React.PointerEvent) => {
+    if (ev.pointerType === 'touch') {
+      usedTouch.current = true
+      if (onMouseOver) {
+        const x = ev.pageX - ev.currentTarget.getBoundingClientRect().left
+        const y = ev.pageY - ev.currentTarget.getBoundingClientRect().top
+        onMouseOver(x, y)
+      }
+      pinchDetector.onPointerDown(ev)
+    }
+  }
+
   const onPointerMove = (ev: React.PointerEvent) => {
-    if (ev.pointerType === 'mouse' && onMouseOver) {
+    if (ev.pointerType === 'touch') {
+      pinchDetector.onPointerMove(ev)
+    }
+    if (onMouseOver) {
       const [x, y] = pointer(ev)
       onMouseOver(x, y)
     }
   }
 
-  const onTouchMove = (ev: React.TouchEvent) => {
-    if (onMouseOver) {
-      const touch = ev.touches[0]
-      const x = touch.pageX - ev.currentTarget.getBoundingClientRect().left
-      const y = touch.pageY - ev.currentTarget.getBoundingClientRect().top
-      onMouseOver(x, y)
+  const onPointerLeave = (ev: React.PointerEvent) => {
+    if (ev.pointerType === 'touch') {
+      pinchDetector.onPointerUp(ev)
+    } else if (ev.pointerType === 'mouse') {
+      onMouseLeave?.()
     }
-  }
-
-  const onPointerLeave = () => {
-    onMouseLeave?.()
   }
 
   const onWheel = (ev: React.WheelEvent) => {
@@ -280,31 +304,23 @@ export const SVGChart = <X, TT>(props: {
           <XAxis axis={xAxis} w={innerW} h={innerH} />
           <YAxis axis={yAxis} w={innerW} h={innerH} />
           <g clipPath={`url(#${clipPathId})`}>{children}</g>
-          {!isMobile ? (
-            <g
-              ref={overlayRef}
-              x="0"
-              y="0"
-              width={innerW}
-              height={innerH}
-              fill="none"
-              pointerEvents="all"
-              onWheel={onWheel}
-              onPointerEnter={onPointerMove}
-              onPointerMove={onPointerMove}
-              onPointerLeave={onPointerLeave}
-            />
-          ) : (
-            <rect
-              x="0"
-              y="0"
-              width={innerW}
-              height={innerH}
-              fill="transparent"
-              onTouchMove={onTouchMove}
-              onTouchEnd={onPointerLeave}
-            />
-          )}
+          <g
+            ref={overlayRef}
+            x="0"
+            y="0"
+            width={innerW}
+            height={innerH}
+            fill="none"
+            pointerEvents="all"
+            onWheel={onWheel}
+            onPointerDown={onPointerDown}
+            onPointerEnter={onPointerMove}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerLeave}
+            onPointerLeave={onPointerLeave}
+            onPointerCancel={onPointerLeave}
+            onPointerOut={onPointerLeave}
+          />
         </g>
       </svg>
     </div>

@@ -109,7 +109,7 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
   const [probAfter, setProbAfter] = useState<number>()
 
   return (
-    <Col className="h-[100vh] w-full bg-white p-4">
+    <Col className="h-[100vh] w-full touch-pan-y bg-white p-4">
       <Row className="justify-between gap-4 px-2">
         <div className="text-xl text-indigo-700 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
