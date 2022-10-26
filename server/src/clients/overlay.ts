@@ -26,14 +26,12 @@ export default class OverlayClient {
     this.connectedUser = <User>this.socket.data;
     const streamName = this.stream.name;
 
-    this.socket.join(streamName);
-
     this.socket.emit(Packet.CLEAR);
 
     const market = this.stream.featuredMarket;
     if (market) {
-      const initialBetIndex = Math.max(0, market.allBets.length - 3);
-      const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.allBets, initialBets: market.allBets.slice(initialBetIndex) };
+      const initialBetIndex = Math.max(0, market.data.bets.length - 3);
+      const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.data.bets, initialBets: market.data.bets.slice(initialBetIndex) };
       this.socket.emit(Packet.SELECT_MARKET, selectMarketPacket);
       if (market.resolveData) {
         this.socket.emit(Packet.RESOLVE, market.resolveData);

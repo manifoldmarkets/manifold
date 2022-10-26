@@ -7,7 +7,6 @@ export const RESOLVED = 'resolved';
 export const CREATE_MARKET = 'create';
 export const MARKET_CREATED = 'marketcreated';
 export const USER_INFO = 'userinfo';
-export const MARKET_LOAD_COMPLETE = 'marketloadcomplete';
 export const HANDSHAKE_COMPLETE = 'handshakecomplete';
 export const SELECT_MARKET = 'selectmarket';
 export const PING = 'ping';

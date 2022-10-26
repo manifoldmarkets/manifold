@@ -1,14 +1,12 @@
 import { getOutcomeForString } from 'common/outcome';
-import * as Packet from 'common/packet-ids';
 import { PacketResolved } from 'common/packets';
-import { AbstractMarket, abstractMarketFromFullMarket, NamedBet } from 'common/types/manifold-abstract-types';
+import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
 import { LiteUser } from 'common/types/manifold-api-types';
 import { Bet, CPMMBinaryContract } from 'common/types/manifold-internal-types';
 import { onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { default as lodash, default as _ } from 'lodash';
 import App from './app';
 import { MANIFOLD_API_BASE_URL } from './envs';
-import log from './logger';
 import * as Manifold from './manifold-api';
 import { TwitchStream } from './stream';
 import User from './user';
@@ -20,7 +18,6 @@ export class Market {
   private readonly stream: TwitchStream;
   private readonly firestoreSubscriptions: Unsubscribe[] = [];
 
-  public readonly allBets: NamedBet[] = [];
   public data: AbstractMarket;
   public resolveData: PacketResolved = null;
 
@@ -31,96 +28,112 @@ export class Market {
 
   static async loadFromManifoldID(app: App, manifoldID: string, stream: TwitchStream) {
     const market = new Market(app, stream);
-    const [contractDoc, betCollection] = await app.manifoldFirestore.getFullMarketByID(manifoldID);
-    await new Promise<void>((resolve, reject) =>
-      market.firestoreSubscriptions.push(
-        onSnapshot(contractDoc, (update) => {
-          try {
-            const contract = update.data();
-            const binaryContract = <CPMMBinaryContract>contract;
-            const {
-              id,
-              creatorUsername,
-              creatorName,
-              creatorId,
-              createdTime,
-              closeTime,
-              question,
-              slug,
-              isResolved,
-              resolutionTime,
-              resolution,
-              description,
-              p,
-              mechanism,
-              outcomeType,
-              pool,
-              resolutionProbability,
-            } = binaryContract;
+    try {
+      const [contractDoc, betCollection] = await app.manifoldFirestore.getFullMarketByID(manifoldID);
+      let initializing = true;
+      await new Promise<void>((resolve, reject) =>
+        market.firestoreSubscriptions.push(
+          onSnapshot(contractDoc, (update) => {
+            try {
+              const contract = update.data();
+              const binaryContract = <CPMMBinaryContract>contract;
+              const {
+                id,
+                creatorUsername,
+                creatorName,
+                creatorId,
+                createdTime,
+                closeTime,
+                question,
+                slug,
+                isResolved,
+                resolutionTime,
+                resolution,
+                description,
+                p,
+                mechanism,
+                outcomeType,
+                pool,
+                resolutionProbability,
+              } = binaryContract;
 
-            market.data = {
-              ...market.data,
-              id,
-              creatorUsername,
-              creatorName,
-              creatorId,
-              createdTime,
-              closeTime,
-              question,
-              description,
-              url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
-              probability: contract.outcomeType === 'BINARY' ? Market.getProbability(binaryContract) : undefined,
-              isResolved,
-              resolutionTime,
-              resolution,
-              p,
-              mechanism,
-              outcomeType,
-              pool,
-              resolutionProbability,
-            };
-            if (update.data().isResolved) {
-              market.resolve();
+              market.data = {
+                ...market.data,
+                id,
+                creatorUsername,
+                creatorName,
+                creatorId,
+                createdTime,
+                closeTime,
+                question,
+                description,
+                url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
+                probability: contract.outcomeType === 'BINARY' ? Market.getProbability(binaryContract) : undefined,
+                isResolved,
+                resolutionTime,
+                resolution,
+                p,
+                mechanism,
+                outcomeType,
+                pool,
+                resolutionProbability,
+                ...(initializing && { bets: [] }),
+              };
+              if (update.data().isResolved) {
+                if (initializing) {
+                  throw new Error('Marked already resolved.');
+                } else {
+                  market.resolve();
+                }
+              }
+              resolve();
+            } catch (e) {
+              reject(e);
             }
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        })
-      )
-    );
-    let initialUpdate = true;
-    await new Promise<void>((r) =>
-      market.firestoreSubscriptions.push(
-        onSnapshot(betCollection, async (update) => {
-          if (initialUpdate) {
-            initialUpdate = false;
-            await Promise.all(_.uniq(update.docs.map((b) => b.data().userId)).map(async (id) => await app.getDisplayNameForUserID(id)));
-            await Promise.all(update.docs.map(async (b) => <NamedBet>{ ...b.data(), username: await app.getDisplayNameForUserID(b.data().userId) })).then((bets) => (market.data.bets = bets));
-            r();
-            return;
-          }
-          const changes = update.docChanges();
-          for (const changedBet of changes) {
-            if (changedBet.type === 'added') {
-              market.onNewBet(changedBet.doc.data());
+          })
+        )
+      );
+      await new Promise<void>((r) =>
+        market.firestoreSubscriptions.push(
+          onSnapshot(betCollection, async (update) => {
+            if (initializing) {
+              const bets = update.docs.map((d) => d.data());
+              bets.filter((b) => Market.isBetValid(b));
+              bets.sort((a, b) => a.createdTime - b.createdTime); // Sort oldest bets first !!! check
+              await Promise.all(_.uniq(bets.map((b) => b.userId)).map(async (id) => await app.getDisplayNameForUserID(id)));
+              await Promise.all(bets.map(async (b) => <NamedBet>{ ...b, username: await app.getDisplayNameForUserID(b.userId) })).then((bets) => (market.data.bets = bets));
+              r();
+              return;
             }
-          }
-        })
-      )
-    );
-    await market.loadInitialBets();
-    return market;
+            const changes = update.docChanges();
+            for (const changedBet of changes) {
+              if (changedBet.type === 'added') {
+                market.onNewBet(changedBet.doc.data());
+              }
+            }
+          })
+        )
+      );
+      initializing = false;
+      return market;
+    } catch (e) {
+      market.unfeature();
+      throw e;
+    }
+  }
+
+  private static isBetValid(bet: Bet): boolean {
+    return !bet.isRedemption && bet.shares !== 0;
   }
 
   async onNewBet(bet: Bet) {
-    if (!bet.isRedemption && bet.shares !== 0) {
+    if (Market.isBetValid(bet)) {
       this.addBet(await this.betToFullBet(bet));
     }
   }
 
   private async resolve() {
-    this.data = abstractMarketFromFullMarket(await Manifold.getFullMarketByID(this.data.id));
+    // this.data = abstractMarketFromFullMarket(await Manifold.getFullMarketByID(this.data.id));
 
     const resolutionOutcome = getOutcomeForString(this.data.resolution);
     const winners = (await this.calculateWinners()).filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0
@@ -148,8 +161,6 @@ export class Market {
     };
 
     this.stream.marketResolved(this);
-    this.app.io.to(this.stream.name).emit(Packet.RESOLVE, this.resolveData);
-    this.app.io.to(this.stream.name).emit(Packet.RESOLVED);
   }
 
   /**
@@ -157,40 +168,12 @@ export class Market {
    */
   getUsersExpectedPayout(user: User) {
     let totalShares = 0;
-    for (const bet of this.allBets) {
+    for (const bet of this.data.bets) {
       if (bet.userId === user.data.manifoldID) {
         totalShares += bet.shares * (bet.outcome === 'YES' ? 1 : -1); //!!! Types
       }
     }
     return totalShares;
-  }
-
-  async loadInitialBets() {
-    let numLoadedBets = 0;
-    const betsToAdd = [];
-    // Bets are in oldest-first order, so must iterate backwards to get most recent bets:
-    for (let betIndex = this.data.bets.length - 1; betIndex >= 0; betIndex--) {
-      const bet = this.data.bets[betIndex];
-      if (bet.isRedemption || bet.shares === 0) {
-        continue;
-      }
-      let fullBet: NamedBet;
-      if (numLoadedBets < 3) {
-        fullBet = await this.betToFullBet(bet);
-      } else {
-        fullBet = { ...bet, username: 'A trader' }; // TODO: this is a crude optimization. Should cache all users in App
-      }
-      betsToAdd.push(fullBet);
-      numLoadedBets++;
-    }
-
-    betsToAdd.reverse(); // Bets must be pushed oldest first, but betsToAdd is newest-first
-    for (const bet of betsToAdd) {
-      this.addBet(bet, --numLoadedBets < 3);
-    }
-
-    log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
-    this.app.io.to(this.stream.name).emit(Packet.MARKET_LOAD_COMPLETE);
   }
 
   static calculateFixedPayout(contract: AbstractMarket, bet: Bet, outcome: string) {
@@ -275,10 +258,9 @@ export class Market {
   }
 
   private addBet(bet: NamedBet, transmit = true) {
-    this.allBets.push(bet);
-
+    this.data.bets.push(bet);
     if (transmit) {
-      this.app.io.to(this.stream.name).emit(Packet.ADD_BETS, [bet]);
+      this.stream.onNewBet(bet);
     }
   }
 

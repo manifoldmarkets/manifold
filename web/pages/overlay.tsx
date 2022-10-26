@@ -98,6 +98,7 @@ class Application {
       }
     });
     this.socket.on(Packet.SELECT_MARKET, (p: PacketSelectMarket) => {
+      console.debug(p);
       try {
         this.resetUI();
         this.loadMarket(p);
@@ -260,10 +261,9 @@ export default () => {
       setResolvedData(undefined);
       setOverlayVisible(false);
     });
-    app.socket.on(Packet.SELECT_MARKET, (marketID: string) => {
-      console.log('Select event');
+    app.socket.on(Packet.SELECT_MARKET, () => {
       setResolvedData(undefined);
-      setOverlayVisible(marketID ? true : false);
+      setOverlayVisible(true);
     });
     app.socket.on(Packet.UNFEATURE_MARKET, () => {
       setResolvedData(undefined);

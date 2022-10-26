@@ -31,8 +31,6 @@ export default class DockClient {
 
     this.registerPacketHandlers();
 
-    this.socket.join(this.stream.name);
-
     this.socket.emit(Packet.HANDSHAKE_COMPLETE, <PacketHandshakeComplete>{ actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: MANIFOLD_API_BASE_URL });
     if (this.stream.featuredMarket) {
       this.socket.emit(Packet.SELECT_MARKET_ID, this.stream.featuredMarket.data.id);
