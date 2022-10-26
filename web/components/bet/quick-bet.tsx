@@ -143,12 +143,11 @@ export function QuickBet(props: {
     <Row
       className={clsx(
         className,
-        'relative min-w-[5.5rem]  items-center justify-between   align-middle'
+        'relative min-w-[5.5rem] items-center justify-between align-middle'
         // Use this for colored QuickBet panes
         // `bg-opacity-10 bg-${color}`
       )}
     >
-      {/* Up bet triangle */}
       <div>
         <div
           className="peer absolute bottom-0 top-0 left-0 w-[50%]"
@@ -161,10 +160,10 @@ export function QuickBet(props: {
           <TriangleLeftFillIcon
             className={clsx(
               'mx-auto h-6 w-6',
-              downHover ? 'text-red-400' : 'text-indigo-500'
+              downHover ? 'text-indigo-700' : 'text-indigo-500'
             )}
           />
-          <span className={textColor}>NO </span>
+          <span className="text-greyscale-6">{downHover ? 'M$10' : ''} </span>
         </Row>
       </div>
 
@@ -173,7 +172,6 @@ export function QuickBet(props: {
       {/* Down bet triangle */}
       {outcomeType !== 'BINARY' && outcomeType !== 'PSEUDO_NUMERIC' ? (
         <div>
-          <div className="peer absolute bottom-0 left-0 right-0 h-[50%] cursor-default"></div>
           <TriangleLeftFillIcon
             className={clsx('mx-auto h-6 w-6 text-gray-200')}
           />
@@ -187,12 +185,14 @@ export function QuickBet(props: {
             onClick={() => placeQuickBet('UP')}
           />
 
-          <Row className=" flex items-center text-gray-500">
-            <span className={textColor}>YES </span>
+          <Row className="text-gray-500">
+            <span className={clsx({ textColor }, upHover ? '' : 'hidden')}>
+              {upHover ? 'M$10' : ''}
+            </span>
             <TriangleRightFillIcon
               className={clsx(
                 'mx-auto h-6 w-6',
-                upHover ? 'text-green-400' : 'text-indigo-500'
+                upHover ? 'text-indigo-700' : 'text-indigo-500'
               )}
             />
           </Row>
@@ -210,17 +210,17 @@ export function ProbBar(props: { contract: Contract; previewProb?: number }) {
     <>
       <div
         className={clsx(
-          'absolute right-0 bottom-0 top-0 -z-10 w-1.5 transition-all',
+          'absolute right-0 bottom-0 top-0 -z-10 w-1.5 rounded-r-lg transition-all',
           `bg-${unfilledColor}`
         )}
         style={{ width: `${100 * (1 - prob)}%` }}
       />
       <div
         className={clsx(
-          ' absolute left-0 bottom-0 top-0 -z-10 w-1.5 transition-all',
+          ' absolute left-0 bottom-0 top-0 -z-10 w-1.5 rounded-l-lg transition-all',
           `bg-${filledColor}`,
           // If we're showing the full bar, also round the top
-          prob === 1 ? 'rounded-tr-md' : ''
+          prob === 1 ? 'rounded-r-lg' : ''
         )}
         style={{ width: `${100 * prob}%` }}
       />
@@ -287,24 +287,28 @@ export function QuickOutcomeView(props: {
     }
   }
 
+  if (outcomeType != 'FREE_RESPONSE') {
+    return (
+      <>
+        <div className="absolute left-1/2">
+          <div className="relative -left-1/2">
+            {contract.resolution ?? override ?? display}
+            {caption && <div className="text-base">{caption}</div>}
+          </div>
+        </div>
+        <ProbBar contract={contract} previewProb={previewProb} />
+      </>
+    )
+  }
   return (
-    <Row
-      className={clsx(
-        'items-center justify-center gap-2 py-1 text-xl',
-        textColor
-      )}
-    >
-      {outcomeType == 'FREE_RESPONSE' && (
-        <>
-          <FreeResponseTopAnswer contract={contract} className="text-xs" />
-          {override ?? display}
-        </>
-      )}
-      {outcomeType != 'FREE_RESPONSE' &&
-        (contract.resolution ?? override ?? display)}
-      {caption && <div className="text-base">{caption}</div>}
+    <>
+      <div className="absolute">
+        <FreeResponseTopAnswer contract={contract} className="text-xs" />
+        {override ?? display}
+        {caption && <div className="text-base">{caption}</div>}
+      </div>
       <ProbBar contract={contract} previewProb={previewProb} />
-    </Row>
+    </>
   )
 }
 

@@ -61,6 +61,7 @@ export const PortfolioGraph = (props: {
     const maxValue = max(data.map((d) => d.y))!
     return { data, minDate, maxDate, minValue, maxValue }
   }, [mode, history])
+  console.log('MIN DATE', minDate)
 
   return (
     <SingleValueHistoryChart

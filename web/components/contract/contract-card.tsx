@@ -87,32 +87,46 @@ export function ContractCard(props: {
   return (
     <Card
       className={clsx(
-        'font-readex-pro group relative flex gap-3 leading-normal',
+        'font-readex-pro group relative flex leading-normal',
         className
       )}
     >
-      <Col className="relative flex-1 gap-3 py-4 pb-12 ">
+      <Col className="relative flex-1 gap-1 py-2 pb-12 ">
         <AvatarDetails
           contract={contract}
-          className={'hidden pl-2 md:inline-flex'}
+          className={'pl-2'}
           noLink={noLinkAvatar}
         />
         {contract.coverImageUrl && showImage && (
-          <img
-            className="h-60 w-full object-cover "
-            src={contract.coverImageUrl}
-          />
+          <div className="relative">
+            <img
+              className="h-80 w-full object-cover "
+              src={contract.coverImageUrl}
+            />
+            <div className="absolute bottom-0">
+              <div
+                className={clsx(
+                  'break-anywhere bg-gradient-to-t from-slate-900 px-2 pb-2 pt-12 text-xl font-semibold text-white',
+                  questionClass
+                )}
+              >
+                {question}
+              </div>
+            </div>
+          </div>
         )}
 
-        <div className="px-2">
-          <div
-            className={clsx(
-              'break-anywhere pb-2 font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
-              questionClass
-            )}
-          >
-            {question}
-          </div>
+        <div className="mt-2 px-4">
+          {(!contract.coverImageUrl || !showImage) && (
+            <div
+              className={clsx(
+                'break-anywhere pb-2 font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+                questionClass
+              )}
+            >
+              {question}
+            </div>
+          )}
           {showQuickBet ? (
             <QuickBet contract={contract} user={user} className="z-10" />
           ) : (
@@ -129,12 +143,6 @@ export function ContractCard(props: {
           showQuickBet ? 'w-[85%]' : 'w-full'
         )}
       >
-        <AvatarDetails
-          contract={contract}
-          short={true}
-          className="md:hidden"
-          noLink={noLinkAvatar}
-        />
         <MiscDetails
           contract={contract}
           showTime={showTime}

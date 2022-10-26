@@ -109,12 +109,12 @@ export function AvatarDetails(props: {
 
   return (
     <Row
-      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
+      className={clsx('text-greyscale-4 items-center gap-2 text-sm', className)}
     >
       <Avatar
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
-        size={6}
+        size={4}
         noLink={noLink}
       />
       <UserLink
