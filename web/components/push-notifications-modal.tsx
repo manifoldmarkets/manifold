@@ -2,10 +2,10 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 
 import { PrivateUser } from 'common/user'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { useEffect } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
+import { setPushTokenRequestDenied } from 'web/lib/firebase/notifications'
 
 export function PushNotificationsModal(props: {
   isOpen: boolean
@@ -14,14 +14,7 @@ export function PushNotificationsModal(props: {
   notifications: number
 }) {
   const { isOpen, setOpen, privateUser, notifications } = props
-  //eslint-disable-next-line
-  const setPushTokenRequestDenied = async (userId: string) => {
-    console.log('push token denied', userId)
-    // TODO: at some point in the future we can ask them again
-    updatePrivateUser(userId, {
-      rejectedPushNotificationsOn: Date.now(),
-    })
-  }
+
   const showSystemDialog = () => {
     ;(window as any).ReactNativeWebView.postMessage(
       'promptEnablePushNotifications'
@@ -29,23 +22,24 @@ export function PushNotificationsModal(props: {
   }
 
   useEffect(() => {
-    if (!(window as any).isNative) return
-    // TODO: if the user uninstalls the app the notification permission will be invalid
-    //  so we have to figure out if it's valid, and if not, re-request it. We maye just want
-    //  to set pushToken to null in case we get a pushReceipt with DeviceNotRegistered, see https://docs.expo.dev/push-notifications/sending-notifications/#push-receipt-errors
-    if (
-      !privateUser.pushToken &&
-      !privateUser.rejectedPushNotificationsOn &&
-      notifications > 10
-    ) {
-      // show modal in 3 seconds
+    if (!(window as any).isNative || privateUser.pushToken) return
+
+    const shouldShowNotificationPrompt =
+      privateUser.rejectedPushNotificationsOn === undefined &&
+      notifications >= 10
+
+    ;(window as any).ReactNativeWebView.postMessage(
+      'tryToGetPushTokenWithoutPrompt'
+    )
+    if (shouldShowNotificationPrompt) {
+      // Show prompt in 3 seconds if we still don't have a push token
       const openTimer = setTimeout(() => {
-        setOpen(true)
+        setOpen(shouldShowNotificationPrompt)
       }, 3000)
       return () => clearTimeout(openTimer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [privateUser.pushToken])
 
   if (!(window as any).isNative) return <div />
 

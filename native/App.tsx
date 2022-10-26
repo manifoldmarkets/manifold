@@ -5,7 +5,6 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithCredential,
-  User,
 } from 'firebase/auth'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
 import 'expo-dev-client'
@@ -16,13 +15,6 @@ import {
   ENV_CONFIG,
   FIREBASE_CONFIG,
 } from 'common/envs/constants'
-import {
-  doc,
-  getFirestore,
-  getDoc,
-  updateDoc,
-  deleteField,
-} from 'firebase/firestore'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -40,10 +32,8 @@ import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingMan
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
 import { TEN_YEARS_SECS } from 'common/envs/constants'
-import { PrivateUser } from 'common/user'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { removeUndefinedProps } from 'common/util/object'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 
@@ -75,11 +65,13 @@ const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
-    : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
+    ? 'https://d69b-181-41-206-188.ngrok.io'
+    : // ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
+      'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
+  const [userId, setUserId] = useState<string | null>()
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     ENV_CONFIG.expoConfig
   )
@@ -220,37 +212,32 @@ export default function App() {
     }
   }, [fbUser])
 
-  const setPushToken = async (userId: string, pushToken: string) => {
-    console.log('setting push token', pushToken, 'for user', userId)
-    if (!userId || !pushToken) return
-    try {
-      const firestore = getFirestore(app)
-      const userDoc = doc(firestore, 'private-users', userId)
-      const privateUserDoc = await getDoc(userDoc)
-      if (!privateUserDoc.exists()) {
-        console.log('no private user found')
-        return
-      }
-      const privateUser = privateUserDoc.data() as PrivateUser
-      const prefs = privateUser.notificationPreferences
-      prefs.opt_out_all = prefs.opt_out_all.filter((p) => p !== 'mobile')
-      privateUser.notificationPreferences = prefs
-      await updateDoc(
-        userDoc,
-        removeUndefinedProps({
-          ...privateUser,
-          pushToken,
-          rejectedPushNotificationsOn: privateUser.rejectedPushNotificationsOn
-            ? deleteField()
-            : undefined,
-        })
-      )
-    } catch (e) {
-      Sentry.Native.captureException(e, {
-        extra: { message: 'error setting user push token' },
+  const getExistingPushNotificationStatus = async () => {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
       })
-      console.error('error setting user push token', e)
     }
+
+    const { status } = await Notifications.getPermissionsAsync()
+    console.log('getExistingPushNotificationStatus', status)
+    return status
+  }
+
+  const getPushToken = async () => {
+    const appConfig = require('./app.json')
+    const projectId = appConfig.expo.extra.eas.projectId
+    console.log('project id', projectId)
+    const token = (
+      await Notifications.getExpoPushTokenAsync({
+        projectId,
+      })
+    ).data
+    console.log(token)
+    return token
   }
 
   const registerForPushNotificationsAsync = async () => {
@@ -259,17 +246,7 @@ export default function App() {
       return null
     }
     try {
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#FF231F7C',
-        })
-      }
-
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync()
+      const existingStatus = await getExistingPushNotificationStatus()
       let finalStatus = existingStatus
       console.log('existing status of push notifications', existingStatus)
       if (existingStatus !== 'granted') {
@@ -277,19 +254,8 @@ export default function App() {
         const { status } = await Notifications.requestPermissionsAsync()
         finalStatus = status
       }
-      if (finalStatus !== 'granted') {
-        return
-      }
-      const appConfig = require('./app.json')
-      const projectId = appConfig.expo.extra.eas.projectId
-      console.log('project id', projectId)
-      const token = (
-        await Notifications.getExpoPushTokenAsync({
-          projectId,
-        })
-      ).data
-      console.log(token)
-      return token
+      if (finalStatus !== 'granted') return
+      return await getPushToken()
     } catch (e) {
       Sentry.Native.captureException(e, {
         extra: { message: 'error registering for push notifications' },
@@ -305,20 +271,46 @@ export default function App() {
     if (nativeEvent.data === 'googleLoginClicked') {
       promptAsync()
       return
+    } else if (nativeEvent.data === 'tryToGetPushTokenWithoutPrompt') {
+      getExistingPushNotificationStatus().then(async (status) => {
+        if (status === 'granted') {
+          const token = await getPushToken()
+          if (!webview.current) return
+          if (token)
+            webview.current.postMessage(
+              JSON.stringify({
+                type: 'pushToken',
+                data: { token, userId },
+              })
+            )
+          else
+            webview.current?.postMessage(
+              JSON.stringify({
+                type: 'pushNotificationPermissionStatus',
+                data: { status, userId },
+              })
+            )
+        }
+      })
+      return
     }
     // User needs to enable push notifications
-    else if (nativeEvent.data === 'promptEnablePushNotifications' && fbUser) {
-      const user = JSON.parse(fbUser) as User
-      if (user.uid) {
-        registerForPushNotificationsAsync().then((token) => {
-          token && setPushToken(user.uid, token)
-        })
-      }
+    else if (nativeEvent.data === 'promptEnablePushNotifications') {
+      registerForPushNotificationsAsync().then((token) => {
+        if (token)
+          webview.current?.postMessage(
+            JSON.stringify({
+              type: 'pushToken',
+              data: { token, userId },
+            })
+          )
+      })
       return
     } else if (nativeEvent.data === 'signOut' && (fbUser || auth.currentUser)) {
       console.log('signOut called')
       auth.signOut()
       setFbUser(null)
+      setUserId(null)
       !isExpoClient && CookieManager.clearAll(useWebKit)
       return
     }
@@ -333,8 +325,12 @@ export default function App() {
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           console.log('Signing in fb user from webview cache')
           setFirebaseUserViaJson(fbUserAndPrivateUser.fbUser, app).then(
-            (userResult) =>
-              userResult && setFbUser(JSON.stringify(userResult.toJSON()))
+            (userResult) => {
+              if (userResult) {
+                setFbUser(JSON.stringify(userResult.toJSON()))
+                setUserId(userResult.uid)
+              }
+            }
           )
           return
         }

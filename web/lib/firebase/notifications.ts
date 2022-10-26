@@ -1,8 +1,16 @@
-import { collection, limit, orderBy, query, where } from 'firebase/firestore'
+import {
+  collection,
+  deleteField,
+  limit,
+  orderBy,
+  query,
+  where,
+} from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 import { Notification, notification_source_types } from 'common/notification'
 import { groupPath } from 'web/lib/firebase/groups'
+import { getPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
 
 export function getNotificationsQuery(
   userId: string,
@@ -75,4 +83,45 @@ export function getSourceUrl(notification: Notification) {
     }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
 
   return ''
+}
+
+export const setPushToken = async (userId: string, pushToken: string) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  console.log('setting push token' + pushToken + 'for user' + privateUser.id)
+  try {
+    const prefs = privateUser.notificationPreferences
+    prefs.opt_out_all = prefs.opt_out_all.filter((p) => p !== 'mobile')
+    privateUser.notificationPreferences = prefs
+    privateUser.pushToken = pushToken
+    if (privateUser.rejectedPushNotificationsOn !== undefined)
+      // eslint-disable-next-line
+      // @ts-ignore
+      privateUser.rejectedPushNotificationsOn = deleteField()
+    await updatePrivateUser(privateUser.id, privateUser)
+  } catch (e) {
+    console.error('error setting user push token', e)
+    ;(window as any).ReactNativeWebView.postMessage(
+      'error setting user push token'
+    )
+  }
+}
+
+export const handlePushNotificationPermissionStatus = async (
+  userId: string,
+  status: 'denied' | 'undetermined'
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser || privateUser.pushToken) return
+  if (status === 'denied') {
+    await setPushTokenRequestDenied(privateUser.id)
+  }
+}
+
+export const setPushTokenRequestDenied = async (userId: string) => {
+  console.log('push token denied', userId)
+  // TODO: at some point in the future we can ask them again
+  await updatePrivateUser(userId, {
+    rejectedPushNotificationsOn: Date.now(),
+  })
 }
