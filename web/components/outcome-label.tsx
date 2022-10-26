@@ -98,13 +98,6 @@ export function FreeResponseOutcomeLabel(props: {
   )
 }
 
-export const OUTCOME_TO_COLOR = {
-  YES: 'teal-500',
-  NO: 'scarlet-300',
-  CANCEL: 'yellow-400',
-  MKT: 'blue-400',
-}
-
 export function YesLabel() {
   return <span className="text-teal-500">YES</span>
 }

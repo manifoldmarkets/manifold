@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { Row } from '../layout/row'
 import {
   formatLargeNumber,
+  formatMoney,
   formatPercent,
-  formatWithCommas,
 } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -31,7 +31,7 @@ import {
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
-import { getColor, ProbBar, QuickBet } from '../bet/quick-bet'
+import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
 import { useUser, useUserContractMetrics } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -55,6 +55,7 @@ export function ContractCard(props: {
   trackingPostfix?: string
   noLinkAvatar?: boolean
   newTab?: boolean
+  showImage?: boolean
 }) {
   const {
     showTime,
@@ -66,6 +67,7 @@ export function ContractCard(props: {
     trackingPostfix,
     noLinkAvatar,
     newTab,
+    showImage,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { question, outcomeType } = contract
@@ -89,72 +91,42 @@ export function ContractCard(props: {
         className
       )}
     >
-      <Col className="relative flex-1 gap-3 py-4 pb-12  pl-6">
+      <Col className="relative flex-1 gap-3 py-4 pb-12 ">
         <AvatarDetails
           contract={contract}
-          className={'hidden md:inline-flex'}
+          className={'hidden pl-2 md:inline-flex'}
           noLink={noLinkAvatar}
         />
-        <div
-          className={clsx(
-            'break-anywhere font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
-            questionClass
-          )}
-        >
-          {question}
-        </div>
-
-        {(outcomeType === 'FREE_RESPONSE' ||
-          outcomeType === 'MULTIPLE_CHOICE') &&
-          (resolution ? (
-            <FreeResponseOutcomeLabel
-              contract={contract}
-              resolution={resolution}
-              truncate={'long'}
-            />
+        {showImage && (
+          <img
+            className="h-60 w-full object-cover "
+            src={
+              'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FykU5KOeiSQ.png?alt=media&token=f7c69a0f-8f71-4758-996c-0b6411d16875'
+            }
+          />
+        )}
+        <div className="px-2">
+          <div
+            className={clsx(
+              'break-anywhere pb-2 font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+              questionClass
+            )}
+          >
+            {question}
+          </div>
+          {showQuickBet ? (
+            <QuickBet contract={contract} user={user} className="z-10" />
           ) : (
-            <FreeResponseTopAnswer contract={contract} />
-          ))}
+            <div className="relative z-10">
+              <QuickOutcomeView contract={contract} />
+            </div>
+          )}
+        </div>
       </Col>
-      {showQuickBet ? (
-        <QuickBet contract={contract} user={user} className="z-10" />
-      ) : (
-        <>
-          {outcomeType === 'BINARY' && (
-            <BinaryResolutionOrChance
-              className="items-center self-center pr-5"
-              contract={contract}
-            />
-          )}
 
-          {outcomeType === 'PSEUDO_NUMERIC' && (
-            <PseudoNumericResolutionOrExpectation
-              className="items-center self-center pr-5"
-              contract={contract}
-            />
-          )}
-
-          {outcomeType === 'NUMERIC' && (
-            <NumericResolutionOrExpectation
-              className="items-center self-center pr-5"
-              contract={contract}
-            />
-          )}
-
-          {(outcomeType === 'FREE_RESPONSE' ||
-            outcomeType === 'MULTIPLE_CHOICE') && (
-            <FreeResponseResolutionOrChance
-              className="items-center self-center pr-5 text-gray-600"
-              contract={contract}
-              truncate="long"
-            />
-          )}
-          <ProbBar contract={contract} />
-        </>
-      )}
       <Row
         className={clsx(
-          'absolute bottom-3 gap-2 truncate px-5 md:gap-0',
+          'absolute bottom-3 gap-2 truncate px-2 md:gap-0',
           showQuickBet ? 'w-[85%]' : 'w-full'
         )}
       >
@@ -215,7 +187,7 @@ export function BinaryResolutionOrChance(props: {
 }) {
   const { contract, large, className, probAfter } = props
   const { resolution } = contract
-  const textColor = `text-${getColor(contract)}`
+  const textColor = `text-${getTextColor(contract)}`
 
   const before = getBinaryProbPercent(contract)
   const after = probAfter && formatPercent(probAfter)
@@ -258,7 +230,7 @@ export function BinaryResolutionOrChance(props: {
   )
 }
 
-function FreeResponseTopAnswer(props: {
+export function FreeResponseTopAnswer(props: {
   contract: FreeResponseContract | MultipleChoiceContract
   className?: string
 }) {
@@ -284,7 +256,7 @@ export function FreeResponseResolutionOrChance(props: {
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
-  const textColor = `text-${getColor(contract)}`
+  const textColor = `text-${getTextColor(contract)}`
 
   return (
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
@@ -324,7 +296,7 @@ export function NumericResolutionOrExpectation(props: {
 }) {
   const { contract, className } = props
   const { resolution } = contract
-  const textColor = `text-${getColor(contract)}`
+  const textColor = `text-${getTextColor(contract)}`
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
@@ -403,8 +375,9 @@ export function ContractCardProbChange(props: {
   noLinkAvatar?: boolean
   showPosition?: boolean
   className?: string
+  showImage?: boolean
 }) {
-  const { noLinkAvatar, showPosition, className } = props
+  const { noLinkAvatar, showPosition, className, showImage } = props
   const yesOutcomeLabel =
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
   const noOutcomeLabel =
@@ -420,38 +393,65 @@ export function ContractCardProbChange(props: {
     metrics && floatingEqual(metrics.totalShares.NO ?? 0, 0) ? 'YES' : 'NO'
 
   const displayedProfit = dayMetrics
-    ? ENV_CONFIG.moneyMoniker +
-      (dayMetrics.profit > 0 ? '+' : '') +
-      dayMetrics.profit.toFixed(0)
+    ? ENV_CONFIG.moneyMoniker + dayMetrics.profit.toFixed(0)
     : undefined
 
   return (
     <Card className={clsx(className, 'mb-4')}>
       <AvatarDetails
         contract={contract}
-        className={'px-6 pt-4'}
+        className={'px-2 pt-4'}
         noLink={noLinkAvatar}
       />
+      {showImage && (
+        <img
+          className="mt-2 h-60 w-full object-cover "
+          src={
+            'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FykU5KOeiSQ.png?alt=media&token=f7c69a0f-8f71-4758-996c-0b6411d16875'
+          }
+        />
+      )}
       <Row className={clsx('items-start justify-between gap-4 ', className)}>
         <SiteLink
-          className="pl-6 pr-0 pt-2 pb-4 font-semibold text-indigo-700"
+          className="pl-2 pr-2 pt-2 font-semibold text-indigo-700"
           href={contractPath(contract)}
         >
           <span className="line-clamp-3">{contract.question}</span>
         </SiteLink>
-        <ProbOrNumericChange className="py-2 pr-4" contract={contract} />
       </Row>
+      <ProbOrNumericChange
+        className="py-2 px-2"
+        contract={contract}
+        user={user}
+      />
       {showPosition && metrics && metrics.hasShares && (
         <Row
           className={clsx(
-            'items-center justify-between gap-4 pl-6 pr-4 pb-2 text-sm'
+            'items-center justify-between gap-4 bg-gray-100 pl-4 pr-4 pt-1 pb-2 text-sm'
           )}
         >
-          <Row className="gap-1 text-gray-400">
-            You: {formatWithCommas(metrics.totalShares[binaryOutcome])}{' '}
-            {binaryOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel} shares
-            <span className="ml-1.5">{displayedProfit} today</span>
-          </Row>
+          <Col className="text-gray-400">
+            <span> Your Position </span>
+            <Row className="items-center justify-center gap-1">
+              <span className="text-lg text-gray-500">
+                {formatMoney(metrics.invested)}{' '}
+              </span>
+              on {binaryOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
+            </Row>
+          </Col>
+          <Col className="gap-1 text-gray-400">
+            <span> Your Profit </span>
+            <span
+              className={clsx(
+                'ml-1.5',
+                dayMetrics && dayMetrics?.profit > 0
+                  ? 'text-teal-500'
+                  : 'text-red-500'
+              )}
+            >
+              {displayedProfit} today
+            </span>
+          </Col>
         </Row>
       )}
     </Card>

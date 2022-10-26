@@ -31,6 +31,7 @@ export function ContractsGrid(props: {
   highlightOptions?: CardHighlightOptions
   trackingPostfix?: string
   breakpointColumns?: { [key: string]: number }
+  showImageOnTopContract?: boolean
 }) {
   const {
     contracts,
@@ -40,6 +41,7 @@ export function ContractsGrid(props: {
     cardUIOptions,
     highlightOptions,
     trackingPostfix,
+    showImageOnTopContract,
   } = props
   const { hideQuickBet, hideGroupLink, noLinkAvatar, showProbChange } =
     cardUIOptions || {}
@@ -76,18 +78,20 @@ export function ContractsGrid(props: {
         className="-ml-4 flex w-auto"
         columnClassName="pl-4 bg-clip-padding"
       >
-        {contracts.map((contract) =>
+        {contracts.map((contract, index) =>
           showProbChange && contract.mechanism === 'cpmm-1' ? (
             <ContractCardProbChange
               key={contract.id}
               contract={contract as CPMMBinaryContract}
               showPosition
+              showImage={showImageOnTopContract && index == 0}
             />
           ) : (
             <ContractCard
               contract={contract}
               key={contract.id}
               showTime={showTime}
+              showImage={showImageOnTopContract && index == 0}
               onClick={
                 onContractClick ? () => onContractClick(contract) : undefined
               }
