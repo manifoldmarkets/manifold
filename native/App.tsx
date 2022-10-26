@@ -390,7 +390,7 @@ export default function App() {
           <ActivityIndicator
             style={styles.activityIndicator}
             size={'large'}
-            color={'orange'}
+            color={'white'}
           />
         </>
       )}
@@ -400,7 +400,7 @@ export default function App() {
           backgroundColor="white"
           style={'dark'}
           hideTransitionAnimation={'none'}
-          hidden={false}
+          hidden={isWebViewLoading}
         />
         <WebView
           style={styles.webView}
