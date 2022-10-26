@@ -97,14 +97,13 @@ export function ContractCard(props: {
           className={'hidden pl-2 md:inline-flex'}
           noLink={noLinkAvatar}
         />
-        {showImage && (
+        {contract.coverImageUrl && showImage && (
           <img
             className="h-60 w-full object-cover "
-            src={
-              'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FykU5KOeiSQ.png?alt=media&token=f7c69a0f-8f71-4758-996c-0b6411d16875'
-            }
+            src={contract.coverImageUrl}
           />
         )}
+
         <div className="px-2">
           <div
             className={clsx(
@@ -403,12 +402,10 @@ export function ContractCardProbChange(props: {
         className={'px-2 pt-4'}
         noLink={noLinkAvatar}
       />
-      {showImage && (
+      {contract.coverImageUrl && showImage && (
         <img
           className="mt-2 h-60 w-full object-cover "
-          src={
-            'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/dream%2FykU5KOeiSQ.png?alt=media&token=f7c69a0f-8f71-4758-996c-0b6411d16875'
-          }
+          src={contract.coverImageUrl}
         />
       )}
       <Row className={clsx('items-start justify-between gap-4 ', className)}>
