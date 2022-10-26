@@ -4,7 +4,7 @@ import {
 } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
-import { ReactNode, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 
@@ -18,13 +18,10 @@ export function ShowMoreLessButton(props: {
   const { onClick, isCollapsed, className } = props
   return (
     <button
-      className={clsx(
-        'select-none rounded-full bg-indigo-100 px-2 py-1 text-sm',
-        className
-      )}
+      className={clsx('select-none text-sm', className)}
       onClick={onClick}
     >
-      <Row className="items-center text-indigo-700">
+      <Row className="items-center gap-0.5 text-indigo-700">
         {isCollapsed ? (
           <ChevronDoubleDownIcon className="h-4 w-4" />
         ) : (
@@ -36,57 +33,7 @@ export function ShowMoreLessButton(props: {
   )
 }
 
-export function CollapsibleWrapper(props: {
-  shouldCollapse: boolean
-  children?: ReactNode
-}) {
-  const { shouldCollapse, children } = props
-  const [isCollapsed, setIsCollapsed] = useState(true)
-  if (shouldCollapse) {
-    return (
-      <>
-        <div
-          className={clsx(
-            'transition-height relative w-full overflow-hidden',
-            isCollapsed ? `h-[104px]` : 'h-full'
-          )}
-        >
-          {children}
-          {isCollapsed && (
-            <>
-              <div className="absolute bottom-0 w-full">
-                <div className="h-2 bg-gradient-to-t from-white" />
-                <div className="h-8 bg-white" />
-              </div>
-              <ShowMoreLessButton
-                className="absolute right-2 bottom-0"
-                onClick={() => setIsCollapsed(false)}
-                isCollapsed={isCollapsed}
-              />
-            </>
-          )}
-          {!isCollapsed && (
-            <Row className="w-full justify-end">
-              <ShowMoreLessButton
-                className="mr-2 flex"
-                onClick={() => {
-                  setIsCollapsed(true)
-                  window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth',
-                  })
-                }}
-                isCollapsed={isCollapsed}
-              />
-            </Row>
-          )}
-        </div>
-      </>
-    )
-  }
-  return <>{children}</>
-}
-
+//puts content inside collapsible wrapper
 export function CollapsibleContent(props: { content: JSONContent | string }) {
   const { content } = props
   const [shouldTruncate, setShouldTruncate] = useState(false)
@@ -98,12 +45,53 @@ export function CollapsibleContent(props: { content: JSONContent | string }) {
       }
     }
   }, [contentRef.current?.offsetHeight])
+  const [isCollapsed, setIsCollapsed] = useState(true)
 
-  return (
-    <CollapsibleWrapper shouldCollapse={shouldTruncate}>
-      <div ref={contentRef}>
-        <Content content={content} />
+  if (shouldTruncate) {
+    return (
+      <div
+        className={clsx(
+          'transition-height relative w-full overflow-hidden',
+          isCollapsed ? `h-[104px]` : 'h-full'
+        )}
+      >
+        <div ref={contentRef}>
+          <Content content={content} />
+        </div>
+        {isCollapsed && (
+          <>
+            <div className="absolute bottom-0 w-full">
+              <div className="h-2 bg-gradient-to-t from-white" />
+              <div className="h-8 bg-white" />
+            </div>
+            <ShowMoreLessButton
+              className="absolute right-2 bottom-0"
+              onClick={() => setIsCollapsed(false)}
+              isCollapsed={isCollapsed}
+            />
+          </>
+        )}
+        {!isCollapsed && (
+          <Row className="w-full justify-end">
+            <ShowMoreLessButton
+              className="mr-2 flex"
+              onClick={() => {
+                setIsCollapsed(true)
+                window.scrollTo({
+                  top: 0,
+                  behavior: 'smooth',
+                })
+              }}
+              isCollapsed={isCollapsed}
+            />
+          </Row>
+        )}
       </div>
-    </CollapsibleWrapper>
+    )
+  }
+  return (
+    <div ref={contentRef}>
+      <Content content={content} />
+    </div>
   )
 }
