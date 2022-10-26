@@ -70,6 +70,8 @@ Secrets are strings that shouldn't be checked into Git (eg API keys, passwords).
 - Read a secret: `$ firebase functions:secrets:access STRIPE_APIKEY`
 
 To access a secret from a cloud function, you'll need to:
-- Expose it to the function, by editing the function in Google Cloud Console (ex [link for the onCreateContract function:] (https://console.cloud.google.com/functions/edit/us-central1/onCreateContract?env=gen1&authuser=0&hl=en&project=mantic-markets)). Go to  "Security and image repo"->Secrets->Add->choose exposed as env variable.
-- Expose it programatically to the function by adding a runWith param (ex: .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY'] })
+1. Expose it to the function, by editing the function in Google Cloud Console (ex [link for the onCreateContract function:] (https://console.cloud.google.com/functions/edit/us-central1/onCreateContract?env=gen1&authuser=0&hl=en&project=mantic-markets)). 
+   - Go to  "Security and image repo"->Secrets->Add->choose exposed as env variable.
+2. Expose it programatically to the function by adding a runWith param 
+   - Example: `.runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY'] }`)
  
