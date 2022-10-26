@@ -1,3 +1,5 @@
+import fetch from 'node-fetch';
+
 export function getParamsFromURL(url: string) {
   const q = url.split('?');
   const result = {};
@@ -24,4 +26,13 @@ export function buildURL(baseURL: string, params: { [k: string]: unknown }) {
 export function getDomainFromURL(url: string) {
   const matches = url.match(/^https?:\/\/([^/?#]+)(?:[/?#]|$)/i);
   return matches && matches[1]; // will be null if no match is found
+}
+
+export async function detectGCloudInstance(): Promise<string> {
+  return fetch('http://metadata.google.internal/computeMetadata/v1/instance/id', { headers: { 'Metadata-Flavor': 'Google' } })
+    .then(async (r) => {
+      const id = await r.text();
+      return id;
+    })
+    .catch(() => undefined);
 }

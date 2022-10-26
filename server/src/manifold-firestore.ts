@@ -90,8 +90,9 @@ export default class ManifoldFirestore {
   async getFullMarketByID(marketID: string, onResolve?: () => void, onNewBet?: (b: Bet) => void): Promise<[DocumentReference<Contract<AnyContractType>>, CollectionReference<Bet>]> {
     ts('mkt' + marketID);
     const contractDoc = doc(this.contracts, marketID);
-    const contract = (await getDoc(contractDoc)).data();
     const betCollection = <CollectionReference<Bet>>collection(this.contracts, marketID, 'bets');
+    return [contractDoc, betCollection];
+    const contract = (await getDoc(contractDoc)).data();
     const betsQuery = await getDocs(query(betCollection, orderBy('createdTime', 'asc')));
     const bets = <NamedBet[]>betsQuery.docs.map((d) => {
       const bet = d.data();

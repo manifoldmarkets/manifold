@@ -1,11 +1,7 @@
-import * as Packet from 'common/packet-ids';
-import { UNFEATURE_MARKET } from 'common/packet-ids';
-import { PacketSelectMarket } from 'common/packets';
 import cors from 'cors';
 import express, { Express } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AddressInfo } from 'net';
-import fetch from 'node-fetch';
 import path from 'path';
 import { Server } from 'socket.io';
 import registerAPIEndpoints from './api';
@@ -15,7 +11,7 @@ import { IS_DEV, PORT } from './envs';
 import AppFirestore from './firestore';
 import log from './logger';
 import ManifoldFirestore from './manifold-firestore';
-import { Market } from './market';
+import { TwitchStream } from './stream';
 import TwitchBot from './twitch-bot';
 import User from './user';
 
@@ -25,16 +21,10 @@ export default class App {
   readonly bot: TwitchBot;
   readonly firestore: AppFirestore;
   readonly manifoldFirestore: ManifoldFirestore;
-
+  readonly streams: { [twitchChannel: string]: TwitchStream } = {};
   readonly userIdToNameMap: { [k: string]: string } = {};
 
-  selectedMarketMap: { [twitchChannel: string]: Market } = {};
-
-  autoUnfeatureTimers: { [twitchChannel: string]: NodeJS.Timeout } = {};
-
-  dockClients: DockClient[] = [];
-
-  constructor() {
+  public constructor() {
     this.app = express();
     this.app.use(cors());
     this.app.use(express.json());
@@ -42,13 +32,6 @@ export default class App {
     this.bot = new TwitchBot(this);
     this.firestore = new AppFirestore();
     this.manifoldFirestore = new ManifoldFirestore();
-
-    fetch('http://metadata.google.internal/computeMetadata/v1/instance/id', { headers: { 'Metadata-Flavor': 'Google' } })
-      .then(async (r) => {
-        const id = await r.text();
-        log.info('Running with Google Cloud Run instance id: ' + id);
-      })
-      .catch(() => {});
   }
 
   public async getDisplayNameForUserID(userID: string) {
@@ -72,77 +55,19 @@ export default class App {
     return (this.userIdToNameMap[userID] = displayName);
   }
 
-  public getMarketForTwitchChannel(channel: string): Market | null {
-    return this.selectedMarketMap[channel];
+  public getStreamByName(channel: string): TwitchStream | null {
+    let stream = this.streams[channel];
+    if (!stream) {
+      stream = this.streams[channel] = new TwitchStream(this, channel);
+    }
+    return stream;
   }
 
-  public getChannelForMarketID(marketID: string) {
-    for (const channel of Object.keys(this.selectedMarketMap)) {
-      const market = this.selectedMarketMap[channel];
-      if (market.data.id == marketID) return channel;
-    }
-    return null;
-  }
-
-  public async selectMarket(channel: string, id: string, sourceDock?: DockClient): Promise<Market> {
-    this.unfeatureCurrentMarket(channel, sourceDock);
-
-    if (id) {
-      try {
-        const market = await Market.loadFromManifoldID(this, id, channel);
-        this.selectedMarketMap[channel] = market;
-        log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
-        const initialBetIndex = Math.max(0, market.allBets.length - 3);
-        const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.allBets, initialBets: market.allBets.slice(initialBetIndex) };
-        if (sourceDock) {
-          sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-          sourceDock.socket.broadcast.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
-        } else {
-          this.io.to(channel).emit(Packet.SELECT_MARKET_ID, id);
-          this.io.to(channel).emit(Packet.SELECT_MARKET, selectMarketPacket);
-        }
-        log.debug('Sent market data to overlay');
-        return market;
-      } catch (e) {
-        throw new Error('Failed to feature market: ' + e.message);
-      }
-    }
-  }
-
-  public unfeatureCurrentMarket(channel: string, sourceDock?: DockClient) {
-    if (this.autoUnfeatureTimers[channel]) {
-      clearTimeout(this.autoUnfeatureTimers[channel]);
-      delete this.autoUnfeatureTimers[channel];
-    }
-
-    const existingMarket = this.getMarketForTwitchChannel(channel);
-    if (existingMarket) {
-      existingMarket.unfeature();
-      delete this.selectedMarketMap[channel];
-    }
-
-    log.debug(`Emitting UFM to ${sourceDock.connectedTwitchStream}`);
-    if (sourceDock) {
-      sourceDock.socket.broadcast.to(channel).emit(Packet.UNFEATURE_MARKET);
-    } else {
-      this.io.to(channel).emit(UNFEATURE_MARKET);
-    }
-  }
-
-  async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
+  public async getUserForTwitchUsername(twitchUsername: string): Promise<User> {
     return this.firestore.getUserForTwitchUsername(twitchUsername);
   }
 
-  public marketResolved(market: Market) {
-    const channel = this.getChannelForMarketID(market.data.id);
-    this.autoUnfeatureTimers[channel] = setTimeout(() => {
-      this.selectMarket(channel, null);
-      this.io.to(channel).emit(UNFEATURE_MARKET);
-    }, 24000);
-    this.bot.onMarketResolved(channel, market);
-  }
-
-  async launch() {
+  public async launch() {
     await this.bot.connect();
     await this.manifoldFirestore.validateConnection();
     await this.manifoldFirestore.loadAllUsers();
@@ -174,10 +99,12 @@ export default class App {
       next();
     });
     this.io.on('connection', (socket) => {
+      const twitchLogin = socket.data.data.twitchLogin;
+      const stream = this.getStreamByName(twitchLogin);
       if (socket.handshake.query.type === 'dock') {
-        this.dockClients.push(new DockClient(this, socket));
+        stream.docks.push(new DockClient(this, socket, stream));
       } else if (socket.handshake.query.type === 'overlay') {
-        new OverlayClient(this, socket);
+        stream.overlays.push(new OverlayClient(this, socket, stream));
       } else {
         log.error('Invalid connection type connected. This indicates a software bug on the server.');
       }

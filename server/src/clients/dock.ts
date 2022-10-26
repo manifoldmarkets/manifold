@@ -8,48 +8,46 @@ import App from '../app';
 import { MANIFOLD_API_BASE_URL } from '../envs';
 import log from '../logger';
 import * as ManifoldAPI from '../manifold-api';
+import { TwitchStream } from '../stream';
 import User from '../user';
 import { getParamsFromURL } from '../utils';
-
-type PacketGroupControl = {
-  beingControlled: string;
-  by: string;
-};
 
 export default class DockClient {
   readonly socket: Socket;
   readonly app: App;
   connectedUser: User;
-  connectedTwitchStream: string;
+  stream: TwitchStream;
 
-  constructor(app: App, socket: Socket) {
+  constructor(app: App, socket: Socket, stream: TwitchStream) {
     this.app = app;
     this.socket = socket;
-
+    this.stream = stream;
+    log.debug(`Dock socket for Twitch user ${stream.name} connected (SID: ${this.socket.id})`);
     this.init();
   }
 
-  async init() {
+  private async init() {
     this.connectedUser = <User>this.socket.data;
 
-    const connectedTwitchStream = (this.connectedTwitchStream = this.connectedUser.data.twitchLogin);
+    this.registerPacketHandlers();
 
-    log.debug(`Dock socket for Twitch user ${connectedTwitchStream} connected (SID: ${this.socket.id})`);
+    this.socket.join(this.stream.name);
 
-    this.socket.join(connectedTwitchStream);
-
-    const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
     this.socket.emit(Packet.HANDSHAKE_COMPLETE, <PacketHandshakeComplete>{ actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: MANIFOLD_API_BASE_URL });
-    if (market) {
-      this.socket.emit(Packet.SELECT_MARKET_ID, market.data.id);
+    if (this.stream.featuredMarket) {
+      this.socket.emit(Packet.SELECT_MARKET_ID, this.stream.featuredMarket.data.id);
     } else {
       this.socket.emit(Packet.UNFEATURE_MARKET);
     }
+  }
+
+  private registerPacketHandlers() {
+    const streamName = this.stream.name;
 
     this.socket.on(Packet.SELECT_MARKET_ID, async (marketID) => {
-      log.debug(`Select market ID '${marketID}' requested for channel '${connectedTwitchStream}' by dock`);
+      log.debug(`Select market ID '${marketID}' requested for channel '${streamName}' by dock`);
       try {
-        await this.app.selectMarket(connectedTwitchStream, marketID, this);
+        await this.stream.selectMarket(marketID, this);
       } catch (e) {
         this.socket.emit(Packet.UNFEATURE_MARKET);
         log.trace(e);
@@ -57,14 +55,14 @@ export default class DockClient {
     });
 
     this.socket.on(Packet.UNFEATURE_MARKET, async () => {
-      log.debug(`Market unfeatured for channel '${connectedTwitchStream}'`);
-      await this.app.selectMarket(connectedTwitchStream, null, this);
+      log.debug(`Market unfeatured for channel '${streamName}'`);
+      await this.stream.selectMarket(null, this);
     });
 
     this.socket.on(Packet.RESOLVE, async (outcomeString: string) => {
-      const currentMarket = this.app.getMarketForTwitchChannel(connectedTwitchStream);
+      const currentMarket = this.stream.featuredMarket;
       if (!currentMarket) {
-        log.error(`Received resolve request when no market was active for stream '${connectedTwitchStream}'`);
+        log.error(`Received resolve request when no market was active for stream '${streamName}'`);
         return;
       }
 
@@ -108,14 +106,14 @@ export default class DockClient {
           const user = await this.app.firestore.getUserForControlToken(<string>controlToken);
           if (user) {
             f.valid = true;
-            const additionalTwitchStream = user.data.twitchLogin;
-            if (additionalTwitchStream !== this.connectedTwitchStream) {
-              const packet: PacketGroupControl = { beingControlled: additionalTwitchStream, by: this.connectedTwitchStream };
-              for (const dock of this.app.dockClients) {
-                dock.groupControl(packet);
-              }
-              log.info(`User ${this.connectedUser.data.twitchLogin} now has control of ${additionalTwitchStream}'s stream.`);
-            }
+            // const additionalTwitchStream = user.data.twitchLogin; //!!! To finish
+            // if (additionalTwitchStream !== this.stream) {
+            //   const packet: PacketGroupControl = { beingControlled: additionalTwitchStream, by: this.stream };
+            //   for (const dock of this.app.dockClients) {
+            //     dock.groupControl(packet);
+            //   }
+            //   log.info(`User ${this.connectedUser.data.twitchLogin} now has control of ${additionalTwitchStream}'s stream.`);
+            // }
           } else {
             f.valid = false;
           }
@@ -127,24 +125,8 @@ export default class DockClient {
     });
 
     this.socket.on('disconnect', () => {
-      this.app.dockClients.splice(this.app.dockClients.indexOf(this), 1);
-      log.debug(`Dock socket for Twitch user ${connectedTwitchStream} disconnected (SID: ${this.socket.id})`);
+      this.stream.dockDisconnected(this);
+      log.debug(`Dock socket for Twitch user ${streamName} disconnected (SID: ${this.socket.id})`);
     });
-  }
-
-  public groupClear() {
-    //!!! Issues: will remove rooms that are due to other control groups
-    for (const room of this.socket.rooms) {
-      if (room !== this.connectedTwitchStream) {
-        this.socket.leave(room);
-      }
-    }
-  }
-
-  public groupControl(p: PacketGroupControl) {
-    if (this.connectedTwitchStream === p.beingControlled) {
-      this.socket.join(p.by);
-      log.info(`Dock for Twitch channel ${this.connectedTwitchStream} being controlled by ${p.by}`);
-    }
   }
 }

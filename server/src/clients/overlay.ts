@@ -5,31 +5,32 @@ import * as Packet from 'common/packet-ids';
 import { PacketSelectMarket } from 'common/packets';
 import App from '../app';
 import log from '../logger';
+import { TwitchStream } from '../stream';
 import User from '../user';
 
 export default class OverlayClient {
   readonly socket: Socket;
   readonly app: App;
-  connectedUserAccount: User;
+  connectedUser: User;
+  stream: TwitchStream;
 
-  constructor(app: App, socket: Socket) {
+  public constructor(app: App, socket: Socket, stream: TwitchStream) {
     this.app = app;
     this.socket = socket;
-
+    this.stream = stream;
+    log.debug(`Overlay socket for Twitch user ${stream.name} connected (SID: ${this.socket.id})`);
     this.init();
   }
 
-  async init() {
-    this.connectedUserAccount = <User>this.socket.data;
+  private async init() {
+    this.connectedUser = <User>this.socket.data;
+    const streamName = this.stream.name;
 
-    const connectedTwitchStream = this.connectedUserAccount.data.twitchLogin;
+    this.socket.join(streamName);
 
-    log.debug(`Overlay socket for Twitch user ${connectedTwitchStream} connected (SID: ${this.socket.id})`);
-
-    this.socket.join(connectedTwitchStream);
-
-    const market = this.app.getMarketForTwitchChannel(connectedTwitchStream);
     this.socket.emit(Packet.CLEAR);
+
+    const market = this.stream.featuredMarket;
     if (market) {
       const initialBetIndex = Math.max(0, market.allBets.length - 3);
       const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.allBets, initialBets: market.allBets.slice(initialBetIndex) };
@@ -40,7 +41,8 @@ export default class OverlayClient {
     }
 
     this.socket.on('disconnect', () => {
-      log.debug(`Overlay socket for Twitch user ${connectedTwitchStream} disconnected (SID: ${this.socket.id})`);
+      this.stream.overlayDisconnected(this);
+      log.debug(`Overlay socket for Twitch user ${streamName} disconnected (SID: ${this.socket.id})`);
     });
   }
 }

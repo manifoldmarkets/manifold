@@ -261,6 +261,7 @@ export default () => {
       setOverlayVisible(false);
     });
     app.socket.on(Packet.SELECT_MARKET, (marketID: string) => {
+      console.log('Select event');
       setResolvedData(undefined);
       setOverlayVisible(marketID ? true : false);
     });

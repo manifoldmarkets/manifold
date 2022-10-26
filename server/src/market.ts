@@ -10,77 +10,82 @@ import App from './app';
 import { MANIFOLD_API_BASE_URL } from './envs';
 import log from './logger';
 import * as Manifold from './manifold-api';
+import { TwitchStream } from './stream';
 import User from './user';
 
 const { keyBy, mapValues, sumBy, groupBy } = lodash;
 
 export class Market {
   private readonly app: App;
-  private readonly twitchChannel: string;
+  private readonly stream: TwitchStream;
   private readonly firestoreSubscriptions: Unsubscribe[] = [];
 
   public readonly allBets: NamedBet[] = [];
   public data: AbstractMarket;
   public resolveData: PacketResolved = null;
 
-  private constructor(app: App, twitchChannel: string) {
+  private constructor(app: App, stream: TwitchStream) {
     this.app = app;
-    this.twitchChannel = twitchChannel;
+    this.stream = stream;
   }
 
-  static async loadFromManifoldID(app: App, manifoldID: string, twitchChannel: string) {
-    const market = new Market(app, twitchChannel);
+  static async loadFromManifoldID(app: App, manifoldID: string, stream: TwitchStream) {
+    const market = new Market(app, stream);
     const [contractDoc, betCollection] = await app.manifoldFirestore.getFullMarketByID(manifoldID);
-    await new Promise<void>((r) =>
+    await new Promise<void>((resolve, reject) =>
       market.firestoreSubscriptions.push(
         onSnapshot(contractDoc, (update) => {
-          const contract = update.data();
-          const binaryContract = <CPMMBinaryContract>contract;
-          const {
-            id,
-            creatorUsername,
-            creatorName,
-            creatorId,
-            createdTime,
-            closeTime,
-            question,
-            slug,
-            isResolved,
-            resolutionTime,
-            resolution,
-            description,
-            p,
-            mechanism,
-            outcomeType,
-            pool,
-            resolutionProbability,
-          } = binaryContract;
+          try {
+            const contract = update.data();
+            const binaryContract = <CPMMBinaryContract>contract;
+            const {
+              id,
+              creatorUsername,
+              creatorName,
+              creatorId,
+              createdTime,
+              closeTime,
+              question,
+              slug,
+              isResolved,
+              resolutionTime,
+              resolution,
+              description,
+              p,
+              mechanism,
+              outcomeType,
+              pool,
+              resolutionProbability,
+            } = binaryContract;
 
-          market.data = {
-            ...market.data,
-            id,
-            creatorUsername,
-            creatorName,
-            creatorId,
-            createdTime,
-            closeTime,
-            question,
-            description,
-            url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
-            probability: contract.outcomeType === 'BINARY' ? Market.getProbability(binaryContract) : undefined,
-            isResolved,
-            resolutionTime,
-            resolution,
-            p,
-            mechanism,
-            outcomeType,
-            pool,
-            resolutionProbability,
-          };
-          if (update.data().isResolved) {
-            market.resolve();
+            market.data = {
+              ...market.data,
+              id,
+              creatorUsername,
+              creatorName,
+              creatorId,
+              createdTime,
+              closeTime,
+              question,
+              description,
+              url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
+              probability: contract.outcomeType === 'BINARY' ? Market.getProbability(binaryContract) : undefined,
+              isResolved,
+              resolutionTime,
+              resolution,
+              p,
+              mechanism,
+              outcomeType,
+              pool,
+              resolutionProbability,
+            };
+            if (update.data().isResolved) {
+              market.resolve();
+            }
+            resolve();
+          } catch (e) {
+            reject(e);
           }
-          r();
         })
       )
     );
@@ -142,9 +147,9 @@ export class Market {
       topLosers: topLosers,
     };
 
-    this.app.marketResolved(this);
-    this.app.io.to(this.twitchChannel).emit(Packet.RESOLVE, this.resolveData);
-    this.app.io.to(this.twitchChannel).emit(Packet.RESOLVED);
+    this.stream.marketResolved(this);
+    this.app.io.to(this.stream.name).emit(Packet.RESOLVE, this.resolveData);
+    this.app.io.to(this.stream.name).emit(Packet.RESOLVED);
   }
 
   /**
@@ -185,7 +190,7 @@ export class Market {
     }
 
     log.debug(`Market '${this.data.question}' loaded ${this.data.bets.length} initial bets.`);
-    this.app.io.to(this.twitchChannel).emit(Packet.MARKET_LOAD_COMPLETE);
+    this.app.io.to(this.stream.name).emit(Packet.MARKET_LOAD_COMPLETE);
   }
 
   static calculateFixedPayout(contract: AbstractMarket, bet: Bet, outcome: string) {
@@ -273,7 +278,7 @@ export class Market {
     this.allBets.push(bet);
 
     if (transmit) {
-      this.app.io.to(this.twitchChannel).emit(Packet.ADD_BETS, [bet]);
+      this.app.io.to(this.stream.name).emit(Packet.ADD_BETS, [bet]);
     }
   }
 
