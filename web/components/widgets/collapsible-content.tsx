@@ -33,7 +33,6 @@ export function ShowMoreLessButton(props: {
   )
 }
 
-//puts content inside collapsible wrapper
 export function CollapsibleContent(props: { content: JSONContent | string }) {
   const { content } = props
   const [shouldTruncate, setShouldTruncate] = useState(false)
