@@ -65,9 +65,8 @@ const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? 'https://d69b-181-41-206-188.ngrok.io'
-    : // ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
-      'https://prod-git-native-main-rebase-mantic.vercel.app/'
+    ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
+    : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
@@ -241,10 +240,8 @@ export default function App() {
   }
 
   const registerForPushNotificationsAsync = async () => {
-    if (!Device.isDevice) {
-      alert('Must use physical device for Push Notifications')
-      return null
-    }
+    if (!Device.isDevice) return null
+
     try {
       const existingStatus = await getExistingPushNotificationStatus()
       let finalStatus = existingStatus
@@ -254,7 +251,15 @@ export default function App() {
         const { status } = await Notifications.requestPermissionsAsync()
         finalStatus = status
       }
-      if (finalStatus !== 'granted') return
+      if (finalStatus !== 'granted') {
+        webview.current?.postMessage(
+          JSON.stringify({
+            type: 'pushNotificationPermissionStatus',
+            data: { status: finalStatus, userId },
+          })
+        )
+        return null
+      }
       return await getPushToken()
     } catch (e) {
       Sentry.Native.captureException(e, {
@@ -283,14 +288,13 @@ export default function App() {
                 data: { token, userId },
               })
             )
-          else
-            webview.current?.postMessage(
-              JSON.stringify({
-                type: 'pushNotificationPermissionStatus',
-                data: { status, userId },
-              })
-            )
-        }
+        } else
+          webview.current?.postMessage(
+            JSON.stringify({
+              type: 'pushNotificationPermissionStatus',
+              data: { status, userId },
+            })
+          )
       })
       return
     }
