@@ -23,7 +23,7 @@ export function FollowList(props: { userIds: string[] }) {
   }
 
   return (
-    <Col className="gap-2">
+    <Col className="gap-2 overflow-auto pt-4">
       {userIds.length === 0 && (
         <div className="text-gray-500">No users yet...</div>
       )}
