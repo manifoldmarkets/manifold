@@ -149,11 +149,12 @@ export const ChoiceContractChart = (props: {
 
   const ChoiceTooltip = useMemo(
     () => (props: TooltipProps<Date, MultiPoint<Bet>>) => {
-      const { data, x, xScale } = props
+      const { prev, x, xScale } = props
       const [start, end] = xScale.domain()
       const d = xScale.invert(x)
+      if (!prev) return null
       const legendItems = sortBy(
-        data.y.map((p, i) => ({
+        prev.y.map((p, i) => ({
           color: CHOICE_ALL_COLORS[i],
           label: i === CHOICE_ANSWER_COLORS.length ? 'Other' : answers[i].text,
           value: formatPct(p),
@@ -164,8 +165,8 @@ export const ChoiceContractChart = (props: {
       return (
         <>
           <Row className="items-center gap-2">
-            {data.obj && (
-              <Avatar size="xxs" avatarUrl={data.obj.userAvatarUrl} />
+            {prev.obj && (
+              <Avatar size="xxs" avatarUrl={prev.obj.userAvatarUrl} />
             )}
             <span className="text-semibold text-base">
               {formatDateInRange(d, start, end)}

@@ -58,12 +58,18 @@ const interpolateY = (
   y1: number
 ) => {
   if (curve === curveLinear) {
-    const p = (x - x0) / (x1 - x0)
-    return y0 * (1 - p) + y1 * p
+    if (x1 == x0) {
+      return y0
+    } else {
+      const p = (x - x0) / (x1 - x0)
+      return y0 * (1 - p) + y1 * p
+    }
   } else if (curve === curveStepAfter) {
     return y0
   } else if (curve === curveStepBefore) {
     return y1
+  } else {
+    return 0
   }
 }
 
@@ -114,7 +120,8 @@ const dataAtPointSelector = <X, Y, P extends Point<X, Y>>(
     const i = bisect.left(data, x)
     const prev = data[i - 1] as P | undefined
     const next = data[i] as P | undefined
-    return { prev, next, x: posX }
+    const nearest = data[bisect.center(data, x)]
+    return { prev, next, nearest, x: posX }
   }
 }
 
@@ -152,7 +159,7 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
     if (p.prev) {
-      setTTParams({ x: mouseX, y: mouseY, data: p.prev })
+      setTTParams({ ...p, x: mouseX, y: mouseY })
     } else {
       setTTParams(undefined)
     }
@@ -254,7 +261,7 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
     if (p.prev) {
-      setTTParams({ x: mouseX, y: mouseY, data: p.prev })
+      setTTParams({ ...p, x: mouseX, y: mouseY })
     } else {
       setTTParams(undefined)
     }
@@ -356,19 +363,13 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onMouseOver = useEvent((mouseX: number) => {
     const p = selector(mouseX)
     props.onMouseOver?.(p.prev)
-    const x0 = p.prev ? xScale(p.prev.x) : xScale.range()[0]
-    const x1 = p.next ? xScale(p.next.x) : xScale.range()[1]
-    const y0 = p.prev ? yScale(p.prev.y) : yScale.range()[0]
-    const y1 = p.next ? yScale(p.next.y) : yScale.range()[1]
-    const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
-    if (p.prev && markerY) {
-      setMouse({
-        x: mouseX,
-        y: markerY,
-        y0: py0,
-        y1: markerY,
-        data: p.prev,
-      })
+    if (p.prev) {
+      const x0 = xScale(p.prev.x)
+      const x1 = p.next ? xScale(p.next.x) : x0
+      const y0 = yScale(p.prev.y)
+      const y1 = p.next ? yScale(p.next.y) : y0
+      const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
+      setMouse({ ...p, x: mouseX, y: markerY, y0: py0, y1: markerY })
     } else {
       setMouse(undefined)
     }
@@ -389,7 +390,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
 
       const bisect = bisector((p: P) => p.x)
       const iMin = bisect.right(data, xMin)
-      const iMax = bisect.left(data, xMax)
+      const iMax = bisect.right(data, xMax)
 
       // don't zoom axis if they selected an area with only one value
       if (iMin != iMax) {
@@ -423,9 +424,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       margin={margin}
       xAxis={xAxis}
       yAxis={yAxis}
-      ttParams={
-        mouse ? { x: mouse.x, y: mouse.y, data: mouse.data } : undefined
-      }
+      ttParams={mouse}
       onSelect={onSelect}
       onMouseOver={onMouseOver}
       onMouseLeave={onMouseLeave}
