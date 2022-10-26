@@ -171,7 +171,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       </Col>
       <div
         className={clsx(
-          'z-1 absolute -mt-1 -ml-5 h-full w-[calc(100%+2rem)] rounded-lg transition-colors',
+          'z-1 absolute -mt-1 -ml-1 h-full w-full rounded-lg transition-colors',
           highlighted ? 'bg-indigo-50' : hover ? 'bg-greyscale-1' : ''
         )}
       />
