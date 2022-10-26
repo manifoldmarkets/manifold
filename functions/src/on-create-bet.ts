@@ -40,7 +40,6 @@ import {
   StreakerBadge,
   streakerBadgeRarityThresholds,
 } from '../../common/badge'
-import { BOT_USERNAMES } from '../../common/envs/constants'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -82,11 +81,7 @@ export const onCreateBet = functions
       userUsername: bettor.username,
     })
 
-    if (!BOT_USERNAMES.includes(bettor.username)) {
-      // exclude bots from bonuses
-      await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
-    }
-
+    await updateUniqueBettorsAndGiveCreatorBonus(contract, eventId, bettor)
     await notifyFills(bet, contract, eventId, bettor)
     await updateBettingStreak(bettor, bet, contract, eventId)
 
