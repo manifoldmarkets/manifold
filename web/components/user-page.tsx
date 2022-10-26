@@ -105,7 +105,7 @@ export function UserPage(props: { user: User }) {
                   {user.name}{' '}
                   {BOT_USERNAMES.includes(user.username) && <BotBadge />}
                 </span>
-                <Row className="sm:text-md -mt-1 items-center gap-x-3 text-sm ">
+                <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-greyscale-4'}>@{user.username}</span>
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
