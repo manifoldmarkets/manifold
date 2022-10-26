@@ -147,7 +147,7 @@ export function useMemberIds(groupId: string | null) {
 }
 
 export const useGroupsWithContract = (contract: Contract) => {
-  const [groups, setGroups] = useState<Group[]>([])
+  const [groups, setGroups] = useState<Group[]>()
 
   useEffect(() => {
     if (contract.groupSlugs)
