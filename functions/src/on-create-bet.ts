@@ -40,6 +40,7 @@ import {
   StreakerBadge,
   streakerBadgeRarityThresholds,
 } from '../../common/badge'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -215,6 +216,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
   )
 
   if (!newUniqueBettorIds) return
+
+  // exclude bots from bonuses
+  if (BOT_USERNAMES.includes(bettor.username)) return
 
   if (oldContract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
