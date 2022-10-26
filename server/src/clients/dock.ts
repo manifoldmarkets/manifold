@@ -11,13 +11,16 @@ import * as ManifoldAPI from '../manifold-api';
 import User from '../user';
 import { getParamsFromURL } from '../utils';
 
+type PacketGroupControl = {
+  beingControlled: string;
+  by: string;
+};
+
 export default class DockClient {
   readonly socket: Socket;
   readonly app: App;
   connectedUser: User;
   connectedTwitchStream: string;
-
-  additionalTwitchStreams: string[] = [];
 
   constructor(app: App, socket: Socket) {
     this.app = app;
@@ -95,20 +98,22 @@ export default class DockClient {
     });
 
     this.socket.on(Packet.GROUP_CONTROL_FIELDS, async (p: PacketGroupControlFields) => {
-      this.additionalTwitchStreams = [];
+      // for (const dock of this.app.dockClients) {
+      //   dock.groupClear();
+      // }
       try {
         for (const f of p.fields) {
-          // if (!f.valid) {
-          //   f.valid = undefined;
-          // }
           const params = getParamsFromURL(f.url);
           const controlToken = params['t'];
           const user = await this.app.firestore.getUserForControlToken(<string>controlToken);
           if (user) {
             f.valid = true;
             const additionalTwitchStream = user.data.twitchLogin;
-            if (this.additionalTwitchStreams.indexOf(additionalTwitchStream) < 0 && additionalTwitchStream !== this.connectedUser.data.twitchLogin) {
-              this.additionalTwitchStreams.push(additionalTwitchStream);
+            if (additionalTwitchStream !== this.connectedTwitchStream) {
+              const packet: PacketGroupControl = { beingControlled: additionalTwitchStream, by: this.connectedTwitchStream };
+              for (const dock of this.app.dockClients) {
+                dock.groupControl(packet);
+              }
               log.info(`User ${this.connectedUser.data.twitchLogin} now has control of ${additionalTwitchStream}'s stream.`);
             }
           } else {
@@ -122,7 +127,24 @@ export default class DockClient {
     });
 
     this.socket.on('disconnect', () => {
+      this.app.dockClients.splice(this.app.dockClients.indexOf(this), 1);
       log.debug(`Dock socket for Twitch user ${connectedTwitchStream} disconnected (SID: ${this.socket.id})`);
     });
+  }
+
+  public groupClear() {
+    //!!! Issues: will remove rooms that are due to other control groups
+    for (const room of this.socket.rooms) {
+      if (room !== this.connectedTwitchStream) {
+        this.socket.leave(room);
+      }
+    }
+  }
+
+  public groupControl(p: PacketGroupControl) {
+    if (this.connectedTwitchStream === p.beingControlled) {
+      this.socket.join(p.by);
+      log.info(`Dock for Twitch channel ${this.connectedTwitchStream} being controlled by ${p.by}`);
+    }
   }
 }

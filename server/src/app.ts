@@ -32,6 +32,8 @@ export default class App {
 
   autoUnfeatureTimers: { [twitchChannel: string]: NodeJS.Timeout } = {};
 
+  dockClients: DockClient[] = [];
+
   constructor() {
     this.app = express();
     this.app.use(cors());
@@ -119,6 +121,7 @@ export default class App {
       delete this.selectedMarketMap[channel];
     }
 
+    log.debug(`Emitting UFM to ${sourceDock.connectedTwitchStream}`);
     if (sourceDock) {
       sourceDock.socket.broadcast.to(channel).emit(Packet.UNFEATURE_MARKET);
     } else {
@@ -172,7 +175,7 @@ export default class App {
     });
     this.io.on('connection', (socket) => {
       if (socket.handshake.query.type === 'dock') {
-        new DockClient(this, socket);
+        this.dockClients.push(new DockClient(this, socket));
       } else if (socket.handshake.query.type === 'overlay') {
         new OverlayClient(this, socket);
       } else {
