@@ -21,9 +21,6 @@ export const onCreateContract = functions
   .runWith({ secrets: ['MAILGUN_KEY', 'DREAM_KEY'] })
   .firestore.document('contracts/{contractId}')
   .onCreate(async (snapshot, context) => {
-    console.log('FRC: Log process env', process.env)
-    console.log('FRC: Log Mailgun Key', process.env.MAILGUN_KEY)
-    console.log('FRC: Log Dream Key', process.env.DREAM_KEY)
     const contract = snapshot.data() as Contract
     const { eventId } = context
 
