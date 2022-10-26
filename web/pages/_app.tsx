@@ -9,7 +9,6 @@ import Welcome from 'web/components/onboarding/welcome'
 import { NativeMessageListener } from 'web/components/native-message-listener'
 import { Analytics } from '@vercel/analytics/react'
 
-
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
 }
