@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { keyBy, groupBy, mapValues, sortBy, partition, sumBy } from 'lodash'
 import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Bet, MAX_USER_BETS_LOADED } from 'web/lib/firebase/bets'
@@ -97,9 +97,15 @@ export function BetsList(props: { user: User }) {
     key: 'bets-list-filter',
     store: storageStore(safeLocalStorage()),
   })
+
   const [page, setPage] = useState(0)
   const start = page * CONTRACTS_PER_PAGE
   const end = start + CONTRACTS_PER_PAGE
+
+  // reset to first page when changing filter
+  useEffect(() => {
+    setPage(0)
+  }, [filter])
 
   if (!bets || !contractsById) {
     return <LoadingIndicator />

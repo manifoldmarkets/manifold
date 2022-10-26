@@ -107,7 +107,7 @@ export function DailyProfit(props: { user: User | null | undefined }) {
   const [first, last] = [metrics[0], metrics[metrics.length - 1]]
 
   let profitPercent = 0
-  if (first && last) {
+  if (first?.investmentValue && last) {
     // profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
     profitPercent = profit / first.investmentValue
   }

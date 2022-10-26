@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
+import React, { memo, useEffect, useRef, useState } from 'react'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
@@ -49,6 +49,12 @@ import { needsAdminToResolve } from 'web/lib/util/admin'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 
+const CONTRACT_BET_LOADING_OPTS = {
+  filterRedemptions: true,
+  filterChallenges: true,
+  filterZeroes: true,
+}
+
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: {
   params: { username: string; contractSlug: string }
@@ -56,7 +62,9 @@ export async function getStaticPropz(props: {
   const { contractSlug } = props.params
   const contract = (await getContractFromSlug(contractSlug)) || null
   const contractId = contract?.id
-  const bets = contractId ? await listAllBets(contractId, 2500) : []
+  const bets = contractId
+    ? await listAllBets(contractId, CONTRACT_BET_LOADING_OPTS, 2500)
+    : []
   const comments = contractId ? await listAllComments(contractId, 100) : []
 
   return {
@@ -118,15 +126,11 @@ export function ContractPageContent(
     true
   )
 
-  const bets = useBets(contract.id) ?? props.bets
-  const nonChallengeBets = useMemo(
-    () => bets.filter((b) => !b.challengeSlug),
-    [bets]
-  )
+  const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
+  console.log(props.bets)
 
-  const userBets = user
-    ? bets.filter((bet) => !bet.isAnte && bet.userId === user.id)
-    : []
+  const userBets =
+    useBets(contract.id, { userId: user?.id ?? '_', filterAntes: true }) ?? []
 
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -193,7 +197,7 @@ export function ContractPageContent(
         />
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
-        <ContractOverview contract={contract} bets={nonChallengeBets} />
+        <ContractOverview contract={contract} bets={bets} />
         <ContractDescription className="mt-6 mb-2 px-2" contract={contract} />
 
         {isCreator ? (

@@ -251,12 +251,7 @@ export const SVGChart = <X, TT>(props: {
             isMobile ?? false
           )}
         >
-          <Tooltip
-            xScale={xAxis.scale()}
-            x={ttParams.x}
-            y={ttParams.y}
-            data={ttParams.data}
-          />
+          <Tooltip xScale={xAxis.scale()} {...ttParams} />
         </TooltipContainer>
       )}
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
@@ -329,7 +324,13 @@ export const getTooltipPosition = (
   return { left, bottom }
 }
 
-export type TooltipParams<T> = { x: number; y: number; data: T }
+export type TooltipParams<T> = {
+  x: number
+  y: number
+  prev: T | undefined
+  next: T | undefined
+  nearest: T
+}
 export type TooltipProps<X, T> = TooltipParams<T> & {
   xScale: ContinuousScale<X>
 }

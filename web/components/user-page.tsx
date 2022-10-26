@@ -205,7 +205,7 @@ export function UserPage(props: { user: User }) {
                 >
                   <Row className="items-center gap-1">
                     <LinkIcon className="h-4 w-4" />
-                    Earn M$250 per referral
+                    Earn M$250 per friend referred
                   </Row>
                 </div>
               )}

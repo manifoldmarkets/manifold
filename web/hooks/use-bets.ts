@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Contract } from 'common/contract'
 import {
   Bet,
+  BetFilter,
   listenForBets,
   listenForLiveBets,
   listenForRecentBets,
@@ -11,28 +12,28 @@ import {
 import { LimitBet } from 'common/bet'
 import { getUser } from 'web/lib/firebase/users'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
-export const useBets = (
-  contractId: string,
-  options?: { filterChallenges: boolean; filterRedemptions: boolean }
-) => {
+export const useBets = (contractId: string, options?: BetFilter) => {
   const [bets, setBets] = useState<Bet[] | undefined>()
-  const filterChallenges = !!options?.filterChallenges
-  const filterRedemptions = !!options?.filterRedemptions
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     if (contractId)
-      return listenForBets(contractId, (bets) => {
-        if (filterChallenges || filterRedemptions)
-          setBets(
-            bets.filter(
-              (bet) =>
-                (filterChallenges ? !bet.challengeSlug : true) &&
-                (filterRedemptions ? !bet.isRedemption : true)
-            )
+      return listenForBets(
+        contractId,
+        (bets) => {
+          // we can't do this stuff in firestore because we can't query for
+          // when a field doesn't exist
+          const filteredBets = bets.filter(
+            (b) =>
+              (!options?.filterChallenges || !b.challengeSlug) &&
+              (!options?.filterAntes || !b.isAnte) &&
+              (!options?.filterRedemptions || !b.isRedemption)
           )
-        else setBets(bets)
-      })
-  }, [contractId, filterChallenges, filterRedemptions])
+          setBets(filteredBets.sort((b) => b.createdTime))
+        },
+        options
+      )
+  }, [contractId, options])
 
   return bets
 }
@@ -41,10 +42,9 @@ export const useBetsWithoutAntes = (contract: Contract, initialBets: Bet[]) => {
   const [bets, setBets] = useState<Bet[]>(
     withoutAnteBets(contract, initialBets)
   )
-
   useEffect(() => {
     return listenForBets(contract.id, (bets) => {
-      setBets(withoutAnteBets(contract, bets))
+      setBets(withoutAnteBets(contract, bets).sort((b) => b.createdTime))
     })
   }, [contract])
 

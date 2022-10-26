@@ -234,7 +234,10 @@ function GroupMembersList(props: { group: Group }) {
   )
 }
 
-export function GroupLinkItem(props: { group: Group; className?: string }) {
+export function GroupLinkItem(props: {
+  group: { slug: string; name: string }
+  className?: string
+}) {
   const { group, className } = props
 
   return (

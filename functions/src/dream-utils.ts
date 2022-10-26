@@ -4,7 +4,6 @@ import { DOMAIN } from '../../common/envs/constants'
 export const dreamWithDefaultParams = async (input: string) => {
   try {
     const API_KEY = process.env.DREAM_KEY
-    console.log('Logging process.env.DREAM_KEY', process.env.DREAM_KEY)
 
     const MODIFIERS =
       '8k, beautiful, illustration, trending on art station, picture of the day, epic composition'
@@ -20,7 +19,7 @@ export const dreamWithDefaultParams = async (input: string) => {
     const json = await response.json()
     return json.url as string
   } catch (e) {
-    console.log('Logging prod calls ERROR: ', e)
+    console.log('Error dreaming cover image: ', e)
     return undefined
   }
 }

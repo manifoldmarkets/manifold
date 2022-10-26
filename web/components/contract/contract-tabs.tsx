@@ -184,9 +184,7 @@ const BetsTabContent = memo(function BetsTabContent(props: {
   const end = start + ITEMS_PER_PAGE
 
   const lps = useLiquidity(contract.id) ?? []
-  const visibleBets = bets.filter(
-    (bet) => !bet.isAnte && !bet.isRedemption && bet.amount !== 0
-  )
+  const visibleBets = bets.filter((bet) => !bet.isAnte) // on top of main contract page bet filters
   const visibleLps = lps.filter(
     (l) =>
       !l.isAnte &&
