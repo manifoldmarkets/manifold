@@ -49,14 +49,16 @@ export async function getUser(userId: string) {
 }
 
 export async function getPrivateUser(userId: string) {
-  return (await getDoc(doc(privateUsers, userId))).data()
+  // TODO: are we recreating these users a la Polaris or continuing to delete them a la Fede?
+  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+  return (await getDoc(doc(privateUsers, userId))).data()!
 }
 
 export async function getUserAndPrivateUser(userId: string) {
   const [user, privateUser] = (
     await Promise.all([
       getDoc(doc(users, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-      getDoc(doc(privateUsers, userId)),
+      getDoc(doc(privateUsers, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
     ])
   ).map((d) => d.data()) as [User, PrivateUser]
   return { user, privateUser } as UserAndPrivateUser
