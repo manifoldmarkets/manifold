@@ -64,6 +64,8 @@ export const BOT_USERNAMES = [
   'Botlab',
   'JuniorBot',
   'ManifoldDream',
+  'ManifoldBugs',
+  'ACXBot',
 ]
 
 export function firestoreConsolePath(contractId: string) {
