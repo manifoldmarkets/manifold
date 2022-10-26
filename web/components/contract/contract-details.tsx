@@ -25,7 +25,11 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { linkClass } from 'web/components/widgets/site-link'
-import { getGroupLinkToDisplay, groupPath } from 'web/lib/firebase/groups'
+import {
+  getGroupLinksToDisplay,
+  getGroupLinkToDisplay,
+  groupPath,
+} from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -266,12 +270,18 @@ export function MarketGroups(props: {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const { contract, disabled } = props
-  const groupToDisplay = getGroupLinkToDisplay(contract)
+  const groupsToDisplay = getGroupLinksToDisplay(contract)
 
   return (
     <>
       <Row className="items-center gap-1">
-        <GroupDisplay groupToDisplay={groupToDisplay} disabled={disabled} />
+        {groupsToDisplay.map((group) => (
+          <GroupDisplay
+            key={group.groupId}
+            groupToDisplay={group}
+            disabled={disabled}
+          />
+        ))}
 
         {!disabled && user && (
           <button

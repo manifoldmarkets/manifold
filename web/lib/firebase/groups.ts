@@ -12,7 +12,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore'
-import { uniq, uniqBy } from 'lodash'
+import { partition, uniq, uniqBy } from 'lodash'
 import { Group, GROUP_CHAT_SLUG, GroupLink } from 'common/group'
 import {
   coll,
@@ -243,6 +243,18 @@ export function getGroupLinkToDisplay(contract: Contract) {
     ? groupCreatorAdded
     : sortedGroupLinks?.[0] ?? null
   return groupToDisplay
+}
+
+export function getGroupLinksToDisplay(contract: Contract) {
+  const { groupLinks } = contract
+  const sortedGroupLinks =
+    groupLinks?.sort((a, b) => b.createdTime - a.createdTime) ?? []
+
+  const [groupsCreatorAdded, otherGroups] = partition(
+    sortedGroupLinks,
+    (g) => g.userId === contract.creatorId
+  )
+  return [...groupsCreatorAdded, ...otherGroups].slice(0, 3)
 }
 
 export async function listMemberIds(group: Group) {
