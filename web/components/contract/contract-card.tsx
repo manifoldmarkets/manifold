@@ -401,7 +401,7 @@ export function ContractCardProbChange(props: {
     <Card className={clsx(className, 'mb-4')}>
       <AvatarDetails
         contract={contract}
-        className={'px-2 pt-4'}
+        className={'px-2 pt-2'}
         noLink={noLinkAvatar}
       />
       {contract.coverImageUrl && showImage && (
