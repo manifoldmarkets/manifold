@@ -1,0 +1,64 @@
+import { useRouter } from 'next/router'
+
+import { User } from 'web/lib/firebase/users'
+import { SEO } from 'web/components/SEO'
+import { Page } from 'web/components/layout/page'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { UserFollowButton } from 'web/components/buttons/follow-button'
+import { BOT_USERNAMES } from 'common/envs/constants'
+import { BadgeDisplay } from 'web/components/badge-display'
+import { BotBadge } from 'web/components/widgets/user-link'
+import { BlockUserButton } from 'web/components//buttons/block-user-button'
+import { PrivateUser } from 'common/user'
+
+export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
+  const { user } = props
+  const router = useRouter()
+
+  return (
+    <Page key={user.id}>
+      <SEO
+        title={`${user.name} (@${user.username})`}
+        description={user.bio ?? ''}
+        url={`/${user.username}`}
+      />
+
+      <Col className="relative">
+        <Row className="relative px-4 pt-4">
+          <Avatar
+            username={user.username}
+            avatarUrl={user.avatarUrl}
+            size={24}
+            className="bg-white shadow-sm shadow-indigo-300"
+          />
+
+          <Col className="w-full gap-4 pl-5">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
+              <Col>
+                <span className="break-anywhere text-lg font-bold sm:text-2xl">
+                  {user.name}
+                  {' (Blocked) '}
+                  {BOT_USERNAMES.includes(user.username) && <BotBadge />}
+                </span>
+                <Row className="sm:text-md items-center gap-x-3 text-sm ">
+                  <span className={' text-greyscale-4'}>@{user.username}</span>
+                  <BadgeDisplay user={user} query={router.query} />
+                </Row>
+              </Col>
+              <Row
+                className={
+                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-8'
+                }
+              >
+                <UserFollowButton userId={user.id} />
+                <BlockUserButton userId={user.id} />
+              </Row>
+            </div>
+          </Col>
+        </Row>
+      </Col>
+    </Page>
+  )
+}
