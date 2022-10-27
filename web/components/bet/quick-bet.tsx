@@ -35,6 +35,7 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
 import { FreeResponseTopAnswer } from '../contract/contract-card'
+import { Tooltip } from '../widgets/tooltip'
 
 const BET_SIZE = 10
 
@@ -140,91 +141,60 @@ export function QuickBet(props: {
   }
 
   return (
-    <Row
-      className={clsx(
-        className,
-        'relative min-w-[5.5rem] items-center justify-between align-middle'
-        // Use this for colored QuickBet panes
-        // `bg-opacity-10 bg-${color}`
-      )}
-    >
-      <div>
-        <div
-          className="peer absolute bottom-0 top-0 left-0 w-[50%]"
+    <div className="mx-y relative">
+      <Row
+        className={clsx(
+          className,
+          'py-auto absolute w-full items-center justify-between align-middle'
+          // Use this for colored QuickBet panes
+          // `bg-opacity-10 bg-${color}`
+        )}
+      >
+        <Row
+          className="items-center pr-4"
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
           onClick={() => placeQuickBet('DOWN')}
-        ></div>
-
-        <Row className=" flex items-center text-gray-500">
+        >
           <TriangleLeftFillIcon
             className={clsx(
               'mx-auto h-6 w-6',
               downHover ? 'text-indigo-700' : 'text-indigo-500'
             )}
           />
-          <span className="text-greyscale-6">{downHover ? 'M$10' : ''} </span>
+          <span
+            className={clsx(
+              'text-greyscale-6 text-sm font-light transition-opacity',
+              downHover ? 'opacity-100' : 'opacity-0 '
+            )}
+          >
+            M$10
+          </span>
         </Row>
-      </div>
-
+        <Row
+          className="items-center pl-4"
+          onMouseEnter={() => setUpHover(true)}
+          onMouseLeave={() => setUpHover(false)}
+          onClick={() => placeQuickBet('UP')}
+        >
+          <span
+            className={clsx(
+              'text-greyscale-6 transition- text-sm font-light',
+              upHover ? 'opacity-100' : 'opacity-0 '
+            )}
+          >
+            M$10
+          </span>
+          <TriangleRightFillIcon
+            className={clsx(
+              'mx-auto h-6 w-6',
+              upHover ? 'text-indigo-700' : 'text-indigo-500'
+            )}
+          />
+        </Row>
+      </Row>
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
-
-      {/* Down bet triangle */}
-      {outcomeType !== 'BINARY' && outcomeType !== 'PSEUDO_NUMERIC' ? (
-        <div>
-          <TriangleLeftFillIcon
-            className={clsx('mx-auto h-6 w-6 text-gray-200')}
-          />
-        </div>
-      ) : (
-        <div>
-          <div
-            className="peer absolute top-0 bottom-0 right-0 w-[50%]"
-            onMouseEnter={() => setUpHover(true)}
-            onMouseLeave={() => setUpHover(false)}
-            onClick={() => placeQuickBet('UP')}
-          />
-
-          <Row className="text-gray-500">
-            <span className={clsx({ textColor }, upHover ? '' : 'hidden')}>
-              {upHover ? 'M$10' : ''}
-            </span>
-            <TriangleRightFillIcon
-              className={clsx(
-                'mx-auto h-6 w-6',
-                upHover ? 'text-indigo-700' : 'text-indigo-500'
-              )}
-            />
-          </Row>
-        </div>
-      )}
-    </Row>
-  )
-}
-
-export function ProbBar(props: { contract: Contract; previewProb?: number }) {
-  const { contract, previewProb } = props
-  const [filledColor, unfilledColor] = getProbBarColors(contract)
-  const prob = previewProb ?? getProb(contract)
-  return (
-    <>
-      <div
-        className={clsx(
-          'absolute right-0 bottom-0 top-0 -z-10 w-1.5 rounded-r-lg transition-all',
-          `bg-${unfilledColor}`
-        )}
-        style={{ width: `${100 * (1 - prob)}%` }}
-      />
-      <div
-        className={clsx(
-          ' absolute left-0 bottom-0 top-0 -z-10 w-1.5 rounded-l-lg transition-all',
-          `bg-${filledColor}`,
-          // If we're showing the full bar, also round the top
-          prob === 1 ? 'rounded-r-lg' : ''
-        )}
-        style={{ width: `${100 * prob}%` }}
-      />
-    </>
+    </div>
   )
 }
 
@@ -255,6 +225,7 @@ export function QuickOutcomeView(props: {
   const { contract, previewProb, caption } = props
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+  const prob = previewProb ?? getProb(contract)
 
   // If there's a preview prob, display that instead of the current prob
   const override =
@@ -286,29 +257,28 @@ export function QuickOutcomeView(props: {
       break
     }
   }
-
-  if (outcomeType != 'FREE_RESPONSE') {
-    return (
-      <>
-        <div className="absolute left-1/2">
-          <div className="relative -left-1/2">
-            {contract.resolution ?? override ?? display}
-            {caption && <div className="text-base">{caption}</div>}
-          </div>
-        </div>
-        <ProbBar contract={contract} previewProb={previewProb} />
-      </>
-    )
-  }
   return (
-    <>
-      <div className="absolute">
-        <FreeResponseTopAnswer contract={contract} className="text-xs" />
-        {override ?? display}
-        {caption && <div className="text-base">{caption}</div>}
-      </div>
-      <ProbBar contract={contract} previewProb={previewProb} />
-    </>
+    <Row
+      className="justify-between rounded-lg px-4 transition-all"
+      style={{
+        background: `linear-gradient(to right, ${getColor(contract)} ${
+          100 * prob
+        }%, #F4F4FB ${100 * prob}%)`,
+      }}
+    >
+      {outcomeType != 'FREE_RESPONSE' && (
+        <div className="mx-auto font-semibold">
+          {contract.resolution ?? override ?? display}
+        </div>
+      )}
+      {outcomeType === 'FREE_RESPONSE' && (
+        <>
+          <FreeResponseTopAnswer contract={contract} className="text-xs" />
+          <div className="font-semibold">{override ?? display}</div>
+        </>
+      )}
+      {caption && <div className="text-base">{caption}</div>}
+    </Row>
   )
 }
 
@@ -338,24 +308,24 @@ function getNumericScale(contract: NumericContract) {
 }
 
 const OUTCOME_TO_COLOR = {
-  YES: 'teal',
-  NO: 'scarlet',
-  CANCEL: 'yellow',
-  MKT: 'blue',
+  YES: '#5eead4',
+  NO: '#FFA799',
+  CANCEL: '#fde68a',
+  MKT: '#7dd3fc',
 }
 
 export function getColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR[resolution as resolution] ?? 'indigo'
+    return OUTCOME_TO_COLOR[resolution as resolution] ?? '#c7d2fe'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return 'gray'
+    return '#B1B1C7'
   }
 
-  return 'indigo'
+  return '#c7d2fe'
 }
 
 export function getTextColor(contract: Contract) {
@@ -373,28 +343,4 @@ export function getTextColor(contract: Contract) {
         return `${color}-600`
     }
   }
-}
-
-export function getProbBarColors(contract: Contract): [string, string] {
-  const color = getColor(contract)
-
-  if (color) {
-    switch (color) {
-      case 'teal':
-        return [`${color}-100`, `${color}-50`]
-      case 'scarlet':
-        return [`${color}-300`, `${color}-50`]
-      case 'yellow':
-        return [`${color}-400`, `${color}-50`]
-      case 'blue':
-        return [`${color}-100`, `${color}-50`]
-      case 'indigo':
-        return [`${color}-200`, `${color}-50`]
-      case 'gray':
-        return [`${color}-200`, `${color}-50`]
-      default:
-        return [`${color}-400`, `${color}-50`]
-    }
-  }
-  return ['indigo-400', 'indigo-50']
 }

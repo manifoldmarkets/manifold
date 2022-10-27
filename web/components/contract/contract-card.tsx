@@ -91,7 +91,7 @@ export function ContractCard(props: {
         className
       )}
     >
-      <Col className="relative flex-1 gap-1 py-2 pb-12 ">
+      <Col className="relative flex-1 gap-1 py-2">
         <AvatarDetails
           contract={contract}
           className={'pl-2'}
@@ -135,20 +135,19 @@ export function ContractCard(props: {
             </div>
           )}
         </div>
+        <Row
+          className={clsx(
+            'gap-2 truncate px-2 md:gap-0'
+            // showQuickBet ? 'w-[85%]' : 'w-full'
+          )}
+        >
+          <MiscDetails
+            contract={contract}
+            showTime={showTime}
+            hideGroupLink={hideGroupLink}
+          />
+        </Row>
       </Col>
-
-      <Row
-        className={clsx(
-          'absolute bottom-3 gap-2 truncate px-2 md:gap-0',
-          showQuickBet ? 'w-[85%]' : 'w-full'
-        )}
-      >
-        <MiscDetails
-          contract={contract}
-          showTime={showTime}
-          hideGroupLink={hideGroupLink}
-        />
-      </Row>
 
       {/* Add click layer */}
       {onClick ? (
@@ -247,9 +246,9 @@ export function FreeResponseTopAnswer(props: {
 
   return topAnswer ? (
     <AnswerLabel
-      className="!text-gray-600"
+      className="!text-greyscale-7 text-md"
       answer={topAnswer}
-      truncate="long"
+      truncate="medium"
     />
   ) : null
 }

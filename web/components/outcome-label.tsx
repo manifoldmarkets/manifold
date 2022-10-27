@@ -142,7 +142,7 @@ export function AnswerNumberLabel(props: { number: string }) {
 
 export function AnswerLabel(props: {
   answer: Answer
-  truncate: 'short' | 'long' | 'none'
+  truncate: 'short' | 'medium' | 'long' | 'none'
   className?: string
 }) {
   const { answer, truncate, className } = props
@@ -151,6 +151,8 @@ export function AnswerLabel(props: {
   let truncated = text
   if (truncate === 'short' && text.length > 20) {
     truncated = text.slice(0, 10) + '...' + text.slice(-10)
+  } else if (truncate === 'medium' && text.length > 30) {
+    truncated = text.slice(0, 20) + '...' + text.slice(-10)
   } else if (truncate === 'long' && text.length > 75) {
     truncated = text.slice(0, 75) + '...'
   }
