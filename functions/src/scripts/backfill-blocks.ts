@@ -18,6 +18,8 @@ async function main() {
           ...privateUser,
           blockedByUserIds: [],
           blockedUserIds: [],
+          blockedContractIds: [],
+          blockedGroupSlugs: [],
         })
     })
   )

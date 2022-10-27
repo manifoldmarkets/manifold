@@ -86,8 +86,8 @@ export type PrivateUser = {
   }
   blockedUserIds: string[]
   blockedByUserIds: string[]
-  blockedContractIds?: string[]
-  blockedGroupSlugs?: string[]
+  blockedContractIds: string[]
+  blockedGroupSlugs: string[]
   // where we need to apply these filters:
   // a blocked user's profile page
   // a blocked user's comments
