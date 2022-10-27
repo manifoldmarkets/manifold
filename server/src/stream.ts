@@ -1,5 +1,5 @@
 import * as Packet from 'common/packet-ids';
-import { PacketGroupControlFields, PacketSelectMarket } from 'common/packets';
+import { GroupControlField, PacketGroupControlFields, PacketSelectMarket } from 'common/packets';
 import { NamedBet } from 'common/types/manifold-abstract-types';
 import App from './app';
 import DockClient from './clients/dock';
@@ -8,9 +8,7 @@ import log from './logger';
 import { Market } from './market';
 import { getParamsFromURL } from './utils';
 
-type AdditionalControl = {
-  url: string;
-  valid: boolean;
+type AdditionalControl = GroupControlField & {
   stream?: TwitchStream;
 };
 
@@ -118,7 +116,7 @@ export class TwitchStream {
         } else {
           f.valid = false;
         }
-        this.additionalControls.push({ url: f.url, valid: f.valid, stream });
+        this.additionalControls.push({ url: f.url, valid: f.valid, stream, affectedUserName: stream?.name });
       }
       this.updateGroupsInDocks();
     } catch (e) {
@@ -129,7 +127,7 @@ export class TwitchStream {
   public updateGroupsInDocks(dock?: DockClient) {
     const p: PacketGroupControlFields = { fields: [] };
     for (const a of this.additionalControls) {
-      p.fields.push({ url: a.url, valid: a.valid });
+      p.fields.push({ url: a.url, valid: a.valid, affectedUserName: a.affectedUserName });
     }
     if (dock) {
       dock.socket.emit(Packet.GROUP_CONTROL_FIELDS, p);

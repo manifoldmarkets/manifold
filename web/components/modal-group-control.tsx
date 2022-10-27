@@ -10,6 +10,10 @@ import { Modal } from './layout/modal';
 import { Row } from './layout/row';
 import { Title } from './title';
 
+function Chip(props: { text: string }) {
+  return <div className="rounded-full bg-red-500 text-white px-2 py-0.5 text-sm mr-1 animate-[popInS_0.2s_ease-in-out_forwards]">{props.text}</div>;
+}
+
 function ControlURL(props: { removeRequested: () => void; field: Field; onUpdate: () => void }) {
   const { removeRequested, field, onUpdate } = props;
 
@@ -24,13 +28,16 @@ function ControlURL(props: { removeRequested: () => void; field: Field; onUpdate
   };
   return (
     <Row className="gap-1 items-center animate-[popInS_0.4s_ease-in-out_forwards]">
-      <input
-        placeholder="Dock URL"
-        value={field.text}
-        className="w-full border rounded-md border-gray-300 bg-white px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none placeholder:text-gray-200"
-        onChange={onUpdateURL}
-        disabled={field.disabled}
-      />
+      <Row className="w-full items-center">
+        {field.channelName && <Chip text={field.channelName} />}
+        <input
+          placeholder="Dock URL"
+          value={field.text}
+          className="grow border rounded-md border-gray-300 bg-white px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none placeholder:text-gray-200"
+          onChange={onUpdateURL}
+          disabled={field.disabled}
+        />
+      </Row>
       <div className={clsx('relative group', !field.disabled && 'cursor-pointer')} onClick={!field.disabled ? removeRequested : undefined}>
         <div className={clsx('absolute opacity-0 w-6 h-6 transition-opacity', !field.disabled && 'group-hover:opacity-100')}>
           <XCircleIcon className="absolute fill-gray-500 animate-[popIn_0.2s_ease-in-out_forwards]" />
@@ -65,6 +72,7 @@ type Field = {
   disabled?: boolean;
   text: string;
   state: State;
+  channelName?: string;
 };
 
 export function ModalGroupControl(props: { socket: Socket; open: boolean; setOpen: (open: boolean) => void }) {
@@ -90,15 +98,7 @@ export function ModalGroupControl(props: { socket: Socket; open: boolean; setOpe
       fields.current = [];
       fields.current.push({ state: State.VALID, initialValue: location.href, text: location.href, disabled: true });
       for (const f of p.fields) {
-        fields.current.push({ state: f.valid ? State.VALID : State.INVALID, text: f.url });
-        // if (!f.disabled) {
-        //   for (const pf of p.fields) {
-        //     if (pf.url === f.text && pf.valid != undefined) {
-        //       f.state = pf.valid ? State.VALID : State.INVALID;
-        //       break;
-        //     }
-        //   }
-        // }
+        fields.current.push({ state: f.valid ? State.VALID : State.INVALID, text: f.url, channelName: f.affectedUserName });
       }
       rerender((t) => !t);
     });

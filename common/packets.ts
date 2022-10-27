@@ -36,6 +36,8 @@ export type PacketSelectMarket = AbstractMarket & {
   initialBets: NamedBet[];
 };
 
+export type GroupControlField = { url: string; valid: boolean; affectedUserName?: string };
+
 export type PacketGroupControlFields = {
-  fields: { url: string; valid: boolean }[];
+  fields: GroupControlField[];
 };
