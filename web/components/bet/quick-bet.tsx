@@ -4,12 +4,18 @@ import {
   getOutcomeProbabilityAfterBet,
   getProbability,
   getTopAnswer,
+  getTopNSortedAnswers,
 } from 'common/calculate'
-import { getExpectedValue } from 'common/calculate-dpm'
+import {
+  getDpmOutcomeProbability,
+  getExpectedValue,
+} from 'common/calculate-dpm'
 import { User } from 'common/user'
 import {
   BinaryContract,
   Contract,
+  FreeResponseContract,
+  MultipleChoiceContract,
   NumericContract,
   PseudoNumericContract,
   resolution,
@@ -36,6 +42,11 @@ import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
 import { FreeResponseTopAnswer } from '../contract/contract-card'
 import { Tooltip } from '../widgets/tooltip'
+import { Col } from '../layout/col'
+import { Answer } from 'common/answer'
+import { AnswerLabel } from '../outcome-label'
+import { useChartAnswers } from '../charts/contract/choice'
+import { getAnswerColor } from '../answers/answers-panel'
 
 const BET_SIZE = 10
 
@@ -239,7 +250,6 @@ export function QuickOutcomeView(props: {
   switch (outcomeType) {
     case 'BINARY':
       display = getBinaryProbPercent(contract)
-
       break
     case 'PSEUDO_NUMERIC':
       display = formatNumericProbability(getProbability(contract), contract)
@@ -255,30 +265,116 @@ export function QuickOutcomeView(props: {
       break
     }
   }
-  return (
-    <Row
-      className="justify-between rounded-md px-4 py-0.5 transition-all"
-      style={{
-        background: `linear-gradient(to right, ${getBarColor(contract)} ${
-          100 * prob
-        }%, ${getBgColor(contract)} ${100 * prob}%)`,
-      }}
-    >
-      {outcomeType != 'FREE_RESPONSE' && (
+
+  if (outcomeType != 'FREE_RESPONSE' && outcomeType != 'MULTIPLE_CHOICE') {
+    return (
+      <Row
+        className="justify-between rounded-md px-4 py-0.5 transition-all"
+        style={{
+          background: `linear-gradient(to right, ${getBarColor(contract)} ${
+            100 * prob
+          }%, ${getBgColor(contract)} ${100 * prob}%)`,
+        }}
+      >
         <div className={`mx-auto font-semibold ${textColor}`}>
           {contract.resolution ?? override ?? display}
         </div>
+        {caption && <div className="text-base">{caption}</div>}
+      </Row>
+    )
+  }
+
+  const answers = getTopNSortedAnswers(contract, 3)
+  if (answers.length === 0) {
+    return <div>No answers yet...</div>
+  }
+
+  const answersArray = useChartAnswers(contract).map(
+    (answer, _index) => answer.text
+  )
+  return (
+    <Col className="gap-2">
+      {answers.map((answer) => (
+        <ContractCardAnswer
+          contract={contract}
+          answer={answer}
+          answersArray={answersArray}
+          type={getAnswerType(
+            answer,
+            contract.resolution,
+            contract.resolutions
+          )}
+        />
+      ))}
+    </Col>
+  )
+}
+
+function getAnswerType(
+  answer: Answer,
+  resolution?: string,
+  resolutions?:
+    | { [outcome: string]: number }
+    | { [outcome: string]: number }
+    | undefined
+) {
+  if (answer.id === resolution || (resolutions && resolutions[answer.id])) {
+    return 'winner'
+  }
+  if (!resolution) {
+    return 'contender'
+  }
+  return 'loser'
+}
+
+function ContractCardAnswer(props: {
+  contract: FreeResponseContract | MultipleChoiceContract
+  answer: Answer
+  answersArray: string[]
+  type: 'winner' | 'loser' | 'contender'
+}) {
+  const { contract, answer, answersArray, type } = props
+  console.log(answer.text, type)
+  const prob = getOutcomeProbability(contract, answer.id)
+  const display = formatPercent(getOutcomeProbability(contract, answer.id))
+  const color = getAnswerColor(answer, answersArray)
+  const isClosed = (contract.closeTime ?? Infinity) < Date.now()
+  return (
+    <div
+      className={clsx(
+        type === 'winner'
+          ? '-mx-[1.5px] -my-[1.5px] rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-fuchsia-500 px-[1.5px] py-[1.5px]'
+          : ''
       )}
-      {outcomeType === 'FREE_RESPONSE' && (
-        <>
-          <FreeResponseTopAnswer contract={contract} className="text-xs" />
-          <div className={`font-semibold ${textColor}`}>
-            {override ?? display}
-          </div>
-        </>
-      )}
-      {caption && <div className="text-base">{caption}</div>}
-    </Row>
+    >
+      <Row
+        className={clsx(
+          'z-50 justify-between rounded-md px-4 py-0.5 transition-all'
+        )}
+        style={{
+          background: `linear-gradient(to right, ${
+            type === 'loser' || isClosed ? '#D8D8EB' : `${color}90`
+          } ${100 * prob}%, ${'#F4F4FB'} ${100 * prob}%)`,
+        }}
+      >
+        <AnswerLabel
+          className={clsx(
+            'text-md',
+            type === 'loser' ? 'text-greyscale-5' : 'text-greyscale-7'
+          )}
+          answer={answer}
+          truncate="medium"
+        />
+        <div
+          className={clsx(
+            'text-md font-semibold',
+            type === 'loser' ? 'text-greyscale-5' : 'text-greyscale-7'
+          )}
+        >
+          {display}
+        </div>
+      </Row>
+    </div>
   )
 }
 
@@ -332,7 +428,7 @@ const OUTCOME_TO_COLOR_BACKGROUND = {
   YES: '#ccfbf1',
   NO: '#FFD3CC',
   CANCEL: '#F4F4FB',
-  MKT: '#e0f2fe',
+  MKT: '#F4F4FB',
 }
 
 export function getBgColor(contract: Contract) {

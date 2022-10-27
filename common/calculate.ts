@@ -261,6 +261,29 @@ export function getTopAnswer(
   return top?.answer
 }
 
+export function getTopNSortedAnswers(
+  contract: FreeResponseContract | MultipleChoiceContract,
+  n: number
+) {
+  const { answers, resolution, resolutions } = contract
+
+  const [winningAnswers, losingAnswers] = partition(
+    answers,
+    (answer) =>
+      answer.id === resolution || (resolutions && resolutions[answer.id])
+  )
+  const sortedAnswers = [
+    ...sortBy(winningAnswers, (answer) =>
+      resolutions ? -1 * resolutions[answer.id] : 0
+    ),
+    ...sortBy(
+      losingAnswers,
+      (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
+    ),
+  ].slice(0, n)
+  return sortedAnswers
+}
+
 export function getLargestPosition(contract: Contract, userBets: Bet[]) {
   let yesFloorShares = 0,
     yesShares = 0,

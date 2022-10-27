@@ -78,7 +78,7 @@ export function ContractCard(props: {
   const marketClosed =
     (contract.closeTime || Infinity) < Date.now() || !!resolution
 
-  const showQuickBet =
+  const showBinaryQuickBet =
     user &&
     !marketClosed &&
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
@@ -99,7 +99,7 @@ export function ContractCard(props: {
         />
         {/* overlay question on image */}
         {contract.coverImageUrl && showImage && (
-          <div className="relative">
+          <div className="relative mb-2">
             <img
               className="h-80 w-full object-cover "
               src={contract.coverImageUrl}
@@ -117,9 +117,9 @@ export function ContractCard(props: {
           </div>
         )}
 
-        <div className="mt-2 px-4">
-          {/* question is here if not overlaid on image */}
-          {(!contract.coverImageUrl || !showImage) && (
+        <div className="px-4">
+          {/* question is here if not overlaid on an image */}
+          {(!showImage || !contract.coverImageUrl) && (
             <div
               className={clsx(
                 'break-anywhere pb-2 font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
@@ -129,15 +129,13 @@ export function ContractCard(props: {
               {question}
             </div>
           )}
-          {showQuickBet ? (
+          {showBinaryQuickBet ? (
             <QuickBet contract={contract} user={user} className="z-10" />
           ) : (
-            <div className="relative z-10">
-              <QuickOutcomeView contract={contract} />
-            </div>
+            <QuickOutcomeView contract={contract} />
           )}
         </div>
-        <Row className={clsx('gap-1 truncate px-2')}>
+        <Row className={clsx('mt-2 gap-1 truncate px-2')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}
