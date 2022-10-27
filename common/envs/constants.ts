@@ -66,6 +66,11 @@ export const BOT_USERNAMES = [
   'ManifoldDream',
   'ManifoldBugs',
   'ACXBot',
+  'JamesBot',
+  'RyanBot',
+  'trainbot',
+  'runebot',
+  'LiquidityBonusBot',
 ]
 
 export function firestoreConsolePath(contractId: string) {
