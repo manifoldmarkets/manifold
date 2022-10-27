@@ -124,7 +124,7 @@ export function PostCardList(props: {
 
   const [shownPosts, setShownPosts] = useState<Post[]>(posts)
   useEffect(() => {
-    if (limit) {
+    if (limit && limit != 0) {
       setShownPosts(posts.slice(0, limit))
     }
   }, [posts, limit])
