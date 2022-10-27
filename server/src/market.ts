@@ -6,7 +6,7 @@ import { Bet, CPMMBinaryContract } from 'common/types/manifold-internal-types';
 import { onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { default as lodash, default as _ } from 'lodash';
 import App from './app';
-import { MANIFOLD_API_BASE_URL } from './envs';
+import { MANIFOLD_URLS, TARGET } from './envs';
 import * as Manifold from './manifold-api';
 import { TwitchStream } from './stream';
 import User from './user';
@@ -67,7 +67,7 @@ export class Market {
                 closeTime,
                 question,
                 description,
-                url: `https://${MANIFOLD_API_BASE_URL}/${creatorUsername}/${slug}`,
+                url: `${MANIFOLD_URLS[TARGET]}${creatorUsername}/${slug}`,
                 probability: contract.outcomeType === 'BINARY' ? Market.getProbability(binaryContract) : undefined,
                 isResolved,
                 resolutionTime,

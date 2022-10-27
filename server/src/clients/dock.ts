@@ -10,7 +10,6 @@ import log from '../logger';
 import * as ManifoldAPI from '../manifold-api';
 import { TwitchStream } from '../stream';
 import User from '../user';
-import { getParamsFromURL } from '../utils';
 
 export default class DockClient {
   readonly socket: Socket;
@@ -37,6 +36,7 @@ export default class DockClient {
     } else {
       this.socket.emit(Packet.UNFEATURE_MARKET);
     }
+    this.stream.updateGroupsInDocks(this);
   }
 
   private registerPacketHandlers() {
@@ -94,32 +94,7 @@ export default class DockClient {
     });
 
     this.socket.on(Packet.GROUP_CONTROL_FIELDS, async (p: PacketGroupControlFields) => {
-      // for (const dock of this.app.dockClients) {
-      //   dock.groupClear();
-      // }
-      try {
-        for (const f of p.fields) {
-          const params = getParamsFromURL(f.url);
-          const controlToken = params['t'];
-          const user = await this.app.firestore.getUserForControlToken(<string>controlToken);
-          if (user) {
-            f.valid = true;
-            // const additionalTwitchStream = user.data.twitchLogin; //!!! To finish
-            // if (additionalTwitchStream !== this.stream) {
-            //   const packet: PacketGroupControl = { beingControlled: additionalTwitchStream, by: this.stream };
-            //   for (const dock of this.app.dockClients) {
-            //     dock.groupControl(packet);
-            //   }
-            //   log.info(`User ${this.connectedUser.data.twitchLogin} now has control of ${additionalTwitchStream}'s stream.`);
-            // }
-          } else {
-            f.valid = false;
-          }
-        }
-        this.socket.emit(Packet.GROUP_CONTROL_FIELDS, p);
-      } catch (e) {
-        log.trace(e);
-      }
+      this.stream.updateGroupControlFields(p);
     });
 
     this.socket.on('disconnect', () => {

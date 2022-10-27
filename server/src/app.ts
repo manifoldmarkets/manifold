@@ -77,7 +77,7 @@ export default class App {
       const addressInfo = <AddressInfo>server.address();
       const host = addressInfo.address;
       const port = addressInfo.port;
-      log.info('Webserver and websocket listening at http://%s:%s', host, port);
+      log.info(`Webserver and websocket listening at http://${host}:${port}`);
     });
 
     this.io = new Server(server);

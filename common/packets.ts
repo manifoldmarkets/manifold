@@ -37,5 +37,5 @@ export type PacketSelectMarket = AbstractMarket & {
 };
 
 export type PacketGroupControlFields = {
-  fields: [{ url: string; valid: boolean }];
+  fields: { url: string; valid: boolean }[];
 };

@@ -1,11 +1,18 @@
 import * as Packet from 'common/packet-ids';
-import { PacketSelectMarket } from 'common/packets';
+import { PacketGroupControlFields, PacketSelectMarket } from 'common/packets';
 import { NamedBet } from 'common/types/manifold-abstract-types';
 import App from './app';
 import DockClient from './clients/dock';
 import OverlayClient from './clients/overlay';
 import log from './logger';
 import { Market } from './market';
+import { getParamsFromURL } from './utils';
+
+type AdditionalControl = {
+  url: string;
+  valid: boolean;
+  stream?: TwitchStream;
+};
 
 export class TwitchStream {
   readonly app: App;
@@ -14,6 +21,8 @@ export class TwitchStream {
   readonly overlays: OverlayClient[] = [];
   featuredMarket: Market = null;
   unfeatureTimer: NodeJS.Timeout = null;
+
+  additionalControls: AdditionalControl[] = [];
 
   constructor(app: App, twitchName: string) {
     this.app = app;
@@ -39,6 +48,12 @@ export class TwitchStream {
   }
 
   public async selectMarket(id: string, sourceDock?: DockClient): Promise<Market> {
+    for (const a of this.additionalControls) {
+      if (a.stream) {
+        await a.stream.selectMarket(id, sourceDock); //!!! await fixes thrown errors, but increases delay in selecting
+      }
+    }
+
     const channel = this.name; //!!!
     this.unfeatureCurrentMarket(sourceDock);
 
@@ -59,7 +74,7 @@ export class TwitchStream {
     }
   }
 
-  public unfeatureCurrentMarket(sourceDock?: DockClient) {
+  private unfeatureCurrentMarket(sourceDock?: DockClient) {
     if (this.unfeatureTimer) {
       clearTimeout(this.unfeatureTimer);
     }
@@ -83,6 +98,49 @@ export class TwitchStream {
 
   public onNewBet(bet: NamedBet) {
     this.broadcastToOverlays(Packet.ADD_BETS, [bet]);
+  }
+
+  public async updateGroupControlFields(p: PacketGroupControlFields) {
+    this.additionalControls = [];
+    try {
+      for (const f of p.fields) {
+        let alreadyExistingURL = false;
+        for (const a of this.additionalControls) {
+          if (a.url === f.url) {
+            alreadyExistingURL = true;
+            break;
+          }
+        }
+        if (alreadyExistingURL) continue;
+
+        const params = getParamsFromURL(f.url);
+        const controlToken = params['t'];
+        const user = await this.app.firestore.getUserForControlToken(<string>controlToken);
+        let stream: TwitchStream = undefined;
+        if (user) {
+          f.valid = true;
+          stream = this.app.getStreamByName(user.data.twitchLogin);
+        } else {
+          f.valid = false;
+        }
+        this.additionalControls.push({ url: f.url, valid: f.valid, stream });
+      }
+      this.updateGroupsInDocks();
+    } catch (e) {
+      log.trace(e);
+    }
+  }
+
+  public updateGroupsInDocks(dock?: DockClient) {
+    const p: PacketGroupControlFields = { fields: [] };
+    for (const a of this.additionalControls) {
+      p.fields.push({ url: a.url, valid: a.valid });
+    }
+    if (dock) {
+      dock.socket.emit(Packet.GROUP_CONTROL_FIELDS, p);
+    } else {
+      this.broadcastToDocks(Packet.GROUP_CONTROL_FIELDS, p);
+    }
   }
 
   public dockDisconnected(dock: DockClient) {

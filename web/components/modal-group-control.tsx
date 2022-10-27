@@ -87,15 +87,18 @@ export function ModalGroupControl(props: { socket: Socket; open: boolean; setOpe
     fields.current.push(getBlankField());
 
     socket.on(Packets.GROUP_CONTROL_FIELDS, (p: PacketGroupControlFields) => {
-      for (const f of fields.current) {
-        if (!f.disabled && f.state === State.CHECKING) {
-          for (const pf of p.fields) {
-            if (pf.url === f.text && pf.valid != undefined) {
-              f.state = pf.valid ? State.VALID : State.INVALID;
-              break;
-            }
-          }
-        }
+      fields.current = [];
+      fields.current.push({ state: State.VALID, initialValue: location.href, text: location.href, disabled: true });
+      for (const f of p.fields) {
+        fields.current.push({ state: f.valid ? State.VALID : State.INVALID, text: f.url });
+        // if (!f.disabled) {
+        //   for (const pf of p.fields) {
+        //     if (pf.url === f.text && pf.valid != undefined) {
+        //       f.state = pf.valid ? State.VALID : State.INVALID;
+        //       break;
+        //     }
+        //   }
+        // }
       }
       rerender((t) => !t);
     });
