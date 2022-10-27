@@ -41,6 +41,7 @@ import { DailyStats } from 'web/components/daily-stats'
 import { SectionHeader } from './groups/group-about'
 import { Button } from './buttons/button'
 import { BotBadge } from './widgets/user-link'
+import { BlockUserButton } from 'web/components/buttons/block-user-button'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -110,8 +111,15 @@ export function UserPage(props: { user: User }) {
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
-              {isCurrentUser && <DailyStats user={user} showLoans />}
-              {!isCurrentUser && <UserFollowButton userId={user.id} />}
+              <Row
+                className={
+                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-8'
+                }
+              >
+                {isCurrentUser && <DailyStats user={user} showLoans />}
+                {!isCurrentUser && <UserFollowButton userId={user.id} />}
+                {!isCurrentUser && <BlockUserButton userId={user.id} />}
+              </Row>
             </div>
             <ProfilePublicStats
               className="sm:text-md text-greyscale-6 hidden text-sm md:inline"
