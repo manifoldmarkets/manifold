@@ -1,0 +1,26 @@
+import { initAdmin } from './script-init'
+initAdmin()
+import * as admin from 'firebase-admin'
+
+import { getAllPrivateUsers } from '../utils'
+
+const firestore = admin.firestore()
+
+async function main() {
+  const privateUsers = await getAllPrivateUsers()
+  await Promise.all(
+    privateUsers.map(async (privateUser) => {
+      if (!privateUser || !privateUser.id) return
+      return firestore
+        .collection('private-users')
+        .doc(privateUser.id)
+        .update({
+          ...privateUser,
+          blockedByUserIds: [],
+          blockedUserIds: [],
+        })
+    })
+  )
+}
+
+if (require.main === module) main().then(() => process.exit())

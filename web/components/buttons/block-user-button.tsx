@@ -1,31 +1,39 @@
 import { usePrivateUser } from 'web/hooks/use-user'
-import { updatePrivateUser } from 'web/lib/firebase/users'
+import { privateUsers } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
-import { uniq } from 'lodash'
 import { toast } from 'react-hot-toast'
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 
 export function BlockUserButton(props: { userId: string }) {
   const { userId } = props
-  const user = usePrivateUser()
-  if (!user || user.id === userId) return null
-  const isBlocked = user.blockedUserIds?.includes(userId)
+  const currentUser = usePrivateUser()
+  if (!currentUser || currentUser.id === userId) return null
+  const isBlocked = currentUser.blockedUserIds?.includes(userId)
+
+  const blockUser = async () => {
+    await updateDoc(doc(privateUsers, currentUser.id), {
+      blockedUserIds: arrayUnion(userId),
+    })
+    await updateDoc(doc(privateUsers, userId), {
+      blockedByUserIds: arrayUnion(currentUser.id),
+    })
+  }
+
+  const unblockUser = async () => {
+    await updateDoc(doc(privateUsers, currentUser.id), {
+      blockedUserIds: arrayRemove(userId),
+    })
+    await updateDoc(doc(privateUsers, userId), {
+      blockedByUserIds: arrayRemove(currentUser.id),
+    })
+  }
 
   const onBlock = async () => {
-    await toast.promise(
-      updatePrivateUser(user.id, {
-        blockedUserIds: uniq([...(user.blockedUserIds ?? []), userId]),
-      }),
-      {
-        loading: 'Blocking...',
-        success: `You'll no longer see content from this user`,
-        error: 'Error blocking user',
-      }
-    )
-  }
-  const onUnblock = async () => {
-    await updatePrivateUser(user.id, {
-      blockedUserIds: user.blockedUserIds?.filter((id) => id !== userId) ?? [],
+    await toast.promise(blockUser(), {
+      loading: 'Blocking...',
+      success: `You'll no longer see content from this user`,
+      error: 'Error blocking user',
     })
   }
 
@@ -35,7 +43,7 @@ export function BlockUserButton(props: { userId: string }) {
         size="sm"
         color="gray-outline"
         className="my-auto"
-        onClick={withTracking(onUnblock, 'unblock')}
+        onClick={withTracking(unblockUser, 'unblock')}
       >
         Blocked
       </Button>

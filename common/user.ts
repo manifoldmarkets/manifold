@@ -84,6 +84,17 @@ export type PrivateUser = {
     botEnabled?: boolean
     needsRelinking?: boolean
   }
+  blockedUserIds: string[]
+  blockedByUserIds: string[]
+  blockedContractIds?: string[]
+  blockedGroupSlugs?: string[]
+  // where we need to apply these filters:
+  // a blocked user's profile page
+  // a blocked user's comments
+  // Block markets: (including block user creators, blocked groups, blocked contracts)
+  // contract search
+  // home page
+  // from a user's profile page (not sure about if blocked group applies here)
 }
 
 export type PortfolioMetrics = {

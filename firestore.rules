@@ -92,6 +92,11 @@ service cloud.firestore {
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['apiKey', 'notificationPreferences', 'twitchInfo', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs']);
+      allow update: if (request.auth != null || isAdmin())
+                       && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['blockedByUserIds'])
+                       && request.resource.data.blockedByUserIds.toSet().difference(resource.data.blockedByUserIds.toSet()).hasOnly([request.auth.uid]);
+
       allow delete: if (userId == request.auth.uid || isAdmin());              
     }
 
