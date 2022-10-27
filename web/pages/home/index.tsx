@@ -389,7 +389,11 @@ function SearchSection(props: {
         label={label}
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
       />
-      <ContractsGrid contracts={contracts} cardUIOptions={{ showProbChange }} />
+      <ContractsGrid
+        contracts={contracts}
+        cardUIOptions={{ showProbChange }}
+        showImageOnTopContract={true}
+      />
     </Col>
   )
 }
