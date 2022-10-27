@@ -14,7 +14,7 @@ import { floatingEqual, floatingLesserEqual } from '../../common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from './follow-market'
-import { FLAT_TRADE_FEE } from 'common/fees'
+import { FLAT_TRADE_FEE } from '../../common/fees'
 
 const bodySchema = z.object({
   contractId: z.string(),
