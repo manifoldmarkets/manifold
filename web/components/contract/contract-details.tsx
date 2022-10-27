@@ -274,7 +274,7 @@ export function MarketGroups(props: {
 
   return (
     <>
-      <Row className="items-center gap-1">
+      <Row className="flex-wrap items-center gap-1">
         {groupsToDisplay.map((group) => (
           <GroupDisplay
             key={group.groupId}
