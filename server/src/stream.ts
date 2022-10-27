@@ -59,7 +59,7 @@ export class TwitchStream {
         const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.data.bets, initialBets: market.data.bets.slice(initialBetIndex) };
         this.broadcastToDocks(Packet.SELECT_MARKET_ID, id, sourceDock);
         this.broadcastToOverlays(Packet.SELECT_MARKET, selectMarketPacket);
-        log.debug('Sent market data to overlay');
+        this.app.bot.onMarketFeatured(this.name, market);
         return market;
       } catch (e) {
         throw new Error('Failed to feature market: ' + e.message);

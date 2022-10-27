@@ -40,6 +40,7 @@ const MSG_MARKET_UNFEATURED = () => `Market unfeatured.`;
 const MSG_COMMAND_FAILED = (username: string) => `Sorry ${username} but an internal error occurred handling your command BibleThump`;
 const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
 const MSG_TRADING_CLOSED = (username: string) => `Too slow ${username}, your bet was too late!`;
+const MSG_FEATURED = (market: Market) => `The market ${market.data.question} is now being featured! ${market.data.url}`;
 /* cSpell:disable */
 
 type CommandParams = {
@@ -324,6 +325,10 @@ export default class TwitchBot {
 
   public onMarketResolved(channel: string, market: Market) {
     this.client.say(channel, MSG_RESOLVED(market));
+  }
+
+  public onMarketFeatured(channel: string, market: Market) {
+    this.client.say(channel, MSG_FEATURED(market));
   }
 
   public async connect() {
