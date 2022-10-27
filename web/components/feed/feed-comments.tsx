@@ -6,7 +6,7 @@ import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -295,6 +295,7 @@ export function ContractCommentInput(props: {
   onSubmitComment?: () => void
 }) {
   const user = useUser()
+  const privateUser = usePrivateUser()
   const { contract, parentAnswerOutcome, parentCommentId, replyTo, className } =
     props
   const { openCommentBounties } = contract
@@ -322,6 +323,7 @@ export function ContractCommentInput(props: {
       onSubmitComment={onSubmitComment}
       pageId={contract.id}
       className={className}
+      blocked={privateUser?.blockedByUserIds.includes(contract.creatorId)}
     />
   )
 }

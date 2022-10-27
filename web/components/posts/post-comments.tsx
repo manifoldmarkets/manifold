@@ -16,7 +16,7 @@ import { Row } from 'web/components/layout/row'
 import { Tipper } from 'web/components/widgets/tipper'
 import { UserLink } from 'web/components/widgets/user-link'
 import { CommentTipMap, CommentTips } from 'web/hooks/use-tip-txns'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { createCommentOnPost } from 'web/lib/firebase/comments'
 import { firebaseLogin } from 'web/lib/firebase/users'
 
@@ -77,6 +77,7 @@ export function PostCommentInput(props: {
   onSubmitComment?: () => void
 }) {
   const user = useUser()
+  const privateUser = usePrivateUser()
 
   const { post, parentCommentId, replyToUser } = props
 
@@ -95,6 +96,7 @@ export function PostCommentInput(props: {
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
       pageId={post.id}
+      blocked={privateUser?.blockedByUserIds.includes(post.creatorId)}
     />
   )
 }
