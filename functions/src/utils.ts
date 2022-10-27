@@ -147,14 +147,13 @@ export const getUserByUsername = async (username: string) => {
   return snap.empty ? undefined : (snap.docs[0].data() as User)
 }
 
-const firestore = admin.firestore()
-
 const updateUserBalance = (
   transaction: Transaction,
   userId: string,
   balanceDelta: number,
   depositDelta: number
 ) => {
+  const firestore = admin.firestore()
   const userDoc = firestore.doc(`users/${userId}`)
 
   // Note: Balance is allowed to go negative.
@@ -167,6 +166,7 @@ const updateUserBalance = (
 export const payUser = (userId: string, payout: number, isDeposit = false) => {
   if (!isFinite(payout)) throw new Error('Payout is not finite: ' + payout)
 
+  const firestore = admin.firestore()
   return firestore.runTransaction(async (transaction) => {
     updateUserBalance(transaction, userId, payout, isDeposit ? payout : 0)
   })
@@ -231,6 +231,7 @@ export const payUsersMultipleTransactions = async (
     deposit?: number
   }[]
 ) => {
+  const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutChunks = chunk(mergedPayouts, 500)
 
