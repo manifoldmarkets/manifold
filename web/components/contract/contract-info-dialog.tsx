@@ -2,7 +2,7 @@ import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import { capitalize } from 'lodash'
+import { capitalize, uniq } from 'lodash'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 import { Contract } from 'common/contract'
@@ -29,6 +29,8 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import { withTracking } from 'web/lib/service/analytics'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { updatePrivateUser } from 'web/lib/firebase/users'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -36,7 +38,7 @@ export function ContractInfoDialog(props: {
   className?: string
 }) {
   const { contract, className, user } = props
-
+  const privateUser = usePrivateUser()
   const [open, setOpen] = useState(false)
   const isDev = useDev()
   const isAdmin = useAdmin()
@@ -211,22 +213,49 @@ export function ContractInfoDialog(props: {
                     </td>
                   </tr>
                 )}
-                {user && (
+
+                <tr>
+                  <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
+                  <td>
+                    <ShortToggle
+                      disabled={
+                        isUnlisted
+                          ? !(isAdmin || (isCreator && wasUnlistedByCreator))
+                          : !(isCreator || isAdmin)
+                      }
+                      on={contract.visibility === 'unlisted'}
+                      setOn={(unlist) =>
+                        updateContract(id, {
+                          visibility: unlist ? 'unlisted' : 'public',
+                          unlistedById: unlist ? user?.id : '',
+                        })
+                      }
+                    />
+                  </td>
+                </tr>
+                {privateUser && (
                   <tr>
-                    <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
+                    <td>Block market</td>
                     <td>
                       <ShortToggle
-                        disabled={
-                          isUnlisted
-                            ? !(isAdmin || (isCreator && wasUnlistedByCreator))
-                            : !(isCreator || isAdmin)
+                        on={
+                          privateUser.blockedContractIds?.includes(id) ?? false
                         }
-                        on={contract.visibility === 'unlisted'}
-                        setOn={(b) =>
-                          updateContract(id, {
-                            visibility: b ? 'unlisted' : 'public',
-                            unlistedById: b ? user.id : '',
-                          })
+                        setOn={(block) =>
+                          block
+                            ? updatePrivateUser(privateUser.id, {
+                                blockedContractIds: uniq(
+                                  privateUser.blockedContractIds?.concat([
+                                    id,
+                                  ]) ?? [id]
+                                ),
+                              })
+                            : updatePrivateUser(privateUser.id, {
+                                blockedContractIds:
+                                  privateUser.blockedContractIds?.filter(
+                                    (blockedId) => blockedId !== id
+                                  ),
+                              })
                         }
                       />
                     </td>
