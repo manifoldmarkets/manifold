@@ -5,6 +5,8 @@ import {
   getProbability,
   getTopAnswer,
   getTopNSortedAnswers,
+  getContractBetMetrics,
+  calculatePayout,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
@@ -27,8 +29,6 @@ import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import TriangleLeftFillIcon from 'web/lib/icons/triangle-left-fill-icon'
-import TriangleRightFillIcon from 'web/lib/icons/triangle-right-fill-icon'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
@@ -42,6 +42,8 @@ import { Answer } from 'common/answer'
 import { AnswerLabel } from '../outcome-label'
 import { useChartAnswers } from '../charts/contract/choice'
 import { getAnswerColor } from '../answers/answers-panel'
+import EquilateralTriangle from 'web/lib/icons/equilateral-triangle'
+import { floor, sumBy } from 'lodash'
 
 const BET_SIZE = 10
 
@@ -144,54 +146,96 @@ export function QuickBet(props: {
       contractId: contract.id,
     })
   }
+  let yesWinnings,
+    noWinnings,
+    position,
+    outcome,
+    invested = null
+  const bets = userBets?.filter((b) => !b.isAnte)
+  if (bets) {
+    const metrics = getContractBetMetrics(contract, bets)
+    invested = metrics.invested
+    const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
+    yesWinnings = sumBy(excludeSales, (bet) =>
+      calculatePayout(contract, bet, 'YES')
+    )
+    noWinnings = sumBy(excludeSales, (bet) =>
+      calculatePayout(contract, bet, 'NO')
+    )
+    position = yesWinnings - noWinnings
+    outcome = position < 0 ? 'NO' : 'YES'
+  }
+
+  const hasUpInvestment =
+    outcome === 'YES' && invested != null && floor(invested) > 0
+  const hasDownInvestment =
+    outcome === 'NO' && invested != null && floor(invested) > 0
 
   return (
     <div className="mx-y relative">
       <Row
         className={clsx(
           className,
-          'absolute my-auto mt-0.5 w-full items-center justify-between align-middle'
+          'absolute my-auto mt-1 w-full items-center justify-between px-2 align-middle'
         )}
       >
         <Row
-          className="items-center pr-4"
+          className="items-center gap-1"
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
           onClick={() => placeQuickBet('DOWN')}
         >
-          <TriangleLeftFillIcon
+          <EquilateralTriangle
             className={clsx(
-              'mx-auto h-6 w-6',
-              downHover ? 'text-indigo-700' : 'text-indigo-500'
+              'mx-auto h-6 w-6 -rotate-90',
+              downHover || hasDownInvestment
+                ? 'text-indigo-900'
+                : 'text-indigo-400'
             )}
           />
-          <span
-            className={clsx(
-              'text-sm font-light text-indigo-500 transition-opacity',
-              downHover ? 'opacity-100' : 'opacity-0 '
-            )}
-          >
-            M$10
-          </span>
+          {hasDownInvestment && invested != null ? (
+            <span className={clsx('text-sm font-light text-indigo-900')}>
+              {downHover
+                ? formatMoney(invested + BET_SIZE)
+                : formatMoney(invested)}
+            </span>
+          ) : (
+            <span
+              className={clsx(
+                'text-sm font-light text-indigo-900 transition-opacity',
+                downHover ? 'opacity-100' : 'opacity-0'
+              )}
+            >
+              {formatMoney(BET_SIZE)}
+            </span>
+          )}
         </Row>
         <Row
-          className="items-center pl-4"
+          className="items-center gap-1 pl-12"
           onMouseEnter={() => setUpHover(true)}
           onMouseLeave={() => setUpHover(false)}
           onClick={() => placeQuickBet('UP')}
         >
-          <span
+          {hasUpInvestment && invested != null ? (
+            <span className={clsx('text-sm font-light text-indigo-900')}>
+              {upHover
+                ? formatMoney(invested + BET_SIZE)
+                : formatMoney(invested)}
+            </span>
+          ) : (
+            <span
+              className={clsx(
+                'text-sm font-light text-indigo-900 transition-opacity',
+                upHover ? 'opacity-100' : 'opacity-0'
+              )}
+            >
+              {formatMoney(BET_SIZE)}
+            </span>
+          )}
+          <EquilateralTriangle
             className={clsx(
-              'transition- text-sm font-light text-indigo-500',
-              upHover ? 'opacity-100' : 'opacity-0 '
-            )}
-          >
-            M$10
-          </span>
-          <TriangleRightFillIcon
-            className={clsx(
-              'mx-auto h-6 w-6',
-              upHover ? 'text-indigo-700' : 'text-indigo-500'
+              'mx-auto h-6 w-6 rotate-90',
+              upHover || hasUpInvestment ? 'text-indigo-900' : 'text-indigo-400'
             )}
           />
         </Row>
@@ -270,7 +314,7 @@ export function QuickOutcomeView(props: {
           }%, ${getBgColor(contract)} ${100 * prob}%)`,
         }}
       >
-        <div className={`mx-auto font-semibold ${textColor}`}>
+        <div className={`mx-auto text-lg font-semibold ${textColor}`}>
           {contract.resolution ?? override ?? display}
         </div>
         {caption && <div className="text-base">{caption}</div>}
