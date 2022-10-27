@@ -40,6 +40,7 @@ import { useUser } from 'web/hooks/use-user'
 import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
+import { BlockGroupButton } from 'web/components/buttons/block-group-button'
 
 export function GroupAbout(props: {
   group: Group
@@ -54,6 +55,9 @@ export function GroupAbout(props: {
     props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
+      <Row className={'justify-end'}>
+        <BlockGroupButton groupSlug={group.slug} />
+      </Row>
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (
         <>
