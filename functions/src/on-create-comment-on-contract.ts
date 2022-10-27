@@ -19,9 +19,9 @@ import {
 } from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
-import { Contract } from 'common/contract'
-import { User } from 'common/user'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { BOT_USERNAMES } from '../../common/envs/constants'
 
 const firestore = admin.firestore()
 
