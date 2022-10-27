@@ -44,6 +44,7 @@ export function ContractTabs(props: {
   comments: ContractComment[]
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
+  blockedUserIds: string[]
 }) {
   const {
     contract,
@@ -52,6 +53,7 @@ export function ContractTabs(props: {
     comments,
     answerResponse,
     onCancelAnswerResponse,
+    blockedUserIds,
   } = props
 
   const yourTrades = (
@@ -71,6 +73,7 @@ export function ContractTabs(props: {
           comments={comments}
           answerResponse={answerResponse}
           onCancelAnswerResponse={onCancelAnswerResponse}
+          blockedUserIds={blockedUserIds}
         />
       ),
     },
@@ -94,10 +97,15 @@ const CommentsTabContent = memo(function CommentsTabContent(props: {
   comments: ContractComment[]
   answerResponse?: Answer
   onCancelAnswerResponse?: () => void
+  blockedUserIds: string[]
 }) {
-  const { contract, answerResponse, onCancelAnswerResponse } = props
+  const { contract, answerResponse, onCancelAnswerResponse, blockedUserIds } =
+    props
   const tips = useTipTxns({ contractId: contract.id })
-  const comments = useComments(contract.id) ?? props.comments
+  const comments = (useComments(contract.id) ?? props.comments).filter(
+    (c) => !blockedUserIds.includes(c.userId)
+  )
+
   const [sort, setSort] = usePersistentState<'Newest' | 'Best'>('Newest', {
     key: `contract-comments-sort`,
     store: storageStore(safeLocalStorage()),
