@@ -1075,15 +1075,20 @@ function ContractResolvedNotification(props: {
     if (sourceText === 'CANCEL') return <CancelLabel />
     if (sourceText === 'MKT' || sourceText === 'PROB') return <MultiLabel />
 
-    // Numeric market
-    if (parseFloat(sourceText))
+    // Numeric markets
+    const isNumberWithCommaOrPeriod = /^[0-9,.]*$/.test(sourceText)
+    if (isNumberWithCommaOrPeriod)
       return <NumericValueLabel value={parseFloat(sourceText)} />
 
     // Free response market
     return (
-      <div className={'line-clamp-1 text-blue-400'}>
-        <Linkify text={sourceText} />
-      </div>
+      <span
+        className={
+          'inline-block max-w-[200px] truncate align-bottom text-blue-400'
+        }
+      >
+        {sourceText}
+      </span>
     )
   }
 
