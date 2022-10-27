@@ -97,13 +97,14 @@ export function ContractCard(props: {
           className={'pl-2'}
           noLink={noLinkAvatar}
         />
+        {/* overlay question on image */}
         {contract.coverImageUrl && showImage && (
           <div className="relative">
             <img
               className="h-80 w-full object-cover "
               src={contract.coverImageUrl}
             />
-            <div className="absolute bottom-0">
+            <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
                   'break-anywhere bg-gradient-to-t from-slate-900 px-2 pb-2 pt-12 text-xl font-semibold text-white',
@@ -117,6 +118,7 @@ export function ContractCard(props: {
         )}
 
         <div className="mt-2 px-4">
+          {/* question is here if not overlaid on image */}
           {(!contract.coverImageUrl || !showImage) && (
             <div
               className={clsx(
@@ -135,12 +137,7 @@ export function ContractCard(props: {
             </div>
           )}
         </div>
-        <Row
-          className={clsx(
-            'gap-2 truncate px-2 md:gap-0'
-            // showQuickBet ? 'w-[85%]' : 'w-full'
-          )}
-        >
+        <Row className={clsx('gap-1 truncate px-2')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}

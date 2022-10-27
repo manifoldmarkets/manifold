@@ -145,9 +145,7 @@ export function QuickBet(props: {
       <Row
         className={clsx(
           className,
-          'py-auto absolute w-full items-center justify-between align-middle'
-          // Use this for colored QuickBet panes
-          // `bg-opacity-10 bg-${color}`
+          'absolute my-auto mt-0.5 w-full items-center justify-between align-middle'
         )}
       >
         <Row
@@ -164,7 +162,7 @@ export function QuickBet(props: {
           />
           <span
             className={clsx(
-              'text-greyscale-6 text-sm font-light transition-opacity',
+              'text-sm font-light text-indigo-500 transition-opacity',
               downHover ? 'opacity-100' : 'opacity-0 '
             )}
           >
@@ -179,7 +177,7 @@ export function QuickBet(props: {
         >
           <span
             className={clsx(
-              'text-greyscale-6 transition- text-sm font-light',
+              'transition- text-sm font-light text-indigo-500',
               upHover ? 'opacity-100' : 'opacity-0 '
             )}
           >
@@ -235,7 +233,7 @@ export function QuickOutcomeView(props: {
       ? formatNumericProbability(previewProb, contract)
       : formatPercent(previewProb)
 
-  const textColor = `text-${getTextColor(contract)}`
+  const textColor = getTextColor(contract)
 
   let display: string | undefined
   switch (outcomeType) {
@@ -259,22 +257,24 @@ export function QuickOutcomeView(props: {
   }
   return (
     <Row
-      className="justify-between rounded-lg px-4 transition-all"
+      className="justify-between rounded-md px-4 py-0.5 transition-all"
       style={{
-        background: `linear-gradient(to right, ${getColor(contract)} ${
+        background: `linear-gradient(to right, ${getBarColor(contract)} ${
           100 * prob
-        }%, #F4F4FB ${100 * prob}%)`,
+        }%, ${getBgColor(contract)} ${100 * prob}%)`,
       }}
     >
       {outcomeType != 'FREE_RESPONSE' && (
-        <div className="mx-auto font-semibold">
+        <div className={`mx-auto font-semibold ${textColor}`}>
           {contract.resolution ?? override ?? display}
         </div>
       )}
       {outcomeType === 'FREE_RESPONSE' && (
         <>
           <FreeResponseTopAnswer contract={contract} className="text-xs" />
-          <div className="font-semibold">{override ?? display}</div>
+          <div className={`font-semibold ${textColor}`}>
+            {override ?? display}
+          </div>
         </>
       )}
       {caption && <div className="text-base">{caption}</div>}
@@ -307,40 +307,65 @@ function getNumericScale(contract: NumericContract) {
   return (ev - min) / (max - min)
 }
 
-const OUTCOME_TO_COLOR = {
-  YES: '#5eead4',
+const OUTCOME_TO_COLOR_BAR = {
+  YES: '#99f6e4',
   NO: '#FFA799',
-  CANCEL: '#fde68a',
-  MKT: '#7dd3fc',
+  CANCEL: '#F4F4FB',
+  MKT: '#bae6fd',
 }
 
-export function getColor(contract: Contract) {
+export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR[resolution as resolution] ?? '#c7d2fe'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? '#c7d2fe'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return '#B1B1C7'
+    return '#D8D8EB'
   }
 
   return '#c7d2fe'
 }
 
-export function getTextColor(contract: Contract) {
-  // this is a bit of a hack, for some reason some tailwind color classes don't work
-  // so im working around it
-  const color = getColor(contract)
-  if (color) {
-    switch (color) {
-      case 'teal':
-      case 'blue':
-        return `${color}-500`
-      case 'yellow':
-        return 'yellow-700'
-      default:
-        return `${color}-600`
-    }
+const OUTCOME_TO_COLOR_BACKGROUND = {
+  YES: '#ccfbf1',
+  NO: '#FFD3CC',
+  CANCEL: '#F4F4FB',
+  MKT: '#e0f2fe',
+}
+
+export function getBgColor(contract: Contract) {
+  const { resolution } = contract
+
+  if (resolution) {
+    return OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? '#F4F4FB'
   }
+
+  if ((contract.closeTime ?? Infinity) < Date.now()) {
+    return '#F4F4FB'
+  }
+
+  return '#F4F4FB'
+}
+
+const OUTCOME_TO_COLOR_TEXT = {
+  YES: 'text-teal-600',
+  NO: 'text-scarlet-600',
+  CANCEL: 'text-greyscale-4',
+  MKT: 'text-sky-600',
+}
+
+export function getTextColor(contract: Contract) {
+  const { resolution } = contract
+
+  if (resolution) {
+    return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? '#c7d2fe'
+  }
+
+  if ((contract.closeTime ?? Infinity) < Date.now()) {
+    return 'text-greyscale-6'
+  }
+
+  return 'text-greyscale-7'
 }
