@@ -62,7 +62,7 @@ const embedPatterns: EmbedPattern[] = [
     // Strawpoll: https://strawpoll.com/polls/PbZqoPJelnN
     regex: /^https?:\/\/strawpoll\.com\/polls\/(\w+)/,
     rewrite: (id) =>
-      `<iframe src="https://strawpoll.com/embed/polls/${id}"></iframe>`
+      `<iframe src="https://strawpoll.com/embed/polls/${id}"></iframe>`,
   },
   {
     regex: /^(https?:\/\/.*)/,
