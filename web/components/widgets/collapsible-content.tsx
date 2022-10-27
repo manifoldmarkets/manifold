@@ -8,8 +8,12 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 import { Button } from 'web/components/buttons/button'
+import {
+  inMemoryStore,
+  usePersistentState,
+} from 'web/hooks/use-persistent-state'
 
-export const COLLAPSIBLE_HEIGHT = 104
+const COLLAPSIBLE_HEIGHT = 204
 
 export function ShowMoreLessButton(props: {
   onClick: () => void
@@ -35,8 +39,11 @@ export function ShowMoreLessButton(props: {
   )
 }
 
-export function CollapsibleContent(props: { content: JSONContent | string }) {
-  const { content } = props
+export function CollapsibleContent(props: {
+  content: JSONContent | string
+  contractId: string
+}) {
+  const { content, contractId } = props
   const [shouldTruncate, setShouldTruncate] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -46,15 +53,16 @@ export function CollapsibleContent(props: { content: JSONContent | string }) {
       }
     }
   }, [contentRef.current?.offsetHeight])
-  const [isCollapsed, setIsCollapsed] = useState(true)
+  const [isCollapsed, setIsCollapsed] = usePersistentState(true, {
+    store: inMemoryStore(),
+    key: `isCollapsed-contract-${contractId}`,
+  })
 
   if (shouldTruncate) {
     return (
       <div
-        className={clsx(
-          'transition-height relative w-full overflow-hidden',
-          isCollapsed ? `h-[104px]` : 'h-full'
-        )}
+        style={{ height: isCollapsed ? COLLAPSIBLE_HEIGHT : 'auto' }}
+        className={clsx('transition-height relative w-full overflow-hidden')}
       >
         <div ref={contentRef}>
           <Content content={content} />

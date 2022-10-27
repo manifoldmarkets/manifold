@@ -35,7 +35,10 @@ export function ContractDescription(props: {
       {isCreator || isAdmin ? (
         <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
       ) : (
-        <CollapsibleContent content={contract.description} />
+        <CollapsibleContent
+          content={contract.description}
+          contractId={contract.id}
+        />
       )}
     </div>
   )
@@ -81,7 +84,10 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     </>
   ) : (
     <>
-      <CollapsibleContent content={contract.description} />
+      <CollapsibleContent
+        content={contract.description}
+        contractId={contract.id}
+      />
       <Spacer h={4} />
       <Row className="items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
