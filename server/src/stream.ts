@@ -48,20 +48,15 @@ export class TwitchStream {
   }
 
   public async selectMarket(id: string, sourceDock?: DockClient): Promise<Market> {
-    for (const a of this.additionalControls) {
-      if (a.stream) {
-        await a.stream.selectMarket(id, sourceDock); //!!! await fixes thrown errors, but increases delay in selecting
-      }
-    }
+    await Promise.all(this.additionalControls.filter((a) => a.stream).map((a) => a.stream.selectMarket(id, sourceDock)));
 
-    const channel = this.name; //!!!
     this.unfeatureCurrentMarket(sourceDock);
 
     if (id) {
       try {
         const market = await Market.loadFromManifoldID(this.app, id, this);
         this.featuredMarket = market;
-        log.debug(`Selected market '${market.data.question}' for channel '${channel}'`);
+        log.debug(`Selected market '${market.data.question}' for channel '${this.name}'`);
         const initialBetIndex = Math.max(0, market.data.bets.length - 3);
         const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.data.bets, initialBets: market.data.bets.slice(initialBetIndex) };
         this.broadcastToDocks(Packet.SELECT_MARKET_ID, id, sourceDock);
