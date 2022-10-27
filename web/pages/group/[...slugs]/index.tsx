@@ -48,6 +48,7 @@ import { BETTORS } from 'common/user'
 import { Page } from 'web/components/layout/page'
 import { Tabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
+import { HideGroupButton } from 'web/components/buttons/hide-group-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -287,7 +288,10 @@ function JoinOrAddQuestionsButtons(props: {
   return user && isMember ? (
     <AddContractButton group={group} user={user} />
   ) : group.anyoneCanJoin ? (
-    <JoinGroupButton group={group} user={user} />
+    <Row className={'gap-4'}>
+      <JoinGroupButton group={group} user={user} />
+      <HideGroupButton groupSlug={group.slug} />
+    </Row>
   ) : (
     <div />
   )

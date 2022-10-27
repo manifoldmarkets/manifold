@@ -5,7 +5,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { uniq } from 'lodash'
 import { toast } from 'react-hot-toast'
 
-export function BlockGroupButton(props: { groupSlug: string }) {
+export function HideGroupButton(props: { groupSlug: string }) {
   const { groupSlug } = props
   const user = usePrivateUser()
   if (!user) return null
@@ -34,11 +34,11 @@ export function BlockGroupButton(props: { groupSlug: string }) {
     return (
       <Button
         size="sm"
-        color="gray-outline"
+        color="gray"
         className="my-auto"
         onClick={withTracking(onUnblock, 'unblock')}
       >
-        Blocked
+        Hidden
       </Button>
     )
   }
@@ -46,11 +46,11 @@ export function BlockGroupButton(props: { groupSlug: string }) {
   return (
     <Button
       size="sm"
-      color="red"
+      color="gray-outline"
       className="my-auto"
       onClick={withTracking(onBlock, 'block')}
     >
-      Block Group
+      Hide
     </Button>
   )
 }
