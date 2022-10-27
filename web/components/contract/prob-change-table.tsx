@@ -140,7 +140,7 @@ export function ProbOrNumericChange(props: {
         <div
           className={clsx(
             'mr-1 flex  items-center justify-center rounded-full bg-teal-100 px-2 py-1 text-xs font-bold ',
-            change > 0 ? 'bg-teal-100' : 'bg-scarlet-100'
+            change >= 0 ? 'bg-teal-100' : 'bg-scarlet-100'
           )}
         >
           {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
