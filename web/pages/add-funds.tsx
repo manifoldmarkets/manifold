@@ -10,6 +10,29 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { auth } from 'web/lib/firebase/users'
+import { IncrementReq } from './api/v0/increment'
+
+async function increment(req: IncrementReq) {
+  const token = await auth.currentUser?.getIdToken()
+  const res = await fetch('/api/v0/increment', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(req),
+  })
+  return await res.json()
+}
+
+function IncrementButton() {
+  return (
+    <Button onClick={async () => await increment({ amount: 2 })}>
+      Increment
+    </Button>
+  )
+}
 
 export default function AddFundsPage() {
   const user = useUser()
@@ -38,6 +61,8 @@ export default function AddFundsPage() {
             width={200}
             height={158}
           />
+
+          <IncrementButton />
 
           <div className="mb-6 text-gray-500">
             Buy mana (M$) to trade in your favorite markets. <br />{' '}
