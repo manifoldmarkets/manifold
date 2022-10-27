@@ -13,6 +13,7 @@ import {
   getBinaryProbPercent,
   getTrendingContracts,
 } from 'web/lib/firebase/contracts'
+import TinderCard from 'react-tinder-card'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts()).filter(
@@ -50,8 +51,11 @@ function Card(props: {
   contract: BinaryContract
   amount?: number
   setAmount: Dispatch<SetStateAction<number>>
+  onRight: () => void
+  onLeft: () => void
+  onUp: () => void
 }) {
-  const { contract, amount = 10, setAmount } = props
+  const { contract, amount = 10, setAmount, onRight, onLeft, onUp } = props
   const { question, coverImageUrl } = contract
 
   const image =
@@ -59,31 +63,40 @@ function Card(props: {
     `https://picsum.photos/id/${parseInt(contract.id, 36) % 1000}/512`
 
   return (
-    <div className="absolute inset-2 overflow-hidden rounded-2xl">
-      <div className="flex h-full flex-col">
-        <div className="relative grow">
-          <img src={image} alt="" className="h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
+    <TinderCard
+      onSwipe={(direction) => {
+        if (direction === 'left') onLeft()
+        else if (direction === 'right') onRight()
+        else if (direction === 'up') onUp()
+      }}
+      preventSwipe={['down']}
+      className="pressable"
+    >
+      <div className="h-full overflow-hidden rounded-2xl">
+        <div className="flex h-full flex-col bg-black">
+          <div className="relative mb-24 grow">
+            <img src={image} alt="" className="h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
+          </div>
         </div>
-        <div className="h-24 bg-black" />
-      </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-end">
-        {/* [text-shadow:red_1px_1px,#10b981_-1px_-1px] */}
-        <div className="line-clamp-4 mx-8 mt-8 mb-4 text-2xl text-white">
-          {question}
+        <div className="absolute inset-0 flex flex-col items-center justify-end">
+          {/* [text-shadow:red_1px_1px,#10b981_-1px_-1px] */}
+          <div className="line-clamp-4 mx-8 mt-8 mb-4 text-2xl text-white">
+            {question}
+          </div>
+          <Percent contract={contract} />
+          <Button
+            size="2xl"
+            color="yellow"
+            onClick={() => setAmount?.((amount) => amount + betTapAdd)}
+            className="mt-4"
+          >
+            {formatMoney(amount)}
+          </Button>
+          <Spacer h={30} />
         </div>
-        <Percent contract={contract} />
-        <Button
-          size="2xl"
-          color="yellow"
-          onClick={() => setAmount?.((amount) => amount + betTapAdd)}
-          className="mt-4"
-        >
-          {formatMoney(amount)}
-        </Button>
-        <Spacer h={30} />
       </div>
-    </div>
+    </TinderCard>
   )
 }
 
@@ -108,7 +121,14 @@ function Interface(props: { contract: BinaryContract; onNext: () => void }) {
 
   return (
     <>
-      <Card contract={contract} amount={amount} setAmount={setAmount} />
+      <Card
+        contract={contract}
+        amount={amount}
+        setAmount={setAmount}
+        onRight={right}
+        onLeft={left}
+        onUp={onNext}
+      />
       <section className="absolute bottom-0 left-0 right-0 flex flex-col items-center">
         <Row className="mb-2 items-start justify-evenly self-stretch text-lg text-white">
           <div className="flex flex-col items-end">
