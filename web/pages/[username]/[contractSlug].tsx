@@ -127,7 +127,6 @@ export function ContractPageContent(
   )
 
   const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
-  console.log(props.bets)
 
   const userBets =
     useBets(contract.id, { userId: user?.id ?? '_', filterAntes: true }) ?? []
