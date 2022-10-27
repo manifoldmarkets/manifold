@@ -133,7 +133,7 @@ export class Market {
   }
 
   private async resolve() {
-    // this.data = abstractMarketFromFullMarket(await Manifold.getFullMarketByID(this.data.id));
+    if (this.resolveData) return; // Already processed resolve
 
     const resolutionOutcome = getOutcomeForString(this.data.resolution);
     const winners = (await this.calculateWinners()).filter((w) => Math.abs(Math.round(w.profit)) !== 0); // Ignore profit/losses of 0

@@ -48,7 +48,7 @@ export class TwitchStream {
   }
 
   public async selectMarket(id: string, sourceDock?: DockClient): Promise<Market> {
-    await Promise.all(this.additionalControls.filter((a) => a.stream).map((a) => a.stream.selectMarket(id, sourceDock)));
+    await Promise.all(this.additionalControls.filter((a) => a.stream).map((a) => a.stream.selectMarket(id, sourceDock))); // TODO this is vulnerable to circular dependencies/groups
 
     this.unfeatureCurrentMarket(sourceDock);
 

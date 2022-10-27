@@ -1,6 +1,6 @@
 import { ChatUserstate, Client } from 'tmi.js';
 
-import { InsufficientBalanceException } from 'common/exceptions';
+import { InsufficientBalanceException, TradingClosedException } from 'common/exceptions';
 
 import { ResolutionOutcome } from 'common/outcome';
 import App from './app';
@@ -37,8 +37,9 @@ const MSG_POSITION = (username: string, shares_int: number) => {
 };
 const MSG_MARKET_CREATED = (question: string) => `The market '${question}' has been created!`;
 const MSG_MARKET_UNFEATURED = () => `Market unfeatured.`;
-const MSG_COMMAND_FAILED = (username: string, message: string) => `Sorry ${username} but that command failed: ${message}`;
+const MSG_COMMAND_FAILED = (username: string) => `Sorry ${username} but an internal error occurred handling your command BibleThump`;
 const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
+const MSG_TRADING_CLOSED = (username: string) => `Too slow ${username}, your bet was too late!`;
 /* cSpell:disable */
 
 type CommandParams = {
@@ -305,7 +306,11 @@ export default class TwitchBot {
         }
         await command.handler(commandParams);
       } catch (e) {
-        this.client.say(channelName, MSG_COMMAND_FAILED(userDisplayName, e.message));
+        if (e instanceof TradingClosedException) {
+          this.client.say(channelName, MSG_TRADING_CLOSED(userDisplayName));
+        } else {
+          this.client.say(channelName, MSG_COMMAND_FAILED(userDisplayName));
+        }
         log.trace(e);
       }
     });

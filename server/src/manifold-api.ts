@@ -1,6 +1,6 @@
 import fetch, { Response } from 'node-fetch';
 
-import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException } from 'common/exceptions';
+import { ForbiddenException, InsufficientBalanceException, ResourceNotFoundException, TradingClosedException } from 'common/exceptions';
 import { ResolutionOutcome } from 'common/outcome';
 import * as ManifoldAPITypes from 'common/types/manifold-api-types';
 import * as ManifoldInternalTypes from 'common/types/manifold-internal-types';
@@ -32,6 +32,7 @@ async function post(url: string, APIKey: string, requestData: unknown): Promise<
     const errorMessage = error.message;
     if (errorMessage === 'Insufficient balance.') throw new InsufficientBalanceException();
     if (errorMessage === 'Balance must be at least 100.') throw new InsufficientBalanceException();
+    if (errorMessage === 'Trading is closed.') throw new TradingClosedException();
     if (r.status === 403) throw new ForbiddenException(errorMessage);
     if (r.status === 404) throw new ResourceNotFoundException(url);
     throw new Error(errorMessage + (error.details ? ' Details: ' + JSON.stringify(error.details) : '') + ` Request: [${url}]: ${JSON.stringify(requestData)}`);
