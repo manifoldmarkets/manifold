@@ -37,23 +37,9 @@ export async function updateGroupMetrics() {
   log('Computing metric updates...')
   const groupUpdates = await Promise.all(
     groups.map(async (group) => {
-      const groupContractDocs = (
-        await firestore
-          .collection('groups')
-          .doc(group.id)
-          .collection('groupContracts')
-          .get()
-      ).docs.map((d) => d.data() as GroupContractDoc)
-      const groupContractIds = groupContractDocs.map((g) => g.contractId)
-      const groupContractRefs = groupContractIds.map((c) =>
-        firestore.collection('contracts').doc(c)
-      )
-      const groupContracts = (await firestore.getAll(...groupContractRefs)).map(
-        (d) => d.data() as Contract
-      )
-      const groupBets = await loadContractBets(groupContractIds)
+      const groupContracts = await loadGroupContracts(group.id)
+      const groupBets = await loadContractBets(groupContracts.map((c) => c.id))
       const betsByContract = groupBy(groupBets, (bet) => bet.contractId)
-
       const bets = groupContracts.map((e) => betsByContract[e.id] ?? [])
 
       const creatorScores = scoreCreators(groupContracts)
@@ -82,6 +68,27 @@ const topUserScores = (scores: { [userId: string]: number }) => {
     .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
     .slice(0, 50)
   return top50.map(([userId, score]) => ({ userId, score }))
+}
+
+async function loadGroupContracts(groupId: string) {
+  const groupContractDocs = (
+    await firestore
+      .collection('groups')
+      .doc(groupId)
+      .collection('groupContracts')
+      .get()
+  ).docs.map((d) => d.data() as GroupContractDoc)
+  if (groupContractDocs.length === 0) {
+    return []
+  } else {
+    const groupContractIds = groupContractDocs.map((g) => g.contractId)
+    const groupContractRefs = groupContractIds.map((c) =>
+      firestore.collection('contracts').doc(c)
+    )
+    return (await firestore.getAll(...groupContractRefs)).map(
+      (d) => d.data() as Contract
+    )
+  }
 }
 
 async function loadContractBets(contractIds: string[]) {
