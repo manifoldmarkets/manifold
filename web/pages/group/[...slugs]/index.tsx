@@ -13,9 +13,14 @@ import {
   listMemberIds,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
-import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
+import {
+  firebaseLogin,
+  getUser,
+  getUsersBlockFacetFilters,
+  User,
+} from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   useGroup,
   useGroupContractIds,
@@ -144,6 +149,7 @@ export default function GroupPage(props: {
   }
 
   const user = useUser()
+  const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
 
@@ -189,7 +195,10 @@ export default function GroupPage(props: {
                   user={user}
                   defaultSort={'score'}
                   defaultFilter={suggestedFilter}
-                  additionalFilter={{ groupSlug: group.slug }}
+                  additionalFilter={{
+                    groupSlug: group.slug,
+                    facetFilters: getUsersBlockFacetFilters(privateUser),
+                  }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
                 />

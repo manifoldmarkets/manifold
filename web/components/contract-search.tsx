@@ -76,6 +76,7 @@ type AdditionalFilter = {
   tag?: string
   excludeContractIds?: string[]
   groupSlug?: string
+  facetFilters?: string[]
 }
 
 export function ContractSearch(props: {
