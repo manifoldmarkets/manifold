@@ -38,7 +38,7 @@ import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
-import { SectionHeader } from './groups/group-overview'
+import { SectionHeader } from './groups/group-about'
 import { Button } from './buttons/button'
 import { BotBadge } from './widgets/user-link'
 

@@ -44,7 +44,7 @@ import {
 } from 'web/hooks/use-contracts'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Input } from 'web/components/widgets/input'
-import { PinnedItems } from 'web/components/groups/group-overview'
+import { PinnedItems } from 'web/components/groups/group-about'
 import {
   getGlobalConfig,
   updateGlobalConfig,

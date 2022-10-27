@@ -42,7 +42,7 @@ import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
 import { Page } from 'web/components/layout/page'
 import { Tabs } from 'web/components/layout/tabs'
-import { GroupOverview } from 'web/components/groups/group-overview'
+import { GroupAbout } from 'web/components/groups/group-about'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -99,10 +99,9 @@ export async function getStaticPaths() {
 const groupSubpages = [
   undefined,
   GROUP_CHAT_SLUG,
-  'overview',
   'markets',
-  'leaderboards',
   'about',
+  'leaderboards',
 ] as const
 
 export default function GroupPage(props: {
@@ -131,8 +130,8 @@ export default function GroupPage(props: {
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
-  const tabIndex = ['overview', 'markets', 'leaderboards'].indexOf(
-    page === 'about' ? 'overview' : page ?? 'markets'
+  const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
+    page === 'about' ? 'about' : page ?? 'markets'
   )
 
   const group = useGroup(props.group?.id) ?? props.group
@@ -183,20 +182,6 @@ export default function GroupPage(props: {
           className={'mb-2'}
           tabs={[
             {
-              title: 'Overview',
-              content: (
-                <GroupOverview
-                  group={group}
-                  posts={groupPosts}
-                  isEditable={!!isCreator || isAdmin}
-                  aboutPost={aboutPost}
-                  creator={creator}
-                  user={user}
-                  memberIds={memberIds}
-                />
-              ),
-            },
-            {
               title: 'Markets',
               content: (
                 <ContractSearch
@@ -207,6 +192,20 @@ export default function GroupPage(props: {
                   additionalFilter={{ groupSlug: group.slug }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
+                />
+              ),
+            },
+            {
+              title: 'About',
+              content: (
+                <GroupAbout
+                  group={group}
+                  posts={groupPosts}
+                  isEditable={!!isCreator || isAdmin}
+                  aboutPost={aboutPost}
+                  creator={creator}
+                  user={user}
+                  memberIds={memberIds}
                 />
               ),
             },

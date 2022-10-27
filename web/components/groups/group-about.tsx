@@ -12,7 +12,6 @@ import { Post } from 'common/post'
 import { useEffect, useState } from 'react'
 import { ReactNode } from 'react'
 import { getPost } from 'web/lib/firebase/posts'
-import { ContractSearch } from '../contract-search'
 import { ContractCard } from '../contract/contract-card'
 
 import Masonry from 'react-masonry-css'
@@ -20,7 +19,7 @@ import Masonry from 'react-masonry-css'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { SiteLink } from '../widgets/site-link'
-import { GroupOverviewPost } from './group-overview-post'
+import { GroupOverviewPost as GroupAboutPost } from './group-overview-post'
 import { getContractFromId } from 'web/lib/firebase/contracts'
 import { groupPath, updateGroup } from 'web/lib/firebase/groups'
 import { PinnedSelectModal } from '../pinned-select-modal'
@@ -42,9 +41,7 @@ import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 
-const MAX_TRENDING_POSTS = 6
-
-export function GroupOverview(props: {
+export function GroupAbout(props: {
   group: Group
   isEditable: boolean
   posts: Post[]
@@ -57,32 +54,18 @@ export function GroupOverview(props: {
     props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-      <GroupOverviewPinned
-        group={group}
-        posts={posts}
-        isEditable={isEditable}
-      />
+      <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (
         <>
-          <SectionHeader label={'About'} href={'/post/' + group.slug} />
-          <GroupOverviewPost
+          <GroupAboutPost
             group={group}
             isEditable={isEditable}
             post={aboutPost}
           />
         </>
       )}
-      <SectionHeader label={'Trending'} />
-      <ContractSearch
-        user={user}
-        defaultSort={'score'}
-        noControls
-        maxResults={MAX_TRENDING_POSTS}
-        defaultFilter={'all'}
-        additionalFilter={{ groupSlug: group.slug }}
-        persistPrefix={`group-trending-${group.slug}`}
-      />
-      <GroupAbout
+
+      <GroupAboutDetails
         group={group}
         creator={creator}
         isEditable={isEditable}
@@ -135,7 +118,7 @@ export function GroupPosts(props: { posts: Post[]; group: Group }) {
   return showCreatePost ? createPost : postList
 }
 
-function GroupOverviewPinned(props: {
+function GroupFeatured(props: {
   group: Group
   posts: Post[]
   isEditable: boolean
@@ -340,7 +323,7 @@ export function SectionHeader(props: {
   )
 }
 
-export function GroupAbout(props: {
+export function GroupAboutDetails(props: {
   group: Group
   creator: User
   user: User | null | undefined
