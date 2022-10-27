@@ -381,6 +381,7 @@ function ContractSearchControls(props: {
     additionalFilter?.groupSlug
       ? `groupLinks.slug:${additionalFilter.groupSlug}`
       : '',
+    ...(additionalFilter?.facetFilters ?? []),
   ]
   const facetFilters = query
     ? additionalFilters
