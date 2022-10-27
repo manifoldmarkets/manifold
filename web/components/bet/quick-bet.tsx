@@ -334,7 +334,6 @@ function ContractCardAnswer(props: {
   type: 'winner' | 'loser' | 'contender'
 }) {
   const { contract, answer, answersArray, type } = props
-  console.log(answer.text, type)
   const prob = getOutcomeProbability(contract, answer.id)
   const display = formatPercent(getOutcomeProbability(contract, answer.id))
   const color = getAnswerColor(answer, answersArray)
