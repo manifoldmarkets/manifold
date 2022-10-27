@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import {
+  Contract,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_QUESTION_LENGTH,
+} from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
@@ -142,6 +146,7 @@ function EditQuestion(props: {
       <ExpandingInput
         className="mb-1 h-24 w-full"
         rows={2}
+        maxLength={MAX_QUESTION_LENGTH}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
         autoFocus
