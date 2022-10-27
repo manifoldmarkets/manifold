@@ -6,10 +6,7 @@ import {
   getTopAnswer,
   getTopNSortedAnswers,
 } from 'common/calculate'
-import {
-  getDpmOutcomeProbability,
-  getExpectedValue,
-} from 'common/calculate-dpm'
+import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
 import {
   BinaryContract,
@@ -40,8 +37,6 @@ import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
-import { FreeResponseTopAnswer } from '../contract/contract-card'
-import { Tooltip } from '../widgets/tooltip'
 import { Col } from '../layout/col'
 import { Answer } from 'common/answer'
 import { AnswerLabel } from '../outcome-label'
@@ -56,7 +51,7 @@ export function QuickBet(props: {
   className?: string
 }) {
   const { contract, user, className } = props
-  const { mechanism, outcomeType } = contract
+  const { mechanism } = contract
   const isCpmm = mechanism === 'cpmm-1'
 
   const userBets = useUserContractBets(user.id, contract.id)
@@ -69,7 +64,6 @@ export function QuickBet(props: {
 
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
-  const textColor = `text-${getTextColor(contract)}`
 
   let previewProb = undefined
   try {
@@ -284,14 +278,20 @@ export function QuickOutcomeView(props: {
     )
   }
 
-  const answers = getTopNSortedAnswers(contract, 3)
-  if (answers.length === 0) {
-    return <div>No answers yet...</div>
-  }
+  return <ContractCardAnswers contract={contract} />
+}
 
+export function ContractCardAnswers(props: {
+  contract: FreeResponseContract | MultipleChoiceContract
+}) {
+  const { contract } = props
+  const answers = getTopNSortedAnswers(contract, 3)
   const answersArray = useChartAnswers(contract).map(
     (answer, _index) => answer.text
   )
+  if (answers.length === 0) {
+    return <div>No answers yet...</div>
+  }
   return (
     <Col className="gap-2">
       {answers.map((answer) => (
