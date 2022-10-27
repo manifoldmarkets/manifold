@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sortBy } from 'lodash'
 
 import { getValues, invokeFunction, log, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
@@ -39,22 +38,18 @@ export async function updateContractMetrics() {
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
   log(`Loaded ${contracts.length} contracts.`)
 
-  log('Loading bets...')
-  const bets = await loadContractBets(contracts.map((c) => c.id))
-  log(`Loaded ${bets.length} bets.`)
-
   log('Computing metric updates...')
 
   const now = Date.now()
-  const betsByContract = groupBy(bets, (bet) => bet.contractId)
-  const contractUpdates = contracts
-    .filter((contract) => contract.id)
-    .map((contract) => {
-      const contractBets = betsByContract[contract.id] ?? []
-      const descendingBets = sortBy(
-        contractBets,
-        (bet) => bet.createdTime
-      ).reverse()
+  const contractUpdates = await batchedWaitAll(
+    contracts.map((contract) => async () => {
+      const descendingBets = await getValues<Bet>(
+        firestore
+          .collection('contracts')
+          .doc(contract.id)
+          .collection('bets')
+          .orderBy('createdTime', 'desc')
+      )
 
       let cpmmFields: Partial<CPMM> = {}
       if (contract.mechanism === 'cpmm-1') {
@@ -71,28 +66,16 @@ export async function updateContractMetrics() {
       return {
         doc: firestore.collection('contracts').doc(contract.id),
         fields: {
-          volume24Hours: computeVolume(contractBets, now - DAY_MS),
-          volume7Days: computeVolume(contractBets, now - DAY_MS * 7),
-          elasticity: computeElasticity(contractBets, contract),
+          volume24Hours: computeVolume(descendingBets, now - DAY_MS),
+          volume7Days: computeVolume(descendingBets, now - DAY_MS * 7),
+          elasticity: computeElasticity(descendingBets, contract),
           ...cpmmFields,
         },
       }
-    })
+    }),
+    100
+  )
 
   log('Writing contract metric updates...')
   await writeAsync(firestore, contractUpdates)
-}
-
-async function loadContractBets(contractIds: string[]) {
-  return (
-    await batchedWaitAll(
-      contractIds.map(
-        (c) => () =>
-          getValues<Bet>(
-            firestore.collection('contracts').doc(c).collection('bets')
-          )
-      ),
-      100
-    )
-  ).flat()
 }

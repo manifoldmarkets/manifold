@@ -18,12 +18,15 @@ const calculateNewLoan = (investedValue: number, loanTotal: number) => {
 }
 
 export const getUserLoanUpdates = (
-  bets: Bet[],
+  betsByContractId: { [contractId: string]: Bet[] },
   contractsById: { [contractId: string]: Contract },
   portfolio?: PortfolioMetrics | undefined
 ) => {
   if (isUserEligibleForLoan(portfolio)) {
-    const updates = calculateLoanBetUpdates(bets, contractsById).betUpdates
+    const updates = calculateLoanBetUpdates(
+      betsByContractId,
+      contractsById
+    ).betUpdates
     return { updates, payout: sumBy(updates, (update) => update.newLoan) }
   } else {
     return undefined
@@ -39,7 +42,7 @@ export const getLoanUpdates = (
   const userUpdates = filterDefined(
     users.map((user) => {
       const result = getUserLoanUpdates(
-        betsByUser[user.id] ?? [],
+        groupBy(betsByUser[user.id] ?? [], (b) => b.contractId),
         contractsById,
         portfolioByUser[user.id]
       )
@@ -63,24 +66,23 @@ const isUserEligibleForLoan = (portfolio: PortfolioMetrics | undefined) => {
 }
 
 const calculateLoanBetUpdates = (
-  bets: Bet[],
+  betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>
 ) => {
-  const betsByContract = groupBy(bets, (bet) => bet.contractId)
   const contracts = filterDefined(
-    Object.keys(betsByContract).map((contractId) => contractsById[contractId])
+    Object.keys(betsByContractId).map((contractId) => contractsById[contractId])
   ).filter((c) => !c.isResolved)
 
   const betUpdates = filterDefined(
     contracts
       .map((c) => {
         if (c.mechanism === 'cpmm-1') {
-          return getBinaryContractLoanUpdate(c, betsByContract[c.id])
+          return getBinaryContractLoanUpdate(c, betsByContractId[c.id])
         } else if (
           c.outcomeType === 'FREE_RESPONSE' ||
           c.outcomeType === 'MULTIPLE_CHOICE'
         )
-          return getFreeResponseContractLoanUpdate(c, betsByContract[c.id])
+          return getFreeResponseContractLoanUpdate(c, betsByContractId[c.id])
         else {
           // Unsupported contract / mechanism for loans.
           return []

@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { keyBy } from 'lodash'
+import { groupBy } from 'lodash'
 
 import { getValues, invokeFunction, log, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
@@ -45,13 +45,15 @@ export async function updateUserMetrics() {
   const users = await getValues<User>(firestore.collection('users'))
   log(`Loaded ${users.length} users.`)
 
-  log('Loading portfolio history...')
-  const userPortfolioHistory = await loadPortfolioHistory(users)
-  log(`Loaded portfolio history for ${users.length} users.`)
+  log('Loading contracts...')
+  const contracts = await getValues<Contract>(firestore.collection('contracts'))
+  log(`Loaded ${contracts.length} contracts.`)
+  const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
   log('Computing metric updates...')
-  const userMetrics = await Promise.all(
-    users.map(async (user) => {
+  const now = Date.now()
+  const userMetrics = await batchedWaitAll(
+    users.map((user) => async () => {
       const userContracts = (
         await firestore
           .collection('contracts')
@@ -64,11 +66,8 @@ export async function updateUserMetrics() {
           .where('userId', '==', user.id)
           .get()
       ).docs.map((d) => d.data() as Bet)
-      const contractsById = Object.fromEntries(
-        userContracts.map((contract) => [contract.id, contract])
-      )
-
-      const portfolioHistory = userPortfolioHistory[user.id] ?? []
+      const betsByContractId = groupBy(currentBets, (b) => b.contractId)
+      const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorVolume = calculateCreatorVolume(userContracts)
       const newPortfolio = calculateNewPortfolioMetrics(
         user,
@@ -85,7 +84,7 @@ export async function updateUserMetrics() {
       const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
       const metricsByContract = calculateMetricsByContract(
-        currentBets,
+        betsByContractId,
         contractsById
       )
 
@@ -114,7 +113,7 @@ export async function updateUserMetrics() {
       }
 
       const nextLoanPayout = getUserLoanUpdates(
-        currentBets,
+        betsByContractId,
         contractsById,
         newPortfolio
       )?.payout
@@ -129,7 +128,8 @@ export async function updateUserMetrics() {
         metricsByContract,
         nextLoanPayout,
       }
-    })
+    }),
+    100
   )
 
   const userUpdates = userMetrics.map(
@@ -188,43 +188,32 @@ export async function updateUserMetrics() {
   await writeAsync(firestore, contractMetricsUpdates, 'set')
 }
 
-const loadPortfolioHistory = async (users: User[]) => {
-  const now = Date.now()
-  const userPortfolioHistory = await batchedWaitAll(
-    users.map((user) => async () => {
-      const query = firestore
-        .collection('users')
-        .doc(user.id)
-        .collection('portfolioHistory')
-        .orderBy('timestamp', 'desc')
-        .limit(1)
+const loadPortfolioHistory = async (userId: string, now: number) => {
+  const query = firestore
+    .collection('users')
+    .doc(userId)
+    .collection('portfolioHistory')
+    .orderBy('timestamp', 'desc')
+    .limit(1)
 
-      const portfolioMetrics = await Promise.all([
-        getValues<PortfolioMetrics>(query),
-        getValues<PortfolioMetrics>(
-          query.where('timestamp', '<', now - DAY_MS)
-        ),
-        getValues<PortfolioMetrics>(
-          query.where('timestamp', '<', now - 7 * DAY_MS)
-        ),
-        getValues<PortfolioMetrics>(
-          query.where('timestamp', '<', now - 30 * DAY_MS)
-        ),
-      ])
-      const [current, day, week, month] = portfolioMetrics.map(
-        (p) => p[0] as PortfolioMetrics | undefined
-      )
-
-      return {
-        userId: user.id,
-        current,
-        day,
-        week,
-        month,
-      }
-    }),
-    100
+  const portfolioMetrics = await Promise.all([
+    getValues<PortfolioMetrics>(query),
+    getValues<PortfolioMetrics>(query.where('timestamp', '<', now - DAY_MS)),
+    getValues<PortfolioMetrics>(
+      query.where('timestamp', '<', now - 7 * DAY_MS)
+    ),
+    getValues<PortfolioMetrics>(
+      query.where('timestamp', '<', now - 30 * DAY_MS)
+    ),
+  ])
+  const [current, day, week, month] = portfolioMetrics.map(
+    (p) => p[0] as PortfolioMetrics | undefined
   )
 
-  return keyBy(userPortfolioHistory, (p) => p.userId)
+  return {
+    current,
+    day,
+    week,
+    month,
+  }
 }

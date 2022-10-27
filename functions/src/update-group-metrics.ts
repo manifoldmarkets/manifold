@@ -35,8 +35,8 @@ export async function updateGroupMetrics() {
   const groups = await getValues<Group>(firestore.collection('groups'))
   log(`Loaded ${groups.length} groups.`)
   log('Computing metric updates...')
-  const groupUpdates = await Promise.all(
-    groups.map(async (group) => {
+  const groupUpdates = await batchedWaitAll(
+    groups.map((group) => async () => {
       const groupContracts = await loadGroupContracts(group.id)
       const groupBets = await loadContractBets(groupContracts.map((c) => c.id))
       const betsByContract = groupBy(groupBets, (bet) => bet.contractId)
@@ -57,7 +57,8 @@ export async function updateGroupMetrics() {
           },
         },
       }
-    })
+    }),
+    100
   )
   log('Writing metric updates...')
   await writeAsync(firestore, groupUpdates)
@@ -85,9 +86,8 @@ async function loadGroupContracts(groupId: string) {
     const groupContractRefs = groupContractIds.map((c) =>
       firestore.collection('contracts').doc(c)
     )
-    return (await firestore.getAll(...groupContractRefs)).map(
-      (d) => d.data() as Contract
-    )
+    const contractDocs = await firestore.getAll(...groupContractRefs)
+    return contractDocs.map((d) => d.data() as Contract)
   }
 }
 
