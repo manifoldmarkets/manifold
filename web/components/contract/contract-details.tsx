@@ -93,15 +93,12 @@ export function MiscDetails(props: {
       )}
 
       {!hideGroupLink && groupToDisplay && (
-        <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-          <a
-            className={clsx(
-              linkClass,
-              'overflow-hidden text-ellipsis text-sm text-gray-400'
-            )}
-          >
-            {groupToDisplay.name}
-          </a>
+        <Link
+          prefetch={false}
+          href={groupPath(groupToDisplay.slug)}
+          className={clsx(linkClass, 'truncate text-sm text-gray-400')}
+        >
+          {groupToDisplay.name}
         </Link>
       )}
     </Row>
