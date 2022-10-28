@@ -518,6 +518,7 @@ function GroupSection(props: {
       <ContractsGrid
         contracts={contracts.slice(0, 4)}
         cardUIOptions={{ showProbChange: true }}
+        showImageOnTopContract={true}
       />
     </Col>
   )
