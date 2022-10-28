@@ -150,7 +150,7 @@ export function QuickBet(props: {
       <Row
         className={clsx(
           className,
-          'absolute my-auto mt-0.5 w-full items-center justify-between align-middle'
+          'absolute my-auto  w-full items-center justify-between align-middle'
         )}
       >
         <Row
@@ -161,7 +161,7 @@ export function QuickBet(props: {
         >
           <TriangleLeftFillIcon
             className={clsx(
-              'mx-auto h-6 w-6',
+              'mx-auto h-8 w-8',
               downHover ? 'text-indigo-700' : 'text-indigo-500'
             )}
           />
@@ -190,7 +190,7 @@ export function QuickBet(props: {
           </span>
           <TriangleRightFillIcon
             className={clsx(
-              'mx-auto h-6 w-6',
+              'mx-auto h-8 w-8',
               upHover ? 'text-indigo-700' : 'text-indigo-500'
             )}
           />
@@ -270,7 +270,7 @@ export function QuickOutcomeView(props: {
           }%, ${getBgColor(contract)} ${100 * prob}%)`,
         }}
       >
-        <div className={`mx-auto font-semibold ${textColor}`}>
+        <div className={`mx-auto font-semibold ${textColor} text-xl`}>
           {contract.resolution ?? override ?? display}
         </div>
         {caption && <div className="text-base">{caption}</div>}
@@ -413,14 +413,14 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? '#c7d2fe'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? '#e1e7fc'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return '#D8D8EB'
   }
 
-  return '#c7d2fe'
+  return '#e1e7fc'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
