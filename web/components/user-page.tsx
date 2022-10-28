@@ -113,12 +113,12 @@ export function UserPage(props: { user: User }) {
               </Col>
               <Row
                 className={
-                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-8'
+                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-4'
                 }
               >
                 {isCurrentUser && <DailyStats user={user} showLoans />}
                 {!isCurrentUser && <UserFollowButton userId={user.id} />}
-                {!isCurrentUser && <BlockUserButton userId={user.id} />}
+                {!isCurrentUser && <BlockUserButton user={user} />}
               </Row>
             </div>
             <ProfilePublicStats

@@ -49,11 +49,11 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
               </Col>
               <Row
                 className={
-                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-8'
+                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-4'
                 }
               >
                 <UserFollowButton userId={user.id} />
-                <BlockUserButton userId={user.id} />
+                <BlockUserButton user={user} />
               </Row>
             </div>
           </Col>
