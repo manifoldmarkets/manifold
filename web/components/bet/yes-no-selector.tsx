@@ -29,24 +29,6 @@ export function YesNoSelector(props: {
 
   return (
     <Row className={clsx('space-x-3', className)}>
-      {replaceYesButton ? (
-        replaceYesButton
-      ) : (
-        <button
-          className={clsx(
-            commonClassNames,
-            selected == 'YES'
-              ? 'border-teal-500 bg-teal-500 text-white'
-              : selected == 'NO'
-              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-teal-500 hover:text-teal-500'
-              : 'border-teal-500 bg-white text-teal-500 hover:bg-teal-50',
-            btnClassName
-          )}
-          onClick={() => onSelect('YES')}
-        >
-          {isPseudoNumeric ? 'HIGHER' : 'YES'}
-        </button>
-      )}
       {replaceNoButton ? (
         replaceNoButton
       ) : (
@@ -63,6 +45,24 @@ export function YesNoSelector(props: {
           onClick={() => onSelect('NO')}
         >
           {isPseudoNumeric ? 'LOWER' : 'NO'}
+        </button>
+      )}
+      {replaceYesButton ? (
+        replaceYesButton
+      ) : (
+        <button
+          className={clsx(
+            commonClassNames,
+            selected == 'YES'
+              ? 'border-teal-500 bg-teal-500 text-white'
+              : selected == 'NO'
+              ? 'border-greyscale-3 text-greyscale-3 bg-white hover:border-teal-500 hover:text-teal-500'
+              : 'border-teal-500 bg-white text-teal-500 hover:bg-teal-50',
+            btnClassName
+          )}
+          onClick={() => onSelect('YES')}
+        >
+          {isPseudoNumeric ? 'HIGHER' : 'YES'}
         </button>
       )}
     </Row>
