@@ -17,7 +17,7 @@ import {
   privateUsers,
   updatePrivateUser,
 } from 'web/lib/firebase/users'
-import { removeUndefinedProps } from 'common/lib/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 
 export function getNotificationsQuery(
   userId: string,
