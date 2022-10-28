@@ -159,7 +159,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [
     globalConfig,
-    privateUser,
     privateUser?.blockedByUserIds,
     privateUser?.blockedContractIds,
     privateUser?.blockedGroupSlugs,
