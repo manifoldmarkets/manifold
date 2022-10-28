@@ -3,7 +3,6 @@ import {
   ExclamationIcon,
   PencilIcon,
   PlusCircleIcon,
-  UserGroupIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
