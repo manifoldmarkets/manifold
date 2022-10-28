@@ -1,4 +1,23 @@
-// const l = logger({ level: 'trace' });
+import { Log, Logging } from '@google-cloud/logging';
+import { GOOGLE_LOG_NAME, GOOGLE_PROJECT_ID } from './envs';
+import { detectGCloudInstance } from './utils';
+
+enum Level {
+  INFO,
+  DEBUG,
+  WARN,
+  ERROR,
+  TRACE,
+}
+
+let l: Log;
+detectGCloudInstance().then((r) => {
+  if (r) {
+    const logging = new Logging({ projectId: GOOGLE_PROJECT_ID });
+    l = logging.log(GOOGLE_LOG_NAME);
+    log(Level.INFO, 'Using Google Cloud Logging');
+  }
+});
 
 function formatDate(date: Date) {
   let day = date.getDate().toString();
@@ -16,14 +35,6 @@ function formatDate(date: Date) {
   return `[${date.getFullYear()}-${month}-${day} ${hours}:${minutes}:${seconds}.${millis}]`;
 }
 
-enum Level {
-  INFO,
-  DEBUG,
-  WARN,
-  ERROR,
-  TRACE,
-}
-
 const date = new Date();
 function log(level: Level, msg: any, ...args: any[]) {
   date.setTime(Date.now());
@@ -34,20 +45,26 @@ function log(level: Level, msg: any, ...args: any[]) {
   switch (level) {
     case Level.DEBUG:
       console.debug(output);
+      l?.debug(l.entry(output));
       break;
     case Level.ERROR:
       console.error(output);
+      l?.error(l.entry(output));
       break;
     case Level.INFO:
       console.log(output);
+      l?.info(l.entry(output));
       break;
     case Level.WARN:
       console.warn(output);
+      l?.warning(l.entry(output));
       break;
     case Level.TRACE:
       console.error(timestamp + ' ' + Level[level] + ': ' + msg.stack);
+      l?.error(l.entry(output));
       break;
     default:
+      l?.info(l.entry(output));
       console.log(output);
   }
 }

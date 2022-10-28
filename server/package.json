@@ -10,6 +10,7 @@
     "lint": "eslint src --ext ts"
   },
   "dependencies": {
+    "@google-cloud/logging": "^10.2.0",
     "bufferutil": "^4.0.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
@@ -18,7 +19,6 @@
     "http-proxy-middleware": "^2.0.6",
     "lodash": "^4.17.21",
     "node-fetch": "^3.2.7",
-    "pino": "^8.3.1",
     "socket.io": "4.5.2",
     "tmi.js": "^1.5.0",
     "utf-8-validate": "^5.0.9"

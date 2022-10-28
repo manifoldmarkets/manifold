@@ -52,3 +52,6 @@ export const MANIFOLD_FIREBASE_CONFIG =
         // appId: '1:134303100058:web:27f9ea8b83347251f80323',
         // measurementId: 'G-YJC9E37P37',
       };
+
+export const GOOGLE_PROJECT_ID = 'mantic-markets';
+export const GOOGLE_LOG_NAME = 'bot-' + TARGET;
