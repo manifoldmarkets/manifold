@@ -1,6 +1,5 @@
 import { useRouter } from 'next/router'
 import React from 'react'
-
 import {
   getUserByUsername,
   getUserAndPrivateUser,
@@ -14,7 +13,6 @@ import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { UserAndPrivateUser } from 'common/user'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { usePrivateUser } from 'web/hooks/use-user'
-
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
