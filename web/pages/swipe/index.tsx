@@ -1,8 +1,7 @@
-import clsx from 'clsx'
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
 import { RichContent } from 'web/components/widgets/editor'
@@ -59,15 +58,12 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
 const betTapAdd = 10
 // const betHoldAdd = 100
 
-type CardRef = Parameters<typeof TinderCard>[0]['ref']
-
 const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
   const { contract, onLeave } = props
   const { question, description, coverImageUrl, id } = contract
 
   const [amount, setAmount] = useState(10)
-
-  const ref: CardRef = useRef(null)
+  const onClickMoney = () => setAmount?.((amount) => amount + betTapAdd)
 
   const image =
     coverImageUrl ??
@@ -85,7 +81,6 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
       onCardLeftScreen={onLeave}
       preventSwipe={['down']}
       className={'absolute inset-2 cursor-grab last:inset-0'}
-      ref={ref}
     >
       <div className="h-full overflow-hidden rounded-2xl">
         {/* background */}
@@ -101,12 +96,7 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
           <div className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white [text-shadow:black_1px_1px_4px] ">
             {question}
           </div>
-          <Percents
-            contract={contract}
-            amount={amount}
-            onLeft={() => ref.current?.swipe('left')}
-            onRight={() => ref.current?.swipe('right')}
-          />
+          <Percents contract={contract} amount={amount} />
           {/* TODO: exclude embeds, images */}
           <RichContent
             content={description}
@@ -149,36 +139,25 @@ const CornerDetails = (props: { contract: Contract }) => {
   )
 }
 
-const Percents = (props: {
-  contract: BinaryContract
-  amount: number
-  onLeft: () => void
-  onRight: () => void
-}) => {
-  const { contract, amount, onLeft, onRight } = props
+const Percents = (props: { contract: BinaryContract; amount: number }) => {
+  const { contract, amount } = props
   const percent = getBinaryProbPercent(contract)
 
   return (
-    <div className="flex justify-evenly text-3xl font-semibold">
-      <button
-        className="pressable text-scarlet-200 flex items-center p-4 [text-shadow:#991600_4px_-2px]"
-        onClick={onLeft}
-      >
+    <div className="flex items-center justify-evenly text-2xl font-semibold">
+      <div className="text-scarlet-200 text-center [text-shadow:#991600_4px_-2px]">
         {formatPercent(
           1 - getOutcomeProbabilityAfterBet(contract, 'NO', amount)
         )}{' '}
         ←
-      </button>
+      </div>
       <div className="text-7xl text-white [text-shadow:#4337c9_0_6px]">
         {percent}
       </div>{' '}
-      <button
-        className="pressable flex items-center p-4 text-teal-200 [text-shadow:#0f766e_-4px_2px]"
-        onClick={onRight}
-      >
+      <div className="text-center text-teal-200 [text-shadow:#0f766e_-4px_2px]">
         →{' '}
         {formatPercent(getOutcomeProbabilityAfterBet(contract, 'YES', amount))}
-      </button>
+      </div>
     </div>
   )
 }
