@@ -70,7 +70,11 @@ export const BOT_USERNAMES = [
   'RyanBot',
   'trainbot',
   'runebot',
+  'BioExperimentBot',
   'LiquidityBonusBot',
+  'clearthinkbot',
+  'CARTBot',
+  'CEPBot',
 ]
 
 export function firestoreConsolePath(contractId: string) {
