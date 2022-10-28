@@ -214,8 +214,8 @@ function BinaryQuickBetButton(props: {
   return (
     <Row
       className={clsx(
-        'items-center gap-1',
-        direction === 'UP' ? 'flex-row-reverse' : ''
+        'absolute top-0 w-[50%] gap-1',
+        direction === 'UP' ? 'right-0 flex-row-reverse  ' : 'left-0'
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -224,7 +224,7 @@ function BinaryQuickBetButton(props: {
       {direction === 'DOWN' && (
         <EquilateralLeftTriangle
           className={clsx(
-            'mx-auto h-6 w-6 drop-shadow-md transition-all',
+            'mx-2 h-6 w-6 drop-shadow-md transition-all',
             shouldFocus
               ? 'animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
               : hasInvestment
@@ -236,7 +236,7 @@ function BinaryQuickBetButton(props: {
       {direction === 'UP' && (
         <EquilateralRightTriangle
           className={clsx(
-            'mx-auto h-6 w-6 drop-shadow-md transition-all',
+            'mx-2 h-6 w-6 drop-shadow-md transition-all',
             shouldFocus
               ? 'sm:animate-bounce-right ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
               : hasInvestment
