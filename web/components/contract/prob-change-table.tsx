@@ -130,12 +130,12 @@ export function ProbOrNumericChange(props: {
     probChanges: { day: change },
   } = contract
 
-  const color = change >= 0 ? 'text-teal-500' : 'text-scarlet-400'
+  const color = change >= 0 ? 'text-teal-600' : 'text-scarlet-600'
   if (Math.abs(change * 100) > 5) {
     return (
       <div
         className={clsx(
-          'mr-1 flex  items-center justify-center rounded-full bg-teal-100 px-2 py-1 text-xs font-bold ',
+          'mr-1 flex  items-center justify-center rounded-full bg-teal-100 px-2 py-1 text-xs font-semibold ',
           change >= 0 ? 'bg-teal-100' : 'bg-scarlet-100',
           color
         )}

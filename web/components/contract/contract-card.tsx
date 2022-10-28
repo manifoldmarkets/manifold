@@ -121,7 +121,7 @@ export function ContractCard(props: {
           </div>
         )}
 
-        <Col className="gap-1 px-4 pb-2">
+        <Col className="gap-1 px-4 pb-1">
           {/* question is here if not overlaid on an image */}
           {(!showImage || !contract.coverImageUrl) && (
             <div
@@ -139,7 +139,7 @@ export function ContractCard(props: {
             <QuickOutcomeView contract={contract} />
           )}
         </Col>
-        <Row className={clsx('mb-1 mt-1 gap-1 px-4')}>
+        <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}
@@ -440,7 +440,7 @@ export function ContractCardProbChange(props: {
                   ? 'text-greyscale-6'
                   : profit > 0
                   ? 'text-teal-500'
-                  : 'text-red-500'
+                  : 'text-red-600'
               )}
             >
               {profit ? formatMoney(profit) : '--'}
