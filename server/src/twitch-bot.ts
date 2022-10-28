@@ -41,7 +41,10 @@ const MSG_COMMAND_FAILED = (username: string) => `Sorry ${username} but an inter
 const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no market is currently active on this stream.`;
 const MSG_TRADING_CLOSED = (username: string) => `Too slow ${username}, your bet was too late!`;
 const MSG_FEATURED = (market: Market) => `The market ${market.data.question} is now being featured! ${market.data.url}`;
+const MSG_BEHIND_PROCESSING = () => `The bot is processing a lot of orders right now, please be patient!`;
 /* cSpell:disable */
+
+const QUEUE_WARNING_THRESHOLD = 5;
 
 type CommandParams = {
   args: string[];
@@ -63,9 +66,15 @@ type CommandDef = {
   };
 };
 
+type RateLimits = {
+  lastProcessingWarning_ms: number;
+};
+
 export default class TwitchBot {
   private readonly app: App;
   private readonly client: Client;
+  private readonly messageQueue: { [channel: string]: { command: CommandDef; params: CommandParams }[] } = {};
+  private readonly rateLimits: { [channel: string]: RateLimits } = {};
 
   constructor(app: App) {
     this.app = app;
@@ -305,16 +314,51 @@ export default class TwitchBot {
             return;
           }
         }
-        await command.handler(commandParams);
+        // await command.handler(commandParams);
+        this.addMessageToQueue(channelName, command, commandParams);
       } catch (e) {
-        if (e instanceof TradingClosedException) {
-          this.client.say(channelName, MSG_TRADING_CLOSED(userDisplayName));
-        } else {
-          this.client.say(channelName, MSG_COMMAND_FAILED(userDisplayName));
-        }
+        this.client.say(channelName, MSG_COMMAND_FAILED(userDisplayName));
         log.trace(e);
       }
     });
+  }
+
+  private addMessageToQueue(channelName: string, command: CommandDef, params: CommandParams) {
+    if (!this.messageQueue[channelName]) {
+      this.messageQueue[channelName] = [];
+    }
+    this.messageQueue[channelName].push({ command, params });
+    if (this.messageQueue[channelName].length > QUEUE_WARNING_THRESHOLD) {
+      if (!this.rateLimits[channelName]) {
+        this.rateLimits[channelName] = { lastProcessingWarning_ms: 0 };
+      }
+      if (Date.now() - this.rateLimits[channelName].lastProcessingWarning_ms > 5000) {
+        this.rateLimits[channelName].lastProcessingWarning_ms = Date.now();
+        log.warn('Bot getting behind. Message queue length: ' + this.messageQueue[channelName].length);
+        this.client.say(channelName, MSG_BEHIND_PROCESSING());
+      }
+    }
+    if (this.messageQueue[channelName].length === 1) {
+      this.handleMessages(channelName);
+    }
+  }
+
+  private async handleMessages(channelName: string) {
+    while (this.messageQueue[channelName].length) {
+      const message = this.messageQueue[channelName][0];
+      try {
+        await message.command.handler(message.params);
+      } catch (e) {
+        if (e instanceof TradingClosedException) {
+          this.client.say(channelName, MSG_TRADING_CLOSED(message.params.user.twitchDisplayName));
+        } else {
+          this.client.say(channelName, MSG_COMMAND_FAILED(message.params.user.twitchDisplayName));
+        }
+        log.trace(e);
+      } finally {
+        this.messageQueue[channelName].shift();
+      }
+    }
   }
 
   private isAllowedAdminCommand(tags: ChatUserstate): boolean {
