@@ -226,7 +226,7 @@ export const userIsBlocked = (
   userSenderId: string
 ) => {
   return (
-    (privateUserReceiver.blockedUserIds ?? []).includes(userSenderId) ||
-    (privateUserReceiver.blockedByUserIds ?? []).includes(userSenderId)
+    privateUserReceiver.blockedUserIds.includes(userSenderId) ||
+    privateUserReceiver.blockedByUserIds.includes(userSenderId)
   )
 }

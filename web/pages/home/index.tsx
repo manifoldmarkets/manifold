@@ -83,9 +83,9 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
+  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser)
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
-
   useRedirectIfSignedOut()
   useTracking('view home')
 
@@ -101,18 +101,12 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const trendingContracts = useTrendingContracts(
-    6,
-    getUsersBlockFacetFilters(privateUser)
-  )
-  const newContracts = useNewContracts(
-    6,
-    getUsersBlockFacetFilters(privateUser)
-  )
+  const trendingContracts = useTrendingContracts(6, userBlockFacetFilters)
+  const newContracts = useNewContracts(6, userBlockFacetFilters)
   const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
     user?.id,
     6,
-    getUsersBlockFacetFilters(privateUser)
+    userBlockFacetFilters
   )
   const contractMetricsByProfit = useUserContractMetricsByProfit(
     user?.id ?? '_'
@@ -122,7 +116,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug),
-    getUsersBlockFacetFilters(privateUser)
+    userBlockFacetFilters
   )
   const latestPosts = useAllPosts(true, 2).filter(
     (p) =>
@@ -137,20 +131,18 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   useEffect(() => {
     const pinnedItems = globalConfig?.pinnedItems
+    const userIsBlocked = (userId: string) =>
+      privateUser?.blockedUserIds.includes(userId) ||
+      privateUser?.blockedByUserIds.includes(userId)
     if (pinnedItems) {
       const itemComponents = pinnedItems.map((element) => {
         if (element.type === 'post') {
           const post = element.item as Post
-          if (
-            !privateUser?.blockedUserIds.includes(post.creatorId) &&
-            !privateUser?.blockedByUserIds.includes(post.creatorId)
-          )
-            return <PostCard post={post} />
+          if (!userIsBlocked(post.creatorId)) return <PostCard post={post} />
         } else if (element.type === 'contract') {
           const contract = element.item as Contract
           if (
-            !privateUser?.blockedUserIds.includes(contract.creatorId) &&
-            !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
+            !userIsBlocked(contract.creatorId) &&
             !privateUser?.blockedContractIds.includes(contract.id) &&
             !privateUser?.blockedGroupSlugs.some((slug) =>
               contract.groupSlugs?.includes(slug)
@@ -167,6 +159,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [
     globalConfig,
+    privateUser,
     privateUser?.blockedByUserIds,
     privateUser?.blockedContractIds,
     privateUser?.blockedGroupSlugs,
