@@ -13,7 +13,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { useCallback, useEffect } from 'react'
+import { ReactNode, useCallback, useEffect } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -165,12 +165,12 @@ const getImages = (data: DataTransfer | null) =>
   Array.from(data?.files ?? []).filter((file) => file.type.startsWith('image'))
 
 function isValidIframe(text: string) {
-  return /^<iframe.*<\/iframe>$/.test(text);
+  return /^<iframe.*<\/iframe>$/.test(text)
 }
 
 export function TextEditor(props: {
   editor: Editor | null
-  children?: React.ReactNode // additional toolbar buttons
+  children?: ReactNode // additional toolbar buttons
 }) {
   const { editor, children } = props
 

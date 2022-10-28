@@ -1,4 +1,5 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
+import { ComponentType } from 'react'
 
 export function MoreButton() {
   return <SidebarButton text={'More'} icon={DotsHorizontalIcon} />
@@ -6,7 +7,7 @@ export function MoreButton() {
 
 function SidebarButton(props: {
   text: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string }>
   children?: React.ReactNode
 }) {
   const { text, children } = props
