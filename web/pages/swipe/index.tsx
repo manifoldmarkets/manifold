@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
-import { BinaryContract } from 'common/contract'
+import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import {
   Dispatch,
@@ -15,12 +15,15 @@ import { getColor } from 'web/components/bet/quick-bet'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { Avatar } from 'web/components/widgets/avatar'
+import { RichContent } from 'web/components/widgets/editor'
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import {
   getBinaryProbPercent,
   getTrendingContracts,
 } from 'web/lib/firebase/contracts'
+import { fromNow } from 'web/lib/util/time'
 
 export async function getStaticProps() {
   const contracts = (await getTrendingContracts()).filter(
@@ -56,14 +59,14 @@ export default function Swipe(props: { contracts: BinaryContract[] }) {
       style={{ height }}
     >
       <div className="relative  mx-auto h-full max-w-lg">
-      {next.map((c) => (
-        <Card contract={c} key={c.id} />
-      ))}
-      <Interface
-        contract={current}
-        onNext={() => setIndex((i) => i + 1)}
-        key={index}
-      />
+        {next.map((c) => (
+          <Card contract={c} key={c.id} />
+        ))}
+        <Interface
+          contract={current}
+          onNext={() => setIndex((i) => i + 1)}
+          key={index}
+        />
       </div>
     </main>
   )
@@ -84,7 +87,7 @@ const Card = forwardRef(
     ref: CardRef
   ) => {
     const { contract, amount = 10, setAmount, onRight, onLeft, onLeave } = props
-    const { question, coverImageUrl } = contract
+    const { question, description, coverImageUrl } = contract
     const isTop = !!setAmount
 
     const image =
@@ -99,37 +102,66 @@ const Card = forwardRef(
         }}
         onCardLeftScreen={onLeave}
         preventSwipe={['down']}
-        className={clsx('pressable absolute', isTop ? 'inset-0' : 'inset-2')}
+        className={clsx('absolute cursor-grab', isTop ? 'inset-0' : 'inset-2')}
         ref={ref}
       >
         <div className="h-full overflow-hidden rounded-2xl">
+          {/* background */}
           <div className="flex h-full flex-col bg-black">
             <div className="relative mb-24 grow">
               <img src={image} alt="" className="h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent" />
             </div>
           </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-end">
+          {/* content */}
+          <div className="absolute inset-0 flex select-none flex-col items-center gap-4">
+            <CornerDetails contract={contract} />
             {/* [text-shadow:red_1px_1px,#10b981_-1px_-1px] */}
-            <div className="line-clamp-4 mx-8 mt-8 mb-4 text-2xl text-white">
+            <div className="line-clamp-4 mx-8 mt-auto mb-4 text-2xl text-white [text-shadow:black_1px_1px_4px] ">
               {question}
             </div>
             <Percent contract={contract} />
+            {/* TODO: exclude embeds, images */}
+            <RichContent
+              content={description}
+              smallImage
+              className="mx-8"
+              proseClassName="prose-invert prose-sm text-greyscale-1 line-clamp-3"
+            />
             <Button
               size="2xl"
               color="yellow"
               onClick={() => setAmount?.((amount) => amount + betTapAdd)}
-              className="mt-4"
+              className="pressable"
             >
               {formatMoney(amount)}
             </Button>
-            <Spacer h={30} />
+            <Spacer h={28} />
           </div>
         </div>
       </TinderCard>
     )
   }
 )
+
+const CornerDetails = (props: { contract: Contract }) => {
+  const { contract } = props
+  const { creatorName, creatorAvatarUrl, closeTime } = contract
+
+  return (
+    <div className="m-3 flex gap-2 self-start drop-shadow">
+      <Avatar size="sm" avatarUrl={creatorAvatarUrl} noLink />
+      <div className="text-xs">
+        <div className="text-white">{creatorName} </div>
+        {closeTime != undefined && (
+          <div className="text-greyscale-1 ">
+            trading closes {fromNow(closeTime)}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // TODO: scale based on user's balance so they never run out
 const betTapAdd = 10
@@ -201,5 +233,5 @@ const Percent = (props: { contract: BinaryContract }) => {
   const percent = getBinaryProbPercent(contract)
   const textColor = `text-${getColor(contract)}`
 
-  return <div className={clsx(textColor, 'text-5xl')}>{percent}</div>
+  return <div className={clsx(textColor, 'text-6xl ')}>{percent}</div>
 }

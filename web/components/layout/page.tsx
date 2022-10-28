@@ -29,7 +29,7 @@ export function Page(props: {
         className={clsx(
           className,
           bottomBarPadding,
-          'mx-auto w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:max-w-7xl xl:gap-x-8'
+          'mx-auto min-h-screen w-full lg:grid lg:grid-cols-12 lg:gap-x-2 xl:max-w-7xl xl:gap-x-8'
         )}
       >
         <Toaster
