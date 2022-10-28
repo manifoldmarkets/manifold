@@ -1,4 +1,3 @@
-import { sumBy } from 'lodash'
 import clsx from 'clsx'
 
 import { Bet } from 'web/lib/firebase/bets'
@@ -7,36 +6,29 @@ import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { YesLabel, NoLabel } from '../outcome-label'
-import {
-  calculatePayout,
-  getContractBetMetrics,
-  getProbability,
-} from 'common/calculate'
+import { getProbability } from 'common/calculate'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProfitBadge } from '../profit-badge'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 export function BetsSummary(props: {
   contract: Contract
-  userBets: Bet[]
+  userBets: Bet[] | undefined
   className?: string
 }) {
   const { contract, className } = props
   const { resolution, outcomeType } = contract
   const isBinary = outcomeType === 'BINARY'
 
-  const bets = props.userBets.filter((b) => !b.isAnte)
-  const { profitPercent, payout, profit, invested } = getContractBetMetrics(
-    contract,
-    bets
-  )
+  const bets = props.userBets?.filter((b) => !b.isAnte)
+  const metrics = useSavedContractMetrics(contract, bets)
 
-  const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-  const yesWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'YES')
-  )
-  const noWinnings = sumBy(excludeSales, (bet) =>
-    calculatePayout(contract, bet, 'NO')
-  )
+  if (!metrics) return <></>
+
+  const { profitPercent, payout, profit, invested, totalShares } = metrics
+
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
 
   const position = yesWinnings - noWinnings
   const exampleOutcome = position < 0 ? 'NO' : 'YES'
@@ -44,7 +36,7 @@ export function BetsSummary(props: {
   const prob = isBinary ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
-  if (bets.length === 0) return <></>
+  if (metrics.invested === 0 && metrics.profit === 0) return null
 
   return (
     <Col className={clsx(className, 'gap-4')}>

@@ -140,8 +140,10 @@ export function ContractPageContent(
 
   const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
 
-  const userBets =
-    useBets(contract.id, { userId: user?.id ?? '_', filterAntes: true }) ?? []
+  const userBets = useBets(contract.id, {
+    userId: user?.id ?? '_',
+    filterAntes: true,
+  })
 
   const [showConfetti, setShowConfetti] = useState(false)
 
@@ -264,7 +266,7 @@ export function ContractPageContent(
           <ContractTabs
             contract={contract}
             bets={bets}
-            userBets={userBets}
+            userBets={userBets ?? []}
             comments={comments}
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
