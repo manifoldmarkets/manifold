@@ -45,6 +45,7 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { floor } from 'lodash'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { ProbOrNumericChange } from './prob-change-table'
+import { Spacer } from '../layout/spacer'
 
 export function ContractCard(props: {
   contract: Contract
@@ -448,7 +449,7 @@ export function ContractCardProbChange(props: {
           </Col>
         </Row>
       )}
-      {(!showPosition || !sharesOutcome) && <></>}
+      {(!showPosition || !sharesOutcome) && <Spacer h={2} />}
     </ContractCard>
   )
 }
