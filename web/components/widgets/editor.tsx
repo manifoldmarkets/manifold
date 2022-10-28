@@ -165,7 +165,7 @@ const getImages = (data: DataTransfer | null) =>
   Array.from(data?.files ?? []).filter((file) => file.type.startsWith('image'))
 
 function isValidIframe(text: string) {
-  return /^<iframe.*<\/iframe>$/.test(text)
+  return /^<iframe.*<\/iframe>$/.test(text);
 }
 
 export function TextEditor(props: {
