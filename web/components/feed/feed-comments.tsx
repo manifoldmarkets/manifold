@@ -26,6 +26,9 @@ import { AwardBountyButton } from 'web/components/buttons/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { ReportButton } from 'web/components/buttons/report-button'
+import { FlagIcon } from '@heroicons/react/outline'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -189,7 +192,7 @@ export function CommentActions(props: {
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
   return (
-    <Row className="grow justify-end">
+    <Row className="grow items-center justify-end">
       {onReplyClick && (
         <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
           <ReplyIcon className="h-5 w-5" />
@@ -201,6 +204,13 @@ export function CommentActions(props: {
       {(contract.openCommentBounties ?? 0) > 0 && (
         <AwardBountyButton comment={comment} contract={contract} />
       )}
+      <Tooltip text={'Report comment'}>
+        <ReportButton
+          userId={comment.userId}
+          label={'comment'}
+          icon={<FlagIcon className={'h-5 w-5 text-gray-500'} />}
+        />
+      </Tooltip>
     </Row>
   )
 }
