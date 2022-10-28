@@ -18,7 +18,7 @@ export function HideGroupButton(props: { groupSlug: string }) {
       }),
       {
         loading: 'Blocking...',
-        success: `You'll no longer see content from this group`,
+        success: `You'll no longer see markets from this group`,
         error: 'Error blocking user',
       }
     )
@@ -34,11 +34,11 @@ export function HideGroupButton(props: { groupSlug: string }) {
     return (
       <Button
         size="sm"
-        color="gray"
+        color="gray-outline"
         className="my-auto"
         onClick={withTracking(onUnblock, 'unblock')}
       >
-        Hidden
+        Group Hidden
       </Button>
     )
   }
@@ -46,11 +46,11 @@ export function HideGroupButton(props: { groupSlug: string }) {
   return (
     <Button
       size="sm"
-      color="gray-outline"
+      color="red"
       className="my-auto"
       onClick={withTracking(onBlock, 'block')}
     >
-      Hide
+      Hide Group
     </Button>
   )
 }
