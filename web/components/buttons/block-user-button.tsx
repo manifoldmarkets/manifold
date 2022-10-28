@@ -47,9 +47,7 @@ export function BlockUserButton(props: { user: User }) {
   return (
     <>
       <Button color={'gray-white'} onClick={() => setIsModalOpen(true)}>
-        <Row className={'items-center justify-center'}>
-          <span className={'rotate-90 text-lg'}>&#xFE19;</span>
-        </Row>
+        <Row className={'items-center justify-center'}>· · ·</Row>
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <Col className={'rounded-md bg-white p-4'}>
