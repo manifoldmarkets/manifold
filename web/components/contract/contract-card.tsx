@@ -29,7 +29,6 @@ import {
   getProbability,
   getTopAnswer,
   getContractBetMetrics,
-  calculatePayout,
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
@@ -43,7 +42,9 @@ import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
 import { ReactNode } from 'react'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { floor, sumBy } from 'lodash'
+import { floor } from 'lodash'
+import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
+import { ProbOrNumericChange } from './prob-change-table'
 
 export function ContractCard(props: {
   contract: Contract
@@ -138,12 +139,19 @@ export function ContractCard(props: {
             <QuickOutcomeView contract={contract} />
           )}
         </Col>
-        <Row className={clsx('mb-1 mt-1 w-full gap-1 truncate px-4')}>
+        <Row className={clsx('mb-1 mt-1 gap-1 px-4')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}
             hideGroupLink={hideGroupLink}
           />
+          {(outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+            <ProbOrNumericChange
+              className="py-2 px-2"
+              contract={contract as CPMMContract}
+              user={user}
+            />
+          )}
         </Row>
         {children}
       </Col>
@@ -391,27 +399,12 @@ export function ContractCardProbChange(props: {
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
-  let yesWinnings,
-    noWinnings,
-    position,
-    outcome,
-    profit = null
-  const bets = userBets?.filter((b) => !b.isAnte)
-  if (bets) {
-    const metrics = getContractBetMetrics(contract, bets)
-    profit = metrics.profit
-    const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-    yesWinnings = sumBy(excludeSales, (bet) =>
-      calculatePayout(contract, bet, 'YES')
-    )
-    noWinnings = sumBy(excludeSales, (bet) =>
-      calculatePayout(contract, bet, 'NO')
-    )
-    position = yesWinnings - noWinnings
-    outcome = position < 0 ? 'NO' : 'YES'
-  }
-
+  const userBets = useUserContractBets(user?.id, contract.id) || []
+  const { profit, invested } = getContractBetMetrics(contract, userBets)
+  const { yesShares, noShares, sharesOutcome } = useSaveBinaryShares(
+    contract,
+    userBets
+  )
   return (
     <ContractCard
       contract={contract}
@@ -422,7 +415,7 @@ export function ContractCardProbChange(props: {
         'mb-4 break-inside-avoid-column overflow-hidden'
       )}
     >
-      {showPosition === true && position != null && floor(position) > 0 && (
+      {showPosition === true && sharesOutcome != null && floor(invested) > 0 && (
         <Row
           className={clsx(
             'bg-greyscale-1.5 items-center gap-4 pl-4 pr-4 pt-1 pb-2 text-sm'
@@ -431,8 +424,10 @@ export function ContractCardProbChange(props: {
           <Col className="w-1/2">
             <span className="text-greyscale-4 text-xs"> Your Position </span>
             <div className="text-greyscale-6 text-sm">
-              <span className="font-semibold">{floor(position)} </span>
-              {outcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
+              <span className="font-semibold">
+                {sharesOutcome === 'YES' ? floor(yesShares) : floor(noShares)}{' '}
+              </span>
+              {sharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
               {' shares'}
             </div>
           </Col>
@@ -453,7 +448,7 @@ export function ContractCardProbChange(props: {
           </Col>
         </Row>
       )}
-      {(!showPosition || !position) && <></>}
+      {(!showPosition || !sharesOutcome) && <></>}
     </ContractCard>
   )
 }

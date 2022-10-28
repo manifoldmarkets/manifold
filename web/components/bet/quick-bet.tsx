@@ -6,7 +6,6 @@ import {
   getTopAnswer,
   getTopNSortedAnswers,
   getContractBetMetrics,
-  calculatePayout,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
@@ -44,8 +43,9 @@ import { useChartAnswers } from '../charts/contract/choice'
 import { getAnswerColor } from '../answers/answers-panel'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
-import { floor, sumBy } from 'lodash'
+import { floor } from 'lodash'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Bet } from 'common/bet'
 
 const BET_SIZE = 10
 
@@ -55,10 +55,10 @@ export function QuickBet(props: {
   className?: string
 }) {
   const { contract, user, className } = props
+  const userBets = useUserContractBets(user.id, contract.id) || []
+
   const { mechanism } = contract
   const isCpmm = mechanism === 'cpmm-1'
-
-  const userBets = useUserContractBets(user.id, contract.id)
   // TODO: Below hook fetches a decent amount of data. Maybe not worth it to show prob change on hover?
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
@@ -160,20 +160,20 @@ export function QuickBet(props: {
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('DOWN')}
           direction="DOWN"
-          user={user}
           contract={contract}
           hover={downHover}
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
+          userBets={userBets}
         />
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('UP')}
           direction="UP"
-          user={user}
           contract={contract}
           hover={upHover}
           onMouseEnter={() => setUpHover(true)}
           onMouseLeave={() => setUpHover(false)}
+          userBets={userBets}
         />
       </Row>
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
@@ -184,48 +184,33 @@ export function QuickBet(props: {
 function BinaryQuickBetButton(props: {
   onClick: () => void
   direction: 'UP' | 'DOWN'
-  user: User
-  contract: Contract
+  contract: BinaryContract | PseudoNumericContract
   hover: boolean
   onMouseEnter: () => void
   onMouseLeave: () => void
+  userBets: Bet[]
 }) {
   const {
     onClick,
     direction,
-    user,
     contract,
     hover,
     onMouseEnter,
     onMouseLeave,
+    userBets,
   } = props
-  const userBets = useUserContractBets(user.id, contract.id)
-  let yesWinnings,
-    noWinnings,
-    position,
-    outcome,
-    invested = null
-  const bets = userBets?.filter((b) => !b.isAnte)
-  if (bets) {
-    const metrics = getContractBetMetrics(contract, bets)
-    invested = metrics.invested
-    const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
-    yesWinnings = sumBy(excludeSales, (bet) =>
-      calculatePayout(contract, bet, 'YES')
-    )
-    noWinnings = sumBy(excludeSales, (bet) =>
-      calculatePayout(contract, bet, 'NO')
-    )
-    position = yesWinnings - noWinnings
-    outcome = position < 0 ? 'NO' : 'YES'
-  }
+  const { invested } = getContractBetMetrics(contract, userBets)
+  const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
   let hasInvestment = false
   if (direction === 'UP') {
-    hasInvestment = outcome === 'YES' && invested != null && floor(invested) > 0
+    hasInvestment =
+      hasYesShares === true && invested != undefined && floor(invested) > 0
   } else {
-    hasInvestment = outcome === 'NO' && invested != null && floor(invested) > 0
+    hasInvestment =
+      hasNoShares === true && invested != undefined && floor(invested) > 0
   }
   const isMobile = useIsMobile()
+  const shouldFocus = hover && !isMobile
   return (
     <Row
       className={clsx(
@@ -240,10 +225,10 @@ function BinaryQuickBetButton(props: {
         <EquilateralLeftTriangle
           className={clsx(
             'mx-auto h-6 w-6 transition-all',
-            hover && !isMobile
+            shouldFocus
               ? 'animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
               : hasInvestment
-              ? 'text-indigo-900'
+              ? 'text-indigo-800'
               : 'text-indigo-400'
           )}
         />
@@ -252,10 +237,10 @@ function BinaryQuickBetButton(props: {
         <EquilateralRightTriangle
           className={clsx(
             'mx-auto h-6 w-6 transition-all',
-            hover && !isMobile
+            shouldFocus
               ? 'sm:animate-bounce-right ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
               : hasInvestment
-              ? 'text-indigo-900'
+              ? 'text-indigo-800'
               : 'text-indigo-400'
           )}
         />
@@ -264,10 +249,10 @@ function BinaryQuickBetButton(props: {
         <span
           className={clsx(
             'text-sm font-light',
-            hover && !isMobile ? 'text-indigo-600' : 'text-indigo-900'
+            shouldFocus ? 'text-indigo-600' : 'text-indigo-800'
           )}
         >
-          {hover && !isMobile
+          {shouldFocus
             ? formatMoney(invested + BET_SIZE)
             : formatMoney(invested)}
         </span>
@@ -275,7 +260,7 @@ function BinaryQuickBetButton(props: {
         <span
           className={clsx(
             'text-sm font-light text-indigo-600 transition-opacity',
-            hover && !isMobile ? 'opacity-100' : 'opacity-0'
+            shouldFocus ? 'opacity-100' : 'opacity-0'
           )}
         >
           {formatMoney(BET_SIZE)}
@@ -504,7 +489,7 @@ export function getBarColor(contract: Contract) {
     return '#D8D8EB'
   }
 
-  return '#c7d2fe'
+  return '#e0e7ff'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
