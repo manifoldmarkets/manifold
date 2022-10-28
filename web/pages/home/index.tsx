@@ -66,7 +66,7 @@ import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { LatestPosts } from '../latestposts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
-
+import { DailyStats } from 'web/components/daily-stats'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
