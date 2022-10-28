@@ -1,10 +1,6 @@
 import React, { ReactNode, useEffect } from 'react'
 import Router from 'next/router'
-import {
-  AdjustmentsIcon,
-  PencilAltIcon,
-  ArrowSmRightIcon,
-} from '@heroicons/react/solid'
+import { AdjustmentsIcon, PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
