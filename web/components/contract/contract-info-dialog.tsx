@@ -31,6 +31,7 @@ import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
+import { formatTime } from 'web/lib/util/time'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -47,8 +48,6 @@ export function ContractInfoDialog(props: {
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
-
-  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
   const {
     createdTime,
