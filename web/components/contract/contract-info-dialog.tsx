@@ -30,7 +30,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { BlockMarketButton } from 'web/components/buttons/hide-market-button'
+import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 
 export function ContractInfoDialog(props: {
   contract: Contract
