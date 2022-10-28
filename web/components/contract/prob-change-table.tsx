@@ -126,9 +126,8 @@ export function ProbOrNumericChange(props: {
   className?: string
 }) {
   const { contract } = props
-  const {
-    probChanges: { day: change },
-  } = contract
+  // Some contract without a probChanges.day was crashing the site, so I added the conditional
+  const change = contract.probChanges?.day ?? 0
 
   const color = change >= 0 ? 'text-teal-600' : 'text-scarlet-600'
   if (Math.abs(change * 100) > 5) {
