@@ -642,6 +642,16 @@ In addition to housing impact litigation, we provide free legal aid, education a
 
     The Society Library dreams of a future when every human on earth inherits a library of the collective ideas, ideologies, and world-views of humanity, so they may more willfully choose to adopt or adapt beliefs, instead of more randomly or blindly inheriting ideas generationally based on limitations like geographic location, economic status, political socialization, and culture. We see a future in which freedom of thought and belief is deeply honored, and when people’s beliefs conflict, humanity has the tools to functionally negotiate those differences in a manner that maximizes freedom in being. People currently have the human right of freedom of thought and belief (Human Right #18 and #19), but to truly make that possible, we need to make information more accessible in every possible way. This is our mission and our work. This is the Society Library.`,
   },
+  {
+    name: 'Kiva Microfunds',
+    website: 'https://www.kiva.org/',
+    preview:
+      "Kiva Microfunds seeks to provide loans to those in need by crowdsourcing funds.",
+    photo: 'https://logos-download.com/wp-content/uploads/2018/09/Kiva_logo.png',
+    description: ` More than 1.7 billion people around the world are unbanked and can’t access the financial services they need. Kiva is an international nonprofit, founded in 2005 in San Francisco, with a mission to expand financial access to help underserved communities thrive.
+
+We do this by crowdfunding loans and unlocking capital for the underserved, improving the quality and cost of financial services, and addressing the underlying barriers to financial access around the world. Through Kiva's work, students can pay for tuition, women can start businesses, farmers are able to invest in equipment and families can afford needed emergency care. `,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
