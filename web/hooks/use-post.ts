@@ -7,6 +7,7 @@ import {
   listenForPost,
 } from 'web/lib/firebase/posts'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const usePost = (postId: string | undefined) => {
   const [post, setPost] = useState<Post | null | undefined>()
@@ -45,10 +46,14 @@ export const usePosts = (postIds: string[]) => {
 }
 
 export const useAllPosts = (excludeAboutPosts?: boolean, limit?: number) => {
-  const [posts, setPosts] = useState<Post[]>([])
+  const [posts, setPosts] = usePersistentState<Post[]>([], {
+    key: 'all-posts',
+    store: inMemoryStore(),
+  })
+
   useEffect(() => {
     getAllPosts().then(setPosts)
-  }, [])
+  }, [setPosts])
 
   return posts
     .filter((post) => (excludeAboutPosts ? !post.isGroupAboutPost : true))
