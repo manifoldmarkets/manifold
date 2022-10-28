@@ -59,7 +59,7 @@ class Application {
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
-    this.socket = io({ query: { type: 'overlay', controlToken: params['t'] }, reconnectionDelay: 100, reconnectionDelayMax: 100, rememberUpgrade: true });
+    this.socket = io({ query: { type: 'overlay', controlToken: params['t'] }, rememberUpgrade: true });
     this.socket.on('disconnect', (reason: Socket.DisconnectReason, description?: DisconnectDescription) => {
       const reasons: { reason: Socket.DisconnectReason; desc: string }[] = [
         { reason: 'io server disconnect', desc: 'The server has forcefully disconnected the socket with socket.disconnect()' },
