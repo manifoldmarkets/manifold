@@ -107,11 +107,26 @@ export default () => {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
     socket = io({ query: { type: 'dock', controlToken: params['t'] }, reconnectionDelay: 100, reconnectionDelayMax: 100, rememberUpgrade: true });
+
+    const sendPing = () => {
+      socket.emit(Packets.PING);
+      pingSent = Date.now();
+    };
+    socket.on(Packets.PONG, () => {
+      const ping = Date.now() - pingSent;
+      setPing(ping);
+
+      setTimeout(() => {
+        sendPing();
+      }, 1000);
+    });
+
     socket.on('connect', () => {
       console.debug(`Using transport: ${socket.io.engine.transport.name}`);
       socket.io.engine.on('upgrade', () => {
         console.debug(`Upgraded transport: ${socket.io.engine.transport.name}`);
       });
+      sendPing();
     });
     socket.on('connect_error', (err) => {
       setLoadingMessage('Failed to connect to server: ' + err.message);
@@ -189,20 +204,6 @@ export default () => {
     socket.on(Packets.UNFEATURE_MARKET, () => {
       setSelectedContract(undefined);
     });
-
-    const sendPing = () => {
-      socket.emit(Packets.PING);
-      pingSent = Date.now();
-    };
-    socket.on(Packets.PONG, () => {
-      const ping = Date.now() - pingSent;
-      setPing(ping);
-
-      setTimeout(() => {
-        sendPing();
-      }, 1000);
-    });
-    sendPing();
   }, []);
 
   const onContractFeature = (contract: LiteMarket) => {

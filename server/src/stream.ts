@@ -113,6 +113,7 @@ export class TwitchStream {
         if (user) {
           f.valid = true;
           stream = this.app.getStreamByName(user.data.twitchLogin);
+          if (stream === this) continue;
         } else {
           f.valid = false;
         }
