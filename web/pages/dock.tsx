@@ -108,7 +108,9 @@ export default () => {
     });
     socket = io({ query: { type: 'dock', controlToken: params['t'] }, rememberUpgrade: true });
 
+    let pingRepeatTask: NodeJS.Timeout = null;
     const sendPing = () => {
+      clearTimeout(pingRepeatTask);
       socket.emit(Packets.PING);
       pingSent = Date.now();
     };
@@ -116,7 +118,7 @@ export default () => {
       const ping = Date.now() - pingSent;
       setPing(ping);
 
-      setTimeout(() => {
+      pingRepeatTask = setTimeout(() => {
         sendPing();
       }, 1000);
     });
