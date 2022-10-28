@@ -482,14 +482,14 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? '#c7d2fe'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? '#e1e7fc'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return '#D8D8EB'
   }
 
-  return '#e0e7ff'
+  return '#e1e7fc'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
