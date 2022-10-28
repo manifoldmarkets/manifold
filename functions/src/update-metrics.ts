@@ -198,6 +198,30 @@ export async function updateMetricsCore() {
     }
   })
 
+  // Sort profits
+  const dailyProfits = sortBy(
+    userMetrics.map((user) => Math.floor(user.newProfit.daily)),
+    (profit) => -profit
+  )
+  const weeklyProfits = sortBy(
+    userMetrics.map((user) => Math.floor(user.newProfit.weekly)),
+    (profit) => -profit
+  )
+  const monthlyProfits = sortBy(
+    userMetrics.map((user) => Math.floor(user.newProfit.monthly)),
+    (profit) => -profit
+  )
+  const allTimeProfits = sortBy(
+    userMetrics.map((user) => Math.floor(user.newProfit.allTime)),
+    (profit) => -profit
+  )
+
+  const getRank = (arr: number[], val: number) => {
+    const index = arr.indexOf(Math.floor(val))
+    const rank = index === -1 ? arr.length : index
+    return rank + 1
+  }
+
   const portfolioByUser = Object.fromEntries(
     userMetrics.map(({ user, newPortfolio }) => [user.id, newPortfolio])
   )
@@ -218,6 +242,12 @@ export async function updateMetricsCore() {
           creatorVolumeCached: newCreatorVolume,
           profitCached: newProfit,
           nextLoanCached,
+          profitRankCached: {
+            daily: getRank(dailyProfits, newProfit.daily),
+            weekly: getRank(weeklyProfits, newProfit.weekly),
+            monthly: getRank(monthlyProfits, newProfit.monthly),
+            allTime: getRank(allTimeProfits, newProfit.allTime),
+          },
           fractionResolvedCorrectly: newFractionResolvedCorrectly,
         },
       }
