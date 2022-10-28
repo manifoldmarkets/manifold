@@ -45,6 +45,7 @@ import { getAnswerColor } from '../answers/answers-panel'
 import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
 import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor, sumBy } from 'lodash'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 const BET_SIZE = 10
 
@@ -166,9 +167,7 @@ export function QuickBet(props: {
           onMouseLeave={() => setDownHover(false)}
         />
         <BinaryQuickBetButton
-          onClick={() => {
-            placeQuickBet('DOWN')
-          }}
+          onClick={() => placeQuickBet('UP')}
           direction="UP"
           user={user}
           contract={contract}
@@ -226,6 +225,7 @@ function BinaryQuickBetButton(props: {
   } else {
     hasInvestment = outcome === 'NO' && invested != null && floor(invested) > 0
   }
+  const isMobile = useIsMobile()
   return (
     <Row
       className={clsx(
@@ -240,8 +240,8 @@ function BinaryQuickBetButton(props: {
         <EquilateralLeftTriangle
           className={clsx(
             'mx-auto h-6 w-6 transition-all',
-            hover
-              ? 'sm:animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+            hover && !isMobile
+              ? 'animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
               : hasInvestment
               ? 'text-indigo-900'
               : 'text-indigo-400'
@@ -252,7 +252,7 @@ function BinaryQuickBetButton(props: {
         <EquilateralRightTriangle
           className={clsx(
             'mx-auto h-6 w-6 transition-all',
-            hover
+            hover && !isMobile
               ? 'sm:animate-bounce-right ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
               : hasInvestment
               ? 'text-indigo-900'
@@ -264,16 +264,18 @@ function BinaryQuickBetButton(props: {
         <span
           className={clsx(
             'text-sm font-light',
-            hover ? 'text-indigo-600' : 'text-indigo-900'
+            hover && !isMobile ? 'text-indigo-600' : 'text-indigo-900'
           )}
         >
-          {hover ? formatMoney(invested + BET_SIZE) : formatMoney(invested)}
+          {hover && !isMobile
+            ? formatMoney(invested + BET_SIZE)
+            : formatMoney(invested)}
         </span>
       ) : (
         <span
           className={clsx(
             'text-sm font-light text-indigo-600 transition-opacity',
-            hover ? 'opacity-100' : 'opacity-0'
+            hover && !isMobile ? 'opacity-100' : 'opacity-0'
           )}
         >
           {formatMoney(BET_SIZE)}
