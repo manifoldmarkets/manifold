@@ -1,4 +1,4 @@
-import { Log, Logging } from '@google-cloud/logging';
+import { Log, Logging } from '@google-cloud/logging-min';
 import { GOOGLE_LOG_NAME, GOOGLE_PROJECT_ID } from './envs';
 import { detectGCloudInstance } from './utils';
 

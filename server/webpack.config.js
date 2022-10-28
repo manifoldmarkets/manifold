@@ -26,5 +26,9 @@ export default {
       module: /node_modules\/express\/lib\/view\.js/,
       message: /the request of a dependency is an expression/,
     },
+    {
+      module: /node_modules\/@google-cloud\/logging\/build\/src\/utils\/instrumentation\.js/,
+      message: /the request of a dependency is an expression/,
+    },
   ],
 };
