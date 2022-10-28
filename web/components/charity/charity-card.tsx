@@ -1,7 +1,7 @@
 import { StarIcon } from '@heroicons/react/solid'
 import { sumBy } from 'lodash'
 import Link from 'next/link'
-import Image from 'next/image'
+import Image from 'next/legacy/image'
 import { Charity } from 'common/charity'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
 import { manaToUSD } from '../../../common/util/format'
