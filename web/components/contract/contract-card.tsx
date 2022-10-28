@@ -116,7 +116,7 @@ export function ContractCard(props: {
                   questionClass
                 )}
               >
-                {question}
+                <div className="drop-shadow-lg">{question}</div>
               </div>
             </div>
           </div>
@@ -449,7 +449,9 @@ export function ContractCardProbChange(props: {
           </Col>
         </Row>
       )}
-      {(!showPosition || !sharesOutcome) && <Spacer h={2} />}
+      {(!showPosition || !sharesOutcome || floor(invested) === 0) && (
+        <Spacer h={2} />
+      )}
     </ContractCard>
   )
 }
