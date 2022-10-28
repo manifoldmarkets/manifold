@@ -15,7 +15,11 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { Sort } from 'web/components/contract-search'
 import { Group } from 'common/group'
 import { SiteLink } from 'web/components/widgets/site-link'
-import { useUser, useUserContractMetricsByProfit } from 'web/hooks/use-user'
+import {
+  usePrivateUser,
+  useUser,
+  useUserContractMetricsByProfit,
+} from 'web/hooks/use-user'
 import {
   useMemberGroupsSubscription,
   useTrendingGroups,
@@ -28,7 +32,7 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { filterDefined } from 'common/util/array'
-import { updateUser } from 'web/lib/firebase/users'
+import { getUsersBlockFacetFilters, updateUser } from 'web/lib/firebase/users'
 import { isArray, keyBy } from 'lodash'
 import { usePrefetch } from 'web/hooks/use-prefetch'
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -61,8 +65,8 @@ import {
 import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { LatestPosts } from '../latestposts'
-import { DailyStats } from '../../components/daily-stats'
 import GoToIcon from 'web/lib/icons/go-to-icon'
+import { DailyStats } from 'web/components/daily-stats'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -75,9 +79,10 @@ export async function getStaticProps() {
 
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
+  const privateUser = usePrivateUser()
+  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser)
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
-
   useRedirectIfSignedOut()
   useTracking('view home')
 
@@ -93,9 +98,13 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     }
   }, [user, sections])
 
-  const trendingContracts = useTrendingContracts(6)
-  const newContracts = useNewContracts(6)
-  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(user?.id, 6)
+  const trendingContracts = useTrendingContracts(6, userBlockFacetFilters)
+  const newContracts = useNewContracts(6, userBlockFacetFilters)
+  const dailyTrendingContracts = useContractsByDailyScoreNotBetOn(
+    user?.id,
+    6,
+    userBlockFacetFilters
+  )
   const contractMetricsByProfit = useUserContractMetricsByProfit(
     user?.id ?? '_'
   )
@@ -103,9 +112,14 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
   const groups = useMemberGroupsSubscription(user)
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
-    groups?.map((g) => g.slug)
+    groups?.map((g) => g.slug),
+    userBlockFacetFilters
   )
-  const latestPosts = useAllPosts(true, 2)
+  const latestPosts = useAllPosts(true, 2).filter(
+    (p) =>
+      !privateUser?.blockedUserIds.includes(p.creatorId) &&
+      !privateUser?.blockedUserIds.includes(p.creatorId)
+  )
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),
@@ -114,12 +128,24 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
   useEffect(() => {
     const pinnedItems = globalConfig?.pinnedItems
+    const userIsBlocked = (userId: string) =>
+      privateUser?.blockedUserIds.includes(userId) ||
+      privateUser?.blockedByUserIds.includes(userId)
     if (pinnedItems) {
       const itemComponents = pinnedItems.map((element) => {
         if (element.type === 'post') {
-          return <PostCard post={element.item as Post} />
+          const post = element.item as Post
+          if (!userIsBlocked(post.creatorId)) return <PostCard post={post} />
         } else if (element.type === 'contract') {
-          return <ContractCard contract={element.item as Contract} />
+          const contract = element.item as Contract
+          if (
+            !userIsBlocked(contract.creatorId) &&
+            !privateUser?.blockedContractIds.includes(contract.id) &&
+            !privateUser?.blockedGroupSlugs.some((slug) =>
+              contract.groupSlugs?.includes(slug)
+            )
+          )
+            return <ContractCard contract={contract} />
         }
       })
       setPinned(
@@ -128,10 +154,18 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
         ) as JSX.Element[]
       )
     }
-  }, [globalConfig, setPinned])
+  }, [
+    globalConfig,
+    privateUser?.blockedByUserIds,
+    privateUser?.blockedContractIds,
+    privateUser?.blockedGroupSlugs,
+    privateUser?.blockedUserIds,
+    setPinned,
+  ])
 
   const isLoading =
     !user ||
+    !privateUser ||
     !trendingContracts ||
     !newContracts ||
     !dailyTrendingContracts ||

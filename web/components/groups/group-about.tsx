@@ -9,7 +9,7 @@ import PencilIcon from '@heroicons/react/solid/PencilIcon'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import { Post } from 'common/post'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ReactNode } from 'react'
 import { getPost } from 'web/lib/firebase/posts'
 import { ContractCard } from '../contract/contract-card'
@@ -40,6 +40,7 @@ import { useUser } from 'web/hooks/use-user'
 import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
+import { HideGroupButton } from 'web/components/buttons/hide-group-button'
 
 export function GroupAbout(props: {
   group: Group
@@ -54,6 +55,9 @@ export function GroupAbout(props: {
     props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
+      <Row className={'justify-end'}>
+        <HideGroupButton groupSlug={group.slug} />
+      </Row>
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (
         <>

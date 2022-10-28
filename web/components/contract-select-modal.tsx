@@ -6,6 +6,8 @@ import { Col } from './layout/col'
 import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './widgets/loading-indicator'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { getUsersBlockFacetFilters } from 'web/lib/firebase/users'
 
 export function SelectMarketsModal(props: {
   title: string
@@ -26,6 +28,7 @@ export function SelectMarketsModal(props: {
     contractSearchOptions,
   } = props
 
+  const privateUser = usePrivateUser()
   const [contracts, setContracts] = useState<Contract[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -95,7 +98,9 @@ export function SelectMarketsModal(props: {
               highlightClassName:
                 '!bg-indigo-100 outline outline-2 outline-indigo-300',
             }}
-            additionalFilter={{}} /* hide pills */
+            additionalFilter={{
+              facetFilters: getUsersBlockFacetFilters(privateUser),
+            }} /* hide pills */
             headerClassName="bg-white sticky"
             {...contractSearchOptions}
           />

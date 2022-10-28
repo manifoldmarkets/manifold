@@ -34,10 +34,15 @@ export const useAllContracts = () => {
   return contracts
 }
 
-export const useTrendingContracts = (maxContracts: number) => {
+export const useTrendingContracts = (
+  maxContracts: number,
+  additionalFilters?: string[]
+) => {
   const { data } = useQuery(['trending-contracts', maxContracts], () =>
     trendingIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false', 'visibility:public'],
+      facetFilters: ['isResolved:false', 'visibility:public'].concat(
+        additionalFilters ?? []
+      ),
       hitsPerPage: maxContracts,
     })
   )
@@ -45,10 +50,15 @@ export const useTrendingContracts = (maxContracts: number) => {
   return data.hits
 }
 
-export const useNewContracts = (maxContracts: number) => {
+export const useNewContracts = (
+  maxContracts: number,
+  additionalFilters?: string[]
+) => {
   const { data } = useQuery(['newest-contracts', maxContracts], () =>
     newIndex.search<CPMMBinaryContract>('', {
-      facetFilters: ['isResolved:false', 'visibility:public'],
+      facetFilters: ['isResolved:false', 'visibility:public'].concat(
+        additionalFilters ?? []
+      ),
       hitsPerPage: maxContracts,
     })
   )
@@ -58,7 +68,8 @@ export const useNewContracts = (maxContracts: number) => {
 
 export const useContractsByDailyScoreNotBetOn = (
   userId: string | null | undefined,
-  maxContracts: number
+  maxContracts: number,
+  additionalFilters?: string[]
 ) => {
   const { data } = useQuery(['daily-score', userId, maxContracts], () =>
     dailyScoreIndex.search<CPMMBinaryContract>('', {
@@ -66,7 +77,7 @@ export const useContractsByDailyScoreNotBetOn = (
         'isResolved:false',
         'visibility:public',
         `uniqueBettors:-${userId}`,
-      ],
+      ].concat(additionalFilters ?? []),
       hitsPerPage: maxContracts,
     })
   )
@@ -75,13 +86,16 @@ export const useContractsByDailyScoreNotBetOn = (
 }
 
 export const useContractsByDailyScoreGroups = (
-  groupSlugs: string[] | undefined
+  groupSlugs: string[] | undefined,
+  additionalFilters?: string[]
 ) => {
   const { data } = useQuery(['daily-score', groupSlugs], () =>
     Promise.all(
       (groupSlugs ?? []).map((slug) =>
         dailyScoreIndex.search<CPMMBinaryContract>('', {
-          facetFilters: ['isResolved:false', `groupLinks.slug:${slug}`],
+          facetFilters: ['isResolved:false', `groupLinks.slug:${slug}`].concat(
+            additionalFilters ?? []
+          ),
         })
       )
     )

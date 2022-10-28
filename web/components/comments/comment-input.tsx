@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { AnyContractType, Contract } from 'common/contract'
 import { User } from 'common/user'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'web/lib/firebase/comments'
 import Curve from 'web/public/custom-components/curve'
@@ -27,6 +27,7 @@ export function CommentInput(props: {
   // unique id for autosave
   pageId: string
   className?: string
+  blocked?: boolean
 }) {
   const {
     parentAnswerOutcome,
@@ -34,6 +35,7 @@ export function CommentInput(props: {
     replyTo,
     onSubmitComment,
     pageId,
+    blocked,
   } = props
   const user = useUser()
 
@@ -65,7 +67,11 @@ export function CommentInput(props: {
 
   if (user?.isBannedFromPosting) return <></>
 
-  return (
+  return blocked ? (
+    <div className={'my-4 text-sm text-gray-500'}>
+      The creator blocked you so you can't comment
+    </div>
+  ) : (
     <Row className={clsx(props.className, 'mb-2 gap-1 sm:gap-2')}>
       <Avatar
         avatarUrl={user?.avatarUrl}

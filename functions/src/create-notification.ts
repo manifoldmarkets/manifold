@@ -34,7 +34,10 @@ import {
   sendNewUniqueBettorsEmail,
 } from './emails'
 import { filterDefined } from '../../common/util/array'
-import { getNotificationDestinationsForUser } from '../../common/user-notification-preferences'
+import {
+  getNotificationDestinationsForUser,
+  userIsBlocked,
+} from '../../common/user-notification-preferences'
 import { ContractFollow } from '../../common/follow'
 import { Badge } from 'common/badge'
 const firestore = admin.firestore()
@@ -214,6 +217,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       return
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
+    if (userIsBlocked(privateUser, sourceUser.id)) return
     const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       reason
@@ -847,6 +851,7 @@ export const createNewContractNotification = async (
   ) => {
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
+    if (userIsBlocked(privateUser, contractCreator.id)) return
     const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       reason
