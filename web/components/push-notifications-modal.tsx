@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { setPushTokenRequestDenied } from 'web/lib/firebase/notifications'
+import { updatePrivateUser } from 'web/lib/firebase/users'
 
 export function PushNotificationsModal(props: {
   isOpen: boolean
@@ -15,31 +16,41 @@ export function PushNotificationsModal(props: {
 }) {
   const { isOpen, setOpen, privateUser, notifications } = props
 
-  const showSystemDialog = () => {
+  const showSystemNotificationsPrompt = () => {
     ;(window as any).ReactNativeWebView.postMessage(
       'promptEnablePushNotifications'
     )
   }
 
   useEffect(() => {
-    if (!(window as any).isNative || privateUser.pushToken) return
-
-    const shouldShowNotificationPrompt =
-      privateUser.rejectedPushNotificationsOn === undefined &&
-      notifications >= 10
-
+    if (
+      !(window as any).isNative ||
+      privateUser.pushToken ||
+      privateUser.rejectedPushNotificationsOn ||
+      privateUser.interestedInPushNotifications === false
+    )
+      return // They already gave permission, but we haven't written the token to the db yet
     ;(window as any).ReactNativeWebView.postMessage(
       'tryToGetPushTokenWithoutPrompt'
     )
-    if (shouldShowNotificationPrompt) {
-      // Show prompt in 3 seconds if we still don't have a push token
-      const openTimer = setTimeout(() => {
-        setOpen(shouldShowNotificationPrompt)
-      }, 3000)
-      return () => clearTimeout(openTimer)
+
+    // They said 'sure' to our prompt, but they haven't given us system permissions yet
+    if (privateUser.interestedInPushNotifications === true) {
+      return showSystemNotificationsPrompt()
     }
+
+    // They haven't seen our prompt yet
+    const shouldShowOurNotificationPrompt = notifications >= 10
+    const openTimer = setTimeout(() => {
+      setOpen(shouldShowOurNotificationPrompt)
+    }, 3000)
+    return () => clearTimeout(openTimer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [privateUser.pushToken])
+  }, [
+    privateUser.pushToken,
+    privateUser.interestedInPushNotifications,
+    privateUser.rejectedPushNotificationsOn,
+  ])
 
   if (!(window as any).isNative) return <div />
 
@@ -71,7 +82,10 @@ export function PushNotificationsModal(props: {
               size={'xl'}
               className={'mt-4'}
               onClick={() => {
-                showSystemDialog()
+                updatePrivateUser(privateUser.id, {
+                  interestedInPushNotifications: true,
+                })
+                showSystemNotificationsPrompt()
                 setOpen(false)
               }}
               color={'blue'}

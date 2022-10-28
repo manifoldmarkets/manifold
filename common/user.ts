@@ -86,6 +86,7 @@ export type PrivateUser = {
   }
   pushToken?: string
   rejectedPushNotificationsOn?: number
+  interestedInPushNotifications?: boolean
   blockedUserIds: string[]
   blockedByUserIds: string[]
   blockedContractIds: string[]

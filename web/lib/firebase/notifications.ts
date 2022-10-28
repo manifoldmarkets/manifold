@@ -1,16 +1,23 @@
 import {
   collection,
   deleteField,
+  doc,
   limit,
   orderBy,
   query,
+  updateDoc,
   where,
 } from 'firebase/firestore'
 import { db } from 'web/lib/firebase/init'
 import { NOTIFICATIONS_PER_PAGE } from 'web/pages/notifications'
 import { Notification, notification_source_types } from 'common/notification'
 import { groupPath } from 'web/lib/firebase/groups'
-import { getPrivateUser, updatePrivateUser } from 'web/lib/firebase/users'
+import {
+  getPrivateUser,
+  privateUsers,
+  updatePrivateUser,
+} from 'web/lib/firebase/users'
+import { removeUndefinedProps } from 'common/lib/util/object'
 
 export function getNotificationsQuery(
   userId: string,
@@ -92,13 +99,20 @@ export const setPushToken = async (userId: string, pushToken: string) => {
   try {
     const prefs = privateUser.notificationPreferences
     prefs.opt_out_all = prefs.opt_out_all.filter((p) => p !== 'mobile')
-    privateUser.notificationPreferences = prefs
-    privateUser.pushToken = pushToken
-    if (privateUser.rejectedPushNotificationsOn !== undefined)
-      // eslint-disable-next-line
-      // @ts-ignore
-      privateUser.rejectedPushNotificationsOn = deleteField()
-    await updatePrivateUser(privateUser.id, privateUser)
+    await updateDoc(
+      doc(privateUsers, privateUser.id),
+      removeUndefinedProps({
+        ...privateUser,
+        notificationPreferences: prefs,
+        pushToken,
+        rejectedPushNotificationsOn: privateUser.rejectedPushNotificationsOn
+          ? deleteField()
+          : undefined,
+        interestedInPushNotifications: privateUser.interestedInPushNotifications
+          ? deleteField()
+          : undefined,
+      })
+    )
   } catch (e) {
     console.error('error setting user push token', e)
     ;(window as any).ReactNativeWebView.postMessage(
@@ -123,5 +137,6 @@ export const setPushTokenRequestDenied = async (userId: string) => {
   // TODO: at some point in the future we can ask them again
   await updatePrivateUser(userId, {
     rejectedPushNotificationsOn: Date.now(),
+    interestedInPushNotifications: false,
   })
 }

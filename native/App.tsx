@@ -66,7 +66,8 @@ const auth = getAuth(app)
 const homeUri =
   ENV === 'DEV'
     ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
-    : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
+    : // : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
+      'https://019b-191-96-67-98.ngrok.io'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
@@ -413,6 +414,12 @@ export default function App() {
           sharedCookiesEnabled={true}
           source={{ uri: homeUri }}
           ref={webview}
+          onError={(e) => {
+            console.log('error in webview', e)
+            Sentry.Native.captureException(e, {
+              extra: { message: 'webview error' },
+            })
+          }}
           onMessage={handleMessageFromWebview}
           onNavigationStateChange={async (navState) => {
             if (!navState.loading && !hasInjectedVariable && webview.current) {
