@@ -391,11 +391,6 @@ export function ContractCardProbChange(props: {
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
   const user = useUser()
-  // const metrics = useUserContractMetrics(user?.id, contract.id)
-  // const dayMetrics = metrics && metrics.from && metrics.from.day
-  // const displayedProfit = dayMetrics
-  //   ? ENV_CONFIG.moneyMoniker + dayMetrics.profit.toFixed(0)
-  //   : undefined
   const userBets = useUserContractBets(user?.id, contract.id)
   let yesWinnings,
     noWinnings,
@@ -427,10 +422,10 @@ export function ContractCardProbChange(props: {
         'mb-4 break-inside-avoid-column overflow-hidden'
       )}
     >
-      {showPosition && position && floor(position) > 0 && (
+      {showPosition === true && position != null && floor(position) > 0 && (
         <Row
           className={clsx(
-            'items-center gap-4 bg-gray-100 pl-4 pr-4 pt-1 pb-2 text-sm'
+            'bg-greyscale-1.5 items-center gap-4 pl-4 pr-4 pt-1 pb-2 text-sm'
           )}
         >
           <Col className="w-1/2">
@@ -458,6 +453,7 @@ export function ContractCardProbChange(props: {
           </Col>
         </Row>
       )}
+      {(!showPosition || !position) && <></>}
     </ContractCard>
   )
 }
