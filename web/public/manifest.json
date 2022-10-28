@@ -1,7 +1,6 @@
 {
-  "theme_color": "#4338ca",
   "background_color": "#FBFBFF",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/swipe",
