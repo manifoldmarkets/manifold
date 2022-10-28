@@ -5,6 +5,7 @@ import {
   getProbability,
   getTopAnswer,
   getTopNSortedAnswers,
+  getContractBetMetrics,
 } from 'common/calculate'
 import { getExpectedValue } from 'common/calculate-dpm'
 import { User } from 'common/user'
@@ -27,8 +28,6 @@ import toast from 'react-hot-toast'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
-import TriangleLeftFillIcon from 'web/lib/icons/triangle-left-fill-icon'
-import TriangleRightFillIcon from 'web/lib/icons/triangle-right-fill-icon'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
 import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
@@ -42,6 +41,11 @@ import { Answer } from 'common/answer'
 import { AnswerLabel } from '../outcome-label'
 import { useChartAnswers } from '../charts/contract/choice'
 import { getAnswerColor } from '../answers/answers-panel'
+import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
+import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
+import { floor } from 'lodash'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Bet } from 'common/bet'
 
 const BET_SIZE = 10
 
@@ -51,10 +55,10 @@ export function QuickBet(props: {
   className?: string
 }) {
   const { contract, user, className } = props
+  const userBets = useUserContractBets(user.id, contract.id) || []
+
   const { mechanism } = contract
   const isCpmm = mechanism === 'cpmm-1'
-
-  const userBets = useUserContractBets(user.id, contract.id)
   // TODO: Below hook fetches a decent amount of data. Maybe not worth it to show prob change on hover?
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
@@ -150,54 +154,119 @@ export function QuickBet(props: {
       <Row
         className={clsx(
           className,
-          'absolute my-auto  w-full items-center justify-between align-middle'
+          'absolute my-auto mt-1 w-full items-center justify-between px-2 align-middle'
         )}
       >
-        <Row
-          className="items-center pr-4"
+        <BinaryQuickBetButton
+          onClick={() => placeQuickBet('DOWN')}
+          direction="DOWN"
+          contract={contract}
+          hover={downHover}
           onMouseEnter={() => setDownHover(true)}
           onMouseLeave={() => setDownHover(false)}
-          onClick={() => placeQuickBet('DOWN')}
-        >
-          <TriangleLeftFillIcon
-            className={clsx(
-              'mx-auto h-8 w-8',
-              downHover ? 'text-indigo-700' : 'text-indigo-500'
-            )}
-          />
-          <span
-            className={clsx(
-              'text-sm font-light text-indigo-500 transition-opacity',
-              downHover ? 'opacity-100' : 'opacity-0 '
-            )}
-          >
-            M$10
-          </span>
-        </Row>
-        <Row
-          className="items-center pl-4"
+          userBets={userBets}
+        />
+        <BinaryQuickBetButton
+          onClick={() => placeQuickBet('UP')}
+          direction="UP"
+          contract={contract}
+          hover={upHover}
           onMouseEnter={() => setUpHover(true)}
           onMouseLeave={() => setUpHover(false)}
-          onClick={() => placeQuickBet('UP')}
-        >
-          <span
-            className={clsx(
-              'transition- text-sm font-light text-indigo-500',
-              upHover ? 'opacity-100' : 'opacity-0 '
-            )}
-          >
-            M$10
-          </span>
-          <TriangleRightFillIcon
-            className={clsx(
-              'mx-auto h-8 w-8',
-              upHover ? 'text-indigo-700' : 'text-indigo-500'
-            )}
-          />
-        </Row>
+          userBets={userBets}
+        />
       </Row>
       <QuickOutcomeView contract={contract} previewProb={previewProb} />
     </div>
+  )
+}
+
+function BinaryQuickBetButton(props: {
+  onClick: () => void
+  direction: 'UP' | 'DOWN'
+  contract: BinaryContract | PseudoNumericContract
+  hover: boolean
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+  userBets: Bet[]
+}) {
+  const {
+    onClick,
+    direction,
+    contract,
+    hover,
+    onMouseEnter,
+    onMouseLeave,
+    userBets,
+  } = props
+  const { invested } = getContractBetMetrics(contract, userBets)
+  const { hasYesShares, hasNoShares } = useSaveBinaryShares(contract, userBets)
+  let hasInvestment = false
+  if (direction === 'UP') {
+    hasInvestment =
+      hasYesShares === true && invested != undefined && floor(invested) > 0
+  } else {
+    hasInvestment =
+      hasNoShares === true && invested != undefined && floor(invested) > 0
+  }
+  const isMobile = useIsMobile()
+  const shouldFocus = hover && !isMobile
+  return (
+    <Row
+      className={clsx(
+        'items-center gap-1',
+        direction === 'UP' ? 'flex-row-reverse' : ''
+      )}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
+    >
+      {direction === 'DOWN' && (
+        <EquilateralLeftTriangle
+          className={clsx(
+            'mx-auto h-6 w-6 drop-shadow-md transition-all',
+            shouldFocus
+              ? 'animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              : hasInvestment
+              ? 'text-indigo-800'
+              : 'text-indigo-400'
+          )}
+        />
+      )}
+      {direction === 'UP' && (
+        <EquilateralRightTriangle
+          className={clsx(
+            'mx-auto h-6 w-6 drop-shadow-md transition-all',
+            shouldFocus
+              ? 'sm:animate-bounce-right ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              : hasInvestment
+              ? 'text-indigo-800'
+              : 'text-indigo-400'
+          )}
+        />
+      )}
+      {hasInvestment && invested != null ? (
+        <span
+          className={clsx(
+            'text-sm font-light',
+            shouldFocus ? 'text-indigo-600' : 'text-indigo-800'
+          )}
+        >
+          {shouldFocus
+            ? formatMoney(invested + BET_SIZE)
+            : formatMoney(invested)}
+        </span>
+      ) : (
+        <span
+          className={clsx(
+            'text-sm font-light text-indigo-600 transition-opacity',
+            shouldFocus ? 'opacity-100' : 'opacity-0'
+          )}
+        >
+          {formatMoney(BET_SIZE)}
+        </span>
+      )}
+    </Row>
   )
 }
 
@@ -270,7 +339,7 @@ export function QuickOutcomeView(props: {
           }%, ${getBgColor(contract)} ${100 * prob}%)`,
         }}
       >
-        <div className={`mx-auto font-semibold ${textColor} text-xl`}>
+        <div className={`mx-auto text-xl font-semibold ${textColor}`}>
           {contract.resolution ?? override ?? display}
         </div>
         {caption && <div className="text-base">{caption}</div>}

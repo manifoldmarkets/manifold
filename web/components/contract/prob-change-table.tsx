@@ -6,7 +6,6 @@ import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractCardProbChange } from './contract-card'
-import { QuickBet } from '../bet/quick-bet'
 import { User } from 'common/user'
 
 export function ProfitChangeTable(props: {
@@ -126,26 +125,24 @@ export function ProbOrNumericChange(props: {
 
   className?: string
 }) {
-  const { contract, className, user } = props
+  const { contract } = props
   const {
     probChanges: { day: change },
   } = contract
 
-  const color = change >= 0 ? 'text-teal-500' : 'text-scarlet-400'
-
-  return (
-    <Col className={clsx('flex flex-col ', className)}>
-      {user && <QuickBet contract={contract} user={user} className="z-10" />}
-      <Col className={clsx('flex items-end pt-2 text-base', color)}>
-        <div
-          className={clsx(
-            'mr-1 flex  items-center justify-center rounded-full bg-teal-100 px-2 py-1 text-xs font-bold ',
-            change >= 0 ? 'bg-teal-100' : 'bg-scarlet-100'
-          )}
-        >
-          {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
-        </div>
-      </Col>
-    </Col>
-  )
+  const color = change >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+  if (Math.abs(change * 100) > 5) {
+    return (
+      <div
+        className={clsx(
+          'mr-1 flex  items-center justify-center rounded-full bg-teal-100 px-2 py-1 text-xs font-semibold ',
+          change >= 0 ? 'bg-teal-100' : 'bg-scarlet-100',
+          color
+        )}
+      >
+        {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
+      </div>
+    )
+  }
+  return <></>
 }
