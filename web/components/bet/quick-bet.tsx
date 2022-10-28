@@ -146,6 +146,58 @@ export function QuickBet(props: {
       contractId: contract.id,
     })
   }
+
+  return (
+    <div className="mx-y relative">
+      <Row
+        className={clsx(
+          className,
+          'absolute my-auto mt-1 w-full items-center justify-between px-2 align-middle'
+        )}
+      >
+        <BinaryQuickBetButton
+          onClick={() => placeQuickBet('DOWN')}
+          direction="DOWN"
+          user={user}
+          contract={contract}
+          hover={downHover}
+          onMouseEnter={() => setDownHover(true)}
+          onMouseLeave={() => setDownHover(false)}
+        />
+        <BinaryQuickBetButton
+          onClick={() => placeQuickBet('UP')}
+          direction="UP"
+          user={user}
+          contract={contract}
+          hover={upHover}
+          onMouseEnter={() => setUpHover(true)}
+          onMouseLeave={() => setUpHover(false)}
+        />
+      </Row>
+      <QuickOutcomeView contract={contract} previewProb={previewProb} />
+    </div>
+  )
+}
+
+function BinaryQuickBetButton(props: {
+  onClick: () => void
+  direction: 'UP' | 'DOWN'
+  user: User
+  contract: Contract
+  hover: boolean
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}) {
+  const {
+    onClick,
+    direction,
+    user,
+    contract,
+    hover,
+    onMouseEnter,
+    onMouseLeave,
+  } = props
+  const userBets = useUserContractBets(user.id, contract.id)
   let yesWinnings,
     noWinnings,
     position,
@@ -165,83 +217,44 @@ export function QuickBet(props: {
     position = yesWinnings - noWinnings
     outcome = position < 0 ? 'NO' : 'YES'
   }
-
-  const hasUpInvestment =
-    outcome === 'YES' && invested != null && floor(invested) > 0
-  const hasDownInvestment =
-    outcome === 'NO' && invested != null && floor(invested) > 0
-
+  let hasInvestment = false
+  if (direction === 'UP') {
+    hasInvestment = outcome === 'YES' && invested != null && floor(invested) > 0
+  } else {
+    hasInvestment = outcome === 'NO' && invested != null && floor(invested) > 0
+  }
   return (
-    <div className="mx-y relative">
-      <Row
+    <Row
+      className={clsx(
+        'items-center gap-1',
+        direction === 'UP' ? 'flex-row-reverse' : ''
+      )}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
+    >
+      <EquilateralTriangle
         className={clsx(
-          className,
-          'absolute my-auto mt-1 w-full items-center justify-between px-2 align-middle'
+          'mx-auto h-6 w-6 -rotate-90',
+          direction === 'DOWN' ? '-rotate-90' : 'rotate-90',
+          hover || hasInvestment ? 'text-indigo-900' : 'text-indigo-400'
         )}
-      >
-        <Row
-          className="items-center gap-1"
-          onMouseEnter={() => setDownHover(true)}
-          onMouseLeave={() => setDownHover(false)}
-          onClick={() => placeQuickBet('DOWN')}
-        >
-          <EquilateralTriangle
-            className={clsx(
-              'mx-auto h-6 w-6 -rotate-90',
-              downHover || hasDownInvestment
-                ? 'text-indigo-900'
-                : 'text-indigo-400'
-            )}
-          />
-          {hasDownInvestment && invested != null ? (
-            <span className={clsx('text-sm font-light text-indigo-900')}>
-              {downHover
-                ? formatMoney(invested + BET_SIZE)
-                : formatMoney(invested)}
-            </span>
-          ) : (
-            <span
-              className={clsx(
-                'text-sm font-light text-indigo-900 transition-opacity',
-                downHover ? 'opacity-100' : 'opacity-0'
-              )}
-            >
-              {formatMoney(BET_SIZE)}
-            </span>
+      />
+      {hasInvestment && invested != null ? (
+        <span className={clsx('text-sm font-light text-indigo-900')}>
+          {hover ? formatMoney(invested + BET_SIZE) : formatMoney(invested)}
+        </span>
+      ) : (
+        <span
+          className={clsx(
+            'text-sm font-light text-indigo-900 transition-opacity',
+            hover ? 'opacity-100' : 'opacity-0'
           )}
-        </Row>
-        <Row
-          className="items-center gap-1 pl-12"
-          onMouseEnter={() => setUpHover(true)}
-          onMouseLeave={() => setUpHover(false)}
-          onClick={() => placeQuickBet('UP')}
         >
-          {hasUpInvestment && invested != null ? (
-            <span className={clsx('text-sm font-light text-indigo-900')}>
-              {upHover
-                ? formatMoney(invested + BET_SIZE)
-                : formatMoney(invested)}
-            </span>
-          ) : (
-            <span
-              className={clsx(
-                'text-sm font-light text-indigo-900 transition-opacity',
-                upHover ? 'opacity-100' : 'opacity-0'
-              )}
-            >
-              {formatMoney(BET_SIZE)}
-            </span>
-          )}
-          <EquilateralTriangle
-            className={clsx(
-              'mx-auto h-6 w-6 rotate-90',
-              upHover || hasUpInvestment ? 'text-indigo-900' : 'text-indigo-400'
-            )}
-          />
-        </Row>
-      </Row>
-      <QuickOutcomeView contract={contract} previewProb={previewProb} />
-    </div>
+          {formatMoney(BET_SIZE)}
+        </span>
+      )}
+    </Row>
   )
 }
 
@@ -314,7 +327,7 @@ export function QuickOutcomeView(props: {
           }%, ${getBgColor(contract)} ${100 * prob}%)`,
         }}
       >
-        <div className={`mx-auto text-lg font-semibold ${textColor}`}>
+        <div className={`mx-auto text-xl font-semibold ${textColor}`}>
           {contract.resolution ?? override ?? display}
         </div>
         {caption && <div className="text-base">{caption}</div>}

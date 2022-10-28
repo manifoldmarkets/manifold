@@ -28,21 +28,22 @@ import {
   getOutcomeProbability,
   getProbability,
   getTopAnswer,
+  getContractBetMetrics,
+  calculatePayout,
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
-import { useUser, useUserContractMetrics } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../widgets/tooltip'
-import { SiteLink } from '../widgets/site-link'
-import { ProbOrNumericChange } from './prob-change-table'
 import { Card } from '../widgets/card'
-import { floatingEqual } from 'common/util/math'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { useContract } from 'web/hooks/use-contracts'
+import { ReactNode } from 'react'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { floor, sumBy } from 'lodash'
 
 export function ContractCard(props: {
   contract: Contract
@@ -56,6 +57,7 @@ export function ContractCard(props: {
   noLinkAvatar?: boolean
   newTab?: boolean
   showImage?: boolean
+  children?: ReactNode
 }) {
   const {
     showTime,
@@ -68,6 +70,7 @@ export function ContractCard(props: {
     noLinkAvatar,
     newTab,
     showImage,
+    children,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { question, outcomeType } = contract
@@ -87,14 +90,14 @@ export function ContractCard(props: {
   return (
     <Card
       className={clsx(
-        'font-readex-pro group relative flex leading-normal',
+        'font-readex-pro group relative flex w-full leading-normal',
         className
       )}
     >
-      <Col className="relative flex-1 gap-1 py-2">
+      <Col className="relative flex-1 gap-1 pt-2">
         <AvatarDetails
           contract={contract}
-          className={'pl-2'}
+          className={'pl-4'}
           noLink={noLinkAvatar}
         />
         {/* overlay question on image */}
@@ -117,7 +120,7 @@ export function ContractCard(props: {
           </div>
         )}
 
-        <div className="px-4">
+        <Col className="gap-1 px-4 pb-2">
           {/* question is here if not overlaid on an image */}
           {(!showImage || !contract.coverImageUrl) && (
             <div
@@ -134,14 +137,15 @@ export function ContractCard(props: {
           ) : (
             <QuickOutcomeView contract={contract} />
           )}
-        </div>
-        <Row className={clsx('mt-2 gap-1 truncate px-2')}>
+        </Col>
+        <Row className={clsx('mb-1 mt-1 w-full gap-1 truncate px-4')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}
             hideGroupLink={hideGroupLink}
           />
         </Row>
+        {children}
       </Col>
 
       {/* Add click layer */}
@@ -379,80 +383,82 @@ export function ContractCardProbChange(props: {
   showImage?: boolean
 }) {
   const { noLinkAvatar, showPosition, className, showImage } = props
+  const contract = (useContract(props.contract.id) ??
+    props.contract) as CPMMBinaryContract
+
   const yesOutcomeLabel =
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
   const noOutcomeLabel =
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
-  const contract = (useContract(props.contract.id) ??
-    props.contract) as CPMMBinaryContract
-
   const user = useUser()
-  const metrics = useUserContractMetrics(user?.id, contract.id)
-  const dayMetrics = metrics && metrics.from && metrics.from.day
-  const binaryOutcome =
-    metrics && floatingEqual(metrics.totalShares.NO ?? 0, 0) ? 'YES' : 'NO'
-
-  const displayedProfit = dayMetrics
-    ? ENV_CONFIG.moneyMoniker + dayMetrics.profit.toFixed(0)
-    : undefined
+  // const metrics = useUserContractMetrics(user?.id, contract.id)
+  // const dayMetrics = metrics && metrics.from && metrics.from.day
+  // const displayedProfit = dayMetrics
+  //   ? ENV_CONFIG.moneyMoniker + dayMetrics.profit.toFixed(0)
+  //   : undefined
+  const userBets = useUserContractBets(user?.id, contract.id)
+  let yesWinnings,
+    noWinnings,
+    position,
+    outcome,
+    profit = null
+  const bets = userBets?.filter((b) => !b.isAnte)
+  if (bets) {
+    const metrics = getContractBetMetrics(contract, bets)
+    profit = metrics.profit
+    const excludeSales = bets.filter((b) => !b.isSold && !b.sale)
+    yesWinnings = sumBy(excludeSales, (bet) =>
+      calculatePayout(contract, bet, 'YES')
+    )
+    noWinnings = sumBy(excludeSales, (bet) =>
+      calculatePayout(contract, bet, 'NO')
+    )
+    position = yesWinnings - noWinnings
+    outcome = position < 0 ? 'NO' : 'YES'
+  }
 
   return (
-    <Card className={clsx(className, 'mb-4')}>
-      <AvatarDetails
-        contract={contract}
-        className={'px-2 pt-2'}
-        noLink={noLinkAvatar}
-      />
-      {contract.coverImageUrl && showImage && (
-        <img
-          className="mt-2 h-60 w-full object-cover "
-          src={contract.coverImageUrl}
-        />
+    <ContractCard
+      contract={contract}
+      noLinkAvatar={noLinkAvatar}
+      showImage={showImage}
+      className={clsx(
+        className,
+        'mb-4 break-inside-avoid-column overflow-hidden'
       )}
-      <Row className={clsx('items-start justify-between gap-4 ', className)}>
-        <SiteLink
-          className="pl-2 pr-2 pt-2 font-semibold text-indigo-700"
-          href={contractPath(contract)}
-        >
-          <span className="line-clamp-3">{contract.question}</span>
-        </SiteLink>
-      </Row>
-      <ProbOrNumericChange
-        className="py-2 px-2"
-        contract={contract}
-        user={user}
-      />
-      {showPosition && metrics && metrics.hasShares && (
+    >
+      {showPosition && position && floor(position) > 0 && (
         <Row
           className={clsx(
-            'items-center justify-between gap-4 bg-gray-100 pl-4 pr-4 pt-1 pb-2 text-sm'
+            'items-center gap-4 bg-gray-100 pl-4 pr-4 pt-1 pb-2 text-sm'
           )}
         >
-          <Col className="text-gray-400">
-            <span> Your Position </span>
-            <Row className="items-center justify-center gap-1">
-              <span className="text-lg text-gray-500">
-                {formatMoney(metrics.invested)}{' '}
-              </span>
-              on {binaryOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
-            </Row>
+          <Col className="w-1/2">
+            <span className="text-greyscale-4 text-xs"> Your Position </span>
+            <div className="text-greyscale-6 text-sm">
+              <span className="font-semibold">{floor(position)} </span>
+              {outcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
+              {' shares'}
+            </div>
           </Col>
-          <Col className="gap-1 text-gray-400">
-            <span> Your Profit </span>
-            <span
+          <Col className="w-1/2">
+            <div className="text-greyscale-4 text-xs"> Your Total Profit </div>
+            <div
               className={clsx(
-                'ml-1.5',
-                dayMetrics && dayMetrics?.profit > 0
+                'text-sm font-semibold',
+                !profit
+                  ? 'text-greyscale-6'
+                  : profit > 0
                   ? 'text-teal-500'
                   : 'text-red-500'
               )}
             >
-              {displayedProfit} today
-            </span>
+              {profit ? formatMoney(profit) : '--'}
+            </div>
           </Col>
         </Row>
       )}
-    </Card>
+    </ContractCard>
   )
 }
