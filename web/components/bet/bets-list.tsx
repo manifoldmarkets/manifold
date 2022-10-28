@@ -319,10 +319,9 @@ function ContractBets(props: {
             <Link
               href={contractPath(contract)}
               className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
-              onClick={(e) => e.stopPropagation()}>
-
+              onClick={(e) => e.stopPropagation()}
+            >
               {contract.question}
-
             </Link>
 
             {/* Show carrot for collapsing. Hack the positioning. */}
@@ -409,7 +408,7 @@ function ContractBets(props: {
         </div>
       )}
     </div>
-  );
+  )
 }
 
 export function ContractBetsTable(props: {
