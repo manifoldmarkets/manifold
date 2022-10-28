@@ -75,12 +75,11 @@ export default function Leaderboards(_props: {
         setProps(props)
         return
       }
-      // check if user is in each of leaderboard categories
       const { allTime, monthly, weekly, daily, topFollowed } = props
       let leaderboards = [allTime, monthly, weekly, daily]
-      // check each type of leaderboard for user, if they're not in it, add them
       leaderboards = leaderboards.map((leaderboard) => {
         const { topTraders, topCreators } = leaderboard
+        // We're only caching users' profits for now
         if (!topTraders.find((u) => u.id === user?.id)) {
           topTraders.push(user)
         }
@@ -113,6 +112,7 @@ export default function Leaderboards(_props: {
         <Col className="mx-4 items-center gap-10 lg:flex-row">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
+            // We're only caching profitRank for now
             entries={topTraders.map((user) => ({
               ...user,
               rank: user.profitRankCached?.[period],
