@@ -1,5 +1,3 @@
-import { Log, Logging } from '@google-cloud/logging-min';
-import { GOOGLE_LOG_NAME, GOOGLE_PROJECT_ID } from './envs';
 import { detectGCloudInstance } from './utils';
 
 enum Level {
@@ -10,12 +8,13 @@ enum Level {
   TRACE,
 }
 
-let l: Log;
+const l = undefined;
 detectGCloudInstance().then((r) => {
   if (r) {
-    const logging = new Logging({ projectId: GOOGLE_PROJECT_ID });
-    l = logging.log(GOOGLE_LOG_NAME);
-    log(Level.INFO, 'Using Google Cloud Logging');
+    // TODO make port of GCloud Logger
+    // const logging = new Logging({ projectId: GOOGLE_PROJECT_ID });
+    // l = logging.log(GOOGLE_LOG_NAME);
+    // log(Level.INFO, 'Using Google Cloud Logging');
   }
 });
 
