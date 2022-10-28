@@ -45,19 +45,6 @@ export type IncrementReq = {
   amount: number
 }
 
-export async function increment(req: IncrementReq) {
-  const token = await auth.currentUser?.getIdToken()
-  const res = await fetch('/api/v0/increment', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(req),
-  })
-  return await res.json()
-}
-
 export default async function route(req: NextApiRequest, res: NextApiResponse) {
   await applyCorsHeaders(req, res, {
     origin: [CORS_ORIGIN_MANIFOLD, CORS_ORIGIN_LOCALHOST],

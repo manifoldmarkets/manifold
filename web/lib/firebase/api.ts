@@ -82,6 +82,10 @@ export function claimManalink(params: any) {
   return call(getFunctionUrl('claimmanalink'), 'POST', params)
 }
 
+export function increment(params: any) {
+  return call(getFunctionUrl('increment'), 'POST', params)
+}
+
 export function createGroup(params: any) {
   return call(getFunctionUrl('creategroup'), 'POST', params)
 }

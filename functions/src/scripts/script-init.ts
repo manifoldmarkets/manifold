@@ -7,6 +7,7 @@ import * as admin from 'firebase-admin'
 // Prod: https://console.firebase.google.com/u/0/project/mantic-markets/settings/serviceaccounts/adminsdk
 // Dev: https://console.firebase.google.com/u/0/project/dev-mantic-markets/settings/serviceaccounts/adminsdk
 // Then set GOOGLE_APPLICATION_CREDENTIALS_PROD or GOOGLE_APPLICATION_CREDENTIALS_DEV to the path of the key.
+// e.g. `export GOOGLE_APPLICATION_CREDENTIALS_DEV=/Users/austin/Downloads/dev-mantic-markets-firebase-adminsdk-sir5m-4ef9b8352f.json`
 
 // Then, to run a script, make sure you are pointing at the Firebase you intend to:
 // $ firebase use dev (or prod)

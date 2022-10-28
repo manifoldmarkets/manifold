@@ -12,6 +12,7 @@ import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { auth } from 'web/lib/firebase/users'
 import { IncrementReq } from './api/v0/increment'
+import { increment as incrementFirebase } from 'web/lib/firebase/api'
 
 async function increment(req: IncrementReq) {
   const token = await auth.currentUser?.getIdToken()
@@ -24,14 +25,6 @@ async function increment(req: IncrementReq) {
     body: JSON.stringify(req),
   })
   return await res.json()
-}
-
-function IncrementButton() {
-  return (
-    <Button onClick={async () => await increment({ amount: 2 })}>
-      Increment
-    </Button>
-  )
 }
 
 export default function AddFundsPage() {
@@ -62,7 +55,12 @@ export default function AddFundsPage() {
             height={158}
           />
 
-          <IncrementButton />
+          <Button onClick={async () => await increment({ amount: 2 })}>
+            Increment (Vercel)
+          </Button>
+          <Button onClick={async () => await incrementFirebase({ amount: 2 })}>
+            Increment (Firebase)
+          </Button>
 
           <div className="mb-6 text-gray-500">
             Buy mana (M$) to trade in your favorite markets. <br />{' '}
