@@ -10,6 +10,8 @@ import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { User } from 'common/user'
+import clsx from 'clsx'
+import { DotsHorizontalIcon } from '@heroicons/react/outline'
 
 export function BlockUserButton(props: { user: User }) {
   const { user } = props
@@ -47,7 +49,10 @@ export function BlockUserButton(props: { user: User }) {
   return (
     <>
       <Button color={'gray-white'} onClick={() => setIsModalOpen(true)}>
-        <Row className={'items-center justify-center'}>· · ·</Row>
+        <DotsHorizontalIcon
+          className={clsx('h-5 w-5 flex-shrink-0')}
+          aria-hidden="true"
+        />
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <Col className={'rounded-md bg-white p-4'}>
@@ -55,9 +60,16 @@ export function BlockUserButton(props: { user: User }) {
             {isBlocked ? `Unblock` : `Block`} {name}
           </Title>
           <span className={'mb-4 text-sm'}>
-            You {isBlocked ? `will` : `won't`} see markets from this user on
-            your homepage and search. Their comments on markets and posts will
-            be {isBlocked ? `visible` : `invisible`} to you as well.
+            · You {isBlocked ? `will` : `won't`} see content from them on your
+            homepage and search.
+            <br />· Their comments will be {isBlocked
+              ? `visible`
+              : `invisible`}{' '}
+            to you.
+            <br />· They {isBlocked ? `will` : `won't`} be able to add new
+            comments to your content.
+            <br />· They {isBlocked ? `will` : `won't`} see your content on
+            their homepage and search.
           </span>
           <Row className={'justify-between'}>
             <Button color={'gray-white'} onClick={() => setIsModalOpen(false)}>
