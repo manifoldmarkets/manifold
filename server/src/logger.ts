@@ -1,3 +1,4 @@
+import GoogleLogger from './google-logger';
 import { detectGCloudInstance } from './utils';
 
 enum Level {
@@ -8,15 +9,15 @@ enum Level {
   TRACE,
 }
 
-const l = undefined;
-detectGCloudInstance().then((r) => {
-  if (r) {
-    // TODO make port of GCloud Logger
-    // const logging = new Logging({ projectId: GOOGLE_PROJECT_ID });
-    // l = logging.log(GOOGLE_LOG_NAME);
-    // log(Level.INFO, 'Using Google Cloud Logging');
-  }
-});
+let l: GoogleLogger = undefined;
+async function init() {
+  await detectGCloudInstance().then(async (r) => {
+    if (r) {
+      log(Level.INFO, 'Using Google Cloud Logging.');
+      l = await GoogleLogger.getLogger();
+    }
+  });
+}
 
 function formatDate(date: Date) {
   let day = date.getDate().toString();
@@ -44,58 +45,54 @@ function log(level: Level, msg: any, ...args: any[]) {
   switch (level) {
     case Level.DEBUG:
       console.debug(output);
-      l?.debug(l.entry(output));
+      l?.debug(output);
       break;
     case Level.ERROR:
       console.error(output);
-      l?.error(l.entry(output));
+      l?.error(output);
       break;
     case Level.INFO:
       console.log(output);
-      l?.info(l.entry(output));
+      l?.info(output);
       break;
     case Level.WARN:
       console.warn(output);
-      l?.warning(l.entry(output));
+      l?.warning(output);
       break;
     case Level.TRACE:
       console.error(timestamp + ' ' + Level[level] + ': ' + msg.stack);
-      l?.error(l.entry(output));
+      l?.error(timestamp + ' ' + Level[level] + ': ' + msg.stack);
       break;
     default:
-      l?.info(l.entry(output));
+      l?.info(output);
       console.log(output);
   }
 }
 
 export default class {
   static info(msg: any, ...args: any[]) {
-    // l.info(msg, args);
-    // console.log(msg, args);
     log(Level.INFO, msg, args);
   }
 
   static debug(msg: any, ...args: any[]) {
-    // l.debug(msg, args);
-    // console.debug(msg, args);
     log(Level.DEBUG, msg, args);
   }
 
   static warn(msg: any, ...args: any[]) {
-    // l.warn(msg, args);
-    // console.warn(msg, args);
     log(Level.WARN, msg, args);
   }
 
   static error(msg: any, ...args: any[]) {
-    // l.error(msg, args);
-    // console.error(msg, args);
     log(Level.ERROR, msg, args);
   }
 
   static trace(error: Error, msg?: string, ...args: any[]) {
-    // l.trace(error, msg, args);
-    // console.trace(obj, msg, args);
     log(Level.TRACE, error, msg, args);
   }
+
+  static async flush() {
+    await l?.flushEntryQueue();
+  }
+
+  static init = init;
 }
