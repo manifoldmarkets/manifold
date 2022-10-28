@@ -1,6 +1,6 @@
 import { BinaryContract, PseudoNumericContract } from 'common/contract'
 import { Bet } from 'common/bet'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { partition, sumBy } from 'lodash'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useEffectCheckEquality } from './use-effect-check-equality'
