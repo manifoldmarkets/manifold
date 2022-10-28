@@ -66,8 +66,7 @@ const auth = getAuth(app)
 const homeUri =
   ENV === 'DEV'
     ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
-    : // : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
-      'https://019b-191-96-67-98.ngrok.io'
+    : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
