@@ -1,5 +1,3 @@
-import clsx from 'clsx'
-
 export default function GoToIcon(props: { className?: string }) {
   const { className } = props
   return (

@@ -212,11 +212,11 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 }
 
 const HOME_SECTIONS = [
-  { label: 'Trending', id: 'score' },
-  { label: 'Featured', id: 'featured' },
-  { label: 'Daily changed', id: 'daily-trending' },
+  { label: 'Trending', id: 'score', icon: '🔥' },
+  { label: 'Featured', id: 'featured', icon: '⭐' },
+  { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
-  { label: 'New', id: 'newest' },
+  { label: 'New', id: 'newest', icon: '✨' },
 ] as const
 
 export const getHomeItems = (sections: string[]) => {
@@ -242,7 +242,7 @@ export const getHomeItems = (sections: string[]) => {
 }
 
 function renderSections(
-  sections: { id: string; label: string }[],
+  sections: { id: string; label: string; icon?: string }[],
   sectionContracts: {
     'daily-movers':
       | {
@@ -263,14 +263,14 @@ function renderSections(
   return (
     <>
       {sections.map((s) => {
-        const { id, label } = s as {
+        const { id, label, icon } = s as {
           id: sectionTypes
           label: string
+          icon: string | undefined
         }
         if (id === 'daily-movers') {
           return <DailyMoversSection key={id} data={sectionContracts[id]} />
         }
-
         if (id === 'featured') {
           return (
             <FeaturedSection
@@ -292,6 +292,7 @@ function renderSections(
               contracts={contracts}
               sort="daily-score"
               showProbChange
+              icon={icon}
             />
           )
         }
@@ -301,6 +302,7 @@ function renderSections(
             label={label}
             contracts={contracts}
             sort={id as Sort}
+            icon={icon}
           />
         )
       })}
@@ -350,17 +352,19 @@ function renderGroupSections(
   )
 }
 
-function SectionHeader(props: {
+function HomeSectionHeader(props: {
   label: string
   href: string
   children?: ReactNode
+  icon?: string
 }) {
-  const { label, href, children } = props
+  const { label, href, children, icon } = props
 
   return (
     <Row className="bg-greyscale-1 text-greyscale-7 sticky top-0 z-20 my-1 items-center justify-between pb-2">
+      {icon != null && <div className="mr-2 inline">{icon}</div>}
       <SiteLink
-        className="flex-1 text-xl"
+        className="flex-1 text-lg md:text-xl"
         href={href}
         onClick={() => track('home click section header', { section: href })}
       >
@@ -378,14 +382,16 @@ function SearchSection(props: {
   sort: Sort
   pill?: string
   showProbChange?: boolean
+  icon?: string
 }) {
-  const { label, contracts, sort, pill, showProbChange } = props
+  const { label, contracts, sort, pill, showProbChange, icon } = props
 
   return (
     <Col>
-      <SectionHeader
+      <HomeSectionHeader
         label={label}
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
+        icon={icon}
       />
       <ContractsGrid
         contracts={contracts}
@@ -401,9 +407,11 @@ function LatestPostsSection(props: { latestPosts: Post[]; user: User | null }) {
   return (
     <Col className="pt-4">
       <Row className="flex items-center justify-between">
-        <Col>
-          <SectionHeader label={'Latest Posts'} href="/latestposts" />
-        </Col>
+        <HomeSectionHeader
+          label={'Latest Posts'}
+          href="/latestposts"
+          icon="📝"
+        />
         <Col>
           {user && (
             <SiteLink
@@ -492,7 +500,7 @@ function GroupSection(props: {
 
   return (
     <Col>
-      <SectionHeader label={group.name} href={groupPath(group.slug)}>
+      <HomeSectionHeader label={group.name} href={groupPath(group.slug)}>
         <Button
           color="gray-white"
           onClick={() => {
@@ -510,7 +518,7 @@ function GroupSection(props: {
         >
           <XCircleIcon className={'h-5 w-5 flex-shrink-0'} aria-hidden="true" />
         </Button>
-      </SectionHeader>
+      </HomeSectionHeader>
       <ContractsGrid
         contracts={contracts.slice(0, 4)}
         cardUIOptions={{ showProbChange: true }}
@@ -544,7 +552,7 @@ function DailyMoversSection(props: {
 
   return (
     <Col className="gap-2">
-      <SectionHeader label="Your daily movers" href="/daily-movers" />
+      <HomeSectionHeader label="Your daily movers" href="/daily-movers" />
       <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
   )
@@ -553,7 +561,7 @@ function DailyMoversSection(props: {
 function ActivitySection() {
   return (
     <Col>
-      <SectionHeader label="Live feed" href="/live" />
+      <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
       <ActivityLog count={6} showPills />
     </Col>
   )
@@ -579,7 +587,11 @@ export function TrendingGroupsSection(props: {
 
   return (
     <Col className={className}>
-      <SectionHeader label="Trending groups" href="/explore-groups" />
+      <HomeSectionHeader
+        label="Trending groups"
+        href="/explore-groups"
+        icon="👥"
+      />
       <div className="mb-4 text-gray-500">
         Follow groups you are interested in.
       </div>
