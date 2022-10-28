@@ -2,7 +2,7 @@ import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import { capitalize, uniq } from 'lodash'
+import { capitalize } from 'lodash'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
 
 import { Contract } from 'common/contract'
@@ -30,7 +30,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { updatePrivateUser } from 'web/lib/firebase/users'
+import { BlockMarketButton } from 'web/components/buttons/hide-market-button'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -97,7 +97,10 @@ export function ContractInfoDialog(props: {
 
         <Modal open={open} setOpen={setOpen}>
           <Col className="gap-4 rounded bg-white p-6">
-            <Title className="!mt-0 !mb-0" text="This Market" />
+            <Row className={'justify-between'}>
+              <Title className="!mt-0 !mb-0" text="This Market" />
+              {privateUser && <BlockMarketButton contractId={contract.id} />}
+            </Row>
 
             <Table>
               <tbody>
@@ -233,34 +236,6 @@ export function ContractInfoDialog(props: {
                     />
                   </td>
                 </tr>
-                {privateUser && (
-                  <tr>
-                    <td>Block market</td>
-                    <td>
-                      <ShortToggle
-                        on={
-                          privateUser.blockedContractIds?.includes(id) ?? false
-                        }
-                        setOn={(block) =>
-                          block
-                            ? updatePrivateUser(privateUser.id, {
-                                blockedContractIds: uniq(
-                                  privateUser.blockedContractIds?.concat([
-                                    id,
-                                  ]) ?? [id]
-                                ),
-                              })
-                            : updatePrivateUser(privateUser.id, {
-                                blockedContractIds:
-                                  privateUser.blockedContractIds?.filter(
-                                    (blockedId) => blockedId !== id
-                                  ),
-                              })
-                        }
-                      />
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </Table>
 
