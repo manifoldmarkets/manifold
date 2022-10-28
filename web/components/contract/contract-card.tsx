@@ -28,21 +28,24 @@ import {
   getOutcomeProbability,
   getProbability,
   getTopAnswer,
+  getContractBetMetrics,
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
 import { getTextColor, QuickBet, QuickOutcomeView } from '../bet/quick-bet'
-import { useUser, useUserContractMetrics } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { trackCallback } from 'web/lib/service/analytics'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../widgets/tooltip'
-import { SiteLink } from '../widgets/site-link'
-import { ProbOrNumericChange } from './prob-change-table'
 import { Card } from '../widgets/card'
-import { floatingEqual } from 'common/util/math'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { useContract } from 'web/hooks/use-contracts'
+import { ReactNode } from 'react'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { floor } from 'lodash'
+import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
+import { ProbOrNumericChange } from './prob-change-table'
+import { Spacer } from '../layout/spacer'
 
 export function ContractCard(props: {
   contract: Contract
@@ -56,6 +59,7 @@ export function ContractCard(props: {
   noLinkAvatar?: boolean
   newTab?: boolean
   showImage?: boolean
+  children?: ReactNode
 }) {
   const {
     showTime,
@@ -68,6 +72,7 @@ export function ContractCard(props: {
     noLinkAvatar,
     newTab,
     showImage,
+    children,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { question, outcomeType } = contract
@@ -87,14 +92,14 @@ export function ContractCard(props: {
   return (
     <Card
       className={clsx(
-        'font-readex-pro group relative flex leading-normal',
+        'font-readex-pro group relative flex w-full leading-normal',
         className
       )}
     >
-      <Col className="relative flex-1 gap-1 py-2">
+      <Col className="relative flex-1 gap-1 pt-2">
         <AvatarDetails
           contract={contract}
-          className={'pl-2'}
+          className={'pl-4'}
           noLink={noLinkAvatar}
         />
         {/* overlay question on image */}
@@ -111,13 +116,13 @@ export function ContractCard(props: {
                   questionClass
                 )}
               >
-                {question}
+                <div className="drop-shadow-lg">{question}</div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="px-4">
+        <Col className="gap-1 px-4 pb-1">
           {/* question is here if not overlaid on an image */}
           {(!showImage || !contract.coverImageUrl) && (
             <div
@@ -134,14 +139,22 @@ export function ContractCard(props: {
           ) : (
             <QuickOutcomeView contract={contract} />
           )}
-        </div>
-        <Row className={clsx('mt-2 gap-1 truncate px-2')}>
+        </Col>
+        <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}
             hideGroupLink={hideGroupLink}
           />
+          {(outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+            <ProbOrNumericChange
+              className="py-2 px-2"
+              contract={contract as CPMMContract}
+              user={user}
+            />
+          )}
         </Row>
+        {children}
       </Col>
 
       {/* Add click layer */}
@@ -162,19 +175,18 @@ export function ContractCard(props: {
           }}
         />
       ) : (
-        <Link href={contractPath(contract)}>
-          <a
-            onClick={trackCallback(
-              'click market card' + (trackingPostfix ?? ''),
-              {
-                slug: contract.slug,
-                contractId: contract.id,
-              }
-            )}
-            className="absolute top-0 left-0 right-0 bottom-0"
-            target={newTab ? '_blank' : '_self'}
-          />
-        </Link>
+        <Link
+          href={contractPath(contract)}
+          onClick={trackCallback(
+            'click market card' + (trackingPostfix ?? ''),
+            {
+              slug: contract.slug,
+              contractId: contract.id,
+            }
+          )}
+          className="absolute top-0 left-0 right-0 bottom-0"
+          target={newTab ? '_blank' : '_self'}
+        />
       )}
     </Card>
   )
@@ -379,80 +391,67 @@ export function ContractCardProbChange(props: {
   showImage?: boolean
 }) {
   const { noLinkAvatar, showPosition, className, showImage } = props
+  const contract = (useContract(props.contract.id) ??
+    props.contract) as CPMMBinaryContract
+
   const yesOutcomeLabel =
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
   const noOutcomeLabel =
     props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
 
-  const contract = (useContract(props.contract.id) ??
-    props.contract) as CPMMBinaryContract
-
   const user = useUser()
-  const metrics = useUserContractMetrics(user?.id, contract.id)
-  const dayMetrics = metrics && metrics.from && metrics.from.day
-  const binaryOutcome =
-    metrics && floatingEqual(metrics.totalShares.NO ?? 0, 0) ? 'YES' : 'NO'
-
-  const displayedProfit = dayMetrics
-    ? ENV_CONFIG.moneyMoniker + dayMetrics.profit.toFixed(0)
-    : undefined
-
+  const userBets = useUserContractBets(user?.id, contract.id) || []
+  const { profit, invested } = getContractBetMetrics(contract, userBets)
+  const { yesShares, noShares, sharesOutcome } = useSaveBinaryShares(
+    contract,
+    userBets
+  )
   return (
-    <Card className={clsx(className, 'mb-4')}>
-      <AvatarDetails
-        contract={contract}
-        className={'px-2 pt-2'}
-        noLink={noLinkAvatar}
-      />
-      {contract.coverImageUrl && showImage && (
-        <img
-          className="mt-2 h-60 w-full object-cover "
-          src={contract.coverImageUrl}
-        />
+    <ContractCard
+      contract={contract}
+      noLinkAvatar={noLinkAvatar}
+      showImage={showImage}
+      className={clsx(
+        className,
+        'mb-4 break-inside-avoid-column overflow-hidden'
       )}
-      <Row className={clsx('items-start justify-between gap-4 ', className)}>
-        <SiteLink
-          className="pl-2 pr-2 pt-2 font-semibold text-indigo-700"
-          href={contractPath(contract)}
-        >
-          <span className="line-clamp-3">{contract.question}</span>
-        </SiteLink>
-      </Row>
-      <ProbOrNumericChange
-        className="py-2 px-2"
-        contract={contract}
-        user={user}
-      />
-      {showPosition && metrics && metrics.hasShares && (
+    >
+      {showPosition === true && sharesOutcome != null && floor(invested) > 0 && (
         <Row
           className={clsx(
-            'items-center justify-between gap-4 bg-gray-100 pl-4 pr-4 pt-1 pb-2 text-sm'
+            'bg-greyscale-1.5 items-center gap-4 pl-4 pr-4 pt-1 pb-2 text-sm'
           )}
         >
-          <Col className="text-gray-400">
-            <span> Your Position </span>
-            <Row className="items-center justify-center gap-1">
-              <span className="text-lg text-gray-500">
-                {formatMoney(metrics.invested)}{' '}
+          <Col className="w-1/2">
+            <span className="text-greyscale-4 text-xs"> Your Position </span>
+            <div className="text-greyscale-6 text-sm">
+              <span className="font-semibold">
+                {sharesOutcome === 'YES' ? floor(yesShares) : floor(noShares)}{' '}
               </span>
-              on {binaryOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
-            </Row>
+              {sharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
+              {' shares'}
+            </div>
           </Col>
-          <Col className="gap-1 text-gray-400">
-            <span> Your Profit </span>
-            <span
+          <Col className="w-1/2">
+            <div className="text-greyscale-4 text-xs"> Your Total Profit </div>
+            <div
               className={clsx(
-                'ml-1.5',
-                dayMetrics && dayMetrics?.profit > 0
+                'text-sm font-semibold',
+                !profit
+                  ? 'text-greyscale-6'
+                  : profit > 0
                   ? 'text-teal-500'
-                  : 'text-red-500'
+                  : 'text-red-600'
               )}
             >
-              {displayedProfit} today
-            </span>
+              {profit ? formatMoney(profit) : '--'}
+            </div>
           </Col>
         </Row>
       )}
-    </Card>
+      {(!showPosition || !sharesOutcome || floor(invested) === 0) && (
+        <Spacer h={2} />
+      )}
+    </ContractCard>
   )
 }

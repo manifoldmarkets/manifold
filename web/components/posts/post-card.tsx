@@ -97,18 +97,17 @@ export function PostCard(props: {
           }}
         />
       ) : (
-        <Link href={postPath(post.slug)}>
-          <a
-            onClick={() => {
-              track('select post card'),
-                {
-                  slug: post.slug,
-                  postId: post.id,
-                }
-            }}
-            className="absolute top-0 left-0 right-0 bottom-0"
-          />
-        </Link>
+        <Link
+          href={postPath(post.slug)}
+          onClick={() => {
+            track('select post card'),
+              {
+                slug: post.slug,
+                postId: post.id,
+              }
+          }}
+          className="absolute top-0 left-0 right-0 bottom-0"
+        />
       )}
     </Card>
   )

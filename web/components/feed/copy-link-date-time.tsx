@@ -31,17 +31,17 @@ export function CopyLinkDateTimeComponent(props: {
   }
   return (
     <DateTimeTooltip className={className} time={createdTime} noTap>
-      <Link href={`/${prefix}/${slug}#${elementId}`} passHref={true}>
-        <a
-          onClick={copyLinkToComment}
-          className={
-            'text-greyscale-4 hover:bg-greyscale-1.5 mx-1 whitespace-nowrap rounded-sm px-1 text-xs transition-colors'
-          }
-        >
-          {isClient && fromNow(createdTime)}
-          {showToast && <ToastClipboard />}
-          <LinkIcon className="ml-1 mb-0.5 inline" height={13} />
-        </a>
+      <Link
+        href={`/${prefix}/${slug}#${elementId}`}
+        passHref={true}
+        onClick={copyLinkToComment}
+        className={
+          'text-greyscale-4 hover:bg-greyscale-1.5 mx-1 whitespace-nowrap rounded-sm px-1 text-xs transition-colors'
+        }
+      >
+        {isClient && fromNow(createdTime)}
+        {showToast && <ToastClipboard />}
+        <LinkIcon className="ml-1 mb-0.5 inline" height={13} />
       </Link>
     </DateTimeTooltip>
   )

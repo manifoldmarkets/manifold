@@ -316,13 +316,12 @@ function ContractBets(props: {
       >
         <Col className="flex-[2] gap-1">
           <Row className="mr-2 max-w-lg">
-            <Link href={contractPath(contract)}>
-              <a
-                className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {contract.question}
-              </a>
+            <Link
+              href={contractPath(contract)}
+              className="font-medium text-indigo-700 hover:underline hover:decoration-indigo-400 hover:decoration-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {contract.question}
             </Link>
 
             {/* Show carrot for collapsing. Hack the positioning. */}

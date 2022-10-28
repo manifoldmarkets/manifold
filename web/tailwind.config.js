@@ -16,14 +16,30 @@ module.exports = {
       }
     ),
     extend: {
+      transitionTimingFunction: {
+        bouncy: 'cubic-bezier(0.8, 0, 1, 1)',
+      },
       keyframes: {
-        progress: {
-          '0%': { width: '0%' },
-          '100%': { width: '100%' },
+        'bounce-left': {
+          '0%,100%': {
+            transform: 'translateX(0%)',
+          },
+          '50%': {
+            transform: 'translateX(-15%)',
+          },
+        },
+        'bounce-right': {
+          '0%,100%': {
+            transform: 'translateX(0%)',
+          },
+          '50%': {
+            transform: 'translateX(15%)',
+          },
         },
       },
       animation: {
-        'progress-loading': 'progress 2s linear',
+        'bounce-left': 'bounce-left 0.8s infinite',
+        'bounce-right': 'bounce-right 0.7s infinite',
       },
       colors: {
         warning: '#F59E0B', // amber-500 TODO: change color

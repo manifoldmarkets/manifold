@@ -257,10 +257,11 @@ export function TopGroupNavBar(props: {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
       <Row className="items-center justify-between gap-2 bg-white px-2">
-        <Link href="/">
-          <a className="py-4 px-2 text-indigo-700 hover:text-gray-500">
-            <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
-          </a>
+        <Link
+          href="/"
+          className="py-4 px-2 text-indigo-700 hover:text-gray-500"
+        >
+          <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
         </Link>
         <h1 className="truncate text-lg font-medium text-indigo-700">
           {props.group.name}

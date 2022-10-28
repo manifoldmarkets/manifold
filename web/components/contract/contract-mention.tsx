@@ -15,33 +15,32 @@ export function ContractMention(props: { contract: Contract }) {
   const isClient = useIsClient()
 
   return (
-    <Link href={contractPath(contract)}>
-      <a
-        className="group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50"
-        title={isClient ? tooltipLabel(contract) : undefined}
-      >
-        <span className="break-anywhere mr-0.5 whitespace-normal font-normal text-indigo-700">
-          {contract.question}
+    <Link
+      href={contractPath(contract)}
+      className="group inline whitespace-nowrap rounded-sm hover:bg-indigo-50 focus:bg-indigo-50"
+      title={isClient ? tooltipLabel(contract) : undefined}
+    >
+      <span className="break-anywhere mr-0.5 whitespace-normal font-normal text-indigo-700">
+        {contract.question}
+      </span>
+      {outcomeType === 'BINARY' && (
+        <span
+          className={clsx(
+            probTextColor,
+            'rounded-full px-2 font-semibold ring-1 ring-inset ring-indigo-100 group-hover:ring-indigo-200'
+          )}
+        >
+          {resolution ? (
+            <BinaryContractOutcomeLabel
+              contract={contract}
+              resolution={resolution}
+            />
+          ) : (
+            getBinaryProbPercent(contract)
+          )}
         </span>
-        {outcomeType === 'BINARY' && (
-          <span
-            className={clsx(
-              probTextColor,
-              'rounded-full px-2 font-semibold ring-1 ring-inset ring-indigo-100 group-hover:ring-indigo-200'
-            )}
-          >
-            {resolution ? (
-              <BinaryContractOutcomeLabel
-                contract={contract}
-                resolution={resolution}
-              />
-            ) : (
-              getBinaryProbPercent(contract)
-            )}
-          </span>
-        )}
-        {/* TODO: numeric? */}
-      </a>
+      )}
+      {/* TODO: numeric? */}
     </Link>
   )
 }

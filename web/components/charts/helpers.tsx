@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useEffect,
+  ComponentType,
 } from 'react'
 import { pointer, select } from 'd3-selection'
 import { Axis, AxisScale } from 'd3-axis'
@@ -335,7 +336,7 @@ export type TooltipProps<X, T> = TooltipParams<T> & {
   xScale: ContinuousScale<X>
 }
 
-export type TooltipComponent<X, T> = React.ComponentType<TooltipProps<X, T>>
+export type TooltipComponent<X, T> = ComponentType<TooltipProps<X, T>>
 export const TooltipContainer = (props: {
   setElem: (e: HTMLElement | null) => void
   pos: TooltipPosition

@@ -90,23 +90,23 @@ export function CreatePostForm(props: { group?: Group }) {
             <TextEditor editor={editor} />
             <Spacer h={6} />
 
-            <Button
-              type="submit"
-              color="green"
-              size="xl"
-              loading={isSubmitting}
-              disabled={!isValid || editor.storage.upload.mutation.isLoading}
-              onClick={async () => {
-                setIsSubmitting(true)
-                await savePost(title)
-                setIsSubmitting(false)
-              }}
-            >
-              {isSubmitting ? 'Creating...' : 'Create a post'}
-            </Button>
             {error !== '' && <div className="text-scarlet-500">{error}</div>}
           </div>
         </form>
+        <Button
+          type="submit"
+          color="green"
+          size="xl"
+          loading={isSubmitting}
+          disabled={!isValid || editor.storage.upload.mutation.isLoading}
+          onClick={async () => {
+            setIsSubmitting(true)
+            await savePost(title)
+            setIsSubmitting(false)
+          }}
+        >
+          {isSubmitting ? 'Creating...' : 'Create a post'}
+        </Button>
       </div>
     </div>
   )
