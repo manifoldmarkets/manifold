@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import Router from 'next/router'
+
 import { toast } from 'react-hot-toast'
 
-import { Group, GROUP_CHAT_SLUG } from 'common/group'
+import { Group } from 'common/group'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   addContractToGroup,
@@ -101,13 +103,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [
-  undefined,
-  GROUP_CHAT_SLUG,
-  'markets',
-  'about',
-  'leaderboards',
-] as const
+const groupSubpages = [undefined, 'markets', 'about', 'leaderboards'] as const
 
 export default function GroupPage(props: {
   group: Group | null
@@ -133,6 +129,7 @@ export default function GroupPage(props: {
   const { creator, topTraders, topCreators, suggestedFilter, posts } = props
 
   const router = useRouter()
+
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
   const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
@@ -183,8 +180,14 @@ export default function GroupPage(props: {
         </div>
       </div>
       <div className={'relative p-1 pt-0'}>
-        {/* TODO: Switching tabs should also update the group path */}
         <Tabs
+          onClick={(title, index) => {
+            // concatenates the group slug with the subpage slug
+            const path = `/group/${group.slug}/${
+              groupSubpages[index + 1] ?? ''
+            }`
+            Router.push(path, undefined, { shallow: true })
+          }}
           className={'mb-2'}
           tabs={[
             {
