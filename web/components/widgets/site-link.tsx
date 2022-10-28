@@ -37,6 +37,8 @@ function MaybeLink(props: { href: string; children: ReactNode }) {
   return href.startsWith('http') ? (
     <>{children}</>
   ) : (
-    <Link href={href}>{children}</Link>
+    <Link href={href} legacyBehavior>
+      {children}
+    </Link>
   )
 }

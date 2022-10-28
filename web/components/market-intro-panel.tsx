@@ -1,4 +1,4 @@
-import Image from 'next/future/image'
+import Image from 'next/image'
 
 import { Col } from './layout/col'
 import { BetSignUpPrompt } from './sign-up-prompt'

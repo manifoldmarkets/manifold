@@ -394,7 +394,11 @@ export function GroupDisplay(props: {
     return disabled ? (
       groupSection
     ) : (
-      <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+      <Link
+        prefetch={false}
+        href={groupPath(groupToDisplay.slug)}
+        legacyBehavior
+      >
         {groupSection}
       </Link>
     )

@@ -13,7 +13,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { useCallback, useEffect } from 'react'
+import { ReactNode, useCallback, useEffect } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention'
 import { DisplayMention } from '../editor/mention'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -170,7 +170,7 @@ function isValidIframe(text: string) {
 
 export function TextEditor(props: {
   editor: Editor | null
-  children?: React.ReactNode // additional toolbar buttons
+  children?: ReactNode // additional toolbar buttons
 }) {
   const { editor, children } = props
 
