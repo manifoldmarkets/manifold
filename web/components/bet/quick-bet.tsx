@@ -42,7 +42,8 @@ import { Answer } from 'common/answer'
 import { AnswerLabel } from '../outcome-label'
 import { useChartAnswers } from '../charts/contract/choice'
 import { getAnswerColor } from '../answers/answers-panel'
-import EquilateralTriangle from 'web/lib/icons/equilateral-triangle'
+import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
+import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
 import { floor, sumBy } from 'lodash'
 
 const BET_SIZE = 10
@@ -165,7 +166,9 @@ export function QuickBet(props: {
           onMouseLeave={() => setDownHover(false)}
         />
         <BinaryQuickBetButton
-          onClick={() => placeQuickBet('UP')}
+          onClick={() => {
+            placeQuickBet('DOWN')
+          }}
           direction="UP"
           user={user}
           contract={contract}
@@ -233,21 +236,43 @@ function BinaryQuickBetButton(props: {
       onMouseLeave={onMouseLeave}
       onClick={onClick}
     >
-      <EquilateralTriangle
-        className={clsx(
-          'mx-auto h-6 w-6 -rotate-90',
-          direction === 'DOWN' ? '-rotate-90' : 'rotate-90',
-          hover || hasInvestment ? 'text-indigo-900' : 'text-indigo-400'
-        )}
-      />
+      {direction === 'DOWN' && (
+        <EquilateralLeftTriangle
+          className={clsx(
+            'mx-auto h-6 w-6 transition-all',
+            hover
+              ? 'sm:animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              : hasInvestment
+              ? 'text-indigo-900'
+              : 'text-indigo-400'
+          )}
+        />
+      )}
+      {direction === 'UP' && (
+        <EquilateralRightTriangle
+          className={clsx(
+            'mx-auto h-6 w-6 transition-all',
+            hover
+              ? 'sm:animate-bounce-right ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              : hasInvestment
+              ? 'text-indigo-900'
+              : 'text-indigo-400'
+          )}
+        />
+      )}
       {hasInvestment && invested != null ? (
-        <span className={clsx('text-sm font-light text-indigo-900')}>
+        <span
+          className={clsx(
+            'text-sm font-light',
+            hover ? 'text-indigo-600' : 'text-indigo-900'
+          )}
+        >
           {hover ? formatMoney(invested + BET_SIZE) : formatMoney(invested)}
         </span>
       ) : (
         <span
           className={clsx(
-            'text-sm font-light text-indigo-900 transition-opacity',
+            'text-sm font-light text-indigo-600 transition-opacity',
             hover ? 'opacity-100' : 'opacity-0'
           )}
         >
