@@ -5,6 +5,7 @@ import {
   formatLargeNumber,
   formatMoney,
   formatPercent,
+  formatWithCommas,
 } from 'common/util/format'
 import { contractPath, getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { Col } from '../layout/col'
@@ -28,7 +29,7 @@ import {
   getOutcomeProbability,
   getProbability,
   getTopAnswer,
-  getContractBetMetrics,
+  ContractBetMetrics,
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
@@ -42,10 +43,9 @@ import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
 import { ReactNode } from 'react'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { floor } from 'lodash'
-import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 export function ContractCard(props: {
   contract: Contract
@@ -394,18 +394,10 @@ export function ContractCardProbChange(props: {
   const contract = (useContract(props.contract.id) ??
     props.contract) as CPMMBinaryContract
 
-  const yesOutcomeLabel =
-    props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
-  const noOutcomeLabel =
-    props.contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
-
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id) || []
-  const { profit, invested } = getContractBetMetrics(contract, userBets)
-  const { yesShares, noShares, sharesOutcome } = useSaveBinaryShares(
-    contract,
-    userBets
-  )
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const metrics = useSavedContractMetrics(contract, userBets)
+
   return (
     <ContractCard
       contract={contract}
@@ -416,42 +408,61 @@ export function ContractCardProbChange(props: {
         'mb-4 break-inside-avoid-column overflow-hidden'
       )}
     >
-      {showPosition === true && sharesOutcome != null && floor(invested) > 0 && (
-        <Row
-          className={clsx(
-            'bg-greyscale-1.5 items-center gap-4 pl-4 pr-4 pt-1 pb-2 text-sm'
-          )}
-        >
-          <Col className="w-1/2">
-            <span className="text-greyscale-4 text-xs"> Your Position </span>
-            <div className="text-greyscale-6 text-sm">
-              <span className="font-semibold">
-                {sharesOutcome === 'YES' ? floor(yesShares) : floor(noShares)}{' '}
-              </span>
-              {sharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
-              {' shares'}
-            </div>
-          </Col>
-          <Col className="w-1/2">
-            <div className="text-greyscale-4 text-xs"> Your Total Profit </div>
-            <div
-              className={clsx(
-                'text-sm font-semibold',
-                !profit
-                  ? 'text-greyscale-6'
-                  : profit > 0
-                  ? 'text-teal-500'
-                  : 'text-red-600'
-              )}
-            >
-              {profit ? formatMoney(profit) : '--'}
-            </div>
-          </Col>
-        </Row>
-      )}
-      {(!showPosition || !sharesOutcome || floor(invested) === 0) && (
+      {showPosition && metrics && metrics.hasShares ? (
+        <MetricsFooter contract={contract} metrics={metrics} />
+      ) : (
         <Spacer h={2} />
       )}
     </ContractCard>
+  )
+}
+
+function MetricsFooter(props: {
+  contract: CPMMContract
+  metrics: ContractBetMetrics
+}) {
+  const { contract, metrics } = props
+  const { profit, totalShares, maxSharesOutcome } = metrics
+  const { YES: yesShares, NO: noShares } = totalShares
+
+  const yesOutcomeLabel =
+    contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
+  const noOutcomeLabel =
+    contract.outcomeType === 'PSEUDO_NUMERIC' ? 'LOWER' : 'NO'
+
+  return (
+    <Row
+      className={clsx(
+        'bg-greyscale-1.5 items-center gap-4 pl-4 pr-4 pt-1 pb-2 text-sm'
+      )}
+    >
+      <Col className="w-1/2">
+        <span className="text-greyscale-4 text-xs"> Your Position </span>
+        <div className="text-greyscale-6 text-sm">
+          <span className="font-semibold">
+            {maxSharesOutcome === 'YES'
+              ? formatWithCommas(yesShares)
+              : formatWithCommas(noShares)}{' '}
+          </span>
+          {maxSharesOutcome === 'YES' ? yesOutcomeLabel : noOutcomeLabel}
+          {' shares'}
+        </div>
+      </Col>
+      <Col className="w-1/2">
+        <div className="text-greyscale-4 text-xs"> Your Total Profit </div>
+        <div
+          className={clsx(
+            'text-sm font-semibold',
+            !profit
+              ? 'text-greyscale-6'
+              : profit > 0
+              ? 'text-teal-500'
+              : 'text-red-600'
+          )}
+        >
+          {profit ? formatMoney(profit) : '--'}
+        </div>
+      </Col>
+    </Row>
   )
 }
