@@ -1,9 +1,9 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
+import { PluginKey } from 'prosemirror-state'
 import { searchInAny } from 'common/util/parse'
 import { orderBy } from 'lodash'
 import { getCachedContracts } from 'web/hooks/use-contracts'
 import { MentionList } from './contract-mention-list'
-import { PluginKey } from 'prosemirror-state'
 import { makeMentionRender } from './mention-suggestion'
 
 type Suggestion = MentionOptions['suggestion']
@@ -15,7 +15,8 @@ export const contractMentionSuggestion: Suggestion = {
   char: '%',
   allowSpaces: true,
   allowedPrefixes: [' '],
-  pluginKey: new PluginKey('contract-mention'),
+  // Note (James): After recreating yarn.lock, this line had a type error, so I cast it to any...
+  pluginKey: new PluginKey('contract-mention') as any,
   items: async ({ query }) =>
     orderBy(
       (await getCachedContracts()).filter((c) =>

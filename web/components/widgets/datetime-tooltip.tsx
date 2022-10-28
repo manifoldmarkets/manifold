@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import { Tooltip } from './tooltip'
 
 const FORMATTER = new Intl.DateTimeFormat('default', {
@@ -9,7 +10,7 @@ export function DateTimeTooltip(props: {
   time: number
   text?: string
   className?: string
-  children?: React.ReactNode
+  children?: ReactNode
   noTap?: boolean
 }) {
   const { className, time, text, noTap } = props

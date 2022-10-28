@@ -2,7 +2,7 @@ import Router from 'next/router'
 import clsx from 'clsx'
 import { memo, MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
-import Image from 'next/future/image'
+import Image from 'next/image'
 
 export const Avatar = memo(
   (props: {

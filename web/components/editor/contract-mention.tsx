@@ -21,10 +21,11 @@ const ContractMentionComponent = (props: any) => {
       {contract ? (
         <ContractMention contract={contract} />
       ) : label ? (
-        <Link href={label}>
-          <a className="rounded-sm !text-indigo-700 hover:bg-indigo-50">
-            {label}
-          </a>
+        <Link
+          href={label}
+          className="rounded-sm !text-indigo-700 hover:bg-indigo-50"
+        >
+          {label}
         </Link>
       ) : (
         '[loading...]'

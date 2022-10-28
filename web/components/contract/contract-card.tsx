@@ -162,19 +162,18 @@ export function ContractCard(props: {
           }}
         />
       ) : (
-        <Link href={contractPath(contract)}>
-          <a
-            onClick={trackCallback(
-              'click market card' + (trackingPostfix ?? ''),
-              {
-                slug: contract.slug,
-                contractId: contract.id,
-              }
-            )}
-            className="absolute top-0 left-0 right-0 bottom-0"
-            target={newTab ? '_blank' : '_self'}
-          />
-        </Link>
+        <Link
+          href={contractPath(contract)}
+          onClick={trackCallback(
+            'click market card' + (trackingPostfix ?? ''),
+            {
+              slug: contract.slug,
+              contractId: contract.id,
+            }
+          )}
+          className="absolute top-0 left-0 right-0 bottom-0"
+          target={newTab ? '_blank' : '_self'}
+        />
       )}
     </Card>
   )
