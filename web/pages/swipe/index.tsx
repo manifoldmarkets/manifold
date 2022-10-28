@@ -4,7 +4,6 @@ import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { useMemo, useRef, useState } from 'react'
 import TinderCard from 'react-tinder-card'
-import { Button } from 'web/components/buttons/button'
 import { Avatar } from 'web/components/widgets/avatar'
 import { RichContent } from 'web/components/widgets/editor'
 import { useWindowSize } from 'web/hooks/use-window-size'
@@ -115,14 +114,16 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
             className="mx-8"
             proseClassName="prose-invert prose-sm text-greyscale-1 line-clamp-3"
           />
-          <Button
-            size="2xl"
-            color="yellow"
-            onClick={() => setAmount?.((amount) => amount + betTapAdd)}
-            className="pressable mb-6 self-center"
-          >
-            {formatMoney(amount)}
-          </Button>
+          <div className="mb-4 flex flex-col items-center gap-2 self-center text-yellow-100">
+            Swipe ⭤ to bet
+            <button
+              onClick={onClickMoney}
+              onTouchStart={onClickMoney}
+              className="rounded-full border border-yellow-400 px-12 py-4 font-bold text-yellow-300 transition-colors focus:bg-yellow-200/20 active:bg-yellow-400 active:text-white"
+            >
+              {formatMoney(amount)}
+            </button>
+          </div>
         </div>
       </div>
     </TinderCard>
