@@ -340,7 +340,7 @@ export function QuickOutcomeView(props: {
         }}
       >
         <div className={`mx-auto text-xl font-semibold ${textColor}`}>
-          {contract.resolution ?? override ?? display}
+          <CardText contract={contract} override={override} display={display} />
         </div>
         {caption && <div className="text-base">{caption}</div>}
       </Row>
@@ -348,6 +348,38 @@ export function QuickOutcomeView(props: {
   }
 
   return <ContractCardAnswers contract={contract} />
+}
+
+export function CardText(props: {
+  contract: Contract
+  override?: string
+  display?: string
+}) {
+  const { contract, override, display } = props
+  const resolution = contract.resolution
+  if (resolution) {
+    if (resolution === 'MKT' && contract.resolutionProbability) {
+      return (
+        <>
+          <span className="my-auto text-sm font-normal">resolved as </span>
+          {formatPercent(contract.resolutionProbability)}
+        </>
+      )
+    }
+    if (resolution === 'CANCEL') {
+      return <>{'CANCELLED'}</>
+    }
+    return (
+      <>
+        <span className="text-sm font-normal">resolved </span>
+        {resolution}
+      </>
+    )
+  }
+  if (override) {
+    return <>{override}</>
+  }
+  return <>{display}</>
 }
 
 export function ContractCardAnswers(props: {
@@ -421,7 +453,9 @@ function ContractCardAnswer(props: {
         )}
         style={{
           background: `linear-gradient(to right, ${
-            type === 'loser' || isClosed ? '#D8D8EB' : `${color}90`
+            type === 'loser' || (isClosed && type === 'contender')
+              ? '#D8D8EB'
+              : `${color}`
           } ${100 * prob}%, ${'#F4F4FB'} ${100 * prob}%)`,
         }}
       >
@@ -473,7 +507,7 @@ function getNumericScale(contract: NumericContract) {
 
 const OUTCOME_TO_COLOR_BAR = {
   YES: '#99f6e4',
-  NO: '#FFA799',
+  NO: '#FFD3CC',
   CANCEL: '#F4F4FB',
   MKT: '#bae6fd',
 }
@@ -494,9 +528,9 @@ export function getBarColor(contract: Contract) {
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
   YES: '#ccfbf1',
-  NO: '#FFD3CC',
+  NO: '#ffece9',
   CANCEL: '#F4F4FB',
-  MKT: '#F4F4FB',
+  MKT: '#e0f2fe',
 }
 
 export function getBgColor(contract: Contract) {

@@ -67,7 +67,7 @@ export function MiscDetails(props: {
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
-    <Row className="w-full items-center gap-3 text-sm text-gray-400">
+    <Row className="text-greyscale-4 w-full items-center gap-3 text-sm">
       {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
@@ -83,9 +83,9 @@ export function MiscDetails(props: {
       ) : (contract.openCommentBounties ?? 0) > 0 ? (
         <BountiedContractBadge />
       ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
-        <Row className={'shrink-0'}>
-          <UserGroupIcon className="mr-1 h-4 w-4" />
-          {uniqueBettorCount || '0'} trader
+        <Row className={'shrink-0 gap-1'}>
+          <div className="font-semibold">{uniqueBettorCount || '0'} </div>
+          trader
           {uniqueBettorCount !== 1 ? 's' : ''}
         </Row>
       ) : (
@@ -96,7 +96,7 @@ export function MiscDetails(props: {
         <Link
           prefetch={false}
           href={groupPath(groupToDisplay.slug)}
-          className={clsx(linkClass, 'w-32 truncate text-sm text-gray-400')}
+          className={clsx(linkClass, 'text-greyscale-4 w-32 truncate text-sm')}
         >
           {groupToDisplay.name}
         </Link>
