@@ -66,6 +66,7 @@ import { ActivityLog } from 'web/components/activity-log'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { LatestPosts } from '../latestposts'
 import { DailyStats } from '../../components/daily-stats'
+import GoToIcon from 'web/lib/icons/go-to-icon'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -357,17 +358,14 @@ function SectionHeader(props: {
   const { label, href, children } = props
 
   return (
-    <Row className="mb-3 items-center justify-between">
+    <Row className="bg-greyscale-1 text-greyscale-7 sticky top-0 z-20 my-1 items-center justify-between pb-2">
       <SiteLink
-        className="text-xl"
+        className="flex-1 text-xl"
         href={href}
         onClick={() => track('home click section header', { section: href })}
       >
-        {label}{' '}
-        <ArrowSmRightIcon
-          className="mb-0.5 inline h-6 w-6 text-gray-500"
-          aria-hidden="true"
-        />
+        {label}
+        <GoToIcon className="text-greyscale-4 mb-1 ml-2 inline h-5 w-5" />
       </SiteLink>
       {children}
     </Row>
