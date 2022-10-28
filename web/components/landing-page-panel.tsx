@@ -1,4 +1,4 @@
-import Image from 'next/future/image'
+import Image from 'next/image'
 import { SparklesIcon } from '@heroicons/react/solid'
 
 import { Contract } from 'common/contract'

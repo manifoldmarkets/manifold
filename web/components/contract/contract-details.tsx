@@ -67,7 +67,7 @@ export function MiscDetails(props: {
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
-    <Row className="items-center gap-3 truncate text-sm text-gray-400">
+    <Row className="w-full items-center gap-3 text-sm text-gray-400">
       {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
@@ -85,17 +85,20 @@ export function MiscDetails(props: {
       ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
         <Row className={'shrink-0'}>
           <UserGroupIcon className="mr-1 h-4 w-4" />
-          {uniqueBettorCount || '0'} trader{uniqueBettorCount !== 1 ? 's' : ''}
+          {uniqueBettorCount || '0'} trader
+          {uniqueBettorCount !== 1 ? 's' : ''}
         </Row>
       ) : (
         <NewContractBadge />
       )}
 
       {!hideGroupLink && groupToDisplay && (
-        <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-          <a className={clsx(linkClass, 'truncate text-sm text-gray-400')}>
-            {groupToDisplay.name}
-          </a>
+        <Link
+          prefetch={false}
+          href={groupPath(groupToDisplay.slug)}
+          className={clsx(linkClass, 'w-32 truncate text-sm text-gray-400')}
+        >
+          {groupToDisplay.name}
         </Link>
       )}
     </Row>
@@ -113,12 +116,12 @@ export function AvatarDetails(props: {
 
   return (
     <Row
-      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
+      className={clsx('text-greyscale-4 items-center gap-2 text-sm', className)}
     >
       <Avatar
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
-        size={6}
+        size={4}
         noLink={noLink}
       />
       <UserLink
@@ -274,7 +277,7 @@ export function MarketGroups(props: {
 
   return (
     <>
-      <Row className="items-center gap-1">
+      <Row className="flex-wrap items-center gap-1">
         {groupsToDisplay.map((group) => (
           <GroupDisplay
             key={group.groupId}
@@ -388,7 +391,11 @@ export function GroupDisplay(props: {
     return disabled ? (
       groupSection
     ) : (
-      <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+      <Link
+        prefetch={false}
+        href={groupPath(groupToDisplay.slug)}
+        legacyBehavior
+      >
         {groupSection}
       </Link>
     )

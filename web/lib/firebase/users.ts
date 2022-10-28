@@ -355,3 +355,31 @@ export function saveUserEvent(
     ...eventProperties,
   })
 }
+
+export const getUsersBlockFacetFilters = (
+  privateUser: PrivateUser | undefined | null
+) => {
+  let facetFilters: string[] = []
+  if (!privateUser) return facetFilters
+  facetFilters = facetFilters.concat(
+    privateUser.blockedUserIds.map(
+      (blockedUserId) => `creatorId:-${blockedUserId}`
+    )
+  )
+  facetFilters = facetFilters.concat(
+    privateUser.blockedByUserIds.map(
+      (blockedUserId) => `creatorId:-${blockedUserId}`
+    )
+  )
+  facetFilters = facetFilters.concat(
+    privateUser.blockedGroupSlugs.map(
+      (blockedUserId) => `groupSlugs:-${blockedUserId}`
+    )
+  )
+  facetFilters = facetFilters.concat(
+    privateUser.blockedContractIds.map(
+      (blockedUserId) => `id:-${blockedUserId}`
+    )
+  )
+  return facetFilters
+}

@@ -162,7 +162,7 @@ export function SimpleBetPanel(props: {
 
         <BetSignUpPrompt />
 
-        {!user && <PlayMoneyDisclaimer />}
+        {user === null && <PlayMoneyDisclaimer />}
       </Col>
 
       {unfilledBets.length > 0 && (

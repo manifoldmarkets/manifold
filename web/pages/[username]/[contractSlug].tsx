@@ -1,9 +1,9 @@
-import React, { memo, useEffect, useRef, useState } from 'react'
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Spacer } from 'web/components/layout/spacer'
 import {
@@ -111,9 +111,12 @@ export function ContractPageContent(
     contract: Contract
   }
 ) {
-  const { comments } = props
   const contract = useContract(props.contract?.id) ?? props.contract
   const user = useUser()
+  const privateUser = usePrivateUser()
+  const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
+    privateUser?.blockedByUserIds ?? []
+  )
   const isCreator = user?.id === contract.creatorId
   usePrefetch(user?.id)
   useTracking(
@@ -126,8 +129,16 @@ export function ContractPageContent(
     true
   )
 
+  const comments = useMemo(
+    () =>
+      props.comments.filter(
+        (comment) => !blockedUserIds.includes(comment.userId)
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.comments.length, blockedUserIds]
+  )
+
   const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
-  console.log(props.bets)
 
   const userBets =
     useBets(contract.id, { userId: user?.id ?? '_', filterAntes: true }) ?? []
@@ -257,6 +268,7 @@ export function ContractPageContent(
             comments={comments}
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
+            blockedUserIds={blockedUserIds}
           />
         </div>
       </Col>

@@ -256,3 +256,13 @@ export const getNotificationDestinationsForUser = (
     }
   }
 }
+
+export const userIsBlocked = (
+  privateUserReceiver: PrivateUser,
+  userSenderId: string
+) => {
+  return (
+    privateUserReceiver.blockedUserIds.includes(userSenderId) ||
+    privateUserReceiver.blockedByUserIds.includes(userSenderId)
+  )
+}

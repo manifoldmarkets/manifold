@@ -29,6 +29,8 @@ import { CHALLENGES_ENABLED } from 'common/challenge'
 import { withTracking } from 'web/lib/service/analytics'
 import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -36,7 +38,7 @@ export function ContractInfoDialog(props: {
   className?: string
 }) {
   const { contract, className, user } = props
-
+  const privateUser = usePrivateUser()
   const [open, setOpen] = useState(false)
   const isDev = useDev()
   const isAdmin = useAdmin()
@@ -95,7 +97,10 @@ export function ContractInfoDialog(props: {
 
         <Modal open={open} setOpen={setOpen}>
           <Col className="gap-4 rounded bg-white p-6">
-            <Title className="!mt-0 !mb-0" text="This Market" />
+            <Row className={'justify-between'}>
+              <Title className="!mt-0 !mb-0" text="This Market" />
+              {privateUser && <BlockMarketButton contractId={contract.id} />}
+            </Row>
 
             <Table>
               <tbody>
@@ -211,27 +216,26 @@ export function ContractInfoDialog(props: {
                     </td>
                   </tr>
                 )}
-                {user && (
-                  <tr>
-                    <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
-                    <td>
-                      <ShortToggle
-                        disabled={
-                          isUnlisted
-                            ? !(isAdmin || (isCreator && wasUnlistedByCreator))
-                            : !(isCreator || isAdmin)
-                        }
-                        on={contract.visibility === 'unlisted'}
-                        setOn={(b) =>
-                          updateContract(id, {
-                            visibility: b ? 'unlisted' : 'public',
-                            unlistedById: b ? user.id : '',
-                          })
-                        }
-                      />
-                    </td>
-                  </tr>
-                )}
+
+                <tr>
+                  <td>{isAdmin ? '[ADMIN]' : ''} Unlisted</td>
+                  <td>
+                    <ShortToggle
+                      disabled={
+                        isUnlisted
+                          ? !(isAdmin || (isCreator && wasUnlistedByCreator))
+                          : !(isCreator || isAdmin)
+                      }
+                      on={contract.visibility === 'unlisted'}
+                      setOn={(unlist) =>
+                        updateContract(id, {
+                          visibility: unlist ? 'unlisted' : 'public',
+                          unlistedById: unlist ? user?.id : '',
+                        })
+                      }
+                    />
+                  </td>
+                </tr>
               </tbody>
             </Table>
 

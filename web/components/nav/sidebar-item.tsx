@@ -49,7 +49,7 @@ export function SidebarItem(props: {
 
   if (item.href) {
     return (
-      <Link href={item.href} key={item.name}>
+      <Link href={item.href} key={item.name} legacyBehavior>
         {sidebarItem}
       </Link>
     )

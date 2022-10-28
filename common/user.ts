@@ -86,6 +86,10 @@ export type PrivateUser = {
   }
   pushToken?: string
   rejectedPushNotificationsOn?: number
+  blockedUserIds: string[]
+  blockedByUserIds: string[]
+  blockedContractIds: string[]
+  blockedGroupSlugs: string[]
 }
 
 export type PortfolioMetrics = {

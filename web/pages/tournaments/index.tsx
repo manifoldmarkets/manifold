@@ -5,7 +5,7 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { zip } from 'lodash'
-import Image, { ImageProps, StaticImageData } from 'next/image'
+import Image, { ImageProps, StaticImageData } from 'next/legacy/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import { ContractCard } from 'web/components/contract/contract-card'
@@ -308,27 +308,25 @@ const SectionHeader = (props: {
 }) => {
   const { url, title, ppl, award, endTime } = props
   return (
-    <Link href={url}>
-      <a className="group mb-3 flex flex-wrap justify-between">
-        <h2 className="text-xl group-hover:underline md:text-3xl">{title}</h2>
-        <Row className="my-2 items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
-          {!!award && <span className="flex items-center">🏆 {award}</span>}
-          {!!ppl && (
+    <Link href={url} className="group mb-3 flex flex-wrap justify-between">
+      <h2 className="text-xl group-hover:underline md:text-3xl">{title}</h2>
+      <Row className="my-2 items-center gap-4 whitespace-nowrap rounded-full bg-gray-200 px-6">
+        {!!award && <span className="flex items-center">🏆 {award}</span>}
+        {!!ppl && (
+          <span className="flex items-center gap-1">
+            <UsersIcon className="h-4" />
+            {ppl}
+          </span>
+        )}
+        {endTime && (
+          <DateTimeTooltip time={endTime} text="Ends">
             <span className="flex items-center gap-1">
-              <UsersIcon className="h-4" />
-              {ppl}
+              <ClockIcon className="h-4" />
+              {dayjs(endTime).format('MMM D')}
             </span>
-          )}
-          {endTime && (
-            <DateTimeTooltip time={endTime} text="Ends">
-              <span className="flex items-center gap-1">
-                <ClockIcon className="h-4" />
-                {dayjs(endTime).format('MMM D')}
-              </span>
-            </DateTimeTooltip>
-          )}
-        </Row>
-      </a>
+          </DateTimeTooltip>
+        )}
+      </Row>
     </Link>
   )
 }

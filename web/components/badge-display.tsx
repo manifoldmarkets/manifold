@@ -38,7 +38,9 @@ export function BadgeDisplay(props: {
               : goldClassName
           )}
         >
-          <span className={clsx('-m-0.5 text-lg')}>•</span>
+          <span className={clsx('-mx-[0.2rem] text-xs')}>
+            {rarity === 'bronze' ? '🥉' : rarity === 'silver' ? '🥈' : '🥇'}
+          </span>
           <span className="text-xs">{numBadges}</span>
         </Row>
       )

@@ -12,6 +12,9 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { GetServerSideProps } from 'next'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { UserAndPrivateUser } from 'common/user'
+import { BlockedUser } from 'web/components/profile/blocked-user'
+import { usePrivateUser } from 'web/hooks/use-user'
+
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -23,9 +26,14 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return { props: { auth, user } }
 }
 
-export default function UserProfile(props: { user: User | null }) {
-  const { user } = props
-
+export default function UserProfile(props: {
+  auth: UserAndPrivateUser | null
+  user: User | null
+}) {
+  const { auth, user } = props
+  const privateUser = usePrivateUser() ?? auth?.privateUser
+  const blockedByCurrentUser =
+    privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
   const router = useRouter()
   const { username } = router.query as {
     username: string
@@ -33,5 +41,13 @@ export default function UserProfile(props: { user: User | null }) {
 
   useTracking('view user profile', { username })
 
-  return user && !user.userDeleted ? <UserPage user={user} /> : <Custom404 />
+  return user && !user.userDeleted ? (
+    privateUser && blockedByCurrentUser ? (
+      <BlockedUser user={user} privateUser={privateUser} />
+    ) : (
+      <UserPage user={user} />
+    )
+  ) : (
+    <Custom404 />
+  )
 }

@@ -4,7 +4,7 @@ import { ChatIcon } from '@heroicons/react/outline'
 
 import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
 import { Col } from '../layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getDpmOutcomeProbability } from 'common/calculate-dpm'
 import { useAnswers } from 'web/hooks/use-answers'
 import { tradingAllowed } from 'web/lib/firebase/contracts'
@@ -71,6 +71,7 @@ export function AnswersPanel(props: {
   )
 
   const user = useUser()
+  const privateUser = usePrivateUser()
 
   const [resolveOption, setResolveOption] = useState<
     'CHOOSE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
@@ -167,9 +168,11 @@ export function AnswersPanel(props: {
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 
-      {outcomeType === 'FREE_RESPONSE' && tradingAllowed(contract) && (
-        <CreateAnswerPanel contract={contract} />
-      )}
+      {outcomeType === 'FREE_RESPONSE' &&
+        tradingAllowed(contract) &&
+        !privateUser?.blockedByUserIds.includes(contract.creatorId) && (
+          <CreateAnswerPanel contract={contract} />
+        )}
 
       {(user?.id === creatorId || (isAdmin && needsAdminToResolve(contract))) &&
         !resolution && (

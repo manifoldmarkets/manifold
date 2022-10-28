@@ -3,11 +3,10 @@ import { sortBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
-import { formatPercent } from 'common/util/format'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractCardProbChange } from './contract-card'
-import { formatNumericProbability } from 'common/pseudo-numeric'
+import { User } from 'common/user'
 
 export function ProfitChangeTable(props: {
   contracts: CPMMBinaryContract[]
@@ -122,28 +121,28 @@ export function ProbChangeTable(props: {
 
 export function ProbOrNumericChange(props: {
   contract: CPMMContract
+  user?: User | null
+
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract } = props
   const {
-    prob,
     probChanges: { day: change },
   } = contract
-  const number =
-    contract.outcomeType === 'PSEUDO_NUMERIC'
-      ? formatNumericProbability(prob, contract)
-      : null
 
-  const color = change >= 0 ? 'text-teal-500' : 'text-scarlet-400'
-
-  return (
-    <Col className={clsx('flex flex-col items-end', className)}>
-      <div className="mb-0.5 mr-0.5 text-2xl">
-        {number ? number : formatPercent(Math.round(100 * prob) / 100)}
-      </div>
-      <div className={clsx('text-base', color)}>
+  const color = change >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+  if (Math.abs(change * 100) > 5) {
+    return (
+      <div
+        className={clsx(
+          'mr-1 flex  items-center justify-center rounded-full bg-teal-100 px-2 py-1 text-xs font-semibold ',
+          change >= 0 ? 'bg-teal-100' : 'bg-scarlet-100',
+          color
+        )}
+      >
         {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
       </div>
-    </Col>
-  )
+    )
+  }
+  return <></>
 }

@@ -37,6 +37,7 @@ import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
 import { addHouseSubsidy } from './helpers/add-house-subsidy'
 import {
+  hasNoBadgeWithCurrentOrGreaterPropertyNumber,
   StreakerBadge,
   streakerBadgeRarityThresholds,
 } from '../../common/badge'
@@ -323,12 +324,12 @@ async function handleBettingStreakBadgeAward(
   user: User,
   newBettingStreak: number
 ) {
-  const alreadyHasBadgeForFirstStreak =
-    user.achievements?.streaker?.badges.some(
-      (badge) => badge.data.totalBettingStreak === 1
-    )
-  // TODO: check if already awarded 50th streak as well
-  if (newBettingStreak === 1 && alreadyHasBadgeForFirstStreak) return
+  const deservesBadge = hasNoBadgeWithCurrentOrGreaterPropertyNumber(
+    user.achievements.streaker?.badges,
+    'totalBettingStreak',
+    newBettingStreak
+  )
+  if (!deservesBadge) return
 
   if (streakerBadgeRarityThresholds.includes(newBettingStreak)) {
     const badge = {

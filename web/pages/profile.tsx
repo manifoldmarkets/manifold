@@ -138,8 +138,11 @@ export default function ProfilePage(props: {
       <Col className="max-w-lg rounded bg-white p-6 shadow-md sm:mx-auto">
         <Row className="items-start justify-between">
           <Title className="!mt-0" text="Edit Profile" />
-          <Link href={`/${user.username}`}>
-            <a className={buttonClass('md', 'green')}>Done</a>
+          <Link
+            href={`/${user.username}`}
+            className={buttonClass('md', 'green')}
+          >
+            Done
           </Link>
         </Row>
         <Col className="gap-4">
@@ -231,10 +234,11 @@ export default function ProfilePage(props: {
                     Updating your API key will break any existing applications
                     connected to your account, <b>including the Twitch bot</b>.
                     You will need to go to the{' '}
-                    <Link href="/twitch">
-                      <a className="underline focus:outline-none">
-                        Twitch page
-                      </a>
+                    <Link
+                      href="/twitch"
+                      className="underline focus:outline-none"
+                    >
+                      Twitch page
                     </Link>{' '}
                     to relink your account.
                   </div>
