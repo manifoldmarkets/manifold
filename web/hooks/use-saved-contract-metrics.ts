@@ -20,17 +20,18 @@ export const useSavedContractMetrics = (
 
   useEffectCheckEquality(() => {
     const local = safeLocalStorage()
-
-    // Read metrics from local storage.
-    const savedMetrics = local?.getItem(`${contract.id}-metrics`)
-    if (savedMetrics) {
-      setSavedMetrics(JSON.parse(savedMetrics))
-    }
+    const key = `${contract.id}-metrics`
 
     if (metrics) {
       // Save metrics to local storage.
       const metricsData = JSON.stringify(metrics)
-      local?.setItem(`${contract.id}-metrics`, metricsData)
+      local?.setItem(key, metricsData)
+    } else {
+      // Read metrics from local storage.
+      const savedMetrics = local?.getItem(key)
+      if (savedMetrics) {
+        setSavedMetrics(JSON.parse(savedMetrics))
+      }
     }
   }, [contract.id, metrics])
 
