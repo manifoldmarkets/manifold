@@ -68,17 +68,25 @@ function log(level: Level, msg: any, ...args: any[]) {
       console.warn(output);
       l?.warning(output);
       break;
-    case Level.TRACE:
-      console.error(timestamp + ' ' + Level[level] + ': ' + msg.stack);
-      l?.error(timestamp + ' ' + Level[level] + ': ' + msg.stack);
+    case Level.TRACE: {
+      let message = timestamp + ' ' + Level[level] + ': ';
+      if (msg?.stack) {
+        message += msg.stack;
+      } else {
+        message += JSON.stringify(msg);
+      }
+      console.error(message);
+      l?.error(message);
       break;
+    }
     case Level.CRASH: {
       const prep = timestamp + ' ';
       let ls = '\n';
       for (let i = 0; i < prep.length; i++) ls += ' ';
       let message = prep + '================================= SERVER CRASH =================================';
-      if (msg.stack) {
-        for (const line of msg.stack.split('\n')) {
+      if (msg?.stack) {
+        const stackLines = msg.stack.split('\n');
+        for (const line of stackLines) {
           message += ls + line;
         }
       } else {

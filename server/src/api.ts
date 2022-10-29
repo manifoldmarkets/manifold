@@ -34,7 +34,6 @@ export default function registerAPIEndpoints(app: App, express: Express) {
 
   express.post('/registerchanneltwitch', async (request, response) => {
     const { apiKey } = <{ apiKey: string }>request.body;
-    log.info(`Got a Twitch link request: ${apiKey}`);
     try {
       const user = await app.firestore.getUserForManifoldAPIKey(apiKey);
       await app.bot.joinChannel(user.data.twitchLogin);

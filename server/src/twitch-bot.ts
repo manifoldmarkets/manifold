@@ -397,12 +397,17 @@ export default class TwitchBot {
   }
 
   public async joinChannel(channelName: string) {
-    if (this.isInChannel(channelName)) return;
+    log.debug('Bot attempting to join channel ' + channelName);
+    if (this.isInChannel(channelName)) {
+      log.debug('Already in channel.');
+      return;
+    }
 
     return this.client
       .join('#' + channelName)
       .then(async () => {
         await this.client.say(channelName, '/color BlueViolet'); // TODO this will become invalid as of February 18, 2023 (https://discuss.dev.twitch.tv/t/deprecation-of-chat-commands-through-irc/40486)
+        log.debug('Sent join message.');
 
         let message = 'Hey there! I am the Manifold Markets chat bot.';
         if (!this.client.isMod(channelName, TWITCH_BOT_USERNAME)) {

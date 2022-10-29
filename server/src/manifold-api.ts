@@ -93,7 +93,6 @@ export async function sellShares(marketID: string, APIKey: string, outcome?: 'YE
     ...(outcome && { outcome }),
     ...(shares && { shares }),
   };
-  console.log(parameters);
   return post(`${MANIFOLD_API_BASE_URL}market/${marketID}/sell`, APIKey, parameters);
 }
 
