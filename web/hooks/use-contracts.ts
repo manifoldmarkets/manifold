@@ -19,10 +19,9 @@ import {
   trendingIndex,
 } from 'web/lib/service/algolia'
 import { CPMMBinaryContract } from 'common/contract'
-import { Dictionary, isEqual, zipObject } from 'lodash'
-import { useForceUpdate } from './use-force-update'
-import { useEffectCheckEquality } from './use-effect-check-equality'
+import { zipObject } from 'lodash'
 import { inMemoryStore, usePersistentState } from './use-persistent-state'
+import { useStore, useStoreItems } from './use-store'
 
 export const useAllContracts = () => {
   const [contracts, setContracts] = useState<Contract[] | undefined>()
@@ -166,58 +165,10 @@ export const useLiveContracts = (count: number) => {
   return contracts
 }
 
-const contractsStore: Dictionary<Contract | null> = {}
-const contractListeners: Dictionary<((contract: Contract | null) => void)[]> =
-  {}
-
-const updateContract = (contractId: string, contract: Contract | null) => {
-  if (isEqual(contractsStore[contractId], contract)) return
-
-  contractsStore[contractId] = contract
-  contractListeners[contractId]?.forEach((l) => l(contract))
+export const useContract = (contractId: string | undefined) => {
+  return useStore(contractId, listenForContract)
 }
 
 export const useContracts = (contractIds: string[]) => {
-  const forceUpdate = useForceUpdate()
-
-  useEffectCheckEquality(() => {
-    for (const id of contractIds) {
-      if (!contractListeners[id]) {
-        contractListeners[id] = []
-        listenForContract(id, (c) => updateContract(id, c))
-      }
-    }
-
-    const listeners = contractIds.map(
-      (id) =>
-        [
-          id,
-          () => {
-            // Update after all have loaded, and on every subsequent update.
-            if (contractIds.every((id) => contractsStore[id] !== undefined)) {
-              forceUpdate()
-            }
-          },
-        ] as const
-    )
-    for (const [id, listener] of listeners) {
-      contractListeners[id].push(listener)
-    }
-    return () => {
-      for (const [id, listener] of listeners) {
-        contractListeners[id] = contractListeners[id].filter(
-          (l) => l !== listener
-        )
-      }
-    }
-  }, [contractIds, forceUpdate])
-
-  return contractIds.map(
-    (id) => contractsStore[id] as Contract | null | undefined
-  )
-}
-
-export const useContract = (contractId: string | undefined) => {
-  const [contract] = useContracts(contractId ? [contractId] : [])
-  return contract
+  return useStoreItems(contractIds, listenForContract)
 }
