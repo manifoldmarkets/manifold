@@ -16,43 +16,57 @@ const updateValue = (key: string, value: any) => {
 
 export const useStore = <T>(
   key: string | undefined,
-  listenForValue: (key: string, setValue: (value: T) => void) => void
+  listenForValue: (key: string, setValue: (value: T) => void) => void,
+  options: {
+    prefix?: string
+  } = {}
 ) => {
+  const { prefix = '' } = options
+  const keyWithPrefix = prefix + key
+
   const forceUpdate = useForceUpdate()
   const listener = useEvent(listenForValue)
 
   useEffect(() => {
     if (key === undefined) return
 
-    if (!storeListeners[key]) {
-      storeListeners[key] = []
-      listener(key, (value) => updateValue(key, value))
+    if (!storeListeners[keyWithPrefix]) {
+      storeListeners[keyWithPrefix] = []
+      listener(key, (value) => updateValue(keyWithPrefix, value))
     }
 
-    storeListeners[key].push(forceUpdate)
+    storeListeners[keyWithPrefix].push(forceUpdate)
 
     return () => {
-      storeListeners[key] = storeListeners[key].filter((l) => l !== forceUpdate)
+      storeListeners[keyWithPrefix] = storeListeners[keyWithPrefix].filter(
+        (l) => l !== forceUpdate
+      )
     }
-  }, [key, forceUpdate, listener])
+  }, [key, keyWithPrefix, forceUpdate, listener])
 
   if (key === undefined) return undefined
 
-  return store[key] as T | undefined
+  return store[keyWithPrefix] as T | undefined
 }
 
 export const useStoreItems = <T>(
   keys: string[],
-  listenForValue: (key: string, setValue: (value: T) => void) => void
+  listenForValue: (key: string, setValue: (value: T) => void) => void,
+  options: {
+    prefix?: string
+  } = {}
 ) => {
+  const { prefix = '' } = options
+
   const forceUpdate = useForceUpdate()
   const listener = useEvent(listenForValue)
 
   useEffectCheckEquality(() => {
     for (const key of keys) {
-      if (!storeListeners[key]) {
-        storeListeners[key] = []
-        listener(key, (value) => updateValue(key, value))
+      const keyWithPrefix = prefix + key
+      if (!storeListeners[keyWithPrefix]) {
+        storeListeners[keyWithPrefix] = []
+        listener(key, (value) => updateValue(keyWithPrefix, value))
       }
     }
 
@@ -62,21 +76,25 @@ export const useStoreItems = <T>(
           key,
           () => {
             // Update after all have loaded, and on every subsequent update.
-            if (keys.every((key) => store[key] !== undefined)) {
+            if (keys.every((key) => store[prefix + key] !== undefined)) {
               forceUpdate()
             }
           },
         ] as const
     )
-    for (const [id, listener] of listeners) {
-      storeListeners[id].push(listener)
+    for (const [key, listener] of listeners) {
+      const keyWithPrefix = prefix + key
+      storeListeners[keyWithPrefix].push(listener)
     }
     return () => {
-      for (const [id, listener] of listeners) {
-        storeListeners[id] = storeListeners[id].filter((l) => l !== listener)
+      for (const [key, listener] of listeners) {
+        const keyWithPrefix = prefix + key
+        storeListeners[keyWithPrefix] = storeListeners[keyWithPrefix].filter(
+          (l) => l !== listener
+        )
       }
     }
   }, [keys, forceUpdate, listener])
 
-  return keys.map((key) => store[key] as T | undefined)
+  return keys.map((key) => store[prefix + key] as T | undefined)
 }
