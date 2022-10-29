@@ -11,6 +11,7 @@ import {
   getBinaryProbPercent,
   getTrendingContracts,
 } from 'web/lib/firebase/contracts'
+import { track } from 'web/lib/service/analytics'
 import { fromNow } from 'web/lib/util/time'
 
 export async function getStaticProps() {
@@ -60,7 +61,7 @@ const betTapAdd = 10
 
 const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
   const { contract, onLeave } = props
-  const { question, description, coverImageUrl, id } = contract
+  const { question, description, coverImageUrl, id: contractId } = contract
 
   const [amount, setAmount] = useState(10)
   const onClickMoney = () => setAmount?.((amount) => amount + betTapAdd)
@@ -71,11 +72,19 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
 
   return (
     <TinderCard
-      onSwipe={(direction) => {
-        if (direction === 'left') {
-          placeBet({ amount, outcome: 'NO', contractId: id })
-        } else if (direction === 'right') {
-          placeBet({ amount, outcome: 'YES', contractId: id })
+      onSwipe={async (direction) => {
+        if (direction === 'left' || direction === 'right') {
+          const outcome = direction === 'left' ? 'NO' : 'YES'
+          await placeBet({ amount, outcome, contractId })
+          track('bet', {
+            location: 'swipe',
+            outcomeType: 'BINARY',
+            slug: contract.slug,
+            contractId,
+            amount,
+            outcome,
+            isLimitOrder: false,
+          })
         }
       }}
       onCardLeftScreen={onLeave}
