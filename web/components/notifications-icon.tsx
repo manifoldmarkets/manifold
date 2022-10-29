@@ -19,14 +19,15 @@ export default function NotificationsIcon(props: { className?: string }) {
   )
 }
 function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
-  const router = useRouter()
+  const { isReady, pathname } = useRouter()
   const { privateUser } = props
   const [seen, setSeen] = useState(false)
 
   useEffect(() => {
-    if (router.pathname.endsWith('notifications')) return setSeen(true)
-    else setSeen(false)
-  }, [router.pathname])
+    if (isReady) {
+      setSeen(pathname.endsWith('notifications'))
+    }
+  }, [isReady, pathname])
 
   const notifications = useUnseenGroupedNotification(privateUser)
   if (!notifications || notifications.length === 0 || seen) {

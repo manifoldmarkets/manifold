@@ -40,7 +40,6 @@ import {
 import { groupBy, sum, uniqBy } from 'lodash'
 import { Pagination } from 'web/components/widgets/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { SEO } from 'web/components/SEO'
@@ -165,12 +164,6 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
     const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
-
-    const local = safeLocalStorage()
-    local?.setItem(
-      'notification-groups',
-      JSON.stringify(allGroupedNotifications)
-    )
     return maxNotificationsToShow
   }, [allGroupedNotifications, page])
 

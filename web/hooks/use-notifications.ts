@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
-import { getNotificationsQuery } from 'web/lib/firebase/notifications'
+import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { groupBy, map, partition } from 'lodash'
-import { useFirestoreQueryData } from '@react-query-firebase/firestore'
+import { useStore } from './use-store'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -14,19 +14,9 @@ export type NotificationGroup = {
 }
 
 function useNotifications(privateUser: PrivateUser) {
-  const result = useFirestoreQueryData(
-    ['notifications-all', privateUser.id],
-    getNotificationsQuery(privateUser.id)
-  )
-
-  const notifications = useMemo(() => {
-    if (!result.data) return undefined
-    const notifications = result.data as Notification[]
-
-    return notifications.filter((n) => !n.isSeenOnHref)
-  }, [result.data])
-
-  return notifications
+  return useStore(privateUser.id, listenForNotifications, {
+    prefix: 'notifications',
+  })
 }
 
 export function useUnseenNotifications(privateUser: PrivateUser) {
@@ -40,14 +30,14 @@ export function useUnseenNotifications(privateUser: PrivateUser) {
 export function useGroupedNotifications(privateUser: PrivateUser) {
   const notifications = useNotifications(privateUser)
   return useMemo(() => {
-    if (notifications) return groupNotifications(notifications)
+    return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])
 }
 
 export function useUnseenGroupedNotification(privateUser: PrivateUser) {
   const notifications = useUnseenNotifications(privateUser)
   return useMemo(() => {
-    if (notifications) return groupNotifications(notifications)
+    return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])
 }
 
