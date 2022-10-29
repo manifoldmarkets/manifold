@@ -14,8 +14,8 @@ import {
 import { fromNow } from 'web/lib/util/time'
 
 export async function getStaticProps() {
-  const contracts = (await getTrendingContracts()).filter(
-    (c) => c.outcomeType === 'BINARY'
+  const contracts = (await getTrendingContracts(1000)).filter(
+    (c) => c.outcomeType === 'BINARY' && (c.closeTime ?? Infinity) > Date.now()
   )
   return {
     props: { contracts },
