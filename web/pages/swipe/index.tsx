@@ -1,10 +1,11 @@
 import { getOutcomeProbabilityAfterBet } from 'common/calculate'
 import type { BinaryContract, Contract } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
+import { richTextToString } from 'common/util/parse'
 import { useMemo, useState } from 'react'
 import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
-import { RichContent } from 'web/components/widgets/editor'
+
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
 import {
@@ -106,13 +107,12 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
             {question}
           </div>
           <Percents contract={contract} amount={amount} />
-          {/* TODO: exclude embeds, images */}
-          <RichContent
-            content={description}
-            smallImage
-            className="mx-8"
-            proseClassName="prose-invert prose-sm text-greyscale-1 line-clamp-3"
-          />
+          {/* TODO: use editor excluding widgets */}
+          <div className="prose prose-invert prose-sm text-greyscale-1 line-clamp-3 mx-8">
+            {typeof description === 'string'
+              ? description
+              : richTextToString(description)}
+          </div>
           <div className="mb-4 flex flex-col items-center gap-2 self-center text-yellow-100">
             Swipe ⭤ to bet
             <button
