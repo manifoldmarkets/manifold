@@ -41,10 +41,12 @@ export default class GoogleLogger {
   private async updateAccessToken(): Promise<void> {
     try {
       const token = <GoogleAccessToken>await fetch('http://metadata/computeMetadata/v1/instance/service-accounts/default/token', { headers: { 'Metadata-Flavor': 'Google' } }).then((r) => r.json());
-      setTimeout(this.updateAccessToken, (token.expires_in - 60) * 1000); // Fetch a new token 1 minute early
+      setTimeout(() => this.updateAccessToken(), (token.expires_in - 60) * 1000); // Fetch a new token 1 minute early
       this.accessToken = token;
       log.info(`Renewed GCloud Logging access token. New expiry in ${token.expires_in}s.`);
     } catch (e) {
+      log.error(`Failed to renew GCloud Logging access token. Cloud Logging disabled. Trying again in 30s...`);
+      setTimeout(() => this.updateAccessToken(), 30 * 1000);
       log.trace(e);
     }
   }

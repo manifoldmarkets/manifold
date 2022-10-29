@@ -12,10 +12,14 @@ enum Level {
 let l: GoogleLogger = undefined;
 async function init() {
   await detectGCloudInstance().then(async (r) => {
+    let message = 'Initialized logging. Using ';
     if (r) {
-      log(Level.INFO, 'Using Google Cloud Logging.');
       l = await GoogleLogger.getLogger();
+      message += 'Google Cloud logger.';
+    } else {
+      message += 'default logger.';
     }
+    log(Level.INFO, message);
   });
 }
 
