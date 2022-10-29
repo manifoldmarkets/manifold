@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { usePrefetchUsers, useUserById } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -9,7 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReferrals } from 'web/hooks/use-referrals'
 import { FilterSelectUsers } from 'web/components/filter-select-users'
-import { getUser, updateUser } from 'web/lib/firebase/users'
+import { updateUser } from 'web/lib/firebase/users'
 import { TextButton } from './text-button'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
@@ -52,15 +52,7 @@ function ReferralsDialog(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
 
-  const [referredByUser, setReferredByUser] = useState<User | null>()
-  useEffect(() => {
-    if (isOpen && !referredByUser && user?.referredByUserId) {
-      getUser(user.referredByUserId).then((user) => {
-        setReferredByUser(user)
-      })
-    }
-  }, [isOpen, referredByUser, user.referredByUserId])
-
+  const referredByUser = useUserById(user.referredByUserId)
   usePrefetchUsers(referralIds)
 
   return (
