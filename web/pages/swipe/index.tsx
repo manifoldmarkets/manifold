@@ -90,9 +90,9 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
       }}
       onCardLeftScreen={onLeave}
       preventSwipe={['down']}
-      className={'absolute inset-2 cursor-grab last:inset-0'}
+      className={'absolute inset-0 cursor-grab [&>*]:last:scale-100'}
     >
-      <div className="h-full overflow-hidden rounded-2xl">
+      <div className="h-full scale-95 overflow-hidden rounded-2xl transition-transform">
         {/* background */}
         <div className="flex h-full flex-col bg-black">
           <div className="relative mb-24 grow">
