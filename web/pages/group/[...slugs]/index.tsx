@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import Router from 'next/router'
+
 import { toast } from 'react-hot-toast'
 
-import { Group, GROUP_CHAT_SLUG } from 'common/group'
+import { Group } from 'common/group'
 import { Contract, listContractsByGroupSlug } from 'web/lib/firebase/contracts'
 import {
   addContractToGroup,
@@ -13,9 +15,14 @@ import {
   listMemberIds,
 } from 'web/lib/firebase/groups'
 import { Row } from 'web/components/layout/row'
-import { firebaseLogin, getUser, User } from 'web/lib/firebase/users'
+import {
+  firebaseLogin,
+  getUser,
+  getUsersBlockFacetFilters,
+  User,
+} from 'web/lib/firebase/users'
 import { Col } from 'web/components/layout/col'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   useGroup,
   useGroupContractIds,
@@ -42,7 +49,7 @@ import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
 import { Page } from 'web/components/layout/page'
 import { Tabs } from 'web/components/layout/tabs'
-import { GroupOverview } from 'web/components/groups/group-overview'
+import { GroupAbout } from 'web/components/groups/group-about'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -96,14 +103,7 @@ export async function getStaticPropz(props: { params: { slugs: string[] } }) {
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const groupSubpages = [
-  undefined,
-  GROUP_CHAT_SLUG,
-  'overview',
-  'markets',
-  'leaderboards',
-  'about',
-] as const
+const groupSubpages = [undefined, 'markets', 'about', 'leaderboards'] as const
 
 export default function GroupPage(props: {
   group: Group | null
@@ -129,10 +129,11 @@ export default function GroupPage(props: {
   const { creator, topTraders, topCreators, suggestedFilter, posts } = props
 
   const router = useRouter()
+
   const { slugs } = router.query as { slugs: string[] }
   const page = slugs?.[1] as typeof groupSubpages[number]
-  const tabIndex = ['overview', 'markets', 'leaderboards'].indexOf(
-    page === 'about' ? 'overview' : page ?? 'markets'
+  const tabIndex = ['markets', 'about', 'leaderboards'].indexOf(
+    page === 'about' ? 'about' : page ?? 'markets'
   )
 
   const group = useGroup(props.group?.id) ?? props.group
@@ -145,6 +146,7 @@ export default function GroupPage(props: {
   }
 
   const user = useUser()
+  const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
 
@@ -178,24 +180,16 @@ export default function GroupPage(props: {
         </div>
       </div>
       <div className={'relative p-1 pt-0'}>
-        {/* TODO: Switching tabs should also update the group path */}
         <Tabs
+          onClick={(title, index) => {
+            // concatenates the group slug with the subpage slug
+            const path = `/group/${group.slug}/${
+              groupSubpages[index + 1] ?? ''
+            }`
+            Router.push(path, undefined, { shallow: true })
+          }}
           className={'mb-2'}
           tabs={[
-            {
-              title: 'Overview',
-              content: (
-                <GroupOverview
-                  group={group}
-                  posts={groupPosts}
-                  isEditable={!!isCreator || isAdmin}
-                  aboutPost={aboutPost}
-                  creator={creator}
-                  user={user}
-                  memberIds={memberIds}
-                />
-              ),
-            },
             {
               title: 'Markets',
               content: (
@@ -204,9 +198,26 @@ export default function GroupPage(props: {
                   user={user}
                   defaultSort={'score'}
                   defaultFilter={suggestedFilter}
-                  additionalFilter={{ groupSlug: group.slug }}
+                  additionalFilter={{
+                    groupSlug: group.slug,
+                    facetFilters: getUsersBlockFacetFilters(privateUser),
+                  }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
+                />
+              ),
+            },
+            {
+              title: 'About',
+              content: (
+                <GroupAbout
+                  group={group}
+                  posts={groupPosts}
+                  isEditable={!!isCreator || isAdmin}
+                  aboutPost={aboutPost}
+                  creator={creator}
+                  user={user}
+                  memberIds={memberIds}
                 />
               ),
             },
@@ -249,10 +260,11 @@ export function TopGroupNavBar(props: {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 md:hidden lg:col-span-12">
       <Row className="items-center justify-between gap-2 bg-white px-2">
-        <Link href="/">
-          <a className="py-4 px-2 text-indigo-700 hover:text-gray-500">
-            <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
-          </a>
+        <Link
+          href="/"
+          className="py-4 px-2 text-indigo-700 hover:text-gray-500"
+        >
+          <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
         </Link>
         <h1 className="truncate text-lg font-medium text-indigo-700">
           {props.group.name}

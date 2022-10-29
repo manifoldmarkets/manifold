@@ -3,7 +3,6 @@ import {
   ExclamationIcon,
   PencilIcon,
   PlusCircleIcon,
-  UserGroupIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
@@ -25,7 +24,11 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractGroupsList } from 'web/components/groups/contract-groups-list'
 import { linkClass } from 'web/components/widgets/site-link'
-import { getGroupLinkToDisplay, groupPath } from 'web/lib/firebase/groups'
+import {
+  getGroupLinksToDisplay,
+  getGroupLinkToDisplay,
+  groupPath,
+} from 'web/lib/firebase/groups'
 import { insertContent } from '../editor/utils'
 import { contractMetrics } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -63,7 +66,7 @@ export function MiscDetails(props: {
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
-    <Row className="items-center gap-3 truncate text-sm text-gray-400">
+    <Row className="text-greyscale-4 w-full items-center gap-3 text-sm">
       {isClient && showTime === 'close-date' ? (
         <Row className="gap-0.5 whitespace-nowrap">
           <ClockIcon className="h-5 w-5" />
@@ -79,19 +82,22 @@ export function MiscDetails(props: {
       ) : (contract.openCommentBounties ?? 0) > 0 ? (
         <BountiedContractBadge />
       ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
-        <Row className={'shrink-0'}>
-          <UserGroupIcon className="mr-1 h-4 w-4" />
-          {uniqueBettorCount || '0'} trader{uniqueBettorCount !== 1 ? 's' : ''}
+        <Row className={'shrink-0 gap-1'}>
+          <div className="font-semibold">{uniqueBettorCount || '0'} </div>
+          trader
+          {uniqueBettorCount !== 1 ? 's' : ''}
         </Row>
       ) : (
         <NewContractBadge />
       )}
 
       {!hideGroupLink && groupToDisplay && (
-        <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
-          <a className={clsx(linkClass, 'truncate text-sm text-gray-400')}>
-            {groupToDisplay.name}
-          </a>
+        <Link
+          prefetch={false}
+          href={groupPath(groupToDisplay.slug)}
+          className={clsx(linkClass, 'text-greyscale-4 w-32 truncate text-sm')}
+        >
+          {groupToDisplay.name}
         </Link>
       )}
     </Row>
@@ -109,12 +115,12 @@ export function AvatarDetails(props: {
 
   return (
     <Row
-      className={clsx('items-center gap-2 text-sm text-gray-400', className)}
+      className={clsx('text-greyscale-4 items-center gap-2 text-sm', className)}
     >
       <Avatar
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
-        size={6}
+        size={4}
         noLink={noLink}
       />
       <UserLink
@@ -266,12 +272,18 @@ export function MarketGroups(props: {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const { contract, disabled } = props
-  const groupToDisplay = getGroupLinkToDisplay(contract)
+  const groupsToDisplay = getGroupLinksToDisplay(contract)
 
   return (
     <>
-      <Row className="items-center gap-1">
-        <GroupDisplay groupToDisplay={groupToDisplay} disabled={disabled} />
+      <Row className="flex-wrap items-center gap-1">
+        {groupsToDisplay.map((group) => (
+          <GroupDisplay
+            key={group.groupId}
+            groupToDisplay={group}
+            disabled={disabled}
+          />
+        ))}
 
         {!disabled && user && (
           <button
@@ -378,7 +390,11 @@ export function GroupDisplay(props: {
     return disabled ? (
       groupSection
     ) : (
-      <Link prefetch={false} href={groupPath(groupToDisplay.slug)}>
+      <Link
+        prefetch={false}
+        href={groupPath(groupToDisplay.slug)}
+        legacyBehavior
+      >
         {groupSection}
       </Link>
     )

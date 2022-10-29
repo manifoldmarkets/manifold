@@ -6,7 +6,7 @@ import clsx from 'clsx'
 
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -171,7 +171,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       </Col>
       <div
         className={clsx(
-          'z-1 absolute -mt-1 -ml-5 h-full w-[calc(100%+2rem)] rounded-lg transition-colors',
+          'z-1 absolute -mt-1 -ml-1 h-full w-full rounded-lg transition-colors',
           highlighted ? 'bg-indigo-50' : hover ? 'bg-greyscale-1' : ''
         )}
       />
@@ -295,6 +295,7 @@ export function ContractCommentInput(props: {
   onSubmitComment?: () => void
 }) {
   const user = useUser()
+  const privateUser = usePrivateUser()
   const { contract, parentAnswerOutcome, parentCommentId, replyTo, className } =
     props
   const { openCommentBounties } = contract
@@ -322,6 +323,7 @@ export function ContractCommentInput(props: {
       onSubmitComment={onSubmitComment}
       pageId={contract.id}
       className={className}
+      blocked={privateUser?.blockedByUserIds.includes(contract.creatorId)}
     />
   )
 }

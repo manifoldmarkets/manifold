@@ -121,3 +121,19 @@ export const getBadgesByRarity = (user: User | null | undefined) => {
   })
   return rarities
 }
+
+// Check the badges for the numeric property, return if they have a badge with that award or greater already
+export const hasNoBadgeWithCurrentOrGreaterPropertyNumber = (
+  badges: Badge[] | undefined,
+  property: string,
+  currentNumber: number
+) => {
+  if (!badges) return true
+  const hasBadge = badges.find((badge) => {
+    return (
+      (badge.data[property] && badge.data[property] === currentNumber) ||
+      (badge.data[property] && badge.data[property] > currentNumber)
+    )
+  })
+  return !hasBadge
+}

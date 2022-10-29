@@ -84,6 +84,10 @@ export type PrivateUser = {
     botEnabled?: boolean
     needsRelinking?: boolean
   }
+  blockedUserIds: string[]
+  blockedByUserIds: string[]
+  blockedContractIds: string[]
+  blockedGroupSlugs: string[]
 }
 
 export type PortfolioMetrics = {

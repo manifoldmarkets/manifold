@@ -187,9 +187,10 @@ export function GroupCard(props: {
         className
       )}
     >
-      <Link href={groupPath(group.slug)}>
-        <a className="absolute left-0 right-0 top-0 bottom-0 z-0" />
-      </Link>
+      <Link
+        href={groupPath(group.slug)}
+        className="absolute left-0 right-0 top-0 bottom-0 z-0"
+      />
       {creator !== null && (
         <div>
           <Avatar
@@ -234,7 +235,10 @@ function GroupMembersList(props: { group: Group }) {
   )
 }
 
-export function GroupLinkItem(props: { group: Group; className?: string }) {
+export function GroupLinkItem(props: {
+  group: { slug: string; name: string }
+  className?: string
+}) {
   const { group, className } = props
 
   return (

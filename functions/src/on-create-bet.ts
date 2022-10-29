@@ -37,9 +37,11 @@ import { DAY_MS } from '../../common/util/time'
 import { BettingStreakBonusTxn, UniqueBettorBonusTxn } from '../../common/txn'
 import { addHouseSubsidy } from './helpers/add-house-subsidy'
 import {
+  hasNoBadgeWithCurrentOrGreaterPropertyNumber,
   StreakerBadge,
   streakerBadgeRarityThresholds,
 } from '../../common/badge'
+import { BOT_USERNAMES } from '../../common/envs/constants'
 
 const firestore = admin.firestore()
 const BONUS_START_DATE = new Date('2022-07-13T15:30:00.000Z').getTime()
@@ -216,6 +218,9 @@ const updateUniqueBettorsAndGiveCreatorBonus = async (
 
   if (!newUniqueBettorIds) return
 
+  // exclude bots from bonuses
+  if (BOT_USERNAMES.includes(bettor.username)) return
+
   if (oldContract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(oldContract.id, UNIQUE_BETTOR_LIQUIDITY)
   }
@@ -319,12 +324,12 @@ async function handleBettingStreakBadgeAward(
   user: User,
   newBettingStreak: number
 ) {
-  const alreadyHasBadgeForFirstStreak =
-    user.achievements?.streaker?.badges.some(
-      (badge) => badge.data.totalBettingStreak === 1
-    )
-  // TODO: check if already awarded 50th streak as well
-  if (newBettingStreak === 1 && alreadyHasBadgeForFirstStreak) return
+  const deservesBadge = hasNoBadgeWithCurrentOrGreaterPropertyNumber(
+    user.achievements.streaker?.badges,
+    'totalBettingStreak',
+    newBettingStreak
+  )
+  if (!deservesBadge) return
 
   if (streakerBadgeRarityThresholds.includes(newBettingStreak)) {
     const badge = {

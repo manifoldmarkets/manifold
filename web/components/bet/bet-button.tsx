@@ -85,7 +85,7 @@ export function BinaryMobileBetting(props: { contract: BinaryContract }) {
   const user = useUser()
   if (user) {
     return <SignedInBinaryMobileBetting contract={contract} user={user} />
-  } else {
+  } else if (user === null) {
     return (
       <Col className="w-full">
         <BetSignUpPrompt className="w-full" />
@@ -93,6 +93,7 @@ export function BinaryMobileBetting(props: { contract: BinaryContract }) {
       </Col>
     )
   }
+  return null
 }
 
 export function SignedInBinaryMobileBetting(props: {

@@ -6,6 +6,7 @@ import Script from 'next/script'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import Welcome from 'web/components/onboarding/welcome'
+import { Analytics } from '@vercel/analytics/react'
 
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
@@ -83,6 +84,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           <Component {...pageProps} />
         </QueryClientProvider>
       </AuthProvider>
+      <Analytics />
     </>
   )
 }

@@ -48,6 +48,7 @@ export const usePrefetchUsers = (userIds: string[]) => {
   )
 }
 
+// Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts
 export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
   const positiveResult = useFirestoreQueryData<ContractMetrics>(
     ['contract-metrics-descending', userId, count],

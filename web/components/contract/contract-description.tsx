@@ -1,12 +1,15 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
-import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import {
+  Contract,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_QUESTION_LENGTH,
+} from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
-import { Content } from '../widgets/editor'
 import {
   TextEditor,
   editorExtensions,
@@ -17,6 +20,7 @@ import { Spacer } from '../layout/spacer'
 import { Editor, Content as ContentType } from '@tiptap/react'
 import { insertContent } from '../editor/utils'
 import { ExpandingInput } from '../widgets/expanding-input'
+import { CollapsibleContent } from '../widgets/collapsible-content'
 
 export function ContractDescription(props: {
   contract: Contract
@@ -31,7 +35,10 @@ export function ContractDescription(props: {
       {isCreator || isAdmin ? (
         <RichEditContract contract={contract} isAdmin={isAdmin && !isCreator} />
       ) : (
-        <Content content={contract.description} />
+        <CollapsibleContent
+          content={contract.description}
+          contractId={contract.id}
+        />
       )}
     </div>
   )
@@ -77,7 +84,10 @@ function RichEditContract(props: { contract: Contract; isAdmin?: boolean }) {
     </>
   ) : (
     <>
-      <Content content={contract.description} />
+      <CollapsibleContent
+        content={contract.description}
+        contractId={contract.id}
+      />
       <Spacer h={4} />
       <Row className="items-center gap-2 text-xs">
         {isAdmin && 'Admin '}
@@ -142,6 +152,7 @@ function EditQuestion(props: {
       <ExpandingInput
         className="mb-1 h-24 w-full"
         rows={2}
+        maxLength={MAX_QUESTION_LENGTH}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
         autoFocus

@@ -20,8 +20,8 @@ export function ContractGroupsList(props: {
   user: User | null | undefined
 }) {
   const { user, contract } = props
-  const { groupLinks } = contract
-  const groups = useGroupsWithContract(contract)
+  const { groupLinks = [] } = contract
+  const groups = useGroupsWithContract(contract) ?? []
   const memberGroupIds = useMemberGroupIds(user)
 
   const canModifyGroupContracts = (group: Group, userId: string) => {
@@ -43,7 +43,7 @@ export function ContractGroupsList(props: {
             options={{
               showSelector: true,
               showLabel: false,
-              ignoreGroupIds: groupLinks?.map((g) => g.groupId),
+              ignoreGroupIds: groupLinks.map((g) => g.groupId),
             }}
             setSelectedGroup={(group) =>
               group && addContractToGroup(group, contract, user.id)
@@ -54,28 +54,31 @@ export function ContractGroupsList(props: {
         </Col>
       )}
       <Col className="h-96 overflow-auto">
-        {groups.length === 0 && (
+        {groupLinks.length === 0 && (
           <Col className="text-greyscale-4">No groups yet...</Col>
         )}
-        {groups.map((group) => (
-          <Row
-            key={group.id}
-            className={clsx('items-center justify-between gap-2 p-2')}
-          >
-            <Row className="line-clamp-1 items-center gap-2">
-              <GroupLinkItem group={group} />
+        {groupLinks.map((groupLink) => {
+          const group = groups.find((g) => g.id === groupLink.groupId)
+          return (
+            <Row
+              key={groupLink.groupId}
+              className={clsx('items-center justify-between gap-2 p-2')}
+            >
+              <Row className="line-clamp-1 h-8 items-center gap-2">
+                <GroupLinkItem group={groupLink} />
+              </Row>
+              {group && user && canModifyGroupContracts(group, user.id) && (
+                <Button
+                  color={'gray-white'}
+                  size={'xs'}
+                  onClick={() => removeContractFromGroup(group, contract)}
+                >
+                  <XIcon className="text-greyscale-4 h-4 w-4" />
+                </Button>
+              )}
             </Row>
-            {user && canModifyGroupContracts(group, user.id) && (
-              <Button
-                color={'gray-white'}
-                size={'xs'}
-                onClick={() => removeContractFromGroup(group, contract)}
-              >
-                <XIcon className="text-greyscale-4 h-4 w-4" />
-              </Button>
-            )}
-          </Row>
-        ))}
+          )
+        })}
       </Col>
     </Col>
   )

@@ -19,6 +19,9 @@ import {
 } from './create-notification'
 import { parseMentions, richTextToString } from '../../common/util/parse'
 import { addUserToContractFollowers } from './follow-market'
+import { Contract } from '../../common/contract'
+import { User } from '../../common/user'
+import { BOT_USERNAMES } from '../../common/envs/constants'
 
 const firestore = admin.firestore()
 
@@ -151,70 +154,88 @@ export const onCreateCommentOnContract = functions
       await change.ref.update(fields)
     }
 
-    let answer: Answer | undefined
-    if (comment.answerOutcome) {
-      answer =
-        contract.outcomeType === 'FREE_RESPONSE' && contract.answers
-          ? contract.answers?.find(
-              (answer) => answer.id === comment.answerOutcome
-            )
-          : undefined
+    if (!BOT_USERNAMES.includes(commentCreator.username)) {
+      await handleCommentNotifications(
+        comment,
+        contract,
+        commentCreator,
+        bet,
+        eventId
+      )
+    }
+  })
+
+const handleCommentNotifications = async (
+  comment: ContractComment,
+  contract: Contract,
+  commentCreator: User,
+  bet: Bet | undefined,
+  eventId: string
+) => {
+  let answer: Answer | undefined
+  if (comment.answerOutcome) {
+    answer =
+      contract.outcomeType === 'FREE_RESPONSE' && contract.answers
+        ? contract.answers?.find(
+            (answer) => answer.id === comment.answerOutcome
+          )
+        : undefined
+  }
+
+  const comments = await getValues<ContractComment>(
+    firestore.collection('contracts').doc(contract.id).collection('comments')
+  )
+  const repliedToType = answer
+    ? 'answer'
+    : comment.replyToCommentId
+    ? 'comment'
+    : undefined
+
+  const repliedUserId = comment.replyToCommentId
+    ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
+    : answer?.userId
+
+  const mentionedUsers = compact(parseMentions(comment.content))
+  const repliedUsers: replied_users_info = {}
+
+  // The parent of the reply chain could be a comment or an answer
+  if (repliedUserId && repliedToType)
+    repliedUsers[repliedUserId] = {
+      repliedToType,
+      repliedToAnswerText: answer ? answer.text : undefined,
+      repliedToId: comment.replyToCommentId || answer?.id,
+      bet: bet,
     }
 
-    const comments = await getValues<ContractComment>(
-      firestore.collection('contracts').doc(contractId).collection('comments')
-    )
-    const repliedToType = answer
-      ? 'answer'
-      : comment.replyToCommentId
-      ? 'comment'
-      : undefined
-
-    const repliedUserId = comment.replyToCommentId
-      ? comments.find((c) => c.id === comment.replyToCommentId)?.userId
-      : answer?.userId
-
-    const mentionedUsers = compact(parseMentions(comment.content))
-    const repliedUsers: replied_users_info = {}
-
-    // The parent of the reply chain could be a comment or an answer
-    if (repliedUserId && repliedToType)
-      repliedUsers[repliedUserId] = {
-        repliedToType,
-        repliedToAnswerText: answer ? answer.text : undefined,
-        repliedToId: comment.replyToCommentId || answer?.id,
-        bet: bet,
+  const commentsInSameReplyChain = comments.filter((c) =>
+    repliedToType === 'answer'
+      ? c.answerOutcome === answer?.id
+      : repliedToType === 'comment'
+      ? c.replyToCommentId === comment.replyToCommentId
+      : false
+  )
+  // The rest of the children in the chain are always comments
+  commentsInSameReplyChain.forEach((c) => {
+    if (c.userId !== comment.userId && c.userId !== repliedUserId) {
+      repliedUsers[c.userId] = {
+        repliedToType: 'comment',
+        repliedToAnswerText: undefined,
+        repliedToId: c.id,
+        bet: undefined,
       }
-
-    const commentsInSameReplyChain = comments.filter((c) =>
-      repliedToType === 'answer'
-        ? c.answerOutcome === answer?.id
-        : repliedToType === 'comment'
-        ? c.replyToCommentId === comment.replyToCommentId
-        : false
-    )
-    // The rest of the children in the chain are always comments
-    commentsInSameReplyChain.forEach((c) => {
-      if (c.userId !== comment.userId && c.userId !== repliedUserId) {
-        repliedUsers[c.userId] = {
-          repliedToType: 'comment',
-          repliedToAnswerText: undefined,
-          repliedToId: c.id,
-          bet: undefined,
-        }
-      }
-    })
-    await createCommentOrAnswerOrUpdatedContractNotification(
-      comment.id,
-      'comment',
-      'created',
-      commentCreator,
-      eventId,
-      richTextToString(comment.content),
-      contract,
-      {
-        repliedUsersInfo: repliedUsers,
-        taggedUserIds: mentionedUsers,
-      }
-    )
+    }
   })
+  await createCommentOrAnswerOrUpdatedContractNotification(
+    comment.id,
+    'comment',
+    'created',
+    commentCreator,
+    eventId,
+    richTextToString(comment.content),
+    contract,
+    {
+      repliedUsersInfo: repliedUsers,
+      taggedUserIds: mentionedUsers,
+    }
+  )
+}

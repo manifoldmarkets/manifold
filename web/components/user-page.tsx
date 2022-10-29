@@ -38,9 +38,10 @@ import { PostCardList } from './posts/post-card'
 import { usePostsByUser } from 'web/hooks/use-post'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { DailyStats } from 'web/components/daily-stats'
-import { SectionHeader } from './groups/group-overview'
+import { SectionHeader } from './groups/group-about'
 import { Button } from './buttons/button'
 import { BotBadge } from './widgets/user-link'
+import { BlockUserButton } from 'web/components/buttons/block-user-button'
 
 export function UserPage(props: { user: User }) {
   const { user } = props
@@ -105,13 +106,20 @@ export function UserPage(props: { user: User }) {
                   {user.name}{' '}
                   {BOT_USERNAMES.includes(user.username) && <BotBadge />}
                 </span>
-                <Row className="sm:text-md -mt-1 items-center gap-x-3 text-sm ">
+                <Row className="sm:text-md items-center gap-x-3 text-sm ">
                   <span className={' text-greyscale-4'}>@{user.username}</span>
                   <BadgeDisplay user={user} query={router.query} />
                 </Row>
               </Col>
-              {isCurrentUser && <DailyStats user={user} showLoans />}
-              {!isCurrentUser && <UserFollowButton userId={user.id} />}
+              <Row
+                className={
+                  'h-full w-full items-center justify-between sm:w-auto sm:justify-end sm:gap-4'
+                }
+              >
+                {isCurrentUser && <DailyStats user={user} showLoans />}
+                {!isCurrentUser && <UserFollowButton userId={user.id} />}
+                {!isCurrentUser && <BlockUserButton user={user} />}
+              </Row>
             </div>
             <ProfilePublicStats
               className="sm:text-md text-greyscale-6 hidden text-sm md:inline"

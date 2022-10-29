@@ -12,6 +12,7 @@ import { addUserToContractFollowers } from './follow-market'
 import { User } from '../../common/user'
 import * as admin from 'firebase-admin'
 import {
+  hasNoBadgeWithCurrentOrGreaterPropertyNumber,
   MarketCreatorBadge,
   marketCreatorBadgeRarityThresholds,
 } from '../../common/badge'
@@ -50,12 +51,23 @@ const firestore = admin.firestore()
 
 async function handleMarketCreatorBadgeAward(contractCreator: User) {
   // get all contracts by user and calculate size of array
-  const contracts = await getValues<Contract>(
-    firestore
-      .collection(`contracts`)
-      .where('creatorId', '==', contractCreator.id)
-      .where('resolution', '!=', 'CANCEL')
+  const contracts = (
+    await getValues<Contract>(
+      firestore
+        .collection(`contracts`)
+        .where('creatorId', '==', contractCreator.id)
+    )
+  ).filter(
+    (contract) =>
+      !contract.resolution ||
+      (contract.resolution && contract.resolution !== 'CANCEL')
   )
+  const deservesBadge = hasNoBadgeWithCurrentOrGreaterPropertyNumber(
+    contractCreator.achievements.marketCreator?.badges,
+    'totalContractsCreated',
+    contracts.length
+  )
+  if (!deservesBadge) return
   if (marketCreatorBadgeRarityThresholds.includes(contracts.length)) {
     const badge = {
       type: 'MARKET_CREATOR',

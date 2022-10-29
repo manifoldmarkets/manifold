@@ -224,6 +224,14 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     (shares) => !floatingEqual(shares, 0)
   )
 
+  const { YES: yesShares, NO: noShares } = totalShares
+  const hasYesShares = yesShares >= 1
+  const hasNoShares = noShares >= 1
+
+  const maxSharesOutcome = hasShares
+    ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
+    : null
+
   return {
     invested,
     loan,
@@ -232,6 +240,9 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     profitPercent,
     totalShares,
     hasShares,
+    hasYesShares,
+    hasNoShares,
+    maxSharesOutcome,
   }
 }
 
@@ -244,6 +255,9 @@ export function getContractBetNullMetrics() {
     profitPercent: 0,
     totalShares: {} as { [outcome: string]: number },
     hasShares: false,
+    hasYesShares: false,
+    hasNoShares: false,
+    maxSharesOutcome: null,
   }
 }
 
@@ -259,6 +273,29 @@ export function getTopAnswer(
     ({ prob }) => prob
   )
   return top?.answer
+}
+
+export function getTopNSortedAnswers(
+  contract: FreeResponseContract | MultipleChoiceContract,
+  n: number
+) {
+  const { answers, resolution, resolutions } = contract
+
+  const [winningAnswers, losingAnswers] = partition(
+    answers,
+    (answer) =>
+      answer.id === resolution || (resolutions && resolutions[answer.id])
+  )
+  const sortedAnswers = [
+    ...sortBy(winningAnswers, (answer) =>
+      resolutions ? -1 * resolutions[answer.id] : 0
+    ),
+    ...sortBy(
+      losingAnswers,
+      (answer) => -1 * getDpmOutcomeProbability(contract.totalShares, answer.id)
+    ),
+  ].slice(0, n)
+  return sortedAnswers
 }
 
 export function getLargestPosition(contract: Contract, userBets: Bet[]) {

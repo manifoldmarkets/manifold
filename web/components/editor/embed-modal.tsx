@@ -59,6 +59,12 @@ const embedPatterns: EmbedPattern[] = [
       `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${DOMAIN}"></iframe>`,
   },
   {
+    // Strawpoll: https://strawpoll.com/polls/PbZqoPJelnN
+    regex: /^https?:\/\/strawpoll\.com\/polls\/(\w+)/,
+    rewrite: (id) =>
+      `<iframe src="https://strawpoll.com/embed/polls/${id}"></iframe>`,
+  },
+  {
     regex: /^(https?:\/\/.*)/,
     rewrite: (url) => `<iframe src="${url}"></iframe>`,
   },
