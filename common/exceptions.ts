@@ -1,5 +1,30 @@
-export class UserNotRegisteredException extends Error {}
-export class InsufficientBalanceException extends Error {}
-export class ForbiddenException extends Error {}
-export class ResourceNotFoundException extends Error {}
-export class TradingClosedException extends Error {}
+export class UserNotRegisteredException extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'UserNotRegisteredException';
+  }
+}
+export class InsufficientBalanceException extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'InsufficientBalanceException';
+  }
+}
+export class ForbiddenException extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'ForbiddenException';
+  }
+}
+export class ResourceNotFoundException extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'ResourceNotFoundException';
+  }
+}
+export class TradingClosedException extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'TradingClosedException';
+  }
+}

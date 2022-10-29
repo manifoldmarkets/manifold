@@ -3,8 +3,7 @@ import App from './app';
 import log from './logger';
 
 process.on('uncaughtException', async (e) => {
-  log.error('================================= SERVER CRASH =================================');
-  log.trace(e);
+  log.crash(e);
   try {
     await log.flush();
   } finally {
@@ -13,8 +12,11 @@ process.on('uncaughtException', async (e) => {
 });
 
 process.on('unhandledRejection', async (e) => {
-  log.error('================================= SERVER CRASH =================================');
-  log.trace(new Error(String(e)));
+  if (e instanceof Error) {
+    log.crash(e);
+  } else {
+    log.crash(new Error(String(e)));
+  }
   try {
     await log.flush();
   } finally {
@@ -22,7 +24,7 @@ process.on('unhandledRejection', async (e) => {
   }
 });
 
-log.info('================================ BOOTING SERVER ================================');
+log.info('Starting application...');
 log.init().then(() => {
   const app = new App();
   app.launch().catch((e) => {

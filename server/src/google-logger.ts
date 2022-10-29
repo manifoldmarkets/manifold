@@ -103,4 +103,8 @@ export default class GoogleLogger {
   public error(msg: string) {
     this.log(msg, 'ERROR');
   }
+
+  public critical(msg: string) {
+    this.log(msg, 'CRITICAL');
+  }
 }

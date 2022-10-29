@@ -7,6 +7,7 @@ enum Level {
   WARN,
   ERROR,
   TRACE,
+  CRASH,
 }
 
 let l: GoogleLogger = undefined;
@@ -40,9 +41,13 @@ function formatDate(date: Date) {
 }
 
 const date = new Date();
-function log(level: Level, msg: any, ...args: any[]) {
+function getTimestamp() {
   date.setTime(Date.now());
-  const timestamp = formatDate(date);
+  return formatDate(date);
+}
+
+function log(level: Level, msg: any, ...args: any[]) {
+  const timestamp = getTimestamp();
 
   const output = `${timestamp} ${Level[level]}: ${String(msg)} ${String(args)}`;
 
@@ -67,6 +72,23 @@ function log(level: Level, msg: any, ...args: any[]) {
       console.error(timestamp + ' ' + Level[level] + ': ' + msg.stack);
       l?.error(timestamp + ' ' + Level[level] + ': ' + msg.stack);
       break;
+    case Level.CRASH: {
+      const prep = timestamp + ' ';
+      let ls = '\n';
+      for (let i = 0; i < prep.length; i++) ls += ' ';
+      let message = prep + '================================= SERVER CRASH =================================';
+      if (msg.stack) {
+        for (const line of msg.stack.split('\n')) {
+          message += ls + line;
+        }
+      } else {
+        message += ls + String(msg);
+      }
+      message += ls + '================================================================================';
+      console.error(message);
+      l?.critical(message);
+      break;
+    }
     default:
       l?.info(output);
       console.log(output);
@@ -92,6 +114,10 @@ export default class {
 
   static trace(error: Error, msg?: string, ...args: any[]) {
     log(Level.TRACE, error, msg, args);
+  }
+
+  static crash(error: Error, msg?: string, ...args: any[]) {
+    log(Level.CRASH, error, msg, args);
   }
 
   static async flush() {
