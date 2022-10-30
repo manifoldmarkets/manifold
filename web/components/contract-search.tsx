@@ -17,7 +17,7 @@ import {
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
-  historyStore,
+  inMemoryStore,
   urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
@@ -139,11 +139,11 @@ export function ContractSearch(props: {
     },
     !persistPrefix
       ? undefined
-      : { key: `${persistPrefix}-search`, store: historyStore() }
+      : { key: `${persistPrefix}-search`, store: inMemoryStore() }
   )
 
   const searchParams = useRef<SearchParameters | null>(null)
-  const searchParamsStore = historyStore<SearchParameters>()
+  const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
 
   useLayoutEffect(() => {
@@ -164,10 +164,12 @@ export function ContractSearch(props: {
     if (searchParams.current == null) {
       return
     }
+    console.log('perform query')
     const { query, sort, openClosedFilter, facetFilters } = searchParams.current
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : state.pages.length
     if (freshQuery || requestedPage < state.numPages) {
+      console.log('requestedPage', requestedPage)
       const index = query
         ? searchIndex
         : searchClient.initIndex(getIndexName(sort))
@@ -197,9 +199,11 @@ export function ContractSearch(props: {
     }
   }
 
+  const firstQuery = useRef(true)
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParams.current, params)) {
+      if (!isEqual(searchParams.current, params) || firstQuery.current) {
+        firstQuery.current = false
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
@@ -434,6 +438,7 @@ function ContractSearchControls(props: {
       openClosedFilter: openClosedFilter,
       facetFilters: facetFilters,
     })
+    console.log('onSearchParamsChanged')
   }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
   if (noControls) {
