@@ -17,6 +17,7 @@ import {
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
+  historyStore,
   inMemoryStore,
   urlParamStore,
   usePersistentState,
@@ -164,12 +165,10 @@ export function ContractSearch(props: {
     if (searchParams.current == null) {
       return
     }
-    console.log('perform query')
     const { query, sort, openClosedFilter, facetFilters } = searchParams.current
     const id = ++requestId.current
     const requestedPage = freshQuery ? 0 : state.pages.length
     if (freshQuery || requestedPage < state.numPages) {
-      console.log('requestedPage', requestedPage)
       const index = query
         ? searchIndex
         : searchClient.initIndex(getIndexName(sort))
@@ -199,11 +198,16 @@ export function ContractSearch(props: {
     }
   }
 
-  const firstQuery = useRef(true)
+  // Always do first query when loading search page, unless going back in history.
+  const [firstQuery, setFirstQuery] = usePersistentState(true, {
+    key: `${persistPrefix}-first-query`,
+    store: historyStore(),
+  })
+
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParams.current, params) || firstQuery.current) {
-        firstQuery.current = false
+      if (!isEqual(searchParams.current, params) || firstQuery) {
+        setFirstQuery(false)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }
@@ -438,7 +442,6 @@ function ContractSearchControls(props: {
       openClosedFilter: openClosedFilter,
       facetFilters: facetFilters,
     })
-    console.log('onSearchParamsChanged')
   }, [query, sort, openClosedFilter, JSON.stringify(facetFilters)])
 
   if (noControls) {
