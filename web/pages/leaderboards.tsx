@@ -169,6 +169,7 @@ export default function Leaderboards(_props: {
         url="/leaderboards"
       />
       <Title text={'Leaderboards'} className={'hidden md:block'} />
+      <div className="text-gray-500 mb-4">Updated every 15 minutes</div>
       <Tabs
         className="mb-4"
         currentPageForAnalytics={'leaderboards'}
