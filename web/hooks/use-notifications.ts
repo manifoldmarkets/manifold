@@ -19,14 +19,6 @@ function useNotifications(privateUser: PrivateUser) {
   })
 }
 
-export function useUnseenNotifications(privateUser: PrivateUser) {
-  const notifications = useNotifications(privateUser)
-  return useMemo(
-    () => notifications && notifications.filter((n) => !n.isSeen),
-    [notifications]
-  )
-}
-
 export function useGroupedNotifications(privateUser: PrivateUser) {
   const notifications = useNotifications(privateUser)
   return useMemo(() => {
@@ -34,14 +26,16 @@ export function useGroupedNotifications(privateUser: PrivateUser) {
   }, [notifications])
 }
 
-export function useUnseenGroupedNotification(privateUser: PrivateUser) {
-  const notifications = useUnseenNotifications(privateUser)
+export function useUnseenNotificationCount(privateUser: PrivateUser) {
+  const notifications = useNotifications(privateUser)
   return useMemo(() => {
-    return notifications ? groupNotifications(notifications) : undefined
+    if (!notifications) return undefined
+    const unseen = notifications.filter((n) => !n.isSeen)
+    return groupNotifications(unseen).length
   }, [notifications])
 }
 
-export function groupNotifications(notifications: Notification[]) {
+function groupNotifications(notifications: Notification[]) {
   let notificationGroups: NotificationGroup[] = []
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()
