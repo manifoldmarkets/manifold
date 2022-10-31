@@ -21,11 +21,6 @@ export const setFirebaseUserViaJson = async (
   app: FirebaseApp
 ) => {
   try {
-    if (typeof window !== 'undefined') {
-      //eslint-disable-next-line
-      ;(window as any).isNative &&
-        (window as any).ReactNativeWebView.postMessage('received fbUser')
-    }
     const clientAuth = getAuth(app) as FirebaseAuthInternal
     const persistenceManager = clientAuth.persistenceManager
     const persistence = persistenceManager.persistence
@@ -37,11 +32,12 @@ export const setFirebaseUserViaJson = async (
     return fbUser
   } catch (e) {
     if (typeof window !== 'undefined') {
-      //eslint-disable-next-line
-      ;(window as any).isNative &&
-        (window as any).ReactNativeWebView.postMessage(
-          `error setting fb user ${e}`
-        )
+      ;(window as any).ReactNativeWebView.postMessage(
+        JSON.stringify({
+          type: 'error',
+          data: `Error setting Firebase user: ${e}`,
+        })
+      )
     }
     console.error('deserializing', e)
     return null

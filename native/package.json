@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.19.4",
+    "@react-native-clipboard/clipboard": "^1.11.1",
     "@react-native-cookies/cookies": "^6.2.1",
     "@sentry/react-native": "4.2.2",
     "@types/react-native": "~0.69.1",

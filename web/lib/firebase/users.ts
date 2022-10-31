@@ -31,6 +31,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { Like } from 'common/like'
 import { track } from '../service/analytics'
+import { postMessageToNative } from 'web/components/native-message-listener'
 
 dayjs.extend(utc)
 
@@ -195,7 +196,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
 export async function firebaseLogin() {
   if ((window as any).isNative) {
     // Post the message back to expo
-    ;(window as any).ReactNativeWebView.postMessage('googleLoginClicked')
+    postMessageToNative('googleLoginClicked', {})
     return
   }
   const provider = new GoogleAuthProvider()
@@ -207,7 +208,7 @@ export async function firebaseLogin() {
 export async function firebaseLogout() {
   if ((window as any).isNative) {
     // Post the message back to expo
-    ;(window as any).ReactNativeWebView.postMessage('signOut')
+    postMessageToNative('signOut', {})
   }
   await auth.signOut()
 }

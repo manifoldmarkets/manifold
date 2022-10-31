@@ -28,6 +28,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native'
+import Clipboard from '@react-native-clipboard/clipboard'
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
@@ -65,7 +66,7 @@ const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? 'https://dev-git-native-main-rebase-mantic.vercel.app/'
+    ? 'https://311e-181-41-206-41.ngrok.io'
     : 'https://prod-git-native-main-rebase-mantic.vercel.app/'
 
 export default function App() {
@@ -271,12 +272,13 @@ export default function App() {
   }
 
   const handleMessageFromWebview = ({ nativeEvent }) => {
-    console.log('Received nativeEvent.data: ', nativeEvent.data.slice(0, 20))
+    const { data } = nativeEvent
+    const { type, data: payload } = JSON.parse(data)
+    console.log('Received nativeEvent: ', type)
     // Time to log in to firebase
-    if (nativeEvent.data === 'googleLoginClicked') {
+    if (type === 'googleLoginClicked') {
       promptAsync()
-      return
-    } else if (nativeEvent.data === 'tryToGetPushTokenWithoutPrompt') {
+    } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
           const token = await getPushToken()
@@ -296,10 +298,11 @@ export default function App() {
             })
           )
       })
-      return
+    } else if (type === 'copyToClipboard') {
+      Clipboard.setString(payload)
     }
     // User needs to enable push notifications
-    else if (nativeEvent.data === 'promptEnablePushNotifications') {
+    else if (type === 'promptEnablePushNotifications') {
       registerForPushNotificationsAsync().then((token) => {
         if (token)
           webview.current?.postMessage(
@@ -309,22 +312,17 @@ export default function App() {
             })
           )
       })
-      return
-    } else if (nativeEvent.data === 'signOut' && (fbUser || auth.currentUser)) {
+    } else if (type === 'signOut' && (fbUser || auth.currentUser)) {
       console.log('signOut called')
       auth.signOut()
       setFbUser(null)
       setUserId(null)
       !isExpoClient && CookieManager.clearAll(useWebKit)
-      return
     }
     // Receiving cached firebase user from webview cache
-    if (
-      nativeEvent.data.includes('fbUser') ||
-      nativeEvent.data.includes('uid')
-    ) {
+    else if (type === 'users') {
       try {
-        const fbUserAndPrivateUser = JSON.parse(nativeEvent.data)
+        const fbUserAndPrivateUser = JSON.parse(payload)
         // Passing us a signed-in user object
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           console.log('Signing in fb user from webview cache')
@@ -344,8 +342,9 @@ export default function App() {
         })
         console.log('error parsing nativeEvent.data', e)
       }
+    } else {
+      console.log('Unhandled nativeEvent.data: ', data)
     }
-    console.log('Unhandled nativeEvent.data: ', nativeEvent.data)
   }
 
   const width = Dimensions.get('window').width //full width

@@ -1,4 +1,8 @@
 We're using Expo to help with android and ios builds. You can find more information about Expo here: https://docs.expo.dev/introduction/expo/
+## Installing
+- The `native/` directory is not part of the yarn workspace, so you have to run `yarn` in the `native/` directory to install dependencies.
+- You will need to install the Expo CLI globally: `npm install -g expo-cli`
+
 ## Configuration
 - `app.json` and `app.config.js` are the configuration files that determine basic functioning of the app. If you change them you'll have to clean your `android` and `ios` folders via `yarn clean`
 
@@ -45,11 +49,15 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Notes
 - The dev and prod version of the app use the same application id (`com.markets.manifold`). This may not be not ideal but it works.
-- I couldn't get "native" added to the yarn workspace without getting build errors, so it's not in the root package.json. I'm not sure if this is a problem or not.
-  - This meanas you have to run yarn in `native` to install dependencies and not from the parent.
 - Notifications on android dev I think won't work bc we have to use Firebase's server signing key to send push notifications and I just linked our application id (com.markets.manifold) to the prod server signing key. To fix I'd have to have a separate application id for dev, which I could do but you can just test on prod
 - Try out sending push notifications [here](https://expo.dev/notifications) (using the `pushToken` from your `private-user` object)
 - Google play release console [here](https://play.google.com/console/u/1/developers/4817631028794628961/app/4973740210331758857/releases/overview)
 
 ## Monitoring
 - [Sentry](https://sentry.io/organizations/manifold-markets/projects/react-native/?issuesType=new&project=4504040585494528)
+
+## Troubleshooting
+- getting an errors on build/install? like `Error: spawn .../manifold/native/android/gradlew EACCES`
+  - Delete the `android` and `ios` folders in `native/` and try again.
+- environment variables not working? like `process.env.API_URL` is undefined
+  - Try running `yarn clear` and ctrl+c to clear the env variable and try again

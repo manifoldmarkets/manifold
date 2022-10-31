@@ -406,6 +406,8 @@ PODS:
     - React-jsi (= 0.69.6)
     - React-logger (= 0.69.6)
     - React-perflogger (= 0.69.6)
+  - RNCClipboard (1.11.1):
+    - React-Core
   - RNSentry (4.2.2):
     - React-Core
     - Sentry (= 7.22.0)
@@ -472,6 +474,7 @@ DEPENDENCIES:
   - React-RCTVibration (from `../node_modules/react-native/Libraries/Vibration`)
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -594,6 +597,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/runtimeexecutor"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNCClipboard:
+    :path: "../node_modules/@react-native-clipboard/clipboard"
   RNSentry:
     :path: "../node_modules/@sentry/react-native"
   Yoga:
@@ -658,6 +663,7 @@ SPEC CHECKSUMS:
   React-RCTVibration: 285f8538386c660e6b9497e204636acd93bf7fcc
   React-runtimeexecutor: 0af71c94f968fa10015bf0119951bccd2e4d8865
   ReactCommon: fe7580b9d10f00249facf25659e0ec051320cc8a
+  RNCClipboard: 2834e1c4af68697089cdd455ee4a4cdd198fa7dd
   RNSentry: f03937a2cf86c7029ba31fbbf5618c55d223cd62
   Sentry: 30b51086ca9aac23337880152e95538f7e177f7f
   Yoga: 75bf4b0131cfb46a659cd0c13309b79a6fcff66d

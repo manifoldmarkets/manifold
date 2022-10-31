@@ -67,6 +67,8 @@ export const NativeMessageListener = () => {
 
 // TODO: use this method instead of call (window as any) all the time
 export const postMessageToNative = (type: string, data: any) => {
+  if (typeof window === 'undefined') return
+  if (!(window as any).isNative) return
   ;(window as any).ReactNativeWebView.postMessage(
     JSON.stringify({
       type,

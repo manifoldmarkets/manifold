@@ -1,10 +1,8 @@
+import { postMessageToNative } from 'web/components/native-message-listener'
+
 export const webviewPassUsers = (userJson: string) => {
-  if ((window as any).isNative) {
-    ;(window as any).ReactNativeWebView.postMessage(userJson)
-  }
+  postMessageToNative('users', userJson)
 }
 export const webviewSignOut = () => {
-  if ((window as any).isNative) {
-    ;(window as any).ReactNativeWebView.postMessage('signOut')
-  }
+  postMessageToNative('signOut', {})
 }

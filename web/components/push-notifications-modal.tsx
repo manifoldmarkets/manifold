@@ -7,6 +7,7 @@ import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { setPushTokenRequestDenied } from 'web/lib/firebase/notifications'
 import { updatePrivateUser } from 'web/lib/firebase/users'
+import { postMessageToNative } from 'web/components/native-message-listener'
 
 export function PushNotificationsModal(props: {
   isOpen: boolean
@@ -17,9 +18,7 @@ export function PushNotificationsModal(props: {
   const { isOpen, setOpen, privateUser, notifications } = props
 
   const showSystemNotificationsPrompt = () => {
-    ;(window as any).ReactNativeWebView.postMessage(
-      'promptEnablePushNotifications'
-    )
+    postMessageToNative('promptEnablePushNotifications', {})
   }
 
   useEffect(() => {
@@ -30,9 +29,7 @@ export function PushNotificationsModal(props: {
       privateUser.interestedInPushNotifications === false
     )
       return // They already gave permission, but we haven't written the token to the db yet
-    ;(window as any).ReactNativeWebView.postMessage(
-      'tryToGetPushTokenWithoutPrompt'
-    )
+    postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
 
     // They said 'sure' to our prompt, but they haven't given us system permissions yet
     if (privateUser.interestedInPushNotifications === true) {

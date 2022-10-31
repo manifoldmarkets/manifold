@@ -19,7 +19,7 @@ import {
 } from 'web/lib/firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
 import { listenForValues } from './utils'
-
+import { postMessageToNative } from 'web/components/native-message-listener'
 
 export function getNotificationsQuery(
   userId: string,
@@ -40,7 +40,6 @@ export function getNotificationsQuery(
     limit(NOTIFICATIONS_PER_PAGE * 10)
   )
 }
-
 
 export function getSourceIdForLinkComponent(
   sourceId: string,
@@ -118,9 +117,7 @@ export const setPushToken = async (userId: string, pushToken: string) => {
     )
   } catch (e) {
     console.error('error setting user push token', e)
-    ;(window as any).ReactNativeWebView.postMessage(
-      'error setting user push token'
-    )
+    postMessageToNative('error', 'Error setting push token')
   }
 }
 
