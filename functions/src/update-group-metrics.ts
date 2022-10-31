@@ -1,11 +1,9 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy } from 'lodash'
+import { groupBy, sumBy, mapValues } from 'lodash'
 
 import { getValues, log, writeAsync } from './utils'
-import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
-import { scoreTraders, scoreCreators } from '../../common/scoring'
 import { Group, GroupContractDoc } from '../../common/group'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
@@ -38,12 +36,8 @@ export async function updateGroupMetrics() {
   const groupUpdates = await batchedWaitAll(
     groups.map((group) => async () => {
       const groupContracts = await loadGroupContracts(group.id)
-      const groupBets = await loadContractBets(groupContracts.map((c) => c.id))
-      const betsByContract = groupBy(groupBets, (bet) => bet.contractId)
-      const bets = groupContracts.map((e) => betsByContract[e.id] ?? [])
-
       const creatorScores = scoreCreators(groupContracts)
-      const traderScores = scoreTraders(groupContracts, bets)
+      const traderScores = await scoreTraders(groupContracts)
 
       const topTraderScores = topUserScores(traderScores)
       const topCreatorScores = topUserScores(creatorScores)
@@ -62,6 +56,56 @@ export async function updateGroupMetrics() {
   )
   log('Writing metric updates...')
   await writeAsync(firestore, groupUpdates)
+}
+
+function scoreCreators(contracts: Contract[]) {
+  const creatorScore = mapValues(
+    groupBy(contracts, ({ creatorId }) => creatorId),
+    (contracts) =>
+      sumBy(
+        contracts.map((contract) => {
+          return contract.volume
+        })
+      )
+  )
+
+  return creatorScore
+}
+
+async function scoreTraders(contracts: Contract[]) {
+  const userScoresByContract = await batchedWaitAll(
+    contracts.map((c) => () => scoreUsersByContract(c))
+  )
+  const userScores: { [userId: string]: number } = {}
+  for (const scores of userScoresByContract) {
+    addUserScores(scores, userScores)
+  }
+  return userScores
+}
+
+async function scoreUsersByContract(contract: Contract) {
+  const userContractMetrics = await firestore
+    .collectionGroup('contract-metrics')
+    .where('contractId', '==', contract.id)
+    .select('profit')
+    .get()
+  return Object.fromEntries(
+    userContractMetrics.docs.map((d) => {
+      const userId = d.ref.path.split('/')[1] // users/foo/contract-metrics/bar
+      const profit = d.get('profit')
+      return [userId, profit]
+    })
+  )
+}
+
+function addUserScores(
+  src: { [userId: string]: number },
+  dest: { [userId: string]: number }
+) {
+  for (const [userId, score] of Object.entries(src)) {
+    if (dest[userId] === undefined) dest[userId] = 0
+    dest[userId] += score
+  }
 }
 
 const topUserScores = (scores: { [userId: string]: number }) => {
@@ -89,18 +133,4 @@ async function loadGroupContracts(groupId: string) {
     const contractDocs = await firestore.getAll(...groupContractRefs)
     return contractDocs.map((d) => d.data() as Contract)
   }
-}
-
-async function loadContractBets(contractIds: string[]) {
-  return (
-    await batchedWaitAll(
-      contractIds.map(
-        (c) => () =>
-          getValues<Bet>(
-            firestore.collection('contracts').doc(c).collection('bets')
-          )
-      ),
-      100
-    )
-  ).flat()
 }
