@@ -17,7 +17,7 @@ export const SwitchSetting = (props: {
           disabled && label !== 'Mobile'
             ? `You are opted out of all ${label} notifications. Go to the Opt Out section to undo this setting.`
             : disabled && label === 'Mobile'
-            ? `You are opted out of all ${label} notifications. First download the app (iOS or Android) and allow notifications. If you've already done so, go to the Opt Out section to undo this setting.`
+            ? `You are opted out of all ${label} notifications. First download the app (Android available now, iOS soon!) and allow notifications. If you've already done so, go to the Opt Out section to undo this setting.`
             : ''
         }
       >
