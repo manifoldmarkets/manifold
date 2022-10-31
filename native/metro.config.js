@@ -13,9 +13,11 @@ const defaultConfig = getDefaultConfig(projectRoot)
 // const workspaceRoot = path.resolve(projectRoot, '../')
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common'),
+  components: path.resolve(__dirname + '/components'),
 }
 defaultConfig.watchFolders = [
   path.resolve(__dirname + '/../common'),
+  path.resolve(__dirname + '/components'),
   // workspaceRoot,
 ]
 defaultConfig.resolver.nodeModulesPaths = [
