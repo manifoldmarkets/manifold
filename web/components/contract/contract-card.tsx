@@ -46,6 +46,8 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { DAY_MS } from 'common/util/time'
+import NewContractBadge from '../new-contract-badge'
 
 export function ContractCard(props: {
   contract: Contract
@@ -77,6 +79,7 @@ export function ContractCard(props: {
     pinned,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
+  const { isResolved, createdTime } = contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -91,6 +94,7 @@ export function ContractCard(props: {
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
     !hideQuickBet
 
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   return (
     <Card
       className={clsx(
@@ -101,7 +105,10 @@ export function ContractCard(props: {
       <Col className="relative flex-1 gap-1 pt-2">
         <Row className="justify-between px-4 ">
           <AvatarDetails contract={contract} noLink={noLinkAvatar} />
-          {pinned && <FeaturedPill />}
+          <Row>
+            {pinned && <FeaturedPill />}
+            {isNew && <NewContractBadge />}
+          </Row>
         </Row>
         {/* overlay question on image */}
         {contract.coverImageUrl && showImage && (

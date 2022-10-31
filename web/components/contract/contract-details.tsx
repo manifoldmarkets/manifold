@@ -15,9 +15,7 @@ import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import { fromNow } from 'web/lib/util/time'
 import { Avatar } from '../widgets/avatar'
 import { useState } from 'react'
-import NewContractBadge from '../new-contract-badge'
 import { MiniUserFollowButton } from '../buttons/follow-button'
-import { DAY_MS } from 'common/util/time'
 import { useUser, useUserById } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
@@ -50,16 +48,10 @@ export function MiscDetails(props: {
   hideGroupLink?: boolean
 }) {
   const { contract, showTime, hideGroupLink } = props
-  const {
-    closeTime,
-    isResolved,
-    createdTime,
-    resolutionTime,
-    uniqueBettorCount,
-  } = contract
+  const { closeTime, resolutionTime, uniqueBettorCount } = contract
 
   const isClient = useIsClient()
-  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  // const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   const groupToDisplay = getGroupLinkToDisplay(contract)
 
   return (
@@ -76,14 +68,14 @@ export function MiscDetails(props: {
           {'Resolved '}
           {fromNow(resolutionTime)}
         </Row>
-      ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
+      ) : (uniqueBettorCount ?? 0) > 1 ? (
         <Row className={'shrink-0 gap-1'}>
           <div className="font-semibold">{uniqueBettorCount || '0'} </div>
           trader
           {uniqueBettorCount !== 1 ? 's' : ''}
         </Row>
       ) : (
-        <NewContractBadge />
+        <></>
       )}
 
       {!hideGroupLink && groupToDisplay && (
