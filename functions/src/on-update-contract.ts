@@ -25,7 +25,7 @@ export const onUpdateContract = functions.firestore
 
     if (!previousContract.isResolved && contract.isResolved) {
       // No need to notify users of resolution, that's handled in resolve-market
-      return await handleResolvedContract(contract)
+      // return await handleResolvedContract(contract)
     } else if (previousContract.groupSlugs !== contract.groupSlugs) {
       await handleContractGroupUpdated(previousContract, contract)
     } else if (
@@ -36,6 +36,7 @@ export const onUpdateContract = functions.firestore
     }
   })
 
+//eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function handleResolvedContract(contract: Contract) {
   if (
     (contract.uniqueBettorCount ?? 0) <

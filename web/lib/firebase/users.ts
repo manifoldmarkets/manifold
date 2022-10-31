@@ -1,23 +1,27 @@
 import {
-  doc,
-  setDoc,
-  getDoc,
   collection,
-  query,
-  where,
-  limit,
-  getDocs,
-  orderBy,
-  updateDoc,
-  deleteDoc,
   collectionGroup,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
   onSnapshot,
+  orderBy,
+  query,
   Query,
+  setDoc,
+  updateDoc,
+  where,
 } from 'firebase/firestore'
-import { getAuth } from 'firebase/auth'
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { app, db } from './init'
-import { PortfolioMetrics, PrivateUser, User } from 'common/user'
+import {
+  PortfolioMetrics,
+  PrivateUser,
+  User,
+  UserAndPrivateUser,
+} from 'common/user'
 import { coll, getValues, listenForValue, listenForValues } from './utils'
 import { safeLocalStorage } from '../util/local'
 import { filterDefined } from 'common/util/array'
@@ -25,17 +29,16 @@ import { addUserToGroupViaId } from 'web/lib/firebase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-dayjs.extend(utc)
-
 import { Like } from 'common/like'
 import { track } from '../service/analytics'
+import { postMessageToNative } from 'web/components/native-message-listener'
+
+dayjs.extend(utc)
 
 export const users = coll<User>('users')
 export const privateUsers = coll<PrivateUser>('private-users')
 
 export type { User }
-
-export type UserAndPrivateUser = { user: User; privateUser: PrivateUser }
 
 export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
@@ -47,6 +50,7 @@ export async function getUser(userId: string) {
 }
 
 export async function getPrivateUser(userId: string) {
+  // TODO: are we recreating these users a la Polaris or continuing to delete them a la Fede?
   /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
   return (await getDoc(doc(privateUsers, userId))).data()!
 }
@@ -190,11 +194,22 @@ export async function setCachedReferralInfoForUser(user: User | null) {
 }
 
 export async function firebaseLogin() {
+  if ((window as any).isNative) {
+    // Post the message back to expo
+    postMessageToNative('googleLoginClicked', {})
+    return
+  }
   const provider = new GoogleAuthProvider()
-  return signInWithPopup(auth, provider)
+  return signInWithPopup(auth, provider).then(async (result) => {
+    return result
+  })
 }
 
 export async function firebaseLogout() {
+  if ((window as any).isNative) {
+    // Post the message back to expo
+    postMessageToNative('signOut', {})
+  }
   await auth.signOut()
 }
 
@@ -343,7 +358,8 @@ export function saveUserEvent(
 }
 
 export const getUsersBlockFacetFilters = (
-  privateUser: PrivateUser | undefined | null
+  privateUser: PrivateUser | undefined | null,
+  excludeGroupSlugs?: boolean
 ) => {
   let facetFilters: string[] = []
   if (!privateUser) return facetFilters
@@ -357,11 +373,12 @@ export const getUsersBlockFacetFilters = (
       (blockedUserId) => `creatorId:-${blockedUserId}`
     )
   )
-  facetFilters = facetFilters.concat(
-    privateUser.blockedGroupSlugs.map(
-      (blockedUserId) => `groupSlugs:-${blockedUserId}`
+  if (!excludeGroupSlugs)
+    facetFilters = facetFilters.concat(
+      privateUser.blockedGroupSlugs.map(
+        (blockedUserId) => `groupSlugs:-${blockedUserId}`
+      )
     )
-  )
   facetFilters = facetFilters.concat(
     privateUser.blockedContractIds.map(
       (blockedUserId) => `id:-${blockedUserId}`

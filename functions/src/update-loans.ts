@@ -5,7 +5,7 @@ import { getValues, log, payUser, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
-import { getLoanUpdates } from '../../common/loans'
+import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 
@@ -51,13 +51,20 @@ async function updateLoansCore() {
     contracts.map((contract) => [contract.id, contract])
   )
   const betsByUser = groupBy(bets, (bet) => bet.userId)
-  const { betUpdates, userPayouts } = getLoanUpdates(
-    users,
-    contractsById,
-    portfolioByUser,
-    betsByUser
-  )
 
+  const eligibleUsers = users.filter((u) =>
+    isUserEligibleForLoan(portfolioByUser[u.id])
+  )
+  const userUpdates = eligibleUsers.map((user) => {
+    const userContractBets = groupBy(
+      betsByUser[user.id] ?? [],
+      (b) => b.contractId
+    )
+    const result = getUserLoanUpdates(userContractBets, contractsById)
+    return { user, result }
+  })
+
+  const betUpdates = userUpdates.map((u) => u.result.updates).flat()
   log(`${betUpdates.length} bet updates.`)
 
   const betDocUpdates = betUpdates.map((update) => ({
@@ -73,20 +80,20 @@ async function updateLoansCore() {
 
   await writeAsync(firestore, betDocUpdates)
 
-  log(`${userPayouts.length} user payouts`)
+  log(`${userUpdates.length} user payouts`)
 
   await Promise.all(
-    userPayouts.map(({ user, payout }) => payUser(user.id, payout))
+    userUpdates.map(({ user, result: { payout } }) => payUser(user.id, payout))
   )
 
   const today = new Date().toDateString().replace(' ', '-')
   const key = `loan-notifications-${today}`
   await Promise.all(
-    userPayouts
+    userUpdates
       // Don't send a notification if the payout is < M$1,
       // because a M$0 loan is confusing.
-      .filter(({ payout }) => payout >= 1)
-      .map(({ user, payout }) =>
+      .filter(({ result: { payout } }) => payout >= 1)
+      .map(({ user, result: { payout } }) =>
         createLoanIncomeNotification(user, key, payout)
       )
   )

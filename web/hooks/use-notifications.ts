@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { PrivateUser } from 'common/user'
 import { Notification } from 'common/notification'
-import { getNotificationsQuery } from 'web/lib/firebase/notifications'
+import { listenForNotifications } from 'web/lib/firebase/notifications'
 import { groupBy, map, partition } from 'lodash'
-import { useFirestoreQueryData } from '@react-query-firebase/firestore'
+import { useStore } from './use-store'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -14,44 +14,28 @@ export type NotificationGroup = {
 }
 
 function useNotifications(privateUser: PrivateUser) {
-  const result = useFirestoreQueryData(
-    ['notifications-all', privateUser.id],
-    getNotificationsQuery(privateUser.id)
-  )
-
-  const notifications = useMemo(() => {
-    if (!result.data) return undefined
-    const notifications = result.data as Notification[]
-
-    return notifications.filter((n) => !n.isSeenOnHref)
-  }, [result.data])
-
-  return notifications
-}
-
-export function useUnseenNotifications(privateUser: PrivateUser) {
-  const notifications = useNotifications(privateUser)
-  return useMemo(
-    () => notifications && notifications.filter((n) => !n.isSeen),
-    [notifications]
-  )
+  return useStore(privateUser.id, listenForNotifications, {
+    prefix: 'notifications',
+  })
 }
 
 export function useGroupedNotifications(privateUser: PrivateUser) {
   const notifications = useNotifications(privateUser)
   return useMemo(() => {
-    if (notifications) return groupNotifications(notifications)
+    return notifications ? groupNotifications(notifications) : undefined
   }, [notifications])
 }
 
-export function useUnseenGroupedNotification(privateUser: PrivateUser) {
-  const notifications = useUnseenNotifications(privateUser)
+export function useUnseenNotificationCount(privateUser: PrivateUser) {
+  const notifications = useNotifications(privateUser)
   return useMemo(() => {
-    if (notifications) return groupNotifications(notifications)
+    if (!notifications) return undefined
+    const unseen = notifications.filter((n) => !n.isSeen)
+    return groupNotifications(unseen).length
   }, [notifications])
 }
 
-export function groupNotifications(notifications: Notification[]) {
+function groupNotifications(notifications: Notification[]) {
   let notificationGroups: NotificationGroup[] = []
   const notificationGroupsByDay = groupBy(notifications, (notification) =>
     new Date(notification.createdTime).toDateString()

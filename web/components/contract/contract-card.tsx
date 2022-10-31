@@ -29,7 +29,6 @@ import {
   getOutcomeProbability,
   getProbability,
   getTopAnswer,
-  ContractBetMetrics,
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
@@ -48,6 +47,7 @@ import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
+import { ContractMetrics } from 'common/calculate-metrics'
 
 export function ContractCard(props: {
   contract: Contract
@@ -395,10 +395,12 @@ export function ContractCardProbChange(props: {
   contract: CPMMContract
   noLinkAvatar?: boolean
   showPosition?: boolean
+  showDailyProfit?: boolean
   className?: string
   showImage?: boolean
 }) {
-  const { noLinkAvatar, showPosition, className, showImage } = props
+  const { noLinkAvatar, showPosition, showDailyProfit, className, showImage } =
+    props
   const contract = (useContract(props.contract.id) ??
     props.contract) as CPMMBinaryContract
 
@@ -417,7 +419,11 @@ export function ContractCardProbChange(props: {
       )}
     >
       {showPosition && metrics && metrics.hasShares ? (
-        <MetricsFooter contract={contract} metrics={metrics} />
+        <MetricsFooter
+          contract={contract}
+          metrics={metrics}
+          showDailyProfit={showDailyProfit}
+        />
       ) : (
         <Spacer h={2} />
       )}
@@ -427,11 +433,14 @@ export function ContractCardProbChange(props: {
 
 function MetricsFooter(props: {
   contract: CPMMContract
-  metrics: ContractBetMetrics
+  metrics: ContractMetrics
+  showDailyProfit?: boolean
 }) {
-  const { contract, metrics } = props
-  const { profit, totalShares, maxSharesOutcome } = metrics
+  const { contract, metrics, showDailyProfit } = props
+  const { totalShares, maxSharesOutcome, from } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
+  const dailyProfit = from ? from.day.profit : 0
+  const profit = showDailyProfit ? dailyProfit : metrics.profit
 
   const yesOutcomeLabel =
     contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
@@ -445,7 +454,7 @@ function MetricsFooter(props: {
       )}
     >
       <Col className="w-1/2">
-        <span className="text-greyscale-4 text-xs"> Your Position </span>
+        <span className="text-greyscale-4 text-xs"> Your position </span>
         <div className="text-greyscale-6 text-sm">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
@@ -457,7 +466,10 @@ function MetricsFooter(props: {
         </div>
       </Col>
       <Col className="w-1/2">
-        <div className="text-greyscale-4 text-xs"> Your Total Profit </div>
+        <div className="text-greyscale-4 text-xs">
+          {' '}
+          Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
+        </div>
         <div
           className={clsx(
             'text-sm font-semibold',

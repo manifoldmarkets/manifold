@@ -6,6 +6,7 @@ import Script from 'next/script'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import Welcome from 'web/components/onboarding/welcome'
+import { NativeMessageListener } from 'web/components/native-message-listener'
 import { Analytics } from '@vercel/analytics/react'
 
 function firstLine(msg: string) {
@@ -76,8 +77,10 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           key="image2"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="manifest" href="manifest.json" />
       </Head>
       <AuthProvider serverUser={pageProps.auth}>
+        <NativeMessageListener />
         <QueryClientProvider client={queryClient}>
           <Welcome />
           <Component {...pageProps} />

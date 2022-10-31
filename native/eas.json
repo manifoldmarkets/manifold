@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 2.3.0"
+  },
+  "build": {
+    "development": {
+      "channel": "dev",
+      "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
+      },
+      "android": {"credentialsSource": "local"},
+      "ios": {}
+    },
+    "preview": {
+      "channel": "preview",
+      "distribution": "internal",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+      },
+      "android": {"credentialsSource": "local"},
+      "ios": {}
+    },
+    "production": {
+      "channel": "default",
+      "env": {
+      "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+      },
+      "android": {"credentialsSource": "local"},
+      "ios": {}
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

@@ -12,6 +12,7 @@ import { Title } from 'web/components/widgets/title'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
+import { ReportButton } from 'web/components/buttons/report-button'
 
 export function BlockUserButton(props: { user: User }) {
   const { user } = props
@@ -75,25 +76,33 @@ export function BlockUserButton(props: { user: User }) {
             <Button color={'gray-white'} onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            {isBlocked ? (
-              <Button
-                size="sm"
-                color="gray-outline"
-                className="my-auto"
-                onClick={withTracking(unblockUser, 'unblock')}
-              >
-                Blocked
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                color="red"
-                className="my-auto"
-                onClick={withTracking(onBlock, 'block')}
-              >
-                Block User
-              </Button>
-            )}
+            <Row className={'gap-4'}>
+              <ReportButton
+                userId={user.id}
+                name={user.name}
+                noModal={true}
+                label={'user'}
+              />
+              {isBlocked ? (
+                <Button
+                  size="sm"
+                  color="gray-outline"
+                  className="my-auto"
+                  onClick={withTracking(unblockUser, 'unblock')}
+                >
+                  Blocked
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  color="red"
+                  className="my-auto"
+                  onClick={withTracking(onBlock, 'block')}
+                >
+                  Block User
+                </Button>
+              )}
+            </Row>
           </Row>
         </Col>
       </Modal>

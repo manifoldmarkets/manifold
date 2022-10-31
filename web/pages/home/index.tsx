@@ -115,11 +115,15 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     groups?.map((g) => g.slug),
     userBlockFacetFilters
   )
-  const latestPosts = useAllPosts(true, 2).filter(
-    (p) =>
-      !privateUser?.blockedUserIds.includes(p.creatorId) &&
-      !privateUser?.blockedUserIds.includes(p.creatorId)
-  )
+  const latestPosts = useAllPosts(true)
+    .filter(
+      (p) =>
+        !privateUser?.blockedUserIds.includes(p.creatorId) &&
+        !privateUser?.blockedUserIds.includes(p.creatorId)
+    )
+    // Remove "test" posts.
+    .filter((p) => !p.title.toLocaleLowerCase().split(' ').includes('test'))
+    .slice(0, 2)
 
   const [pinned, setPinned] = usePersistentState<JSX.Element[] | null>(null, {
     store: inMemoryStore(),

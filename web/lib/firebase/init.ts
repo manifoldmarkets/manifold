@@ -1,11 +1,11 @@
-import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getStorage } from 'firebase/storage'
-import { FIREBASE_CONFIG } from 'common/envs/constants'
 import {
   connectFirestoreEmulator,
   initializeFirestore,
 } from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
+import { getApp, getApps, initializeApp } from 'firebase/app'
+import { FIREBASE_CONFIG } from 'common/envs/constants'
 
 // Initialize Firebase
 export const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
