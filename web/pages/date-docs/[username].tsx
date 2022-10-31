@@ -140,7 +140,7 @@ export function DateDocPost(props: {
       {user && user.id === creator.id ? (
         <RichEditPost post={post} />
       ) : (
-        <Content content={content} />
+        <Content size="lg" content={content} />
       )}
       {contractSlug && (
         <div className="mt-4 w-full max-w-lg self-center rounded-xl bg-gradient-to-r from-blue-200 via-purple-200 to-indigo-300 p-3">

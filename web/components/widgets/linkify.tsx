@@ -3,12 +3,8 @@ import { Fragment } from 'react'
 import { SiteLink } from './site-link'
 
 // Return a JSX span, linkifying @username, and https://...
-export function Linkify(props: {
-  text: string
-  className?: string
-  gray?: boolean
-}) {
-  const { text, className, gray } = props
+export function Linkify(props: { text: string; className?: string }) {
+  const { text, className } = props
   // Replace "m1234" with "ϻ1234"
   // const mRegex = /(\W|^)m(\d+)/g
   // text = text.replace(mRegex, (_, pre, num) => `${pre}ϻ${num}`)
@@ -30,10 +26,7 @@ export function Linkify(props: {
     return (
       <>
         {whitespace}
-        <SiteLink
-          className={gray ? 'text-gray-500' : 'text-indigo-700'}
-          href={href}
-        >
+        <SiteLink className="text-indigo-700" href={href}>
           {symbol}
           {tag}
         </SiteLink>

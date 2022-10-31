@@ -22,6 +22,7 @@ export function CreatePostForm(props: { group?: Group }) {
 
   const editor = useTextEditor({
     key: `post ${group?.id || ''}`,
+    size: 'lg',
   })
 
   const isValid =
