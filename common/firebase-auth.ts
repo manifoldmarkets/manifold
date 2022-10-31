@@ -32,12 +32,15 @@ export const setFirebaseUserViaJson = async (
     return fbUser
   } catch (e) {
     if (typeof window !== 'undefined') {
-      ;(window as any).ReactNativeWebView.postMessage(
-        JSON.stringify({
-          type: 'error',
-          data: `Error setting Firebase user: ${e}`,
-        })
-      )
+      if ((window as any).isNative) {
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;(window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({
+            type: 'error',
+            data: `Error setting Firebase user: ${e}`,
+          })
+        )
+      }
     }
     console.error('deserializing', e)
     return null
