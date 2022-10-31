@@ -39,7 +39,7 @@ const addEndpointRoute = (
   ...middlewares: Middleware[]
 ) => {
   const method = endpoint.opts.method.toLowerCase() as keyof Express
-  const corsMiddleware = cors({ origin: '*' })
+  const corsMiddleware = cors({ origin: endpoint.opts.cors })
   const allMiddleware = [...middlewares, corsMiddleware]
   app.options(path, corsMiddleware) // preflight requests
   app[method](path, ...allMiddleware, endpoint.handler)
