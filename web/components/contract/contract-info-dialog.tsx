@@ -1,6 +1,5 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import dayjs from 'dayjs'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
@@ -31,6 +30,7 @@ import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
+import { formatTime } from 'web/lib/util/time'
 import { ReportButton } from 'web/components/buttons/report-button'
 
 export function ContractInfoDialog(props: {
@@ -48,8 +48,6 @@ export function ContractInfoDialog(props: {
   const wasUnlistedByCreator = contract.unlistedById
     ? contract.unlistedById === contract.creatorId
     : false
-
-  const formatTime = (dt: number) => dayjs(dt).format('MMM DD, YYYY hh:mm a')
 
   const {
     createdTime,

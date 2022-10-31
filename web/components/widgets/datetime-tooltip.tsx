@@ -1,10 +1,6 @@
 import { ReactNode } from 'react'
+import { formatTime } from 'web/lib/util/time'
 import { Tooltip } from './tooltip'
-
-const FORMATTER = new Intl.DateTimeFormat('default', {
-  dateStyle: 'medium',
-  timeStyle: 'long',
-})
 
 export function DateTimeTooltip(props: {
   time: number
@@ -15,7 +11,7 @@ export function DateTimeTooltip(props: {
 }) {
   const { className, time, text, noTap } = props
 
-  const formattedTime = FORMATTER.format(time)
+  const formattedTime = formatTime(time)
   const toolTip = text ? `${text} ${formattedTime}` : formattedTime
 
   return (
