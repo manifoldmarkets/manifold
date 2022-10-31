@@ -141,7 +141,7 @@ export function ContractCard(props: {
             <QuickOutcomeView contract={contract} />
           )}
         </Col>
-        <Row className={clsx('gap-1 px-4 ', children ? '' : 'mb-2')}>
+        <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}
