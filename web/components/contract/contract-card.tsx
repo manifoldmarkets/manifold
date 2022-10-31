@@ -208,7 +208,7 @@ export function BinaryResolutionOrChance(props: {
 }) {
   const { contract, large, className, probAfter } = props
   const { resolution } = contract
-  const textColor = `text-${getTextColor(contract)}`
+  const textColor = getTextColor(contract)
 
   const before = getBinaryProbPercent(contract)
   const after = probAfter && formatPercent(probAfter)
@@ -277,7 +277,7 @@ export function FreeResponseResolutionOrChance(props: {
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
-  const textColor = `text-${getTextColor(contract)}`
+  const textColor = getTextColor(contract)
 
   return (
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
@@ -317,7 +317,7 @@ export function NumericResolutionOrExpectation(props: {
 }) {
   const { contract, className } = props
   const { resolution } = contract
-  const textColor = `text-${getTextColor(contract)}`
+  const textColor = getTextColor(contract)
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)

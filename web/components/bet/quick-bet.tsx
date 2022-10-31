@@ -558,7 +558,7 @@ export function getTextColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? '#c7d2fe'
+    return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? 'text-indigo-200'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
