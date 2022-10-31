@@ -50,6 +50,7 @@ export function ProfitChangeTable(props: {
             key={contract.id}
             contract={contract}
             showPosition
+            showDailyProfit
           />
         ))}
       </Col>
@@ -59,6 +60,7 @@ export function ProfitChangeTable(props: {
             key={contract.id}
             contract={contract}
             showPosition
+            showDailyProfit
           />
         ))}
       </Col>
@@ -103,6 +105,7 @@ export function ProbChangeTable(props: {
             key={contract.id}
             contract={contract}
             showPosition
+            showDailyProfit
           />
         ))}
       </Col>
@@ -112,6 +115,7 @@ export function ProbChangeTable(props: {
             key={contract.id}
             contract={contract}
             showPosition
+            showDailyProfit
           />
         ))}
       </Col>
