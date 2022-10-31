@@ -56,7 +56,7 @@ import { Select } from '../widgets/select'
 import { Table } from '../widgets/table'
 import { SellRow } from './sell-row'
 
-type BetSort = 'newest' | 'profit' | 'closeTime' | 'value'
+type BetSort = 'newest' | 'profit' | 'loss' | 'closeTime' | 'value'
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const CONTRACTS_PER_PAGE = 50
@@ -138,6 +138,7 @@ export function BetsList(props: { user: User }) {
   }
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     profit: (c) => contractsMetrics[c.id].profit,
+    loss: (c) => -contractsMetrics[c.id].profit,
     value: (c) => contractsMetrics[c.id].payout,
     newest: (c) =>
       Math.max(...contractBets[c.id].map((bet) => bet.createdTime)),
@@ -228,6 +229,7 @@ export function BetsList(props: { user: User }) {
             <option value="newest">Recent</option>
             <option value="value">Value</option>
             <option value="profit">Profit</option>
+            <option value="loss">Loss</option>
             <option value="closeTime">Close date</option>
           </Select>
         </Row>
