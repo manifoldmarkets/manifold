@@ -19,7 +19,7 @@ import { APIError, newEndpoint, validate } from './api'
 import { Group } from '../../common/group'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from '../../common/economy'
 import { getDefaultNotificationPreferences } from '../../common/user-notification-preferences'
-import { removeUndefinedProps } from 'common/util/object'
+import { removeUndefinedProps } from '../../common/util/object'
 
 const bodySchema = z.object({
   deviceToken: z.string().optional(),
