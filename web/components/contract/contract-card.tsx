@@ -105,7 +105,7 @@ export function ContractCard(props: {
       <Col className="relative flex-1 gap-1 pt-2">
         <Row className="justify-between px-4 ">
           <AvatarDetails contract={contract} noLink={noLinkAvatar} />
-          <Row>
+          <Row className="gap-1">
             {pinned && <FeaturedPill />}
             {isNew && <NewContractBadge />}
           </Row>
