@@ -211,7 +211,13 @@ export function CommentActions(props: {
           <ReportButton
             userId={comment.userId}
             label={'comment'}
-            icon={<FlagIcon className={'h-5 w-5 text-gray-500'} />}
+            icon={
+              <FlagIcon
+                className={
+                  'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6 h-5 w-5'
+                }
+              />
+            }
           />
         </Tooltip>
       )}
