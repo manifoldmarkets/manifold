@@ -48,35 +48,25 @@ export const computeInvestmentValueCustomProb = (
 }
 
 export const computeElasticity = (
-  bets: Bet[],
+  unfilledBets: LimitBet[],
   contract: Contract,
   betAmount = 50
 ) => {
   const { mechanism, outcomeType } = contract
   return mechanism === 'cpmm-1' &&
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC')
-    ? computeBinaryCpmmElasticity(bets, contract, betAmount)
+    ? computeBinaryCpmmElasticity(unfilledBets, contract, betAmount)
     : computeDpmElasticity(contract, betAmount)
 }
 
 export const computeBinaryCpmmElasticity = (
-  bets: Bet[],
+  unfilledBets: LimitBet[],
   contract: CPMMContract,
   betAmount: number
 ) => {
-  const limitBets = bets
-    .filter(
-      (b) =>
-        !b.isFilled &&
-        !b.isSold &&
-        !b.isRedemption &&
-        !b.sale &&
-        !b.isCancelled &&
-        b.limitProb !== undefined
-    )
-    .sort((a, b) => a.createdTime - b.createdTime) as LimitBet[]
+  const sortedBets = unfilledBets.sort((a, b) => a.createdTime - b.createdTime)
 
-  const userIds = uniq(limitBets.map((b) => b.userId))
+  const userIds = uniq(unfilledBets.map((b) => b.userId))
   // Assume all limit orders are good.
   const userBalances = Object.fromEntries(
     userIds.map((id) => [id, Number.MAX_SAFE_INTEGER])
@@ -87,7 +77,7 @@ export const computeBinaryCpmmElasticity = (
     betAmount,
     contract,
     undefined,
-    limitBets,
+    sortedBets,
     userBalances
   )
   const resultYes = getCpmmProbability(poolY, pY)
@@ -97,7 +87,7 @@ export const computeBinaryCpmmElasticity = (
     betAmount,
     contract,
     undefined,
-    limitBets,
+    sortedBets,
     userBalances
   )
   const resultNo = getCpmmProbability(poolN, pN)
@@ -166,7 +156,7 @@ export const computeVolume = (contractBets: Bet[], since: number) => {
   )
 }
 
-const calculateProbChangeSince = (
+export const calculateProbChange = (
   prob: number,
   descendingBets: Bet[],
   since: number
@@ -182,19 +172,6 @@ const calculateProbChangeSince = (
   }
 
   return prob - betBeforeSince.probAfter
-}
-
-export const calculateProbChanges = (prob: number, descendingBets: Bet[]) => {
-  const now = Date.now()
-  const yesterday = now - DAY_MS
-  const weekAgo = now - 7 * DAY_MS
-  const monthAgo = now - 30 * DAY_MS
-
-  return {
-    day: calculateProbChangeSince(prob, descendingBets, yesterday),
-    week: calculateProbChangeSince(prob, descendingBets, weekAgo),
-    month: calculateProbChangeSince(prob, descendingBets, monthAgo),
-  }
 }
 
 export const calculateCreatorVolume = (userContracts: Contract[]) => {
