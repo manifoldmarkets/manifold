@@ -1,6 +1,5 @@
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import dayjs from 'dayjs'
 import { useState } from 'react'
 import { capitalize } from 'lodash'
 import ChallengeIcon from 'web/lib/icons/challenge-icon'
