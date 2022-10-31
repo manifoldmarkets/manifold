@@ -13,6 +13,8 @@ export const NativeMessageListener = () => {
   const router = useRouter()
 
   const handleNativeMessage = async (e: any) => {
+    if (typeof window === 'undefined') return
+    if (!(window as any).isNative) return
     let event
     try {
       event = JSON.parse(e.data)
