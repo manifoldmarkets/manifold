@@ -200,7 +200,7 @@ export default function GroupPage(props: {
                   defaultFilter={suggestedFilter}
                   additionalFilter={{
                     groupSlug: group.slug,
-                    facetFilters: getUsersBlockFacetFilters(privateUser),
+                    facetFilters: getUsersBlockFacetFilters(privateUser, true),
                   }}
                   persistPrefix={`group-${group.slug}`}
                   includeProbSorts
