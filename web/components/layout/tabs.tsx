@@ -21,8 +21,6 @@ type TabProps = {
   onClick?: (tabTitle: string, index: number) => void
   className?: string
   currentPageForAnalytics?: string
-  overrideIndex?: number
-  setOverrideIndexBack?: () => void
 }
 
 export function ControlledTabs(props: TabProps & { activeIndex: number }) {
@@ -90,7 +88,13 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   )
 }
 
-export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
+export function OverrideableTabs(
+  props: TabProps & {
+    overrideIndex: number | undefined
+    setOverrideIndexBack: () => void
+    defaultIndex?: number
+  }
+) {
   const {
     defaultIndex,
     onClick,
@@ -100,11 +104,26 @@ export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
   } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
   useEffect(() => {
-    if (overrideIndex != undefined && setOverrideIndexBack != undefined) {
+    if (overrideIndex != undefined) {
       setActiveIndex(overrideIndex)
       setOverrideIndexBack()
     }
-  }, [overrideIndex])
+  }, [overrideIndex, setOverrideIndexBack])
+  return (
+    <ControlledTabs
+      {...rest}
+      activeIndex={activeIndex}
+      onClick={(title, i) => {
+        setActiveIndex(i)
+        onClick?.(title, i)
+      }}
+    />
+  )
+}
+
+export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
+  const { defaultIndex, onClick, ...rest } = props
+  const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
   return (
     <ControlledTabs
       {...rest}

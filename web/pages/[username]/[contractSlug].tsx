@@ -180,6 +180,7 @@ export function ContractPageContent(
     }
     setOverrideIndex(0)
   })
+  const setOverrideIndexBack = useEvent(() => setOverrideIndex(undefined))
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
   return (
@@ -268,7 +269,7 @@ export function ContractPageContent(
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}
             overrideIndex={overrideIndex}
-            setOverrideIndexBack={() => setOverrideIndex(undefined)}
+            setOverrideIndexBack={setOverrideIndexBack}
           />
         </div>
       </Col>
