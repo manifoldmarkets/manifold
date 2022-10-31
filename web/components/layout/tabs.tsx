@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -21,6 +21,8 @@ type TabProps = {
   onClick?: (tabTitle: string, index: number) => void
   className?: string
   currentPageForAnalytics?: string
+  overrideIndex?: number
+  setOverrideIndexBack?: () => void
 }
 
 export function ControlledTabs(props: TabProps & { activeIndex: number }) {
@@ -89,8 +91,20 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
 }
 
 export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
-  const { defaultIndex, onClick, ...rest } = props
+  const {
+    defaultIndex,
+    onClick,
+    overrideIndex,
+    setOverrideIndexBack,
+    ...rest
+  } = props
   const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
+  useEffect(() => {
+    if (overrideIndex != undefined && setOverrideIndexBack != undefined) {
+      setActiveIndex(overrideIndex)
+      setOverrideIndexBack()
+    }
+  }, [overrideIndex])
   return (
     <ControlledTabs
       {...rest}

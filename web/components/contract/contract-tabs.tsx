@@ -45,6 +45,8 @@ export function ContractTabs(props: {
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
+  overrideIndex?: number
+  setOverrideIndexBack?: () => void
 }) {
   const {
     contract,
@@ -54,6 +56,8 @@ export function ContractTabs(props: {
     answerResponse,
     onCancelAnswerResponse,
     blockedUserIds,
+    overrideIndex,
+    setOverrideIndexBack,
   } = props
 
   const yourTrades = (
@@ -88,7 +92,13 @@ export function ContractTabs(props: {
   )
 
   return (
-    <Tabs className="mb-4" currentPageForAnalytics={'contract'} tabs={tabs} />
+    <Tabs
+      className="mb-4"
+      currentPageForAnalytics={'contract'}
+      tabs={tabs}
+      overrideIndex={overrideIndex}
+      setOverrideIndexBack={setOverrideIndexBack}
+    />
   )
 }
 

@@ -168,6 +168,9 @@ export function ContractPageContent(
     undefined
   )
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
+  const [overrideIndex, setOverrideIndex] = useState<undefined | number>(
+    undefined
+  )
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
@@ -175,6 +178,7 @@ export function ContractPageContent(
     } else {
       console.error('no ref to scroll to')
     }
+    setOverrideIndex(0)
   })
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
@@ -243,11 +247,6 @@ export function ContractPageContent(
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
-              {/*<ContractTopTrades*/}
-              {/*  contract={contract}*/}
-              {/*  bets={bets}*/}
-              {/*  comments={comments}*/}
-              {/*/>*/}
             </div>
             <Spacer h={12} />
           </>
@@ -268,6 +267,8 @@ export function ContractPageContent(
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}
+            overrideIndex={overrideIndex}
+            setOverrideIndexBack={() => setOverrideIndex(undefined)}
           />
         </div>
       </Col>
