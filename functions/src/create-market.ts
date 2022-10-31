@@ -143,7 +143,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   }
   const user = userDoc.data() as User
 
-  const ante = FIXED_ANTE
+  const ante = user.username === 'DavidChee' ? 500 : FIXED_ANTE
+
   const deservesFreeMarket =
     (user?.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
   // TODO: this is broken because it's not in a transaction

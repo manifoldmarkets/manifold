@@ -1,4 +1,4 @@
-import { Dictionary, groupBy, last, partition, sum, sumBy, uniq } from 'lodash'
+import { Dictionary, last, partition, sum, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetrics } from './calculate'
 import { Bet, LimitBet } from './bet'
 import {
@@ -235,16 +235,15 @@ export const calculateNewProfit = (
 }
 
 export const calculateMetricsByContract = (
-  bets: Bet[],
+  betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>
 ) => {
-  const betsByContract = groupBy(bets, (bet) => bet.contractId)
-  const unresolvedContracts = Object.keys(betsByContract)
+  const unresolvedContracts = Object.keys(betsByContractId)
     .map((cid) => contractsById[cid])
     .filter((c) => c && !c.isResolved)
 
   return unresolvedContracts.map((c) => {
-    const bets = betsByContract[c.id] ?? []
+    const bets = betsByContractId[c.id] ?? []
     const current = getContractBetMetrics(c, bets)
 
     let periodMetrics

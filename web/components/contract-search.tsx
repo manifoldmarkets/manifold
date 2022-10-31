@@ -18,6 +18,7 @@ import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
   historyStore,
+  inMemoryStore,
   urlParamStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
@@ -139,11 +140,11 @@ export function ContractSearch(props: {
     },
     !persistPrefix
       ? undefined
-      : { key: `${persistPrefix}-search`, store: historyStore() }
+      : { key: `${persistPrefix}-search`, store: inMemoryStore() }
   )
 
   const searchParams = useRef<SearchParameters | null>(null)
-  const searchParamsStore = historyStore<SearchParameters>()
+  const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
 
   useLayoutEffect(() => {
@@ -197,9 +198,16 @@ export function ContractSearch(props: {
     }
   }
 
+  // Always do first query when loading search page, unless going back in history.
+  const [firstQuery, setFirstQuery] = usePersistentState(true, {
+    key: `${persistPrefix}-first-query`,
+    store: historyStore(),
+  })
+
   const onSearchParametersChanged = useRef(
     debounce((params) => {
-      if (!isEqual(searchParams.current, params)) {
+      if (!isEqual(searchParams.current, params) || firstQuery) {
+        setFirstQuery(false)
         if (persistPrefix) {
           searchParamsStore.set(`${persistPrefix}-params`, params)
         }

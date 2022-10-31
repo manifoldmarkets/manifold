@@ -18,6 +18,8 @@ import {
   updatePrivateUser,
 } from 'web/lib/firebase/users'
 import { removeUndefinedProps } from 'common/util/object'
+import { listenForValues } from './utils'
+
 
 export function getNotificationsQuery(
   userId: string,
@@ -38,6 +40,7 @@ export function getNotificationsQuery(
     limit(NOTIFICATIONS_PER_PAGE * 10)
   )
 }
+
 
 export function getSourceIdForLinkComponent(
   sourceId: string,
@@ -139,4 +142,14 @@ export const setPushTokenRequestDenied = async (userId: string) => {
     rejectedPushNotificationsOn: Date.now(),
     interestedInPushNotifications: false,
   })
+}
+
+export function listenForNotifications(
+  userId: string,
+  setNotifictions: (notifications: Notification[]) => void
+) {
+  return listenForValues<Notification>(
+    getNotificationsQuery(userId),
+    setNotifictions
+  )
 }

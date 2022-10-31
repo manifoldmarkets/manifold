@@ -64,7 +64,12 @@ export function AuthProvider(props: {
   useEffect(() => {
     if (serverUser === undefined) {
       const cachedUser = localStorage.getItem(CACHED_USER_KEY)
-      setAuthUser(cachedUser && JSON.parse(cachedUser))
+      const parsed = cachedUser ? JSON.parse(cachedUser) : null
+      if (parsed) {
+        // Temporary: only set auth user if private user has blockedUserIds.
+        if (parsed.privateUser && parsed.privateUser.blockedUserIds)
+          setAuthUser(parsed)
+      } else setAuthUser(null)
     }
   }, [setAuthUser, serverUser])
 

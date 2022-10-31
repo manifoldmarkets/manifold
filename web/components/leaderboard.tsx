@@ -9,6 +9,7 @@ interface LeaderboardEntry {
   username: string
   name: string
   avatarUrl?: string
+  rank?: number
 }
 
 export function Leaderboard<T extends LeaderboardEntry>(props: {
@@ -20,9 +21,10 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   }[]
   className?: string
   maxToShow?: number
+  highlightUsername?: string
 }) {
   // TODO: Ideally, highlight your own entry on the leaderboard
-  const { title, columns, className } = props
+  const { title, columns, className, highlightUsername } = props
   const maxToShow = props.maxToShow ?? props.entries.length
   const entries = props.entries.slice(0, maxToShow)
   return (
@@ -44,8 +46,13 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
             </thead>
             <tbody>
               {entries.map((entry, index) => (
-                <tr key={index}>
-                  <td>{index + 1}</td>
+                <tr
+                  key={index}
+                  className={
+                    entry.username === highlightUsername ? '!bg-amber-100' : ''
+                  }
+                >
+                  <td>{entry.rank ? entry.rank : index + 1}</td>
                   <td className="max-w-[190px]">
                     <SiteLink className="relative" href={`/${entry.username}`}>
                       <Row className="items-center gap-4">

@@ -26,7 +26,6 @@ import {
 import {
   NotificationGroup,
   useGroupedNotifications,
-  useUnseenGroupedNotification,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
@@ -39,7 +38,6 @@ import {
 import { groupBy, sum, uniqBy } from 'lodash'
 import { Pagination } from 'web/components/widgets/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { SEO } from 'web/components/SEO'
@@ -58,6 +56,7 @@ import {
   getSourceIdForLinkComponent,
   getSourceUrl,
 } from 'web/lib/firebase/notifications'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -161,37 +160,32 @@ function RenderNotificationGroups(props: {
 
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
+
   const [page, setPage] = useState(0)
   const [showPushNotificationsModal, setShowPushNotificationsModal] =
     useState(false)
+
   const allGroupedNotifications = useGroupedNotifications(privateUser)
-  const unseenGroupedNotifications = useUnseenGroupedNotification(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
-    if (!allGroupedNotifications) return
+    if (!allGroupedNotifications) return undefined
+
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
-
-    const local = safeLocalStorage()
-    local?.setItem(
-      'notification-groups',
-      JSON.stringify(allGroupedNotifications)
-    )
-    return maxNotificationsToShow
+    return allGroupedNotifications.slice(start, end)
   }, [allGroupedNotifications, page])
 
-  // Set all notifications that don't fit on the first page to seen
+  const isPageVisible = useIsPageVisible()
+
+  // Mark all notifications as seen.
   useEffect(() => {
-    if (
-      paginatedGroupedNotifications &&
-      paginatedGroupedNotifications?.length >= NOTIFICATIONS_PER_PAGE
-    ) {
-      const allUnseenNotifications = unseenGroupedNotifications
-        ?.map((ng) => ng.notifications)
+    if (isPageVisible && paginatedGroupedNotifications) {
+      const notifications = paginatedGroupedNotifications
         .flat()
-      allUnseenNotifications && setNotificationsAsSeen(allUnseenNotifications)
+        .flatMap((g) => g.notifications)
+
+      markNotificationsAsSeen(notifications)
     }
-  }, [paginatedGroupedNotifications, unseenGroupedNotifications])
+  }, [isPageVisible, paginatedGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -248,10 +242,6 @@ function IncomeNotificationGroupItem(props: {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
-
-  useEffect(() => {
-    setNotificationsAsSeen(notifications)
-  }, [notifications])
 
   useEffect(() => {
     if (expanded) setHighlighted(false)
@@ -430,10 +420,6 @@ function IncomeNotificationItem(props: {
   const isUniqueBettorBonus = sourceType === 'bonus'
   const userLinks: MultiUserLinkInfo[] =
     isTip || isUniqueBettorBonus ? data?.uniqueUsers ?? [] : []
-
-  useEffect(() => {
-    setNotificationsAsSeen([notification])
-  }, [notification])
 
   function reasonAndLink(simple: boolean) {
     const { sourceText } = notification
@@ -614,10 +600,6 @@ function NotificationGroupItem(props: {
   }
 
   useEffect(() => {
-    setNotificationsAsSeen(notifications)
-  }, [notifications])
-
-  useEffect(() => {
     if (expanded) setHighlighted(false)
   }, [expanded])
 
@@ -722,10 +704,6 @@ function NotificationItem(props: {
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted] = useState(!notification.isSeen)
-
-  useEffect(() => {
-    setNotificationsAsSeen([notification])
-  }, [notification])
 
   // TODO Any new notification should be its own component
   if (reason === 'bet_fill') {
@@ -1147,7 +1125,7 @@ function ContractResolvedNotification(props: {
   )
 }
 
-export const setNotificationsAsSeen = async (notifications: Notification[]) => {
+const markNotificationsAsSeen = async (notifications: Notification[]) => {
   const unseenNotifications = notifications.filter((n) => !n.isSeen)
   return await Promise.all(
     unseenNotifications.map((n) => {

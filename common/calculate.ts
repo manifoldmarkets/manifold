@@ -178,8 +178,6 @@ function getDpmInvested(yourBets: Bet[]) {
   })
 }
 
-export type ContractBetMetrics = ReturnType<typeof getContractBetMetrics>
-
 export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
   const { resolution } = contract
   const isCpmm = contract.mechanism === 'cpmm-1'
@@ -224,6 +222,14 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     (shares) => !floatingEqual(shares, 0)
   )
 
+  const { YES: yesShares, NO: noShares } = totalShares
+  const hasYesShares = yesShares >= 1
+  const hasNoShares = noShares >= 1
+
+  const maxSharesOutcome = hasShares
+    ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
+    : null
+
   return {
     invested,
     loan,
@@ -232,6 +238,9 @@ export function getContractBetMetrics(contract: Contract, yourBets: Bet[]) {
     profitPercent,
     totalShares,
     hasShares,
+    hasYesShares,
+    hasNoShares,
+    maxSharesOutcome,
   }
 }
 
@@ -244,6 +253,9 @@ export function getContractBetNullMetrics() {
     profitPercent: 0,
     totalShares: {} as { [outcome: string]: number },
     hasShares: false,
+    hasYesShares: false,
+    hasNoShares: false,
+    maxSharesOutcome: null,
   }
 }
 

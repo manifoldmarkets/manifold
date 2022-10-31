@@ -3,7 +3,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 
 export default function Document() {
   return (
-    <Html lang="en" data-theme="mantic" className="min-h-screen">
+    <Html lang="en">
       <Head>
         <link rel="icon" href={ENV_CONFIG.faviconPath} />
         <link
@@ -23,7 +23,7 @@ export default function Document() {
           crossOrigin="anonymous"
         />
       </Head>
-      <body className="font-readex-pro bg-greyscale-1 min-h-screen">
+      <body className="font-readex-pro bg-greyscale-1">
         <Main />
         <NextScript />
       </body>

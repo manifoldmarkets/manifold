@@ -10,7 +10,9 @@ export * from './on-create-bet'
 export * from './on-create-comment-on-contract'
 export * from './on-create-comment-on-post'
 export * from './on-view'
-export { scheduleUpdateMetrics } from './update-metrics'
+export { scheduleUpdateContractMetrics } from './update-contract-metrics'
+export { scheduleUpdateUserMetrics } from './update-user-metrics'
+export { scheduleUpdateGroupMetrics } from './update-group-metrics'
 export * from './update-stats'
 export * from './update-loans'
 export * from './backup-db'
@@ -79,7 +81,9 @@ import { getcurrentuser } from './get-current-user'
 import { acceptchallenge } from './accept-challenge'
 import { createpost } from './create-post'
 import { savetwitchcredentials } from './save-twitch-credentials'
-import { updatemetrics } from './update-metrics'
+import { updatecontractmetrics } from './update-contract-metrics'
+import { updateusermetrics } from './update-user-metrics'
+import { updategroupmetrics } from './update-group-metrics'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
 
@@ -111,8 +115,9 @@ const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
-const updateMetricsFunction = toCloudFunction(updatemetrics)
-const testScheduledFunction = toCloudFunction(testscheduledfunction)
+const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
+const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
+const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 
 export {
   healthFunction as health,
@@ -140,6 +145,8 @@ export {
   createCommentFunction as createcomment,
   addCommentBounty as addcommentbounty,
   awardCommentBounty as awardcommentbounty,
-  updateMetricsFunction as updatemetrics,
   testScheduledFunction as testscheduledfunction,
+  updateContractMetricsFunction as updatecontractmetrics,
+  updateUserMetricsFunction as updateusermetrics,
+  updateGroupMetricsFunction as updategroupmetrics,
 }

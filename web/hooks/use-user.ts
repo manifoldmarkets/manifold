@@ -3,17 +3,17 @@ import {
   useFirestoreDocumentData,
   useFirestoreQueryData,
 } from '@react-query-firebase/firestore'
-import { useQueryClient } from 'react-query'
 import { sortBy } from 'lodash'
 
 import { doc, DocumentData } from 'firebase/firestore'
-import { getUser, User, users } from 'web/lib/firebase/users'
+import { listenForUser, users } from 'web/lib/firebase/users'
 import { AuthContext } from 'web/components/auth-context'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { getUserContractMetricsQuery } from 'web/lib/firebase/contract-metrics'
 import { buildArray, filterDefined } from 'common/util/array'
 import { CPMMBinaryContract } from 'common/contract'
 import { useContracts } from './use-contracts'
+import { useStore, useStoreItems } from './use-store'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -25,27 +25,16 @@ export const usePrivateUser = () => {
   return authUser ? authUser.privateUser : authUser
 }
 
-export const useUserById = (userId = '_') => {
-  const result = useFirestoreDocumentData<DocumentData, User>(
-    ['users', userId],
-    doc(users, userId),
-    { subscribe: true, includeMetadataChanges: true }
-  )
-
-  if (userId === '_') return undefined
-
-  return result.isLoading ? undefined : result.data
+export const useUserById = (userId: string | undefined) => {
+  return useStore(userId, listenForUser)
 }
 
-export const usePrefetchUser = (userId: string) => {
-  return usePrefetchUsers([userId])[0]
+export const useUsersById = (userIds: string[]) => {
+  return useStoreItems(userIds, listenForUser)
 }
 
 export const usePrefetchUsers = (userIds: string[]) => {
-  const queryClient = useQueryClient()
-  return userIds.map((userId) =>
-    queryClient.prefetchQuery(['users', userId], () => getUser(userId))
-  )
+  useStoreItems(userIds, listenForUser)
 }
 
 // Note: we don't filter out blocked contracts/users/groups here like we do in unbet-on contracts

@@ -225,6 +225,9 @@ export default function GroupPage(props: {
               title: 'Leaderboards',
               content: (
                 <Col>
+                  <div className="mb-4 text-gray-500">
+                    Updated every 15 minutes
+                  </div>
                   <div className="mt-4 flex flex-col gap-8 px-4 md:flex-row">
                     <GroupLeaderboard
                       topUsers={topTraders}
