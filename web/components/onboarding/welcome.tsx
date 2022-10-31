@@ -202,7 +202,7 @@ function Page3() {
       <Title className="mx-auto" text="Let's start predicting!" />
       <p className="mb-8">
         As a thank you for signing up, we’ve sent you{' '}
-        <span className="font-normal text-indigo-700">M$1000 Mana</span>{' '}
+        <span className="font-normal text-indigo-700">M$500 Mana</span>{' '}
       </p>
     </>
   )

@@ -4,7 +4,7 @@
 
 ### Do I have to pay real money in order to participate?
 
-Nope! Each account starts with a free 1000 mana (or M$1000 for short). If you invest it wisely, you can increase your total without ever needing to put any real money into the site.
+Nope! Each account starts with a free 500 mana (or M$500 for short). If you invest it wisely, you can increase your total without ever needing to put any real money into the site.
 
 ### Can M$ be sold for real money?
 
