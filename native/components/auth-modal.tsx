@@ -19,6 +19,8 @@ import {
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto'
 import { FontAwesome5 } from '@expo/vector-icons'
 import { OAuthProvider } from 'firebase/auth'
+import { signInWithCredential } from '@firebase/auth'
+import { auth } from 'App'
 
 export const AuthModal = (props: {
   modalVisible: boolean
@@ -32,6 +34,8 @@ export const AuthModal = (props: {
       const { credential, data } = await loginWithApple()
       console.log('credential', credential)
       console.log('data', data)
+      const { user } = await signInWithCredential(auth, credential)
+      console.log('user', user)
     } catch (error: any) {
       console.error(error)
       Alert.alert('Error', 'Something went wrong. Please try again later.')

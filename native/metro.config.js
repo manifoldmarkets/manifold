@@ -35,6 +35,7 @@ module.exports = {
       },
     }),
   },
+  sourceExts: [...defaultConfig.sourceExts, 'js', 'jsx', 'ts', 'tsx'],
   resolver: {
     ...defaultConfig.resolver,
     extraNodeModules: new Proxy(extraNodeModules, {
