@@ -80,7 +80,7 @@ export default function App() {
   )
   const [isWebViewLoading, setIsWebViewLoading] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const webview = useRef<WebView>()
+  const webview = useRef<WebView | undefined>()
   const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
   const isIOS = Platform.OS === 'ios'
   const useWebKit = isIOS
@@ -441,6 +441,7 @@ export default function App() {
         <AuthModal
           modalVisible={showAuthModal}
           setModalVisible={setShowAuthModal}
+          webview={webview}
         />
       </SafeAreaView>
     </>

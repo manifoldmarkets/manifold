@@ -18,15 +18,17 @@ import {
 } from 'expo-apple-authentication'
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto'
 import { FontAwesome5 } from '@expo/vector-icons'
-import { OAuthProvider } from 'firebase/auth'
+import { OAuthProvider, updateEmail, updateProfile } from 'firebase/auth'
 import { signInWithCredential } from '@firebase/auth'
-import { auth } from 'App'
+import { auth } from '../App'
+import WebView from 'react-native-webview'
 
 export const AuthModal = (props: {
   modalVisible: boolean
   setModalVisible: (visible: boolean) => void
+  webview: React.RefObject<WebView | undefined>
 }) => {
-  const { modalVisible, setModalVisible } = props
+  const { modalVisible, setModalVisible, webview } = props
   const appleAuthAvailable = useAppleAuthentication()
 
   async function triggerLoginWithApple() {
@@ -36,6 +38,17 @@ export const AuthModal = (props: {
       console.log('data', data)
       const { user } = await signInWithCredential(auth, credential)
       console.log('user', user)
+      if (data?.email && !user.email) {
+        await updateEmail(user, data.email)
+      }
+      if (data?.displayName && !user.displayName) {
+        await updateProfile(user, { displayName: data.displayName })
+      }
+      const fbUser = user.toJSON()
+      console.log('fbUser', JSON.stringify(fbUser))
+      webview.current?.postMessage(
+        JSON.stringify({ type: 'nativeFbUser', data: fbUser })
+      )
     } catch (error: any) {
       console.error(error)
       Alert.alert('Error', 'Something went wrong. Please try again later.')
