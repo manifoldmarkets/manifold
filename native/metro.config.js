@@ -14,10 +14,12 @@ const defaultConfig = getDefaultConfig(projectRoot)
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common'),
   components: path.resolve(__dirname + '/components'),
+  root: path.resolve(__dirname + '/'),
 }
 defaultConfig.watchFolders = [
   path.resolve(__dirname + '/../common'),
   path.resolve(__dirname + '/components'),
+  path.resolve(__dirname + '/'),
   // workspaceRoot,
 ]
 defaultConfig.resolver.nodeModulesPaths = [
@@ -35,7 +37,6 @@ module.exports = {
       },
     }),
   },
-  sourceExts: [...defaultConfig.sourceExts, 'js', 'jsx', 'ts', 'tsx'],
   resolver: {
     ...defaultConfig.resolver,
     extraNodeModules: new Proxy(extraNodeModules, {
@@ -46,5 +47,12 @@ module.exports = {
           : path.join(process.cwd(), `node_modules/${name}`),
     }),
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
+    sourceExts: [
+      ...defaultConfig.resolver.sourceExts,
+      'js',
+      'jsx',
+      'ts',
+      'tsx',
+    ],
   },
 }

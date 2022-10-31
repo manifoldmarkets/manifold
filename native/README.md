@@ -58,6 +58,7 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Troubleshooting
 - getting an errors on build/install? like `Error: spawn .../manifold/native/android/gradlew EACCES`
-  - Delete the `android` and `ios` folders in `native/` and try again.
+  - Delete the `android` or `ios` folders or run `yarn clean` and try again.
 - environment variables not working? like `process.env.API_URL` is undefined
   - Try running `yarn clear` and ctrl+c to clear the env variable and try again
+- When in doubt: `yarn clean`
