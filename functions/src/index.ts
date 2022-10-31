@@ -116,6 +116,7 @@ const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
 const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
+const testScheduledFunction = toCloudFunction(testscheduledfunction)
 const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 

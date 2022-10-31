@@ -1,15 +1,8 @@
 import React from 'react'
-import {
-  getUserByUsername,
-  getUserAndPrivateUser,
-  User,
-} from 'web/lib/firebase/users'
+import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
 import Custom404 from '../404'
 import { useTracking } from 'web/hooks/use-tracking'
-import { GetServerSideProps } from 'next'
-import { authenticateOnServer } from 'web/lib/firebase/server-auth'
-import { UserAndPrivateUser } from 'common/user'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { usePrivateUser } from 'web/hooks/use-user'
 
