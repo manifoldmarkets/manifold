@@ -238,11 +238,7 @@ export const calculateMetricsByContract = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>
 ) => {
-  const unresolvedContracts = Object.keys(betsByContractId)
-    .map((cid) => contractsById[cid])
-    .filter((c) => c && !c.isResolved)
-
-  return unresolvedContracts.map((c) => {
+  return Object.values(contractsById).map((c) => {
     const bets = betsByContractId[c.id] ?? []
     const current = getContractBetMetrics(c, bets)
 
