@@ -26,6 +26,9 @@ import { AwardBountyButton } from 'web/components/buttons/award-bounty-button'
 import { ReplyIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { ReportButton } from 'web/components/buttons/report-button'
+import { FlagIcon } from '@heroicons/react/outline'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -188,8 +191,10 @@ export function CommentActions(props: {
   contract: Contract
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
+  const isNative = typeof window !== 'undefined' && (window as any).isNative
+
   return (
-    <Row className="grow justify-end">
+    <Row className="grow items-center justify-end">
       {onReplyClick && (
         <IconButton size={'xs'} onClick={() => onReplyClick(comment)}>
           <ReplyIcon className="h-5 w-5" />
@@ -200,6 +205,21 @@ export function CommentActions(props: {
       )}
       {(contract.openCommentBounties ?? 0) > 0 && (
         <AwardBountyButton comment={comment} contract={contract} />
+      )}
+      {isNative && (
+        <Tooltip text={'Report comment'}>
+          <ReportButton
+            userId={comment.userId}
+            label={'comment'}
+            icon={
+              <FlagIcon
+                className={
+                  'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6 h-5 w-5'
+                }
+              />
+            }
+          />
+        </Tooltip>
       )}
     </Row>
   )
@@ -263,7 +283,7 @@ export const FeedComment = memo(function FeedComment(props: {
       </Col>
       <div
         className={clsx(
-          'z-1 absolute -mt-1 -ml-5 h-full w-[calc(100%+2rem)] rounded-lg',
+          'z-1 absolute -mt-1 -ml-1 h-full w-full rounded-lg transition-colors',
           highlighted ? 'bg-indigo-50' : hover ? 'bg-greyscale-1' : ''
         )}
       />

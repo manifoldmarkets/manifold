@@ -19,7 +19,7 @@ export function FeedLiquidity(props: {
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const bettor = isBeforeJune2022 ? undefined : useUserById(userId)
+  const bettor = isBeforeJune2022 ? undefined : useUserById(userId) ?? undefined
 
   const user = useUser()
   const isSelf = user?.id === userId

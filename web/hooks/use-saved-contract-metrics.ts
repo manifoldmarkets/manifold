@@ -1,38 +1,43 @@
 import { Bet } from 'common/bet'
 import { getContractBetMetrics } from 'common/calculate'
+import { ContractMetrics } from 'common/calculate-metrics'
 import { Contract } from 'common/contract'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { usePersistentState, storageStore } from './use-persistent-state'
+import { useUser, useUserContractMetrics } from './use-user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { inMemoryStore, usePersistentState } from './use-persistent-state'
 
 export const useSavedContractMetrics = (
   contract: Contract,
   userBets: Bet[] | undefined
 ) => {
-  const [savedMetrics, setSavedMetrics] = usePersistentState(undefined, {
+  const user = useUser()
+  const contractMetrics = useUserContractMetrics(user?.id, contract.id)
+
+  const [savedMetrics, setSavedMetrics] = usePersistentState<
+    ContractMetrics | undefined
+  >(undefined, {
     key: `contract-metrics-${contract.id}`,
-    store: inMemoryStore(),
+    store: storageStore(safeLocalStorage()),
   })
 
-  const metrics = userBets
+  const computedMetrics = userBets
     ? getContractBetMetrics(contract, userBets)
     : savedMetrics
 
+  const metrics =
+    contractMetrics || savedMetrics || computedMetrics
+      ? ({
+          ...contractMetrics,
+          ...savedMetrics,
+          // Computed metrics has a subset of the fields of contract metrics.
+          ...computedMetrics,
+        } as ContractMetrics)
+      : undefined
+
   useEffectCheckEquality(() => {
-    const local = safeLocalStorage()
-
-    // Read metrics from local storage.
-    const savedMetrics = local?.getItem(`${contract.id}-metrics`)
-    if (savedMetrics) {
-      setSavedMetrics(JSON.parse(savedMetrics))
-    }
-
-    if (metrics) {
-      // Save metrics to local storage.
-      const metricsData = JSON.stringify(metrics)
-      local?.setItem(`${contract.id}-metrics`, metricsData)
-    }
-  }, [contract.id, metrics])
+    if (metrics) setSavedMetrics(metrics)
+  }, [metrics, setSavedMetrics])
 
   return metrics
 }

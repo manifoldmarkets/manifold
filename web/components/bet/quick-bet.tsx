@@ -214,7 +214,7 @@ function BinaryQuickBetButton(props: {
   return (
     <Row
       className={clsx(
-        'absolute top-0 w-[50%] gap-1',
+        'absolute top-0 w-[50%] items-center gap-1',
         direction === 'UP' ? 'right-0 flex-row-reverse  ' : 'left-0'
       )}
       onMouseEnter={onMouseEnter}
@@ -259,7 +259,7 @@ function BinaryQuickBetButton(props: {
       ) : (
         <span
           className={clsx(
-            'text-sm font-light text-indigo-600 transition-opacity',
+            'my-auto text-sm font-light text-indigo-600 transition-opacity',
             shouldFocus ? 'opacity-100' : 'opacity-0'
           )}
         >

@@ -120,7 +120,7 @@ function getDesktopNavigation() {
 
     !IS_PRIVATE_MANIFOLD && [
       { name: 'Midterms', href: '/midterms', icon: FlagIcon },
-      { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+      { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     ]
   )
 }
@@ -155,7 +155,7 @@ function getMoreDesktopNavigation(user?: User | null) {
   // Signed in "More"
   return buildArray(
     { name: 'Tournaments', href: '/tournaments' },
-    { name: 'Leaderboards', href: '/leaderboards' },
+    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
     { name: 'Groups', href: '/groups' },
     { name: 'Refer a friend', href: '/referrals' },
     { name: 'Charity', href: '/charity' },

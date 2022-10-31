@@ -29,7 +29,6 @@ import {
   getOutcomeProbability,
   getProbability,
   getTopAnswer,
-  ContractBetMetrics,
 } from 'common/calculate'
 import { AvatarDetails, MiscDetails, ShowTime } from './contract-details'
 import { getExpectedValue, getValueFromBucket } from 'common/calculate-dpm'
@@ -46,6 +45,9 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { DAY_MS } from 'common/util/time'
+import NewContractBadge from '../new-contract-badge'
+import { ContractMetrics } from 'common/calculate-metrics'
 
 export function ContractCard(props: {
   contract: Contract
@@ -60,6 +62,7 @@ export function ContractCard(props: {
   newTab?: boolean
   showImage?: boolean
   children?: ReactNode
+  pinned?: boolean
 }) {
   const {
     showTime,
@@ -73,8 +76,10 @@ export function ContractCard(props: {
     newTab,
     showImage,
     children,
+    pinned,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
+  const { isResolved, createdTime } = contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -89,6 +94,7 @@ export function ContractCard(props: {
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
     !hideQuickBet
 
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   return (
     <Card
       className={clsx(
@@ -97,11 +103,13 @@ export function ContractCard(props: {
       )}
     >
       <Col className="relative flex-1 gap-1 pt-2">
-        <AvatarDetails
-          contract={contract}
-          className={'pl-4'}
-          noLink={noLinkAvatar}
-        />
+        <Row className="justify-between px-4 ">
+          <AvatarDetails contract={contract} noLink={noLinkAvatar} />
+          <Row className="gap-1">
+            {pinned && <FeaturedPill />}
+            {isNew && <NewContractBadge />}
+          </Row>
+        </Row>
         {/* overlay question on image */}
         {contract.coverImageUrl && showImage && (
           <div className="relative mb-2">
@@ -112,7 +120,7 @@ export function ContractCard(props: {
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
-                  'break-anywhere bg-gradient-to-t from-slate-900 px-2 pb-2 pt-12 text-xl font-semibold text-white',
+                  'break-anywhere bg-gradient-to-t from-slate-900 px-4 pb-2 pt-12 text-xl font-semibold text-white',
                   questionClass
                 )}
               >
@@ -122,12 +130,12 @@ export function ContractCard(props: {
           </div>
         )}
 
-        <Col className="gap-1 px-4 pb-1">
+        <Col className="gap-1 px-4 pb-1 ">
           {/* question is here if not overlaid on an image */}
           {(!showImage || !contract.coverImageUrl) && (
             <div
               className={clsx(
-                'break-anywhere pb-2 font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+                'break-anywhere text-greyscale-7 pb-2 font-medium',
                 questionClass
               )}
             >
@@ -387,10 +395,12 @@ export function ContractCardProbChange(props: {
   contract: CPMMContract
   noLinkAvatar?: boolean
   showPosition?: boolean
+  showDailyProfit?: boolean
   className?: string
   showImage?: boolean
 }) {
-  const { noLinkAvatar, showPosition, className, showImage } = props
+  const { noLinkAvatar, showPosition, showDailyProfit, className, showImage } =
+    props
   const contract = (useContract(props.contract.id) ??
     props.contract) as CPMMBinaryContract
 
@@ -409,7 +419,11 @@ export function ContractCardProbChange(props: {
       )}
     >
       {showPosition && metrics && metrics.hasShares ? (
-        <MetricsFooter contract={contract} metrics={metrics} />
+        <MetricsFooter
+          contract={contract}
+          metrics={metrics}
+          showDailyProfit={showDailyProfit}
+        />
       ) : (
         <Spacer h={2} />
       )}
@@ -419,11 +433,14 @@ export function ContractCardProbChange(props: {
 
 function MetricsFooter(props: {
   contract: CPMMContract
-  metrics: ContractBetMetrics
+  metrics: ContractMetrics
+  showDailyProfit?: boolean
 }) {
-  const { contract, metrics } = props
-  const { profit, totalShares, maxSharesOutcome } = metrics
+  const { contract, metrics, showDailyProfit } = props
+  const { totalShares, maxSharesOutcome, from } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
+  const dailyProfit = from ? from.day.profit : 0
+  const profit = showDailyProfit ? dailyProfit : metrics.profit
 
   const yesOutcomeLabel =
     contract.outcomeType === 'PSEUDO_NUMERIC' ? 'HIGHER' : 'YES'
@@ -437,7 +454,7 @@ function MetricsFooter(props: {
       )}
     >
       <Col className="w-1/2">
-        <span className="text-greyscale-4 text-xs"> Your Position </span>
+        <span className="text-greyscale-4 text-xs"> Your position </span>
         <div className="text-greyscale-6 text-sm">
           <span className="font-semibold">
             {maxSharesOutcome === 'YES'
@@ -449,7 +466,10 @@ function MetricsFooter(props: {
         </div>
       </Col>
       <Col className="w-1/2">
-        <div className="text-greyscale-4 text-xs"> Your Total Profit </div>
+        <div className="text-greyscale-4 text-xs">
+          {' '}
+          Your {showDailyProfit ? 'daily' : 'total'} profit{' '}
+        </div>
         <div
           className={clsx(
             'text-sm font-semibold',
@@ -464,5 +484,13 @@ function MetricsFooter(props: {
         </div>
       </Col>
     </Row>
+  )
+}
+
+export function FeaturedPill() {
+  return (
+    <div className="rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-xs text-white">
+      Featured
+    </div>
   )
 }

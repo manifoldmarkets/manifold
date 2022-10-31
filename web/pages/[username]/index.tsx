@@ -1,52 +1,49 @@
-import { useRouter } from 'next/router'
 import React from 'react'
-
-import {
-  getUserByUsername,
-  getUserAndPrivateUser,
-  User,
-  UserAndPrivateUser,
-} from 'web/lib/firebase/users'
+import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
 import Custom404 from '../404'
 import { useTracking } from 'web/hooks/use-tracking'
-import { GetServerSideProps } from 'next'
-import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { usePrivateUser } from 'web/hooks/use-user'
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const creds = await authenticateOnServer(ctx)
-  const username = ctx.params!.username as string // eslint-disable-line @typescript-eslint/no-non-null-assertion
-  const [auth, user] = (await Promise.all([
-    creds != null ? getUserAndPrivateUser(creds.uid) : null,
-    getUserByUsername(username),
-  ])) as [UserAndPrivateUser | null, User | null]
-  return { props: { auth, user } }
+export const getStaticProps = async (props: {
+  params: {
+    username: string
+  }
+}) => {
+  const { username } = props.params
+  const user = await getUserByUsername(username)
+  return {
+    props: {
+      user,
+      username,
+      revalidate: 60, // Regenerate after 60 seconds
+    },
+  }
+}
+
+export const getStaticPaths = () => {
+  return { paths: [], fallback: 'blocking' }
 }
 
 export default function UserProfile(props: {
-  auth: UserAndPrivateUser | null
   user: User | null
+  username: string
 }) {
-  const { auth, user } = props
-  const privateUser = usePrivateUser() ?? auth?.privateUser
+  const { user, username } = props
+  const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
-  const router = useRouter()
-  const { username } = router.query as {
-    username: string
-  }
 
   useTracking('view user profile', { username })
 
-  return user && !user.userDeleted ? (
-    privateUser && blockedByCurrentUser ? (
-      <BlockedUser user={user} privateUser={privateUser} />
-    ) : (
-      <UserPage user={user} />
-    )
+  if (!user || user.userDeleted) {
+    return <Custom404 />
+  }
+
+  return privateUser && blockedByCurrentUser ? (
+    <BlockedUser user={user} privateUser={privateUser} />
   ) : (
-    <Custom404 />
+    <UserPage user={user} />
   )
 }

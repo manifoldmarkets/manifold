@@ -5,7 +5,6 @@ import {
   BetFillData,
   ContractResolutionData,
   Notification,
-  notification_source_types,
 } from 'common/notification'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
@@ -27,7 +26,6 @@ import {
 import {
   NotificationGroup,
   useGroupedNotifications,
-  useUnseenGroupedNotification,
 } from 'web/hooks/use-notifications'
 import { TrendingUpIcon } from '@heroicons/react/outline'
 import { formatMoney } from 'common/util/format'
@@ -40,7 +38,6 @@ import {
 import { groupBy, sum, uniqBy } from 'lodash'
 import { Pagination } from 'web/components/widgets/pagination'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { SEO } from 'web/components/SEO'
@@ -54,6 +51,12 @@ import {
 import { Col } from 'web/components/layout/col'
 import { track } from 'web/lib/service/analytics'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { PushNotificationsModal } from 'web/components/push-notifications-modal'
+import {
+  getSourceIdForLinkComponent,
+  getSourceUrl,
+} from 'web/lib/firebase/notifications'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -157,35 +160,32 @@ function RenderNotificationGroups(props: {
 
 function NotificationsList(props: { privateUser: PrivateUser }) {
   const { privateUser } = props
+
   const [page, setPage] = useState(0)
+  const [showPushNotificationsModal, setShowPushNotificationsModal] =
+    useState(false)
+
   const allGroupedNotifications = useGroupedNotifications(privateUser)
-  const unseenGroupedNotifications = useUnseenGroupedNotification(privateUser)
   const paginatedGroupedNotifications = useMemo(() => {
-    if (!allGroupedNotifications) return
+    if (!allGroupedNotifications) return undefined
+
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
-    const maxNotificationsToShow = allGroupedNotifications.slice(start, end)
-
-    const local = safeLocalStorage()
-    local?.setItem(
-      'notification-groups',
-      JSON.stringify(allGroupedNotifications)
-    )
-    return maxNotificationsToShow
+    return allGroupedNotifications.slice(start, end)
   }, [allGroupedNotifications, page])
 
-  // Set all notifications that don't fit on the first page to seen
+  const isPageVisible = useIsPageVisible()
+
+  // Mark all notifications as seen.
   useEffect(() => {
-    if (
-      paginatedGroupedNotifications &&
-      paginatedGroupedNotifications?.length >= NOTIFICATIONS_PER_PAGE
-    ) {
-      const allUnseenNotifications = unseenGroupedNotifications
-        ?.map((ng) => ng.notifications)
+    if (isPageVisible && paginatedGroupedNotifications) {
+      const notifications = paginatedGroupedNotifications
         .flat()
-      allUnseenNotifications && setNotificationsAsSeen(allUnseenNotifications)
+        .flatMap((g) => g.notifications)
+
+      markNotificationsAsSeen(notifications)
     }
-  }, [paginatedGroupedNotifications, unseenGroupedNotifications])
+  }, [isPageVisible, paginatedGroupedNotifications])
 
   if (!paginatedGroupedNotifications || !allGroupedNotifications)
     return <LoadingIndicator />
@@ -198,6 +198,14 @@ function NotificationsList(props: { privateUser: PrivateUser }) {
           more.
         </div>
       )}
+      <PushNotificationsModal
+        isOpen={showPushNotificationsModal}
+        setOpen={setShowPushNotificationsModal}
+        privateUser={privateUser}
+        notifications={
+          allGroupedNotifications.map((ng) => ng.notifications).flat().length
+        }
+      />
 
       <RenderNotificationGroups
         notificationGroups={paginatedGroupedNotifications}
@@ -234,10 +242,6 @@ function IncomeNotificationGroupItem(props: {
     if (event.ctrlKey || event.metaKey) return
     setExpanded(!expanded)
   }
-
-  useEffect(() => {
-    setNotificationsAsSeen(notifications)
-  }, [notifications])
 
   useEffect(() => {
     if (expanded) setHighlighted(false)
@@ -416,10 +420,6 @@ function IncomeNotificationItem(props: {
   const isUniqueBettorBonus = sourceType === 'bonus'
   const userLinks: MultiUserLinkInfo[] =
     isTip || isUniqueBettorBonus ? data?.uniqueUsers ?? [] : []
-
-  useEffect(() => {
-    setNotificationsAsSeen([notification])
-  }, [notification])
 
   function reasonAndLink(simple: boolean) {
     const { sourceText } = notification
@@ -600,10 +600,6 @@ function NotificationGroupItem(props: {
   }
 
   useEffect(() => {
-    setNotificationsAsSeen(notifications)
-  }, [notifications])
-
-  useEffect(() => {
     if (expanded) setHighlighted(false)
   }, [expanded])
 
@@ -708,10 +704,6 @@ function NotificationItem(props: {
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted] = useState(!notification.isSeen)
-
-  useEffect(() => {
-    setNotificationsAsSeen([notification])
-  }, [notification])
 
   // TODO Any new notification should be its own component
   if (reason === 'bet_fill') {
@@ -857,7 +849,7 @@ function NotificationFrame(props: {
     >
       <div className={'relative cursor-pointer'}>
         <SiteLink
-          href={getSourceUrl(notification) ?? ''}
+          href={getSourceUrl(notification)}
           className={'absolute left-0 right-0 top-0 bottom-0 z-0'}
           onClick={() =>
             track('Notification Clicked', {
@@ -1133,7 +1125,7 @@ function ContractResolvedNotification(props: {
   )
 }
 
-export const setNotificationsAsSeen = async (notifications: Notification[]) => {
+const markNotificationsAsSeen = async (notifications: Notification[]) => {
   const unseenNotifications = notifications.filter((n) => !n.isSeen)
   return await Promise.all(
     unseenNotifications.map((n) => {
@@ -1192,57 +1184,6 @@ function QuestionOrGroupLink(props: {
       {sourceContractTitle || sourceTitle}
     </SiteLink>
   )
-}
-
-function getSourceUrl(notification: Notification) {
-  const {
-    sourceType,
-    sourceId,
-    sourceUserUsername,
-    sourceContractCreatorUsername,
-    sourceContractSlug,
-    sourceSlug,
-  } = notification
-  if (sourceType === 'follow') return `/${sourceUserUsername}`
-  if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
-  // User referral via contract:
-  if (
-    sourceContractCreatorUsername &&
-    sourceContractSlug &&
-    sourceType === 'user'
-  )
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
-  // User referral:
-  if (sourceType === 'user' && !sourceContractSlug)
-    return `/${sourceUserUsername}`
-  if (sourceType === 'challenge') return `${sourceSlug}`
-  if (sourceContractCreatorUsername && sourceContractSlug)
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
-      sourceId ?? '',
-      sourceType
-    )}`
-  else if (sourceSlug)
-    return `${
-      sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
-    }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
-}
-
-function getSourceIdForLinkComponent(
-  sourceId: string,
-  sourceType?: notification_source_types
-) {
-  switch (sourceType) {
-    case 'answer':
-      return `answer-${sourceId}`
-    case 'comment':
-      return sourceId
-    case 'contract':
-      return ''
-    case 'bet':
-      return ''
-    default:
-      return sourceId
-  }
 }
 
 function NotificationTextLabel(props: {

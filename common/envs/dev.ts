@@ -18,4 +18,13 @@ export const DEV_CONFIG: EnvConfig = {
   amplitudeApiKey: 'fd8cbfd964b9a205b8678a39faae71b3',
   twitchBotEndpoint: 'https://dev-twitch-bot.manifold.markets',
   sprigEnvironmentId: 'Tu7kRZPm7daP',
+  expoConfig: {
+    //dev:
+    iosClientId:
+      '134303100058-lioqb7auc8minvqt9iamuit2pg10pubt.apps.googleusercontent.com',
+    expoClientId:
+      '134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com',
+    androidClientId:
+      '134303100058-mu6dbubhks8khpqi3dq0fokqnkbputiq.apps.googleusercontent.com',
+  },
 }

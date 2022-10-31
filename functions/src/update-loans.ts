@@ -1,22 +1,36 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy, keyBy } from 'lodash'
-import { getValues, log, payUser, writeAsync } from './utils'
+import { getValues, invokeFunction, log, payUser, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
-import { getLoanUpdates } from '../../common/loans'
+import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 import { filterDefined } from '../../common/util/array'
+import { newEndpointNoAuth } from './api'
 
 const firestore = admin.firestore()
 
-export const updateLoans = functions
-  .runWith({ memory: '8GB', timeoutSeconds: 540 })
+export const scheduleUpdateLoans = functions.pubsub
   // Run every day at midnight.
-  .pubsub.schedule('0 0 * * *')
+  .schedule('0 0 * * *')
   .timeZone('America/Los_Angeles')
-  .onRun(updateLoansCore)
+  .onRun(async () => {
+    try {
+      console.log(await invokeFunction('updateloans'))
+    } catch (e) {
+      console.error(e)
+    }
+  })
+
+export const updateloans = newEndpointNoAuth(
+  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
+  async (_req) => {
+    await updateLoansCore()
+    return { success: true }
+  }
+)
 
 async function updateLoansCore() {
   log('Updating loans...')
@@ -51,13 +65,20 @@ async function updateLoansCore() {
     contracts.map((contract) => [contract.id, contract])
   )
   const betsByUser = groupBy(bets, (bet) => bet.userId)
-  const { betUpdates, userPayouts } = getLoanUpdates(
-    users,
-    contractsById,
-    portfolioByUser,
-    betsByUser
-  )
 
+  const eligibleUsers = users.filter((u) =>
+    isUserEligibleForLoan(portfolioByUser[u.id])
+  )
+  const userUpdates = eligibleUsers.map((user) => {
+    const userContractBets = groupBy(
+      betsByUser[user.id] ?? [],
+      (b) => b.contractId
+    )
+    const result = getUserLoanUpdates(userContractBets, contractsById)
+    return { user, result }
+  })
+
+  const betUpdates = userUpdates.map((u) => u.result.updates).flat()
   log(`${betUpdates.length} bet updates.`)
 
   const betDocUpdates = betUpdates.map((update) => ({
@@ -73,20 +94,20 @@ async function updateLoansCore() {
 
   await writeAsync(firestore, betDocUpdates)
 
-  log(`${userPayouts.length} user payouts`)
+  log(`${userUpdates.length} user payouts`)
 
   await Promise.all(
-    userPayouts.map(({ user, payout }) => payUser(user.id, payout))
+    userUpdates.map(({ user, result: { payout } }) => payUser(user.id, payout))
   )
 
   const today = new Date().toDateString().replace(' ', '-')
   const key = `loan-notifications-${today}`
   await Promise.all(
-    userPayouts
+    userUpdates
       // Don't send a notification if the payout is < M$1,
       // because a M$0 loan is confusing.
-      .filter(({ payout }) => payout >= 1)
-      .map(({ user, payout }) =>
+      .filter(({ result: { payout } }) => payout >= 1)
+      .map(({ user, result: { payout } }) =>
         createLoanIncomeNotification(user, key, payout)
       )
   )
