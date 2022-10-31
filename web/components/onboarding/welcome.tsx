@@ -15,6 +15,8 @@ import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Title } from '../widgets/title'
 import GroupSelectorDialog from './group-selector-dialog'
+import { formatMoney } from 'common/util/format'
+import { STARTING_BALANCE } from 'common/economy'
 
 export default function Welcome() {
   const user = useUser()
@@ -183,8 +185,9 @@ function Page2() {
       </Row>
       <div className="mt-8 font-semibold">Example</div>
       <p className="mt-2">
-        When you donate <span className="font-semibold">M$1000</span> to
-        Givewell, Manifold sends them{' '}
+        When you donate{' '}
+        <span className="font-semibold">{formatMoney(STARTING_BALANCE)}</span>{' '}
+        to Givewell, Manifold sends them{' '}
         <span className="font-semibold">$10 USD</span>.
       </p>
       <video loop autoPlay className="z-0 h-full w-full">

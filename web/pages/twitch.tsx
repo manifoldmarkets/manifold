@@ -25,6 +25,8 @@ import {
   updateBotEnabledForUser,
 } from 'web/lib/twitch/link-twitch-account'
 import { copyToClipboard } from 'web/lib/util/copy'
+import { formatMoney } from 'common/util/format'
+import { STARTING_BALANCE } from 'common/economy'
 
 function ButtonGetStarted(props: {
   user?: User | null
@@ -145,9 +147,9 @@ function TwitchPlaysManifoldMarkets(props: {
         </div>
         <div>
           Instead of Twitch channel points we use our own play money, mana (M$).
-          All viewers start with M$1,000 and can earn more for free by betting
-          well. Just like channel points, mana cannot be converted to real
-          money.
+          All viewers start with {formatMoney(STARTING_BALANCE)} and can earn
+          more for free by betting well. Just like channel points, mana cannot
+          be converted to real money.
         </div>
       </Col>
     </div>
