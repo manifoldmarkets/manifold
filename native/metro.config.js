@@ -10,21 +10,17 @@ const { getDefaultConfig } = require('expo/metro-config')
 const path = require('path')
 const projectRoot = __dirname
 const defaultConfig = getDefaultConfig(projectRoot)
-// const workspaceRoot = path.resolve(projectRoot, '../')
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common'),
   components: path.resolve(__dirname + '/components'),
-  root: path.resolve(__dirname + '/'),
 }
 defaultConfig.watchFolders = [
   path.resolve(__dirname + '/../common'),
   path.resolve(__dirname + '/components'),
-  path.resolve(__dirname + '/'),
   // workspaceRoot,
 ]
 defaultConfig.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
-  // path.resolve(workspaceRoot, 'node_modules'),
 ]
 module.exports = {
   ...defaultConfig,
