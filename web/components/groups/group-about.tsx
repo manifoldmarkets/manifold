@@ -216,11 +216,11 @@ export function PinnedItems(props: {
 
   return pinned.length > 0 || isEditable ? (
     <div>
-      <Row className="items-center justify-between">
-        <SectionHeader label={'Featured'} />
+      <Row className="items-center justify-end ">
         {isEditable && (
           <Button
-            color="gray"
+            className="my-2"
+            color="red"
             size="xs"
             onClick={() => {
               setEditMode(!editMode)
@@ -231,7 +231,7 @@ export function PinnedItems(props: {
             ) : (
               <>
                 <PencilIcon className="inline h-4 w-4" />
-                Edit
+                ADMIN: Edit Featured
               </>
             )}
           </Button>
@@ -243,16 +243,6 @@ export function PinnedItems(props: {
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
-          {pinned.length == 0 && !editMode && (
-            <div
-              className="flex flex-col items-center justify-center"
-              key="no-pinned"
-            >
-              <p className="text-center text-gray-400">
-                No pinned items yet. Click the edit button to add some!
-              </p>
-            </div>
-          )}
           {pinned.map((element, index) => (
             <div className="relative mb-4" key={index}>
               {element}
