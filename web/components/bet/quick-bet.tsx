@@ -248,7 +248,7 @@ function BinaryQuickBetButton(props: {
       {hasInvestment && invested != null ? (
         <span
           className={clsx(
-            'text-sm font-light',
+            'my-auto text-sm font-light',
             shouldFocus ? 'text-indigo-600' : 'text-indigo-800'
           )}
         >
@@ -259,7 +259,7 @@ function BinaryQuickBetButton(props: {
       ) : (
         <span
           className={clsx(
-            'text-sm font-light text-indigo-600 transition-opacity',
+            'my-auto text-sm font-light text-indigo-600 transition-opacity',
             shouldFocus ? 'opacity-100' : 'opacity-0'
           )}
         >

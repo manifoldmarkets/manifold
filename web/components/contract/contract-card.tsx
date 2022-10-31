@@ -60,6 +60,7 @@ export function ContractCard(props: {
   newTab?: boolean
   showImage?: boolean
   children?: ReactNode
+  pinned?: boolean
 }) {
   const {
     showTime,
@@ -73,6 +74,7 @@ export function ContractCard(props: {
     newTab,
     showImage,
     children,
+    pinned,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { question, outcomeType } = contract
@@ -97,11 +99,10 @@ export function ContractCard(props: {
       )}
     >
       <Col className="relative flex-1 gap-1 pt-2">
-        <AvatarDetails
-          contract={contract}
-          className={'pl-4'}
-          noLink={noLinkAvatar}
-        />
+        <Row className="justify-between px-4 ">
+          <AvatarDetails contract={contract} noLink={noLinkAvatar} />
+          {pinned && <FeaturedPill />}
+        </Row>
         {/* overlay question on image */}
         {contract.coverImageUrl && showImage && (
           <div className="relative mb-2">
@@ -112,7 +113,7 @@ export function ContractCard(props: {
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
-                  'break-anywhere bg-gradient-to-t from-slate-900 px-2 pb-2 pt-12 text-xl font-semibold text-white',
+                  'break-anywhere bg-gradient-to-t from-slate-900 px-4 pb-2 pt-12 text-xl font-semibold text-white',
                   questionClass
                 )}
               >
@@ -122,12 +123,12 @@ export function ContractCard(props: {
           </div>
         )}
 
-        <Col className="gap-1 px-4 pb-1">
+        <Col className="gap-1 px-4 pb-1 ">
           {/* question is here if not overlaid on an image */}
           {(!showImage || !contract.coverImageUrl) && (
             <div
               className={clsx(
-                'break-anywhere pb-2 font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+                'break-anywhere text-greyscale-7 pb-2 font-medium',
                 questionClass
               )}
             >
@@ -140,7 +141,7 @@ export function ContractCard(props: {
             <QuickOutcomeView contract={contract} />
           )}
         </Col>
-        <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
+        <Row className={clsx('gap-1 px-4 ', children ? '' : 'mb-2')}>
           <MiscDetails
             contract={contract}
             showTime={showTime}
@@ -464,5 +465,13 @@ function MetricsFooter(props: {
         </div>
       </Col>
     </Row>
+  )
+}
+
+export function FeaturedPill() {
+  return (
+    <div className="rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-xs text-white">
+      Featured
+    </div>
   )
 }

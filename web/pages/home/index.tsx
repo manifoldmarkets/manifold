@@ -135,7 +135,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
       const itemComponents = pinnedItems.map((element) => {
         if (element.type === 'post') {
           const post = element.item as Post
-          if (!userIsBlocked(post.creatorId)) return <PostCard post={post} />
+          if (!userIsBlocked(post.creatorId))
+            return <PostCard post={post} pinned={true} />
         } else if (element.type === 'contract') {
           const contract = element.item as Contract
           if (
@@ -145,7 +146,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               contract.groupSlugs?.includes(slug)
             )
           )
-            return <ContractCard contract={contract} />
+            return <ContractCard contract={contract} pinned={true} />
         }
       })
       setPinned(
@@ -243,7 +244,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
 const HOME_SECTIONS = [
   { label: 'Trending', id: 'score', icon: '🔥' },
-  { label: 'Featured', id: 'featured', icon: '⭐' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
   { label: 'New', id: 'newest', icon: '✨' },
@@ -292,6 +292,12 @@ function renderSections(
 
   return (
     <>
+      <FeaturedSection
+        key={'featured'}
+        globalConfig={globalConfig}
+        pinned={pinned}
+        isAdmin={isAdmin}
+      />
       {sections.map((s) => {
         const { id, label, icon } = s as {
           id: sectionTypes
@@ -300,16 +306,6 @@ function renderSections(
         }
         if (id === 'daily-movers') {
           return <DailyMoversSection key={id} data={sectionContracts[id]} />
-        }
-        if (id === 'featured') {
-          return (
-            <FeaturedSection
-              key={id}
-              globalConfig={globalConfig}
-              pinned={pinned}
-              isAdmin={isAdmin}
-            />
-          )
         }
 
         const contracts = sectionContracts[id]

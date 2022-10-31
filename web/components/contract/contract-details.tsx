@@ -38,10 +38,7 @@ import { GroupLink } from 'common/group'
 import { Subtitle } from '../widgets/subtitle'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
-import {
-  BountiedContractBadge,
-  BountiedContractSmallBadge,
-} from 'web/components/contract/bountied-contract-badge'
+import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Input } from '../widgets/input'
 import { editorExtensions } from '../widgets/editor'
 
@@ -79,8 +76,6 @@ export function MiscDetails(props: {
           {'Resolved '}
           {fromNow(resolutionTime)}
         </Row>
-      ) : (contract.openCommentBounties ?? 0) > 0 ? (
-        <BountiedContractBadge />
       ) : !isNew || (uniqueBettorCount ?? 0) > 1 ? (
         <Row className={'shrink-0 gap-1'}>
           <div className="font-semibold">{uniqueBettorCount || '0'} </div>
