@@ -31,6 +31,7 @@ import { QRCode } from '../widgets/qr-code'
 import { getShareUrl } from 'common/util/share'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
+import { ReportButton } from 'web/components/buttons/report-button'
 
 export function ContractInfoDialog(props: {
   contract: Contract
@@ -99,6 +100,9 @@ export function ContractInfoDialog(props: {
           <Col className="gap-4 rounded bg-white p-6">
             <Row className={'justify-between'}>
               <Title className="!mt-0 !mb-0" text="This Market" />
+              {user && (
+                <ReportButton userId={contract.creatorId} label={'market'} />
+              )}
               {privateUser && <BlockMarketButton contractId={contract.id} />}
             </Row>
 

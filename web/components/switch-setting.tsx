@@ -6,7 +6,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 export const SwitchSetting = (props: {
   checked: boolean
   onChange: (checked: boolean) => void
-  label: string
+  label: 'Web' | 'Email' | 'Mobile'
   disabled: boolean
 }) => {
   const { checked, onChange, label, disabled } = props
@@ -14,8 +14,10 @@ export const SwitchSetting = (props: {
     <Switch.Group as="div" className="flex items-center">
       <Tooltip
         text={
-          disabled
+          disabled && label !== 'Mobile'
             ? `You are opted out of all ${label} notifications. Go to the Opt Out section to undo this setting.`
+            : disabled && label === 'Mobile'
+            ? `You are opted out of all ${label} notifications. First download the app (Android available now, iOS soon!) and allow notifications. If you've already done so, go to the Opt Out section to undo this setting.`
             : ''
         }
       >

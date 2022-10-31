@@ -35,6 +35,7 @@ export * from './on-update-contract-follow'
 export * from './on-update-like'
 export * from './weekly-portfolio-emails'
 export * from './drizzle-liquidity'
+export * from './check-push-notification-receipts'
 
 // v2
 export * from './health'
@@ -56,6 +57,7 @@ export * from './mana-bonus-email'
 export * from './close-market'
 export * from './update-comment-bounty'
 export * from './add-subsidy'
+export * from './test-scheduled-function'
 
 import { health } from './health'
 import { transact } from './transact'
@@ -83,6 +85,7 @@ import { updatecontractmetrics } from './update-contract-metrics'
 import { updateusermetrics } from './update-user-metrics'
 import { updategroupmetrics } from './update-group-metrics'
 import { addsubsidy } from './add-subsidy'
+import { testscheduledfunction } from './test-scheduled-function'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -113,6 +116,7 @@ const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
 const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
+const testScheduledFunction = toCloudFunction(testscheduledfunction)
 const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
 
@@ -142,6 +146,7 @@ export {
   createCommentFunction as createcomment,
   addCommentBounty as addcommentbounty,
   awardCommentBounty as awardcommentbounty,
+  testScheduledFunction as testscheduledfunction,
   updateContractMetricsFunction as updatecontractmetrics,
   updateUserMetricsFunction as updateusermetrics,
   updateGroupMetricsFunction as updategroupmetrics,

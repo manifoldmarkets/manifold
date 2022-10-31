@@ -1,5 +1,4 @@
 import React from 'react'
-
 import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { UserPage } from 'web/components/user-page'
 import Custom404 from '../404'

@@ -91,6 +91,9 @@ export type PrivateUser = {
     botEnabled?: boolean
     needsRelinking?: boolean
   }
+  pushToken?: string
+  rejectedPushNotificationsOn?: number
+  interestedInPushNotifications?: boolean
   blockedUserIds: string[]
   blockedByUserIds: string[]
   blockedContractIds: string[]
@@ -117,3 +120,5 @@ export const PRESENT_BET = ENV_CONFIG.presentBet ?? 'trade'
 export const PRESENT_BETS = ENV_CONFIG.presentBet + 's' ?? 'trades'
 export const PAST_BET = ENV_CONFIG.pastBet ?? 'trade'
 export const PAST_BETS = ENV_CONFIG.pastBet + 's' ?? 'trades'
+
+export type UserAndPrivateUser = { user: User; privateUser: PrivateUser }

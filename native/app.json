@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "Manifold",
+    "slug": "manifold-markets",
+    "owner": "iansp",
+    "sdkVersion": "46.0.0",
+    "version": "2.0.6",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "plugins": ["./plugins/withAndroidVerifiedLinksWorkaround", "sentry-expo"],
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#4337C9"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/0ce454fc-3885-4eab-88b6-787b1691973b"
+    },
+    "android": {
+      "runtimeVersion": "46.0.0",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "manifold.markets"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "useNextNotificationsApi": true,
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#4337C9"
+      },
+      "package": "com.markets.manifold",
+      "versionCode": 15
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.markets.manifold",
+      "buildNumber": "1.0.3",
+      "runtimeVersion": {
+        "policy": "sdkVersion"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0ce454fc-3885-4eab-88b6-787b1691973b"
+      }
+    }
+  }
+}
