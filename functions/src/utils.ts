@@ -7,6 +7,7 @@ import { Contract } from '../../common/contract'
 import { PrivateUser, User } from '../../common/user'
 import { Group } from '../../common/group'
 import { Post } from '../../common/post'
+import { getFunctionUrl } from '../../common/api'
 
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
@@ -17,6 +18,23 @@ export const logMemory = () => {
   for (const [k, v] of Object.entries(used)) {
     log(`${k} ${Math.round((v / 1024 / 1024) * 100) / 100} MB`)
   }
+}
+
+export const invokeFunction = async (name: string, body?: unknown) => {
+  const response = await fetch(getFunctionUrl(name), {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    body: JSON.stringify(body ?? {}),
+  })
+
+  const json = await response.json()
+  if (response.ok) return await response.json()
+  else
+    throw new Error(
+      `${response.status} invoking function: ${JSON.stringify(json)}`
+    )
 }
 
 export const revalidateStaticProps = async (
@@ -129,14 +147,13 @@ export const getUserByUsername = async (username: string) => {
   return snap.empty ? undefined : (snap.docs[0].data() as User)
 }
 
-const firestore = admin.firestore()
-
 const updateUserBalance = (
   transaction: Transaction,
   userId: string,
   balanceDelta: number,
   depositDelta: number
 ) => {
+  const firestore = admin.firestore()
   const userDoc = firestore.doc(`users/${userId}`)
 
   // Note: Balance is allowed to go negative.
@@ -149,6 +166,7 @@ const updateUserBalance = (
 export const payUser = (userId: string, payout: number, isDeposit = false) => {
   if (!isFinite(payout)) throw new Error('Payout is not finite: ' + payout)
 
+  const firestore = admin.firestore()
   return firestore.runTransaction(async (transaction) => {
     updateUserBalance(transaction, userId, payout, isDeposit ? payout : 0)
   })
@@ -213,6 +231,7 @@ export const payUsersMultipleTransactions = async (
     deposit?: number
   }[]
 ) => {
+  const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutChunks = chunk(mergedPayouts, 500)
 

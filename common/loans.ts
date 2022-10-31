@@ -17,39 +17,44 @@ const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   return netValue * LOAN_DAILY_RATE
 }
 
+export const getUserLoanUpdates = (
+  betsByContractId: { [contractId: string]: Bet[] },
+  contractsById: { [contractId: string]: Contract },
+  portfolio?: PortfolioMetrics | undefined
+) => {
+  if (isUserEligibleForLoan(portfolio)) {
+    const updates = calculateLoanBetUpdates(
+      betsByContractId,
+      contractsById
+    ).betUpdates
+    return { updates, payout: sumBy(updates, (update) => update.newLoan) }
+  } else {
+    return undefined
+  }
+}
+
 export const getLoanUpdates = (
   users: User[],
   contractsById: { [contractId: string]: Contract },
   portfolioByUser: { [userId: string]: PortfolioMetrics | undefined },
   betsByUser: { [userId: string]: Bet[] }
 ) => {
-  const eligibleUsers = filterDefined(
-    users.map((user) =>
-      isUserEligibleForLoan(portfolioByUser[user.id]) ? user : undefined
-    )
-  )
-
-  const betUpdates = eligibleUsers
-    .map((user) => {
-      const updates = calculateLoanBetUpdates(
-        betsByUser[user.id] ?? [],
-        contractsById
-      ).betUpdates
-      return updates.map((update) => ({ ...update, user }))
+  const userUpdates = filterDefined(
+    users.map((user) => {
+      const result = getUserLoanUpdates(
+        groupBy(betsByUser[user.id] ?? [], (b) => b.contractId),
+        contractsById,
+        portfolioByUser[user.id]
+      )
+      return result ? { user, result } : undefined
     })
-    .flat()
-
-  const updatesByUser = groupBy(betUpdates, (update) => update.userId)
-  const userPayouts = Object.values(updatesByUser).map((updates) => {
-    return {
-      user: updates[0].user,
-      payout: sumBy(updates, (update) => update.newLoan),
-    }
-  })
-
+  )
   return {
-    betUpdates,
-    userPayouts,
+    betUpdates: userUpdates.map((u) => u.result.updates).flat(),
+    userPayouts: userUpdates.map(({ user, result: { payout } }) => ({
+      user,
+      payout,
+    })),
   }
 }
 
@@ -61,24 +66,23 @@ const isUserEligibleForLoan = (portfolio: PortfolioMetrics | undefined) => {
 }
 
 const calculateLoanBetUpdates = (
-  bets: Bet[],
+  betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>
 ) => {
-  const betsByContract = groupBy(bets, (bet) => bet.contractId)
   const contracts = filterDefined(
-    Object.keys(betsByContract).map((contractId) => contractsById[contractId])
+    Object.keys(betsByContractId).map((contractId) => contractsById[contractId])
   ).filter((c) => !c.isResolved)
 
   const betUpdates = filterDefined(
     contracts
       .map((c) => {
         if (c.mechanism === 'cpmm-1') {
-          return getBinaryContractLoanUpdate(c, betsByContract[c.id])
+          return getBinaryContractLoanUpdate(c, betsByContractId[c.id])
         } else if (
           c.outcomeType === 'FREE_RESPONSE' ||
           c.outcomeType === 'MULTIPLE_CHOICE'
         )
-          return getFreeResponseContractLoanUpdate(c, betsByContract[c.id])
+          return getFreeResponseContractLoanUpdate(c, betsByContractId[c.id])
         else {
           // Unsupported contract / mechanism for loans.
           return []
