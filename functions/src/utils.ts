@@ -30,11 +30,13 @@ export const invokeFunction = async (name: string, body?: unknown) => {
   })
 
   const json = await response.json()
-  if (response.ok) return await response.json()
-  else
+  if (response.ok) {
+    return json
+  } else {
     throw new Error(
-      `${response.status} invoking function: ${JSON.stringify(json)}`
+      `${response.status} invoking ${name}: ${JSON.stringify(json)}`
     )
+  }
 }
 
 export const revalidateStaticProps = async (
