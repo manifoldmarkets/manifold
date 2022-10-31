@@ -9,7 +9,9 @@
   ],
   "scripts": {
     "verify": "(cd web && yarn verify:dir); (cd functions && yarn verify:dir)",
-    "lint": "eslint common --fix ; eslint web --fix ; eslint functions --fix"
+    "lint": "eslint common --fix ; eslint web --fix ; eslint functions --fix",
+    "_comment": "Place your admin json under /functions/src/ to enable this:",
+    "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
   },
   "dependencies": {},
   "devDependencies": {
