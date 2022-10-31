@@ -11,7 +11,7 @@ import {
 import toast from 'react-hot-toast'
 
 import { User } from 'web/lib/firebase/users'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { CreatorContractsList } from './contract/contracts-grid'
 import { SEO } from './SEO'
 import { Page } from './layout/page'
@@ -44,7 +44,8 @@ import { BotBadge } from './widgets/user-link'
 import { BlockUserButton } from 'web/components/buttons/block-user-button'
 
 export function UserPage(props: { user: User }) {
-  const { user } = props
+  const user = useUserById(props.user.id) ?? props.user
+
   const router = useRouter()
   const currentUser = useUser()
   const isCurrentUser = user.id === currentUser?.id

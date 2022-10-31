@@ -14,7 +14,13 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
   const user = await getUserByUsername(username)
-  return { props: { user, username } }
+  return {
+    props: {
+      user,
+      username,
+      revalidate: 60, // Regenerate after 60 seconds
+    },
+  }
 }
 
 export const getStaticPaths = () => {
