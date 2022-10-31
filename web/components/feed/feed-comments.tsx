@@ -191,6 +191,8 @@ export function CommentActions(props: {
   contract: Contract
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
+  const isNative = typeof window !== 'undefined' && (window as any).isNative
+
   return (
     <Row className="grow items-center justify-end">
       {onReplyClick && (
@@ -204,13 +206,15 @@ export function CommentActions(props: {
       {(contract.openCommentBounties ?? 0) > 0 && (
         <AwardBountyButton comment={comment} contract={contract} />
       )}
-      <Tooltip text={'Report comment'}>
-        <ReportButton
-          userId={comment.userId}
-          label={'comment'}
-          icon={<FlagIcon className={'h-5 w-5 text-gray-500'} />}
-        />
-      </Tooltip>
+      {isNative && (
+        <Tooltip text={'Report comment'}>
+          <ReportButton
+            userId={comment.userId}
+            label={'comment'}
+            icon={<FlagIcon className={'h-5 w-5 text-gray-500'} />}
+          />
+        </Tooltip>
+      )}
     </Row>
   )
 }

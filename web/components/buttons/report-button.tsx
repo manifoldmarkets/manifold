@@ -20,7 +20,8 @@ export function ReportButton(props: {
   const currentUser = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isReported, setIsReported] = useState(false)
-  if (!currentUser || currentUser.id === userId) return null
+  const isNative = typeof window !== 'undefined' && (window as any).isNative
+  if (!currentUser || currentUser.id === userId || !isNative) return null
   const report = async () => {
     // TODO: file report
     await new Promise((resolve) => setTimeout(resolve, 2000))
