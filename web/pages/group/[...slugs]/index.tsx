@@ -50,6 +50,7 @@ import { BETTORS } from 'common/user'
 import { Page } from 'web/components/layout/page'
 import { Tabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
+import { HideGroupButton } from 'web/components/buttons/hide-group-button'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -169,13 +170,18 @@ export default function GroupPage(props: {
         description={`Created by ${creator.name}. ${group.about}`}
         url={groupPath(group.slug)}
       />
-      <TopGroupNavBar group={group} isMember={isMember} />
+      <TopGroupNavBar
+        group={group}
+        isMember={isMember}
+        isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
+      />
       <div className="relative hidden justify-self-end md:flex">
         <div className="absolute right-0 top-0 z-10">
           <JoinOrAddQuestionsButtons
             group={group}
             user={user}
             isMember={!!isMember}
+            isBlocked={privateUser?.blockedGroupSlugs?.includes(group.slug)}
           />
         </div>
       </div>
@@ -256,8 +262,9 @@ export default function GroupPage(props: {
 export function TopGroupNavBar(props: {
   group: Group
   isMember: boolean | undefined
+  isBlocked?: boolean
 }) {
-  const { group, isMember } = props
+  const { group, isMember, isBlocked } = props
   const user = useUser()
 
   return (
@@ -276,6 +283,7 @@ export function TopGroupNavBar(props: {
           group={group}
           user={user}
           isMember={isMember}
+          isBlocked={isBlocked}
         />
       </Row>
     </header>
@@ -286,12 +294,15 @@ function JoinOrAddQuestionsButtons(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean | undefined
+  isBlocked?: boolean
 }) {
-  const { group, user, isMember } = props
+  const { group, user, isMember, isBlocked } = props
 
   if (user === undefined || isMember === undefined) return <div />
 
-  return user && isMember ? (
+  return isBlocked ? (
+    <HideGroupButton groupSlug={group.slug} />
+  ) : user && isMember ? (
     <AddContractButton group={group} user={user} />
   ) : group.anyoneCanJoin ? (
     <JoinGroupButton group={group} user={user} />
