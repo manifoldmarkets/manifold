@@ -221,7 +221,7 @@ function BinaryQuickBetButton(props: {
           className={clsx(
             'mx-2 h-6 w-6 drop-shadow-md transition-all',
             shouldFocus
-              ? 'animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              ? 'animate-bounce-left text-indigo-600'
               : hasInvestment
               ? 'text-indigo-800'
               : 'text-indigo-400'
@@ -233,7 +233,7 @@ function BinaryQuickBetButton(props: {
           className={clsx(
             'mx-2 h-6 w-6 drop-shadow-md transition-all',
             shouldFocus
-              ? 'sm:animate-bounce-right ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              ? 'sm:animate-bounce-right text-indigo-600'
               : hasInvestment
               ? 'text-indigo-800'
               : 'text-indigo-400'

@@ -23,17 +23,21 @@ module.exports = {
         'bounce-left': {
           '0%,100%': {
             transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
           '50%': {
             transform: 'translateX(-15%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
         'bounce-right': {
           '0%,100%': {
             transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
           '50%': {
             transform: 'translateX(15%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
       },
