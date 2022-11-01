@@ -35,9 +35,7 @@ export const PortfolioValueSection = memo(
           graphMode={graphMode}
           onClickNumber={onClickNumber}
           currentTimePeriod={currentTimePeriod}
-          setCurrentTimePeriod={(timePeriod: Period) =>
-            setCurrentTimePeriod(timePeriod)
-          }
+          setCurrentTimePeriod={setCurrentTimePeriod}
           profitElement={
             <div className="text-greyscale-5 animate-pulse text-lg sm:text-xl">
               ---
@@ -70,9 +68,7 @@ export const PortfolioValueSection = memo(
         graphMode={graphMode}
         onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
-        setCurrentTimePeriod={(timePeriod: Period) =>
-          setCurrentTimePeriod(timePeriod)
-        }
+        setCurrentTimePeriod={setCurrentTimePeriod}
         profitElement={
           <div
             className={clsx(
@@ -181,9 +177,7 @@ export function PortfolioValueSkeleton(props: {
       </SizedContainer>
       <PortfolioTimeSelection
         currentTimePeriod={currentTimePeriod}
-        setCurrentTimePeriod={(timePeriod: Period) =>
-          setCurrentTimePeriod(timePeriod)
-        }
+        setCurrentTimePeriod={setCurrentTimePeriod}
         disabled={disabled}
       />
     </>
