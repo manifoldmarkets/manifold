@@ -168,12 +168,12 @@ export function ContractPageContent(
     undefined
   )
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
-  const [activeIndex, setActiveIndex] = useState<number>(0)
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
       tabsContainerRef.current.scrollIntoView({ behavior: 'smooth' })
-      setActiveIndex(0)
+      setActiveTabIndex(0)
     } else {
       console.error('no ref to scroll to')
     }
@@ -265,8 +265,8 @@ export function ContractPageContent(
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}
-            activeIndex={activeIndex}
-            setActiveIndex={(i: number) => setActiveIndex(i)}
+            activeIndex={activeTabIndex}
+            setActiveIndex={setActiveTabIndex}
           />
         </div>
       </Col>
