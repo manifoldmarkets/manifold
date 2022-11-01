@@ -1,20 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import * as Google from 'expo-auth-session/providers/google'
 import WebView from 'react-native-webview'
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithCredential,
-} from 'firebase/auth'
+import { getAuth } from 'firebase/auth'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
 import 'expo-dev-client'
 import CookieManager from '@react-native-cookies/cookies'
-import {
-  AUTH_COOKIE_NAME,
-  ENV,
-  ENV_CONFIG,
-  FIREBASE_CONFIG,
-} from 'common/envs/constants'
+import { AUTH_COOKIE_NAME, ENV, FIREBASE_CONFIG } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -74,14 +64,11 @@ const homeUri =
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
   const [userId, setUserId] = useState<string | null>()
-  const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
-    // @ts-ignore
-    ENV_CONFIG.expoConfig
-  )
+
   const [isWebViewLoading, setIsWebViewLoading] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const webview = useRef<WebView | undefined>()
-  const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
+  const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const isIOS = Platform.OS === 'ios'
   const useWebKit = isIOS
   const notificationListener = useRef<Subscription | undefined>()
@@ -176,29 +163,6 @@ export default function App() {
     }
   }, [])
 
-  // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
-  useEffect(() => {
-    try {
-      if (response?.type === 'success') {
-        const { id_token } = response.params
-        const credential = GoogleAuthProvider.credential(id_token)
-        signInWithCredential(auth, credential).then((result) => {
-          const fbUser = result.user.toJSON()
-          if (webview.current) {
-            webview.current.postMessage(
-              JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-            )
-          }
-        })
-      }
-    } catch (err) {
-      Sentry.Native.captureException(err, {
-        extra: { message: 'google sign in' },
-      })
-      console.log('[google sign in] Error : ', err)
-    }
-  }, [response])
-
   useEffect(() => {
     try {
       if (fbUser && !isExpoClient) {
@@ -284,13 +248,10 @@ export default function App() {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data)
     console.log('Received nativeEvent: ', type)
+    setHasSetNativeFlag(true)
     // Time to log in to firebase
     if (type === 'googleLoginClicked') {
-      if (Platform.OS === 'ios') {
-        setShowAuthModal(true)
-      } else {
-        promptAsync()
-      }
+      setShowAuthModal(true)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -347,7 +308,6 @@ export default function App() {
               }
             }
           )
-          return
         }
       } catch (e) {
         Sentry.Native.captureException(e, {
@@ -432,9 +392,9 @@ export default function App() {
               extra: { message: 'webview error' },
             })
           }}
-          onMessage={handleMessageFromWebview}
-          onNavigationStateChange={async (navState) => {
-            if (!navState.loading && !hasInjectedVariable && webview.current) {
+          // TODO: test on android
+          onTouchStart={() => {
+            if (!hasSetNativeFlag && webview.current) {
               console.log('setting is native')
               webview.current.postMessage(
                 JSON.stringify({
@@ -442,14 +402,15 @@ export default function App() {
                   data: {},
                 })
               )
-              setHasInjectedVariable(true)
             }
           }}
+          onMessage={handleMessageFromWebview}
         />
         <AuthModal
-          modalVisible={showAuthModal}
-          setModalVisible={setShowAuthModal}
+          shouldShowAuth={showAuthModal}
           webview={webview}
+          setFbUser={setFbUser}
+          setUserId={setUserId}
         />
       </SafeAreaView>
     </>

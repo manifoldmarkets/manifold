@@ -18,19 +18,67 @@ import {
 } from 'expo-apple-authentication'
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto'
 import { FontAwesome5 } from '@expo/vector-icons'
-import { OAuthProvider, updateEmail, updateProfile } from 'firebase/auth'
+import {
+  GoogleAuthProvider,
+  OAuthProvider,
+  updateEmail,
+  updateProfile,
+} from 'firebase/auth'
 import { signInWithCredential } from '@firebase/auth'
 import { auth } from '../App'
 import WebView from 'react-native-webview'
+import * as Google from 'expo-auth-session/providers/google'
+import { ENV_CONFIG } from 'common/lib/envs/constants'
+import * as Sentry from 'sentry-expo'
 
-// TODO: combine auth code so we can set the cookie from the same code
 export const AuthModal = (props: {
-  modalVisible: boolean
-  setModalVisible: (visible: boolean) => void
+  shouldShowAuth: boolean
   webview: React.RefObject<WebView | undefined>
+  setFbUser: (user: string) => void
+  setUserId: (userId: string) => void
 }) => {
-  const { modalVisible, setModalVisible, webview } = props
+  const { shouldShowAuth, webview, setFbUser, setUserId } = props
+  const [modalVisible, setModalVisible] = useState(false)
+  const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
+    // @ts-ignore
+    ENV_CONFIG.expoConfig
+  )
   const appleAuthAvailable = useAppleAuthentication()
+
+  useEffect(() => {
+    if (shouldShowAuth) {
+      if (Platform.OS === 'ios') {
+        setModalVisible(true)
+      } else {
+        promptAsync()
+      }
+    }
+  }, [shouldShowAuth])
+
+  // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
+  useEffect(() => {
+    try {
+      if (response?.type === 'success') {
+        const { id_token } = response.params
+        const credential = GoogleAuthProvider.credential(id_token)
+        signInWithCredential(auth, credential).then((result) => {
+          const fbUser = result.user.toJSON()
+          setFbUser(JSON.stringify(fbUser))
+          setUserId(result.user.uid)
+          if (webview.current) {
+            webview.current.postMessage(
+              JSON.stringify({ type: 'nativeFbUser', data: fbUser })
+            )
+          }
+        })
+      }
+    } catch (err) {
+      Sentry.Native.captureException(err, {
+        extra: { message: 'google sign in' },
+      })
+      console.log('[google sign in] Error : ', err)
+    }
+  }, [response])
 
   async function triggerLoginWithApple() {
     try {
@@ -50,6 +98,8 @@ export const AuthModal = (props: {
       webview.current?.postMessage(
         JSON.stringify({ type: 'nativeFbUser', data: fbUser })
       )
+      setFbUser(JSON.stringify(fbUser))
+      setUserId(user.uid)
     } catch (error: any) {
       console.error(error)
       Alert.alert('Error', 'Something went wrong. Please try again later.')
