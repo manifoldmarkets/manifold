@@ -15,17 +15,15 @@ import {
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser, getContract, isProd } from './utils'
+import { chargeUser, getContract } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 
-import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from '../../common/economy'
+import { FIXED_ANTE } from '../../common/economy'
 import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   getCpmmInitialLiquidity,
   getFreeAnswerAnte,
   getMultipleChoiceAntes,
   getNumericAnte,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from '../../common/antes'
 import { Answer, getNoneAnswer } from '../../common/answer'
 import { getNewContract } from '../../common/new-contract'
@@ -36,7 +34,6 @@ import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
-import { FieldValue } from 'firebase-admin/firestore'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -145,10 +142,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
 
   const ante = user.username === 'DavidChee' ? 500 : FIXED_ANTE
 
-  const deservesFreeMarket =
-    (user?.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
   // TODO: this is broken because it's not in a transaction
-  if (ante > user.balance && !deservesFreeMarket)
+  if (ante > user.balance)
     throw new APIError(400, `Balance must be at least ${ante}.`)
 
   let group: Group | null = null
@@ -222,19 +217,9 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     visibility
   )
 
-  const providerId = deservesFreeMarket
-    ? isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    : user.id
+  const providerId = user.id
 
   if (ante) await chargeUser(providerId, ante, true)
-  if (deservesFreeMarket)
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({ freeMarketsCreated: FieldValue.increment(1) })
-
   await contractRef.create(contract)
 
   if (group != null) {

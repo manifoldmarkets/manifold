@@ -7,7 +7,6 @@ import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
 import {
   FIXED_ANTE,
-  FREE_MARKETS_PER_USER_MAX,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -180,8 +179,6 @@ export function NewContract(props: {
     : undefined
 
   const balance = creator.balance || 0
-  const deservesFreeMarket =
-    (creator.freeMarketsCreated ?? 0) < FREE_MARKETS_PER_USER_MAX
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -201,7 +198,7 @@ export function NewContract(props: {
     question.length > 0 &&
     ante !== undefined &&
     ante !== null &&
-    (ante <= balance || deservesFreeMarket) &&
+    ante <= balance &&
     // closeTime must be in the future
     closeTime &&
     closeTime > Date.now() &&
@@ -482,35 +479,19 @@ export function NewContract(props: {
               text={`Cost to create your question. This amount is used to subsidize predictions.`}
             />
           </label>
-          {!deservesFreeMarket ? (
-            <>
-              <div className="pl-1 text-sm text-gray-700">
-                {formatMoney(ante)} or{' '}
-                <span className=" text-teal-500">FREE </span>
-                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
-                <InfoTooltip
-                  text={`You'll earn a bonus of ${formatMoney(
-                    UNIQUE_BETTOR_BONUS_AMOUNT
-                  )} for each unique trader you get on your market.`}
-                />
-              </div>
-              <div className="pl-1 text-gray-500"></div>
-            </>
-          ) : (
-            <Row className="text-sm">
-              <div className="pl-1 text-gray-700 line-through">
-                {formatMoney(ante)}
-              </div>
-              <div className="pl-1 text-teal-500">FREE </div>
-              <div className="pl-1 text-gray-500">
-                (You have{' '}
-                {FREE_MARKETS_PER_USER_MAX - (creator?.freeMarketsCreated ?? 0)}{' '}
-                free markets left)
-              </div>
-            </Row>
-          )}
 
-          {ante > balance && !deservesFreeMarket && (
+          <div className="pl-1 text-sm text-gray-700">
+            {formatMoney(ante)} or <span className=" text-teal-500">FREE </span>
+            if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+            <InfoTooltip
+              text={`You'll earn a bonus of ${formatMoney(
+                UNIQUE_BETTOR_BONUS_AMOUNT
+              )} for each unique trader you get on your market.`}
+            />
+          </div>
+          <div className="pl-1 text-gray-500"></div>
+
+          {ante > balance && (
             <div className="mb-2 mt-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
               <span className="text-scarlet-500 mr-2">
                 Insufficient balance
