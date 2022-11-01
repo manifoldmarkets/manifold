@@ -46,20 +46,16 @@ export async function updateUserMetrics() {
 
   log('Loading contracts...')
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
-  log(`Loaded ${contracts.length} contracts.`)
+  const contractsByCreator = groupBy(contracts, (c) => c.creatorId)
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+  log(`Loaded ${contracts.length} contracts.`)
 
   log('Computing metric updates...')
   const now = Date.now()
   const writer = firestore.bulkWriter({ throttling: false })
   await batchedWaitAll(
     users.map((user) => async () => {
-      const userContracts = (
-        await firestore
-          .collection('contracts')
-          .where('creatorId', '==', user.id)
-          .get()
-      ).docs.map((d) => d.data() as Contract)
+      const userContracts = contractsByCreator[user.id] ?? []
       const currentBets = (
         await firestore
           .collectionGroup('bets')
