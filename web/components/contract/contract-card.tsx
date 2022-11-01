@@ -420,7 +420,7 @@ export function ContractCardProbChange(props: {
         'mb-4 break-inside-avoid-column overflow-hidden'
       )}
     >
-      {showPosition && metrics && metrics.hasShares ? (
+      {showPosition && user && metrics && metrics.hasShares ? (
         <MetricsFooter
           contract={contract}
           metrics={metrics}
