@@ -135,7 +135,7 @@ export function ContractCard(props: {
           {(!showImage || !contract.coverImageUrl) && (
             <div
               className={clsx(
-                'break-anywhere text-greyscale-7 pb-2 font-medium',
+                'break-anywhere text-greyscale-7 pb-2 font-medium text-lg',
                 questionClass
               )}
             >
