@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useRouter, NextRouter } from 'next/router'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -85,39 +85,6 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         </div>
       ))}
     </>
-  )
-}
-
-export function OverrideableTabs(
-  props: TabProps & {
-    overrideIndex: number | undefined
-    setOverrideIndexBack: () => void
-    defaultIndex?: number
-  }
-) {
-  const {
-    defaultIndex,
-    onClick,
-    overrideIndex,
-    setOverrideIndexBack,
-    ...rest
-  } = props
-  const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
-  useEffect(() => {
-    if (overrideIndex != undefined) {
-      setActiveIndex(overrideIndex)
-      setOverrideIndexBack()
-    }
-  }, [overrideIndex, setOverrideIndexBack])
-  return (
-    <ControlledTabs
-      {...rest}
-      activeIndex={activeIndex}
-      onClick={(title, i) => {
-        setActiveIndex(i)
-        onClick?.(title, i)
-      }}
-    />
   )
 }
 
