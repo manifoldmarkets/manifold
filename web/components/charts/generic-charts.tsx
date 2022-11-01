@@ -521,12 +521,13 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       setViewXScale={setViewXScale}
       viewYScale={viewYScale}
       setViewYScale={setViewYScale}
-      yKind="m$"
+      yKind={yKind}
       data={data}
-      curve={curveStepAfter}
+      curve={curve}
       Tooltip={Tooltip}
       onMouseOver={onMouseOver}
       color={color}
+      pct={pct}
     />
   )
 }

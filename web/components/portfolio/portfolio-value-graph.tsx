@@ -14,7 +14,6 @@ import { TooltipProps } from 'web/components/charts/helpers'
 import {
   ControllableSingleValueHistoryChart,
   HistoryPoint,
-  SingleValueHistoryChart,
 } from 'web/components/charts/generic-charts'
 
 const MARGIN = { top: 20, right: 10, bottom: 20, left: 70 }
