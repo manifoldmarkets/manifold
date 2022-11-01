@@ -358,7 +358,8 @@ export function saveUserEvent(
 }
 
 export const getUsersBlockFacetFilters = (
-  privateUser: PrivateUser | undefined | null
+  privateUser: PrivateUser | undefined | null,
+  excludeGroupSlugs?: boolean
 ) => {
   let facetFilters: string[] = []
   if (!privateUser) return facetFilters
@@ -372,11 +373,12 @@ export const getUsersBlockFacetFilters = (
       (blockedUserId) => `creatorId:-${blockedUserId}`
     )
   )
-  facetFilters = facetFilters.concat(
-    privateUser.blockedGroupSlugs.map(
-      (blockedUserId) => `groupSlugs:-${blockedUserId}`
+  if (!excludeGroupSlugs)
+    facetFilters = facetFilters.concat(
+      privateUser.blockedGroupSlugs.map(
+        (blockedUserId) => `groupSlugs:-${blockedUserId}`
+      )
     )
-  )
   facetFilters = facetFilters.concat(
     privateUser.blockedContractIds.map(
       (blockedUserId) => `id:-${blockedUserId}`

@@ -26,7 +26,7 @@ export const useSavedContractMetrics = (
     : savedMetrics
 
   const metrics =
-    contractMetrics || savedMetrics
+    contractMetrics || savedMetrics || computedMetrics
       ? ({
           ...contractMetrics,
           ...savedMetrics,

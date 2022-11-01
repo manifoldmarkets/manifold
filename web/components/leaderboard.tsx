@@ -4,6 +4,7 @@ import { Row } from './layout/row'
 import { SiteLink } from './widgets/site-link'
 import { Table } from './widgets/table'
 import { Title } from './widgets/title'
+import { sortBy } from 'lodash'
 
 interface LeaderboardEntry {
   username: string
@@ -26,7 +27,10 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   // TODO: Ideally, highlight your own entry on the leaderboard
   const { title, columns, className, highlightUsername } = props
   const maxToShow = props.maxToShow ?? props.entries.length
-  const entries = props.entries.slice(0, maxToShow)
+  const entries = sortBy(
+    props.entries.slice(0, maxToShow),
+    (entry) => entry.rank
+  )
   return (
     <div className={clsx('w-full px-1', className)}>
       <Title text={title} className="!mt-0" />

@@ -15,6 +15,13 @@ Our community is the beating heart of Manifold; your individual contributions ar
 
 ## Awarded bounties
 
+💥 *Awarded on 2022-10-31*
+
+**[Matt Kempster](https://github.com/manifoldmarkets/manifold/issues/1119): M$5,000**
+
+- For altering the Manifold team to a way users' emails were being publicly exposed.
+
+
 💥 *Awarded on 2022-10-07*
 
 **[Pepe](https://manifold.markets/Pepe): M$10,000**
