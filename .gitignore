@@ -6,4 +6,5 @@ node_modules
 /web/out
 /.env
 tsconfig.tsbuildinfo
-/scripts
+/scripts/build
+/scripts/legacy
