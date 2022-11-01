@@ -5,10 +5,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
-import {
-  FIXED_ANTE,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
+import { FIXED_ANTE, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -417,14 +414,6 @@ export function NewContract(props: {
         )}
       </Row>
 
-      <Row className="my-2 items-center gap-2 text-sm">
-        <span>Display this market on homepage</span>
-        <ShortToggle
-          on={visibility === 'public'}
-          setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
-        />
-      </Row>
-
       <Spacer h={6} />
 
       <div className="mb-1 flex flex-col items-start">
@@ -467,6 +456,16 @@ export function NewContract(props: {
           />
         </Row>
       </div>
+
+      <Spacer h={6} />
+
+      <Row className="items-center gap-2">
+        <span>Display this market on homepage</span>
+        <ShortToggle
+          on={visibility === 'public'}
+          setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
+        />
+      </Row>
 
       <Spacer h={6} />
 
