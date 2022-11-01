@@ -126,17 +126,20 @@ export function ContractDetails(props: {
   const { contract, disabled } = props
 
   return (
-    <Row className="justify-between">
-      <MarketSubheader contract={contract} disabled={disabled} />
-      <ExtraContractActionsRow contract={contract} />
-    </Row>
+    <Col className="gap-2">
+      <Row className="justify-between">
+        <MarketSubheader contract={contract} disabled={disabled} />
+        {!disabled && <ExtraContractActionsRow contract={contract} />}
+      </Row>
+      <Row className="gap-1">
+        {!disabled && <BountiedContractSmallBadge contract={contract} />}
+        <MarketGroups contract={contract} disabled={disabled} />
+      </Row>
+    </Col>
   )
 }
 
-export function MarketSubheader(props: {
-  contract: Contract
-  disabled?: boolean
-}) {
+function MarketSubheader(props: { contract: Contract; disabled?: boolean }) {
   const { contract, disabled } = props
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
@@ -145,57 +148,51 @@ export function MarketSubheader(props: {
   const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   return (
-    <div className="block items-end gap-2 sm:flex">
-      <Row>
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          noLink={disabled}
-          size={9}
-          className="mr-1.5"
-        />
+    <Row>
+      <Avatar
+        username={creatorUsername}
+        avatarUrl={creatorAvatarUrl}
+        noLink={disabled}
+        size={9}
+        className="mr-1.5"
+      />
 
-        {!disabled && (
-          <div className="absolute mt-3 ml-[11px]">
-            <MiniUserFollowButton userId={creatorId} />
-          </div>
-        )}
-        <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-          <Row className="w-full space-x-1 ">
-            {disabled ? (
-              creatorName
-            ) : (
-              <Row className={'gap-2'}>
-                <UserLink
-                  className="my-auto whitespace-nowrap"
-                  name={creatorName}
-                  username={creatorUsername}
-                />
-                {/*<BadgeDisplay user={creator} />*/}
-              </Row>
+      {!disabled && (
+        <div className="absolute mt-3 ml-[11px]">
+          <MiniUserFollowButton userId={creatorId} />
+        </div>
+      )}
+      <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
+        <Row className="w-full space-x-1 ">
+          {disabled ? (
+            creatorName
+          ) : (
+            <Row className={'gap-2'}>
+              <UserLink
+                className="my-auto whitespace-nowrap"
+                name={creatorName}
+                username={creatorUsername}
+              />
+              {/*<BadgeDisplay user={creator} />*/}
+            </Row>
+          )}
+          {correctResolutionPercentage != null &&
+            correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
+              <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
+                <ExclamationIcon className="h-6 w-6 text-yellow-500" />
+              </Tooltip>
             )}
-            {correctResolutionPercentage != null &&
-              correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
-                <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
-                  <ExclamationIcon className="h-6 w-6 text-yellow-500" />
-                </Tooltip>
-              )}
-          </Row>
-          <div className="text-2xs text-greyscale-4 sm:text-xs">
-            <CloseOrResolveTime
-              contract={contract}
-              resolvedDate={resolvedDate}
-              isCreator={isCreator}
-              disabled={disabled}
-            />
-          </div>
-        </Col>
-      </Row>
-      <Row className="mt-2 gap-1">
-        {!disabled && <BountiedContractSmallBadge contract={contract} />}
-        <MarketGroups contract={contract} disabled={disabled} />
-      </Row>
-    </div>
+        </Row>
+        <div className="text-2xs text-greyscale-4 sm:text-xs">
+          <CloseOrResolveTime
+            contract={contract}
+            resolvedDate={resolvedDate}
+            isCreator={isCreator}
+            disabled={disabled}
+          />
+        </div>
+      </Col>
+    </Row>
   )
 }
 

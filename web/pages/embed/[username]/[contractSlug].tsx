@@ -10,7 +10,7 @@ import {
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
 } from 'web/components/contract/contract-card'
-import { MarketSubheader } from 'web/components/contract/contract-details'
+import { ContractDetails } from 'web/components/contract/contract-details'
 import { ContractChart } from 'web/components/charts/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -135,9 +135,7 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
         )}
       </Row>
       <Spacer h={3} />
-      <Row className="items-center justify-between gap-4 px-2">
-        <MarketSubheader contract={contract} disabled />
-      </Row>
+      <ContractDetails contract={contract} disabled />
 
       <Spacer h={2} />
 
