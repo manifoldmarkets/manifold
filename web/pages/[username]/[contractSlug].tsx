@@ -168,9 +168,7 @@ export function ContractPageContent(
     undefined
   )
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
-  const [overrideIndex, setOverrideIndex] = useState<undefined | number>(
-    undefined
-  )
+  const [activeIndex, setActiveIndex] = useState<number>(0)
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
@@ -178,9 +176,8 @@ export function ContractPageContent(
     } else {
       console.error('no ref to scroll to')
     }
-    setOverrideIndex(0)
+    setActiveIndex(0)
   })
-  const setOverrideIndexBack = useEvent(() => setOverrideIndex(undefined))
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
   return (
@@ -268,8 +265,8 @@ export function ContractPageContent(
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}
-            overrideIndex={overrideIndex}
-            setOverrideIndexBack={setOverrideIndexBack}
+            activeIndex={activeIndex}
+            setActiveIndex={(i: number) => setActiveIndex(i)}
           />
         </div>
       </Col>
