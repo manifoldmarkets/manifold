@@ -4,6 +4,7 @@ Setlocal EnableDelayedExpansion
 ::============
 ::   CONFIG   
 ::============
+set ROUTE_TO_SCRIPTS_DIR=..
 set ZONE=us-central1-a
 set PROJECT=mantic-markets
 
@@ -15,6 +16,7 @@ set PROD_BUILD_DIR=build\prod
 ::============
 ::   SCRIPT   
 ::============
+cd %ROUTE_TO_SCRIPTS_DIR%
 set /p de=Which server do you want to deploy to [DEV/prod]? 
 if /i [!de!]==[prod] goto init_prod
 if /i [!de!]==[p] goto init_prod
