@@ -13,29 +13,25 @@ export const NativeMessageListener = () => {
   const router = useRouter()
 
   const handleNativeMessage = async (e: any) => {
-    if (typeof window === 'undefined') return
-    if (!(window as any).isNative) return
     let event
     try {
       event = JSON.parse(e.data)
     } catch (e) {
-      console.log('error parsing native message', e)
       return
     }
-    const eventType = event.type
-    const eventData = event.data
+    const { type, data } = event
     console.log('Received native event: ', event)
-    if (eventType === 'nativeFbUser') {
-      await setFirebaseUserViaJson(eventData, app)
+    if (type === 'nativeFbUser') {
+      await setFirebaseUserViaJson(data, app)
       return
-    } else if (eventType === 'pushNotificationPermissionStatus') {
-      const { status, userId } = eventData
+    } else if (type === 'pushNotificationPermissionStatus') {
+      const { status, userId } = data
       await handlePushNotificationPermissionStatus(userId, status)
-    } else if (eventType === 'pushToken') {
-      const { token, userId } = eventData
+    } else if (type === 'pushToken') {
+      const { token, userId } = data
       await setPushToken(userId, token)
-    } else if (eventType === 'notification') {
-      const notification = eventData as Notification
+    } else if (type === 'notification') {
+      const notification = data as Notification
       const sourceUrl = getSourceUrl(notification)
       console.log('sourceUrl', sourceUrl)
       try {
@@ -43,9 +39,9 @@ export const NativeMessageListener = () => {
       } catch (e) {
         console.log(`Error navigating to notification route ${sourceUrl}`, e)
       }
-    } else if (eventType === 'link') {
-      console.log('link', eventData)
-      const newRoute = eventData.startsWith('/') ? eventData : '/' + eventData
+    } else if (type === 'link') {
+      console.log('link', data)
+      const newRoute = data.startsWith('/') ? data : '/' + data
       try {
         router.push(newRoute)
       } catch (e) {
