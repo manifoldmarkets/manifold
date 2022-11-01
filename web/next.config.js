@@ -9,6 +9,7 @@ module.exports = {
   reactStrictMode: true,
   optimizeFonts: false,
   experimental: {
+    appDir: true,
     scrollRestoration: true,
     externalDir: true,
     modularizeImports: {
