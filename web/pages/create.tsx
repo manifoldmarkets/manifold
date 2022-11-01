@@ -5,7 +5,11 @@ import { Spacer } from 'web/components/layout/spacer'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Contract, contractPath } from 'web/lib/firebase/contracts'
 import { createMarket } from 'web/lib/firebase/api'
-import { FIXED_ANTE, FREE_MARKETS_PER_USER_MAX } from 'common/economy'
+import {
+  FIXED_ANTE,
+  FREE_MARKETS_PER_USER_MAX,
+  UNIQUE_BETTOR_BONUS_AMOUNT,
+} from 'common/economy'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -278,6 +282,16 @@ export function NewContract(props: {
 
   return (
     <div>
+      <div className="mb-1 flex flex-col items-start gap-1">
+        <label className="gap-2 px-1 py-2">
+          <span className="mb-1">Description </span>
+          <InfoTooltip text="Optional. Describe how you will resolve this question." />
+        </label>
+        <TextEditor editor={editor} />
+      </div>
+
+      <Spacer h={6} />
+
       <label className="flex px-1 pt-2 pb-3">Answer type</label>
       <Row>
         <ChoicesToggleGroup
@@ -459,15 +473,6 @@ export function NewContract(props: {
 
       <Spacer h={6} />
 
-      <div className="mb-1 flex flex-col items-start gap-1">
-        <label className="gap-2 px-1 py-2">
-          <span className="mb-1">Description </span>
-          <InfoTooltip text="Optional. Describe how you will resolve this question." />
-        </label>
-        <TextEditor editor={editor} />
-      </div>
-
-      <Spacer h={6} />
       <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
         <div className="mb-1 flex flex-col items-start">
@@ -478,9 +483,19 @@ export function NewContract(props: {
             />
           </label>
           {!deservesFreeMarket ? (
-            <div className="pl-1 text-sm text-gray-700">
-              {formatMoney(ante)}
-            </div>
+            <>
+              <div className="pl-1 text-sm text-gray-700">
+                {formatMoney(ante)} or{' '}
+                <span className=" text-teal-500">FREE </span>
+                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+                <InfoTooltip
+                  text={`You'll earn a bonus of ${formatMoney(
+                    UNIQUE_BETTOR_BONUS_AMOUNT
+                  )} for each unique trader you get on your market.`}
+                />
+              </div>
+              <div className="pl-1 text-gray-500"></div>
+            </>
           ) : (
             <Row className="text-sm">
               <div className="pl-1 text-gray-700 line-through">
@@ -514,20 +529,22 @@ export function NewContract(props: {
             </div>
           )}
         </div>
-
-        <Button
-          type="submit"
-          color="green"
-          loading={isSubmitting}
-          disabled={!isValid || editor?.storage.upload.mutation.isLoading}
-          onClick={(e) => {
-            e.preventDefault()
-            submit()
-          }}
-        >
-          {isSubmitting ? 'Creating...' : 'Create question'}
-        </Button>
       </Row>
+
+      <Spacer h={6} />
+      <Button
+        type="submit"
+        color="indigo"
+        size="xl"
+        loading={isSubmitting}
+        disabled={!isValid || editor?.storage.upload.mutation.isLoading}
+        onClick={(e) => {
+          e.preventDefault()
+          submit()
+        }}
+      >
+        {isSubmitting ? 'Creating...' : 'Create question'}
+      </Button>
 
       <Spacer h={6} />
     </div>
