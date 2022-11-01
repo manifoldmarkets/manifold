@@ -32,6 +32,7 @@ import utc from 'dayjs/plugin/utc'
 import { Like } from 'common/like'
 import { track } from '../service/analytics'
 import { postMessageToNative } from 'web/components/native-message-listener'
+import { getIsNative } from 'web/lib/native/is-native'
 
 dayjs.extend(utc)
 
@@ -194,7 +195,7 @@ export async function setCachedReferralInfoForUser(user: User | null) {
 }
 
 export async function firebaseLogin() {
-  if ((window as any).isNative) {
+  if (getIsNative()) {
     // Post the message back to expo
     postMessageToNative('googleLoginClicked', {})
     return
@@ -206,7 +207,7 @@ export async function firebaseLogin() {
 }
 
 export async function firebaseLogout() {
-  if ((window as any).isNative) {
+  if (getIsNative()) {
     // Post the message back to expo
     postMessageToNative('signOut', {})
   }

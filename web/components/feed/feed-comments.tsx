@@ -29,6 +29,7 @@ import { ReplyToggle } from '../comments/reply-toggle'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ReportButton } from 'web/components/buttons/report-button'
 import { FlagIcon } from '@heroicons/react/outline'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -187,7 +188,7 @@ export function CommentActions(props: {
   contract: Contract
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
-  const isNative = typeof window !== 'undefined' && (window as any).isNative
+  const isNative = getIsNative()
 
   return (
     <Row className="grow items-center justify-end">

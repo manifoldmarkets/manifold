@@ -419,7 +419,13 @@ export default function App() {
           onMessage={handleMessageFromWebview}
           onNavigationStateChange={async (navState) => {
             if (!navState.loading && !hasInjectedVariable && webview.current) {
-              webview.current.injectJavaScript('window.isNative = true')
+              console.log('setting is native')
+              webview.current.postMessage(
+                JSON.stringify({
+                  type: 'setIsNative',
+                  data: {},
+                })
+              )
               setHasInjectedVariable(true)
             }
           }}

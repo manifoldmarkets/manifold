@@ -7,9 +7,10 @@
 // an administrator. By default a prompt is shown the first
 // time the clipboard is used (per session).
 import { postMessageToNative } from 'web/components/native-message-listener'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export function copyToClipboard(text: string) {
-  if ((window as any).isNative) {
+  if (getIsNative()) {
     postMessageToNative('copyToClipboard', text)
   }
   if (navigator.clipboard) {
