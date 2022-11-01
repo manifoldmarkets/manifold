@@ -2,7 +2,6 @@ import { sortBy, sumBy, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/legacy/image'
-import Confetti from 'react-confetti'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -18,12 +17,12 @@ import { charities, Charity } from 'common/charity'
 import { useRouter } from 'next/router'
 import Custom404 from '../404'
 import { useCharityTxns } from 'web/hooks/use-charity-txns'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { Donation } from 'web/components/charity/feed-items'
 import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
+import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 
 export default function CharityPageWrapper() {
   const router = useRouter()
@@ -53,7 +52,6 @@ function CharityPage(props: { charity: Charity }) {
   )
   const numSupporters = uniqBy(txns, (txn) => txn.fromId).length
 
-  const { width, height } = useWindowSize()
   const [showConfetti, setShowConfetti] = useState(false)
 
   return (
@@ -68,12 +66,7 @@ function CharityPage(props: { charity: Charity }) {
     >
       <SEO title={name} description={description} url="/groups" />
       {showConfetti && (
-        <Confetti
-          width={width ? width : 500}
-          height={height ? height : 500}
-          recycle={false}
-          numberOfPieces={300}
-        />
+        <FullscreenConfetti recycle={false} numberOfPieces={300} />
       )}
 
       <Col className="mx-1 w-full items-center sm:px-0">

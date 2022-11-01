@@ -186,7 +186,7 @@ function ClosedChallengeContent(props: {
   const user = useUserById(acceptances[0].userId)
 
   const [showConfetti, setShowConfetti] = useState(false)
-  const { width, height } = useWindowSize()
+  const { width = 500, height = 500 } = useWindowSize()
   useEffect(() => {
     if (acceptances.length === 0) return
     if (acceptances[0].createdTime > Date.now() - 1000 * 60)
@@ -205,10 +205,10 @@ function ClosedChallengeContent(props: {
     <>
       {showConfetti && (
         <Confetti
-          width={width ?? 500}
-          height={height ?? 500}
+          width={width}
+          height={height}
           confettiSource={{
-            x: ((width ?? 500) - 200) / 2,
+            x: (width - 200) / 2,
             y: 0,
             w: 200,
             h: 0,

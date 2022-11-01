@@ -34,7 +34,6 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { ExtraContractActionsRow } from './extra-contract-actions-row'
 import { GroupLink } from 'common/group'
 import { Subtitle } from '../widgets/subtitle'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { BountiedContractSmallBadge } from 'web/components/contract/bountied-contract-badge'
 import { Input } from '../widgets/input'
@@ -125,24 +124,12 @@ export function ContractDetails(props: {
   disabled?: boolean
 }) {
   const { contract, disabled } = props
-  const isMobile = useIsMobile()
 
   return (
-    <Col>
-      <Row className="justify-between">
-        <MarketSubheader contract={contract} disabled={disabled} />
-        <div className="mt-0">
-          <ExtraContractActionsRow contract={contract} />
-        </div>
-      </Row>
-      {/* GROUPS */}
-      {isMobile && (
-        <Row className="mt-2 gap-1">
-          <BountiedContractSmallBadge contract={contract} />
-          <MarketGroups contract={contract} disabled={disabled} />
-        </Row>
-      )}
-    </Col>
+    <Row className="justify-between">
+      <MarketSubheader contract={contract} disabled={disabled} />
+      <ExtraContractActionsRow contract={contract} />
+    </Row>
   )
 }
 
@@ -157,59 +144,58 @@ export function MarketSubheader(props: {
   const creator = useUserById(creatorId)
   const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
-  const isMobile = useIsMobile()
   return (
-    <Row>
-      <Avatar
-        username={creatorUsername}
-        avatarUrl={creatorAvatarUrl}
-        noLink={disabled}
-        size={9}
-        className="mr-1.5"
-      />
+    <div className="block items-end gap-2 sm:flex">
+      <Row>
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={creatorAvatarUrl}
+          noLink={disabled}
+          size={9}
+          className="mr-1.5"
+        />
 
-      {!disabled && (
-        <div className="absolute mt-3 ml-[11px]">
-          <MiniUserFollowButton userId={creatorId} />
-        </div>
-      )}
-      <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-        <Row className="w-full space-x-1 ">
-          {disabled ? (
-            creatorName
-          ) : (
-            <Row className={'gap-2'}>
-              <UserLink
-                className="my-auto whitespace-nowrap"
-                name={creatorName}
-                username={creatorUsername}
-              />
-              {/*<BadgeDisplay user={creator} />*/}
-            </Row>
-          )}
-          {correctResolutionPercentage != null &&
-            correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
-              <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
-                <ExclamationIcon className="h-6 w-6 text-yellow-500" />
-              </Tooltip>
+        {!disabled && (
+          <div className="absolute mt-3 ml-[11px]">
+            <MiniUserFollowButton userId={creatorId} />
+          </div>
+        )}
+        <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
+          <Row className="w-full space-x-1 ">
+            {disabled ? (
+              creatorName
+            ) : (
+              <Row className={'gap-2'}>
+                <UserLink
+                  className="my-auto whitespace-nowrap"
+                  name={creatorName}
+                  username={creatorUsername}
+                />
+                {/*<BadgeDisplay user={creator} />*/}
+              </Row>
             )}
-        </Row>
-        <Row className="text-2xs text-greyscale-4 flex-wrap gap-2 sm:text-xs">
-          <CloseOrResolveTime
-            contract={contract}
-            resolvedDate={resolvedDate}
-            isCreator={isCreator}
-            disabled={disabled}
-          />
-          {!isMobile && (
-            <Row className={'gap-1'}>
-              {!disabled && <BountiedContractSmallBadge contract={contract} />}
-              <MarketGroups contract={contract} disabled={disabled} />
-            </Row>
-          )}
-        </Row>
-      </Col>
-    </Row>
+            {correctResolutionPercentage != null &&
+              correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
+                <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
+                  <ExclamationIcon className="h-6 w-6 text-yellow-500" />
+                </Tooltip>
+              )}
+          </Row>
+          <div className="text-2xs text-greyscale-4 sm:text-xs">
+            <CloseOrResolveTime
+              contract={contract}
+              resolvedDate={resolvedDate}
+              isCreator={isCreator}
+              disabled={disabled}
+            />
+          </div>
+        </Col>
+      </Row>
+      <Row className="mt-2 gap-1">
+        {!disabled && <BountiedContractSmallBadge contract={contract} />}
+        <MarketGroups contract={contract} disabled={disabled} />
+      </Row>
+    </div>
   )
 }
 
