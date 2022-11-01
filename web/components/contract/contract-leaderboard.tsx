@@ -13,6 +13,7 @@ import { BETTORS } from 'common/user'
 import { scoreCommentorsAndBettors } from 'common/scoring'
 import { ContractComment } from 'common/comment'
 import { memo } from 'react'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
 export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   contract: Contract
@@ -35,6 +36,7 @@ export const ContractLeaderboard = memo(function ContractLeaderboard(props: {
   const top5 = Object.values(userProfits)
     .sort((p1, p2) => p2.total - p1.total)
     .filter((p) => p.total > 0)
+    .filter((p) => p.username !== HOUSE_BOT_USERNAME)
     .slice(0, 5)
 
   return top5 && top5.length > 0 ? (

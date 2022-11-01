@@ -51,6 +51,7 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -324,8 +325,11 @@ function GroupLeaderboard(props: {
   header: string
   noFormatting?: boolean
 }) {
-  const { topUsers, title, maxToShow, header, noFormatting } = props
+  const { title, maxToShow, header, noFormatting } = props
 
+  const topUsers = props.topUsers.filter(
+    (u) => u.user.username !== HOUSE_BOT_USERNAME
+  )
   const scoresByUser = topUsers.reduce((acc, { user, score }) => {
     acc[user.id] = score
     return acc

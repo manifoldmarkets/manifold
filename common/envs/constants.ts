@@ -73,6 +73,8 @@ export const BOT_USERNAMES = [
   'LiquidityBonusBot',
 ]
 
+export const HOUSE_BOT_USERNAME = 'acc'
+
 export function firestoreConsolePath(contractId: string) {
   return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fcontracts~2F${contractId}`
 }

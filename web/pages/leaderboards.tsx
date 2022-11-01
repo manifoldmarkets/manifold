@@ -16,6 +16,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
 export async function getStaticProps() {
   const props = await fetchProps()
@@ -50,7 +51,7 @@ const queryLeaderboardUsers = async (period: Period) => {
     getTopCreators(period),
   ])
   return {
-    topTraders,
+    topTraders: topTraders.filter((t) => t.username !== HOUSE_BOT_USERNAME),
     topCreators,
   }
 }
