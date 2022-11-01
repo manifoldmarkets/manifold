@@ -6,12 +6,9 @@ export function fromNow(time: number) {
   return dayjs(time).fromNow()
 }
 
-export function formatTime(time: number, includeTime: boolean) {
-  const d = dayjs(time)
+const FORMATTER = new Intl.DateTimeFormat('default', {
+  dateStyle: 'medium',
+  timeStyle: 'long',
+})
 
-  if (d.isSame(Date.now(), 'day')) return d.format('ha')
-
-  if (includeTime) return dayjs(time).format('MMM D, ha')
-
-  return dayjs(time).format('MMM D')
-}
+export const formatTime = FORMATTER.format

@@ -139,7 +139,8 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
       const itemComponents = pinnedItems.map((element) => {
         if (element.type === 'post') {
           const post = element.item as Post
-          if (!userIsBlocked(post.creatorId)) return <PostCard post={post} />
+          if (!userIsBlocked(post.creatorId))
+            return <PostCard post={post} pinned={true} />
         } else if (element.type === 'contract') {
           const contract = element.item as Contract
           if (
@@ -149,7 +150,7 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
               contract.groupSlugs?.includes(slug)
             )
           )
-            return <ContractCard contract={contract} />
+            return <ContractCard contract={contract} pinned={true} />
         }
       })
       setPinned(
@@ -203,16 +204,13 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
                 score: trendingContracts,
                 newest: newContracts,
                 'daily-trending': dailyTrendingContracts,
-                'daily-movers': contractMetricsByProfit,
               },
               isAdmin,
               globalConfig,
-              pinned
+              pinned,
+              contractMetricsByProfit,
+              latestPosts
             )}
-
-            <ActivitySection />
-
-            <LatestPostsSection latestPosts={latestPosts} user={user} />
 
             {groups && groupContracts && trendingGroups.length > 0 ? (
               <>
@@ -247,10 +245,12 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
 
 const HOME_SECTIONS = [
   { label: 'Trending', id: 'score', icon: '🔥' },
-  { label: 'Featured', id: 'featured', icon: '⭐' },
   { label: 'Daily changed', id: 'daily-trending', icon: '📈' },
   { label: 'Your daily movers', id: 'daily-movers' },
+  { label: 'Featured', id: 'featured', icon: '⭐' },
   { label: 'New', id: 'newest', icon: '✨' },
+  { label: 'Live feed', id: 'live-feed', icon: '🔴' },
+  { label: 'Latest posts', id: 'latest-posts', icon: '📝' },
 ] as const
 
 export const getHomeItems = (sections: string[]) => {
@@ -260,10 +260,6 @@ export const getHomeItems = (sections: string[]) => {
   const itemsById = keyBy(HOME_SECTIONS, 'id')
   const sectionItems = filterDefined(sections.map((id) => itemsById[id]))
 
-  // Add new home section items to the top.
-  sectionItems.unshift(
-    ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
-  )
   // Add unmentioned items to the end.
   sectionItems.push(
     ...HOME_SECTIONS.filter((item) => !sectionItems.includes(item))
@@ -278,19 +274,20 @@ export const getHomeItems = (sections: string[]) => {
 function renderSections(
   sections: { id: string; label: string; icon?: string }[],
   sectionContracts: {
-    'daily-movers':
-      | {
-          contracts: CPMMBinaryContract[]
-          metrics: ContractMetrics[]
-        }
-      | undefined
     'daily-trending': CPMMBinaryContract[]
     newest: CPMMBinaryContract[]
     score: CPMMBinaryContract[]
   },
   isAdmin: boolean,
   globalConfig: GlobalConfig,
-  pinned: JSX.Element[]
+  pinned: JSX.Element[],
+  dailyMovers:
+    | {
+        contracts: CPMMBinaryContract[]
+        metrics: ContractMetrics[]
+      }
+    | undefined,
+  latestPosts: Post[]
 ) {
   type sectionTypes = typeof HOME_SECTIONS[number]['id']
 
@@ -302,18 +299,24 @@ function renderSections(
           label: string
           icon: string | undefined
         }
-        if (id === 'daily-movers') {
-          return <DailyMoversSection key={id} data={sectionContracts[id]} />
-        }
-        if (id === 'featured') {
+        if (id === 'featured')
           return (
             <FeaturedSection
-              key={id}
+              key={'featured'}
               globalConfig={globalConfig}
               pinned={pinned}
               isAdmin={isAdmin}
             />
           )
+
+        if (id === 'live-feed') return <ActivitySection />
+
+        if (id === 'daily-movers') {
+          return <DailyMoversSection key={id} data={dailyMovers} />
+        }
+
+        if (id === 'latest-posts') {
+          return <LatestPostsSection latestPosts={latestPosts} />
         }
 
         const contracts = sectionContracts[id]
@@ -388,7 +391,7 @@ function renderGroupSections(
 
 function HomeSectionHeader(props: {
   label: string
-  href: string
+  href?: string
   children?: ReactNode
   icon?: string
 }) {
@@ -397,14 +400,18 @@ function HomeSectionHeader(props: {
   return (
     <Row className="bg-greyscale-1 text-greyscale-7 sticky top-0 z-20 my-1 items-center justify-between pb-2">
       {icon != null && <div className="mr-2 inline">{icon}</div>}
-      <SiteLink
-        className="flex-1 text-lg md:text-xl"
-        href={href}
-        onClick={() => track('home click section header', { section: href })}
-      >
-        {label}
-        <GoToIcon className="text-greyscale-4 mb-1 ml-2 inline h-5 w-5" />
-      </SiteLink>
+      {href ? (
+        <SiteLink
+          className="flex-1 text-lg md:text-xl"
+          href={href}
+          onClick={() => track('home click section header', { section: href })}
+        >
+          {label}
+          <GoToIcon className="text-greyscale-4 mb-1 ml-2 inline h-5 w-5" />
+        </SiteLink>
+      ) : (
+        <div className="flex-1 text-lg md:text-xl">{label}</div>
+      )}
       {children}
     </Row>
   )
@@ -436,8 +443,10 @@ function SearchSection(props: {
   )
 }
 
-function LatestPostsSection(props: { latestPosts: Post[]; user: User | null }) {
-  const { latestPosts, user } = props
+function LatestPostsSection(props: { latestPosts: Post[] }) {
+  const { latestPosts } = props
+  const user = useUser()
+
   return (
     <Col className="pt-4">
       <Row className="flex items-center justify-between">
@@ -513,6 +522,7 @@ function FeaturedSection(props: {
 
   return (
     <Col>
+      <HomeSectionHeader label={'Featured'} icon={'⭐'} />
       <PinnedItems
         posts={posts}
         isEditable={isAdmin}

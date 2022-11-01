@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 
-export function useIsMobile(threshold?: number) {
-  const [isMobile, setIsMobile] = useState<boolean>()
+// 640 matches tailwind sm breakpoint
+export function useIsMobile(threshold = 640) {
+  const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
-    // 640 matches tailwind sm breakpoint
-    const onResize = () => setIsMobile(window.innerWidth < (threshold ?? 640))
+    const onResize = () => setIsMobile(window.innerWidth < threshold)
     onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)

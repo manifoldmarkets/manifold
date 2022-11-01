@@ -19,13 +19,12 @@ export const Avatar = memo(
       size == 'xxs' ? 4 : size == 'xs' ? 6 : size === 'sm' ? 8 : size || 10
     const sizeInPx = s * 4
 
-    const onClick =
-      noLink && username
-        ? undefined
-        : (e: MouseEvent) => {
-            e.stopPropagation()
-            Router.push(`/${username}`)
-          }
+    const onClick = (e: MouseEvent) => {
+      if (!noLink && username) {
+        e.stopPropagation()
+        Router.push(`/${username}`)
+      }
+    }
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in

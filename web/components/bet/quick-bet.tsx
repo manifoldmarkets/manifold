@@ -150,13 +150,8 @@ export function QuickBet(props: {
   }
 
   return (
-    <div className="mx-y relative">
-      <Row
-        className={clsx(
-          className,
-          'absolute my-auto mt-1 w-full items-center justify-between px-2 align-middle'
-        )}
-      >
+    <div className="relative">
+      <Row className={clsx(className, 'absolute inset-0')}>
         <BinaryQuickBetButton
           onClick={() => placeQuickBet('DOWN')}
           direction="DOWN"
@@ -214,8 +209,8 @@ function BinaryQuickBetButton(props: {
   return (
     <Row
       className={clsx(
-        'absolute top-0 w-[50%] gap-1',
-        direction === 'UP' ? 'right-0 flex-row-reverse  ' : 'left-0'
+        'w-[50%] items-center gap-2',
+        direction === 'UP' && 'flex-row-reverse'
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -226,7 +221,7 @@ function BinaryQuickBetButton(props: {
           className={clsx(
             'mx-2 h-6 w-6 drop-shadow-md transition-all',
             shouldFocus
-              ? 'animate-bounce-left ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              ? 'animate-bounce-left text-indigo-600'
               : hasInvestment
               ? 'text-indigo-800'
               : 'text-indigo-400'
@@ -238,7 +233,7 @@ function BinaryQuickBetButton(props: {
           className={clsx(
             'mx-2 h-6 w-6 drop-shadow-md transition-all',
             shouldFocus
-              ? 'sm:animate-bounce-right ease-[cubic-bezier(1, 1, 0.8, 0)] text-indigo-600'
+              ? 'sm:animate-bounce-right text-indigo-600'
               : hasInvestment
               ? 'text-indigo-800'
               : 'text-indigo-400'
@@ -259,7 +254,7 @@ function BinaryQuickBetButton(props: {
       ) : (
         <span
           className={clsx(
-            'text-sm font-light text-indigo-600 transition-opacity',
+            'my-auto text-sm font-light text-indigo-600 transition-opacity',
             shouldFocus ? 'opacity-100' : 'opacity-0'
           )}
         >
@@ -292,94 +287,83 @@ function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
 export function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
-  caption?: 'chance' | 'expected'
 }) {
-  const { contract, previewProb, caption } = props
+  const { contract, previewProb } = props
   const { outcomeType } = contract
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const prob = previewProb ?? getProb(contract)
-
-  // If there's a preview prob, display that instead of the current prob
-  const override =
-    previewProb === undefined
-      ? undefined
-      : isPseudoNumeric
-      ? formatNumericProbability(previewProb, contract)
-      : formatPercent(previewProb)
 
   const textColor = getTextColor(contract)
 
-  let display: string | undefined
-  switch (outcomeType) {
-    case 'BINARY':
-      display = getBinaryProbPercent(contract)
-      break
-    case 'PSEUDO_NUMERIC':
-      display = formatNumericProbability(getProbability(contract), contract)
-      break
-    case 'NUMERIC':
-      display = formatLargeNumber(getExpectedValue(contract))
-      break
-    case 'FREE_RESPONSE': {
-      const topAnswer = getTopAnswer(contract)
-      display =
-        topAnswer &&
-        formatPercent(getOutcomeProbability(contract, topAnswer.id))
-      break
-    }
-  }
-
   if (outcomeType != 'FREE_RESPONSE' && outcomeType != 'MULTIPLE_CHOICE') {
     return (
-      <Row
-        className="justify-between rounded-md px-4 py-0.5 transition-all"
-        style={{
-          background: `linear-gradient(to right, ${getBarColor(contract)} ${
-            100 * prob
-          }%, ${getBgColor(contract)} ${100 * prob}%)`,
-        }}
+      <div
+        className={clsx(
+          'relative h-8 w-full overflow-hidden rounded-md',
+          getBgColor(contract)
+        )}
       >
-        <div className={`mx-auto text-xl font-semibold ${textColor}`}>
-          <CardText contract={contract} override={override} display={display} />
+        <div
+          className={clsx('h-full transition-all', getBarColor(contract))}
+          style={{ width: `${100 * prob}%` }}
+          aria-hidden
+        />
+        <div
+          className={`absolute inset-0 flex items-center justify-center gap-1 text-xl font-semibold ${textColor}`}
+        >
+          {cardText(contract, previewProb)}
         </div>
-        {caption && <div className="text-base">{caption}</div>}
-      </Row>
+      </div>
     )
   }
 
   return <ContractCardAnswers contract={contract} />
 }
 
-export function CardText(props: {
-  contract: Contract
-  override?: string
-  display?: string
-}) {
-  const { contract, override, display } = props
-  const resolution = contract.resolution
+function cardText(contract: Contract, previewProb?: number) {
+  const { resolution, outcomeType, resolutionProbability } = contract
+
   if (resolution) {
-    if (resolution === 'MKT' && contract.resolutionProbability) {
+    if (resolution === 'MKT' && resolutionProbability) {
       return (
         <>
-          <span className="my-auto text-sm font-normal">resolved as </span>
-          {formatPercent(contract.resolutionProbability)}
+          <span className="my-auto text-sm font-normal">resolved as</span>
+          {formatPercent(resolutionProbability)}
         </>
       )
     }
     if (resolution === 'CANCEL') {
-      return <>{'CANCELLED'}</>
+      return 'CANCELLED'
     }
     return (
       <>
-        <span className="text-sm font-normal">resolved </span>
+        <span className="text-sm font-normal">resolved</span>
         {resolution}
       </>
     )
   }
-  if (override) {
-    return <>{override}</>
+
+  if (previewProb) {
+    return outcomeType === 'PSEUDO_NUMERIC'
+      ? formatNumericProbability(previewProb, contract)
+      : formatPercent(previewProb)
   }
-  return <>{display}</>
+
+  switch (outcomeType) {
+    case 'BINARY':
+      return getBinaryProbPercent(contract)
+    case 'PSEUDO_NUMERIC':
+      return formatNumericProbability(getProbability(contract), contract)
+    case 'NUMERIC':
+      return formatLargeNumber(getExpectedValue(contract))
+    // case 'MULTIPLE_CHOICE':
+    case 'FREE_RESPONSE': {
+      const topAnswer = getTopAnswer(contract)
+      return (
+        topAnswer &&
+        formatPercent(getOutcomeProbability(contract, topAnswer.id))
+      )
+    }
+  }
 }
 
 export function ContractCardAnswers(props: {
@@ -397,6 +381,7 @@ export function ContractCardAnswers(props: {
     <Col className="gap-2">
       {answers.map((answer) => (
         <ContractCardAnswer
+          key={answer.id}
           contract={contract}
           answer={answer}
           answersArray={answersArray}
@@ -506,45 +491,48 @@ function getNumericScale(contract: NumericContract) {
 }
 
 const OUTCOME_TO_COLOR_BAR = {
-  YES: '#99f6e4',
-  NO: '#FFD3CC',
-  CANCEL: '#F4F4FB',
-  MKT: '#bae6fd',
+  YES: 'bg-teal-200',
+  NO: 'bg-scarlet-200',
+  CANCEL: 'bg-greyscale-1.5',
+  MKT: 'bg-sky-200',
 }
 
 export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? '#e1e7fc'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-100'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return '#D8D8EB'
+    return 'bg-slate-300'
   }
 
-  return '#e1e7fc'
+  return 'bg-indigo-100'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
-  YES: '#ccfbf1',
-  NO: '#ffece9',
-  CANCEL: '#F4F4FB',
-  MKT: '#e0f2fe',
+  YES: 'bg-teal-100',
+  NO: 'bg-scarlet-100',
+  CANCEL: 'bg-greyscale-1.5',
+  MKT: 'bg-sky-100',
 }
 
 export function getBgColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? '#F4F4FB'
+    return (
+      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ??
+      'bg-greyscale-1.5'
+    )
   }
 
-  if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return '#F4F4FB'
-  }
+  // if ((contract.closeTime ?? Infinity) < Date.now()) {
+  //   return 'bg-greyscale-1.5'
+  // }
 
-  return '#F4F4FB'
+  return 'bg-greyscale-1.5'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {
@@ -558,7 +546,7 @@ export function getTextColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? '#c7d2fe'
+    return OUTCOME_TO_COLOR_TEXT[resolution as resolution] ?? 'text-indigo-200'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {

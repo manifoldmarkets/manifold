@@ -13,8 +13,8 @@ export * from './on-view'
 export { scheduleUpdateContractMetrics } from './update-contract-metrics'
 export { scheduleUpdateUserMetrics } from './update-user-metrics'
 export { scheduleUpdateGroupMetrics } from './update-group-metrics'
+export { scheduleUpdateLoans } from './update-loans'
 export * from './update-stats'
-export * from './update-loans'
 export * from './backup-db'
 export * from './market-close-notifications'
 export * from './on-create-answer'
@@ -84,6 +84,7 @@ import { savetwitchcredentials } from './save-twitch-credentials'
 import { updatecontractmetrics } from './update-contract-metrics'
 import { updateusermetrics } from './update-user-metrics'
 import { updategroupmetrics } from './update-group-metrics'
+import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
 
@@ -115,10 +116,11 @@ const getCurrentUserFunction = toCloudFunction(getcurrentuser)
 const acceptChallenge = toCloudFunction(acceptchallenge)
 const createPostFunction = toCloudFunction(createpost)
 const saveTwitchCredentials = toCloudFunction(savetwitchcredentials)
-const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
 const testScheduledFunction = toCloudFunction(testscheduledfunction)
+const updateContractMetricsFunction = toCloudFunction(updatecontractmetrics)
 const updateUserMetricsFunction = toCloudFunction(updateusermetrics)
 const updateGroupMetricsFunction = toCloudFunction(updategroupmetrics)
+const updateLoansFunction = toCloudFunction(updateloans)
 
 export {
   healthFunction as health,
@@ -150,4 +152,5 @@ export {
   updateContractMetricsFunction as updatecontractmetrics,
   updateUserMetricsFunction as updateusermetrics,
   updateGroupMetricsFunction as updategroupmetrics,
+  updateLoansFunction as updateloans,
 }

@@ -1,20 +1,19 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 
-import { getValues, invokeFunction, log, writeAsync } from './utils'
+import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
 import { DAY_MS } from '../../common/util/time'
-import { getUserLoanUpdates } from '../../common/loans'
+import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import {
   calculateCreatorVolume,
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateMetricsByContract,
 } from '../../common/calculate-metrics'
-import { filterDefined } from '../../common/util/array'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
 
@@ -33,7 +32,7 @@ export const scheduleUpdateUserMetrics = functions.pubsub
   })
 
 export const updateusermetrics = newEndpointNoAuth(
-  { timeoutSeconds: 2000, memory: '8GiB', minInstances: 0 },
+  { timeoutSeconds: 2000, memory: '16GiB', minInstances: 0 },
   async (_req) => {
     await updateUserMetrics()
     return { success: true }
@@ -47,19 +46,16 @@ export async function updateUserMetrics() {
 
   log('Loading contracts...')
   const contracts = await getValues<Contract>(firestore.collection('contracts'))
-  log(`Loaded ${contracts.length} contracts.`)
+  const contractsByCreator = groupBy(contracts, (c) => c.creatorId)
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+  log(`Loaded ${contracts.length} contracts.`)
 
   log('Computing metric updates...')
   const now = Date.now()
-  const userMetrics = await batchedWaitAll(
+  const writer = firestore.bulkWriter({ throttling: false })
+  const userUpdates = await batchedWaitAll(
     users.map((user) => async () => {
-      const userContracts = (
-        await firestore
-          .collection('contracts')
-          .where('creatorId', '==', user.id)
-          .get()
-      ).docs.map((d) => d.data() as Contract)
+      const userContracts = contractsByCreator[user.id] ?? []
       const currentBets = (
         await firestore
           .collectionGroup('bets')
@@ -112,36 +108,21 @@ export async function updateUserMetrics() {
           (userContracts.length - badResolutions.length) / userContracts.length
       }
 
-      const nextLoanPayout = getUserLoanUpdates(
-        betsByContractId,
-        contractsById,
-        newPortfolio
-      )?.payout
+      const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
+        ? getUserLoanUpdates(betsByContractId, contractsById).payout
+        : undefined
 
-      return {
-        user,
-        newCreatorVolume,
-        newPortfolio,
-        newProfit,
-        didPortfolioChange,
-        newFractionResolvedCorrectly,
-        metricsByContract,
-        nextLoanPayout,
+      const userDoc = firestore.collection('users').doc(user.id)
+      if (didPortfolioChange) {
+        writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
       }
-    }),
-    100
-  )
 
-  const userUpdates = userMetrics.map(
-    ({
-      user,
-      newCreatorVolume,
-      newProfit,
-      newFractionResolvedCorrectly,
-      nextLoanPayout,
-    }) => {
+      const contractMetricsCollection = userDoc.collection('contract-metrics')
+      for (const metrics of metricsByContract) {
+        writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
+      }
       return {
-        doc: firestore.collection('users').doc(user.id),
+        user: user,
         fields: {
           creatorVolumeCached: newCreatorVolume,
           profitCached: newProfit,
@@ -149,43 +130,36 @@ export async function updateUserMetrics() {
           fractionResolvedCorrectly: newFractionResolvedCorrectly,
         },
       }
-    }
-  )
-  log('Writing metric updates...')
-  await writeAsync(firestore, userUpdates)
-
-  const portfolioHistoryUpdates = filterDefined(
-    userMetrics.map(({ user, newPortfolio, didPortfolioChange }) => {
-      return didPortfolioChange
-        ? {
-            doc: firestore
-              .collection('users')
-              .doc(user.id)
-              .collection('portfolioHistory')
-              .doc(),
-            fields: newPortfolio,
-          }
-        : null
-    })
-  )
-  log('Writing portfolio history updates...')
-  await writeAsync(firestore, portfolioHistoryUpdates, 'set')
-
-  const contractMetricsUpdates = userMetrics.flatMap(
-    ({ user, metricsByContract }) => {
-      const collection = firestore
-        .collection('users')
-        .doc(user.id)
-        .collection('contract-metrics')
-      return metricsByContract.map((metrics) => ({
-        doc: collection.doc(metrics.contractId),
-        fields: metrics,
-      }))
-    }
+    }),
+    100
   )
 
-  log('Writing user contract metric updates...')
-  await writeAsync(firestore, contractMetricsUpdates, 'set')
+  const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
+  const periodRanksByUserId = periods.map((period) => {
+    const rankedUpdates = sortBy(
+      userUpdates,
+      ({ fields }) => -fields.profitCached[period]
+    )
+    return Object.fromEntries(
+      rankedUpdates.map((update, i) => [update.user.id, i + 1])
+    )
+  })
+
+  for (const { user, fields } of userUpdates) {
+    const profitRankCached = Object.fromEntries(
+      periods.map((period, i) => {
+        return [period, periodRanksByUserId[i][user.id]]
+      })
+    )
+    const userDoc = firestore.collection('users').doc(user.id)
+    writer.update(userDoc, { profitRankCached, ...fields })
+  }
+
+  log('Committing writes...')
+  await writer.close()
+
+  await revalidateStaticProps('/leaderboards')
+  log('Done.')
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {

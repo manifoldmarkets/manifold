@@ -238,30 +238,22 @@ export const calculateMetricsByContract = (
   betsByContractId: Dictionary<Bet[]>,
   contractsById: Dictionary<Contract>
 ) => {
-  const unresolvedContracts = Object.keys(betsByContractId)
-    .map((cid) => contractsById[cid])
-    .filter((c) => c && !c.isResolved)
-
-  return unresolvedContracts.map((c) => {
-    const bets = betsByContractId[c.id] ?? []
-    const current = getContractBetMetrics(c, bets)
+  return Object.entries(betsByContractId).map(([contractId, bets]) => {
+    const contract = contractsById[contractId]
+    const current = getContractBetMetrics(contract, bets)
 
     let periodMetrics
-    if (c.mechanism === 'cpmm-1' && c.outcomeType === 'BINARY') {
+    if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
       const periods = ['day', 'week', 'month'] as const
       periodMetrics = Object.fromEntries(
         periods.map((period) => [
           period,
-          calculatePeriodProfit(c, bets, period),
+          calculatePeriodProfit(contract, bets, period),
         ])
       )
     }
 
-    return removeUndefinedProps({
-      contractId: c.id,
-      ...current,
-      from: periodMetrics,
-    })
+    return removeUndefinedProps({ contractId, ...current, from: periodMetrics })
   })
 }
 

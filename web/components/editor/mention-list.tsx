@@ -53,7 +53,7 @@ export const MentionList = forwardRef((props: SuggestionProps<User>, ref) => {
             onClick={() => submitUser(i)}
             key={user.id}
           >
-            <Avatar avatarUrl={user.avatarUrl} size="xs" />
+            <Avatar avatarUrl={user.avatarUrl} size="xs" noLink />
             {user.username}
           </button>
         ))

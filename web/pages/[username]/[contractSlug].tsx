@@ -168,10 +168,12 @@ export function ContractPageContent(
     undefined
   )
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
   const onAnswerCommentClick = useEvent((answer: Answer) => {
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
       tabsContainerRef.current.scrollIntoView({ behavior: 'smooth' })
+      setActiveTabIndex(0)
     } else {
       console.error('no ref to scroll to')
     }
@@ -243,11 +245,6 @@ export function ContractPageContent(
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
-              {/*<ContractTopTrades*/}
-              {/*  contract={contract}*/}
-              {/*  bets={bets}*/}
-              {/*  comments={comments}*/}
-              {/*/>*/}
             </div>
             <Spacer h={12} />
           </>
@@ -268,6 +265,8 @@ export function ContractPageContent(
             answerResponse={answerResponse}
             onCancelAnswerResponse={onCancelAnswerResponse}
             blockedUserIds={blockedUserIds}
+            activeIndex={activeTabIndex}
+            setActiveIndex={setActiveTabIndex}
           />
         </div>
       </Col>

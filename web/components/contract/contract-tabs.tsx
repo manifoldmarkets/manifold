@@ -10,7 +10,7 @@ import { AnyContractType, Contract } from 'common/contract'
 import { PAST_BETS } from 'common/user'
 import { ContractBetsTable } from '../bet/bets-list'
 import { Spacer } from '../layout/spacer'
-import { Tabs } from '../layout/tabs'
+import { ControlledTabs } from '../layout/tabs'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useComments } from 'web/hooks/use-comments'
@@ -45,6 +45,8 @@ export function ContractTabs(props: {
   answerResponse?: Answer | undefined
   onCancelAnswerResponse?: () => void
   blockedUserIds: string[]
+  activeIndex: number
+  setActiveIndex: (i: number) => void
 }) {
   const {
     contract,
@@ -54,6 +56,8 @@ export function ContractTabs(props: {
     answerResponse,
     onCancelAnswerResponse,
     blockedUserIds,
+    activeIndex,
+    setActiveIndex,
   } = props
 
   const yourTrades = (
@@ -88,7 +92,15 @@ export function ContractTabs(props: {
   )
 
   return (
-    <Tabs className="mb-4" currentPageForAnalytics={'contract'} tabs={tabs} />
+    <ControlledTabs
+      className="mb-4"
+      currentPageForAnalytics={'contract'}
+      tabs={tabs}
+      activeIndex={activeIndex}
+      onClick={(title, i) => {
+        setActiveIndex(i)
+      }}
+    />
   )
 }
 

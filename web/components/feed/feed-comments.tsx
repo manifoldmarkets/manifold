@@ -29,6 +29,7 @@ import { ReplyToggle } from '../comments/reply-toggle'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ReportButton } from 'web/components/buttons/report-button'
 import { FlagIcon } from '@heroicons/react/outline'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -151,11 +152,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       </Col>
       <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content
-          className="text-greyscale-7 mt-2 grow text-[14px]"
-          content={content || text}
-          smallImage
-        />
+        <Content size="sm" content={content || text} />
         <Row className="justify-between">
           <ReplyToggle
             seeReplies={seeReplies}
@@ -191,7 +188,7 @@ export function CommentActions(props: {
   contract: Contract
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
-  const isNative = typeof window !== 'undefined' && (window as any).isNative
+  const isNative = getIsNative()
 
   return (
     <Row className="grow items-center justify-end">
@@ -267,11 +264,7 @@ export const FeedComment = memo(function FeedComment(props: {
       </Col>
       <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content
-          className="text-greyscale-7 mt-2 grow text-[14px]"
-          content={content || text}
-          smallImage
-        />
+        <Content className="mt-2 grow" size="sm" content={content || text} />
         <CommentActions
           onReplyClick={onReplyClick}
           comment={comment}

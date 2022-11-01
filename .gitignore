@@ -5,3 +5,4 @@ node_modules
 yarn-error.log
 
 firebase-debug.log
+dev-mantic-markets-firebase-adminsdk.json

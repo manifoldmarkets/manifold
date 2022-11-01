@@ -45,6 +45,8 @@ import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { DAY_MS } from 'common/util/time'
+import NewContractBadge from '../new-contract-badge'
 import { ContractMetrics } from 'common/calculate-metrics'
 
 export function ContractCard(props: {
@@ -60,6 +62,7 @@ export function ContractCard(props: {
   newTab?: boolean
   showImage?: boolean
   children?: ReactNode
+  pinned?: boolean
 }) {
   const {
     showTime,
@@ -73,8 +76,10 @@ export function ContractCard(props: {
     newTab,
     showImage,
     children,
+    pinned,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
+  const { isResolved, createdTime } = contract
   const { question, outcomeType } = contract
   const { resolution } = contract
 
@@ -89,6 +94,7 @@ export function ContractCard(props: {
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') &&
     !hideQuickBet
 
+  const isNew = createdTime > Date.now() - DAY_MS && !isResolved
   return (
     <Card
       className={clsx(
@@ -97,11 +103,13 @@ export function ContractCard(props: {
       )}
     >
       <Col className="relative flex-1 gap-1 pt-2">
-        <AvatarDetails
-          contract={contract}
-          className={'pl-4'}
-          noLink={noLinkAvatar}
-        />
+        <Row className="justify-between px-4 ">
+          <AvatarDetails contract={contract} noLink={noLinkAvatar} />
+          <Row className="gap-1">
+            {pinned && <FeaturedPill />}
+            {isNew && <NewContractBadge />}
+          </Row>
+        </Row>
         {/* overlay question on image */}
         {contract.coverImageUrl && showImage && (
           <div className="relative mb-2">
@@ -112,7 +120,7 @@ export function ContractCard(props: {
             <div className="absolute bottom-0 w-full">
               <div
                 className={clsx(
-                  'break-anywhere bg-gradient-to-t from-slate-900 px-2 pb-2 pt-12 text-xl font-semibold text-white',
+                  'break-anywhere bg-gradient-to-t from-slate-900 px-4 pb-2 pt-12 text-xl font-semibold text-white',
                   questionClass
                 )}
               >
@@ -122,12 +130,12 @@ export function ContractCard(props: {
           </div>
         )}
 
-        <Col className="gap-1 px-4 pb-1">
+        <Col className="gap-1 px-4 pb-1 ">
           {/* question is here if not overlaid on an image */}
           {(!showImage || !contract.coverImageUrl) && (
             <div
               className={clsx(
-                'break-anywhere pb-2 font-semibold text-indigo-700 group-hover:underline group-hover:decoration-indigo-400 group-hover:decoration-2',
+                'break-anywhere text-greyscale-7 pb-2 font-medium',
                 questionClass
               )}
             >
@@ -200,7 +208,7 @@ export function BinaryResolutionOrChance(props: {
 }) {
   const { contract, large, className, probAfter } = props
   const { resolution } = contract
-  const textColor = `text-${getTextColor(contract)}`
+  const textColor = getTextColor(contract)
 
   const before = getBinaryProbPercent(contract)
   const after = probAfter && formatPercent(probAfter)
@@ -269,7 +277,7 @@ export function FreeResponseResolutionOrChance(props: {
   const { resolution } = contract
 
   const topAnswer = getTopAnswer(contract)
-  const textColor = `text-${getTextColor(contract)}`
+  const textColor = getTextColor(contract)
 
   return (
     <Col className={clsx(resolution ? 'text-3xl' : 'text-xl', className)}>
@@ -309,7 +317,7 @@ export function NumericResolutionOrExpectation(props: {
 }) {
   const { contract, className } = props
   const { resolution } = contract
-  const textColor = `text-${getTextColor(contract)}`
+  const textColor = getTextColor(contract)
 
   const resolutionValue =
     contract.resolutionValue ?? getValueFromBucket(resolution ?? '', contract)
@@ -476,5 +484,13 @@ function MetricsFooter(props: {
         </div>
       </Col>
     </Row>
+  )
+}
+
+export function FeaturedPill() {
+  return (
+    <div className="rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-xs text-white">
+      Featured
+    </div>
   )
 }

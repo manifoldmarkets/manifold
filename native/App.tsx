@@ -412,7 +412,7 @@ export default function App() {
           backgroundColor="white"
           style={'dark'}
           hideTransitionAnimation={'none'}
-          hidden={isWebViewLoading}
+          hidden={false}
         />
         <WebView
           style={styles.webView}

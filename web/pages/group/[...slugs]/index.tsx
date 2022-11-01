@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Router from 'next/router'
@@ -48,7 +48,7 @@ import { ArrowLeftIcon } from '@heroicons/react/solid'
 import { SelectMarketsModal } from 'web/components/contract-select-modal'
 import { BETTORS } from 'common/user'
 import { Page } from 'web/components/layout/page'
-import { Tabs } from 'web/components/layout/tabs'
+import { ControlledTabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
 
@@ -150,6 +150,10 @@ export default function GroupPage(props: {
   const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
   const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
+  const [activeIndex, setActiveIndex] = useState(tabIndex)
+  useEffect(() => {
+    setActiveIndex(tabIndex)
+  }, [tabIndex])
 
   useSaveReferral(user, {
     defaultReferrerUsername: creator?.username,
@@ -186,13 +190,15 @@ export default function GroupPage(props: {
         </div>
       </div>
       <div className={'relative p-1 pt-0'}>
-        <Tabs
+        <ControlledTabs
+          activeIndex={activeIndex}
           onClick={(title, index) => {
             // concatenates the group slug with the subpage slug
             const path = `/group/${group.slug}/${
               groupSubpages[index + 1] ?? ''
             }`
             Router.push(path, undefined, { shallow: true })
+            setActiveIndex(index)
           }}
           className={'mb-2'}
           tabs={[
@@ -244,15 +250,15 @@ export default function GroupPage(props: {
                     <GroupLeaderboard
                       topUsers={topCreators}
                       title="🏅 Top creators"
-                      header="Market volume"
+                      header="Number of traders"
                       maxToShow={maxLeaderboardSize}
+                      noFormatting={true}
                     />
                   </div>
                 </Col>
               ),
             },
           ]}
-          defaultIndex={tabIndex}
         />
       </div>
     </Page>
@@ -316,8 +322,9 @@ function GroupLeaderboard(props: {
   title: string
   maxToShow: number
   header: string
+  noFormatting?: boolean
 }) {
-  const { topUsers, title, maxToShow, header } = props
+  const { topUsers, title, maxToShow, header, noFormatting } = props
 
   const scoresByUser = topUsers.reduce((acc, { user, score }) => {
     acc[user.id] = score
@@ -330,7 +337,13 @@ function GroupLeaderboard(props: {
       entries={topUsers.map((t) => t.user)}
       title={title}
       columns={[
-        { header, renderCell: (user) => formatMoney(scoresByUser[user.id]) },
+        {
+          header,
+          renderCell: (user) =>
+            noFormatting
+              ? scoresByUser[user.id]
+              : formatMoney(scoresByUser[user.id]),
+        },
       ]}
       maxToShow={maxToShow}
     />

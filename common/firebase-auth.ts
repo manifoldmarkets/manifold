@@ -18,7 +18,8 @@ export interface FirebaseAuthInternal extends FirebaseAuth {
 
 export const setFirebaseUserViaJson = async (
   deserializedUser: FirebaseUser,
-  app: FirebaseApp
+  app: FirebaseApp,
+  isNative?: boolean
 ) => {
   try {
     const clientAuth = getAuth(app) as FirebaseAuthInternal
@@ -32,7 +33,7 @@ export const setFirebaseUserViaJson = async (
     return fbUser
   } catch (e) {
     if (typeof window !== 'undefined') {
-      if ((window as any).isNative) {
+      if (isNative) {
         // eslint-disable-next-line @typescript-eslint/no-extra-semi
         ;(window as any).ReactNativeWebView.postMessage(
           JSON.stringify({
