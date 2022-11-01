@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { getValues, invokeFunction, log, writeAsync } from './utils'
+import { getValues, invokeFunction, log } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract, CPMM } from '../../common/contract'
 import { DAY_MS } from '../../common/util/time'
@@ -39,9 +39,9 @@ export async function updateContractMetrics() {
   log(`Loaded ${contracts.length} contracts.`)
 
   log('Computing metric updates...')
-
   const now = Date.now()
-  const contractUpdates = await batchedWaitAll(
+  const writer = firestore.bulkWriter({ throttling: false })
+  await batchedWaitAll(
     contracts.map((contract) => async () => {
       const descendingBets = await getValues<Bet>(
         firestore
@@ -79,24 +79,22 @@ export async function updateContractMetrics() {
         descendingBets.filter((bet) => now - bet.createdTime < 30 * DAY_MS)
       )
 
-      return {
-        doc: firestore.collection('contracts').doc(contract.id),
-        fields: {
-          volume24Hours: computeVolume(descendingBets, now - DAY_MS),
-          volume7Days: computeVolume(descendingBets, now - DAY_MS * 7),
-          elasticity: computeElasticity(descendingBets, contract),
-          uniqueBettors24Hours,
-          uniqueBettors7Days,
-          uniqueBettors30Days,
-          ...cpmmFields,
-        },
-      }
+      writer.update(firestore.collection('contracts').doc(contract.id), {
+        volume24Hours: computeVolume(descendingBets, now - DAY_MS),
+        volume7Days: computeVolume(descendingBets, now - DAY_MS * 7),
+        elasticity: computeElasticity(descendingBets, contract),
+        uniqueBettors24Hours,
+        uniqueBettors7Days,
+        uniqueBettors30Days,
+        ...cpmmFields,
+      })
     }),
     100
   )
 
-  log('Writing contract metric updates...')
-  await writeAsync(firestore, contractUpdates)
+  log('Committing writes...')
+  await writer.close()
+  log('Done.')
 }
 
 function getUniqueBettors(bets: Bet[]) {
