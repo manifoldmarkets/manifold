@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { groupBy } from 'lodash'
 
-import { getValues, invokeFunction, log } from './utils'
+import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
 import { PortfolioMetrics, User } from '../../common/user'
@@ -134,6 +134,8 @@ export async function updateUserMetrics() {
 
   log('Committing writes...')
   await writer.close()
+
+  await revalidateStaticProps('/leaderboards')
   log('Done.')
 }
 
