@@ -23,6 +23,7 @@ import { signInWithCredential } from '@firebase/auth'
 import { auth } from '../App'
 import WebView from 'react-native-webview'
 
+// TODO: combine auth code so we can set the cookie from the same code
 export const AuthModal = (props: {
   modalVisible: boolean
   setModalVisible: (visible: boolean) => void

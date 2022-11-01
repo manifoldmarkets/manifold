@@ -68,8 +68,8 @@ export const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? 'https://5121-181-41-206-91.ngrok.io'
-    : 'https://manifold.markets/'
+    ? 'https://91ef-181-41-206-207.ngrok.io'
+    : 'https://prod-git-apple-sign-in-mantic.vercel.app/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
@@ -150,6 +150,7 @@ export default function App() {
       // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener((response) => {
+          console.log('notification response', response)
           webview.current?.postMessage(
             JSON.stringify({
               type: 'notification',
@@ -165,6 +166,7 @@ export default function App() {
     }
 
     return () => {
+      console.log('removing notification listeners')
       notificationListener.current &&
         Notifications.removeNotificationSubscription(
           notificationListener.current
@@ -433,7 +435,13 @@ export default function App() {
           onMessage={handleMessageFromWebview}
           onNavigationStateChange={async (navState) => {
             if (!navState.loading && !hasInjectedVariable && webview.current) {
-              webview.current.injectJavaScript('window.isNative = true')
+              console.log('setting is native')
+              webview.current.postMessage(
+                JSON.stringify({
+                  type: 'setIsNative',
+                  data: {},
+                })
+              )
               setHasInjectedVariable(true)
             }
           }}
