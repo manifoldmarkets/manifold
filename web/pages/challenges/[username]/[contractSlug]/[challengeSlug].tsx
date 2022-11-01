@@ -32,7 +32,6 @@ import { Title } from 'web/components/widgets/title'
 import { getOpenGraphProps } from 'common/contract-details'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useContract } from 'web/hooks/use-contracts'
-import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 
 export async function getStaticProps(props: {
   params: { username: string; contractSlug: string; challengeSlug: string }

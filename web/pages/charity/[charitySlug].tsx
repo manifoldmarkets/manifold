@@ -2,7 +2,6 @@ import { sortBy, sumBy, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/legacy/image'
-import Confetti from 'react-confetti'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
