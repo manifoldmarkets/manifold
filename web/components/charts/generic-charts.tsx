@@ -1,4 +1,11 @@
-import { useCallback, useId, useMemo, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useId,
+  useMemo,
+  useState,
+} from 'react'
 import { bisector, extent } from 'd3-array'
 import { axisBottom, axisLeft } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
@@ -312,7 +319,9 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   )
 }
 
-export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
+export const ControllableSingleValueHistoryChart = <
+  P extends HistoryPoint
+>(props: {
   data: P[]
   w: number
   h: number
@@ -320,20 +329,36 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  viewXScale: ScaleTime<number, number, never> | undefined
+  setViewXScale: Dispatch<
+    SetStateAction<ScaleTime<number, number, never> | undefined>
+  >
+  viewYScale: ScaleContinuousNumeric<number, number, never> | undefined
+  setViewYScale: Dispatch<
+    SetStateAction<ScaleContinuousNumeric<number, number, never> | undefined>
+  >
   yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
   Tooltip?: TooltipComponent<Date, P>
   pct?: boolean
 }) => {
-  const { data, w, h, color, margin, Tooltip } = props
+  const {
+    data,
+    w,
+    h,
+    color,
+    margin,
+    viewXScale,
+    setViewXScale,
+    viewYScale,
+    setViewYScale,
+    Tooltip,
+  } = props
   const yKind = props.yKind ?? 'amount'
   const curve = props.curve ?? curveLinear
 
   const [mouse, setMouse] = useState<TooltipParams<P> & SliceExtent>()
-  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [viewYScale, setViewYScale] =
-    useState<ScaleContinuousNumeric<number, number>>()
   const xScale = viewXScale ?? props.xScale
   const yScale = viewYScale ?? props.yScale
 
@@ -451,5 +476,57 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         <SliceMarker color="#5BCEFF" x={mouse.x} y0={mouse.y0} y1={mouse.y1} />
       )}
     </SVGChart>
+  )
+}
+
+export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
+  data: P[]
+  w: number
+  h: number
+  color: string | ((p: P) => string)
+  margin: Margin
+  xScale: ScaleTime<number, number>
+  yScale: ScaleContinuousNumeric<number, number>
+  yKind?: ValueKind
+  curve?: CurveFactory
+  onMouseOver?: (p: P | undefined) => void
+  Tooltip?: TooltipComponent<Date, P>
+  pct?: boolean
+}) => {
+  const {
+    data,
+    w,
+    h,
+    color,
+    margin,
+    xScale,
+    yScale,
+    yKind,
+    curve,
+    onMouseOver,
+    Tooltip,
+    pct,
+  } = props
+  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
+  const [viewYScale, setViewYScale] =
+    useState<ScaleContinuousNumeric<number, number>>()
+  return (
+    <ControllableSingleValueHistoryChart
+      w={w}
+      h={h}
+      margin={margin}
+      xScale={xScale}
+      yScale={yScale}
+      viewXScale={viewXScale}
+      setViewXScale={setViewXScale}
+      viewYScale={viewYScale}
+      setViewYScale={setViewYScale}
+      yKind="m$"
+      data={data}
+      curve={curveStepAfter}
+      Tooltip={Tooltip}
+      onMouseOver={onMouseOver}
+      color={color}
+    />
   )
 }

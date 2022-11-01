@@ -1,5 +1,10 @@
-import { useMemo } from 'react'
-import { scaleTime, scaleLinear } from 'd3-scale'
+import { Dispatch, SetStateAction, useMemo } from 'react'
+import {
+  scaleTime,
+  scaleLinear,
+  ScaleTime,
+  ScaleContinuousNumeric,
+} from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 import { min, max } from 'lodash'
 import dayjs from 'dayjs'
@@ -7,6 +12,7 @@ import { PortfolioMetrics } from 'common/user'
 import { Col } from '../layout/col'
 import { TooltipProps } from 'web/components/charts/helpers'
 import {
+  ControllableSingleValueHistoryChart,
   HistoryPoint,
   SingleValueHistoryChart,
 } from 'web/components/charts/generic-charts'
@@ -46,9 +52,27 @@ export const PortfolioGraph = (props: {
   history: PortfolioMetrics[]
   width: number
   height: number
+  viewXScale: ScaleTime<number, number, never> | undefined
+  setViewXScale: Dispatch<
+    SetStateAction<ScaleTime<number, number, never> | undefined>
+  >
+  viewYScale: ScaleContinuousNumeric<number, number, never> | undefined
+  setViewYScale: Dispatch<
+    SetStateAction<ScaleContinuousNumeric<number, number, never> | undefined>
+  >
   onMouseOver?: (p: HistoryPoint<PortfolioMetrics> | undefined) => void
 }) => {
-  const { mode, history, onMouseOver, width, height } = props
+  const {
+    mode,
+    history,
+    onMouseOver,
+    width,
+    height,
+    viewXScale,
+    setViewXScale,
+    viewYScale,
+    setViewYScale,
+  } = props
   const { data, minDate, maxDate, minValue, maxValue } = useMemo(() => {
     const data = getPoints(mode, history)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -61,15 +85,18 @@ export const PortfolioGraph = (props: {
     const maxValue = max(data.map((d) => d.y))!
     return { data, minDate, maxDate, minValue, maxValue }
   }, [mode, history])
-  console.log('MIN DATE', minDate)
 
   return (
-    <SingleValueHistoryChart
+    <ControllableSingleValueHistoryChart
       w={width}
       h={height}
       margin={MARGIN}
       xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
       yScale={scaleLinear([minValue, maxValue], [height - MARGIN_Y, 0])}
+      viewXScale={viewXScale}
+      setViewXScale={setViewXScale}
+      viewYScale={viewYScale}
+      setViewYScale={setViewYScale}
       yKind="m$"
       data={data}
       curve={curveStepAfter}

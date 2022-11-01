@@ -10,6 +10,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { Period } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph'
+import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: { userId: string }) {
@@ -27,6 +28,17 @@ export const PortfolioValueSection = memo(
     const onClickNumber = useEvent((mode: GraphMode) => {
       setGraphMode(mode)
       setGraphDisplayNumber(null)
+    })
+    const [graphViewXScale, setGraphViewXScale] =
+      useState<ScaleTime<number, number>>()
+    const [graphViewYScale, setGraphViewYScale] =
+      useState<ScaleContinuousNumeric<number, number>>()
+
+    //zooms out of graph if zoomed in upon time selection change
+    const setTimePeriod = useEvent((timePeriod: Period) => {
+      setCurrentTimePeriod(timePeriod)
+      setGraphViewXScale(undefined)
+      setGraphViewYScale(undefined)
     })
     // placeholder when loading
     if (!portfolioHistory || !lastPortfolioMetrics) {
@@ -68,7 +80,7 @@ export const PortfolioValueSection = memo(
         graphMode={graphMode}
         onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
-        setCurrentTimePeriod={setCurrentTimePeriod}
+        setCurrentTimePeriod={setTimePeriod}
         profitElement={
           <div
             className={clsx(
@@ -110,6 +122,10 @@ export const PortfolioValueSection = memo(
             width={width}
             height={height}
             onMouseOver={handleGraphDisplayChange}
+            viewXScale={graphViewXScale}
+            setViewXScale={setGraphViewXScale}
+            viewYScale={graphViewYScale}
+            setViewYScale={setGraphViewYScale}
           />
         )}
       />
