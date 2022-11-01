@@ -1,10 +1,5 @@
-import { Dispatch, SetStateAction, useMemo } from 'react'
-import {
-  scaleTime,
-  scaleLinear,
-  ScaleTime,
-  ScaleContinuousNumeric,
-} from 'd3-scale'
+import { useMemo } from 'react'
+import { scaleTime, scaleLinear } from 'd3-scale'
 import { curveStepAfter } from 'd3-shape'
 import { min, max } from 'lodash'
 import dayjs from 'dayjs'
