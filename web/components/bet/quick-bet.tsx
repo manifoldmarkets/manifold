@@ -290,38 +290,9 @@ export function QuickOutcomeView(props: {
 }) {
   const { contract, previewProb } = props
   const { outcomeType } = contract
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const prob = previewProb ?? getProb(contract)
 
-  // If there's a preview prob, display that instead of the current prob
-  const override =
-    previewProb === undefined
-      ? undefined
-      : isPseudoNumeric
-      ? formatNumericProbability(previewProb, contract)
-      : formatPercent(previewProb)
-
   const textColor = getTextColor(contract)
-
-  let display: string | undefined
-  switch (outcomeType) {
-    case 'BINARY':
-      display = getBinaryProbPercent(contract)
-      break
-    case 'PSEUDO_NUMERIC':
-      display = formatNumericProbability(getProbability(contract), contract)
-      break
-    case 'NUMERIC':
-      display = formatLargeNumber(getExpectedValue(contract))
-      break
-    case 'FREE_RESPONSE': {
-      const topAnswer = getTopAnswer(contract)
-      display =
-        topAnswer &&
-        formatPercent(getOutcomeProbability(contract, topAnswer.id))
-      break
-    }
-  }
 
   if (outcomeType != 'FREE_RESPONSE' && outcomeType != 'MULTIPLE_CHOICE') {
     return (
@@ -339,7 +310,7 @@ export function QuickOutcomeView(props: {
         <div
           className={`absolute inset-0 flex items-center justify-center gap-1 text-xl font-semibold ${textColor}`}
         >
-          <CardText contract={contract} override={override} display={display} />
+          {cardText(contract, previewProb)}
         </div>
       </div>
     )
@@ -348,36 +319,51 @@ export function QuickOutcomeView(props: {
   return <ContractCardAnswers contract={contract} />
 }
 
-export function CardText(props: {
-  contract: Contract
-  override?: string
-  display?: string
-}) {
-  const { contract, override, display } = props
-  const resolution = contract.resolution
+function cardText(contract: Contract, previewProb?: number) {
+  const { resolution, outcomeType, resolutionProbability } = contract
+
   if (resolution) {
-    if (resolution === 'MKT' && contract.resolutionProbability) {
+    if (resolution === 'MKT' && resolutionProbability) {
       return (
         <>
-          <span className="my-auto text-sm font-normal">resolved as </span>
-          {formatPercent(contract.resolutionProbability)}
+          <span className="my-auto text-sm font-normal">resolved as</span>
+          {formatPercent(resolutionProbability)}
         </>
       )
     }
     if (resolution === 'CANCEL') {
-      return <>{'CANCELLED'}</>
+      return 'CANCELLED'
     }
     return (
       <>
-        <span className="text-sm font-normal">resolved </span>
+        <span className="text-sm font-normal">resolved</span>
         {resolution}
       </>
     )
   }
-  if (override) {
-    return <>{override}</>
+
+  if (previewProb) {
+    return outcomeType === 'PSEUDO_NUMERIC'
+      ? formatNumericProbability(previewProb, contract)
+      : formatPercent(previewProb)
   }
-  return <>{display}</>
+
+  switch (outcomeType) {
+    case 'BINARY':
+      return getBinaryProbPercent(contract)
+    case 'PSEUDO_NUMERIC':
+      return formatNumericProbability(getProbability(contract), contract)
+    case 'NUMERIC':
+      return formatLargeNumber(getExpectedValue(contract))
+    // case 'MULTIPLE_CHOICE':
+    case 'FREE_RESPONSE': {
+      const topAnswer = getTopAnswer(contract)
+      return (
+        topAnswer &&
+        formatPercent(getOutcomeProbability(contract, topAnswer.id))
+      )
+    }
+  }
 }
 
 export function ContractCardAnswers(props: {
