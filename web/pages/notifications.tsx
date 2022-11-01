@@ -37,7 +37,6 @@ import {
 } from 'common/economy'
 import { groupBy, sum, uniqBy } from 'lodash'
 import { Pagination } from 'web/components/widgets/pagination'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { NotificationSettings } from 'web/components/notification-settings'
 import { SEO } from 'web/components/SEO'
@@ -57,6 +56,7 @@ import {
   getSourceUrl,
 } from 'web/lib/firebase/notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 const HIGHLIGHT_CLASS = 'bg-indigo-50'
@@ -413,8 +413,7 @@ function IncomeNotificationItem(props: {
   const { notification, justSummary } = props
   const { sourceType, sourceUserUsername, sourceText, data } = notification
   const [highlighted] = useState(!notification.isSeen)
-  const { width } = useWindowSize()
-  const isMobile = (width && width < 768) || false
+  const isMobile = useIsMobile(768)
   const user = useUser()
   const isTip = sourceType === 'tip' || sourceType === 'tip_and_like'
   const isUniqueBettorBonus = sourceType === 'bonus'
@@ -583,8 +582,7 @@ function NotificationGroupItem(props: {
   const { notificationGroup, className } = props
   const { notifications } = notificationGroup
   const { sourceContractTitle } = notifications[0]
-  const { width } = useWindowSize()
-  const isMobile = (width && width < 768) || false
+  const isMobile = useIsMobile(768)
   const numSummaryLines = 3
 
   const [expanded, setExpanded] = useState(
@@ -838,8 +836,7 @@ function NotificationFrame(props: {
     sourceText,
   } = notification
 
-  const { width } = useWindowSize()
-  const isMobile = (width ?? 0) < 600
+  const isMobile = useIsMobile(600)
   return (
     <div
       className={clsx(
