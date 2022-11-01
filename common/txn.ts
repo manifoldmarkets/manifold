@@ -9,7 +9,9 @@ type AnyTxnType =
   | BettingStreakBonus
   | CancelUniqueBettorBonus
   | CommentBountyRefund
+  | TransferCert
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
+type CertId = string
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string
@@ -22,7 +24,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' // | 'USD' | MarketOutcome
+  token: 'M$' | CertId // | 'USD' | MarketOutcome
 
   category:
     | 'CHARITY'
@@ -34,6 +36,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'CANCEL_UNIQUE_BETTOR_BONUS'
     | 'COMMENT_BOUNTY'
     | 'REFUND_COMMENT_BOUNTY'
+    | 'TRANSFER_CERT'
 
   // Any extra data
   data?: { [key: string]: any }
@@ -127,6 +130,11 @@ type CommentBountyRefund = {
   data: {
     contractId: string
   }
+}
+
+type TransferCert = {
+  fromType: 'USER'
+  toType: 'USER'
 }
 
 export type DonationTxn = Txn & Donation
