@@ -49,57 +49,60 @@ function getTimestamp() {
 function log(level: Level, msg: any, ...args: any[]) {
   const timestamp = getTimestamp();
 
-  const output = `${timestamp} ${Level[level]}: ${String(msg)} ${String(args)}`;
+  const outputPrefix = `${timestamp} ${Level[level]}: `;
+  const output = `${String(msg)} ${String(args)}`;
+  const localOutput = outputPrefix + output;
 
   switch (level) {
     case Level.DEBUG:
-      console.debug(output);
+      console.debug(localOutput);
       l?.debug(output);
       break;
     case Level.ERROR:
-      console.error(output);
+      console.error(localOutput);
       l?.error(output);
       break;
     case Level.INFO:
-      console.log(output);
+      console.log(localOutput);
       l?.info(output);
       break;
     case Level.WARN:
-      console.warn(output);
+      console.warn(localOutput);
       l?.warning(output);
       break;
     case Level.TRACE: {
-      let message = timestamp + ' ' + Level[level] + ': ';
+      let message = '';
       if (msg?.stack) {
         message += msg.stack;
       } else {
         message += JSON.stringify(msg);
       }
-      console.error(message);
+      console.error(outputPrefix + message);
       l?.error(message);
       break;
     }
     case Level.CRASH: {
-      const prep = timestamp + ' ';
-      let ls = '\n';
-      for (let i = 0; i < prep.length; i++) ls += ' ';
-      let message = prep + '================================= SERVER CRASH =================================';
-      if (msg?.stack) {
-        const stackLines = msg.stack.split('\n');
-        for (const line of stackLines) {
-          message += ls + line;
+      const getMessage = (prefix?: string) => {
+        let ls = '\n';
+        for (let i = 0; i < prefix.length; i++) ls += ' ';
+        let message = prefix + '================================= SERVER CRASH =================================';
+        if (msg?.stack) {
+          const stackLines = msg.stack.split('\n');
+          for (const line of stackLines) {
+            message += ls + line;
+          }
+        } else {
+          message += ls + String(msg);
         }
-      } else {
-        message += ls + String(msg);
-      }
-      message += ls + '================================================================================';
-      console.error(message);
-      l?.critical(message);
+        message += ls + '================================================================================';
+        return message;
+      };
+      console.error(getMessage(timestamp + ' '));
+      l?.critical(getMessage());
       break;
     }
     default:
-      l?.info(output);
-      console.log(output);
+      throw new Error('Illegal log level used: ' + level);
   }
 }
 
