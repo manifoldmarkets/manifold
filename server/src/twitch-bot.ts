@@ -26,7 +26,7 @@ const MSG_RESOLVED = (market: Market) => {
   const topWinners = market.resolveData.topWinners;
   let message = `The market has resolved to ${outcome === ResolutionOutcome.CANCEL ? 'N/A' : outcome}!`;
   if (topWinners.length > 0) {
-    message += ` The top ${maxWinners} bettors are ` + topWinners.map((w) => `${w.displayName} (${w.profit > 0 ? '+' : ''}${w.profit.toFixed(0)}`).join(', ');
+    message += ` The top ${maxWinners} bettors are ` + topWinners.map((w) => `${w.displayName} (${w.profit > 0 ? '+' : ''}${w.profit.toFixed(0)})`).join(', ');
   }
   message += ` See the market here: ${market.data.url}`;
   return message;
@@ -42,6 +42,7 @@ const MSG_NO_MARKET_SELECTED = (username: string) => `Sorry ${username} but no m
 const MSG_TRADING_CLOSED = (username: string) => `Too slow ${username}, your bet was too late!`;
 const MSG_FEATURED = (market: Market) => `The market ${market.data.question} is now being featured! ${market.data.url}`;
 const MSG_BEHIND_PROCESSING = () => `The bot is processing a lot of orders right now, please be patient!`;
+const MSG_PREDICT = () => `Predict here for free to win a share of 250USD: https://manifold.markets/post/storybook-brawl-streamer-showdown`;
 /* cSpell:disable */
 
 const QUEUE_WARNING_THRESHOLD = 5;
@@ -242,6 +243,9 @@ export default class TwitchBot {
       resolve: resolveCommand,
       position: positionCommand,
       pos: positionCommand,
+      predict: {
+        handler: (params) => this.client.say(params.stream.name, MSG_PREDICT()),
+      },
     };
 
     this.client = new Client({
@@ -353,8 +357,8 @@ export default class TwitchBot {
           this.client.say(channelName, MSG_TRADING_CLOSED(message.params.user.twitchDisplayName));
         } else {
           this.client.say(channelName, MSG_COMMAND_FAILED(message.params.user.twitchDisplayName));
+          log.trace(e);
         }
-        log.trace(e);
       } finally {
         this.messageQueue[channelName].shift();
       }
