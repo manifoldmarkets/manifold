@@ -250,8 +250,9 @@ export default function GroupPage(props: {
                     <GroupLeaderboard
                       topUsers={topCreators}
                       title="🏅 Top creators"
-                      header="Market volume"
+                      header="Number of traders"
                       maxToShow={maxLeaderboardSize}
+                      noFormatting={true}
                     />
                   </div>
                 </Col>
@@ -321,8 +322,9 @@ function GroupLeaderboard(props: {
   title: string
   maxToShow: number
   header: string
+  noFormatting?: boolean
 }) {
-  const { topUsers, title, maxToShow, header } = props
+  const { topUsers, title, maxToShow, header, noFormatting } = props
 
   const scoresByUser = topUsers.reduce((acc, { user, score }) => {
     acc[user.id] = score
@@ -335,7 +337,13 @@ function GroupLeaderboard(props: {
       entries={topUsers.map((t) => t.user)}
       title={title}
       columns={[
-        { header, renderCell: (user) => formatMoney(scoresByUser[user.id]) },
+        {
+          header,
+          renderCell: (user) =>
+            noFormatting
+              ? scoresByUser[user.id]
+              : formatMoney(scoresByUser[user.id]),
+        },
       ]}
       maxToShow={maxToShow}
     />
