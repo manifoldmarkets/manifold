@@ -95,10 +95,12 @@ export function ContractCard(props: {
     !hideQuickBet
 
   const isNew = createdTime > Date.now() - DAY_MS && !isResolved
+  const hasImage = contract.coverImageUrl && showImage
   return (
     <Card
       className={clsx(
         'font-readex-pro group relative flex w-full leading-normal',
+        hasImage ? 'ub-cover-image' : '',
         className
       )}
     >
@@ -111,7 +113,7 @@ export function ContractCard(props: {
           </Row>
         </Row>
         {/* overlay question on image */}
-        {contract.coverImageUrl && showImage && (
+        {hasImage && (
           <div className="relative mb-2">
             <img
               className="h-80 w-full object-cover "
@@ -132,7 +134,7 @@ export function ContractCard(props: {
 
         <Col className="gap-1 px-4 pb-1 ">
           {/* question is here if not overlaid on an image */}
-          {(!showImage || !contract.coverImageUrl) && (
+          {!hasImage && (
             <div
               className={clsx(
                 'break-anywhere text-greyscale-7 pb-2 text-lg font-medium',
