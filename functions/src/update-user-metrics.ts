@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -53,7 +53,7 @@ export async function updateUserMetrics() {
   log('Computing metric updates...')
   const now = Date.now()
   const writer = firestore.bulkWriter({ throttling: false })
-  await batchedWaitAll(
+  const userUpdates = await batchedWaitAll(
     users.map((user) => async () => {
       const userContracts = contractsByCreator[user.id] ?? []
       const currentBets = (
@@ -113,13 +113,6 @@ export async function updateUserMetrics() {
         : undefined
 
       const userDoc = firestore.collection('users').doc(user.id)
-      writer.update(userDoc, {
-        creatorVolumeCached: newCreatorVolume,
-        profitCached: newProfit,
-        nextLoanCached: nextLoanPayout ?? 0,
-        fractionResolvedCorrectly: newFractionResolvedCorrectly,
-      })
-
       if (didPortfolioChange) {
         writer.set(userDoc.collection('portfolioHistory').doc(), newPortfolio)
       }
@@ -128,9 +121,39 @@ export async function updateUserMetrics() {
       for (const metrics of metricsByContract) {
         writer.set(contractMetricsCollection.doc(metrics.contractId), metrics)
       }
+      return {
+        user: user,
+        fields: {
+          creatorVolumeCached: newCreatorVolume,
+          profitCached: newProfit,
+          nextLoanCached: nextLoanPayout ?? 0,
+          fractionResolvedCorrectly: newFractionResolvedCorrectly,
+        },
+      }
     }),
     100
   )
+
+  const periods = ['daily', 'weekly', 'monthly', 'allTime'] as const
+  const periodRanksByUserId = periods.map((period) => {
+    const rankedUpdates = sortBy(
+      userUpdates,
+      ({ fields }) => -fields.profitCached[period]
+    )
+    return Object.fromEntries(
+      rankedUpdates.map((update, i) => [update.user.id, i + 1])
+    )
+  })
+
+  for (const { user, fields } of userUpdates) {
+    const profitRankCached = Object.fromEntries(
+      periods.map((period, i) => {
+        return [period, periodRanksByUserId[i][user.id]]
+      })
+    )
+    const userDoc = firestore.collection('users').doc(user.id)
+    writer.update(userDoc, { profitRankCached, ...fields })
+  }
 
   log('Committing writes...')
   await writer.close()
