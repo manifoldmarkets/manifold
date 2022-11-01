@@ -327,7 +327,7 @@ export function QuickOutcomeView(props: {
     return (
       <div
         className={clsx(
-          'h-8 w-full overflow-hidden rounded-md',
+          'relative h-8 w-full overflow-hidden rounded-md',
           getBgColor(contract)
         )}
       >
