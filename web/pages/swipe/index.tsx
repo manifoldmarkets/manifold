@@ -5,7 +5,7 @@ import { richTextToString } from 'common/util/parse'
 import { useMemo, useState } from 'react'
 import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
-import { RichContent } from 'web/components/widgets/editor'
+import { Content } from 'web/components/widgets/editor'
 
 import { useWindowSize } from 'web/hooks/use-window-size'
 import { placeBet } from 'web/lib/firebase/api'
@@ -192,11 +192,7 @@ const Peek = (props: { contract: BinaryContract; onClose: () => void }) => {
         <h1 className="mb-8 text-lg font-semibold text-indigo-700">
           {question}
         </h1>
-        <RichContent
-          proseClassName="prose-sm"
-          content={description}
-          smallImage
-        />
+        <Content size="sm" content={description} />
       </div>
     </section>
   )

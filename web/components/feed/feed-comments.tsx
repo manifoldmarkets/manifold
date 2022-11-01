@@ -151,11 +151,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       </Col>
       <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content
-          className="text-greyscale-7 mt-2 grow text-[14px]"
-          content={content || text}
-          smallImage
-        />
+        <Content size="sm" content={content || text} />
         <Row className="justify-between">
           <ReplyToggle
             seeReplies={seeReplies}
@@ -267,11 +263,7 @@ export const FeedComment = memo(function FeedComment(props: {
       </Col>
       <Col className="z-20 w-full">
         <FeedCommentHeader comment={comment} contract={contract} />
-        <Content
-          className="text-greyscale-7 mt-2 grow text-[14px]"
-          content={content || text}
-          smallImage
-        />
+        <Content className="mt-2 grow" size="sm" content={content || text} />
         <CommentActions
           onReplyClick={onReplyClick}
           comment={comment}

@@ -114,7 +114,7 @@ function ProfileComment(props: { comment: ContractComment }) {
           />{' '}
           <RelativeTimestamp time={createdTime} />
         </p>
-        <Content content={content || text} smallImage />
+        <Content content={content || text} size="sm" />
       </div>
     </Row>
   )

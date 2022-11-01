@@ -45,7 +45,7 @@ export function CommentInput(props: {
 
   const editor = useTextEditor({
     key,
-    simple: true,
+    size: 'sm',
     max: MAX_COMMENT_LENGTH,
     placeholder:
       !!parentCommentId || !!parentAnswerOutcome

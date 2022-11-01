@@ -4,7 +4,6 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
 } from '@tiptap/react'
-import clsx from 'clsx'
 import { Linkify } from '../widgets/linkify'
 import { mentionSuggestion } from './mention-suggestion'
 
@@ -12,7 +11,7 @@ const name = 'mention-component'
 
 const MentionComponent = (props: any) => {
   return (
-    <NodeViewWrapper className={clsx(name, 'not-prose text-indigo-700')}>
+    <NodeViewWrapper className={name}>
       <Linkify text={'@' + props.node.attrs.label} />
     </NodeViewWrapper>
   )

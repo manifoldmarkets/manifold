@@ -178,11 +178,7 @@ export const CommentLog = memo(function FeedComment(props: {
           <RelativeTimestamp time={createdTime} />
         </div>
       </Row>
-      <Content
-        className="text-greyscale-7 grow text-[14px]"
-        content={content || text}
-        smallImage
-      />
+      <Content size="sm" className="grow" content={content || text} />
     </Col>
   )
 })

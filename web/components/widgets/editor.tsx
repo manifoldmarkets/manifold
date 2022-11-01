@@ -49,11 +49,7 @@ const DisplayLink = Link.extend({
       0,
     ]
   },
-}).configure({
-  HTMLAttributes: {
-    class: clsx('no-underline !text-indigo-700', linkClass),
-  },
-})
+}).configure({ HTMLAttributes: { class: linkClass } })
 
 export const editorExtensions = (simple = false): Extensions => [
   StarterKit.configure({
@@ -74,19 +70,25 @@ export const editorExtensions = (simple = false): Extensions => [
   Upload,
 ]
 
-const proseClass = clsx(
-  'prose prose-p:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0 max-w-none prose-quoteless leading-relaxed',
-  'prose-blockquote:font-light prose-blockquote:text-greyscale-6 font-light text-md'
-)
+export const proseClass = (size: 'sm' | 'md' | 'lg') =>
+  clsx(
+    'prose prose-ul:my-0 prose-ol:my-0 prose-li:my-0 max-w-none prose-quoteless leading-relaxed',
+    'prose-a:text-indigo-700 prose-a:no-underline',
+    size === 'sm' ? 'prose-sm' : 'text-md',
+    size !== 'lg' && 'prose-p:my-0',
+    'text-greyscale-7 prose-blockquote:text-greyscale-6',
+    'prose-a:font-light prose-blockquote:font-light font-light'
+  )
 
 export function useTextEditor(props: {
   placeholder?: string
   max?: number
   defaultValue?: Content
-  simple?: boolean
+  size?: 'sm' | 'md' | 'lg'
   key?: string // unique key for autosave. If set, plz call `clearContent(true)` on submit to clear autosave
 }) {
-  const { placeholder, max, defaultValue, simple, key } = props
+  const { placeholder, max, defaultValue, size = 'md', key } = props
+  const simple = size === 'sm'
 
   const [content, saveContent] = usePersistentState<JSONContent | undefined>(
     undefined,
@@ -100,7 +102,7 @@ export function useTextEditor(props: {
   const save = useCallback(debounce(saveContent, 500), [])
 
   const editorClass = clsx(
-    proseClass,
+    proseClass(size),
     simple ? 'min-h-[4.25em]' : 'min-h-[7.5em]', // 1 em padding + 13/8 em * line count
     'max-h-[69vh] overflow-auto',
     'outline-none py-[.5em] px-4',
@@ -187,15 +189,14 @@ export function TextEditor(props: {
 export function RichContent(props: {
   content: JSONContent | string
   className?: string
-  proseClassName?: string
-  smallImage?: boolean
+  size?: 'sm' | 'md' | 'lg'
 }) {
-  const { className, proseClassName, content, smallImage } = props
+  const { className, content, size = 'md' } = props
   const editor = useEditor({
-    editorProps: { attributes: { class: clsx(proseClass, proseClassName) } },
+    editorProps: { attributes: { class: proseClass(size) } },
     extensions: [
       StarterKit,
-      smallImage ? DisplayImage : Image,
+      size === 'md' ? DisplayImage : Image,
       DisplayLink.configure({ openOnClick: false }), // stop link opening twice (browser still opens)
       DisplayMention,
       DisplayContractMention,
@@ -224,26 +225,17 @@ export function RichContent(props: {
 // backwards compatibility: we used to store content as strings
 export function Content(props: {
   content: JSONContent | string
+  /** font/spacing */
+  size?: 'sm' | 'md' | 'lg'
   className?: string
-  proseClassName?: string
-  smallImage?: boolean
 }) {
-  const { className, proseClassName, content } = props
+  const { className, size = 'md', content } = props
   return typeof content === 'string' ? (
     <Linkify
-      className={clsx(
-        'whitespace-pre-line font-light leading-relaxed',
-        className,
-        proseClassName
-      )}
+      className={clsx('whitespace-pre-line', proseClass(size), className)}
       text={content}
     />
   ) : (
     <RichContent {...props} />
   )
-}
-
-export function PostContent(props: { content: JSONContent | string }) {
-  const { content } = props
-  return <Content content={content} className="prose-p:mb-4" />
 }

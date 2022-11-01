@@ -153,11 +153,7 @@ export function PostComment(props: {
             elementId={comment.id}
           />
         </div>
-        <Content
-          className="mt-2 text-[15px] text-gray-700"
-          content={content || text}
-          smallImage
-        />
+        <Content className="mt-2" size="sm" content={content || text} />
         <Row className="mt-2 items-center gap-6 text-xs text-gray-500">
           {onReplyClick && (
             <button
