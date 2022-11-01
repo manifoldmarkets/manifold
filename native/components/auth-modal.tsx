@@ -7,6 +7,7 @@ import {
   View,
   Platform,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native'
 import {
   AppleAuthenticationButton,
@@ -32,13 +33,14 @@ import { ENV_CONFIG } from 'common/lib/envs/constants'
 import * as Sentry from 'sentry-expo'
 
 export const AuthModal = (props: {
-  shouldShowAuth: boolean
+  showModal: boolean
+  setShowModal: (shouldShowAuth: boolean) => void
   webview: React.RefObject<WebView | undefined>
   setFbUser: (user: string) => void
   setUserId: (userId: string) => void
 }) => {
-  const { shouldShowAuth, webview, setFbUser, setUserId } = props
-  const [modalVisible, setModalVisible] = useState(false)
+  const { showModal, setShowModal, webview, setFbUser, setUserId } = props
+  const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
     ENV_CONFIG.expoConfig
@@ -46,14 +48,17 @@ export const AuthModal = (props: {
   const appleAuthAvailable = useAppleAuthentication()
 
   useEffect(() => {
-    if (shouldShowAuth) {
+    if (showModal) {
       if (Platform.OS === 'ios') {
-        setModalVisible(true)
+        setShowModal(true)
       } else {
         promptAsync()
       }
+    } else {
+      setShowModal(false)
+      setLoading(false)
     }
-  }, [shouldShowAuth])
+  }, [showModal])
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
@@ -78,9 +83,12 @@ export const AuthModal = (props: {
       })
       console.log('[google sign in] Error : ', err)
     }
+    setShowModal(false)
+    setLoading(false)
   }, [response])
 
   async function triggerLoginWithApple() {
+    setLoading(true)
     try {
       const { credential, data } = await loginWithApple()
       console.log('credential', credential)
@@ -102,7 +110,56 @@ export const AuthModal = (props: {
       setUserId(user.uid)
     } catch (error: any) {
       console.error(error)
-      Alert.alert('Error', 'Something went wrong. Please try again later.')
+    }
+    setLoading(false)
+    setShowModal(false)
+  }
+
+  const loginWithApple = async () => {
+    console.log('Signing in with Apple...')
+    const state = Math.random().toString(36).substring(2, 15)
+    const rawNonce = Math.random().toString(36).substring(2, 10)
+    const requestedScopes = [
+      AppleAuthenticationScope.FULL_NAME,
+      AppleAuthenticationScope.EMAIL,
+    ]
+
+    try {
+      const nonce = await digestStringAsync(
+        CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      )
+
+      const appleCredential = await signInAsync({
+        requestedScopes,
+        state,
+        nonce,
+      })
+
+      const { identityToken, email, fullName } = appleCredential
+
+      if (!identityToken) {
+        throw new Error('No identity token provided.')
+      }
+
+      const provider = new OAuthProvider('apple.com')
+
+      provider.addScope('email')
+      provider.addScope('fullName')
+
+      const credential = provider.credential({
+        idToken: identityToken,
+        rawNonce,
+      })
+
+      const displayName = fullName
+        ? `${fullName.givenName} ${fullName.familyName}`
+        : undefined
+      const data = { email, displayName }
+
+      return { credential, data }
+    } catch (error: any) {
+      throw error
     }
   }
 
@@ -110,41 +167,49 @@ export const AuthModal = (props: {
     <Modal
       animationType="slide"
       transparent={true}
-      visible={modalVisible}
+      visible={showModal}
       onRequestClose={() => {
         Alert.alert('Modal has been closed.')
         // setModalVisible(!modalVisible)
       }}
     >
       <View style={styles.modalContent}>
-        <View style={styles.modalView}>
-          <FontAwesome5.Button
-            style={styles.googleButton}
-            name="google"
-            onPress={() => console.log('google')}
-            //any other customization you want, like borderRadius, color, or size
-          >
-            <Text style={styles.googleText}>Log In With Google</Text>
-          </FontAwesome5.Button>
-
-          {appleAuthAvailable && (
-            <AppleAuthenticationButton
-              buttonType={AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={5}
-              style={{
-                width: '100%',
-                height: 48,
-                marginTop: 16,
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <View style={styles.modalView}>
+            <FontAwesome5.Button
+              style={styles.googleButton}
+              name="google"
+              onPress={async () => {
+                setLoading(true)
+                await promptAsync()
+                setLoading(false)
               }}
-              onPress={triggerLoginWithApple}
-            />
-          )}
-        </View>
+              //any other customization you want, like borderRadius, color, or size
+            >
+              <Text style={styles.googleText}>Log In With Google</Text>
+            </FontAwesome5.Button>
+
+            {appleAuthAvailable && (
+              <AppleAuthenticationButton
+                buttonType={AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={5}
+                style={{
+                  width: '100%',
+                  height: 48,
+                  marginTop: 16,
+                }}
+                onPress={triggerLoginWithApple}
+              />
+            )}
+          </View>
+        )}
         <TouchableWithoutFeedback
           onPress={() => {
             console.log('tapped')
-            setModalVisible(false)
+            setShowModal(false)
           }}
         >
           <View style={styles.modalOverlay} />
@@ -152,54 +217,6 @@ export const AuthModal = (props: {
       </View>
     </Modal>
   )
-}
-
-async function loginWithApple() {
-  console.log('Signing in with Apple...')
-  const state = Math.random().toString(36).substring(2, 15)
-  const rawNonce = Math.random().toString(36).substring(2, 10)
-  const requestedScopes = [
-    AppleAuthenticationScope.FULL_NAME,
-    AppleAuthenticationScope.EMAIL,
-  ]
-
-  try {
-    const nonce = await digestStringAsync(
-      CryptoDigestAlgorithm.SHA256,
-      rawNonce
-    )
-
-    const appleCredential = await signInAsync({
-      requestedScopes,
-      state,
-      nonce,
-    })
-
-    const { identityToken, email, fullName } = appleCredential
-
-    if (!identityToken) {
-      throw new Error('No identity token provided.')
-    }
-
-    const provider = new OAuthProvider('apple.com')
-
-    provider.addScope('email')
-    provider.addScope('fullName')
-
-    const credential = provider.credential({
-      idToken: identityToken,
-      rawNonce,
-    })
-
-    const displayName = fullName
-      ? `${fullName.givenName} ${fullName.familyName}`
-      : undefined
-    const data = { email, displayName }
-
-    return { credential, data }
-  } catch (error: any) {
-    throw error
-  }
 }
 
 function useAppleAuthentication() {

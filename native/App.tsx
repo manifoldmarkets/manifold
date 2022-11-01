@@ -58,7 +58,7 @@ export const auth = getAuth(app)
 // const uri = 'http://localhost:3000/'
 const homeUri =
   ENV === 'DEV'
-    ? 'https://91ef-181-41-206-207.ngrok.io'
+    ? 'https://dev-git-apple-sign-in-mantic.vercel.app/'
     : 'https://prod-git-apple-sign-in-mantic.vercel.app/'
 
 export default function App() {
@@ -407,7 +407,8 @@ export default function App() {
           onMessage={handleMessageFromWebview}
         />
         <AuthModal
-          shouldShowAuth={showAuthModal}
+          showModal={showAuthModal}
+          setShowModal={setShowAuthModal}
           webview={webview}
           setFbUser={setFbUser}
           setUserId={setUserId}
