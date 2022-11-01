@@ -173,10 +173,10 @@ export function ContractPageContent(
     setAnswerResponse(answer)
     if (tabsContainerRef.current) {
       tabsContainerRef.current.scrollIntoView({ behavior: 'smooth' })
+      setActiveIndex(0)
     } else {
       console.error('no ref to scroll to')
     }
-    setActiveIndex(0)
   })
   const onCancelAnswerResponse = useEvent(() => setAnswerResponse(undefined))
 
