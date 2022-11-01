@@ -33,6 +33,12 @@ export const PortfolioValueSection = memo(
       useState<ScaleTime<number, number>>()
     const [graphViewYScale, setGraphViewYScale] =
       useState<ScaleContinuousNumeric<number, number>>()
+    const viewScaleProps = {
+      viewXScale: graphViewXScale,
+      setViewXScale: setGraphViewXScale,
+      viewYScale: graphViewYScale,
+      setViewYScale: setGraphViewYScale,
+    }
 
     //zooms out of graph if zoomed in upon time selection change
     const setTimePeriod = useEvent((timePeriod: Period) => {
@@ -121,11 +127,8 @@ export const PortfolioValueSection = memo(
             history={portfolioHistory}
             width={width}
             height={height}
+            viewScaleProps={viewScaleProps}
             onMouseOver={handleGraphDisplayChange}
-            viewXScale={graphViewXScale}
-            setViewXScale={setGraphViewXScale}
-            viewYScale={graphViewYScale}
-            setViewYScale={setGraphViewYScale}
           />
         )}
       />

@@ -14,6 +14,7 @@ import { TooltipProps } from 'web/components/charts/helpers'
 import {
   ControllableSingleValueHistoryChart,
   HistoryPoint,
+  viewScale,
 } from 'web/components/charts/generic-charts'
 
 const MARGIN = { top: 20, right: 10, bottom: 20, left: 70 }
@@ -51,27 +52,10 @@ export const PortfolioGraph = (props: {
   history: PortfolioMetrics[]
   width: number
   height: number
-  viewXScale: ScaleTime<number, number, never> | undefined
-  setViewXScale: Dispatch<
-    SetStateAction<ScaleTime<number, number, never> | undefined>
-  >
-  viewYScale: ScaleContinuousNumeric<number, number, never> | undefined
-  setViewYScale: Dispatch<
-    SetStateAction<ScaleContinuousNumeric<number, number, never> | undefined>
-  >
+  viewScaleProps: viewScale
   onMouseOver?: (p: HistoryPoint<PortfolioMetrics> | undefined) => void
 }) => {
-  const {
-    mode,
-    history,
-    onMouseOver,
-    width,
-    height,
-    viewXScale,
-    setViewXScale,
-    viewYScale,
-    setViewYScale,
-  } = props
+  const { mode, history, onMouseOver, width, height, viewScaleProps } = props
   const { data, minDate, maxDate, minValue, maxValue } = useMemo(() => {
     const data = getPoints(mode, history)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -92,10 +76,7 @@ export const PortfolioGraph = (props: {
       margin={MARGIN}
       xScale={scaleTime([minDate, maxDate], [0, width - MARGIN_X])}
       yScale={scaleLinear([minValue, maxValue], [height - MARGIN_Y, 0])}
-      viewXScale={viewXScale}
-      setViewXScale={setViewXScale}
-      viewYScale={viewYScale}
-      setViewYScale={setViewYScale}
+      viewScaleProps={viewScaleProps}
       yKind="m$"
       data={data}
       curve={curveStepAfter}
