@@ -37,7 +37,6 @@ import {
   searchClient,
   searchIndexName,
 } from 'web/lib/service/algolia'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AdjustmentsIcon } from '@heroicons/react/solid'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
@@ -312,8 +311,6 @@ function ContractSearchControls(props: {
         }
   )
 
-  const isMobile = useIsMobile()
-
   const sortKey = `${persistPrefix}-search-sort`
   const savedSort = safeLocalStorage()?.getItem(sortKey)
 
@@ -460,39 +457,23 @@ function ContractSearchControls(props: {
           className="w-full"
           autoFocus={autoFocus}
         />
-        {query && (
+        {query ? (
           <SimpleLinkButton
             getUrl={() => window.location.href}
             tooltip="Copy link to search results"
           />
-        )}
-        {!isMobile && !query && (
-          <SearchFilters
-            filter={filter}
-            selectFilter={selectFilter}
-            hideOrderSelector={hideOrderSelector}
-            selectSort={selectSort}
-            sort={sort}
-            className={'flex flex-row gap-2'}
-            includeProbSorts={includeProbSorts}
-          />
-        )}
-        {isMobile && !query && (
-          <>
-            <MobileSearchBar
-              children={
-                <SearchFilters
-                  filter={filter}
-                  selectFilter={selectFilter}
-                  hideOrderSelector={hideOrderSelector}
-                  selectSort={selectSort}
-                  sort={sort}
-                  className={'flex flex-col gap-4'}
-                  includeProbSorts={includeProbSorts}
-                />
-              }
+        ) : (
+          <ModalOnMobile>
+            <SearchFilters
+              filter={filter}
+              selectFilter={selectFilter}
+              hideOrderSelector={hideOrderSelector}
+              selectSort={selectSort}
+              sort={sort}
+              className={'flex flex-row gap-2'}
+              includeProbSorts={includeProbSorts}
             />
-          </>
+          </ModalOnMobile>
         )}
       </Row>
 
@@ -586,25 +567,28 @@ export function SearchFilters(props: {
   )
 }
 
-export function MobileSearchBar(props: { children: ReactNode }) {
+export function ModalOnMobile(props: { children: ReactNode }) {
   const { children } = props
   const [openFilters, setOpenFilters] = useState(false)
   return (
     <>
-      <Button color="gray-white" onClick={() => setOpenFilters(true)}>
-        <AdjustmentsIcon className="my-auto h-7" />
-      </Button>
-      <Modal
-        open={openFilters}
-        setOpen={setOpenFilters}
-        position="top"
-        className="rounded-lg bg-white px-4 pb-4"
-      >
-        <Col>
-          <Title text="Filter Markets" />
-          {children}
-        </Col>
-      </Modal>
+      <div className="contents sm:hidden">
+        <Button color="gray-white" onClick={() => setOpenFilters(true)}>
+          <AdjustmentsIcon className="my-auto h-7" />
+        </Button>
+        <Modal
+          open={openFilters}
+          setOpen={setOpenFilters}
+          position="top"
+          className="rounded-lg bg-white px-4 pb-4"
+        >
+          <Col>
+            <Title text="Filter Markets" />
+            {children}
+          </Col>
+        </Modal>
+      </div>
+      <div className="hidden sm:contents">{children}</div>
     </>
   )
 }

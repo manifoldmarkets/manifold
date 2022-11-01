@@ -1,6 +1,5 @@
 import { SiteLink } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
-import { useWindowSize } from 'web/hooks/use-window-size'
 import { BOT_USERNAMES } from 'common/envs/constants'
 
 export function shortenName(name: string) {
@@ -26,15 +25,13 @@ export function UserLink(props: {
 }) {
   const { name, username, className, short, noLink } = props
   const shortName = short ? shortenName(name) : name
-  const { width } = useWindowSize()
   return (
     <SiteLink
       href={`/${username}`}
       className={clsx(
-        (width ?? 0) < 450 ? ' max-w-[120px]' : 'max-w-[200px]',
-        'z-10 truncate',
+        'z-10 max-w-[120px] truncate [@media(min-width:450px)]:max-w-[200px]',
         className,
-        noLink ? 'pointer-events-none' : ''
+        noLink && 'pointer-events-none'
       )}
     >
       {shortName}
