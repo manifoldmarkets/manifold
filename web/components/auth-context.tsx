@@ -1,3 +1,5 @@
+'use client'
+
 import { createContext, ReactNode, useEffect } from 'react'
 import { onIdTokenChanged } from 'firebase/auth'
 import {

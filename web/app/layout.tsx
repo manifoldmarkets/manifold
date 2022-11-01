@@ -1,6 +1,7 @@
 import 'tailwindcss/tailwind.css'
 
 import Head from 'next/head'
+import { AuthProvider } from 'web/components/auth-context'
 
 export default function RootLayout({
   // Layouts must accept a children prop.
@@ -14,7 +15,10 @@ export default function RootLayout({
       <Head>
         <title>Next.js</title>
       </Head>
-      <body>{children}</body>
+      <body>
+        {/* Note: missing the serverUser optimization? */}
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }
