@@ -395,6 +395,7 @@ export function ContractCardAnswers(props: {
     <Col className="gap-2">
       {answers.map((answer) => (
         <ContractCardAnswer
+          key={answer.id}
           contract={contract}
           answer={answer}
           answersArray={answersArray}
