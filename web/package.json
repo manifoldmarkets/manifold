@@ -86,6 +86,7 @@
     "critters": "0.0.16",
     "cross-env": "^7.0.3",
     "csstype": "^3.1.0",
+    "encoding": "0.1.13",
     "eslint-config-next": "13.0.0",
     "eslint-config-prettier": "8.5.0",
     "next-sitemap": "^2.5.14",
