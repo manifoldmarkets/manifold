@@ -184,7 +184,10 @@ export function RichEditPost(props: { post: Post }) {
   const { post } = props
   const [editing, setEditing] = useState(false)
 
-  const editor = useTextEditor({ defaultValue: post.content })
+  const editor = useTextEditor({
+    defaultValue: post.content,
+    key: `post ${post?.id || ''}`,
+  })
 
   async function savePost() {
     if (!editor) return
