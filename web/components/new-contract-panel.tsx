@@ -159,7 +159,7 @@ export function NewContractPanel(props: {
 
   const descriptionPlaceholder =
     outcomeType === 'BINARY'
-      ? `e.g. This question resolves to "YES" if they receive the majority of votes...`
+      ? `e.g. This market resolves YES if...`
       : `e.g. I will choose the answer according to...`
 
   const editor = useTextEditor({

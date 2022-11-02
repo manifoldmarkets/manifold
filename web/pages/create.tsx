@@ -10,6 +10,7 @@ import {
   NewContractPanel,
   NewQuestionParams,
 } from 'web/components/new-contract-panel'
+import { SiteLink } from 'web/components/widgets/site-link'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -46,6 +47,15 @@ export default function Create(props: { auth: { user: User } }) {
         <div className="rounded-lg px-6 py-4 sm:py-0">
           <Title className="!mt-0" text="Create a market" />
 
+          <div className="mb-4 text-gray-700">
+            Create a play-money prediction market on any question.{' '}
+            <SiteLink
+              href="https://help.manifold.markets/manifold-101#ec8a2d8520654fe2be28caf61fb5d0e6"
+              className=""
+            >
+              Learn more...
+            </SiteLink>
+          </div>
           <NewContractPanel params={params} creator={user} />
         </div>
       </div>
