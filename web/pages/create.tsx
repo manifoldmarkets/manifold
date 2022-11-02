@@ -149,7 +149,13 @@ export function NewContract(props: {
         }
       })
   }, [creator.id, groupId])
-  const [ante, _setAnte] = useState(FIXED_ANTE)
+
+  const ante =
+    outcomeType === 'BINARY'
+      ? FIXED_ANTE
+      : outcomeType === 'PSEUDO_NUMERIC'
+      ? FIXED_ANTE * 5
+      : FIXED_ANTE * 2
 
   // If params.closeTime is set, extract out the specified date and time
   // By default, close the market a week from today
@@ -480,13 +486,18 @@ export function NewContract(props: {
           </label>
 
           <div className="pl-1 text-sm text-gray-700">
-            {formatMoney(ante)} or <span className=" text-teal-500">FREE </span>
-            if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
-            <InfoTooltip
-              text={`You'll earn a bonus of ${formatMoney(
-                UNIQUE_BETTOR_BONUS_AMOUNT
-              )} for each unique trader you get on your market.`}
-            />
+            {formatMoney(ante)}{' '}
+            {(outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+              <>
+                or <span className=" text-teal-500">FREE </span>
+                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+                <InfoTooltip
+                  text={`You'll earn a bonus of ${formatMoney(
+                    UNIQUE_BETTOR_BONUS_AMOUNT
+                  )} for each unique trader you get on your market.`}
+                />
+              </>
+            )}
           </div>
           <div className="pl-1 text-gray-500"></div>
 

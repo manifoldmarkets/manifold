@@ -140,7 +140,12 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   }
   const user = userDoc.data() as User
 
-  const ante = user.username === 'DavidChee' ? 500 : FIXED_ANTE
+  const ante =
+    outcomeType === 'BINARY'
+      ? FIXED_ANTE
+      : outcomeType === 'PSEUDO_NUMERIC'
+      ? FIXED_ANTE * 5
+      : FIXED_ANTE * 2
 
   // TODO: this is broken because it's not in a transaction
   if (ante > user.balance)
