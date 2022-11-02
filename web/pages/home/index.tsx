@@ -309,14 +309,14 @@ function renderSections(
             />
           )
 
-        if (id === 'live-feed') return <ActivitySection />
+        if (id === 'live-feed') return <ActivitySection key={id} />
 
         if (id === 'daily-movers') {
           return <DailyMoversSection key={id} data={dailyMovers} />
         }
 
         if (id === 'latest-posts') {
-          return <LatestPostsSection latestPosts={latestPosts} />
+          return <LatestPostsSection key={id} latestPosts={latestPosts} />
         }
 
         const contracts = sectionContracts[id]
