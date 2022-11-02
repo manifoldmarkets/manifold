@@ -21,12 +21,16 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
 import { Col } from '../layout/col'
 
+const itemClass =
+  'sm:hover:bg-greyscale-2 block w-full py-1 px-3 text-center sm:hover:text-indigo-700'
+const selectedItemClass = 'bg-greyscale-1.5 text-indigo-700'
+
 function getNavigation(user: User) {
   return [
     { name: 'Home', href: '/home', icon: HomeIcon },
     { name: 'Search', href: '/search', icon: SearchIcon },
     {
-      name: 'User',
+      name: 'Profile',
       href: `/${user.username}?tab=portfolio`,
     },
     {
@@ -69,7 +73,8 @@ export function BottomNavBar() {
         />
       ))}
       <div
-        className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
+        // className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
+        className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
         onClick={() => setSidebarOpen(true)}
       >
         <MenuAlt3Icon className=" my-1 mx-auto h-6 w-6" aria-hidden="true" />
@@ -91,12 +96,9 @@ function NavBarItem(props: {
   user?: User | null
   className?: string
 }) {
-  const itemClass =
-    'sm:hover:bg-greyscale-2 block w-full py-1 px-3 text-center sm:hover:text-indigo-700'
-  const selectedItemClass = 'bg-greyscale-1.5 text-indigo-700'
   const { item, currentPage, children, user } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
-  if (item.name === 'User' && user) {
+  if (item.name === 'Profile' && user) {
     return (
       <Link
         href={item.href ?? '#'}
