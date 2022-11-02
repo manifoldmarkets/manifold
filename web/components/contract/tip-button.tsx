@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
-import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../widgets/tooltip'
 import TipJar from 'web/public/custom-components/tipJar'
 import { useState } from 'react'
