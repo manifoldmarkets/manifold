@@ -35,6 +35,12 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (id) =>
       `<iframe src="https://www.youtube.com/embed/${id}"></iframe>`,
   },
+  // Also rewrite youtube links like `https://youtu.be/IOlKZDgyQRQ`
+  {
+    regex: /^https?:\/\/youtu\.be\/([^&]+)/,
+    rewrite: (id) =>
+      `<iframe src="https://www.youtube.com/embed/${id}"></iframe>`,
+  },
   {
     regex: /^https?:\/\/www\.metaculus\.com\/questions\/(\d+)/,
     rewrite: (id) =>
