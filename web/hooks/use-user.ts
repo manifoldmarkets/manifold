@@ -1,11 +1,8 @@
 import { useContext, useRef } from 'react'
-import {
-  useFirestoreDocumentData,
-  useFirestoreQueryData,
-} from '@react-query-firebase/firestore'
+import { useFirestoreQueryData } from '@react-query-firebase/firestore'
 import { sortBy } from 'lodash'
 
-import { doc, DocumentData } from 'firebase/firestore'
+import { doc } from 'firebase/firestore'
 import { listenForUser, users } from 'web/lib/firebase/users'
 import { AuthContext } from 'web/components/auth-context'
 import { ContractMetrics } from 'common/calculate-metrics'
@@ -16,6 +13,7 @@ import { useContracts } from './use-contracts'
 import { useStore, useStoreItems } from './use-store'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { listenForValue } from 'web/lib/firebase/utils'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -99,12 +97,14 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
 }
 
 export const useUserContractMetrics = (userId = '_', contractId: string) => {
-  const result = useFirestoreDocumentData<DocumentData, ContractMetrics>(
-    ['user-contract-metrics', userId, contractId],
-    doc(users, userId, 'contract-metrics', contractId)
+  const metricsDoc = doc(users, userId, 'contract-metrics', contractId)
+
+  const data = useStore<ContractMetrics | null>(
+    ['user-contract-metrics', userId, contractId].join('/'),
+    (_, setValue) => listenForValue(metricsDoc, setValue)
   )
 
   if (userId === '_') return undefined
 
-  return result.data
+  return data
 }
