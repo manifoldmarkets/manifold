@@ -43,7 +43,7 @@ export function GridComponent(props: any) {
   const loaded = contracts.every((c) => c !== undefined)
 
   return (
-    <NodeViewWrapper className="grid-cards-component">
+    <NodeViewWrapper className="grid-cards-component not-prose">
       {loaded ? (
         <ContractsGrid
           contracts={filterDefined(contracts)}

@@ -33,7 +33,7 @@ export default Node.create({
   },
 })
 
-export function StaticReactEmbedComponent(props: any) {
+function StaticReactEmbedComponent(props: any) {
   const embedName = props.node.attrs.embedName
 
   return (

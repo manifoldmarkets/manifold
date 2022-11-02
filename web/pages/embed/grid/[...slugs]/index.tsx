@@ -15,7 +15,6 @@ export async function getStaticProps(props: { params: { slugs: string[] } }) {
     props: {
       contracts,
     },
-    revalidate: 60, // regenerate after a minute
   }
 }
 

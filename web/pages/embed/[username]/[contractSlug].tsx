@@ -98,7 +98,7 @@ export function ContractEmbed(props: EmbedProps) {
   )
 }
 
-function ContractSmolView({ contract, bets }: EmbedProps) {
+export function ContractSmolView({ contract, bets }: EmbedProps) {
   const { question, outcomeType } = contract
 
   const isBinary = outcomeType === 'BINARY'
