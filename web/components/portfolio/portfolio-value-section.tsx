@@ -68,7 +68,7 @@ export const PortfolioValueSection = memo(
             <div
               style={{
                 height: `${height - 40}px`,
-                margin: '20px 10px 20px 70px',
+                margin: '20px 70px 20px 10px',
               }}
             >
               <PlaceholderGraph className="text-greyscale-4 h-full w-full animate-pulse" />

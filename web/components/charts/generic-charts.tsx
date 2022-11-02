@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react'
 import { bisector, extent } from 'd3-array'
-import { axisBottom, axisLeft } from 'd3-axis'
+import { axisBottom, axisLeft, axisRight } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 import {
@@ -368,14 +368,14 @@ export const ControllableSingleValueHistoryChart = <
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis =
       yKind === 'percent'
-        ? axisLeft<number>(yScale)
+        ? axisRight<number>(yScale)
             .tickValues(pctTickValues)
             .tickFormat((n) => formatPct(n))
         : yKind === 'm$'
-        ? axisLeft<number>(yScale)
+        ? axisRight<number>(yScale)
             .ticks(nTicks)
             .tickFormat((n) => formatMoney(n))
-        : axisLeft<number>(yScale).ticks(nTicks)
+        : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
