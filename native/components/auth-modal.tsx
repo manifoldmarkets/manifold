@@ -167,7 +167,7 @@ export const AuthModal = (props: {
     <Modal
       animationType="slide"
       transparent={true}
-      visible={showModal}
+      visible={Platform.OS !== 'android' && showModal}
       onRequestClose={() => {
         Alert.alert('Modal has been closed.')
         // setModalVisible(!modalVisible)
