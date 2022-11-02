@@ -635,18 +635,6 @@ function LimitOrderPanel(props: {
       <Row className="mt-1 mb-4 items-center gap-4">
         <Col className="gap-2">
           <div className="text-sm text-gray-500">
-            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
-          </div>
-          <ProbabilityOrNumericInput
-            contract={contract}
-            prob={highLimitProb}
-            setProb={setHighLimitProb}
-            isSubmitting={isSubmitting}
-            placeholder="90"
-          />
-        </Col>
-        <Col className="gap-2">
-          <div className="text-sm text-gray-500">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
@@ -655,6 +643,19 @@ function LimitOrderPanel(props: {
             setProb={setLowLimitProb}
             isSubmitting={isSubmitting}
             placeholder="10"
+          />
+        </Col>
+
+        <Col className="gap-2">
+          <div className="text-sm text-gray-500">
+            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
+          </div>
+          <ProbabilityOrNumericInput
+            contract={contract}
+            prob={highLimitProb}
+            setProb={setHighLimitProb}
+            isSubmitting={isSubmitting}
+            placeholder="90"
           />
         </Col>
       </Row>
