@@ -57,6 +57,9 @@
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.markets.manifold",
+      "associatedDomains": [
+        "applinks:manifold.markets"
+      ],
       "buildNumber": "1.0.4",
       "runtimeVersion": {
         "policy": "sdkVersion"

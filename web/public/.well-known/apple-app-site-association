@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+    {
+        "appID": "RPU7UVLP3Z.com.markets.manifold",
+        "paths": ["*"]
+      }
+    ]
+  }
+}
