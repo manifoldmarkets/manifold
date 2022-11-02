@@ -435,18 +435,13 @@ export function NewContractPanel(props: {
           </label>
 
           <div className="pl-1 text-sm text-gray-700">
-            {formatMoney(ante)}{' '}
-            {(outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
-              <>
-                or <span className=" text-teal-500">FREE </span>
-                if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
-                <InfoTooltip
-                  text={`You'll earn a bonus of ${formatMoney(
-                    UNIQUE_BETTOR_BONUS_AMOUNT
-                  )} for each unique trader you get on your market.`}
-                />
-              </>
-            )}
+            {formatMoney(ante)} or <span className=" text-teal-500">FREE </span>
+            if you get {ante / UNIQUE_BETTOR_BONUS_AMOUNT}+ participants{' '}
+            <InfoTooltip
+              text={`You'll earn a bonus of ${formatMoney(
+                UNIQUE_BETTOR_BONUS_AMOUNT
+              )} for each unique trader you get on your market.`}
+            />
           </div>
           <div className="pl-1 text-gray-500"></div>
 
