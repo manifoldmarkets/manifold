@@ -398,7 +398,7 @@ export function BuyPanel(props: {
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
-          showSliderOnMobile
+          showSlider={true}
           binaryOutcome={outcome}
         />
 
@@ -688,7 +688,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showSliderOnMobile
+        showSlider={true}
       />
 
       <Col className="mt-3 w-full gap-3">

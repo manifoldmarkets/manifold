@@ -162,7 +162,7 @@ export function CreateAnswerPanel(props: { contract: FreeResponseContract }) {
                   setError={setAmountError}
                   minimumAmount={1}
                   disabled={isSubmitting}
-                  showSliderOnMobile
+                  showSlider={true}
                 />
               </Col>
               <Col className="gap-3">

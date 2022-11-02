@@ -149,7 +149,7 @@ export function AnswerBetPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showSliderOnMobile
+        showSlider={true}
       />
 
       <Col className="mt-3 w-full gap-3">
