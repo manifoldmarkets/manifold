@@ -28,7 +28,7 @@ import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
-import { AuthModal } from './auth-modal'
+import { AuthModal } from 'components/auth-modal'
 
 console.log('using', ENV, 'env')
 console.log(
