@@ -15,7 +15,7 @@ import {
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
 
-import { chargeUser, getContract } from './utils'
+import { getContract } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
 
 import { FIXED_ANTE } from '../../common/economy'
@@ -34,6 +34,7 @@ import { getPseudoProbability } from '../../common/pseudo-numeric'
 import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -134,22 +135,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     ;({ answers } = validate(multipleChoiceSchema, body))
   }
 
-  const userDoc = await firestore.collection('users').doc(auth.uid).get()
-  if (!userDoc.exists) {
-    throw new APIError(400, 'No user exists with the authenticated user ID.')
-  }
-  const user = userDoc.data() as User
-
-  const ante =
-    outcomeType === 'BINARY'
-      ? FIXED_ANTE
-      : outcomeType === 'PSEUDO_NUMERIC'
-      ? FIXED_ANTE * 5
-      : FIXED_ANTE * 2
-
-  // TODO: this is broken because it's not in a transaction
-  if (ante > user.balance)
-    throw new APIError(400, `Balance must be at least ${ante}.`)
+  const userId = auth.uid
 
   let group: Group | null = null
   if (groupId) {
@@ -167,9 +153,9 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
       (doc) => doc.data() as { userId: string; createdTime: number }
     )
     if (
-      !groupMemberDocs.map((m) => m.userId).includes(user.id) &&
+      !groupMemberDocs.map((m) => m.userId).includes(userId) &&
       !group.anyoneCanJoin &&
-      group.creatorId !== user.id
+      group.creatorId !== userId
     ) {
       throw new APIError(
         400,
@@ -179,15 +165,6 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   }
   const slug = await getSlug(question)
   const contractRef = firestore.collection('contracts').doc()
-
-  console.log(
-    'creating contract for',
-    user.username,
-    'on',
-    question,
-    'ante:',
-    ante || 0
-  )
 
   // convert string descriptions into JSONContent
   const newDescription =
@@ -202,6 +179,31 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
           ],
         }
       : description
+
+  const ante =
+    outcomeType === 'BINARY'
+      ? FIXED_ANTE
+      : outcomeType === 'PSEUDO_NUMERIC'
+      ? FIXED_ANTE * 5
+      : FIXED_ANTE * 2
+
+  const user = await firestore.runTransaction(async (trans) => {
+    const userDoc = await trans.get(firestore.collection('users').doc(userId))
+    if (!userDoc.exists)
+      throw new APIError(400, 'No user exists with the authenticated user ID.')
+
+    const user = userDoc.data() as User
+
+    if (ante > user.balance)
+      throw new APIError(400, `Balance must be at least ${ante}.`)
+
+    trans.update(userDoc.ref, {
+      balance: FieldValue.increment(-ante),
+      totalDeposits: FieldValue.increment(-ante),
+    })
+
+    return user
+  })
 
   const contract = getNewContract(
     contractRef.id,
@@ -222,29 +224,41 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     visibility
   )
 
-  const providerId = user.id
-
-  if (ante) await chargeUser(providerId, ante, true)
   await contractRef.create(contract)
+
+  console.log(
+    'created contract for',
+    user.username,
+    'on',
+    question,
+    'ante:',
+    ante || 0
+  )
 
   if (group != null) {
     const groupContractsSnap = await firestore
       .collection(`groups/${groupId}/groupContracts`)
       .get()
+
     const groupContracts = groupContractsSnap.docs.map(
       (doc) => doc.data() as { contractId: string; createdTime: number }
     )
+
     if (!groupContracts.map((c) => c.contractId).includes(contractRef.id)) {
       await createGroupLinks(group, [contractRef.id], auth.uid)
+
       const groupContractRef = firestore
         .collection(`groups/${groupId}/groupContracts`)
         .doc(contract.id)
+
       await groupContractRef.set({
         contractId: contract.id,
         createdTime: Date.now(),
       })
     }
   }
+
+  const providerId = userId
 
   if (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') {
     const liquidityDoc = firestore
