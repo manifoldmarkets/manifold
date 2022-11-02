@@ -168,10 +168,7 @@ export const AuthModal = (props: {
       animationType="slide"
       transparent={true}
       visible={Platform.OS !== 'android' && showModal}
-      onRequestClose={() => {
-        Alert.alert('Modal has been closed.')
-        // setModalVisible(!modalVisible)
-      }}
+      onRequestClose={() => {}}
     >
       <View style={styles.modalContent}>
         {loading ? (
@@ -186,7 +183,6 @@ export const AuthModal = (props: {
                 await promptAsync()
                 setLoading(false)
               }}
-              //any other customization you want, like borderRadius, color, or size
             >
               <Text style={styles.googleText}>Log In With Google</Text>
             </FontAwesome5.Button>

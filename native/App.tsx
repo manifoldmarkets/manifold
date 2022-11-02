@@ -55,9 +55,7 @@ export const auth = getAuth(app)
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
 const homeUri =
-  ENV === 'DEV'
-    ? 'https://dev-git-apple-sign-in-mantic.vercel.app/'
-    : 'https://prod-git-apple-sign-in-mantic.vercel.app/'
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
