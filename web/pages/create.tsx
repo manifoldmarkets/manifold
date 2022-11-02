@@ -51,7 +51,7 @@ export default function Create(props: { auth: { user: User } }) {
             Create a play-money prediction market on any question.{' '}
             <SiteLink
               href="https://help.manifold.markets/manifold-101#ec8a2d8520654fe2be28caf61fb5d0e6"
-              className=""
+              className="text-indigo-700"
             >
               Learn more...
             </SiteLink>
