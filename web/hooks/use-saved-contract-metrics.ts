@@ -28,8 +28,8 @@ export const useSavedContractMetrics = (
   const metrics =
     contractMetrics || savedMetrics || computedMetrics
       ? ({
-          ...contractMetrics,
           ...savedMetrics,
+          ...contractMetrics,
           // Computed metrics has a subset of the fields of contract metrics.
           ...computedMetrics,
         } as ContractMetrics)
