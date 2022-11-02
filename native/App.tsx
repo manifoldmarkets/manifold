@@ -3,8 +3,7 @@ import WebView from 'react-native-webview'
 import { getAuth } from 'firebase/auth'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
 import 'expo-dev-client'
-import CookieManager from '@react-native-cookies/cookies'
-import { AUTH_COOKIE_NAME, ENV, FIREBASE_CONFIG } from 'common/envs/constants'
+import { ENV, FIREBASE_CONFIG } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -23,7 +22,6 @@ import Clipboard from '@react-native-clipboard/clipboard'
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
-import { TEN_YEARS_SECS } from 'common/envs/constants'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import * as Sentry from 'sentry-expo'
@@ -59,7 +57,7 @@ export const auth = getAuth(app)
 const homeUri =
   ENV === 'DEV'
     ? 'https://dev-git-apple-sign-in-mantic.vercel.app/'
-    : 'https://prod-git-apple-sign-in-mantic.vercel.app/'
+    : 'https://92a6-71-218-239-220.ngrok.io/'
 
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
@@ -162,28 +160,6 @@ export default function App() {
         Notifications.removeNotificationSubscription(responseListener.current)
     }
   }, [])
-
-  useEffect(() => {
-    try {
-      if (fbUser && !isExpoClient) {
-        console.log('Setting cookie')
-        CookieManager.set(
-          homeUri,
-          {
-            name: AUTH_COOKIE_NAME,
-            value: encodeURIComponent(fbUser),
-            path: '/',
-            expires: new Date(TEN_YEARS_SECS).toISOString(),
-            secure: true,
-          },
-          useWebKit
-        )
-      }
-    } catch (err) {
-      Sentry.Native.captureException(err, { extra: { message: 'set cookie' } })
-      console.log('[setCookie] Error : ', err)
-    }
-  }, [fbUser])
 
   const getExistingPushNotificationStatus = async () => {
     if (Platform.OS === 'android') {
@@ -291,7 +267,6 @@ export default function App() {
       auth.signOut()
       setFbUser(null)
       setUserId(null)
-      !isExpoClient && CookieManager.clearAll(useWebKit)
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
@@ -392,8 +367,18 @@ export default function App() {
               extra: { message: 'webview error' },
             })
           }}
-          // TODO: test on android
           onTouchStart={() => {
+            if (!hasSetNativeFlag && webview.current) {
+              console.log('setting is native')
+              webview.current.postMessage(
+                JSON.stringify({
+                  type: 'setIsNative',
+                  data: {},
+                })
+              )
+            }
+          }}
+          onNavigationStateChange={() => {
             if (!hasSetNativeFlag && webview.current) {
               console.log('setting is native')
               webview.current.postMessage(
