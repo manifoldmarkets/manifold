@@ -55,7 +55,6 @@
     },
     "ios": {
       "supportsTablet": true,
-      "usesAppleSignIn": true,
       "bundleIdentifier": "com.markets.manifold",
       "buildNumber": "1.0.3",
       "runtimeVersion": {
