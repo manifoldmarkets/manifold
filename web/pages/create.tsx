@@ -1,4 +1,6 @@
 import { useRouter } from 'next/router'
+import { LightBulbIcon } from '@heroicons/react/outline'
+
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Page } from 'web/components/layout/page'
 import { useTracking } from 'web/hooks/use-tracking'
@@ -56,7 +58,13 @@ export default function Create(props: { auth: { user: User } }) {
               Learn more...
             </SiteLink>
           </div>
+
           <NewContractPanel params={params} creator={user} />
+
+          <div className="mb-4 text-xs text-gray-700 ">
+            <LightBulbIcon className="inline-flex h-5 w-5 mb-1" /> Don't worry if the
+            details aren't perfect. You'll be able to edit everything later.
+          </div>
         </div>
       </div>
     </Page>
