@@ -134,7 +134,10 @@ export function ContractDetails(props: {
   )
 }
 
-function MarketSubheader(props: { contract: Contract; disabled?: boolean }) {
+export function MarketSubheader(props: {
+  contract: Contract
+  disabled?: boolean
+}) {
   const { contract, disabled } = props
   const { creatorName, creatorUsername, creatorId, creatorAvatarUrl } = contract
   const { resolvedDate } = contractMetrics(contract)
