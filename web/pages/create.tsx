@@ -50,7 +50,7 @@ export default function Create(props: { auth: { user: User } }) {
           <Title className="!mt-0" text="Create a market" />
 
           <div className="mb-4 text-gray-700">
-            Create a play-money prediction market on any question.{' '}
+            Set up your own play-money prediction market on any question.{' '}
             <SiteLink
               href="https://help.manifold.markets/manifold-101#ec8a2d8520654fe2be28caf61fb5d0e6"
               className="text-indigo-700"
