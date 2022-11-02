@@ -26,7 +26,6 @@ export const NativeMessageListener = () => {
       setIsNative(true)
     } else if (type === 'nativeFbUser') {
       await setFirebaseUserViaJson(data, app, true)
-      return
     } else if (type === 'pushNotificationPermissionStatus') {
       const { status, userId } = data
       await handlePushNotificationPermissionStatus(userId, status)

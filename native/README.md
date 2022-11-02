@@ -15,7 +15,7 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Building  
 - You'll need to get Android signing credentials from Ian (located [here](https://drive.google.com/drive/folders/155gaiY97oY0IkQvHGKHqKbXEeO4LaVCe?usp=sharing)) to properly sign android builds for the google play store. You'll probably need to be added to the Apple Business developer team when we get that to build ios apps.    
-- After changing anything in the `app.config.js` you'll want to run `npx expo prebuild` to clear the android and ios folders
+- After changing anything in the `app.config.js` or `app.json` you'll want to run `npx expo prebuild` to clear the android and ios folders
 - Before every build we clean and reset the git tree so you'll want to make sure any changes are committed. The dialog will ask you to confirm this.   
 - After every build your git tree may be dirty with build artifacts. I tried removing these and ended up down in a git-sponsored nightmare, so I wouldn't advise trying to edit these files out of the git history unless you really know what you're doing. 
 - The following commands build the binaries locally by default. If you remove the `--local` flag it will build in the EAS/Expo cloud, (this tends to be much slower, though).
@@ -58,6 +58,8 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Troubleshooting
 - getting an errors on build/install? like `Error: spawn .../manifold/native/android/gradlew EACCES`
-  - Delete the `android` and `ios` folders in `native/` and try again.
+  - Delete the `android` or `ios` folders or run `yarn clean` and try again.
 - environment variables not working? like `process.env.API_URL` is undefined
   - Try running `yarn clear` and ctrl+c to clear the env variable and try again
+- When in doubt: `yarn clean`
+- Fastlane build failing? Could be a malformed import

@@ -1,20 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import * as Google from 'expo-auth-session/providers/google'
 import WebView from 'react-native-webview'
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithCredential,
-} from 'firebase/auth'
+import { getAuth } from 'firebase/auth'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
 import 'expo-dev-client'
-import CookieManager from '@react-native-cookies/cookies'
-import {
-  AUTH_COOKIE_NAME,
-  ENV,
-  ENV_CONFIG,
-  FIREBASE_CONFIG,
-} from 'common/envs/constants'
+import { ENV, FIREBASE_CONFIG } from 'common/envs/constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
 import {
@@ -29,14 +18,15 @@ import {
   Dimensions,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
+// @ts-ignore
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
 import { Subscription } from 'expo-modules-core'
-import { TEN_YEARS_SECS } from 'common/envs/constants'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { getApp, getApps, initializeApp } from 'firebase/app'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
+import { AuthModal } from 'components/auth-modal'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -60,7 +50,7 @@ const isExpoClient =
   Constants.ExecutionEnvironment === ExecutionEnvironment.StoreClient
 
 const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
-const auth = getAuth(app)
+export const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
@@ -70,18 +60,15 @@ const homeUri =
 export default function App() {
   const [fbUser, setFbUser] = useState<string | null>()
   const [userId, setUserId] = useState<string | null>()
-  const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
-    ENV_CONFIG.expoConfig
-  )
+
   const [isWebViewLoading, setIsWebViewLoading] = useState(true)
-  const webview = useRef<WebView>()
-  const [hasInjectedVariable, setHasInjectedVariable] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const webview = useRef<WebView | undefined>()
+  const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const isIOS = Platform.OS === 'ios'
-  const useWebKit = isIOS
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
   const url = Linking.useURL()
-  // TODO: untested on ios
   const eventEmitter = new NativeEventEmitter(
     Platform.OS === 'ios' ? LinkingManager.default : null
   )
@@ -96,7 +83,7 @@ export default function App() {
           queryParams
         )}`
       )
-      webview.current.postMessage(
+      webview.current?.postMessage(
         JSON.stringify({
           type: 'link',
           data: path,
@@ -119,7 +106,7 @@ export default function App() {
       Sentry.Native.captureException(err, {
         extra: { message: 'back button press' },
       })
-      console.log('[handleBackButtonPress] Error : ', err.message)
+      console.log('[handleBackButtonPress] Error : ', err)
       return false
     }
   }
@@ -145,7 +132,8 @@ export default function App() {
       // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener((response) => {
-          webview.current.postMessage(
+          console.log('notification response', response)
+          webview.current?.postMessage(
             JSON.stringify({
               type: 'notification',
               data: response.notification.request.content.data,
@@ -156,59 +144,19 @@ export default function App() {
       Sentry.Native.captureException(err, {
         extra: { message: 'notification listener' },
       })
-      console.log('[notification listener] Error : ', err.message)
+      console.log('[notification listener] Error : ', err)
     }
 
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener.current)
-      Notifications.removeNotificationSubscription(responseListener.current)
+      console.log('removing notification listeners')
+      notificationListener.current &&
+        Notifications.removeNotificationSubscription(
+          notificationListener.current
+        )
+      responseListener.current &&
+        Notifications.removeNotificationSubscription(responseListener.current)
     }
   }, [])
-
-  // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
-  useEffect(() => {
-    try {
-      if (response?.type === 'success') {
-        const { id_token } = response.params
-        const credential = GoogleAuthProvider.credential(id_token)
-        signInWithCredential(auth, credential).then((result) => {
-          const fbUser = result.user.toJSON()
-          if (webview.current) {
-            webview.current.postMessage(
-              JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-            )
-          }
-        })
-      }
-    } catch (err) {
-      Sentry.Native.captureException(err, {
-        extra: { message: 'google sign in' },
-      })
-      console.log('[google sign in] Error : ', err.message)
-    }
-  }, [response])
-
-  useEffect(() => {
-    try {
-      if (fbUser && !isExpoClient) {
-        console.log('Setting cookie')
-        CookieManager.set(
-          homeUri,
-          {
-            name: AUTH_COOKIE_NAME,
-            value: encodeURIComponent(fbUser),
-            path: '/',
-            expires: new Date(TEN_YEARS_SECS).toISOString(),
-            secure: true,
-          },
-          useWebKit
-        )
-      }
-    } catch (err) {
-      Sentry.Native.captureException(err, { extra: { message: 'set cookie' } })
-      console.log('[setCookie] Error : ', err.message)
-    }
-  }, [fbUser])
 
   const getExistingPushNotificationStatus = async () => {
     if (Platform.OS === 'android') {
@@ -269,13 +217,14 @@ export default function App() {
     }
   }
 
-  const handleMessageFromWebview = ({ nativeEvent }) => {
+  const handleMessageFromWebview = ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data)
     console.log('Received nativeEvent: ', type)
+    setHasSetNativeFlag(true)
     // Time to log in to firebase
     if (type === 'googleLoginClicked') {
-      promptAsync()
+      setShowAuthModal(true)
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
         if (status === 'granted') {
@@ -315,7 +264,6 @@ export default function App() {
       auth.signOut()
       setFbUser(null)
       setUserId(null)
-      !isExpoClient && CookieManager.clearAll(useWebKit)
     }
     // Receiving cached firebase user from webview cache
     else if (type === 'users') {
@@ -332,7 +280,6 @@ export default function App() {
               }
             }
           )
-          return
         }
       } catch (e) {
         Sentry.Native.captureException(e, {
@@ -409,6 +356,7 @@ export default function App() {
           onLoadEnd={() => isWebViewLoading && setIsWebViewLoading(false)}
           sharedCookiesEnabled={true}
           source={{ uri: homeUri }}
+          //@ts-ignore
           ref={webview}
           onError={(e) => {
             console.log('error in webview', e)
@@ -416,9 +364,8 @@ export default function App() {
               extra: { message: 'webview error' },
             })
           }}
-          onMessage={handleMessageFromWebview}
-          onNavigationStateChange={async (navState) => {
-            if (!navState.loading && !hasInjectedVariable && webview.current) {
+          onTouchStart={() => {
+            if (!hasSetNativeFlag && webview.current) {
               console.log('setting is native')
               webview.current.postMessage(
                 JSON.stringify({
@@ -426,9 +373,27 @@ export default function App() {
                   data: {},
                 })
               )
-              setHasInjectedVariable(true)
             }
           }}
+          onNavigationStateChange={() => {
+            if (!hasSetNativeFlag && webview.current) {
+              console.log('setting is native')
+              webview.current.postMessage(
+                JSON.stringify({
+                  type: 'setIsNative',
+                  data: {},
+                })
+              )
+            }
+          }}
+          onMessage={handleMessageFromWebview}
+        />
+        <AuthModal
+          showModal={showAuthModal}
+          setShowModal={setShowAuthModal}
+          webview={webview}
+          setFbUser={setFbUser}
+          setUserId={setUserId}
         />
       </SafeAreaView>
     </>

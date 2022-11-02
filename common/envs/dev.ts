@@ -19,7 +19,6 @@ export const DEV_CONFIG: EnvConfig = {
   twitchBotEndpoint: 'https://dev-twitch-bot.manifold.markets',
   sprigEnvironmentId: 'Tu7kRZPm7daP',
   expoConfig: {
-    //dev:
     iosClientId:
       '134303100058-lioqb7auc8minvqt9iamuit2pg10pubt.apps.googleusercontent.com',
     expoClientId:

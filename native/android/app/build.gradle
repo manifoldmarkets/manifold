@@ -147,8 +147,8 @@ android {
         applicationId 'com.markets.manifold'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 15
-        versionName "2.0.6"
+        versionCode 17
+        versionName "2.0.8"
         buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
 
         if (isNewArchitectureEnabled()) {
