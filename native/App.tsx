@@ -68,7 +68,6 @@ export default function App() {
   const webview = useRef<WebView | undefined>()
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const isIOS = Platform.OS === 'ios'
-  const useWebKit = isIOS
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
   const url = Linking.useURL()
