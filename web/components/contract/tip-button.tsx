@@ -46,7 +46,7 @@ export function TipButton(props: {
         }}
         onMouseLeave={() => setHover(false)}
       >
-        <Col className={clsx('relative')}>
+        <div className="relative m-px">
           <div
             className={clsx(
               'absolute transition-all',
@@ -78,7 +78,7 @@ export function TipButton(props: {
           <div
             className={clsx(
               userTipped && 'text-indigo-600',
-              ' absolute top-[2px] text-[0.5rem]',
+              'absolute top-0.5 text-[0.5rem]',
               tipDisplay.length === 1
                 ? 'left-[7px]'
                 : tipDisplay.length === 2
@@ -90,7 +90,7 @@ export function TipButton(props: {
           >
             {totalTipped > 0 ? tipDisplay : ''}
           </div>
-        </Col>
+        </div>
       </button>
     </Tooltip>
   )
