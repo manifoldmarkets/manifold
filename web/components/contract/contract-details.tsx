@@ -126,16 +126,11 @@ export function ContractDetails(props: {
   const { contract, disabled } = props
 
   return (
-    <Col className="gap-2">
-      <Row className="justify-between">
-        <MarketSubheader contract={contract} disabled={disabled} />
-        {!disabled && <ExtraContractActionsRow contract={contract} />}
-      </Row>
-      <Row className="gap-1">
-        {!disabled && <BountiedContractSmallBadge contract={contract} />}
-        <MarketGroups contract={contract} disabled={disabled} />
-      </Row>
-    </Col>
+    <Row className="flex-wrap gap-2 sm:flex-nowrap">
+      <MarketSubheader contract={contract} disabled={disabled} />
+      <MarketGroups contract={contract} disabled={disabled} />
+      <ExtraContractActionsRow contract={contract} />
+    </Row>
   )
 }
 
@@ -148,7 +143,7 @@ function MarketSubheader(props: { contract: Contract; disabled?: boolean }) {
   const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   return (
-    <Row>
+    <Row className="grow">
       <Avatar
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
@@ -162,23 +157,25 @@ function MarketSubheader(props: { contract: Contract; disabled?: boolean }) {
           <MiniUserFollowButton userId={creatorId} />
         </div>
       )}
-      <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-        <Row className="w-full space-x-1 ">
+      <Col className="text-greyscale-6 ml-2 flex-1 text-sm">
+        <Row className="gap-1">
           {disabled ? (
             creatorName
           ) : (
-            <Row className={'gap-2'}>
-              <UserLink
-                className="my-auto whitespace-nowrap"
-                name={creatorName}
-                username={creatorUsername}
-              />
-              {/*<BadgeDisplay user={creator} />*/}
-            </Row>
+            <UserLink
+              className="my-auto whitespace-nowrap"
+              name={creatorName}
+              username={creatorUsername}
+            />
+            /*<BadgeDisplay user={creator} className="mr-1" />*/
           )}
           {correctResolutionPercentage != null &&
             correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
-              <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
+              <Tooltip
+                text="This creator has a track record of creating contracts that are resolved incorrectly."
+                placement="bottom"
+                className="w-fit"
+              >
                 <ExclamationIcon className="h-6 w-6 text-yellow-500" />
               </Tooltip>
             )}
@@ -208,37 +205,28 @@ export function CloseOrResolveTime(props: {
     return (
       <Row className="select-none items-center gap-1">
         {resolvedDate && resolutionTime ? (
-          <>
-            <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
-              <Row>
-                <div>resolved&nbsp;</div>
-                {resolvedDate}
-              </Row>
-            </DateTimeTooltip>
-          </>
+          <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
+            resolved&nbsp;{resolvedDate}
+          </DateTimeTooltip>
         ) : null}
 
         {!resolvedDate && closeTime && (
-          <Row>
-            {dayjs().isBefore(closeTime) && <div>closes&nbsp;</div>}
-            {!dayjs().isBefore(closeTime) && <div>closed&nbsp;</div>}
+          <div className="flex gap-1 whitespace-nowrap">
+            {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}
             <EditableCloseDate
               closeTime={closeTime}
               contract={contract}
               isCreator={isCreator ?? false}
               disabled={disabled}
             />
-          </Row>
+          </div>
         )}
       </Row>
     )
   } else return <></>
 }
 
-export function MarketGroups(props: {
-  contract: Contract
-  disabled?: boolean
-}) {
+function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const { contract, disabled } = props
@@ -246,7 +234,10 @@ export function MarketGroups(props: {
 
   return (
     <>
-      <Row className="flex-wrap items-center gap-1">
+      {/* Put after market action icons on mobile, but before them on desktop*/}
+      <Row className="order-last w-full flex-wrap items-end gap-1 sm:order-[unset]">
+        {!disabled && <BountiedContractSmallBadge contract={contract} />}
+
         {groupsToDisplay.map((group) => (
           <GroupDisplay
             key={group.groupId}
@@ -260,7 +251,7 @@ export function MarketGroups(props: {
             className="text-greyscale-4 hover:text-greyscale-3"
             onClick={() => setOpen(true)}
           >
-            <PlusCircleIcon className="h-[18px]" />
+            <PlusCircleIcon className="h-[20px]" />
           </button>
         )}
       </Row>
