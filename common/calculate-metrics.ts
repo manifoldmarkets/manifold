@@ -109,6 +109,41 @@ export const computeBinaryCpmmElasticity = (
   return safeYes - safeNo
 }
 
+export const computeBinaryCpmmElasticityFromAnte = (
+  ante: number,
+  betAmount = 50
+) => {
+  const pool = { YES: ante, NO: ante }
+  const p = 0.5
+  const contract = { pool, p } as any
+
+  const { newPool: poolY, newP: pY } = getBinaryCpmmBetInfo(
+    'YES',
+    betAmount,
+    contract,
+    undefined,
+    [],
+    {}
+  )
+  const resultYes = getCpmmProbability(poolY, pY)
+
+  const { newPool: poolN, newP: pN } = getBinaryCpmmBetInfo(
+    'NO',
+    betAmount,
+    contract,
+    undefined,
+    [],
+    {}
+  )
+  const resultNo = getCpmmProbability(poolN, pN)
+
+  // handle AMM overflow
+  const safeYes = Number.isFinite(resultYes) ? resultYes : 1
+  const safeNo = Number.isFinite(resultNo) ? resultNo : 0
+
+  return safeYes - safeNo
+}
+
 export const computeDpmElasticity = (
   contract: DPMContract,
   betAmount: number
