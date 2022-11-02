@@ -4,7 +4,7 @@
     "slug": "manifold-markets",
     "owner": "iansp",
     "sdkVersion": "46.0.0",
-    "version": "2.0.10",
+    "version": "2.0.11",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -58,9 +58,10 @@
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.markets.manifold",
       "associatedDomains": [
-        "applinks:manifold.markets"
+        "applinks:manifold.markets",
+        "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.5",
+      "buildNumber": "1.0.6",
       "runtimeVersion": {
         "policy": "sdkVersion"
       }
