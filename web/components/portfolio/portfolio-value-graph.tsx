@@ -12,7 +12,7 @@ import {
   viewScale,
 } from 'web/components/charts/generic-charts'
 
-const MARGIN = { top: 20, right: 10, bottom: 20, left: 70 }
+const MARGIN = { top: 20, right: 70, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 

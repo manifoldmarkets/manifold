@@ -9,7 +9,7 @@ import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { TooltipProps, formatPct } from '../helpers'
 import { DistributionPoint, DistributionChart } from '../generic-charts'
 
-const MARGIN = { top: 20, right: 10, bottom: 20, left: 40 }
+const MARGIN = { top: 20, right: 40, bottom: 20, left: 10 }
 const MARGIN_X = MARGIN.left + MARGIN.right
 const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
