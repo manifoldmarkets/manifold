@@ -39,7 +39,7 @@ const MARGIN_Y = MARGIN.top + MARGIN.bottom
 
 const getAnswers = (contract: ChoiceContract) => {
   const { answers, outcomeType } = contract
-  const validAnswers = answers.filter(
+  const validAnswers = (answers ?? []).filter(
     (answer) => answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE'
   )
   return sortBy(
