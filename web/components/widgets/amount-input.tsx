@@ -10,7 +10,7 @@ import { Input } from './input'
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
-import { DAY_MS } from 'common/lib/util/time'
+import { DAY_MS } from 'common/util/time'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function AmountInput(props: {
