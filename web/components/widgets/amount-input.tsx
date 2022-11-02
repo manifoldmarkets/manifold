@@ -10,8 +10,6 @@ import { Input } from './input'
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
 import { binaryOutcomes } from '../bet/bet-panel'
-import { DAY_MS } from 'common/util/time'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function AmountInput(props: {
   amount: number | undefined
@@ -108,6 +106,7 @@ export function BuyAmountInput(props: {
   minimumAmount?: number
   disabled?: boolean
   showSlider?: boolean
+  hideInput?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -126,10 +125,10 @@ export function BuyAmountInput(props: {
     minimumAmount,
     inputRef,
     binaryOutcome,
+    hideInput,
   } = props
 
   const user = useUser()
-  const isMobile = useIsMobile()
 
   const onAmountChange = (amount: number | undefined) => {
     onChange(amount)
@@ -151,22 +150,18 @@ export function BuyAmountInput(props: {
   return (
     <>
       <Row className="items-center gap-4 xl:flex-wrap">
-        {/* Disable amount input on mobile if user is less than 2 weeks old*/}
-        {!isMobile &&
-          user &&
-          user.createdTime &&
-          user.createdTime < Date.now() - 14 * DAY_MS && (
-            <AmountInput
-              amount={amount}
-              onChange={onAmountChange}
-              label={ENV_CONFIG.moneyMoniker}
-              error={error}
-              disabled={disabled}
-              className={className}
-              inputClassName={inputClassName}
-              inputRef={inputRef}
-            />
-          )}
+        {!hideInput && (
+          <AmountInput
+            amount={amount}
+            onChange={onAmountChange}
+            label={ENV_CONFIG.moneyMoniker}
+            error={error}
+            disabled={disabled}
+            className={className}
+            inputClassName={inputClassName}
+            inputRef={inputRef}
+          />
+        )}
         {showSlider && (
           <Slider
             min={0}

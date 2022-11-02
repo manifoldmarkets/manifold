@@ -313,6 +313,11 @@ export function BuyPanel(props: {
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
+  // hide input on mobile for new users for first week
+  const hideInput =
+    mobileView &&
+    (user?.createdTime ?? 0) > Date.now() - 7 * 24 * 60 * 60 * 1000
+
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <YesNoSelector
@@ -400,6 +405,7 @@ export function BuyPanel(props: {
           inputRef={inputRef}
           showSlider={true}
           binaryOutcome={outcome}
+          hideInput={hideInput}
         />
 
         <Spacer h={8} />
