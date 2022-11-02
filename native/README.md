@@ -62,3 +62,4 @@ We're using Expo to help with android and ios builds. You can find more informat
 - environment variables not working? like `process.env.API_URL` is undefined
   - Try running `yarn clear` and ctrl+c to clear the env variable and try again
 - When in doubt: `yarn clean`
+- Fastlane build failing? Could be a malformed import
