@@ -9,7 +9,10 @@ export const useSaveBinaryShares = (
   contract: BinaryContract | PseudoNumericContract,
   userBets: Bet[] | undefined
 ) => {
-  const [savedShares, setSavedShares] = useStateCheckEquality({ yesShares: 0, noShares: 0 })
+  const [savedShares, setSavedShares] = useStateCheckEquality({
+    yesShares: 0,
+    noShares: 0,
+  })
 
   const [yesBets, noBets] = partition(
     userBets ?? [],
