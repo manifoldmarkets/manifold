@@ -1,3 +1,5 @@
+import { sortBy } from 'lodash'
+
 export type Group = {
   id: string
   slug: string
@@ -40,3 +42,34 @@ export type GroupLink = {
   userId?: string
 }
 export type GroupContractDoc = { contractId: string; createdTime: number }
+
+const excludedGroups = [
+  'features',
+  'personal',
+  'private',
+  'nomic',
+  'proofnik',
+  'free money',
+  'motivation',
+  'sf events',
+  'please resolve',
+  'short-term',
+  'washifold',
+]
+
+export function filterTopGroups(groups: Group[], n = 100) {
+  return sortBy(groups, [
+    (group) => -1 * group.totalMembers,
+    (group) => -1 * group.totalContracts,
+  ])
+    .filter((group) => group.anyoneCanJoin)
+    .filter((group) =>
+      excludedGroups.every((name) => !group.name.toLowerCase().includes(name))
+    )
+    .filter(
+      (group) =>
+        (group.mostRecentContractAddedTime ?? 0) >
+        Date.now() - 1000 * 60 * 60 * 24 * 7
+    )
+    .slice(0, n)
+}
