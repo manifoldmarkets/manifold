@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from './script-init'
 initAdmin()
 
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser } from 'common/user'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 import { isProd } from 'functions/src/utils'
 
@@ -12,8 +12,8 @@ const firestore = admin.firestore()
 async function main() {
   if (isProd())
     return console.log('This script is not allowed to run in production')
-  const snap = await firestore.collection('users').get()
-  const users = snap.docs.map((d) => d.data() as User)
+  const snap = await firestore.collection('private-users').get()
+  const users = snap.docs.map((d) => d.data() as PrivateUser)
 
   await Promise.all(
     users.map(async (user) => {
