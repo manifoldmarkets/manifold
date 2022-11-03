@@ -93,9 +93,12 @@ const multipleChoiceSchema = z.object({
   answers: z.string().trim().min(1).array().min(2),
 })
 
-export const createmarket = newEndpoint({}, (req, auth) => {
-  return createMarketHelper(req.body, auth)
-})
+export const createmarket = newEndpoint(
+  { secrets: ['OPENAI_API_KEY'] },
+  (req, auth) => {
+    return createMarketHelper(req.body, auth)
+  }
+)
 
 export async function createMarketHelper(body: any, auth: AuthedUser) {
   const {
