@@ -1,6 +1,7 @@
 import { ImageResponse } from '@vercel/og'
 import { NextRequest } from 'next/server'
 import React from 'react'
+import { OgMarket, OgMarketProps } from 'web/pages/og/og-market'
 
 export const config = {
   runtime: 'experimental-edge',
@@ -10,8 +11,6 @@ async function loadFont(url: URL) {
   const res = await fetch(url)
   return await res.arrayBuffer()
 }
-// TODO: Rename this file to 'contract.tsx'?
-
 // Note: These URLs must be constructed outside of a function, due to
 // the weird way import.meta.url works
 const readexFontUrl = new URL('ReadexPro-Regular.ttf', import.meta.url)
@@ -20,10 +19,10 @@ const monoFontUrl = new URL('MajorMonoDisplay-Regular.ttf', import.meta.url)
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const MarketImageProps = Object.fromEntries(
+    const OgMarketProps = Object.fromEntries(
       searchParams.entries()
-    ) as MarketImageProps
-    const image = MarketImage(MarketImageProps)
+    ) as OgMarketProps
+    const image = OgMarket(OgMarketProps)
 
     return new ImageResponse(replaceTw(image), {
       width: 1200,
@@ -72,73 +71,4 @@ function replaceTw(element: JSX.Element | string): JSX.Element {
     : []
 
   return React.createElement(element.type, newProps, newChildren)
-}
-
-type MarketImageProps = {
-  question: string
-  creatorName?: string
-  creatorAvatarUrl?: string
-  creatorUsername?: string
-  metadata?: string
-  probability?: string
-}
-
-// Notes for working with this:
-// - Some css elements are missing or broken (e.g. 'gap')
-// - Every element should have `flex` set
-function MarketImage(props: MarketImageProps) {
-  return (
-    <div className="flex h-full w-full flex-col bg-white px-24">
-      {/* <!-- Profile image --> */}
-      <div className="absolute left-24 top-8 flex flex-row ">
-        <img
-          className="mr-6 flex h-24 w-24 items-center justify-center rounded-full bg-white"
-          // Fill in with a placeholder image if missing
-          src={props.creatorAvatarUrl ?? 'https://via.placeholder.com/150.png'}
-          alt=""
-        />
-        <div className="mt-3 flex flex-col">
-          <div className="flex text-3xl text-gray-900">{props.creatorName}</div>
-          <div className="flex text-3xl text-gray-500">
-            @{props.creatorUsername}
-          </div>
-        </div>
-      </div>
-
-      {/* <!-- Manifold logo --> */}
-      <div className="absolute right-24 top-8 flex">
-        <a className="flex flex-row" href="/">
-          <img
-            className="mr-3 h-12 w-12"
-            src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.svg"
-            width="40"
-            height="40"
-          />
-          <div
-            className="mt-3 flex text-3xl lowercase"
-            style={{ fontFamily: 'Major Mono Display' }}
-          >
-            Manifold Markets
-          </div>
-        </a>
-      </div>
-
-      <div className="flex max-h-40 w-full flex-row justify-between pt-36">
-        <div className="mr-12 flex text-6xl leading-tight text-indigo-700">
-          {props.question.slice(0, 100)}
-        </div>
-        <div className="flex flex-col text-teal-500">
-          <div className="flex text-8xl">{props.probability}</div>
-          <div className="flex text-4xl">chance</div>
-        </div>
-      </div>
-
-      {/* <!-- Metadata --> */}
-      <div className="absolute bottom-16 left-24 flex">
-        <div className="flex max-w-[80vw] bg-white text-3xl text-gray-500">
-          {props.metadata}
-        </div>
-      </div>
-    </div>
-  )
 }
