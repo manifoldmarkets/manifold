@@ -42,7 +42,6 @@ import { ContractComment } from 'common/comment'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
-import { needsAdminToResolve } from 'web/lib/util/admin'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
 
@@ -287,10 +286,7 @@ function ContractPageSidebar(props: { contract: Contract }) {
   const isNumeric = outcomeType === 'NUMERIC'
   const allowTrade = tradingAllowed(contract)
   const isAdmin = useAdmin()
-  const allowResolve =
-    !isResolved &&
-    (isCreator || (needsAdminToResolve(contract) && isAdmin)) &&
-    !!user
+  const allowResolve = !isResolved && (isCreator || isAdmin) && !!user
 
   const hasSidePanel =
     (isBinary || isNumeric || isPseudoNumeric) && (allowTrade || allowResolve)
