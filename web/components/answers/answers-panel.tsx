@@ -25,7 +25,6 @@ import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { CHOICE_ANSWER_COLORS } from '../charts/contract/choice'
 import { useChartAnswers } from '../charts/contract/choice'
-import { needsAdminToResolve } from 'web/lib/util/admin'
 
 export function getAnswerColor(answer: Answer, answersArray: string[]) {
   const colorIndex = answersArray.indexOf(answer.text)
@@ -174,20 +173,19 @@ export function AnswersPanel(props: {
           <CreateAnswerPanel contract={contract} />
         )}
 
-      {(user?.id === creatorId || (isAdmin && needsAdminToResolve(contract))) &&
-        !resolution && (
-          <>
-            <Spacer h={2} />
-            <AnswerResolvePanel
-              isAdmin={isAdmin}
-              isCreator={user?.id === creatorId}
-              contract={contract}
-              resolveOption={resolveOption}
-              setResolveOption={setResolveOption}
-              chosenAnswers={chosenAnswers}
-            />
-          </>
-        )}
+      {(user?.id === creatorId || isAdmin) && !resolution && (
+        <>
+          <Spacer h={2} />
+          <AnswerResolvePanel
+            isAdmin={isAdmin}
+            isCreator={user?.id === creatorId}
+            contract={contract}
+            resolveOption={resolveOption}
+            setResolveOption={setResolveOption}
+            chosenAnswers={chosenAnswers}
+          />
+        </>
+      )}
     </Col>
   )
 }
