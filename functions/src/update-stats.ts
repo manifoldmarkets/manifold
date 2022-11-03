@@ -343,6 +343,6 @@ export const updateStatsCore = async () => {
 }
 
 export const updateStats = functions
-  .runWith({ memory: '4GB', timeoutSeconds: 540 })
+  .runWith({ memory: '8GB', timeoutSeconds: 540 })
   .pubsub.schedule('every 60 minutes')
   .onRun(updateStatsCore)
