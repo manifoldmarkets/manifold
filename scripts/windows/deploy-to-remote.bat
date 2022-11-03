@@ -5,13 +5,15 @@ Setlocal EnableDelayedExpansion
 ::   CONFIG   
 ::============
 set ROUTE_TO_SCRIPTS_DIR=..
-set ZONE=us-central1-a
 set PROJECT=mantic-markets
 
 set DEV_INSTANCE=dev-twitch-bot
 set DEV_BUILD_DIR=build\dev
+set DEV_ZONE=europe-west2-c
+
 set PROD_INSTANCE=twitch-bot
 set PROD_BUILD_DIR=build\prod
+set PROD_ZONE=us-central1-a
 
 ::============
 ::   SCRIPT   
@@ -29,12 +31,14 @@ goto error
 echo Deploying to DEV
 set INSTANCE_NAME=%DEV_INSTANCE%
 set BUILD_DIR=%DEV_BUILD_DIR%
+set ZONE=%DEV_ZONE%
 goto init_build
 
 :init_prod
 echo Deploying to PROD
 set INSTANCE_NAME=%PROD_INSTANCE%
 set BUILD_DIR=%PROD_BUILD_DIR%
+set ZONE=%PROD_ZONE%
 goto init_build
 
 :init_build
@@ -58,7 +62,7 @@ mkdir out\static
 xcopy web\out out\static /s /e >nul 2>&1
 xcopy server\dist out /s /e >nul 2>&1
 copy scripts\%BUILD_DIR%\.env out >nul 2>&1
-copy scripts\%BUILD_DIR%\Dockerfile out >nul 2>&1
+copy scripts\Dockerfile out >nul 2>&1
 goto deploy
 
 :build_latest
@@ -86,7 +90,7 @@ mkdir out\static
 xcopy src\web\out out\static /s /e >nul 2>&1
 xcopy src\server\dist out /s /e >nul 2>&1
 copy .env out >nul 2>&1
-copy Dockerfile out >nul 2>&1
+copy ..\..\Dockerfile out >nul 2>&1
 goto deploy
 
 :deploy
@@ -102,8 +106,7 @@ rm out.tar.gz ^&^& ^
 echo Rebuilding docker image... ^&^& ^
 docker build -t bot out ^&^& ^
 echo Launching docker image... ^&^& ^
-docker kill $^(docker ps -q^) ^|^| true ^&^& ^
-docker run -itd --env-file=out/.env -p 80:80 --restart on-failure bot ^&^& ^
+docker run -d --env-file=out/.env --restart on-failure --network="host" --security-opt="apparmor=docker-default" bot ^&^& ^
 echo Cleaning up... ^&^& ^
 rm -r out ^&^& ^
 docker system prune -a -f

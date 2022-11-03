@@ -106,7 +106,7 @@ export default () => {
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
     });
-    socket = io({ query: { type: 'dock', controlToken: params['t'] }, rememberUpgrade: true });
+    socket = io({ query: { type: 'dock', controlToken: params['t'] }, rememberUpgrade: true, reconnectionDelay: 100, reconnectionDelayMax: 100 });
 
     let pingRepeatTask: NodeJS.Timeout = null;
     const sendPing = () => {

@@ -59,6 +59,7 @@ export class TwitchStream {
         const selectMarketPacket: PacketSelectMarket = { ...market.data, bets: market.data.bets, initialBets: market.data.bets.slice(initialBetIndex) };
         this.broadcastToDocks(Packet.SELECT_MARKET_ID, id, sourceDock);
         this.broadcastToOverlays(Packet.SELECT_MARKET, selectMarketPacket);
+        this.app.firestore.updateSelectedMarketForUser(this.name, id);
         this.app.bot.onMarketFeatured(this.name, market);
         return market;
       } catch (e) {
@@ -68,6 +69,7 @@ export class TwitchStream {
   }
 
   private unfeatureCurrentMarket(sourceDock?: DockClient) {
+    this.app.firestore.updateSelectedMarketForUser(this.name, undefined);
     if (this.unfeatureTimer) {
       clearTimeout(this.unfeatureTimer);
     }

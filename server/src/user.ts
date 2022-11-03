@@ -9,7 +9,7 @@ export type UserData = {
   APIKey: string;
   controlToken: string;
   botEnabled?: boolean;
-  devBotLastActive?: number;
+  selectedMarket?: string;
 };
 
 export default class User {

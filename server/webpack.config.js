@@ -4,6 +4,7 @@ export default {
   mode: 'production',
   entry: './src/index.ts',
   target: 'node',
+  devtool: 'source-map',
   module: {
     rules: [
       {
@@ -18,16 +19,12 @@ export default {
   },
   output: {
     filename: 'bundle.js',
-    path: path.resolve('./dist'),
+    path: path.resolve('./dist'), //./dist    C:/Users/Phil/Desktop/dist
     clean: true,
   },
   ignoreWarnings: [
     {
       module: /node_modules\/express\/lib\/view\.js/,
-      message: /the request of a dependency is an expression/,
-    },
-    {
-      module: /node_modules\/@google-cloud\/logging\/build\/src\/utils\/instrumentation\.js/,
       message: /the request of a dependency is an expression/,
     },
   ],

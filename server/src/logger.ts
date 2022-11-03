@@ -82,7 +82,7 @@ function log(level: Level, msg: any, ...args: any[]) {
       break;
     }
     case Level.CRASH: {
-      const getMessage = (prefix?: string) => {
+      const getMessage = (prefix: string) => {
         let ls = '\n';
         for (let i = 0; i < prefix.length; i++) ls += ' ';
         let message = prefix + '================================= SERVER CRASH =================================';
@@ -98,7 +98,7 @@ function log(level: Level, msg: any, ...args: any[]) {
         return message;
       };
       console.error(getMessage(timestamp + ' '));
-      l?.critical(getMessage());
+      l?.critical(getMessage(''));
       break;
     }
     default:

@@ -45,9 +45,9 @@ export default class GoogleLogger {
       this.accessToken = token;
       log.info(`Renewed GCloud Logging access token. New expiry in ${token.expires_in}s.`);
     } catch (e) {
-      log.error(`Failed to renew GCloud Logging access token. Cloud Logging disabled. Trying again in 30s...`);
-      setTimeout(() => this.updateAccessToken(), 30 * 1000);
+      log.error(`Failed to renew GCloud Logging access token. Trying again in 30s...`);
       log.trace(e);
+      setTimeout(() => this.updateAccessToken(), 30 * 1000);
     }
   }
 
@@ -55,19 +55,19 @@ export default class GoogleLogger {
     this.logQueue.push(entry);
 
     if (!this.timeoutTask) {
-      this.timeoutTask = setTimeout(async () => {
-        try {
-          this.flushEntryQueue();
-          this.timeoutTask = null;
-        } catch (e) {}
+      this.timeoutTask = setTimeout(() => {
+        this.flushEntryQueue();
+        this.timeoutTask = null;
       }, 10000);
     }
   }
 
   public async flushEntryQueue() {
-    const body = { entries: this.logQueue };
-    await fetch('https://logging.googleapis.com/v2/entries:write', { method: 'POST', headers: { Authorization: `Bearer ${this.accessToken.access_token}` }, body: JSON.stringify(body) });
-    this.logQueue = [];
+    try {
+      const body = { entries: this.logQueue };
+      await fetch('https://logging.googleapis.com/v2/entries:write', { method: 'POST', headers: { Authorization: `Bearer ${this.accessToken.access_token}` }, body: JSON.stringify(body) });
+      this.logQueue = [];
+    } catch (e) {}
   }
 
   public log(msg: string, severity: 'DEFAULT' | 'DEBUG' | 'INFO' | 'NOTICE' | 'WARNING' | 'ERROR' | 'CRITICAL' | 'ALERT' | 'EMERGENCY') {

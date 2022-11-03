@@ -38,8 +38,10 @@ export default class AppFirestore {
     });
   }
 
-  async updateDevBotLastActive() {
-    updateDoc(doc(this.dbCollection, MANIFOLD_DB_LOCATION), { devBotLastActive: Date.now() });
+  async updateSelectedMarketForUser(twitchName: string, selectedMarket: string) {
+    const docs = await getDocs(query(this.userCollection, where('twitchLogin', '==', twitchName)));
+    const data = { selectedMarket: selectedMarket ? selectedMarket : deleteField() };
+    updateDoc(doc(this.db, this.userCollection.path, (<UserData>docs.docs[0].data()).manifoldID), data);
   }
 
   async getUserForTwitchUsername(twitchUsername: string): Promise<User> {

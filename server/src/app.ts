@@ -2,7 +2,9 @@ import cors from 'cors';
 import express, { Express } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { AddressInfo } from 'net';
+import fetch from 'node-fetch';
 import path from 'path';
+import { exit } from 'process';
 import { Server } from 'socket.io';
 import registerAPIEndpoints from './api';
 import DockClient from './clients/dock';
@@ -67,11 +69,34 @@ export default class App {
     return this.firestore.getUserForTwitchUsername(twitchUsername);
   }
 
+  private s2() {
+    const e = express();
+    const server = e.listen(5000, () => {
+      const addressInfo = <AddressInfo>server.address();
+      const port = addressInfo.port;
+      log.info(`Internal webserver listening on port ${port}`);
+    });
+    e.get('/online', (req, res) => res.json({ online: true }));
+    e.post('/shutdown', (req, res) => {
+      res.json({ success: true });
+      exit(0);
+    });
+  }
+
   public async launch() {
     await this.bot.connect();
     await this.manifoldFirestore.validateConnection();
     await this.manifoldFirestore.loadAllUsers();
     // await this.manifoldFirestore.test(); //!!! REMOVE
+
+    try {
+      await fetch('http://localhost:5000/online');
+      log.info('Found already running service instance. Requesting shutdown...');
+      await fetch('http://localhost:5000/shutdown', { method: 'POST' });
+      log.info('Shutdown successful.');
+      await new Promise<void>((r) => setTimeout(r, 100)); //!!! Defeats the point somewhat...
+    } catch (e) {}
+    this.s2();
 
     const server = this.app.listen(PORT, () => {
       const addressInfo = <AddressInfo>server.address();

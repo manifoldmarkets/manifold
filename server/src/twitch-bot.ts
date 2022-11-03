@@ -380,13 +380,16 @@ export default class TwitchBot {
   }
 
   public async connect() {
+    const channelsToJoin: string[] = [];
     if (IS_DEV) {
       if (DEBUG_TWITCH_ACCOUNT) {
         log.info(`Using debug Twitch account '${DEBUG_TWITCH_ACCOUNT}'`);
-        this.client.getOptions().channels = [DEBUG_TWITCH_ACCOUNT];
+        // this.client.getOptions().channels = [DEBUG_TWITCH_ACCOUNT];
+        channelsToJoin.push(DEBUG_TWITCH_ACCOUNT);
       }
     } else {
-      this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
+      // this.client.getOptions().channels = await this.app.firestore.getRegisteredTwitchChannels();
+      channelsToJoin.push(...(await this.app.firestore.getRegisteredTwitchChannels()));
     }
 
     try {
@@ -394,6 +397,8 @@ export default class TwitchBot {
     } catch (e) {
       throw new TwitchBotInitializationException(e);
     }
+
+    await Promise.all(channelsToJoin.map((c) => this.client.join(c).catch((e) => log.error(new Error(`Failed to add bot to channel '${c}': ${String(e)}`)))));
   }
 
   public isInChannel(channelName: string) {

@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { getDomainFromURL } from './utils';
 dotenv.config({ path: '../.env' });
 
-export const PORT = process.env.PORT || 9172;
+export const PORT = Number.parseInt(process.env.PORT) || 9172;
 
 export const PUBLIC_FACING_URL = process.env.PUBLIC_FACING_URL || 'http://localhost:' + PORT;
 
