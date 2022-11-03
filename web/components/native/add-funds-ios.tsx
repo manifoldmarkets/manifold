@@ -12,7 +12,7 @@ import {
   REFERRAL_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { formatMoney } from 'common/lib/util/format'
+import { formatMoney } from 'common/util/format'
 import { Card } from 'web/components/widgets/card'
 
 export function AddFundsIOS() {
