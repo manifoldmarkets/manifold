@@ -49,7 +49,7 @@ export default async function handler(req: NextRequest) {
 }
 
 function replaceTw(element: JSX.Element | string): JSX.Element {
-  // Base case:
+  // Base case
   if (typeof element === 'string' || !element.props) {
     return element as JSX.Element
   }
@@ -72,21 +72,21 @@ function replaceTw(element: JSX.Element | string): JSX.Element {
 
   return React.createElement(element.type, newProps, newChildren)
 }
-
-const buildImage = (props: { question: string }) => (
-  <div className="flex h-full w-full flex-col items-center justify-center bg-white px-24">
+// Notes for working with this:
+// - Some css elements are missing or broken (e.g. 'gap')
+// - Every element should have `flex` set
+export const buildImage = (props: { question: string }) => (
+  <div className="flex h-full w-full flex-col bg-white px-24">
     {/* <!-- Profile image --> */}
-    <div className="absolute left-24 top-8 flex">
-      <div className="flex flex-row">
-        <img
-          className="mr-6 flex h-24 w-24 items-center justify-center rounded-full bg-white"
-          src="https://avatars.githubusercontent.com/u/1062408?v=4"
-          alt=""
-        />
-        <div className="flex flex-col">
-          <p className="mb-2 text-3xl text-gray-900">Austin</p>
-          <p className="text-3xl text-gray-500">@Austin</p>
-        </div>
+    <div className="absolute left-24 top-8 flex flex-row ">
+      <img
+        className="mr-6 flex h-24 w-24 items-center justify-center rounded-full bg-white"
+        src="https://avatars.githubusercontent.com/u/1062408?v=4"
+        alt=""
+      />
+      <div className="mt-3 flex flex-col">
+        <div className="flex text-3xl text-gray-900">Austin</div>
+        <div className="flex text-3xl text-gray-500">@Austin</div>
       </div>
     </div>
 
@@ -108,20 +108,21 @@ const buildImage = (props: { question: string }) => (
       </a>
     </div>
 
-    <div className="flex flex-row justify-between">
+    <div className="flex max-h-40 w-full flex-row justify-between pt-36">
       <div className="line-clamp-4 mr-12 flex text-6xl leading-tight text-indigo-700">
         {props.question}
       </div>
-      <div className="flex flex-col text-center text-teal-500">
+      <div className="flex flex-col text-teal-500">
         <div className="flex text-8xl">68%</div>
         <div className="flex text-4xl">chance</div>
       </div>
     </div>
 
     {/* <!-- Metadata --> */}
-    <div className="absolute bottom-16 flex">
-      <div className="line-clamp-2 flex max-w-[80vw] text-3xl text-gray-500">
-        #one * two * #threez
+    <div className="absolute bottom-16 left-24 flex">
+      <div className="line-clamp-2 flex max-w-[80vw] bg-white text-3xl text-gray-500">
+        #one * two * #threez #one * two * #threez #one * two * #threez#one * two
+        * #threez
       </div>
     </div>
   </div>
