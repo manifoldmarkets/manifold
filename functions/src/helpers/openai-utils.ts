@@ -30,7 +30,11 @@ export const getGroupForMarket = async (question: string) => {
   const text = response.data.choices[0].text?.trim()
   if (!text) return undefined
 
-  return groups.find((g) => g.name.toLowerCase().startsWith(text?.toLowerCase()))
+  console.log('AI-selected group for question', question, ':', text)
+
+  return groups.find((g) =>
+    g.name.toLowerCase().startsWith(text?.toLowerCase())
+  )
 }
 
 export const getCloseDate = async (question: string) => {
@@ -50,8 +54,11 @@ export const getCloseDate = async (question: string) => {
 
   const text = response.data.choices[0].text?.trim()
   if (!text) return undefined
+  console.log('AI-selected close date for question', question, ':', text)
 
-  return dayjs(text, 'M/D/YYYY h:mm a').valueOf()
+  const timestamp = dayjs(text, 'M/D/YYYY h:mm a').valueOf()
+
+  return !timestamp || !isFinite(timestamp) ? undefined : timestamp
 }
 
 const firestore = admin.firestore()
@@ -64,5 +71,5 @@ const getGroups = async () => {
 
   const groups = snap.docs.map((d) => d.data() as Group)
 
-  return filterTopGroups(groups)
+  return filterTopGroups(groups, 100, false)
 }

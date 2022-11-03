@@ -57,14 +57,22 @@ const excludedGroups = [
   'washifold',
 ]
 
-export function filterTopGroups(groups: Group[], n = 100) {
+export function filterTopGroups(
+  groups: Group[],
+  n = 100,
+  excludeGroups = true
+) {
   return sortBy(groups, [
     (group) => -1 * group.totalMembers,
     (group) => -1 * group.totalContracts,
   ])
     .filter((group) => group.anyoneCanJoin)
     .filter((group) =>
-      excludedGroups.every((name) => !group.name.toLowerCase().includes(name))
+      excludeGroups
+        ? excludedGroups.every(
+            (name) => !group.name.toLowerCase().includes(name)
+          )
+        : true
     )
     .filter(
       (group) =>
