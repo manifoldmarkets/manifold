@@ -10,7 +10,7 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration)
 
-export const getQuestionGroup = async (question: string) => {
+export const getGroupForMarket = async (question: string) => {
   const groups = await getGroups()
 
   const groupsList = groups.map((g) => g.name).join('\n')
@@ -30,7 +30,7 @@ export const getQuestionGroup = async (question: string) => {
   const text = response.data.choices[0].text?.trim()
   if (!text) return undefined
 
-  return groups.find((g) => g.name.toLowerCase().includes(text?.toLowerCase()))
+  return groups.find((g) => g.name.toLowerCase().startsWith(text?.toLowerCase()))
 }
 
 export const getCloseDate = async (question: string) => {

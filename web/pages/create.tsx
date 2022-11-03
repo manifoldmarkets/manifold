@@ -1,5 +1,4 @@
 import { useRouter } from 'next/router'
-import { LightBulbIcon } from '@heroicons/react/outline'
 
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { Page } from 'web/components/layout/page'

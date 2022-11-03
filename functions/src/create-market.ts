@@ -1,5 +1,8 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
+import { FieldValue } from 'firebase-admin/firestore'
+import { JSONContent } from '@tiptap/core'
+import { uniq, zip } from 'lodash'
 
 import {
   Contract,
@@ -14,10 +17,8 @@ import {
 } from '../../common/contract'
 import { slugify } from '../../common/util/slugify'
 import { randomString } from '../../common/util/random'
-
 import { getContract } from './utils'
 import { APIError, AuthedUser, newEndpoint, validate, zTimestamp } from './api'
-
 import { FIXED_ANTE } from '../../common/economy'
 import {
   getCpmmInitialLiquidity,
@@ -31,11 +32,8 @@ import { NUMERIC_BUCKET_COUNT } from '../../common/numeric-constants'
 import { User } from '../../common/user'
 import { Group, GroupLink, MAX_ID_LENGTH } from '../../common/group'
 import { getPseudoProbability } from '../../common/pseudo-numeric'
-import { JSONContent } from '@tiptap/core'
-import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
-import { FieldValue } from 'firebase-admin/firestore'
-import { getCloseDate, getQuestionGroup } from './helpers/openai-utils'
+import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -168,7 +166,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     }
   } else {
     // generate group using AI
-    group = (await getQuestionGroup(question)) ?? null
+    group = (await getGroupForMarket(question)) ?? null
   }
 
   const slug = await getSlug(question)
