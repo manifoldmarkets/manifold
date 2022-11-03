@@ -11,7 +11,6 @@ import {
   useUserContractMetricsByProfit,
 } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import {
   BettingStreakModal,
