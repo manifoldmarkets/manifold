@@ -17,8 +17,10 @@ import {
   BettingStreakModal,
   hasCompletedStreakToday,
 } from 'web/components/profile/betting-streak-modal'
-import { ProfitBadge } from 'web/components/profit-badge'
 import { LoansModal } from 'web/components/profile/loans-modal'
+
+const dailyStatsHeaderClass = 'text-greyscale-5 text-xs sm:text-sm'
+const dailyStatsClass = 'items-center text-lg'
 
 export function DailyStats(props: {
   user: User | null | undefined
@@ -48,14 +50,14 @@ export function DailyStats(props: {
           className="cursor-pointer"
           onClick={() => setShowStreakModal(true)}
         >
-          <div className="text-gray-500">Streak</div>
+          <div className={dailyStatsHeaderClass}>Streak</div>
           <Row
             className={clsx(
-              'items-center text-lg',
+              dailyStatsClass,
               user && !hasCompletedStreakToday(user) && 'grayscale'
             )}
           >
-            <span>🔥 {user?.currentBettingStreak ?? 0}</span>
+            <span>{user?.currentBettingStreak ?? 0}🔥</span>
           </Row>
         </Col>
       )}
@@ -64,10 +66,10 @@ export function DailyStats(props: {
           className="hidden cursor-pointer sm:flex"
           onClick={() => setShowLoansModal(true)}
         >
-          <div className="text-gray-500">Next loan</div>
+          <div className={dailyStatsHeaderClass}>Next loan</div>
           <Row
             className={clsx(
-              'items-center text-lg',
+              dailyStatsClass,
               user && !hasCompletedStreakToday(user) && 'grayscale'
             )}
           >
@@ -102,22 +104,11 @@ export function DailyProfit(props: { user: User | null | undefined }) {
       m.from ? m.from.day.profit : 0
     ) ?? []
   )
-
-  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
-  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
-
-  let profitPercent = 0
-  if (first?.investmentValue && last) {
-    // profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-    profitPercent = profit / first.investmentValue
-  }
-
   return (
     <SiteLink className="flex flex-col hover:no-underline" href="/daily-movers">
-      <div className="text-gray-500">Daily profit</div>
-      <Row className="items-center text-lg">
+      <div className={dailyStatsHeaderClass}>Daily profit</div>
+      <Row className={dailyStatsClass}>
         <span>{formatMoney(profit)}</span>{' '}
-        <ProfitBadge profitPercent={profitPercent * 100} />
       </Row>
     </SiteLink>
   )

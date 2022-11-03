@@ -1,6 +1,6 @@
 import React, { memo, ReactNode, useEffect } from 'react'
 import Router from 'next/router'
-import { AdjustmentsIcon, PencilAltIcon } from '@heroicons/react/solid'
+import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
@@ -24,7 +24,7 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -67,6 +67,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { LatestPosts } from '../latestposts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
+import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -181,16 +182,18 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
         <Row
-          className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
+          className={'mb-2 w-full items-center justify-between gap-2 sm:gap-8'}
         >
-          <Input
-            type="text"
-            placeholder={'Search'}
-            className="w-full"
-            onClick={() => Router.push('/search')}
-            onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
-          />
-          <CustomizeButton justIcon />
+          <Row className="md:w-3/4">
+            <Input
+              type="text"
+              placeholder={'Search Manifold'}
+              className="w-full"
+              onClick={() => Router.push('/search')}
+              onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
+            />
+            <CustomizeButton className="ml-1" justIcon />
+          </Row>
           <DailyStats user={user} />
         </Row>
 
@@ -694,13 +697,13 @@ function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
       )}
       href="/home/edit"
     >
-      <Button size="lg" color="gray" className={clsx('flex gap-2')}>
-        <AdjustmentsIcon
-          className={clsx('h-[24px] w-5 text-gray-500')}
+      <IconButton size="xs">
+        <HomeSettingsIcon
+          className={clsx('h-7 w-7 text-gray-500')}
           aria-hidden="true"
         />
         {!justIcon && 'Customize'}
-      </Button>
+      </IconButton>
     </SiteLink>
   )
 }
