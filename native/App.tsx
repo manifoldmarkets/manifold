@@ -55,7 +55,8 @@ export const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const homeUri = ENV === 'DEV' ? '' : 'https://3004-181-41-206-68.ngrok.io'
+const homeUri =
+  ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
 export default function App() {
   // Init
