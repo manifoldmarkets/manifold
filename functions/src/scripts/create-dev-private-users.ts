@@ -35,8 +35,8 @@ async function main() {
           .set(privateUser)
 
         console.log('created private user for:', user.username)
-      } catch (_) {
-        // private user already created
+      } catch (e) {
+        console.log('error creating private user for:', user.username, e)
       }
     })
   )
