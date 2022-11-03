@@ -86,8 +86,8 @@ export const useUserContractMetricsByProfit = (userId: string, count = 50) => {
 
   if (!result) return undefined
 
-  const filteredContracts = filterDefined(result.contracts).filter(
-    (c) => !c.isResolved
+  const filteredContracts = filterDefined(
+    result.contracts
   ) as CPMMBinaryContract[]
   const filteredMetrics = result.metrics
     .filter((m) => m.from && Math.abs(m.from.day.profit) >= 0.5)
