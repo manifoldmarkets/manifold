@@ -35,6 +35,7 @@ import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
+import { getCloseDate, getQuestionGroup } from './helpers/openai-utils'
 
 const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -101,8 +102,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     question,
     description,
     tags,
-    // Default to one week after now, if closeTime not specified
-    closeTime = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
+    closeTime,
     outcomeType,
     groupId,
     visibility = 'public',
@@ -138,6 +138,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   const userId = auth.uid
 
   let group: Group | null = null
+
   if (groupId) {
     const groupDocRef = firestore.collection('groups').doc(groupId)
     const groupDoc = await groupDocRef.get()
@@ -162,7 +163,11 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
         'User must be a member/creator of the group or group must be open to add markets to it.'
       )
     }
+  } else {
+    // generate group using AI
+    group = (await getQuestionGroup(question)) ?? null
   }
+
   const slug = await getSlug(question)
   const contractRef = firestore.collection('contracts').doc()
 
@@ -205,6 +210,11 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     return user
   })
 
+  const closeTimestamp = closeTime
+    ? closeTime.getTime()
+    : // Use AI to get date, default to one week after now if failure
+      (await getCloseDate(question)) ?? Date.now() + 7 * 24 * 60 * 60 * 1000
+
   const contract = getNewContract(
     contractRef.id,
     slug,
@@ -214,7 +224,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     newDescription,
     initialProb ?? 0,
     ante,
-    closeTime.getTime(),
+    closeTimestamp,
     tags ?? [],
     NUMERIC_BUCKET_COUNT,
     min ?? 0,

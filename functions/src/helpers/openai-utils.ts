@@ -51,7 +51,7 @@ export const getCloseDate = async (question: string) => {
   const text = response.data.choices[0].text?.trim()
   if (!text) return undefined
 
-  return dayjs(text, 'M/D/YYYY h:mm a').format('M/D/YYYY h:mm a')
+  return dayjs(text, 'M/D/YYYY h:mm a').valueOf()
 }
 
 const firestore = admin.firestore()
