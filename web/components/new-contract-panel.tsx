@@ -162,9 +162,7 @@ export function NewContractPanel(props: {
   }, [isValid])
 
   const descriptionPlaceholder =
-    outcomeType === 'BINARY'
-      ? `e.g. This market resolves YES if...`
-      : `e.g. I will choose the answer according to...`
+    'Optional. Provide background info and market resolution criteria here.'
 
   const editor = useTextEditor({
     key: 'create market',
@@ -239,8 +237,7 @@ export function NewContractPanel(props: {
       <Spacer h={6} />
       <div className="mb-1 flex flex-col items-start gap-1">
         <label className="gap-2 px-1 py-2">
-          <span className="mb-1">Description </span>
-          <InfoTooltip text="Optional. Describe how you will resolve this question." />
+          <span className="mb-1">Description</span>
         </label>
         <TextEditor editor={editor} />
       </div>
@@ -388,7 +385,7 @@ export function NewContractPanel(props: {
           <div className="mb-1 flex flex-col items-start">
             <label className="mb-1 gap-2 px-1 py-2">
               <span>Question closes in </span>
-              <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
+              <InfoTooltip text="Trading will be halted after this time (local timezone)." />
             </label>
             <Row className={'w-full items-center gap-2'}>
               <ChoicesToggleGroup
