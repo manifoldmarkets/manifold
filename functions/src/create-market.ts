@@ -37,7 +37,7 @@ import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
-import { htmlToRichText } from 'common/util/parse'
+import { htmlToRichText } from '../../common/util/parse'
 import { marked } from 'marked'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>

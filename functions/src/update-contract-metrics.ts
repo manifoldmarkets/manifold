@@ -58,11 +58,10 @@ export async function updateContractMetrics() {
           : getProbability(contract)
 
         const { resolution, resolutionProbability } = contract
-        if (resolutionProbability) {
+        if (resolution === 'YES') prob = 1
+        else if (resolution === 'NO') prob = 0
+        else if (resolution === 'MKT' && resolutionProbability)
           prob = resolutionProbability
-        } else if (resolution && resolution !== 'CANCEL') {
-          prob = resolution === 'YES' ? 1 : 0
-        }
 
         cpmmFields = {
           prob,
