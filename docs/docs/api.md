@@ -559,8 +559,8 @@ Parameters:
 
 - `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, `MULTIPLE_CHOICE`, or `PSEUDO_NUMERIC`.
 - `question`: Required. The headline question for the market.
-- `description`: Required. A long description describing the rules for the market.
-  - Note: string descriptions do **not** turn into links, mentions, formatted text. Instead, rich text descriptions must be in [TipTap json](https://tiptap.dev/guide/output#option-1-json).
+- `description`: Optional. A long description describing the rules for the market.
+  - Note: string descriptions do **not** turn into links, mentions, formatted text. You may instead use `descriptionMarkdown` or `descriptionHtml` for rich text formatting.
 - `closeTime`: Optional. The time at which the market will close, represented as milliseconds since the epoch. Defaults to 7 days from now.
 - `visibility`: Optional. One of `public` (default) or `unlisted`. Controls whether the market is shown on the homepage.
 - `groupId`: Optional. A group to create this market under.

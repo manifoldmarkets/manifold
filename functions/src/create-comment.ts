@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 
-import { getContract, getUser, log } from './utils'
+import { getContract, getUser } from './utils'
 import { APIError, newEndpoint, validate } from './api'
 import { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
@@ -60,13 +60,10 @@ export const createcomment = newEndpoint({}, async (req, auth) => {
   if (content) {
     contentJson = content
   } else if (html) {
-    console.log('html', html)
     contentJson = htmlToRichText(html)
   } else if (markdown) {
     const markedParse = marked.parse(markdown)
-    log('parsed', markedParse)
     contentJson = htmlToRichText(markedParse)
-    log('json', contentJson)
   }
 
   if (!contentJson) {
