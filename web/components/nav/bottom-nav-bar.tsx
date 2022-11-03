@@ -60,7 +60,7 @@ export function BottomNavBar() {
     return null
   }
 
-  const navigationOptions = !user ? signedOutNavigation : getNavigation(user)
+  const navigationOptions = user ? getNavigation(user) : signedOutNavigation
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between border-t-2 bg-white text-xs text-gray-700 lg:hidden">
@@ -73,7 +73,6 @@ export function BottomNavBar() {
         />
       ))}
       <div
-        // className="w-full select-none py-1 px-3 text-center hover:cursor-pointer hover:bg-indigo-200 hover:text-indigo-700"
         className={clsx(itemClass, sidebarOpen ? selectedItemClass : '')}
         onClick={() => setSidebarOpen(true)}
       >
