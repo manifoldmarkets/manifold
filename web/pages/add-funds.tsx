@@ -10,6 +10,11 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { getNativePlatform } from 'web/lib/native/is-native'
+import {
+  AddFundsIOS,
+  OtherWaysToGetMana,
+} from 'web/components/native/add-funds-ios'
 
 export default function AddFundsPage() {
   const user = useUser()
@@ -20,6 +25,11 @@ export default function AddFundsPage() {
 
   useRedirectIfSignedOut()
   useTracking('view add funds')
+
+  const { isNative, platform } = getNativePlatform() ?? {}
+  if (isNative && platform === 'ios') {
+    return <AddFundsIOS />
+  }
 
   return (
     <Page>
@@ -73,6 +83,11 @@ export default function AddFundsPage() {
               Checkout
             </Button>
           </form>
+
+          <div className="mb-6 mt-12 text-gray-500">
+            Short on USD?. Here are some other ways to get mana: <br />{' '}
+          </div>
+          {OtherWaysToGetMana(false)}
         </Col>
       </Col>
     </Page>

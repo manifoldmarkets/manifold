@@ -97,6 +97,7 @@ export type PrivateUser = {
   blockedByUserIds: string[]
   blockedContractIds: string[]
   blockedGroupSlugs: string[]
+  hasSignedEula?: boolean
 }
 
 export type PortfolioMetrics = {
