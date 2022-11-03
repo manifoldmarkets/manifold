@@ -11,10 +11,11 @@ export default function MarketPage() {
 export type OgMarketProps = {
   question: string
   creatorName?: string
-  creatorAvatarUrl?: string
+  creatorAvatarUrl?: stringß
   creatorUsername?: string
   metadata?: string
   probability?: string
+  numericValue?: string
   resolution?: resolution
 }
 
@@ -62,7 +63,11 @@ export function OgMarket(props: OgMarketProps) {
         <div className="mr-12 flex text-6xl leading-tight text-indigo-700">
           {props.question.slice(0, 100)}
         </div>
-        {props.resolution ? ResolutionDiv(props) : ProbabilityDiv(props)}
+        {props.resolution
+          ? ResolutionDiv(props)
+          : props.numericValue
+          ? NumericValueDiv(props)
+          : ProbabilityDiv(props)}
       </div>
 
       {/* <!-- Metadata --> */}
@@ -80,6 +85,15 @@ function ProbabilityDiv(props: OgMarketProps) {
     <div className="flex flex-col text-teal-500">
       <div className="flex text-8xl">{props.probability}</div>
       <div className="flex text-4xl">chance</div>
+    </div>
+  )
+}
+
+function NumericValueDiv(props: OgMarketProps) {
+  return (
+    <div className="flex flex-col text-blue-500">
+      <div className="flex text-8xl">{props.numericValue}</div>
+      <div className="flex text-4xl">expected</div>
     </div>
   )
 }
