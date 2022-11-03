@@ -11,7 +11,7 @@ export default function MarketPage() {
 export type OgMarketProps = {
   question: string
   creatorName?: string
-  creatorAvatarUrl?: stringß
+  creatorAvatarUrl?: string
   creatorUsername?: string
   metadata?: string
   probability?: string
