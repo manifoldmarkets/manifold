@@ -206,9 +206,13 @@ export function CloseOrResolveTime(props: {
   const { resolutionTime, closeTime } = contract
   if (!!closeTime || !!resolvedDate) {
     return (
-      <Row className="select-none items-center gap-1">
+      <Row className="select-none flex-nowrap items-center gap-1">
         {resolvedDate && resolutionTime ? (
-          <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
+          <DateTimeTooltip
+            className="whitespace-nowrap"
+            text="Market resolved:"
+            time={resolutionTime}
+          >
             resolved&nbsp;{resolvedDate}
           </DateTimeTooltip>
         ) : null}
