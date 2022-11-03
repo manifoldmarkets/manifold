@@ -14,6 +14,7 @@ import {
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { JSONContent } from '@tiptap/core'
+import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 
 export function getNewContract(
   id: string,
@@ -71,7 +72,10 @@ export function getNewContract(
     volume: 0,
     volume24Hours: 0,
     volume7Days: 0,
-    elasticity: propsByOutcomeType.mechanism === 'cpmm-1' ? 0.38 : 0.75,
+    elasticity:
+      propsByOutcomeType.mechanism === 'cpmm-1'
+        ? computeBinaryCpmmElasticityFromAnte(ante)
+        : 0.75,
 
     collectedFees: {
       creatorFee: 0,

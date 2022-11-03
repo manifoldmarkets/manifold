@@ -56,7 +56,6 @@ export type User = {
   lastBetTime?: number
   currentBettingStreak?: number
   hasSeenContractFollowModal?: boolean
-  freeMarketsCreated?: number
   isBannedFromPosting?: boolean
 
   achievements: {

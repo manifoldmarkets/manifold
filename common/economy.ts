@@ -2,7 +2,7 @@ import { ENV_CONFIG } from './envs/constants'
 
 const econ = ENV_CONFIG.economy
 
-export const FIXED_ANTE = econ?.FIXED_ANTE ?? 100
+export const FIXED_ANTE = econ?.FIXED_ANTE ?? 50
 
 export const STARTING_BALANCE = econ?.STARTING_BALANCE ?? 500
 // for sus users, i.e. multiple sign ups for same person
