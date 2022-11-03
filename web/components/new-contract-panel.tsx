@@ -1,5 +1,7 @@
 import router from 'next/router'
 import { useEffect, useState } from 'react'
+import { ChevronLeftIcon } from '@heroicons/react/solid'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 import dayjs from 'dayjs'
 
 import { Spacer } from 'web/components/layout/spacer'
@@ -26,14 +28,12 @@ import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { MINUTE_MS } from 'common/util/time'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -101,8 +101,12 @@ export function NewContractPanel(props: {
     ? dayjs(timeInMs).format('YYYY-MM-DD')
     : weekFromToday
   const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
-  const [closeDate, setCloseDate] = useState<undefined | string>(initDate)
-  const [closeHoursMinutes, setCloseHoursMinutes] = useState<string>(initTime)
+  const [closeDate, setCloseDate] = useState<undefined | string>(
+    timeInMs ? initDate : undefined
+  )
+  const [closeHoursMinutes, setCloseHoursMinutes] = useState<
+    string | undefined
+  >(timeInMs ? initTime : undefined)
 
   const [marketInfoText, setMarketInfoText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -139,8 +143,7 @@ export function NewContractPanel(props: {
     ante !== null &&
     ante <= balance &&
     // closeTime must be in the future
-    closeTime &&
-    closeTime > Date.now() &&
+    (closeTime ?? Infinity) > Date.now() &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
@@ -392,6 +395,10 @@ export function NewContractPanel(props: {
                 currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
                 setChoice={(choice) => {
                   setCloseDateInDays(choice as number)
+
+                  if (!closeHoursMinutes) {
+                    setCloseHoursMinutes(initTime)
+                  }
                 }}
                 choicesMap={{
                   'A day': 1,
