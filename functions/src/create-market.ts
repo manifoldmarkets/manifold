@@ -37,14 +37,16 @@ import { JSONContent } from '@tiptap/core'
 import { uniq, zip } from 'lodash'
 import { Bet } from '../../common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
+import { htmlToRichText } from 'common/util/parse'
+import { marked } from 'marked'
 
-const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
+const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
     z.record(z.any()),
     z.object({
       type: z.string().optional(),
       attrs: z.record(z.any()).optional(),
-      content: z.array(descScehma).optional(),
+      content: z.array(descSchema).optional(),
       marks: z
         .array(
           z.intersection(
@@ -63,7 +65,9 @@ const descScehma: z.ZodType<JSONContent> = z.lazy(() =>
 
 const bodySchema = z.object({
   question: z.string().min(1).max(MAX_QUESTION_LENGTH),
-  description: descScehma.or(z.string()).optional(),
+  description: descSchema.or(z.string()).optional(),
+  descriptionHtml: z.string().optional(),
+  descriptionMarkdown: z.string().optional(),
   tags: z.array(z.string().min(1).max(MAX_TAG_LENGTH)).optional(),
   closeTime: zTimestamp()
     .refine(
@@ -102,6 +106,8 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   const {
     question,
     description,
+    descriptionHtml,
+    descriptionMarkdown,
     tags,
     // Default to one week after now, if closeTime not specified
     closeTime = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
@@ -190,18 +196,21 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
   )
 
   // convert string descriptions into JSONContent
-  const newDescription =
-    !description || typeof description === 'string'
-      ? {
-          type: 'doc',
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: description || ' ' }],
-            },
-          ],
-        }
-      : description
+  let descriptionJson = null
+  if (description) {
+    if (typeof description === 'string') {
+      descriptionJson = htmlToRichText(`<p>${description}</p>`)
+    } else {
+      descriptionJson = description
+    }
+  } else if (descriptionHtml) {
+    descriptionJson = htmlToRichText(descriptionHtml)
+  } else if (descriptionMarkdown) {
+    descriptionJson = htmlToRichText(marked.parse(descriptionMarkdown))
+  } else {
+    // Use a single empty space as the description
+    descriptionJson = htmlToRichText('<p> </p>')
+  }
 
   const contract = getNewContract(
     contractRef.id,
@@ -209,7 +218,7 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     user,
     question,
     outcomeType,
-    newDescription,
+    descriptionJson,
     initialProb ?? 0,
     ante,
     closeTime.getTime(),
