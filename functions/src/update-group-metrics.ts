@@ -88,7 +88,7 @@ function scoreCreators(contracts: Contract[]) {
     (contracts) =>
       sumBy(
         contracts.map((contract) => {
-          return contract.volume
+          return contract?.uniqueBettorCount ?? 0
         })
       )
   )

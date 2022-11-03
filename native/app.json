@@ -4,7 +4,7 @@
     "slug": "manifold-markets",
     "owner": "iansp",
     "sdkVersion": "46.0.0",
-    "version": "2.0.7",
+    "version": "2.0.12",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -51,12 +51,17 @@
         "backgroundColor": "#4337C9"
       },
       "package": "com.markets.manifold",
-      "versionCode": 16
+      "versionCode": 20
     },
     "ios": {
       "supportsTablet": true,
+      "usesAppleSignIn": true,
       "bundleIdentifier": "com.markets.manifold",
-      "buildNumber": "1.0.3",
+      "associatedDomains": [
+        "applinks:manifold.markets",
+        "webcredentials:manifold.markets"
+      ],
+      "buildNumber": "1.0.7",
       "runtimeVersion": {
         "policy": "sdkVersion"
       }

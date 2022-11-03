@@ -2867,6 +2867,19 @@
     lodash.isplainobject "^4.0.6"
     lodash.merge "^4.6.2"
 
+"@tiptap-pro/extension-emoji@2.0.0-beta.17":
+  version "2.0.0-beta.17"
+  resolved "https://registry.tiptap.dev/@tiptap-pro%2fextension-emoji/-/extension-emoji-2.0.0-beta.17.tgz#8d62f5b181b5469c6c369dc9fb78a57d52a98b95"
+  integrity sha512-Y7u5XHV2gPbPh9nGUvQSBdQrivXCt48x+W72I6wv8zr9SnPKWGGi2NWuO6c9p3KD0qs1TCZrAPbybekaCLG38Q==
+  dependencies:
+    "@tiptap/suggestion" "^2.0.0-beta.90"
+    emoji-regex "^10.0.0"
+    emojibase-data "^7.0.1"
+    is-emoji-supported "^0.0.5"
+    prosemirror-model "^1.16.1"
+    prosemirror-state "^1.3.4"
+    prosemirror-transform "^1.3.4"
+
 "@tiptap/core@2.0.0-beta.199", "@tiptap/core@^2.0.0-beta.199":
   version "2.0.0-beta.199"
   resolved "https://registry.yarnpkg.com/@tiptap/core/-/core-2.0.0-beta.199.tgz#77c3d8df10a4594cf5860b8a73d5007b0a020d01"
@@ -3080,7 +3093,7 @@
     "@tiptap/extension-strike" "^2.0.0-beta.199"
     "@tiptap/extension-text" "^2.0.0-beta.199"
 
-"@tiptap/suggestion@2.0.0-beta.199":
+"@tiptap/suggestion@2.0.0-beta.199", "@tiptap/suggestion@^2.0.0-beta.90":
   version "2.0.0-beta.199"
   resolved "https://registry.yarnpkg.com/@tiptap/suggestion/-/suggestion-2.0.0-beta.199.tgz#8bf8029a25826bc41266bb9fffe8b33195bf9a40"
   integrity sha512-FwkaMW0fX1Xlsv4n5GPlVkHwwMSMvIXgZ6LZnwy4Mxo+Njz7YgHw8X8YQo927lMbYsVHYhNcsk726HaxudDMEw==
@@ -5969,6 +5982,11 @@ electron-to-chromium@^1.4.118:
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.137.tgz#186180a45617283f1c012284458510cd99d6787f"
   integrity sha512-0Rcpald12O11BUogJagX3HsCN3FE83DSqWjgXoHo5a72KUKMSfI39XBgJpgNNxS9fuGzytaFjE06kZkiVFy2qA==
 
+emoji-regex@^10.0.0:
+  version "10.2.1"
+  resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-10.2.1.tgz#a41c330d957191efd3d9dfe6e1e8e1e9ab048b3f"
+  integrity sha512-97g6QgOk8zlDRdgq1WxwgTMgEWGVAQvB5Fdpgc1MkNy56la5SKP9GsMXKDOdqwn90/41a8yPwIGk1Y6WVbeMQA==
+
 emoji-regex@^8.0.0:
   version "8.0.0"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-8.0.0.tgz#e818fd69ce5ccfcb404594f842963bf53164cc37"
@@ -5978,6 +5996,11 @@ emoji-regex@^9.2.2:
   version "9.2.2"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-9.2.2.tgz#840c8803b0d8047f4ff0cf963176b32d4ef3ed72"
   integrity sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==
+
+emojibase-data@^7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/emojibase-data/-/emojibase-data-7.0.1.tgz#a81d7fcd12247f7d94a96dcbdb143e6b6dd5c328"
+  integrity sha512-BLZpOdwyFpZ7lzBWyDtnxmKVm/SJMYgAfp1if3o6n1TVUMSXAf0nikONXl90LZuJ/m3XWPBkkubgCet2BsCGGQ==
 
 emojis-list@^3.0.0:
   version "3.0.0"
@@ -7908,6 +7931,11 @@ is-docker@^2.0.0, is-docker@^2.1.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/is-docker/-/is-docker-2.2.1.tgz#33eeabe23cfe86f14bde4408a02c0cfb853acdaa"
   integrity sha512-F+i2BKsFrH66iaUFc0woD8sLy8getkwTwtOBjvs56Cx4CgJDeKQeqfz8wAYiSb8JOprWhHH5p77PbmYCvvUuXQ==
+
+is-emoji-supported@^0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/is-emoji-supported/-/is-emoji-supported-0.0.5.tgz#f22301b22c63d6322935e829f39dfa59d03a7fe2"
+  integrity sha512-WOlXUhDDHxYqcSmFZis+xWhhqXiK2SU0iYiqmth5Ip0FHLZQAt9rKL5ahnilE8/86WH8tZ3bmNNNC+bTzamqlw==
 
 is-extendable@^0.1.0:
   version "0.1.1"
@@ -10145,7 +10173,7 @@ prosemirror-keymap@^1.0.0, prosemirror-keymap@^1.2.0:
     prosemirror-state "^1.0.0"
     w3c-keyname "^2.2.0"
 
-prosemirror-model@^1.0.0, prosemirror-model@^1.16.0, prosemirror-model@^1.18.1:
+prosemirror-model@^1.0.0, prosemirror-model@^1.16.0, prosemirror-model@^1.16.1, prosemirror-model@^1.18.1:
   version "1.18.1"
   resolved "https://registry.yarnpkg.com/prosemirror-model/-/prosemirror-model-1.18.1.tgz#1d5d6b6de7b983ee67a479dc607165fdef3935bd"
   integrity sha512-IxSVBKAEMjD7s3n8cgtwMlxAXZrC7Mlag7zYsAKDndAqnDScvSmp/UdnRTV/B33lTCVU3CCm7dyAn/rVVD0mcw==
@@ -10169,6 +10197,15 @@ prosemirror-state@1.4.1, prosemirror-state@^1.0.0, prosemirror-state@^1.2.2, pro
     prosemirror-model "^1.0.0"
     prosemirror-transform "^1.0.0"
 
+prosemirror-state@^1.3.4:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/prosemirror-state/-/prosemirror-state-1.4.2.tgz#f93bd8a33a4454efab917ba9b738259d828db7e5"
+  integrity sha512-puuzLD2mz/oTdfgd8msFbe0A42j5eNudKAAPDB0+QJRw8cO1ygjLmhLrg9RvDpf87Dkd6D4t93qdef00KKNacQ==
+  dependencies:
+    prosemirror-model "^1.0.0"
+    prosemirror-transform "^1.0.0"
+    prosemirror-view "^1.27.0"
+
 prosemirror-transform@^1.0.0, prosemirror-transform@^1.1.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/prosemirror-transform/-/prosemirror-transform-1.6.0.tgz#8162dbfaf124f9253a7ab28605a9460411a96a53"
@@ -10176,7 +10213,7 @@ prosemirror-transform@^1.0.0, prosemirror-transform@^1.1.0:
   dependencies:
     prosemirror-model "^1.0.0"
 
-prosemirror-transform@^1.7.0:
+prosemirror-transform@^1.3.4, prosemirror-transform@^1.7.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/prosemirror-transform/-/prosemirror-transform-1.7.0.tgz#a8a0768f3ee6418d26ebef435beda9d43c65e472"
   integrity sha512-O4T697Cqilw06Zvc3Wm+e237R6eZtJL/xGMliCi+Uo8VL6qHk6afz1qq0zNjT3eZMuYwnP8ZS0+YxX/tfcE9TQ==
@@ -10187,6 +10224,15 @@ prosemirror-view@^1.0.0, prosemirror-view@^1.1.0:
   version "1.26.2"
   resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.26.2.tgz#e673894ecf26aea330b727622d561c51b41d31eb"
   integrity sha512-CGKw+GadkfSBEwRAJTHCEKJ4DlV6/3IhAdjpwGyZHUHtbP7jX4Ol4zmi7xa2c6GOabDlIJLYXJydoNYLX7lNeQ==
+  dependencies:
+    prosemirror-model "^1.16.0"
+    prosemirror-state "^1.0.0"
+    prosemirror-transform "^1.1.0"
+
+prosemirror-view@^1.27.0:
+  version "1.29.0"
+  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.29.0.tgz#5a9baa32a3c520442ad443f4bbf5ec7400e55b4e"
+  integrity sha512-bifVd5aD9uCNtpLL1AyhquG/cVbNZSv+ALBxTEGYv51a6OHDhq+aOuzqq4MermNdeBdT+5uyURXCALgzk0EN5g==
   dependencies:
     prosemirror-model "^1.16.0"
     prosemirror-state "^1.0.0"

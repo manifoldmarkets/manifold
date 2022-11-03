@@ -2,7 +2,6 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { QrcodeIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
-
 import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
@@ -10,7 +9,6 @@ import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
 import { ShareIconButton } from './buttons/share-icon-button'
 import { useUserById } from 'web/hooks/use-user'
-import getManalinkUrl from 'web/get-manalink-url'
 import { IconButton } from './buttons/button'
 
 export type ManalinkInfo = {
@@ -200,25 +198,29 @@ function Claim(props: { claim: Claim }) {
 }
 
 function getManalinkGradient(amount: number) {
-  if (amount < 20) {
+  if (amount < 200) {
     return 'from-indigo-200 via-indigo-500 to-indigo-800'
-  } else if (amount >= 20 && amount < 50) {
+  } else if (amount >= 200 && amount < 500) {
     return 'from-fuchsia-200 via-fuchsia-500 to-fuchsia-800'
-  } else if (amount >= 50 && amount < 100) {
+  } else if (amount >= 500 && amount < 1000) {
     return 'from-rose-100 via-rose-400 to-rose-700'
-  } else if (amount >= 100) {
+  } else if (amount >= 1000) {
     return 'from-amber-200 via-amber-500 to-amber-700'
   }
 }
 
 function getManalinkAmountColor(amount: number) {
-  if (amount < 20) {
+  if (amount < 200) {
     return 'text-indigo-500'
-  } else if (amount >= 20 && amount < 50) {
+  } else if (amount >= 200 && amount < 500) {
     return 'text-fuchsia-600'
-  } else if (amount >= 50 && amount < 100) {
+  } else if (amount >= 500 && amount < 1000) {
     return 'text-scarlet-500'
-  } else if (amount >= 100) {
+  } else if (amount >= 1000) {
     return 'text-amber-600'
   }
+}
+
+function getManalinkUrl(slug: string) {
+  return `${location.protocol}//${location.host}/link/${slug}`
 }

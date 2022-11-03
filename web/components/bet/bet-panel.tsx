@@ -313,6 +313,11 @@ export function BuyPanel(props: {
       ? `Are you sure you want to move the market by ${displayedDifference}?`
       : undefined
 
+  // hide input on mobile for new users for first week
+  const hideInput =
+    mobileView &&
+    (user?.createdTime ?? 0) > Date.now() - 7 * 24 * 60 * 60 * 1000
+
   return (
     <Col className={hidden ? 'hidden' : ''}>
       <YesNoSelector
@@ -398,8 +403,9 @@ export function BuyPanel(props: {
           setError={setError}
           disabled={isSubmitting}
           inputRef={inputRef}
-          showSliderOnMobile
+          showSlider={true}
           binaryOutcome={outcome}
+          hideInput={hideInput}
         />
 
         <Spacer h={8} />
@@ -635,18 +641,6 @@ function LimitOrderPanel(props: {
       <Row className="mt-1 mb-4 items-center gap-4">
         <Col className="gap-2">
           <div className="text-sm text-gray-500">
-            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
-          </div>
-          <ProbabilityOrNumericInput
-            contract={contract}
-            prob={highLimitProb}
-            setProb={setHighLimitProb}
-            isSubmitting={isSubmitting}
-            placeholder="90"
-          />
-        </Col>
-        <Col className="gap-2">
-          <div className="text-sm text-gray-500">
             Buy {isPseudoNumeric ? <HigherLabel /> : <YesLabel />} up to
           </div>
           <ProbabilityOrNumericInput
@@ -655,6 +649,19 @@ function LimitOrderPanel(props: {
             setProb={setLowLimitProb}
             isSubmitting={isSubmitting}
             placeholder="10"
+          />
+        </Col>
+
+        <Col className="gap-2">
+          <div className="text-sm text-gray-500">
+            Buy {isPseudoNumeric ? <LowerLabel /> : <NoLabel />} down to
+          </div>
+          <ProbabilityOrNumericInput
+            contract={contract}
+            prob={highLimitProb}
+            setProb={setHighLimitProb}
+            isSubmitting={isSubmitting}
+            placeholder="90"
           />
         </Col>
       </Row>
@@ -687,7 +694,7 @@ function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showSliderOnMobile
+        showSlider={true}
       />
 
       <Col className="mt-3 w-full gap-3">

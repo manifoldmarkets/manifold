@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { capitalize } from 'lodash'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export function ReportButton(props: {
   userId: string
@@ -20,7 +21,7 @@ export function ReportButton(props: {
   const currentUser = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isReported, setIsReported] = useState(false)
-  const isNative = typeof window !== 'undefined' && (window as any).isNative
+  const isNative = getIsNative()
   if (!currentUser || currentUser.id === userId || !isNative) return null
   const report = async () => {
     // TODO: file report

@@ -84,14 +84,14 @@ export function ContractsGrid(props: {
               key={contract.id}
               contract={contract as CPMMBinaryContract}
               showPosition
-              showImage={showImageOnTopContract && index == 0}
+              showImage={showImageOnTopContract && (index == 0 || index == 3)}
             />
           ) : (
             <ContractCard
               contract={contract}
               key={contract.id}
               showTime={showTime}
-              showImage={showImageOnTopContract && index == 0}
+              showImage={showImageOnTopContract && (index == 0 || index == 3)}
               onClick={
                 onContractClick ? () => onContractClick(contract) : undefined
               }

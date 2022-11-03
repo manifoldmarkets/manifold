@@ -8,6 +8,7 @@ import {
   setPushToken,
 } from 'web/lib/firebase/notifications'
 import { useRouter } from 'next/router'
+import { getIsNative, setIsNative } from 'web/lib/native/is-native'
 
 export const NativeMessageListener = () => {
   const router = useRouter()
@@ -21,9 +22,10 @@ export const NativeMessageListener = () => {
     }
     const { type, data } = event
     console.log('Received native event: ', event)
-    if (type === 'nativeFbUser') {
-      await setFirebaseUserViaJson(data, app)
-      return
+    if (type === 'setIsNative') {
+      setIsNative(true)
+    } else if (type === 'nativeFbUser') {
+      await setFirebaseUserViaJson(data, app, true)
     } else if (type === 'pushNotificationPermissionStatus') {
       const { status, userId } = data
       await handlePushNotificationPermissionStatus(userId, status)
@@ -64,8 +66,9 @@ export const NativeMessageListener = () => {
 }
 
 export const postMessageToNative = (type: string, data: any) => {
-  if (typeof window === 'undefined') return
-  if (!(window as any).isNative) return
+  const isNative = getIsNative()
+  console.log('posting message to native, is native?', isNative)
+  if (!isNative) return
   ;(window as any).ReactNativeWebView.postMessage(
     JSON.stringify({
       type,

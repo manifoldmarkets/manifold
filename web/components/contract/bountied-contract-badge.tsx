@@ -52,7 +52,7 @@ export function BountiedContractSmallBadge(props: {
   )} currently available.`
 
   return (
-    <Tooltip text={tooltip} placement="bottom">
+    <Tooltip className="inline-flex" text={tooltip} placement="bottom">
       {modal}
       <SmallBadge
         text={`${formatMoney(openCommentBounties)} bounty`}

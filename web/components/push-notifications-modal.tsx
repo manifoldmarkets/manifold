@@ -8,6 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { setPushTokenRequestDenied } from 'web/lib/firebase/notifications'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { postMessageToNative } from 'web/components/native-message-listener'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export function PushNotificationsModal(props: {
   isOpen: boolean
@@ -23,7 +24,7 @@ export function PushNotificationsModal(props: {
 
   useEffect(() => {
     if (
-      !(window as any).isNative ||
+      !getIsNative() ||
       privateUser.pushToken ||
       privateUser.rejectedPushNotificationsOn ||
       privateUser.interestedInPushNotifications === false
@@ -49,7 +50,7 @@ export function PushNotificationsModal(props: {
     privateUser.rejectedPushNotificationsOn,
   ])
 
-  if (!(window as any).isNative) return <div />
+  if (!getIsNative()) return <div />
 
   return (
     <Modal open={isOpen} setOpen={setOpen}>

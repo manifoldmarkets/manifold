@@ -95,6 +95,7 @@ export const useContractsByDailyScoreGroups = (
           facetFilters: ['isResolved:false', `groupLinks.slug:${slug}`].concat(
             additionalFilters ?? []
           ),
+          hitsPerPage: 10,
         })
       )
     )

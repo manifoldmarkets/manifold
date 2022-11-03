@@ -51,6 +51,7 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { GroupAbout } from 'web/components/groups/group-about'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
 export const getStaticProps = fromPropz(getStaticPropz)
 export async function getStaticPropz(props: { params: { slugs: string[] } }) {
@@ -250,8 +251,9 @@ export default function GroupPage(props: {
                     <GroupLeaderboard
                       topUsers={topCreators}
                       title="🏅 Top creators"
-                      header="Market volume"
+                      header="Number of traders"
                       maxToShow={maxLeaderboardSize}
+                      noFormatting={true}
                     />
                   </div>
                 </Col>
@@ -321,9 +323,13 @@ function GroupLeaderboard(props: {
   title: string
   maxToShow: number
   header: string
+  noFormatting?: boolean
 }) {
-  const { topUsers, title, maxToShow, header } = props
+  const { title, maxToShow, header, noFormatting } = props
 
+  const topUsers = props.topUsers.filter(
+    (u) => u.user.username !== HOUSE_BOT_USERNAME
+  )
   const scoresByUser = topUsers.reduce((acc, { user, score }) => {
     acc[user.id] = score
     return acc
@@ -335,7 +341,13 @@ function GroupLeaderboard(props: {
       entries={topUsers.map((t) => t.user)}
       title={title}
       columns={[
-        { header, renderCell: (user) => formatMoney(scoresByUser[user.id]) },
+        {
+          header,
+          renderCell: (user) =>
+            noFormatting
+              ? scoresByUser[user.id]
+              : formatMoney(scoresByUser[user.id]),
+        },
       ]}
       maxToShow={maxToShow}
     />

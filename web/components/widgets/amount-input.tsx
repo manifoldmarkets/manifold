@@ -105,7 +105,8 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   disabled?: boolean
-  showSliderOnMobile?: boolean
+  showSlider?: boolean
+  hideInput?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -117,13 +118,14 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
-    showSliderOnMobile: showSlider,
+    showSlider,
     disabled,
     className,
     inputClassName,
     minimumAmount,
     inputRef,
     binaryOutcome,
+    hideInput,
   } = props
 
   const user = useUser()
@@ -147,17 +149,19 @@ export function BuyAmountInput(props: {
 
   return (
     <>
-      <Row className="items-center gap-4">
-        <AmountInput
-          amount={amount}
-          onChange={onAmountChange}
-          label={ENV_CONFIG.moneyMoniker}
-          error={error}
-          disabled={disabled}
-          className={className}
-          inputClassName={inputClassName}
-          inputRef={inputRef}
-        />
+      <Row className="items-center gap-4 xl:flex-wrap">
+        {!hideInput && (
+          <AmountInput
+            amount={amount}
+            onChange={onAmountChange}
+            label={ENV_CONFIG.moneyMoniker}
+            error={error}
+            disabled={disabled}
+            className={className}
+            inputClassName={inputClassName}
+            inputRef={inputRef}
+          />
+        )}
         {showSlider && (
           <Slider
             min={0}
@@ -165,7 +169,7 @@ export function BuyAmountInput(props: {
             value={amount ?? 0}
             onChange={(value) => onAmountChange(value as number)}
             className={clsx(
-              ' my-auto mx-2 !h-1 xl:hidden [&>.rc-slider-rail]:bg-gray-200',
+              ' my-auto mx-2 !h-1 xl:mx-auto xl:mt-3 xl:ml-4  [&>.rc-slider-rail]:bg-gray-200',
               binaryOutcome === 'YES'
                 ? '[&>.rc-slider-track]:bg-teal-600 [&>.rc-slider-handle]:bg-teal-500'
                 : binaryOutcome === 'NO'

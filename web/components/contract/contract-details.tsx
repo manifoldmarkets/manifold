@@ -126,8 +126,9 @@ export function ContractDetails(props: {
   const { contract, disabled } = props
 
   return (
-    <Row className="justify-between">
+    <Row className="flex-wrap gap-2 sm:flex-nowrap">
       <MarketSubheader contract={contract} disabled={disabled} />
+      <MarketGroups contract={contract} disabled={disabled} />
       <ExtraContractActionsRow contract={contract} />
     </Row>
   )
@@ -145,57 +146,53 @@ export function MarketSubheader(props: {
   const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   return (
-    <div className="block items-end gap-2 sm:flex">
-      <Row>
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          noLink={disabled}
-          size={9}
-          className="mr-1.5"
-        />
+    <Row className="grow">
+      <Avatar
+        username={creatorUsername}
+        avatarUrl={creatorAvatarUrl}
+        noLink={disabled}
+        size={9}
+        className="mr-1.5"
+      />
 
-        {!disabled && (
-          <div className="absolute mt-3 ml-[11px]">
-            <MiniUserFollowButton userId={creatorId} />
-          </div>
-        )}
-        <Col className="text-greyscale-6 ml-2 flex-1 flex-wrap text-sm">
-          <Row className="w-full space-x-1 ">
-            {disabled ? (
-              creatorName
-            ) : (
-              <Row className={'gap-2'}>
-                <UserLink
-                  className="my-auto whitespace-nowrap"
-                  name={creatorName}
-                  username={creatorUsername}
-                />
-                {/*<BadgeDisplay user={creator} />*/}
-              </Row>
-            )}
-            {correctResolutionPercentage != null &&
-              correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
-                <Tooltip text="This creator has a track record of creating contracts that are resolved incorrectly.">
-                  <ExclamationIcon className="h-6 w-6 text-yellow-500" />
-                </Tooltip>
-              )}
-          </Row>
-          <div className="text-2xs text-greyscale-4 sm:text-xs">
-            <CloseOrResolveTime
-              contract={contract}
-              resolvedDate={resolvedDate}
-              isCreator={isCreator}
-              disabled={disabled}
+      {!disabled && (
+        <div className="absolute mt-3 ml-[11px]">
+          <MiniUserFollowButton userId={creatorId} />
+        </div>
+      )}
+      <Col className="text-greyscale-6 ml-2 flex-1 text-sm">
+        <Row className="gap-1">
+          {disabled ? (
+            creatorName
+          ) : (
+            <UserLink
+              className="my-auto whitespace-nowrap"
+              name={creatorName}
+              username={creatorUsername}
             />
-          </div>
-        </Col>
-      </Row>
-      <Row className="mt-2 gap-1">
-        {!disabled && <BountiedContractSmallBadge contract={contract} />}
-        <MarketGroups contract={contract} disabled={disabled} />
-      </Row>
-    </div>
+            /*<BadgeDisplay user={creator} className="mr-1" />*/
+          )}
+          {correctResolutionPercentage != null &&
+            correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
+              <Tooltip
+                text="This creator has a track record of creating contracts that are resolved incorrectly."
+                placement="bottom"
+                className="w-fit"
+              >
+                <ExclamationIcon className="h-6 w-6 text-yellow-500" />
+              </Tooltip>
+            )}
+        </Row>
+        <div className="text-2xs text-greyscale-4 sm:text-xs">
+          <CloseOrResolveTime
+            contract={contract}
+            resolvedDate={resolvedDate}
+            isCreator={isCreator}
+            disabled={disabled}
+          />
+        </div>
+      </Col>
+    </Row>
   )
 }
 
@@ -209,39 +206,34 @@ export function CloseOrResolveTime(props: {
   const { resolutionTime, closeTime } = contract
   if (!!closeTime || !!resolvedDate) {
     return (
-      <Row className="select-none items-center gap-1">
+      <Row className="select-none flex-nowrap items-center gap-1">
         {resolvedDate && resolutionTime ? (
-          <>
-            <DateTimeTooltip text="Market resolved:" time={resolutionTime}>
-              <Row>
-                <div>resolved&nbsp;</div>
-                {resolvedDate}
-              </Row>
-            </DateTimeTooltip>
-          </>
+          <DateTimeTooltip
+            className="whitespace-nowrap"
+            text="Market resolved:"
+            time={resolutionTime}
+          >
+            resolved&nbsp;{resolvedDate}
+          </DateTimeTooltip>
         ) : null}
 
         {!resolvedDate && closeTime && (
-          <Row>
-            {dayjs().isBefore(closeTime) && <div>closes&nbsp;</div>}
-            {!dayjs().isBefore(closeTime) && <div>closed&nbsp;</div>}
+          <div className="flex gap-1 whitespace-nowrap">
+            {dayjs().isBefore(closeTime) ? 'closes' : 'closed'}
             <EditableCloseDate
               closeTime={closeTime}
               contract={contract}
               isCreator={isCreator ?? false}
               disabled={disabled}
             />
-          </Row>
+          </div>
         )}
       </Row>
     )
   } else return <></>
 }
 
-export function MarketGroups(props: {
-  contract: Contract
-  disabled?: boolean
-}) {
+function MarketGroups(props: { contract: Contract; disabled?: boolean }) {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const { contract, disabled } = props
@@ -249,7 +241,10 @@ export function MarketGroups(props: {
 
   return (
     <>
-      <Row className="flex-wrap items-center gap-1">
+      {/* Put after market action icons on mobile, but before them on desktop*/}
+      <Row className="order-last w-full flex-wrap items-end gap-1 sm:order-[unset]">
+        {!disabled && <BountiedContractSmallBadge contract={contract} />}
+
         {groupsToDisplay.map((group) => (
           <GroupDisplay
             key={group.groupId}
@@ -263,7 +258,7 @@ export function MarketGroups(props: {
             className="text-greyscale-4 hover:text-greyscale-3"
             onClick={() => setOpen(true)}
           >
-            <PlusCircleIcon className="h-[18px]" />
+            <PlusCircleIcon className="h-[20px]" />
           </button>
         )}
       </Row>

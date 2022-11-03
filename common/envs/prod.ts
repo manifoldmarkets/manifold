@@ -103,7 +103,6 @@ export const PROD_CONFIG: EnvConfig = {
     'Will the Democrats win the 2024 presidential election?',
   ],
   expoConfig: {
-    //prod:
     iosClientId:
       '128925704902-n0ic4j1s5tk51t2vu8anu8glh3t5jimo.apps.googleusercontent.com',
     expoClientId:

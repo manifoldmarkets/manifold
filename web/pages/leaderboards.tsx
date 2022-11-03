@@ -16,6 +16,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { SEO } from 'web/components/SEO'
 import { BETTORS } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
+import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 
 export async function getStaticProps() {
   const props = await fetchProps()
@@ -50,7 +51,7 @@ const queryLeaderboardUsers = async (period: Period) => {
     getTopCreators(period),
   ])
   return {
-    topTraders,
+    topTraders: topTraders.filter((t) => t.username !== HOUSE_BOT_USERNAME),
     topCreators,
   }
 }
@@ -109,7 +110,7 @@ export default function Leaderboards(_props: {
 
     return (
       <>
-        <Col className="mx-4 items-center gap-10 lg:flex-row">
+        <Col className="mx-4 items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
             // We're only caching profitRank for now

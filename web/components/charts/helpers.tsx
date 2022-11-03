@@ -59,13 +59,17 @@ export const YAxis = <Y,>(props: { w: number; h: number; axis: Axis<Y> }) => {
       select(axisRef.current)
         .call(axis)
         .call((g) =>
-          g.selectAll('.tick line').attr('x2', w).attr('stroke-opacity', 0.1)
+          g
+            .selectAll('.tick line')
+            .attr('x2', w)
+            .attr('stroke-opacity', 0.1)
+            .attr('transform', `translate(-${w}, 0)`)
         )
         .select('.domain')
         .attr('stroke-width', 0)
     }
   }, [w, h, axis])
-  return <g ref={axisRef} />
+  return <g ref={axisRef} transform={`translate(${w}, 0)`} />
 }
 
 export const LinePath = <P,>(

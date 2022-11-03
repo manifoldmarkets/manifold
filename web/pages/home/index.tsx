@@ -1,6 +1,6 @@
-import React, { ReactNode, useEffect } from 'react'
+import React, { memo, ReactNode, useEffect } from 'react'
 import Router from 'next/router'
-import { AdjustmentsIcon, PencilAltIcon } from '@heroicons/react/solid'
+import { PencilAltIcon } from '@heroicons/react/solid'
 import { PlusCircleIcon, XCircleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { toast } from 'react-hot-toast'
@@ -24,7 +24,7 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
@@ -67,6 +67,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { LatestPosts } from '../latestposts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
+import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -181,16 +182,18 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     <Page>
       <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
         <Row
-          className={'mb-2 w-full items-center justify-between gap-4 sm:gap-8'}
+          className={'mb-2 w-full items-center justify-between gap-2 sm:gap-8'}
         >
-          <Input
-            type="text"
-            placeholder={'Search'}
-            className="w-full"
-            onClick={() => Router.push('/search')}
-            onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
-          />
-          <CustomizeButton justIcon />
+          <Row className="md:w-3/4">
+            <Input
+              type="text"
+              placeholder={'Search Manifold'}
+              className="w-full"
+              onClick={() => Router.push('/search')}
+              onChange={(e) => Router.push(`/search?q=${e.target.value}`)}
+            />
+            <CustomizeButton className="ml-1" justIcon />
+          </Row>
           <DailyStats user={user} />
         </Row>
 
@@ -220,7 +223,11 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
                   myGroups={groups}
                   trendingGroups={trendingGroups}
                 />
-                {renderGroupSections(user, groups, groupContracts)}
+                <GroupSections
+                  user={user}
+                  groups={groups}
+                  groupContracts={groupContracts}
+                />
               </>
             ) : (
               <LoadingIndicator />
@@ -309,14 +316,14 @@ function renderSections(
             />
           )
 
-        if (id === 'live-feed') return <ActivitySection />
+        if (id === 'live-feed') return <ActivitySection key={id} />
 
         if (id === 'daily-movers') {
           return <DailyMoversSection key={id} data={dailyMovers} />
         }
 
         if (id === 'latest-posts') {
-          return <LatestPostsSection latestPosts={latestPosts} />
+          return <LatestPostsSection key={id} latestPosts={latestPosts} />
         }
 
         const contracts = sectionContracts[id]
@@ -347,11 +354,12 @@ function renderSections(
   )
 }
 
-function renderGroupSections(
-  user: User,
-  groups: Group[],
+const GroupSections = memo(function GroupSections(props: {
+  user: User
+  groups: Group[]
   groupContracts: Dictionary<CPMMBinaryContract[]>
-) {
+}) {
+  const { user, groups, groupContracts } = props
   const filteredGroups = groups.filter((g) => groupContracts[g.slug])
   const orderedGroups = sortBy(filteredGroups, (g) =>
     // Sort by sum of top two daily scores.
@@ -387,7 +395,7 @@ function renderGroupSections(
       })}
     </>
   )
-}
+})
 
 function HomeSectionHeader(props: {
   label: string
@@ -417,7 +425,7 @@ function HomeSectionHeader(props: {
   )
 }
 
-function SearchSection(props: {
+const SearchSection = memo(function SearchSection(props: {
   label: string
   contracts: CPMMBinaryContract[]
   sort: Sort
@@ -441,7 +449,7 @@ function SearchSection(props: {
       />
     </Col>
   )
-}
+})
 
 function LatestPostsSection(props: { latestPosts: Post[] }) {
   const { latestPosts } = props
@@ -572,7 +580,7 @@ function GroupSection(props: {
   )
 }
 
-function DailyMoversSection(props: {
+const DailyMoversSection = memo(function DailyMoversSection(props: {
   data:
     | {
         contracts: CPMMBinaryContract[]
@@ -601,81 +609,83 @@ function DailyMoversSection(props: {
       <ProfitChangeTable contracts={contracts} metrics={metrics} maxRows={3} />
     </Col>
   )
-}
+})
 
-function ActivitySection() {
+const ActivitySection = memo(function ActivitySection() {
   return (
     <Col>
       <HomeSectionHeader label="Live feed" href="/live" icon="🔴" />
       <ActivityLog count={6} showPills />
     </Col>
   )
-}
+})
 
-export function TrendingGroupsSection(props: {
-  user: User
-  myGroups: Group[]
-  trendingGroups: Group[]
-  className?: string
-}) {
-  const { user, myGroups, trendingGroups, className } = props
+export const TrendingGroupsSection = memo(
+  function TrendingGroupsSection(props: {
+    user: User
+    myGroups: Group[]
+    trendingGroups: Group[]
+    className?: string
+  }) {
+    const { user, myGroups, trendingGroups, className } = props
 
-  const myGroupIds = new Set(myGroups.map((g) => g.id))
+    const myGroupIds = new Set(myGroups.map((g) => g.id))
 
-  const groups = trendingGroups.filter((g) => !myGroupIds.has(g.id))
-  const count = 20
-  const chosenGroups = groups.slice(0, count)
+    const groups = trendingGroups.filter((g) => !myGroupIds.has(g.id))
+    const count = 20
+    const chosenGroups = groups.slice(0, count)
 
-  if (chosenGroups.length === 0) {
-    return null
+    if (chosenGroups.length === 0) {
+      return null
+    }
+
+    return (
+      <Col className={className}>
+        <HomeSectionHeader
+          label="Trending groups"
+          href="/explore-groups"
+          icon="👥"
+        />
+        <div className="mb-4 text-gray-500">
+          Follow groups you are interested in.
+        </div>
+        <Row className="flex-wrap gap-2">
+          {chosenGroups.map((g) => (
+            <PillButton
+              className="flex flex-row items-center gap-1"
+              key={g.id}
+              selected={myGroupIds.has(g.id)}
+              onSelect={() => {
+                if (myGroupIds.has(g.id)) leaveGroup(g, user.id)
+                else {
+                  const homeSections = (user.homeSections ?? [])
+                    .filter((id) => id !== g.id)
+                    .concat(g.id)
+                  updateUser(user.id, { homeSections })
+
+                  toast.promise(joinGroup(g, user.id), {
+                    loading: 'Following group...',
+                    success: `Followed ${g.name}`,
+                    error: "Couldn't follow group, try again?",
+                  })
+
+                  track('home follow group', { group: g.slug })
+                }
+              }}
+            >
+              <PlusCircleIcon
+                className={'h-5 w-5 flex-shrink-0 text-gray-500'}
+                aria-hidden="true"
+              />
+
+              {g.name}
+            </PillButton>
+          ))}
+        </Row>
+      </Col>
+    )
   }
-
-  return (
-    <Col className={className}>
-      <HomeSectionHeader
-        label="Trending groups"
-        href="/explore-groups"
-        icon="👥"
-      />
-      <div className="mb-4 text-gray-500">
-        Follow groups you are interested in.
-      </div>
-      <Row className="flex-wrap gap-2">
-        {chosenGroups.map((g) => (
-          <PillButton
-            className="flex flex-row items-center gap-1"
-            key={g.id}
-            selected={myGroupIds.has(g.id)}
-            onSelect={() => {
-              if (myGroupIds.has(g.id)) leaveGroup(g, user.id)
-              else {
-                const homeSections = (user.homeSections ?? [])
-                  .filter((id) => id !== g.id)
-                  .concat(g.id)
-                updateUser(user.id, { homeSections })
-
-                toast.promise(joinGroup(g, user.id), {
-                  loading: 'Following group...',
-                  success: `Followed ${g.name}`,
-                  error: "Couldn't follow group, try again?",
-                })
-
-                track('home follow group', { group: g.slug })
-              }
-            }}
-          >
-            <PlusCircleIcon
-              className={'h-5 w-5 flex-shrink-0 text-gray-500'}
-              aria-hidden="true"
-            />
-
-            {g.name}
-          </PillButton>
-        ))}
-      </Row>
-    </Col>
-  )
-}
+)
 
 function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
   const { justIcon, className } = props
@@ -687,13 +697,13 @@ function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
       )}
       href="/home/edit"
     >
-      <Button size="lg" color="gray" className={clsx('flex gap-2')}>
-        <AdjustmentsIcon
-          className={clsx('h-[24px] w-5 text-gray-500')}
+      <IconButton size="xs">
+        <HomeSettingsIcon
+          className={clsx('h-7 w-7 text-gray-500')}
           aria-hidden="true"
         />
         {!justIcon && 'Customize'}
-      </Button>
+      </IconButton>
     </SiteLink>
   )
 }

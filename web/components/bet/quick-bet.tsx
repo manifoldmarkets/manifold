@@ -501,14 +501,14 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-100'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-200'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
     return 'bg-slate-300'
   }
 
-  return 'bg-indigo-100'
+  return 'bg-indigo-200'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {

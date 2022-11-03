@@ -1,6 +1,13 @@
-import { useCallback, useId, useMemo, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useId,
+  useMemo,
+  useState,
+} from 'react'
 import { bisector, extent } from 'd3-array'
-import { axisBottom, axisLeft } from 'd3-axis'
+import { axisBottom, axisLeft, axisRight } from 'd3-axis'
 import { D3BrushEvent } from 'd3-brush'
 import { ScaleTime, ScaleContinuousNumeric } from 'd3-scale'
 import {
@@ -34,6 +41,17 @@ export type MultiPoint<T = unknown> = Point<Date, number[], T>
 export type HistoryPoint<T = unknown> = Point<Date, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'm$' | 'percent' | 'amount'
+
+export type viewScale = {
+  viewXScale: ScaleTime<number, number, never> | undefined
+  setViewXScale: Dispatch<
+    SetStateAction<ScaleTime<number, number, never> | undefined>
+  >
+  viewYScale: ScaleContinuousNumeric<number, number, never> | undefined
+  setViewYScale: Dispatch<
+    SetStateAction<ScaleContinuousNumeric<number, number, never> | undefined>
+  >
+}
 
 type AxisConstraints = {
   min?: number
@@ -312,7 +330,9 @@ export const MultiValueHistoryChart = <P extends MultiPoint>(props: {
   )
 }
 
-export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
+export const ControllableSingleValueHistoryChart = <
+  P extends HistoryPoint
+>(props: {
   data: P[]
   w: number
   h: number
@@ -320,6 +340,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   margin: Margin
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  viewScaleProps: viewScale
   yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
@@ -327,13 +348,12 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   pct?: boolean
 }) => {
   const { data, w, h, color, margin, Tooltip } = props
+  const { viewXScale, setViewXScale, viewYScale, setViewYScale } =
+    props.viewScaleProps
   const yKind = props.yKind ?? 'amount'
   const curve = props.curve ?? curveLinear
 
   const [mouse, setMouse] = useState<TooltipParams<P> & SliceExtent>()
-  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
-  const [viewYScale, setViewYScale] =
-    useState<ScaleContinuousNumeric<number, number>>()
   const xScale = viewXScale ?? props.xScale
   const yScale = viewYScale ?? props.yScale
 
@@ -348,14 +368,14 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis =
       yKind === 'percent'
-        ? axisLeft<number>(yScale)
+        ? axisRight<number>(yScale)
             .tickValues(pctTickValues)
             .tickFormat((n) => formatPct(n))
         : yKind === 'm$'
-        ? axisLeft<number>(yScale)
+        ? axisRight<number>(yScale)
             .ticks(nTicks)
             .tickFormat((n) => formatMoney(n))
-        : axisLeft<number>(yScale).ticks(nTicks)
+        : axisRight<number>(yScale).ticks(nTicks)
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
@@ -451,5 +471,61 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         <SliceMarker color="#5BCEFF" x={mouse.x} y0={mouse.y0} y1={mouse.y1} />
       )}
     </SVGChart>
+  )
+}
+
+export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
+  data: P[]
+  w: number
+  h: number
+  color: string | ((p: P) => string)
+  margin: Margin
+  xScale: ScaleTime<number, number>
+  yScale: ScaleContinuousNumeric<number, number>
+  yKind?: ValueKind
+  curve?: CurveFactory
+  onMouseOver?: (p: P | undefined) => void
+  Tooltip?: TooltipComponent<Date, P>
+  pct?: boolean
+}) => {
+  const {
+    data,
+    w,
+    h,
+    color,
+    margin,
+    xScale,
+    yScale,
+    yKind,
+    curve,
+    onMouseOver,
+    Tooltip,
+    pct,
+  } = props
+  const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>()
+  const [viewYScale, setViewYScale] =
+    useState<ScaleContinuousNumeric<number, number>>()
+  const viewScaleProps = {
+    viewXScale,
+    setViewXScale,
+    viewYScale,
+    setViewYScale,
+  }
+  return (
+    <ControllableSingleValueHistoryChart
+      w={w}
+      h={h}
+      margin={margin}
+      xScale={xScale}
+      yScale={yScale}
+      viewScaleProps={viewScaleProps}
+      yKind={yKind}
+      data={data}
+      curve={curve}
+      Tooltip={Tooltip}
+      onMouseOver={onMouseOver}
+      color={color}
+      pct={pct}
+    />
   )
 }

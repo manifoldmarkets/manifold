@@ -29,6 +29,7 @@ import { ReplyToggle } from '../comments/reply-toggle'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { ReportButton } from 'web/components/buttons/report-button'
 import { FlagIcon } from '@heroicons/react/outline'
+import { getIsNative } from 'web/lib/native/is-native'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -138,13 +139,15 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   }, [highlighted])
 
   const [hover, setHover] = useState(false)
+  const commentKind =
+    userUsername === 'ManifoldDream' ? 'ub-dream-comment' : null
   return (
     <Row
       ref={commentRef}
       id={comment.id}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className={clsx('relative ml-3 gap-2')}
+      className={clsx(commentKind, 'relative ml-3 gap-2')}
     >
       <Col className="z-20 -ml-3.5">
         <Avatar size="sm" username={userUsername} avatarUrl={userAvatarUrl} />
@@ -187,7 +190,7 @@ export function CommentActions(props: {
   contract: Contract
 }) {
   const { onReplyClick, comment, showTip, myTip, totalTip, contract } = props
-  const isNative = typeof window !== 'undefined' && (window as any).isNative
+  const isNative = getIsNative()
 
   return (
     <Row className="grow items-center justify-end">

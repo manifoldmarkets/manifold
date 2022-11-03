@@ -188,7 +188,9 @@ export function ContractInfoDialog(props: {
                   <td>Liquidity subsidies</td>
                   <td>
                     {mechanism === 'cpmm-1'
-                      ? formatMoney(contract.totalLiquidity)
+                      ? `${formatMoney(
+                          contract.totalLiquidity - contract.subsidyPool
+                        )} / ${formatMoney(contract.totalLiquidity)}`
                       : formatMoney(100)}
                   </td>
                 </tr>
