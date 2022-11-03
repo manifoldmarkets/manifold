@@ -20,23 +20,11 @@ const monoFontUrl = new URL('MajorMonoDisplay-Regular.ttf', import.meta.url)
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    // ?question=<question>
-    const question =
-      searchParams.get('question')?.slice(0, 100) ?? 'My default question?'
-    const creatorName = searchParams.get('creatorName') ?? ''
-    const creatorAvatarUrl = searchParams.get('creatorAvatarUrl') ?? ''
-    const creatorUsername = searchParams.get('creatorUsername') ?? ''
-    const metadata = searchParams.get('metadata') ?? ''
-    const probability = searchParams.get('probability') ?? ''
+    const MarketImageProps = Object.fromEntries(
+      searchParams.entries()
+    ) as MarketImageProps
+    const image = MarketImage(MarketImageProps)
 
-    const image = buildImage({
-      question,
-      creatorName,
-      creatorAvatarUrl,
-      creatorUsername,
-      metadata,
-      probability,
-    })
     return new ImageResponse(replaceTw(image), {
       width: 1200,
       height: 600,
@@ -85,17 +73,20 @@ function replaceTw(element: JSX.Element | string): JSX.Element {
 
   return React.createElement(element.type, newProps, newChildren)
 }
-// Notes for working with this:
-// - Some css elements are missing or broken (e.g. 'gap')
-// - Every element should have `flex` set
-function buildImage(props: {
+
+type MarketImageProps = {
   question: string
   creatorName?: string
   creatorAvatarUrl?: string
   creatorUsername?: string
   metadata?: string
   probability?: string
-}) {
+}
+
+// Notes for working with this:
+// - Some css elements are missing or broken (e.g. 'gap')
+// - Every element should have `flex` set
+function MarketImage(props: MarketImageProps) {
   return (
     <div className="flex h-full w-full flex-col bg-white px-24">
       {/* <!-- Profile image --> */}
@@ -133,8 +124,8 @@ function buildImage(props: {
       </div>
 
       <div className="flex max-h-40 w-full flex-row justify-between pt-36">
-        <div className="line-clamp-4 mr-12 flex text-6xl leading-tight text-indigo-700">
-          {props.question}
+        <div className="mr-12 flex text-6xl leading-tight text-indigo-700">
+          {props.question.slice(0, 100)}
         </div>
         <div className="flex flex-col text-teal-500">
           <div className="flex text-8xl">{props.probability}</div>
@@ -144,7 +135,7 @@ function buildImage(props: {
 
       {/* <!-- Metadata --> */}
       <div className="absolute bottom-16 left-24 flex">
-        <div className="line-clamp-2 flex max-w-[80vw] bg-white text-3xl text-gray-500">
+        <div className="flex max-w-[80vw] bg-white text-3xl text-gray-500">
           {props.metadata}
         </div>
       </div>
