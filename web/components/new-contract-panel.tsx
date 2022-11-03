@@ -33,6 +33,7 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Input } from 'web/components/widgets/input'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 
 export type NewQuestionParams = {
   groupId?: string
@@ -215,6 +216,8 @@ export function NewContractPanel(props: {
     }
   }
 
+  const [hideOptions, setHideOptions] = useState(true)
+
   return (
     <div>
       <div className="flex w-full flex-col">
@@ -239,190 +242,199 @@ export function NewContractPanel(props: {
         <TextEditor editor={editor} />
       </div>
 
-      <Spacer h={6} />
-
-      <label className="flex px-1 pt-2 pb-3">Answer type</label>
-      <Row>
-        <ChoicesToggleGroup
-          currentChoice={outcomeType}
-          setChoice={(choice) => {
-            if (choice === 'FREE_RESPONSE')
-              setMarketInfoText(
-                'Users can submit their own answers to this market.'
-              )
-            else setMarketInfoText('')
-            setOutcomeType(choice as outcomeType)
-          }}
-          choicesMap={{
-            'Yes / No': 'BINARY',
-            // 'Multiple choice': 'MULTIPLE_CHOICE',
-            'Free response': 'FREE_RESPONSE',
-            // Numeric: 'PSEUDO_NUMERIC',
-          }}
-          isSubmitting={isSubmitting}
-          className={'col-span-4'}
-        />
-      </Row>
-      {marketInfoText && (
-        <div className="mt-3 ml-1 text-sm text-indigo-700">
-          {marketInfoText}
-        </div>
-      )}
-
-      <Spacer h={6} />
-
-      {outcomeType === 'MULTIPLE_CHOICE' && (
-        <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
-      )}
-
-      {outcomeType === 'PSEUDO_NUMERIC' && (
+      {hideOptions ? (
+        <Row className="mt-4 justify-end">
+          <Button color="gray-white" onClick={() => setHideOptions(false)}>
+            <ChevronLeftIcon className="h-5 w-5" />
+            More options
+          </Button>
+        </Row>
+      ) : (
         <>
-          <div className="mb-2 flex flex-col items-start">
-            <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Range </span>
-              <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
-            </label>
-
-            <Row className="gap-2">
-              <Input
-                type="number"
-                className="w-32"
-                placeholder="LOW"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setMinString(e.target.value)}
-                min={Number.MIN_SAFE_INTEGER}
-                max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
-                value={minString ?? ''}
-              />
-              <Input
-                type="number"
-                className="w-32"
-                placeholder="HIGH"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setMaxString(e.target.value)}
-                min={Number.MIN_SAFE_INTEGER}
-                max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
-                value={maxString}
-              />
-            </Row>
-
-            <Checkbox
-              className="my-2 text-sm"
-              label="Log scale"
-              checked={isLogScale}
-              toggle={() => setIsLogScale(!isLogScale)}
-              disabled={isSubmitting}
+          <Spacer h={6} />
+          <label className="flex px-1 pt-2 pb-3">Answer type</label>
+          <Row>
+            <ChoicesToggleGroup
+              currentChoice={outcomeType}
+              setChoice={(choice) => {
+                if (choice === 'FREE_RESPONSE')
+                  setMarketInfoText(
+                    'Users can submit their own answers to this market.'
+                  )
+                else setMarketInfoText('')
+                setOutcomeType(choice as outcomeType)
+              }}
+              choicesMap={{
+                'Yes / No': 'BINARY',
+                // 'Multiple choice': 'MULTIPLE_CHOICE',
+                'Free response': 'FREE_RESPONSE',
+                // Numeric: 'PSEUDO_NUMERIC',
+              }}
+              isSubmitting={isSubmitting}
+              className={'col-span-4'}
             />
+          </Row>
+          {marketInfoText && (
+            <div className="mt-3 ml-1 text-sm text-indigo-700">
+              {marketInfoText}
+            </div>
+          )}
 
-            {min !== undefined && max !== undefined && min >= max && (
-              <div className="text-scarlet-500 mt-2 mb-2 text-sm">
-                The maximum value must be greater than the minimum.
+          <Spacer h={6} />
+
+          {outcomeType === 'MULTIPLE_CHOICE' && (
+            <MultipleChoiceAnswers answers={answers} setAnswers={setAnswers} />
+          )}
+
+          {outcomeType === 'PSEUDO_NUMERIC' && (
+            <>
+              <div className="mb-2 flex flex-col items-start">
+                <label className="gap-2 px-1 py-2">
+                  <span className="mb-1">Range </span>
+                  <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
+                </label>
+
+                <Row className="gap-2">
+                  <Input
+                    type="number"
+                    className="w-32"
+                    placeholder="LOW"
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setMinString(e.target.value)}
+                    min={Number.MIN_SAFE_INTEGER}
+                    max={Number.MAX_SAFE_INTEGER}
+                    disabled={isSubmitting}
+                    value={minString ?? ''}
+                  />
+                  <Input
+                    type="number"
+                    className="w-32"
+                    placeholder="HIGH"
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setMaxString(e.target.value)}
+                    min={Number.MIN_SAFE_INTEGER}
+                    max={Number.MAX_SAFE_INTEGER}
+                    disabled={isSubmitting}
+                    value={maxString}
+                  />
+                </Row>
+
+                <Checkbox
+                  className="my-2 text-sm"
+                  label="Log scale"
+                  checked={isLogScale}
+                  toggle={() => setIsLogScale(!isLogScale)}
+                  disabled={isSubmitting}
+                />
+
+                {min !== undefined && max !== undefined && min >= max && (
+                  <div className="text-scarlet-500 mt-2 mb-2 text-sm">
+                    The maximum value must be greater than the minimum.
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <div className="mb-2 flex flex-col items-start">
-            <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Initial value </span>
-              <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
-            </label>
+              <div className="mb-2 flex flex-col items-start">
+                <label className="gap-2 px-1 py-2">
+                  <span className="mb-1">Initial value </span>
+                  <InfoTooltip text="The starting value for this market. Should be in between min and max values." />
+                </label>
 
-            <Row className="gap-2">
-              <Input
-                type="number"
-                placeholder="Initial value"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setInitialValueString(e.target.value)}
-                max={Number.MAX_SAFE_INTEGER}
-                disabled={isSubmitting}
-                value={initialValueString ?? ''}
+                <Row className="gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Initial value"
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setInitialValueString(e.target.value)}
+                    max={Number.MAX_SAFE_INTEGER}
+                    disabled={isSubmitting}
+                    value={initialValueString ?? ''}
+                  />
+                </Row>
+
+                {initialValue !== undefined &&
+                  min !== undefined &&
+                  max !== undefined &&
+                  min < max &&
+                  (initialValue <= min || initialValue >= max) && (
+                    <div className="text-scarlet-500 mt-2 mb-2 text-sm">
+                      Initial value must be in between {min} and {max}.{' '}
+                    </div>
+                  )}
+              </div>
+            </>
+          )}
+
+          <Spacer h={4} />
+
+          <Row className={'items-end gap-x-2'}>
+            <GroupSelector
+              selectedGroup={selectedGroup}
+              setSelectedGroup={setSelectedGroup}
+              creator={creator}
+              options={{ showSelector: showGroupSelector, showLabel: true }}
+            />
+            {showGroupSelector && selectedGroup && (
+              <SiteLink href={groupPath(selectedGroup.slug)}>
+                <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
+              </SiteLink>
+            )}
+          </Row>
+
+          <Spacer h={6} />
+
+          <div className="mb-1 flex flex-col items-start">
+            <label className="mb-1 gap-2 px-1 py-2">
+              <span>Question closes in </span>
+              <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
+            </label>
+            <Row className={'w-full items-center gap-2'}>
+              <ChoicesToggleGroup
+                currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
+                setChoice={(choice) => {
+                  setCloseDateInDays(choice as number)
+                }}
+                choicesMap={{
+                  'A day': 1,
+                  'A week': 7,
+                  '30 days': 30,
+                  'This year': daysLeftInTheYear,
+                }}
+                isSubmitting={isSubmitting}
+                className={'col-span-4 sm:col-span-2'}
               />
             </Row>
-
-            {initialValue !== undefined &&
-              min !== undefined &&
-              max !== undefined &&
-              min < max &&
-              (initialValue <= min || initialValue >= max) && (
-                <div className="text-scarlet-500 mt-2 mb-2 text-sm">
-                  Initial value must be in between {min} and {max}.{' '}
-                </div>
-              )}
+            <Row className="mt-4 gap-2">
+              <Input
+                type={'date'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setCloseDate(e.target.value)}
+                min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
+                disabled={isSubmitting}
+                value={closeDate}
+              />
+              <Input
+                type={'time'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setCloseHoursMinutes(e.target.value)}
+                min={'00:00'}
+                disabled={isSubmitting}
+                value={closeHoursMinutes}
+              />
+            </Row>
           </div>
+
+          <Spacer h={6} />
+
+          <Row className="items-center gap-2">
+            <span>Display this market on homepage</span>
+            <ShortToggle
+              on={visibility === 'public'}
+              setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
+            />
+          </Row>
+          <Spacer h={6} />
         </>
       )}
-
-      <Spacer h={4} />
-
-      <Row className={'items-end gap-x-2'}>
-        <GroupSelector
-          selectedGroup={selectedGroup}
-          setSelectedGroup={setSelectedGroup}
-          creator={creator}
-          options={{ showSelector: showGroupSelector, showLabel: true }}
-        />
-        {showGroupSelector && selectedGroup && (
-          <SiteLink href={groupPath(selectedGroup.slug)}>
-            <ExternalLinkIcon className=" ml-1 mb-3 h-5 w-5 text-gray-500" />
-          </SiteLink>
-        )}
-      </Row>
-
-      <Spacer h={6} />
-
-      <div className="mb-1 flex flex-col items-start">
-        <label className="mb-1 gap-2 px-1 py-2">
-          <span>Question closes in </span>
-          <InfoTooltip text="Predicting will be halted after this time (local timezone)." />
-        </label>
-        <Row className={'w-full items-center gap-2'}>
-          <ChoicesToggleGroup
-            currentChoice={dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')}
-            setChoice={(choice) => {
-              setCloseDateInDays(choice as number)
-            }}
-            choicesMap={{
-              'A day': 1,
-              'A week': 7,
-              '30 days': 30,
-              'This year': daysLeftInTheYear,
-            }}
-            isSubmitting={isSubmitting}
-            className={'col-span-4 sm:col-span-2'}
-          />
-        </Row>
-        <Row className="mt-4 gap-2">
-          <Input
-            type={'date'}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseDate(e.target.value)}
-            min={Math.round(Date.now() / MINUTE_MS) * MINUTE_MS}
-            disabled={isSubmitting}
-            value={closeDate}
-          />
-          <Input
-            type={'time'}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setCloseHoursMinutes(e.target.value)}
-            min={'00:00'}
-            disabled={isSubmitting}
-            value={closeHoursMinutes}
-          />
-        </Row>
-      </div>
-
-      <Spacer h={6} />
-
-      <Row className="items-center gap-2">
-        <span>Display this market on homepage</span>
-        <ShortToggle
-          on={visibility === 'public'}
-          setOn={(on) => setVisibility(on ? 'public' : 'unlisted')}
-        />
-      </Row>
-
-      <Spacer h={6} />
 
       <span className={'text-error'}>{errorText}</span>
       <Row className="items-end justify-between">
@@ -478,7 +490,7 @@ export function NewContractPanel(props: {
           submit()
         }}
       >
-        {isSubmitting ? 'Creating...' : 'Create question'}
+        {isSubmitting ? 'Creating...' : 'Create market'}
       </Button>
 
       <Spacer h={6} />
