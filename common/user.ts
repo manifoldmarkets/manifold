@@ -40,6 +40,13 @@ export type User = {
     allTime: number
   }
 
+  creatorTraders: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
+
   fractionResolvedCorrectly: number
 
   nextLoanCached: number

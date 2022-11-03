@@ -186,6 +186,40 @@ export const calculateCreatorVolume = (userContracts: Contract[]) => {
   }
 }
 
+export const calculateCreatorTraders = (userContracts: Contract[]) => {
+  let allTimeCreatorTraders = 0
+  let dailyCreatorTraders = 0
+  let weeklyCreatorTraders = 0
+  let monthlyCreatorTraders = 0
+
+  userContracts.forEach((contract) => {
+    const counts = contract.cachedUniqueBettorCount
+    if (counts) {
+      const reversedCounts = counts.slice().reverse()
+      allTimeCreatorTraders += reversedCounts[0].count
+      const yesterdayTraders =
+        reversedCounts.find((c) => c.time < Date.now() - DAY_MS)?.count ?? 0
+      dailyCreatorTraders += allTimeCreatorTraders - yesterdayTraders
+
+      const lastWeekTraders =
+        reversedCounts.find((c) => c.time < Date.now() - 7 * DAY_MS)?.count ?? 0
+      weeklyCreatorTraders += allTimeCreatorTraders - lastWeekTraders
+
+      const lastMonthTraders =
+        reversedCounts.find((c) => c.time < Date.now() - 30 * DAY_MS)?.count ??
+        0
+      monthlyCreatorTraders += allTimeCreatorTraders - lastMonthTraders
+    }
+  })
+
+  return {
+    daily: dailyCreatorTraders,
+    weekly: weeklyCreatorTraders,
+    monthly: monthlyCreatorTraders,
+    allTime: allTimeCreatorTraders,
+  }
+}
+
 export const calculateNewPortfolioMetrics = (
   user: User,
   contractsById: { [k: string]: Contract },
