@@ -11,7 +11,8 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { Button } from 'web/components/buttons/button'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import AddFundsIOS, {
+import {
+  AddFundsIOS,
   OtherWaysToGetMana,
 } from 'web/components/native/add-funds-ios'
 

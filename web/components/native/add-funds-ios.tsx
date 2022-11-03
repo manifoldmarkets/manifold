@@ -13,8 +13,9 @@ import {
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { formatMoney } from 'common/lib/util/format'
+import { Card } from 'web/components/widgets/card'
 
-export default function AddFundsIOS() {
+export function AddFundsIOS() {
   useRedirectIfSignedOut()
   useTracking('view add funds')
 
@@ -46,9 +47,16 @@ export default function AddFundsIOS() {
 }
 
 export const OtherWaysToGetMana = (includeBuyingNote?: boolean) => {
+  const cardClass = 'p-2 shadow-md'
   return (
     <Col className={'text-md gap-y-4 text-gray-700'}>
-      <Row>
+      <Card className={cardClass}>
+        <Row>
+          - Add a helpful comment to a market or post to earn tips from other
+          users.
+        </Row>
+      </Card>
+      <Card className={cardClass}>
         <span>
           - Place a {PAST_BET} once per day to get your streak bonus. (up to
           <span className={'mx-1 inline-block text-indigo-700'}>
@@ -56,8 +64,8 @@ export const OtherWaysToGetMana = (includeBuyingNote?: boolean) => {
           </span>
           per day!).
         </span>
-      </Row>
-      <Row>
+      </Card>
+      <Card className={cardClass}>
         <span>
           - Refer a friend and get
           <span className={'mx-1 inline-block text-indigo-700'}>
@@ -65,8 +73,8 @@ export const OtherWaysToGetMana = (includeBuyingNote?: boolean) => {
           </span>
           per signup.
         </span>
-      </Row>
-      <Row>
+      </Card>
+      <Card className={cardClass}>
         <span>
           - Make a market and get
           <span className={'mx-1 inline-block text-indigo-700'}>
@@ -74,8 +82,8 @@ export const OtherWaysToGetMana = (includeBuyingNote?: boolean) => {
           </span>
           per unique trader.
         </span>
-      </Row>
-      <Row>
+      </Card>
+      <Card className={cardClass}>
         <span>
           - Come by our
           <a
@@ -86,11 +94,23 @@ export const OtherWaysToGetMana = (includeBuyingNote?: boolean) => {
           </a>
           and ask nicely - we pay new users for sharing their experience!
         </span>
-      </Row>
+      </Card>
+      <Card className={cardClass}>
+        <span>
+          - Contribute to our{' '}
+          <a
+            className={'text-indigo-700'}
+            href={'https://github.com/manifoldmarkets/manifold'}
+          >
+            codebase
+          </a>
+          , even something simple, and we'll pay you a bounty.
+        </span>
+      </Card>
       {includeBuyingNote && (
-        <Row>
+        <Card className={cardClass}>
           - Visit our website in your browser to buy mana with a credit card.
-        </Row>
+        </Card>
       )}
     </Col>
   )
