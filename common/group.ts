@@ -62,10 +62,15 @@ export function filterTopGroups(
   n = 100,
   excludeGroups = true
 ) {
-  return sortBy(groups, [
-    (group) => -1 * group.totalMembers,
-    (group) => -1 * group.totalContracts,
-  ])
+  return sortBy(
+    groups,
+    (group) =>
+      -(group.totalMembers + group.totalContracts) *
+      ((group.mostRecentContractAddedTime ?? 0) >
+      Date.now() - 1000 * 60 * 60 * 24 * 7
+        ? 2
+        : 1)
+  )
     .filter((group) => group.anyoneCanJoin)
     .filter((group) =>
       excludeGroups
@@ -73,11 +78,6 @@ export function filterTopGroups(
             (name) => !group.name.toLowerCase().includes(name)
           )
         : true
-    )
-    .filter(
-      (group) =>
-        (group.mostRecentContractAddedTime ?? 0) >
-        Date.now() - 1000 * 60 * 60 * 24 * 7
     )
     .slice(0, n)
 }
