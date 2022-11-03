@@ -22,7 +22,7 @@ export default async function handler(req: NextRequest) {
     const question =
       searchParams.get('question')?.slice(0, 100) ?? 'My default question?'
 
-    return new ImageResponse(body({ question }), {
+    return new ImageResponse(buildImage({ question }), {
       width: 1200,
       height: 600,
       fonts: [
@@ -46,9 +46,8 @@ export default async function handler(req: NextRequest) {
   }
 }
 
-// TODO: Figure out how to allow the `tw` prop
-
-const body = ({ question }) => (
+// TODO: Allow the `tw` prop to be recognized by Typescript
+const buildImage = (props: { question: string }) => (
   <div
     tw="px-24"
     style={{
@@ -96,7 +95,7 @@ const body = ({ question }) => (
 
     <div tw="flex flex-row justify-between">
       <div tw="flex text-indigo-700 text-6xl leading-tight line-clamp-4 mr-12">
-        {question}
+        {props.question}
       </div>
       <div tw="flex flex-col text-center text-teal-500">
         <div tw="text-8xl">68%</div>
