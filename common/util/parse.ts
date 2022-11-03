@@ -33,6 +33,9 @@ export function getUrl(text: string) {
   return results.length ? results[0].href : null
 }
 
+export const beginsWith = (text: string, query: string) =>
+  text.toLocaleLowerCase().startsWith(query.toLocaleLowerCase())
+
 // TODO: fuzzy matching
 export const wordIn = (word: string, corpus: string) =>
   corpus.toLocaleLowerCase().includes(word.toLocaleLowerCase())

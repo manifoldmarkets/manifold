@@ -4,24 +4,52 @@ import {
   EmojiSuggestionPluginKey,
   EmojiItem,
 } from '@tiptap-pro/extension-emoji'
-import { searchInAny } from 'common/util/parse'
+import { beginsWith, searchInAny } from 'common/util/parse'
 import tippy from 'tippy.js'
 import { EmojiList } from './emoji-list'
+import { orderBy } from 'lodash'
 type Render = Suggestion['render']
 
 type Suggestion = Omit<SuggestionOptions, 'editor'>
+
+// first 100 most popular emoji from https://home.unicode.org/emoji/emoji-frequency/
+const ranking =
+  '😂❤️🤣👍😭🙏😘🥰😍😊🎉😁💕🥺😅🔥☺️🤦♥️🤷🙄😆🤗😉🎂🤔👏🙂😳🥳😎👌💜😔💪✨💖👀😋😏😢👉💗😩💯🌹💞🎈💙😃😡💐😜🙈🤞😄🤤🙌🤪❣️😀💋💀👇💔😌💓🤩🙃😬😱😴🤭😐🌞😒😇🌸😈🎶✌️🎊🥵😞💚☀️🖤💰😚👑🎁💥🙋☹️😑🥴👈💩✅'
+
+const rank = (c: string) => {
+  const r = ranking.indexOf(c)
+  return r < 0 ? 101 : r
+}
 
 // copied from mention-suggestion.ts, which is copied from https://tiptap.dev/api/nodes/mention#usage
 export const emojiSuggestion: Suggestion = {
   char: ':',
   pluginKey: EmojiSuggestionPluginKey,
   allowedPrefixes: [' '],
-  items: ({ editor, query }) =>
-    editor.storage.emoji.emojis
-      .filter(({ shortcodes, tags, emoticons = [] }: EmojiItem) =>
-        searchInAny(query, ...shortcodes, ...tags, ...emoticons)
+  items: ({ editor, query }) => {
+    const emojis: EmojiItem[] = editor.storage.emoji.emojis
+    if (query.endsWith(':')) {
+      return emojis.filter(({ shortcodes }) =>
+        shortcodes.includes(query.slice(0, -1))
       )
-      .slice(0, 5),
+    }
+
+    const matches = emojis.filter(({ shortcodes, tags, emoticons = [] }) =>
+      searchInAny(query, ...shortcodes, ...tags, ...emoticons)
+    )
+
+    return orderBy(
+      matches,
+      [
+        (e) => rank(e.emoji ?? ''),
+        (e) =>
+          e.shortcodes.some((s) => beginsWith(s, query)) ||
+          e.emoticons?.some((s) => beginsWith(s, query)),
+      ],
+      ['asc', 'desc']
+    ).slice(0, 5)
+  },
+
   render: makeMentionRender(EmojiList),
   command: ({ editor, range, props }) => {
     editor
