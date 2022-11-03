@@ -131,7 +131,11 @@ export const computeVolume = (contractBets: Bet[], since: number) => {
   )
 }
 
-const calculateProbChangeSince = (descendingBets: Bet[], since: number) => {
+const calculateProbChangeSince = (
+  prob: number,
+  descendingBets: Bet[],
+  since: number
+) => {
   const newestBet = descendingBets[0]
   if (!newestBet) return 0
 
@@ -139,22 +143,22 @@ const calculateProbChangeSince = (descendingBets: Bet[], since: number) => {
 
   if (!betBeforeSince) {
     const oldestBet = last(descendingBets) ?? newestBet
-    return newestBet.probAfter - oldestBet.probBefore
+    return prob - oldestBet.probBefore
   }
 
-  return newestBet.probAfter - betBeforeSince.probAfter
+  return prob - betBeforeSince.probAfter
 }
 
-export const calculateProbChanges = (descendingBets: Bet[]) => {
+export const calculateProbChanges = (prob: number, descendingBets: Bet[]) => {
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const monthAgo = now - 30 * DAY_MS
 
   return {
-    day: calculateProbChangeSince(descendingBets, yesterday),
-    week: calculateProbChangeSince(descendingBets, weekAgo),
-    month: calculateProbChangeSince(descendingBets, monthAgo),
+    day: calculateProbChangeSince(prob, descendingBets, yesterday),
+    week: calculateProbChangeSince(prob, descendingBets, weekAgo),
+    month: calculateProbChangeSince(prob, descendingBets, monthAgo),
   }
 }
 
