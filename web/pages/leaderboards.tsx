@@ -110,7 +110,7 @@ export default function Leaderboards(_props: {
 
     return (
       <>
-        <Col className="mx-4 items-center gap-10 lg:flex-row">
+        <Col className="mx-4 items-center gap-10 lg:flex-row lg:items-start">
           <Leaderboard
             title={`🏅 Top ${BETTORS}`}
             // We're only caching profitRank for now
