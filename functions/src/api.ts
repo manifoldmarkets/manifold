@@ -117,6 +117,7 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
 
 export interface EndpointOptions extends HttpsOptions {
   method?: string
+  secrets?: string[]
 }
 
 const DEFAULT_OPTS = {
