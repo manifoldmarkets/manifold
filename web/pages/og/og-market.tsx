@@ -1,3 +1,5 @@
+import { resolution } from 'common/contract'
+
 export default function MarketPage() {
   // This endpoint is just used to debug the html for the og card
   // found at /api/og/market.tsx
@@ -13,6 +15,7 @@ export type OgMarketProps = {
   creatorUsername?: string
   metadata?: string
   probability?: string
+  resolution?: resolution
 }
 
 // Notes for working with this:
@@ -59,10 +62,7 @@ export function OgMarket(props: OgMarketProps) {
         <div className="mr-12 flex text-6xl leading-tight text-indigo-700">
           {props.question.slice(0, 100)}
         </div>
-        <div className="flex flex-col text-teal-500">
-          <div className="flex text-8xl">{props.probability}</div>
-          <div className="flex text-4xl">chance</div>
-        </div>
+        {props.resolution ? ResolutionDiv(props) : ProbabilityDiv(props)}
       </div>
 
       {/* <!-- Metadata --> */}
@@ -70,6 +70,43 @@ export function OgMarket(props: OgMarketProps) {
         <div className="flex max-w-[80vw] bg-white text-3xl text-gray-500">
           {props.metadata}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function ProbabilityDiv(props: OgMarketProps) {
+  return (
+    <div className="flex flex-col text-teal-500">
+      <div className="flex text-8xl">{props.probability}</div>
+      <div className="flex text-4xl">chance</div>
+    </div>
+  )
+}
+
+function ResolutionDiv(props: OgMarketProps) {
+  const { resolution, probability } = props
+  if (!resolution) {
+    return <div></div>
+  }
+  const text = {
+    YES: 'YES',
+    NO: 'NO',
+    MKT: probability,
+    CANCEL: 'N/A',
+  }[resolution]
+  const color = {
+    YES: 'text-teal-500',
+    NO: 'text-red-500',
+    MKT: 'text-blue-500',
+    CANCEL: 'text-yellow-500',
+  }[resolution]
+
+  return (
+    <div className={`flex flex-col ${color} text-center`}>
+      <div className="flex text-8xl">{text}</div>
+      <div className="flex text-4xl">
+        {resolution === 'CANCEL' ? '' : 'resolved'}
       </div>
     </div>
   )
