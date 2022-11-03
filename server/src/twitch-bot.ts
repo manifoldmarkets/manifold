@@ -262,16 +262,24 @@ export default class TwitchBot {
 
     this.client.on('message', async (channelName, tags, message, self) => {
       if (self) return; // Ignore echoed messages.
-      channelName = sanitizeTwitchChannelName(channelName);
-      const stream = app.getStreamByName(channelName);
 
       const groups = message.match(COMMAND_REGEXP);
-      if (!groups) return;
-      if (groups.length < 2) return;
-
+      if (!groups || groups.length < 2) return;
       const commandString: string = groups[1].toLocaleLowerCase();
       let args: string[] = groups[2]?.split(' ') || [];
       args = args.filter((value: string) => value.length > 0);
+
+      let command = commands[commandString];
+      if (!command) {
+        const match = commandString.match('^(?:yes|no|y|n)[0-9]+$'); // Catch shortened betting commands !y12, !no15 etc
+        if (match) {
+          command = betCommand();
+          args.unshift(commandString); // Push the command (e.g. y12) as the first arg
+        } else return; // If it's not a valid command, ignore it
+      }
+
+      channelName = sanitizeTwitchChannelName(channelName);
+      const stream = app.getStreamByName(channelName);
 
       const userDisplayName = tags['display-name'];
 
@@ -286,14 +294,6 @@ export default class TwitchBot {
         } catch (e) {}
         const commandParams: CommandParams = { args, stream, tags, username: tags.username, broadcaster, market, user };
 
-        let command = commands[commandString];
-        if (!command) {
-          const match = commandString.match('^(?:yes|no|y|n)[0-9]+$'); // Catch shortened betting commands !y12, !no15 etc
-          if (match) {
-            command = betCommand();
-            args.unshift(commandString); // Push the command (e.g. y12) as the first arg
-          } else return; // If it's not a valid command, ignore it
-        }
         if (command.requirements) {
           const requirements = command.requirements;
           if (requirements.isAdmin && !this.isAllowedAdminCommand(tags)) {
