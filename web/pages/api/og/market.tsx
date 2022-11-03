@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og'
 import { NextRequest } from 'next/server'
+import React from 'react'
 
 export const config = {
   runtime: 'experimental-edge',
@@ -22,7 +23,8 @@ export default async function handler(req: NextRequest) {
     const question =
       searchParams.get('question')?.slice(0, 100) ?? 'My default question?'
 
-    return new ImageResponse(buildImage({ question }), {
+    const image = buildImage({ question })
+    return new ImageResponse(replaceTw(image), {
       width: 1200,
       height: 600,
       fonts: [
@@ -46,46 +48,59 @@ export default async function handler(req: NextRequest) {
   }
 }
 
-// TODO: Allow the `tw` prop to be recognized by Typescript
+function replaceTw(element: JSX.Element | string): JSX.Element {
+  // Base case:
+  if (typeof element === 'string' || !element.props) {
+    return element as JSX.Element
+  }
+
+  // Replace `className` with `tw` for this element
+  const { props } = element
+  const newProps = { ...props }
+  if (props.className) {
+    newProps.tw = props.className
+    delete newProps.className
+  }
+
+  // Recursively replace children, whether we have many, one, or no children
+  const { children } = props
+  const newChildren: (JSX.Element | string)[] = children
+    ? Array.isArray(children)
+      ? children.map(replaceTw)
+      : [replaceTw(children)]
+    : []
+
+  return React.createElement(element.type, newProps, newChildren)
+}
+
 const buildImage = (props: { question: string }) => (
-  <div
-    tw="px-24"
-    style={{
-      height: '100%',
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'white',
-    }}
-  >
+  <div className="flex h-full w-full flex-col items-center justify-center bg-white px-24">
     {/* <!-- Profile image --> */}
-    <div tw="flex absolute left-24 top-8">
-      <div tw="flex flex-row">
+    <div className="absolute left-24 top-8 flex">
+      <div className="flex flex-row">
         <img
-          tw="h-24 w-24 rounded-full bg-white flex items-center justify-center mr-6"
+          className="mr-6 flex h-24 w-24 items-center justify-center rounded-full bg-white"
           src="https://avatars.githubusercontent.com/u/1062408?v=4"
           alt=""
         />
-        <div tw="flex flex-col">
-          <p tw="text-gray-900 text-3xl mb-2">Austin</p>
-          <p tw="text-gray-500 text-3xl">@Austin</p>
+        <div className="flex flex-col">
+          <p className="mb-2 text-3xl text-gray-900">Austin</p>
+          <p className="text-3xl text-gray-500">@Austin</p>
         </div>
       </div>
     </div>
 
     {/* <!-- Manifold logo --> */}
-    <div tw="flex absolute right-24 top-8">
-      <a tw="flex flex-row" href="/">
+    <div className="absolute right-24 top-8 flex">
+      <a className="flex flex-row" href="/">
         <img
-          tw="sm:h-12 sm:w-12 mr-3"
+          className="mr-3 sm:h-12 sm:w-12"
           src="https:&#x2F;&#x2F;manifold.markets&#x2F;logo.png"
           width="40"
           height="40"
         />
         <div
-          tw="hidden sm:flex lowercase mt-1 sm:text-3xl"
+          className="mt-1 hidden lowercase sm:flex sm:text-3xl"
           style={{ fontFamily: 'Major Mono Display' }}
         >
           Manifold Markets
@@ -93,19 +108,19 @@ const buildImage = (props: { question: string }) => (
       </a>
     </div>
 
-    <div tw="flex flex-row justify-between">
-      <div tw="flex text-indigo-700 text-6xl leading-tight line-clamp-4 mr-12">
+    <div className="flex flex-row justify-between">
+      <div className="line-clamp-4 mr-12 flex text-6xl leading-tight text-indigo-700">
         {props.question}
       </div>
-      <div tw="flex flex-col text-center text-teal-500">
-        <div tw="text-8xl">68%</div>
-        <div tw="text-4xl">chance</div>
+      <div className="flex flex-col text-center text-teal-500">
+        <div className="flex text-8xl">68%</div>
+        <div className="flex text-4xl">chance</div>
       </div>
     </div>
 
     {/* <!-- Metadata --> */}
-    <div tw="flex absolute bottom-16">
-      <div tw="flex text-gray-500 text-3xl max-w-[80vw] line-clamp-2">
+    <div className="absolute bottom-16 flex">
+      <div className="line-clamp-2 flex max-w-[80vw] text-3xl text-gray-500">
         #one * two * #threez
       </div>
     </div>
