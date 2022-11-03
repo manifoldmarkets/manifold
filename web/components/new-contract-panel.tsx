@@ -1,6 +1,6 @@
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import { ChevronLeftIcon } from '@heroicons/react/solid'
+import { ChevronDownIcon } from '@heroicons/react/solid'
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import dayjs from 'dayjs'
 
@@ -248,7 +248,7 @@ export function NewContractPanel(props: {
       {hideOptions ? (
         <Row className="mt-4 justify-end">
           <Button color="gray-white" onClick={() => setHideOptions(false)}>
-            <ChevronLeftIcon className="h-5 w-5" />
+            <ChevronDownIcon className="h-5 w-5" />
             More options
           </Button>
         </Row>
