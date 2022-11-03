@@ -1,4 +1,5 @@
 import { mapValues, sum } from 'lodash'
+import { binarySearch } from './util/algos'
 
 export function getProbability(
   pool: { [outcome: string]: number },
@@ -39,50 +40,50 @@ function calculateBet(
   return { newPool, shares }
 }
 
-function addOutcome(
+function calculateSale(
   pool: {
     [outcome: string]: number
   },
-  outcome: string,
-  amount: number
+  shares: number,
+  outcome: string
 ) {
-  // const poolWithNewOutcome = { ...pool, [outcome]: 999999999 }
-  // const { newPool, shares } = calculateBet(poolWithNewOutcome, amount, outcome)
+  if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
-  const n = Object.keys(pool).length
   const k = getK(pool)
-  const newK = k * ((n + 1) / n) //getK(poolWithMidOutcome)
+  const poolWithShares = { ...pool, [outcome]: pool[outcome] + shares }
 
-  const largeConstant = 9999999999
+  const saleAmount = binarySearch(0, shares, (saleAmount) => {
+    const poolAfterSale = mapValues(poolWithShares, (s) => s - saleAmount)
+    const kAfterSale = getK(poolAfterSale)
+    return k - kAfterSale
+  })
 
-  const poolWithLowShares = { ...pool, [outcome]: 0.000001 }
-  const poolAfterPurchase = calculateBet(
-    poolWithLowShares,
-    largeConstant,
-    outcome
-  ).newPool
+  const newPool = mapValues(poolWithShares, (s) => s - saleAmount)
 
-  const tempPool = mapValues(pool, (s) => s + amount)
-  const poolWithNewOutcome = { ...pool, [outcome]: largeConstant }
-  const kWithNewOutcome = getK(poolWithNewOutcome)
-  const renormed = mapValues(
-    poolWithNewOutcome,
-    (s) => s ** (k / kWithNewOutcome)
-  )
-  const renormedK = getK(renormed)
-  console.log('k', k, 'renormedK', renormedK, renormed)
+  return { newPool, saleAmount }
+}
 
-  return calculateBet(renormed, amount, outcome)
+function calculateShortSell(
+  pool: {
+    [outcome: string]: number
+  },
+  amount: number,
+  outcome: string
+) {
+  if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
-  // const kWithOutcome = getK(poolWithNewOutcome)
-  // console.log('k', k, 'newK', newK, 'kWithOutcome', kWithOutcome)
-  // const shares = largeConstant - Math.exp(kWithOutcome - k)
+  const k = getK(pool)
+  const poolWithAmount = mapValues(pool, (s) => s + amount)
 
-  // poolWithNewOutcome[outcome] = largeConstant - shares
-  // const newPool = poolWithNewOutcome
+  const shares = binarySearch(amount, amount * 2, (shares) => {
+    const poolAfterPurchase = mapValues(poolWithAmount, (s, o) => o === outcome ? s : s - shares)
+    const kAfterSale = getK(poolAfterPurchase)
+    return k - kAfterSale
+  })
 
-  // console.log('final k', getK(newPool))
-  // return { newPool, shares }
+  const newPool = mapValues(poolWithShares, (s) => s - saleAmount)
+
+  return { newPool, saleAmount }
 }
 
 export function test() {
@@ -92,16 +93,27 @@ export function test() {
     C: 100,
   }
 
-  const { newPool, shares } = addOutcome(pool, 'D', 10)
-  console.log('add outcome D', newPool, shares, getProbability(newPool, 'D'))
+  console.log('pool', pool, 'k', getK(pool))
+  console.log('prob before', getProbability(pool, 'C'))
 
-  // console.log('prob before', getProbability(pool, 'C'))
+  const { newPool, shares } = calculateBet(pool, 10, 'C')
+  console.log('shares', shares, pool, 'newPool', newPool, 'newK', getK(newPool))
 
-  // const { newPool, shares } = calculateBet(pool, 100, 'C')
-  // console.log('shares', shares, 'pool', pool, 'newPool', newPool)
+  const { newPool: poolAfterSale, saleAmount } = calculateSale(
+    newPool,
+    shares,
+    'C'
+  )
+  console.log(
+    'sale amount',
+    saleAmount,
+    'pool after sale',
+    poolAfterSale,
+    'k',
+    getK(poolAfterSale)
+  )
 
-  // console.log('prob after A', getProbability(newPool, 'A'))
-  // console.log('prob after B', getProbability(newPool, 'B'))
-  // console.log('prob after C', getProbability(newPool, 'C'))
-  // console.log('prob after D', getProbability(pool, 'D'))
+  console.log('prob after A', getProbability(poolAfterSale, 'A'))
+  console.log('prob after B', getProbability(poolAfterSale, 'B'))
+  console.log('prob after C', getProbability(poolAfterSale, 'C'))
 }
