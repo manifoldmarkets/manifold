@@ -12,6 +12,7 @@ import { Button } from 'web/components/buttons/button'
 import { Group } from 'common/group'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { withTracking } from 'web/lib/service/analytics'
+import { Row } from 'web/components/layout/row'
 
 export default function GroupSelectorDialog(props: {
   open: boolean
@@ -89,9 +90,11 @@ export default function GroupSelectorDialog(props: {
             ))
           )}
         </div>
-      </Col>
-      <Col>
-        <Button onClick={() => setOpen(false)}>Done</Button>
+        <Row className={'justify-end'}>
+          <Button size={'lg'} onClick={() => setOpen(false)}>
+            Done
+          </Button>
+        </Row>
       </Col>
     </Modal>
   )

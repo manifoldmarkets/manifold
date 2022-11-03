@@ -55,10 +55,7 @@ export const auth = getAuth(app)
 
 // no other uri works for API requests due to CORS
 // const uri = 'http://localhost:3000/'
-const homeUri =
-  ENV === 'DEV'
-    ? 'https://3004-181-41-206-68.ngrok.io'
-    : 'https://manifold.markets/'
+const homeUri = ENV === 'DEV' ? '' : 'https://3004-181-41-206-68.ngrok.io'
 
 export default function App() {
   // Init
@@ -289,7 +286,7 @@ export default function App() {
 
   const tellWebviewToSetNativeFlag = () => {
     if (hasSetNativeFlag) return
-    communicateWithWebview('setNativeFlag', { platform: Platform.OS })
+    communicateWithWebview('setIsNative', { platform: Platform.OS })
   }
 
   const communicateWithWebview = (type: string, data: object | string) => {
@@ -463,7 +460,6 @@ export default function App() {
             tellWebviewToSetNativeFlag()
           }}
           onLoadStart={() => {
-            console.log('onLoadStart')
             setCurrentHostStatus({ ...currentHostStatus, loading: true })
           }}
           onNavigationStateChange={(navState) => {
