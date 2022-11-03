@@ -21,6 +21,8 @@ import { GetServerSideProps } from 'next'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useUser } from 'web/hooks/use-user'
 import { Input } from 'web/components/widgets/input'
+import { track } from '@amplitude/analytics-browser'
+import { CardHighlightOptions } from 'web/components/contract/contracts-grid'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -173,24 +175,32 @@ export default function Groups(props: {
 
 export function GroupCard(props: {
   group: Group
-  creator: User | null | undefined
-  user: User | undefined | null
-  isMember: boolean
+  creator?: User | null | undefined
+  user?: User | undefined | null
+  isMember?: boolean
   className?: string
+  onGroupClick?: (group: Group) => void
+  highlightOptions?: CardHighlightOptions
 }) {
-  const { group, creator, user, isMember, className } = props
+  const {
+    group,
+    creator,
+    user,
+    isMember,
+    className,
+    onGroupClick,
+    highlightOptions,
+  } = props
   const { totalContracts } = group
+  const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
   return (
     <Col
       className={clsx(
         'relative min-w-[20rem] max-w-xs gap-1 rounded-xl bg-white p-6 shadow-md hover:bg-gray-100',
-        className
+        className,
+        itemIds?.includes(group.id) && highlightClassName
       )}
     >
-      <Link
-        href={groupPath(group.slug)}
-        className="absolute left-0 right-0 top-0 bottom-0 z-0"
-      />
       {creator !== null && (
         <div>
           <Avatar
@@ -212,14 +222,38 @@ export function GroupCard(props: {
       <Row>
         <div className="text-sm text-gray-500">{group.about}</div>
       </Row>
-      <Col className={'mt-2 h-full items-start justify-end'}>
-        <JoinOrLeaveGroupButton
-          group={group}
-          className={'z-10 w-24'}
-          user={user}
-          isMember={isMember}
+      {isMember != null && user != null && (
+        <Col className={'mt-2 h-full items-start justify-end'}>
+          <JoinOrLeaveGroupButton
+            group={group}
+            className={'z-10 w-24'}
+            user={user}
+            isMember={isMember}
+          />
+        </Col>
+      )}
+      {onGroupClick ? (
+        <a
+          className="absolute top-0 left-0 right-0 bottom-0"
+          onClick={(e) => {
+            // Let the browser handle the link click (opens in new tab).
+            if (e.ctrlKey || e.metaKey) return
+
+            e.preventDefault()
+            track('select group card'),
+              {
+                slug: group.slug,
+                postId: group.id,
+              }
+            onGroupClick(group)
+          }}
         />
-      </Col>
+      ) : (
+        <Link
+          href={groupPath(group.slug)}
+          className="absolute left-0 right-0 top-0 bottom-0 z-0"
+        />
+      )}
     </Col>
   )
 }

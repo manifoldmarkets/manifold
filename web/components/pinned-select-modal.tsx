@@ -10,6 +10,10 @@ import { Modal } from './layout/modal'
 import { Row } from './layout/row'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { PostCardList } from './posts/post-card'
+import { GroupCard } from 'web/pages/groups'
+import { Input } from './widgets/input'
+import { debounce } from 'lodash'
+import { searchInAny } from 'common/util/parse'
 
 export function PinnedSelectModal(props: {
   title: string
@@ -21,6 +25,7 @@ export function PinnedSelectModal(props: {
   ) => void | Promise<void>
   contractSearchOptions?: Partial<Parameters<typeof ContractSearch>[0]>
   posts: Post[]
+  groups?: Group[]
   group?: Group
 }) {
   const {
@@ -31,6 +36,7 @@ export function PinnedSelectModal(props: {
     onSubmit,
     contractSearchOptions,
     posts,
+    groups,
     group,
   } = props
 
@@ -39,7 +45,10 @@ export function PinnedSelectModal(props: {
     type: string
   } | null>(null)
   const [loading, setLoading] = useState(false)
-  const [selectedTab, setSelectedTab] = useState<'contracts' | 'posts'>('posts')
+  const [selectedTab, setSelectedTab] = useState<
+    'contracts' | 'posts' | 'groups'
+  >('posts')
+  const [groupsQuery, setGroupsQuery] = useState('')
 
   async function selectContract(contract: Contract) {
     selectItem(contract.id, 'contract')
@@ -47,6 +56,10 @@ export function PinnedSelectModal(props: {
 
   async function selectPost(post: Post) {
     selectItem(post.id, 'post')
+  }
+
+  async function selectGroup(group: Group) {
+    selectItem(group.id, 'post')
   }
 
   async function selectItem(itemId: string, type: string) {
@@ -67,6 +80,7 @@ export function PinnedSelectModal(props: {
       setSelectedItem(null)
     }
   }
+  const debouncedQuery = debounce(setGroupsQuery, 50)
 
   return (
     <Modal open={open} setOpen={setOpen} className={' sm:p-0'} size={'lg'}>
@@ -116,6 +130,12 @@ export function PinnedSelectModal(props: {
             >
               Posts
             </PillButton>
+            <PillButton
+              onSelect={() => setSelectedTab('groups')}
+              selected={selectedTab === 'groups'}
+            >
+              Groups
+            </PillButton>
           </Row>
         </div>
 
@@ -140,7 +160,7 @@ export function PinnedSelectModal(props: {
               {...contractSearchOptions}
             />
           </div>
-        ) : (
+        ) : selectedTab === 'posts' ? (
           <>
             <div className="mt-2 px-2">
               <PostCardList
@@ -157,6 +177,38 @@ export function PinnedSelectModal(props: {
               )}
             </div>
           </>
+        ) : (
+          groups && (
+            <>
+              <div className="mt-2 px-2">
+                <Col>
+                  <Input
+                    type="text"
+                    onChange={(e) => debouncedQuery(e.target.value)}
+                    placeholder="Search groups"
+                    value={groupsQuery}
+                    className="mb-4 w-full"
+                  />
+                  {groups
+                    .filter((g) =>
+                      searchInAny(groupsQuery, g.name, g.about || '')
+                    )
+                    .map((group) => (
+                      <GroupCard
+                        key={group.id}
+                        highlightOptions={{
+                          itemIds: [selectedItem?.itemId ?? ''],
+                          highlightClassName:
+                            '!bg-indigo-100 outline outline-2 outline-indigo-300',
+                        }}
+                        group={group}
+                        onGroupClick={selectGroup}
+                      />
+                    ))}
+                </Col>
+              </div>
+            </>
+          )
         )}
       </Col>
     </Modal>

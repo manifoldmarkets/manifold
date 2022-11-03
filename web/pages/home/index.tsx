@@ -21,13 +21,19 @@ import {
   useUserContractMetricsByProfit,
 } from 'web/hooks/use-user'
 import {
+  useGroups,
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
-import { groupPath, joinGroup, leaveGroup } from 'web/lib/firebase/groups'
+import {
+  getGroup,
+  groupPath,
+  joinGroup,
+  leaveGroup,
+} from 'web/lib/firebase/groups'
 import { ContractMetrics } from 'common/calculate-metrics'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -68,6 +74,7 @@ import { LatestPosts } from '../latestposts'
 import GoToIcon from 'web/lib/icons/go-to-icon'
 import { DailyStats } from 'web/components/daily-stats'
 import HomeSettingsIcon from 'web/lib/icons/home-settings-icon'
+import { GroupCard } from '../groups'
 
 export async function getStaticProps() {
   const globalConfig = await getGlobalConfig()
@@ -142,6 +149,10 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
           const post = element.item as Post
           if (!userIsBlocked(post.creatorId))
             return <PostCard post={post} pinned={true} />
+        } else if (element.type == 'group') {
+          const group = element.item as Group
+          if (!userIsBlocked(group.creatorId))
+            return <GroupCard group={group} />
         } else if (element.type === 'contract') {
           const contract = element.item as Contract
           if (
@@ -489,6 +500,8 @@ function FeaturedSection(props: {
 }) {
   const { globalConfig, pinned, isAdmin } = props
   const posts = useAllPosts()
+  const groups = useTrendingGroups()
+  console.log('groups frc', groups)
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
     if (globalConfig == null) return
@@ -505,6 +518,10 @@ function FeaturedSection(props: {
             if (contract == null) return null
 
             return { item: contract, type: 'contract' }
+          } else if (item.type === 'group') {
+            const group = await getGroup(item.itemId)
+            if (group == null) return null
+            return { item: group, type: 'group' }
           }
         })
         .filter((item) => item != null)
@@ -513,8 +530,8 @@ function FeaturedSection(props: {
       pinnedItems: [
         ...(globalConfig?.pinnedItems ?? []),
         ...(pinnedItems as {
-          item: Contract | Post
-          type: 'contract' | 'post'
+          item: Contract | Post | Group
+          type: 'contract' | 'post' | 'group'
         }[]),
       ],
     })
@@ -538,6 +555,7 @@ function FeaturedSection(props: {
         onDeleteClicked={onDeleteClicked}
         onSubmit={onSubmit}
         modalMessage={'Pin posts or markets to the overview of this group.'}
+        groups={groups}
       />
     </Col>
   )

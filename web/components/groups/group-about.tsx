@@ -21,7 +21,7 @@ import { Row } from '../layout/row'
 import { SiteLink } from '../widgets/site-link'
 import { GroupOverviewPost as GroupAboutPost } from './group-overview-post'
 import { getContractFromId } from 'web/lib/firebase/contracts'
-import { groupPath, updateGroup } from 'web/lib/firebase/groups'
+import { getGroup, groupPath, updateGroup } from 'web/lib/firebase/groups'
 import { PinnedSelectModal } from '../pinned-select-modal'
 import { Button } from '../buttons/button'
 import { User } from 'common/user'
@@ -41,6 +41,7 @@ import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
+import { GroupCard } from 'web/pages/groups'
 
 export function GroupAbout(props: {
   group: Group
@@ -200,6 +201,7 @@ export function PinnedItems(props: {
   onDeleteClicked: (index: number) => void
   onSubmit: (selectedItems: { itemId: string; type: string }[]) => void
   group?: Group
+  groups?: Group[]
   modalMessage: string
 }) {
   const {
@@ -209,6 +211,7 @@ export function PinnedItems(props: {
     onSubmit,
     posts,
     group,
+    groups,
     modalMessage,
   } = props
   const [editMode, setEditMode] = useState(false)
@@ -281,6 +284,7 @@ export function PinnedItems(props: {
           <div className={'text-md my-4 text-gray-600'}>{modalMessage}</div>
         }
         onSubmit={onSubmit}
+        groups={groups}
       />
     </div>
   ) : (
