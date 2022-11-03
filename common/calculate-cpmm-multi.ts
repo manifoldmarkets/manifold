@@ -1,10 +1,7 @@
-import { mapValues, sum } from 'lodash'
+import { mapValues, min, sum } from 'lodash'
 import { binarySearch } from './util/algos'
 
-export function getProbability(
-  pool: { [outcome: string]: number },
-  outcome: string
-) {
+export function getProb(pool: { [outcome: string]: number }, outcome: string) {
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const values = Object.values(pool)
@@ -12,18 +9,23 @@ export function getProbability(
   return 1 / ratioSum
 }
 
+function poolToProbs(pool: { [outcome: string]: number }) {
+  return mapValues(pool, (_, outcome) => getProb(pool, outcome))
+}
+
 const getK = (pool: { [outcome: string]: number }) => {
   const values = Object.values(pool)
   return sum(values.map((value) => Math.log(value)))
 }
 
-function calculateBet(
+function buy(
   pool: {
     [outcome: string]: number
   },
-  amount: number,
-  outcome: string
+  outcome: string,
+  amount: number
 ) {
+  if (amount <= 0) throw new Error('Amount must be positive')
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const k = getK(pool)
@@ -40,13 +42,14 @@ function calculateBet(
   return { newPool, shares }
 }
 
-function calculateSale(
+function sell(
   pool: {
     [outcome: string]: number
   },
-  shares: number,
-  outcome: string
+  outcome: string,
+  shares: number
 ) {
+  if (shares <= 0) throw new Error('Shares must be positive')
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const k = getK(pool)
@@ -63,27 +66,34 @@ function calculateSale(
   return { newPool, saleAmount }
 }
 
-function calculateShortSell(
+function shortSell(
   pool: {
     [outcome: string]: number
   },
-  amount: number,
-  outcome: string
+  outcome: string,
+  amount: number
 ) {
+  if (amount <= 0) throw new Error('Amount must be positive')
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
   const k = getK(pool)
   const poolWithAmount = mapValues(pool, (s) => s + amount)
 
-  const shares = binarySearch(amount, amount * 2, (shares) => {
-    const poolAfterPurchase = mapValues(poolWithAmount, (s, o) => o === outcome ? s : s - shares)
+  const maxShares = min(Object.values(poolWithAmount)) as number
+  const shares = binarySearch(amount, maxShares, (shares) => {
+    const poolAfterPurchase = mapValues(poolWithAmount, (s, o) =>
+      o === outcome ? s : s - shares
+    )
     const kAfterSale = getK(poolAfterPurchase)
     return k - kAfterSale
   })
 
-  const newPool = mapValues(poolWithShares, (s) => s - saleAmount)
+  const newPool = mapValues(poolWithAmount, (s, o) =>
+    o === outcome ? s : s - shares
+  )
+  const gainedShares = mapValues(newPool, (s, o) => poolWithAmount[o] - s)
 
-  return { newPool, saleAmount }
+  return { newPool, gainedShares }
 }
 
 export function test() {
@@ -94,26 +104,67 @@ export function test() {
   }
 
   console.log('pool', pool, 'k', getK(pool))
-  console.log('prob before', getProbability(pool, 'C'))
+  console.log('prob before', getProb(pool, 'C'))
 
-  const { newPool, shares } = calculateBet(pool, 10, 'C')
+  const { newPool, shares } = buy(pool, 'C', 10)
   console.log('shares', shares, pool, 'newPool', newPool, 'newK', getK(newPool))
 
-  const { newPool: poolAfterSale, saleAmount } = calculateSale(
-    newPool,
-    shares,
-    'C'
-  )
+  const { newPool: poolAfterSale, saleAmount } = sell(newPool, 'C', shares)
   console.log(
-    'sale amount',
-    saleAmount,
     'pool after sale',
     poolAfterSale,
+    'sale amount',
+    saleAmount,
     'k',
-    getK(poolAfterSale)
+    getK(poolAfterSale),
+    'probs',
+    poolToProbs(poolAfterSale)
   )
 
-  console.log('prob after A', getProbability(poolAfterSale, 'A'))
-  console.log('prob after B', getProbability(poolAfterSale, 'B'))
-  console.log('prob after C', getProbability(poolAfterSale, 'C'))
+  const { newPool: poolAfterShortSell, gainedShares } = shortSell(
+    poolAfterSale,
+    'C',
+    1000000000
+  )
+  console.log(
+    'poolAfterShortSell',
+    poolAfterShortSell,
+    'gained shares',
+    gainedShares,
+    'probs',
+    poolToProbs(poolAfterShortSell),
+    'k',
+    getK(poolAfterShortSell)
+  )
+
+  const { newPool: poolAfterBuy, shares: sharesBought } = buy(
+    poolAfterShortSell,
+    'A',
+    10
+  )
+  console.log(
+    'poolAfterBuy',
+    poolAfterBuy,
+    'gained shares',
+    sharesBought,
+    'probs',
+    poolToProbs(poolAfterBuy),
+    'k',
+    getK(poolAfterBuy)
+  )
+  const { newPool: poolAfterBuy2, shares: sharesBought2 } = buy(
+    poolAfterShortSell,
+    'C',
+    10
+  )
+  console.log(
+    'poolAfterBuy',
+    poolAfterBuy2,
+    'gained shares',
+    sharesBought2,
+    'probs',
+    poolToProbs(poolAfterBuy2),
+    'k',
+    getK(poolAfterBuy2)
+  )
 }
