@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import WebView from 'react-native-webview'
 import { getAuth } from 'firebase/auth'
-import Constants, { ExecutionEnvironment } from 'expo-constants'
 import 'expo-dev-client'
 import { ENV, FIREBASE_CONFIG } from 'common/envs/constants'
 import * as Device from 'expo-device'
@@ -16,6 +15,10 @@ import {
   StatusBar as RNStatusBar,
   Image,
   Dimensions,
+  View,
+  Text,
+  Pressable,
+  Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
 // @ts-ignore
@@ -27,6 +30,7 @@ import { getApp, getApps, initializeApp } from 'firebase/app'
 import * as Sentry from 'sentry-expo'
 import { StatusBar } from 'expo-status-bar'
 import { AuthModal } from 'components/auth-modal'
+import { Feather, AntDesign } from '@expo/vector-icons'
 
 console.log('using', ENV, 'env')
 console.log(
@@ -46,9 +50,6 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 })
-const isExpoClient =
-  Constants.ExecutionEnvironment === ExecutionEnvironment.StoreClient
-
 const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG)
 export const auth = getAuth(app)
 
@@ -58,71 +59,44 @@ const homeUri =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
 export default function App() {
-  const [fbUser, setFbUser] = useState<string | null>()
-  const [userId, setUserId] = useState<string | null>()
-
-  const [isWebViewLoading, setIsWebViewLoading] = useState(true)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const webview = useRef<WebView | undefined>()
+  // Init
+  const [hasWebViewLoaded, setHasWebViewLoaded] = useState(true)
   const [hasSetNativeFlag, setHasSetNativeFlag] = useState(false)
   const isIOS = Platform.OS === 'ios'
+  const webview = useRef<WebView | undefined>()
   const notificationListener = useRef<Subscription | undefined>()
   const responseListener = useRef<Subscription | undefined>()
-  const url = Linking.useURL()
+
+  // Auth
+  const [fbUser, setFbUser] = useState<string | null>()
+  const [userId, setUserId] = useState<string | null>()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  // Url mangement
+  const [currentHostStatus, setCurrentHostStatus] = useState<{
+    previousHomeUrl: string
+    previousUrl: string
+    url: string
+    loading: boolean
+  }>({
+    previousHomeUrl: homeUri,
+    previousUrl: homeUri,
+    url: homeUri,
+    loading: true,
+  })
+  const [urlToLoad, setUrlToLoad] = useState<string>(homeUri)
+  const isVisitingOtherSite =
+    !currentHostStatus.url.startsWith(homeUri) ||
+    (currentHostStatus.loading &&
+      !currentHostStatus.previousUrl.startsWith(homeUri))
+  const linkedUrl = Linking.useURL()
   const eventEmitter = new NativeEventEmitter(
     Platform.OS === 'ios' ? LinkingManager.default : null
   )
 
   useEffect(() => {
-    if (!url) return
-
-    const { hostname, path, queryParams } = Linking.parse(url)
-    if (path !== 'blank' && hostname) {
-      console.log(
-        `Linked to app with hostname: ${hostname}, path: ${path} and data: ${JSON.stringify(
-          queryParams
-        )}`
-      )
-      webview.current?.postMessage(
-        JSON.stringify({
-          type: 'link',
-          data: path,
-        })
-      )
-      // If we don't clear the url, we won't reopen previously opened links
-      const clearUrlCacheEvent = {
-        hostname: 'manifold.markets',
-        url: 'blank',
-      }
-      eventEmitter.emit('url', clearUrlCacheEvent)
-    }
-  }, [url])
-
-  const handleBackButtonPress = () => {
     try {
-      webview.current?.goBack()
-      return true
-    } catch (err) {
-      Sentry.Native.captureException(err, {
-        extra: { message: 'back button press' },
-      })
-      console.log('[handleBackButtonPress] Error : ', err)
-      return false
-    }
-  }
-
-  useEffect(() => {
-    BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
-    return () => {
-      BackHandler.removeEventListener(
-        'hardwareBackPress',
-        handleBackButtonPress
-      )
-    }
-  }, [])
-
-  useEffect(() => {
-    try {
+      BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
       // This listener is fired whenever a notification is received while the app is foregrounded
       notificationListener.current =
         Notifications.addNotificationReceivedListener((notification) => {
@@ -142,21 +116,63 @@ export default function App() {
         })
     } catch (err) {
       Sentry.Native.captureException(err, {
-        extra: { message: 'notification listener' },
+        extra: { message: 'notification & back listener' },
       })
-      console.log('[notification listener] Error : ', err)
+      console.log('[notification & back listener] Error : ', err)
     }
 
     return () => {
-      console.log('removing notification listeners')
+      console.log('removing notification & back listeners')
       notificationListener.current &&
         Notifications.removeNotificationSubscription(
           notificationListener.current
         )
       responseListener.current &&
         Notifications.removeNotificationSubscription(responseListener.current)
+      BackHandler.removeEventListener(
+        'hardwareBackPress',
+        handleBackButtonPress
+      )
     }
   }, [])
+
+  useEffect(() => {
+    if (!linkedUrl) return
+
+    const { hostname, path, queryParams } = Linking.parse(linkedUrl)
+    if (path !== 'blank' && hostname) {
+      console.log(
+        `Linked to app with hostname: ${hostname}, path: ${path} and data: ${JSON.stringify(
+          queryParams
+        )}`
+      )
+      webview.current?.postMessage(
+        JSON.stringify({
+          type: 'link',
+          data: path,
+        })
+      )
+      // If we don't clear the url, we won't reopen previously opened links
+      const clearUrlCacheEvent = {
+        hostname: 'manifold.markets',
+        url: 'blank',
+      }
+      eventEmitter.emit('url', clearUrlCacheEvent)
+    }
+  }, [linkedUrl])
+
+  const handleBackButtonPress = () => {
+    try {
+      webview.current?.goBack()
+      return true
+    } catch (err) {
+      Sentry.Native.captureException(err, {
+        extra: { message: 'back button press' },
+      })
+      console.log('[handleBackButtonPress] Error : ', err)
+      return false
+    }
+  }
 
   const getExistingPushNotificationStatus = async () => {
     if (Platform.OS === 'android') {
@@ -296,7 +312,7 @@ export default function App() {
   const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
-      display: isWebViewLoading ? 'none' : 'flex',
+      display: hasWebViewLoaded ? 'none' : 'flex',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
@@ -307,9 +323,11 @@ export default function App() {
       padding: 10,
     },
     webView: {
-      display: isWebViewLoading ? 'none' : 'flex',
+      display: hasWebViewLoaded ? 'none' : 'flex',
       overflow: 'hidden',
-      marginTop: !isIOS ? RNStatusBar.currentHeight : 0,
+      marginTop:
+        (!isIOS ? RNStatusBar.currentHeight ?? 0 : 0) +
+        (isVisitingOtherSite ? 40 : 0),
       marginBottom: !isIOS ? 10 : 0,
     },
     image: {
@@ -324,11 +342,39 @@ export default function App() {
       left: width / 2 - 20,
       bottom: 100,
     },
+    otherSiteToolbar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 90,
+      backgroundColor: 'lightgray',
+      zIndex: 100,
+      display: isVisitingOtherSite ? 'flex' : 'none',
+    },
+    row: {
+      flexDirection: 'row',
+      flex: 1,
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      marginBottom: 15,
+      marginHorizontal: 20,
+    },
+    toolBarText: {
+      fontSize: 20,
+      width: 50,
+    },
+    toolBarIcon: {
+      width: 50,
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
   })
 
   return (
     <>
-      {isWebViewLoading && (
+      {hasWebViewLoaded && (
         <>
           <Image style={styles.image} source={require('./assets/splash.png')} />
           <ActivityIndicator
@@ -346,6 +392,58 @@ export default function App() {
           hideTransitionAnimation={'none'}
           hidden={false}
         />
+        <View style={styles.otherSiteToolbar}>
+          <View style={styles.row}>
+            <Pressable
+              style={[styles.toolBarIcon, { justifyContent: 'flex-start' }]}
+              onPress={() => {
+                const { previousHomeUrl } = currentHostStatus
+                // In order to make the webview load a new url manually it has to be different from the previous one
+                const back = !previousHomeUrl.includes('?')
+                  ? `${previousHomeUrl}?ignoreThisQuery=true`
+                  : `${previousHomeUrl}&ignoreThisQuery=true`
+                console.log('back to', back)
+                setUrlToLoad(back)
+              }}
+            >
+              <Text style={styles.toolBarText}>Done</Text>
+            </Pressable>
+            <Pressable
+              style={styles.toolBarIcon}
+              onPress={async () => {
+                await Share.share({
+                  message: currentHostStatus.url,
+                })
+              }}
+            >
+              <Feather name="share" size={24} color="black" />
+            </Pressable>
+            <Pressable
+              style={[styles.toolBarIcon, { justifyContent: 'flex-end' }]}
+              onPress={async () => {
+                if (currentHostStatus.loading) {
+                  webview.current?.stopLoading()
+                  setCurrentHostStatus({
+                    ...currentHostStatus,
+                    loading: false,
+                  })
+                } else {
+                  webview.current?.reload()
+                  setCurrentHostStatus({
+                    ...currentHostStatus,
+                    loading: true,
+                  })
+                }
+              }}
+            >
+              {currentHostStatus.loading ? (
+                <Feather name="x" size={24} color="black" />
+              ) : (
+                <AntDesign name="reload1" size={24} color="black" />
+              )}
+            </Pressable>
+          </View>
+        </View>
         <WebView
           style={styles.webView}
           showsHorizontalScrollIndicator={false}
@@ -353,9 +451,13 @@ export default function App() {
           overScrollMode={'never'}
           decelerationRate={'normal'}
           allowsBackForwardNavigationGestures={true}
-          onLoadEnd={() => isWebViewLoading && setIsWebViewLoading(false)}
+          onLoadEnd={() => {
+            console.log('onLoadEnd')
+            if (hasWebViewLoaded) setHasWebViewLoaded(false)
+            setCurrentHostStatus({ ...currentHostStatus, loading: false })
+          }}
           sharedCookiesEnabled={true}
-          source={{ uri: homeUri }}
+          source={{ uri: urlToLoad }}
           //@ts-ignore
           ref={webview}
           onError={(e) => {
@@ -375,7 +477,22 @@ export default function App() {
               )
             }
           }}
-          onNavigationStateChange={() => {
+          onLoadStart={() => {
+            console.log('onLoadStart')
+            setCurrentHostStatus({ ...currentHostStatus, loading: true })
+          }}
+          onNavigationStateChange={(navState) => {
+            const { url, loading } = navState
+            console.log('setting new nav url', url)
+            setCurrentHostStatus({
+              loading,
+              url,
+              previousHomeUrl: url.startsWith(homeUri)
+                ? url
+                : currentHostStatus.previousHomeUrl,
+              previousUrl: currentHostStatus.url,
+            })
+
             if (!hasSetNativeFlag && webview.current) {
               console.log('setting is native')
               webview.current.postMessage(

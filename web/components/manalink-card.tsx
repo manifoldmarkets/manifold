@@ -2,7 +2,6 @@ import { useState } from 'react'
 import clsx from 'clsx'
 import { QrcodeIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon } from '@heroicons/react/solid'
-
 import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
@@ -10,7 +9,6 @@ import { Row } from 'web/components/layout/row'
 import { Claim, Manalink } from 'common/manalink'
 import { ShareIconButton } from './buttons/share-icon-button'
 import { useUserById } from 'web/hooks/use-user'
-import getManalinkUrl from 'web/get-manalink-url'
 import { IconButton } from './buttons/button'
 
 export type ManalinkInfo = {
@@ -221,4 +219,8 @@ function getManalinkAmountColor(amount: number) {
   } else if (amount >= 100) {
     return 'text-amber-600'
   }
+}
+
+function getManalinkUrl(slug: string) {
+  return `${location.protocol}//${location.host}/link/${slug}`
 }

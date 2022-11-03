@@ -16,6 +16,13 @@ export function formatMoney(amount: number) {
         (amount > 0 ? Math.floor : Math.ceil)(
           amount + 0.00000000001 * Math.sign(amount)
         )
+  if (newAmount < 0) {
+    return (
+      '-' +
+      ENV_CONFIG.moneyMoniker +
+      formatter.format(Math.abs(newAmount)).replace('$', '')
+    )
+  }
   return ENV_CONFIG.moneyMoniker + formatter.format(newAmount).replace('$', '')
 }
 

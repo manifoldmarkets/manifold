@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
-import { Col } from 'web/components/layout/col'
 import { Tooltip } from '../widgets/tooltip'
 import TipJar from 'web/public/custom-components/tipJar'
 import { useState } from 'react'
@@ -46,7 +45,7 @@ export function TipButton(props: {
         }}
         onMouseLeave={() => setHover(false)}
       >
-        <Col className={clsx('relative')}>
+        <div className="relative m-px">
           <div
             className={clsx(
               'absolute transition-all',
@@ -78,7 +77,7 @@ export function TipButton(props: {
           <div
             className={clsx(
               userTipped && 'text-indigo-600',
-              ' absolute top-[2px] text-[0.5rem]',
+              'absolute top-0.5 text-[0.5rem]',
               tipDisplay.length === 1
                 ? 'left-[7px]'
                 : tipDisplay.length === 2
@@ -90,7 +89,7 @@ export function TipButton(props: {
           >
             {totalTipped > 0 ? tipDisplay : ''}
           </div>
-        </Col>
+        </div>
       </button>
     </Tooltip>
   )

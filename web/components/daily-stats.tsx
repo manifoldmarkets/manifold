@@ -11,17 +11,15 @@ import {
   useUserContractMetricsByProfit,
 } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { formatMoney } from 'common/util/format'
 import {
   BettingStreakModal,
   hasCompletedStreakToday,
 } from 'web/components/profile/betting-streak-modal'
-import { ProfitBadge } from 'web/components/profit-badge'
 import { LoansModal } from 'web/components/profile/loans-modal'
 
 const dailyStatsHeaderClass = 'text-greyscale-5 text-xs sm:text-sm'
-const dailyStatsClass = 'items-center sm:text-lg'
+const dailyStatsClass = 'items-center text-lg'
 
 export function DailyStats(props: {
   user: User | null | undefined
@@ -58,7 +56,7 @@ export function DailyStats(props: {
               user && !hasCompletedStreakToday(user) && 'grayscale'
             )}
           >
-            <span>🔥 {user?.currentBettingStreak ?? 0}</span>
+            <span>{user?.currentBettingStreak ?? 0}🔥</span>
           </Row>
         </Col>
       )}
@@ -105,22 +103,11 @@ export function DailyProfit(props: { user: User | null | undefined }) {
       m.from ? m.from.day.profit : 0
     ) ?? []
   )
-
-  const metrics = usePortfolioHistory(user?.id ?? '', 'daily') ?? []
-  const [first, last] = [metrics[0], metrics[metrics.length - 1]]
-
-  let profitPercent = 0
-  if (first?.investmentValue && last) {
-    // profit = calculatePortfolioProfit(last) - calculatePortfolioProfit(first)
-    profitPercent = profit / first.investmentValue
-  }
-
   return (
     <SiteLink className="flex flex-col hover:no-underline" href="/daily-movers">
       <div className={dailyStatsHeaderClass}>Daily profit</div>
       <Row className={dailyStatsClass}>
         <span>{formatMoney(profit)}</span>{' '}
-        <ProfitBadge profitPercent={profitPercent * 100} />
       </Row>
     </SiteLink>
   )

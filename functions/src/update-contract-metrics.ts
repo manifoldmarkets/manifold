@@ -53,13 +53,20 @@ export async function updateContractMetrics() {
 
       let cpmmFields: Partial<CPMM> = {}
       if (contract.mechanism === 'cpmm-1') {
-        const prob = descendingBets[0]
+        let prob = descendingBets[0]
           ? descendingBets[0].probAfter
           : getProbability(contract)
 
+        const { resolution, resolutionProbability } = contract
+        if (resolutionProbability) {
+          prob = resolutionProbability
+        } else if (resolution && resolution !== 'CANCEL') {
+          prob = resolution === 'YES' ? 1 : 0
+        }
+
         cpmmFields = {
           prob,
-          probChanges: calculateProbChanges(descendingBets),
+          probChanges: calculateProbChanges(prob, descendingBets),
         }
       }
 

@@ -40,7 +40,7 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { Tooltip } from '../widgets/tooltip'
 import { Card } from '../widgets/card'
 import { useContract } from 'web/hooks/use-contracts'
-import { ReactNode } from 'react'
+import { memo, ReactNode } from 'react'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
@@ -49,7 +49,7 @@ import { DAY_MS } from 'common/util/time'
 import NewContractBadge from '../new-contract-badge'
 import { ContractMetrics } from 'common/calculate-metrics'
 
-export function ContractCard(props: {
+export const ContractCard = memo(function ContractCard(props: {
   contract: Contract
   showTime?: ShowTime
   className?: string
@@ -200,7 +200,7 @@ export function ContractCard(props: {
       )}
     </Card>
   )
-}
+})
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -393,45 +393,52 @@ export function PseudoNumericResolutionOrExpectation(props: {
   )
 }
 
-export function ContractCardProbChange(props: {
-  contract: CPMMContract
-  noLinkAvatar?: boolean
-  showPosition?: boolean
-  showDailyProfit?: boolean
-  className?: string
-  showImage?: boolean
-}) {
-  const { noLinkAvatar, showPosition, showDailyProfit, className, showImage } =
-    props
-  const contract = (useContract(props.contract.id) ??
-    props.contract) as CPMMBinaryContract
+export const ContractCardProbChange = memo(
+  function ContractCardProbChange(props: {
+    contract: CPMMContract
+    noLinkAvatar?: boolean
+    showPosition?: boolean
+    showDailyProfit?: boolean
+    className?: string
+    showImage?: boolean
+  }) {
+    const {
+      noLinkAvatar,
+      showPosition,
+      showDailyProfit,
+      className,
+      showImage,
+    } = props
+    const contract = (useContract(props.contract.id) ??
+      props.contract) as CPMMBinaryContract
 
-  const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
-  const metrics = useSavedContractMetrics(contract, userBets)
+    const user = useUser()
+    const userBets = useUserContractBets(user?.id, contract.id)
+    const metrics = useSavedContractMetrics(contract, userBets)
 
-  return (
-    <ContractCard
-      contract={contract}
-      noLinkAvatar={noLinkAvatar}
-      showImage={showImage}
-      className={clsx(
-        className,
-        'mb-4 break-inside-avoid-column overflow-hidden'
-      )}
-    >
-      {showPosition && user && metrics && metrics.hasShares ? (
-        <MetricsFooter
-          contract={contract}
-          metrics={metrics}
-          showDailyProfit={showDailyProfit}
-        />
-      ) : (
-        <Spacer h={2} />
-      )}
-    </ContractCard>
-  )
-}
+    return (
+      <ContractCard
+        contract={contract}
+        noLinkAvatar={noLinkAvatar}
+        showImage={showImage}
+        className={clsx(
+          className,
+          'mb-4 break-inside-avoid-column overflow-hidden'
+        )}
+      >
+        {showPosition && user && metrics && metrics.hasShares ? (
+          <MetricsFooter
+            contract={contract}
+            metrics={metrics}
+            showDailyProfit={showDailyProfit}
+          />
+        ) : (
+          <Spacer h={2} />
+        )}
+      </ContractCard>
+    )
+  }
+)
 
 function MetricsFooter(props: {
   contract: CPMMContract
