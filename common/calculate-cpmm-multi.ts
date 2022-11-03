@@ -1,24 +1,24 @@
-import { mapValues, min, sum } from 'lodash'
+import { mapValues, min, sumBy } from 'lodash'
 import { binarySearch } from './util/algos'
 
 export function getProb(pool: { [outcome: string]: number }, outcome: string) {
   if (pool[outcome] === undefined) throw new Error('Invalid outcome')
 
-  const values = Object.values(pool)
-  const ratioSum = sum(values.map((value) => pool[outcome] / value))
+  const basis = pool[outcome]
+  const ratioSum = sumBy(Object.values(pool), (value) => basis / value)
   return 1 / ratioSum
 }
 
-function poolToProbs(pool: { [outcome: string]: number }) {
+export function poolToProbs(pool: { [outcome: string]: number }) {
   return mapValues(pool, (_, outcome) => getProb(pool, outcome))
 }
 
 const getK = (pool: { [outcome: string]: number }) => {
   const values = Object.values(pool)
-  return sum(values.map((value) => Math.log(value)))
+  return sumBy(values, Math.log)
 }
 
-function buy(
+export function buy(
   pool: {
     [outcome: string]: number
   },
@@ -42,7 +42,7 @@ function buy(
   return { newPool, shares }
 }
 
-function sell(
+export function sell(
   pool: {
     [outcome: string]: number
   },
@@ -66,7 +66,7 @@ function sell(
   return { newPool, saleAmount }
 }
 
-function shortSell(
+export function shortSell(
   pool: {
     [outcome: string]: number
   },
