@@ -206,15 +206,12 @@ export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
   large?: boolean
   className?: string
-  probAfter?: number // 0 to 1
 }) {
-  const { contract, large, className, probAfter } = props
+  const { contract, large, className } = props
   const { resolution } = contract
   const textColor = getTextColor(contract)
 
-  const before = getBinaryProbPercent(contract)
-  const after = probAfter && formatPercent(probAfter)
-  const probChanged = before !== after
+  const prob = getBinaryProbPercent(contract)
 
   return (
     <Col
@@ -236,14 +233,7 @@ export function BinaryResolutionOrChance(props: {
         </Row>
       ) : (
         <>
-          {probAfter && probChanged ? (
-            <div>
-              <span className="text-gray-500 line-through">{before}</span>
-              <span className={textColor}>{after}</span>
-            </div>
-          ) : (
-            <div className={textColor}>{before}</div>
-          )}
+          <div className={textColor}>{prob}</div>
           <div className={clsx(textColor, large ? 'text-xl' : 'text-base')}>
             chance
           </div>
