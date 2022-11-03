@@ -54,6 +54,9 @@
       "versionCode": 20
     },
     "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Pictures can be attached to the content you create."
+      },
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.markets.manifold",
