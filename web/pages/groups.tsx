@@ -23,6 +23,8 @@ import { useUser } from 'web/hooks/use-user'
 import { Input } from 'web/components/widgets/input'
 import { track } from '@amplitude/analytics-browser'
 import { CardHighlightOptions } from 'web/components/contract/contracts-grid'
+import { Card } from 'web/components/widgets/card'
+import { FeaturedPill } from 'web/components/contract/contract-card'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -117,7 +119,7 @@ export default function Groups(props: {
                       className="mb-4 w-full"
                     />
 
-                    <div className="flex flex-wrap justify-center gap-4">
+                    <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
                       {matchesOrderedByMostContractAndMembers.map((group) => (
                         <GroupCard
                           key={group.id}
@@ -145,7 +147,7 @@ export default function Groups(props: {
                             className="mb-4 w-full"
                           />
 
-                          <div className="flex flex-wrap justify-center gap-4">
+                          <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
                             {matchesOrderedByMostContractAndMembers
                               .filter((match) =>
                                 memberGroupIds.includes(match.id)
@@ -181,6 +183,7 @@ export function GroupCard(props: {
   className?: string
   onGroupClick?: (group: Group) => void
   highlightOptions?: CardHighlightOptions
+  pinned?: boolean
 }) {
   const {
     group,
@@ -190,19 +193,20 @@ export function GroupCard(props: {
     className,
     onGroupClick,
     highlightOptions,
+    pinned,
   } = props
   const { totalContracts } = group
   const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
   return (
-    <Col
+    <Card
       className={clsx(
-        'relative min-w-[20rem] max-w-xs gap-1 rounded-xl bg-white p-6 shadow-md hover:bg-gray-100',
+        'relative min-w-[20rem]  gap-1 rounded-xl bg-white p-6  hover:bg-gray-100',
         className,
         itemIds?.includes(group.id) && highlightClassName
       )}
     >
-      {creator !== null && (
-        <div>
+      <div>
+        {creator != null && (
           <Avatar
             className={'absolute top-2 right-2 z-10'}
             username={creator?.username}
@@ -210,10 +214,16 @@ export function GroupCard(props: {
             noLink={false}
             size={12}
           />
-        </div>
-      )}
+        )}
+      </div>
+
       <Row className="items-center justify-between gap-2">
         <span className="text-xl">{group.name}</span>
+        {pinned && (
+          <Row>
+            <FeaturedPill />
+          </Row>
+        )}
       </Row>
       <Row>{totalContracts} questions</Row>
       <Row className="text-sm text-gray-500">
@@ -223,14 +233,14 @@ export function GroupCard(props: {
         <div className="text-sm text-gray-500">{group.about}</div>
       </Row>
       {isMember != null && user != null && (
-        <Col className={'mt-2 h-full items-start justify-end'}>
+        <div className={'mt-2 h-full items-start justify-end'}>
           <JoinOrLeaveGroupButton
             group={group}
             className={'z-10 w-24'}
             user={user}
             isMember={isMember}
           />
-        </Col>
+        </div>
       )}
       {onGroupClick ? (
         <a
@@ -254,7 +264,7 @@ export function GroupCard(props: {
           className="absolute left-0 right-0 top-0 bottom-0 z-0"
         />
       )}
-    </Col>
+    </Card>
   )
 }
 

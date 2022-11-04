@@ -59,7 +59,7 @@ export function PinnedSelectModal(props: {
   }
 
   async function selectGroup(group: Group) {
-    selectItem(group.id, 'post')
+    selectItem(group.id, 'group')
   }
 
   async function selectItem(itemId: string, type: string) {

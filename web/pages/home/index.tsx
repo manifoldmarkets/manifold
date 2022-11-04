@@ -21,7 +21,6 @@ import {
   useUserContractMetricsByProfit,
 } from 'web/hooks/use-user'
 import {
-  useGroups,
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
@@ -145,15 +144,15 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
       privateUser?.blockedByUserIds.includes(userId)
     if (pinnedItems) {
       const itemComponents = pinnedItems.map((element) => {
-        if (element.type === 'post') {
+        if (element?.type === 'post') {
           const post = element.item as Post
           if (!userIsBlocked(post.creatorId))
             return <PostCard post={post} pinned={true} />
-        } else if (element.type == 'group') {
+        } else if (element?.type == 'group') {
           const group = element.item as Group
           if (!userIsBlocked(group.creatorId))
-            return <GroupCard group={group} />
-        } else if (element.type === 'contract') {
+            return <GroupCard group={group} pinned={true} />
+        } else if (element?.type === 'contract') {
           const contract = element.item as Contract
           if (
             !userIsBlocked(contract.creatorId) &&
@@ -501,7 +500,6 @@ function FeaturedSection(props: {
   const { globalConfig, pinned, isAdmin } = props
   const posts = useAllPosts()
   const groups = useTrendingGroups()
-  console.log('groups frc', groups)
 
   async function onSubmit(selectedItems: { itemId: string; type: string }[]) {
     if (globalConfig == null) return

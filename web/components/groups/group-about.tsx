@@ -21,7 +21,7 @@ import { Row } from '../layout/row'
 import { SiteLink } from '../widgets/site-link'
 import { GroupOverviewPost as GroupAboutPost } from './group-overview-post'
 import { getContractFromId } from 'web/lib/firebase/contracts'
-import { getGroup, groupPath, updateGroup } from 'web/lib/firebase/groups'
+import { groupPath, updateGroup } from 'web/lib/firebase/groups'
 import { PinnedSelectModal } from '../pinned-select-modal'
 import { Button } from '../buttons/button'
 import { User } from 'common/user'
@@ -41,7 +41,6 @@ import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
-import { GroupCard } from 'web/pages/groups'
 
 export function GroupAbout(props: {
   group: Group
