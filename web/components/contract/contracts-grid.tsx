@@ -70,6 +70,13 @@ export function ContractsGrid(props: {
     )
   }
 
+  const lastIndex =
+    !!contracts[0].coverImageUrl &&
+    contracts.length >= 4 &&
+    contracts.length % 2 === 0
+      ? contracts.length - 1
+      : undefined
+
   return (
     <Col className="gap-8">
       <Masonry
@@ -84,14 +91,18 @@ export function ContractsGrid(props: {
               key={contract.id}
               contract={contract as CPMMBinaryContract}
               showPosition
-              showImage={showImageOnTopContract && (index == 0 || index == 3)}
+              showImage={
+                showImageOnTopContract && (index == 0 || index === lastIndex)
+              }
             />
           ) : (
             <ContractCard
               contract={contract}
               key={contract.id}
               showTime={showTime}
-              showImage={showImageOnTopContract && (index == 0 || index == 3)}
+              showImage={
+                showImageOnTopContract && (index == 0 || index === lastIndex)
+              }
               onClick={
                 onContractClick ? () => onContractClick(contract) : undefined
               }
