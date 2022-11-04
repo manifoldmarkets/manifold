@@ -476,6 +476,22 @@ export default function App() {
             })
             tellWebviewToSetNativeFlag()
           }}
+          onRenderProcessGone={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent
+            console.warn(
+              'Content process terminated, reloading android',
+              nativeEvent.didCrash
+            )
+            webview.current?.reload()
+          }}
+          onContentProcessDidTerminate={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent
+            console.warn(
+              'Content process terminated, reloading ios ',
+              nativeEvent
+            )
+            webview.current?.reload()
+          }}
           onMessage={handleMessageFromWebview}
         />
         <AuthModal
