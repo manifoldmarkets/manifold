@@ -559,10 +559,10 @@ Note: this costs mana. If you have insufficient mana, this call will return an e
 
 | Market Type     | Creation Cost |
 |-----------------|---------------|
-| BINARY          | 50            |
-| PSEUDO_NUMERIC  | 250           |
-| FREE_RESPONSE   | 100           |
-| MULTIPLE_CHOICE | 100           |
+| BINARY          | M$50          |
+| PSEUDO_NUMERIC  | M$250         |
+| FREE_RESPONSE   | M$100         |
+| MULTIPLE_CHOICE | M$100         |
 
 Parameters:
 
