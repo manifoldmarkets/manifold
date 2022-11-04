@@ -482,12 +482,10 @@ function MetricsFooter(props: {
         </div>
         <div
           className={clsx(
-            'text-sm font-semibold',
-            !profit
-              ? 'text-greyscale-6'
-              : profit > 0
-              ? 'text-teal-500'
-              : 'text-red-600'
+            'text-sm font-semibold text-greyscale-6'
+              // : profit > 0
+              // ? 'text-teal-500'
+              // : 'text-red-600'
           )}
         >
           {profit ? formatMoney(profit) : '--'}
