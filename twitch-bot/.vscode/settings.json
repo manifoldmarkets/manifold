@@ -1,0 +1,8 @@
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  },
+  "eslint.workingDirectories": [".common", "./server", "./web"],
+  "files.eol": "\n"
+}
