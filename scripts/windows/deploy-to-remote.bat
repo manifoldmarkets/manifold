@@ -1,3 +1,8 @@
+:: This script is a quick way to deploy a docker image to the remote GCloud server.
+:: It works by building the default repository Docker image first, extracting the build
+:: artifacts, zipping them up along with a mini Dockerfile, copying them to the server,
+:: and finally building the runtime image there.
+
 @echo off
 Setlocal EnableDelayedExpansion
 
@@ -19,6 +24,7 @@ set PROD_ZONE=us-central1-a
 ::   SCRIPT   
 ::============
 cd %ROUTE_TO_SCRIPTS_DIR%
+set SOURCE_DIR=..
 set /p de=Which server do you want to deploy to [DEV/prod]? 
 if /i [!de!]==[prod] goto init_prod
 if /i [!de!]==[p] goto init_prod
@@ -43,57 +49,49 @@ goto init_build
 
 :init_build
 set /p latestgit=Use latest git [Y/n]? 
-if /i [!latestgit!]==[y] goto build_latest
-if /i [!latestgit!]==[] goto build_latest
-if /i [!latestgit!]==[n] goto build_workspace
+if /i [!latestgit!]==[y] goto update_git_and_build
+if /i [!latestgit!]==[] goto update_git_and_build
+if /i [!latestgit!]==[n] goto build
 echo Invalid option entered. Exiting...
 goto error
 
-:build_workspace
-cd ..
-echo Building code...
-call npx concurrently -n WEB,SERVER "yarn --cwd web build" "yarn --cwd server build" -g || goto error
-echo Preparing files...
-if exist out (
-	del /s /q out
-	rmdir /s /q out
-)
-mkdir out\static
-xcopy web\out out\static /s /e >nul 2>&1
-xcopy server\dist out /s /e >nul 2>&1
-copy scripts\%BUILD_DIR%\.env out >nul 2>&1
-copy scripts\Dockerfile out >nul 2>&1
-goto deploy
-
-:build_latest
-if not exist %BUILD_DIR% (
+:update_git_and_build
+if not exist %BUILD_DIR%\src (
 	echo Build folder not found, creating...
 	mkdir %BUILD_DIR%
-	cd %BUILD_DIR%
+	pushd %BUILD_DIR%
 	git clone https://github.com/PhilBladen/ManifoldTwitchIntegration.git src
-	cd src
+	popd
 ) else (
-	cd %BUILD_DIR%
-	cd src
+	pushd %BUILD_DIR%\src
 	git pull
+	popd
 )
-call yarn || goto error
+set SOURCE_DIR=%BUILD_DIR%\src
+goto build
+
+:build
+pushd %SOURCE_DIR%
 echo Building code...
-call npx concurrently -n WEB,SERVER "yarn --cwd web build" "yarn --cwd server build" -g || goto error
+docker rmi mb
+docker build -t mb . || goto error
+popd
+
+pushd %BUILD_DIR%
 echo Preparing files...
-cd ..
-if exist out (
-	del /s /q out
-	rmdir /s /q out
-)
-mkdir out\static
-xcopy src\web\out out\static /s /e >nul 2>&1
-xcopy src\server\dist out /s /e >nul 2>&1
-copy .env out >nul 2>&1
-copy ..\..\Dockerfile out >nul 2>&1
+FOR /F "tokens=* USEBACKQ" %%F IN (`docker create mb`) DO SET CONTAINER_ID=%%F
+docker cp %CONTAINER_ID%:deploy/. out/
+docker rm %CONTAINER_ID%
+popd
+
+copy %BUILD_DIR%\.env %BUILD_DIR%\out\ >nul 2>&1
+copy Dockerfile %BUILD_DIR%\out\ >nul 2>&1
+
 goto deploy
 
 :deploy
+cd %BUILD_DIR%
+
 echo Copying files to server...
 tar -czf out.tar.gz out
 del /s /q out >nul 2>&1

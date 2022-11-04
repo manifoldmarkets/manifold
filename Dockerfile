@@ -1,5 +1,5 @@
 # -- Stage 1 -- #
-FROM node:16.3.0-alpine as builder
+FROM node:16 as builder
 WORKDIR /manifold
 RUN npm install -g concurrently
 COPY package.json yarn.lock ./
@@ -10,10 +10,10 @@ RUN yarn
 COPY common common
 COPY web web
 COPY server server
-RUN npx concurrently "yarn --cwd web build" "yarn --cwd server build"
+RUN npx concurrently -n WEB,SERVER "yarn --cwd web build" "yarn --cwd server build" -g
 
 # -- Stage 2 -- #
-FROM node:16.3.0-alpine
+FROM node:16
 WORKDIR /deploy
 COPY --from=builder /manifold/web/out static
 COPY --from=builder /manifold/server/dist .

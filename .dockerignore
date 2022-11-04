@@ -1,6 +1,9 @@
-node_modules
-npm-debug.log
 .git
+.vscode
+docs
+node_modules
+scripts
+npm-debug.log
 .cache
 *.md
 Dockerfile
