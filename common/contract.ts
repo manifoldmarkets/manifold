@@ -10,6 +10,7 @@ export type AnyOutcomeType =
   | PseudoNumeric
   | FreeResponse
   | Numeric
+  | Cert
 
 export type AnyContractType =
   | (CPMM & Binary)
@@ -18,6 +19,7 @@ export type AnyContractType =
   | (DPM & FreeResponse)
   | (DPM & Numeric)
   | (DPM & MultipleChoice)
+  | (Uniswap2 & Cert)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -79,10 +81,12 @@ export type PseudoNumericContract = Contract & PseudoNumeric
 export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
 export type MultipleChoiceContract = Contract & MultipleChoice
+export type CertContract = Contract & Cert
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type DPMBinaryContract = BinaryContract & DPM
 export type CPMMBinaryContract = BinaryContract & CPMM
+export type Uniswap2CertContract = CertContract & Uniswap2
 
 export type DPM = {
   mechanism: 'dpm-2'
@@ -105,6 +109,21 @@ export type CPMM = {
     week: number
     month: number
   }
+}
+
+export type Uniswap2 = {
+  mechanism: 'uniswap-2'
+  // outcome can be e.g. 'M$' or a 'SHARE'
+  pool: { [outcome: string]: number }
+  // Unused; just for making Typescript happy, because code paths
+  // assume this thing falls under DPM-2
+  totalShares: { [outcome: string]: number }
+  // The price of the token in terms of M$. Similar to prob.
+  price: number
+}
+
+export type Cert = {
+  outcomeType: 'CERT'
 }
 
 export type Binary = {
@@ -158,6 +177,7 @@ export const OUTCOME_TYPES = [
   'FREE_RESPONSE',
   'PSEUDO_NUMERIC',
   'NUMERIC',
+  'CERT',
 ] as const
 
 export const MAX_QUESTION_LENGTH = 240
