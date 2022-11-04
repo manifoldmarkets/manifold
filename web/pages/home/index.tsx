@@ -24,7 +24,7 @@ import {
   useMemberGroupsSubscription,
   useTrendingGroups,
 } from 'web/hooks/use-group'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { ProfitChangeTable } from 'web/components/contract/prob-change-table'
 import {
@@ -716,13 +716,13 @@ function CustomizeButton(props: { justIcon?: boolean; className?: string }) {
       )}
       href="/home/edit"
     >
-      <IconButton size="xs">
+      <Button size="xs" color="gray-white">
         <HomeSettingsIcon
-          className={clsx('h-7 w-7 text-gray-500')}
+          className={clsx('h-7 w-7 text-gray-400')}
           aria-hidden="true"
         />
         {!justIcon && 'Customize'}
-      </IconButton>
+      </Button>
     </SiteLink>
   )
 }
