@@ -210,6 +210,108 @@ export const governorMidterms: StateElectionMarket[] = [
     slug: 'if-dan-mckee-is-the-democratic-nomi',
     isWinRepublican: false,
   },
+  {
+    state: 'AL',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go',
+    isWinRepublican: false,
+  },
+  {
+    state: 'AR',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-385b9a14af8f',
+    isWinRepublican: false,
+  },
+  {
+    state: 'CA',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-552c14cd24d6',
+    isWinRepublican: false,
+  },
+  {
+    state: 'HI',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-d85c9600c910',
+    isWinRepublican: false,
+  },
+  {
+    state: 'CT',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-de6277d93167',
+    isWinRepublican: false,
+  },
+  {
+    state: 'ID',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-7d6e427ef03e',
+    isWinRepublican: false,
+  },
+  {
+    state: 'IL',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-52b16da5fdb3',
+    isWinRepublican: false,
+  },
+  {
+    state: 'IA',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-9fa0f51f0358',
+    isWinRepublican: false,
+  },
+  {
+    state: 'NH',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-e297970d87ff',
+    isWinRepublican: false,
+  },
+  {
+    state: 'MA',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-ac78dc96220f',
+    isWinRepublican: false,
+  },
+  {
+    state: 'OH',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-5d3ae0582a1b',
+    isWinRepublican: false,
+  },
+  {
+    state: 'SC',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-e15ec0b3f8ee',
+    isWinRepublican: false,
+  },
+  {
+    state: 'NE',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-bf78dcda9c99',
+    isWinRepublican: false,
+  },
+  {
+    state: 'SD',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-cf7193bf9ab0',
+    isWinRepublican: false,
+  },
+  {
+    state: 'TN',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-11c18eea32a7',
+    isWinRepublican: false,
+  },
+  {
+    state: 'VT',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-f11fde5396e7',
+    isWinRepublican: false,
+  },
+  {
+    state: 'WY',
+    creatorUsername: 'MarketManagerBot',
+    slug: 'a-democrat-win-the-2022-race-for-go-c0c7e02a0188',
+    isWinRepublican: false,
+  },
 ]
 
 export async function getStaticProps() {
