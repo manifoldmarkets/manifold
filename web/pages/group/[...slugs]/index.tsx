@@ -160,7 +160,8 @@ export default function GroupPage(props: {
   const isAdmin = useAdmin()
   const isMember =
     groupMembers?.some((g) => g.id === group?.id) ??
-    memberIds.includes(user?.id ?? '_')
+    memberIds?.includes(user?.id ?? '_') ??
+    false
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
