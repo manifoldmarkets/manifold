@@ -200,6 +200,7 @@ export function PinnedItems(props: {
   onDeleteClicked: (index: number) => void
   onSubmit: (selectedItems: { itemId: string; type: string }[]) => void
   group?: Group
+  groups?: Group[]
   modalMessage: string
 }) {
   const {
@@ -209,6 +210,7 @@ export function PinnedItems(props: {
     onSubmit,
     posts,
     group,
+    groups,
     modalMessage,
   } = props
   const [editMode, setEditMode] = useState(false)
@@ -281,6 +283,7 @@ export function PinnedItems(props: {
           <div className={'text-md my-4 text-gray-600'}>{modalMessage}</div>
         }
         onSubmit={onSubmit}
+        groups={groups}
       />
     </div>
   ) : (
