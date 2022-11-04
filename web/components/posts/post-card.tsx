@@ -49,7 +49,7 @@ export function PostCard(props: {
           </Row>
           {pinned && <FeaturedPill />}
         </Row>
-        <div className="text-greyscale-7 mb-1 text-lg font-medium transition-all">
+        <div className="text-greyscale-7 mb-1 text-md font-medium transition-all">
           {post.title}
         </div>
         <div className="text-greyscale-6 break-words text-sm">

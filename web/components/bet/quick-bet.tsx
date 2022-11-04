@@ -223,8 +223,8 @@ function BinaryQuickBetButton(props: {
             shouldFocus
               ? 'animate-bounce-left text-indigo-600'
               : hasInvestment
-              ? 'text-indigo-800'
-              : 'text-indigo-400'
+              ? 'text-indigo-500'
+              : 'text-indigo-300'
           )}
         />
       )}
@@ -235,8 +235,8 @@ function BinaryQuickBetButton(props: {
             shouldFocus
               ? 'sm:animate-bounce-right text-indigo-600'
               : hasInvestment
-              ? 'text-indigo-800'
-              : 'text-indigo-400'
+              ? 'text-indigo-500'
+              : 'text-indigo-300'
           )}
         />
       )}
@@ -244,7 +244,7 @@ function BinaryQuickBetButton(props: {
         <span
           className={clsx(
             'text-sm font-light',
-            shouldFocus ? 'text-indigo-600' : 'text-indigo-800'
+            shouldFocus ? 'text-indigo-600' : 'text-greyscale-4'
           )}
         >
           {shouldFocus
@@ -308,7 +308,7 @@ export function QuickOutcomeView(props: {
           aria-hidden
         />
         <div
-          className={`absolute inset-0 flex items-center justify-center gap-1 text-xl font-semibold ${textColor}`}
+          className={`absolute inset-0 flex items-center justify-center gap-1 text-lg font-semibold ${textColor}`}
         >
           {cardText(contract, previewProb)}
         </div>
@@ -501,14 +501,14 @@ export function getBarColor(contract: Contract) {
   const { resolution } = contract
 
   if (resolution) {
-    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-200'
+    return OUTCOME_TO_COLOR_BAR[resolution as resolution] ?? 'bg-indigo-50'
   }
 
   if ((contract.closeTime ?? Infinity) < Date.now()) {
-    return 'bg-slate-300'
+    return 'bg-slate-200'
   }
 
-  return 'bg-indigo-200'
+  return 'bg-indigo-50'
 }
 
 const OUTCOME_TO_COLOR_BACKGROUND = {
@@ -524,7 +524,7 @@ export function getBgColor(contract: Contract) {
   if (resolution) {
     return (
       OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ??
-      'bg-greyscale-1.5'
+      'bg-greyscale-1'
     )
   }
 
@@ -532,7 +532,7 @@ export function getBgColor(contract: Contract) {
   //   return 'bg-greyscale-1.5'
   // }
 
-  return 'bg-greyscale-1.5'
+  return 'bg-greyscale-1'
 }
 
 const OUTCOME_TO_COLOR_TEXT = {
