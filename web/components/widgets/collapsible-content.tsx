@@ -4,7 +4,7 @@ import {
 } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 import { Button } from 'web/components/buttons/button'
@@ -12,6 +12,7 @@ import {
   inMemoryStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 const COLLAPSIBLE_HEIGHT = 204
 
@@ -46,7 +47,7 @@ export function CollapsibleContent(props: {
   const { content, contractId } = props
   const [shouldTruncate, setShouldTruncate] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
+  useSafeLayoutEffect(() => {
     if (contentRef.current) {
       if (contentRef.current.offsetHeight > COLLAPSIBLE_HEIGHT) {
         setShouldTruncate(true)

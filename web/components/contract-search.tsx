@@ -6,14 +6,7 @@ import { PAST_BETS, User } from 'common/user'
 import { CardHighlightOptions, ContractsGrid } from './contract/contracts-grid'
 import { ShowTime } from './contract/contract-details'
 import { Row } from './layout/row'
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useMemo,
-  ReactNode,
-  useState,
-} from 'react'
+import { useEffect, useRef, useMemo, ReactNode, useState } from 'react'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
 import { useFollows } from 'web/hooks/use-follows'
 import {
@@ -44,6 +37,7 @@ import { Title } from './widgets/title'
 import { Input } from './widgets/input'
 import { Select } from './widgets/select'
 import { SimpleLinkButton } from './buttons/simple-link-button'
+import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
 export const SORTS = [
   { label: 'Newest', value: 'newest' },
@@ -146,7 +140,7 @@ export function ContractSearch(props: {
   const searchParamsStore = inMemoryStore<SearchParameters>()
   const requestId = useRef(0)
 
-  useLayoutEffect(() => {
+  useSafeLayoutEffect(() => {
     if (persistPrefix) {
       const params = searchParamsStore.get(`${persistPrefix}-params`)
       if (params !== undefined) {

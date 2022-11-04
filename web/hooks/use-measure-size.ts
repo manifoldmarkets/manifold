@@ -1,5 +1,6 @@
 import { debounce } from 'lodash'
 import { RefObject, useMemo, useLayoutEffect, useRef, useState } from 'react'
+import { useSafeLayoutEffect } from './use-safe-layout-effect'
 
 type elem_size =
   | { width: number; height: number }
@@ -27,7 +28,7 @@ export function useListenElemSize<T extends HTMLElement>(
 
   const elem = elemRef.current
 
-  useLayoutEffect(() => {
+  useSafeLayoutEffect(() => {
     if (!elemRef.current) return
 
     const resizeObserver = new ResizeObserver(handleResize)
