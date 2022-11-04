@@ -45,10 +45,54 @@ module.exports = {
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
+        'slide-in-1': {
+          '0%': {
+            transform: 'translateX(-100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '19%': {
+            transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-in-2': {
+          '0%': {
+            transform: 'translateX(-100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '20%': {
+            transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-in-3': {
+          '0%': {
+            transform: 'translateX(-100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '34%': {
+            transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-in-4': {
+          '0%': {
+            transform: 'translateX(-100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '36%': {
+            transform: 'translateX(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
       },
       animation: {
-        'bounce-left': 'bounce-left 0.8s infinite',
-        'bounce-right': 'bounce-right 0.7s infinite',
+        'bounce-left': 'bounce-left 0.8s',
+        'bounce-right': 'bounce-right 0.7s',
+        'slide-in-1': 'slide-in-1 4s',
+        'slide-in-2': 'slide-in-2 4s',
+        'slide-in-3': 'slide-in-3 4s',
+        'slide-in-4': 'slide-in-4 4s',
       },
       colors: {
         warning: '#F59E0B', // amber-500 TODO: change color

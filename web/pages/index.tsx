@@ -29,10 +29,10 @@ export default function Home(props: { hotContracts: Contract[] }) {
         description="Create a play-money prediction market on any topic you care about
             and bet with your friends on what will happen!"
       />
-      <div className="px-4 pt-2 md:mt-0 lg:hidden">
+      {/* <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
-      </div>
-      <Col className="items-center">
+      </div> */}
+      <Col className="pm:mx-10 gap-4 px-4 pb-8 pt-4 sm:pt-0">
         <Col className="max-w-3xl">
           <LandingPagePanel hotContracts={hotContracts ?? []} />
         </Col>

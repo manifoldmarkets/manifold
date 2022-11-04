@@ -71,7 +71,8 @@
     "react-twitter-embed": "4.0.4",
     "stability-client": "1.6.1",
     "string-similarity": "^4.0.4",
-    "tippy.js": "6.3.7"
+    "tippy.js": "6.3.7",
+    "typewriter-effect": "2.19.0"
   },
   "devDependencies": {
     "@tailwindcss/forms": "0.4.0",
