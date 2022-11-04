@@ -137,7 +137,7 @@ export const ContractCard = memo(function ContractCard(props: {
           {!hasImage && (
             <div
               className={clsx(
-                'break-anywhere text-greyscale-7 pb-2 text-lg font-medium',
+                'break-anywhere text-greyscale-7 pb-2 text-md font-medium',
                 questionClass
               )}
             >
