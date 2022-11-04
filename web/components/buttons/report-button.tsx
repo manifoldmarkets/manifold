@@ -1,10 +1,10 @@
 import { useUser } from 'web/hooks/use-user'
-import { Button } from 'web/components/buttons/button'
+import { Button, IconButton } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { capitalize } from 'lodash'
@@ -12,8 +12,12 @@ import { collection, doc, setDoc } from 'firebase/firestore'
 import { Report, ReportContentTypes } from 'common/report'
 import { db } from 'web/lib/firebase/init'
 import { removeUndefinedProps } from 'common/util/object'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { FlagIcon } from '@heroicons/react/outline'
 
 export function ReportButton(props: {
+  iconButton?: boolean
+  noModal?: boolean
   contentType: ReportContentTypes
   contentOwnerId: string
   contentId: string
@@ -21,13 +25,11 @@ export function ReportButton(props: {
   parentType?: 'post' | 'contract'
   description?: string
   contentName?: string
-  icon?: React.ReactNode
-  noModal?: boolean
 }) {
   const {
     noModal,
     contentType,
-    icon,
+    iconButton,
     contentOwnerId,
     contentId,
     parentId,
@@ -72,14 +74,31 @@ export function ReportButton(props: {
 
   return (
     <>
-      <Button
-        color={'gray-white'}
-        onClick={() => {
-          noModal ? onReport() : setIsModalOpen(true)
-        }}
-      >
-        {icon ? icon : 'Report'}
-      </Button>
+      {iconButton ? (
+        <Tooltip text={`Report ${label}`}>
+          <IconButton
+            size={'2xs'}
+            onClick={() => {
+              noModal ? onReport() : setIsModalOpen(true)
+            }}
+          >
+            <FlagIcon
+              className={
+                'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6 h-5 w-5'
+              }
+            />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Button
+          color={'gray-white'}
+          onClick={() => {
+            noModal ? onReport() : setIsModalOpen(true)
+          }}
+        >
+          Report
+        </Button>
+      )}
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <Col className={'rounded-md bg-white p-4'}>
           <Title>Report {contentName ? contentName : label}</Title>

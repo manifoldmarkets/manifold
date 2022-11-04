@@ -27,7 +27,6 @@ import { ReplyIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { ReplyToggle } from '../comments/reply-toggle'
 import { ReportButton } from 'web/components/buttons/report-button'
-import { FlagIcon } from '@heroicons/react/outline'
 
 export type ReplyTo = { id: string; username: string }
 
@@ -208,13 +207,7 @@ export function CommentActions(props: {
         parentId={contract.id}
         parentType={'contract'}
         contentType={'comment'}
-        icon={
-          <FlagIcon
-            className={
-              'disabled:text-greyscale-2 text-greyscale-5 hover:text-greyscale-6 h-5 w-5'
-            }
-          />
-        }
+        iconButton={true}
       />
     </Row>
   )
