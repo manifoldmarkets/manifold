@@ -49,14 +49,14 @@ export function GroupAbout(props: {
   aboutPost: Post | null
   creator: User
   user: User | null | undefined
-  memberIds: string[]
+  isMember: boolean
 }) {
-  const { group, isEditable, posts, aboutPost, creator, user, memberIds } =
-    props
+  const { group, isEditable, posts, aboutPost, creator, user, isMember } = props
   return (
     <Col className="pm:mx-10 gap-4 px-4 pb-12 pt-4 sm:pt-0">
-      <Row className={'justify-end'}>
+      <Row className={'justify-between'}>
         <HideGroupButton groupSlug={group.slug} />
+        <JoinOrLeaveGroupButton group={group} isMember={isMember} user={user} />
       </Row>
       <GroupFeatured group={group} posts={posts} isEditable={isEditable} />
       {(group.aboutPostId != null || isEditable) && (
@@ -74,7 +74,7 @@ export function GroupAbout(props: {
         creator={creator}
         isEditable={isEditable}
         user={user}
-        memberIds={memberIds}
+        isMember={isMember}
       />
 
       <GroupPosts group={group} posts={posts} />
@@ -325,9 +325,9 @@ export function GroupAboutDetails(props: {
   creator: User
   user: User | null | undefined
   isEditable: boolean
-  memberIds: string[]
+  isMember: boolean
 }) {
-  const { group, creator, isEditable, user, memberIds } = props
+  const { group, creator, isEditable, user, isMember } = props
   const anyoneCanJoinChoices: { [key: string]: string } = {
     Closed: 'false',
     Open: 'true',
@@ -346,7 +346,6 @@ export function GroupAboutDetails(props: {
   const shareUrl = `https://${ENV_CONFIG.domain}${groupPath(
     group.slug
   )}${postFix}`
-  const isMember = user ? memberIds.includes(user.id) : false
 
   return (
     <>

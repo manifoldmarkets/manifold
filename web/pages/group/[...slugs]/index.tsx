@@ -26,7 +26,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import {
   useGroup,
   useGroupContractIds,
-  useMemberIds,
+  useMemberGroupsSubscription,
 } from 'web/hooks/use-group'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
@@ -128,7 +128,14 @@ export default function GroupPage(props: {
     suggestedFilter: 'open',
     posts: [],
   }
-  const { creator, topTraders, topCreators, suggestedFilter, posts } = props
+  const {
+    creator,
+    topTraders,
+    topCreators,
+    suggestedFilter,
+    posts,
+    memberIds,
+  } = props
 
   const router = useRouter()
 
@@ -148,9 +155,12 @@ export default function GroupPage(props: {
   }
 
   const user = useUser()
+  const groupMembers = useMemberGroupsSubscription(user)
   const privateUser = usePrivateUser()
   const isAdmin = useAdmin()
-  const memberIds = useMemberIds(group?.id ?? null) ?? props.memberIds
+  const isMember =
+    groupMembers?.some((g) => g.id === group?.id) ??
+    memberIds.includes(user?.id ?? '_')
   const [activeIndex, setActiveIndex] = useState(tabIndex)
   useEffect(() => {
     setActiveIndex(tabIndex)
@@ -165,7 +175,6 @@ export default function GroupPage(props: {
     return <Custom404 />
   }
   const isCreator = user && group && user.id === group.creatorId
-  const isMember = user ? memberIds.includes(user.id) : undefined
   const maxLeaderboardSize = 50
 
   return (
@@ -230,7 +239,7 @@ export default function GroupPage(props: {
                   aboutPost={aboutPost}
                   creator={creator}
                   user={user}
-                  memberIds={memberIds}
+                  isMember={isMember ?? false}
                 />
               ),
             },
@@ -420,9 +429,7 @@ function JoinGroupButton(props: {
 
   return (
     <div>
-      <Button onClick={follow} color="blue">
-        Follow
-      </Button>
+      <Button onClick={follow}>Follow</Button>
     </div>
   )
 }
