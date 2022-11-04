@@ -218,7 +218,7 @@ export function PinnedItems(props: {
 
   return pinned.length > 0 || isEditable ? (
     <div>
-      <Row className="items-center justify-end ">
+      <div className="absolute top-0 right-0 z-20 ">
         {isEditable && (
           <Button
             className="my-2"
@@ -238,7 +238,7 @@ export function PinnedItems(props: {
             )}
           </Button>
         )}
-      </Row>
+      </div>
       <div>
         <Masonry
           breakpointCols={{ default: 2, 768: 1 }}

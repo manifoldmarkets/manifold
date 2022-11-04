@@ -544,7 +544,7 @@ function FeaturedSection(props: {
   }
 
   return (
-    <Col>
+    <Col className="relative">
       <HomeSectionHeader label={'Featured'} icon={'⭐'} />
       <PinnedItems
         posts={posts}
