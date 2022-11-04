@@ -10,11 +10,13 @@ import { batchedWaitAll } from 'common/lib/util/promise'
 import { FieldValue } from 'firebase-admin/lib/firestore'
 
 const firestore = admin.firestore()
-// remember to run export FIRESTORE_EMULATOR_HOST="localhost:8080" in the terminal before running this script
+// Run export FIRESTORE_EMULATOR_HOST="localhost:8080" in the terminal before running this script
 async function main() {
   const host = process.env.FIRESTORE_EMULATOR_HOST
   if (host !== 'localhost:8080')
-    return console.log('This script must be run on the local emulator')
+    return console.log(
+      'This script must be run on the local emulator, run export FIRESTORE_EMULATOR_HOST="localhost:8080" in the terminal before running this script'
+    )
   if (isProd())
     return console.log('This script is not allowed to run in production')
 
@@ -47,7 +49,6 @@ async function deleteTopLevelCollections() {
 //  but in the end I used an old, smaller firestore export and using this wasn't necessary.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function deleteUsersSubcollections() {
-  // delete users' subcollections with balances below 1000 than subcollections
   const deleteSubCollections = [
     'contract-metrics',
     'notifications',
@@ -56,15 +57,12 @@ async function deleteUsersSubcollections() {
   ]
   const userSnap = await firestore.collection('users').get()
   const users = userSnap.docs.map((d) => d.data() as User)
-  // delete users with creatorColumeCached == 0
-  const usersToDelete2 = users.filter(
-    (u) => u.balance > 999 && u.balance < 1001
+  const usersToDelete = users.filter(
+    (u) =>
+      u.balance === 1000 ||
+      u.balance < 300 ||
+      u.creatorVolumeCached.allTime === 0
   )
-  const usersToDelete3 = users.filter((u) => u.balance < 300)
-  const usersToDelete = users
-    .filter((u) => u.creatorVolumeCached.allTime === 0)
-    .concat(usersToDelete2)
-    .concat(usersToDelete3)
   const userIds = usersToDelete.map((d) => d.id)
   console.log('deleting users subcollections:', userIds.length)
   await Promise.all(
@@ -75,7 +73,6 @@ async function deleteUsersSubcollections() {
           return deleteCollection(firestore, `users/${id}/${collection}`, 500)
         })
       )
-      // await firestore.collection('users').doc(id).delete()
     })
   )
 }
@@ -83,7 +80,7 @@ async function deleteUsersSubcollections() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function deleteOldContracts() {
   // delete contracts made older than 1 month
-  const thresholdPeriod = Date.now() - 1000 * 60 * 60 * 24 * 30 * 0.5
+  const thresholdPeriod = Date.now() - 1000 * 60 * 60 * 24 * 30
   const contractSnap = await firestore
     .collection('contracts')
     .where('createdTime', '<', thresholdPeriod)
@@ -111,7 +108,7 @@ async function deleteOldContracts() {
             )
           })
         )
-        // await firestore.collection('contracts').doc(id).delete()
+        await firestore.collection('contracts').doc(id).delete()
         console.log('deleted contract:', id)
       } catch (e) {
         console.log('error deleting contract:', id, e)
@@ -127,8 +124,7 @@ async function cleanPrivateUsers() {
   await Promise.all(
     users.map(async (user) => {
       if (!user || !user.id) return
-      let { username } = user
-      if (!user.username) username = user.id
+      const { username } = user
       const privateUser: PrivateUser = {
         id: user.id,
         username,
