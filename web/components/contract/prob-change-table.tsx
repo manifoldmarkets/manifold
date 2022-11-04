@@ -133,14 +133,11 @@ export function ProbOrNumericChange(props: {
   // Some contract without a probChanges.day was crashing the site, so I added the conditional
   const change = contract.probChanges?.day ?? 0
 
-  const color = change >= 0 ? 'text-teal-600' : 'text-scarlet-600'
   if (Math.abs(change * 100) > 5) {
     return (
       <div
         className={clsx(
-          'mr-1 flex  items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold ',
-          // change >= 0 ? 'bg-teal-100' : 'bg-scarlet-100',
-          // color
+          'mr-1 flex  items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold '
         )}
       >
         {(change > 0 ? '+' : '') + (change * 100).toFixed(0) + '%'}
