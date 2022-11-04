@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, isEqual, mapValues, sortBy } from 'lodash'
 
 import { getValues, invokeFunction, log, revalidateStaticProps } from './utils'
 import { Bet } from '../../common/bet'
@@ -151,8 +151,17 @@ export async function updateUserMetrics() {
         return [period, periodRanksByUserId[i][user.id]]
       })
     )
-    const userDoc = firestore.collection('users').doc(user.id)
-    writer.update(userDoc, { profitRankCached, ...fields })
+    const update = { profitRankCached, ...fields }
+    const currValues = mapValues(
+      update,
+      (_, key: keyof typeof update) => user[key]
+    )
+
+    // Skip writing if nothing changed.
+    if (!isEqual(currValues, update)) {
+      const userDoc = firestore.collection('users').doc(user.id)
+      writer.update(userDoc, update)
+    }
   }
 
   log('Committing writes...')
