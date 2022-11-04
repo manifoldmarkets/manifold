@@ -555,6 +555,15 @@ Cancel the limit order of a bet with the specified id. If the bet was unfilled, 
 
 Creates a new market on behalf of the authorized user.
 
+Note: this costs mana. If you have insufficient mana, this call will return an error. The cost to create each type of market is:
+
+| Market Type     | Creation Cost |
+|-----------------|---------------|
+| BINARY          | 50            |
+| PSEUDO_NUMERIC  | 250           |
+| FREE_RESPONSE   | 100           |
+| MULTIPLE_CHOICE | 100           |
+
 Parameters:
 
 - `outcomeType`: Required. One of `BINARY`, `FREE_RESPONSE`, `MULTIPLE_CHOICE`, or `PSEUDO_NUMERIC`.
