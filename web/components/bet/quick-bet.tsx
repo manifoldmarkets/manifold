@@ -523,8 +523,7 @@ export function getBgColor(contract: Contract) {
 
   if (resolution) {
     return (
-      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ??
-      'bg-greyscale-1'
+      OUTCOME_TO_COLOR_BACKGROUND[resolution as resolution] ?? 'bg-greyscale-1'
     )
   }
 

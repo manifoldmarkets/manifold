@@ -137,7 +137,7 @@ export const ContractCard = memo(function ContractCard(props: {
           {!hasImage && (
             <div
               className={clsx(
-                'break-anywhere text-greyscale-7 pb-2 text-md font-medium',
+                'break-anywhere text-greyscale-7 text-md pb-2 font-medium',
                 questionClass
               )}
             >
@@ -482,10 +482,10 @@ function MetricsFooter(props: {
         </div>
         <div
           className={clsx(
-            'text-sm font-semibold text-greyscale-6'
-              // : profit > 0
-              // ? 'text-teal-500'
-              // : 'text-red-600'
+            'text-greyscale-6 text-sm font-semibold'
+            // : profit > 0
+            // ? 'text-teal-500'
+            // : 'text-red-600'
           )}
         >
           {profit ? formatMoney(profit) : '--'}
