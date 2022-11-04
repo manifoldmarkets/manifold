@@ -46,7 +46,6 @@ import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
-import NewContractBadge from '../new-contract-badge'
 import { ContractMetrics } from 'common/calculate-metrics'
 
 export const ContractCard = memo(function ContractCard(props: {
@@ -109,7 +108,7 @@ export const ContractCard = memo(function ContractCard(props: {
           <AvatarDetails contract={contract} noLink={noLinkAvatar} />
           <Row className="gap-1">
             {pinned && <FeaturedPill />}
-            {isNew && <NewContractBadge />}
+            {/* {isNew && <NewContractBadge />} */}
           </Row>
         </Row>
         {/* overlay question on image */}
