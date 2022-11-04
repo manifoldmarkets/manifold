@@ -104,7 +104,7 @@ rm out.tar.gz ^&^& ^
 echo Rebuilding docker image... ^&^& ^
 docker build -t bot out ^&^& ^
 echo Launching docker image... ^&^& ^
-docker run -d --env-file=out/.env --restart on-failure --network="host" --security-opt="apparmor=docker-default" bot ^&^& ^
+docker run -d --env-file=out/.env --restart on-failure --network="host" bot ^&^& ^
 echo Cleaning up... ^&^& ^
 rm -r out ^&^& ^
 docker system prune -a -f

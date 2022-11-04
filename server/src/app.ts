@@ -87,7 +87,6 @@ export default class App {
     await this.bot.connect();
     await this.manifoldFirestore.validateConnection();
     await this.manifoldFirestore.loadAllUsers();
-    // await this.manifoldFirestore.test(); //!!! REMOVE
 
     try {
       await fetch('http://localhost:5000/online');
