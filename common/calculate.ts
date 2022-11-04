@@ -81,6 +81,7 @@ export function calculateSaleAmount(
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
+  if (contract.mechanism === 'uniswap-2') return -1
   return contract.mechanism === 'cpmm-1' &&
     (contract.outcomeType === 'BINARY' ||
       contract.outcomeType === 'PSEUDO_NUMERIC')
@@ -95,6 +96,7 @@ export function calculateSaleAmount(
 }
 
 export function calculatePayoutAfterCorrectBet(contract: Contract, bet: Bet) {
+  if (contract.mechanism === 'uniswap-2') return -1
   return contract.mechanism === 'cpmm-1'
     ? bet.shares
     : calculateDpmPayoutAfterCorrectBet(contract, bet)
@@ -119,6 +121,9 @@ export function getProbabilityAfterSale(
 }
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('calculatePayout not implemented')
+
   return contract.mechanism === 'cpmm-1' &&
     (contract.outcomeType === 'BINARY' ||
       contract.outcomeType === 'PSEUDO_NUMERIC')
@@ -129,6 +134,8 @@ export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
 export function resolvedPayout(contract: Contract, bet: Bet) {
   const outcome = contract.resolution
   if (!outcome) throw new Error('Contract not resolved')
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('resolvedPayout not implemented')
 
   return contract.mechanism === 'cpmm-1' &&
     (contract.outcomeType === 'BINARY' ||

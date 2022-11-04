@@ -61,6 +61,8 @@ export const getPayouts = (
   },
   resolutionProbability?: number
 ): PayoutInfo => {
+  if (contract.mechanism === 'uniswap-2')
+    throw new Error('getPayouts not implemented')
   if (
     contract.mechanism === 'cpmm-1' &&
     (contract.outcomeType === 'BINARY' ||

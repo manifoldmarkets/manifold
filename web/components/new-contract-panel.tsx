@@ -271,6 +271,7 @@ export function NewContractPanel(props: {
                 'Multiple choice': 'MULTIPLE_CHOICE',
                 'Free response': 'FREE_RESPONSE',
                 Numeric: 'PSEUDO_NUMERIC',
+                Cert: 'CERT',
               }}
               isSubmitting={isSubmitting}
               className={'col-span-4'}

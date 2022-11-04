@@ -34,6 +34,10 @@ export function OutcomeLabel(props: {
       </span>
     )
 
+  if (outcomeType === 'CERT') {
+    return <span>TODO Cert outcome label</span>
+  }
+
   return (
     <FreeResponseOutcomeLabel
       contract={contract}

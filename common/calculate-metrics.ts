@@ -53,6 +53,7 @@ export const computeElasticity = (
   betAmount = 50
 ) => {
   const { mechanism, outcomeType } = contract
+  if (mechanism === 'uniswap-2') return -1
   return mechanism === 'cpmm-1' &&
     (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC')
     ? computeBinaryCpmmElasticity(bets, contract, betAmount)

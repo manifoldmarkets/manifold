@@ -201,6 +201,8 @@ export const ContractOverview = (props: {
       return <NumericOverview contract={contract} bets={bets} />
     case 'PSEUDO_NUMERIC':
       return <PseudoNumericOverview contract={contract} bets={bets} />
+    case 'CERT':
+      return <h1>Cert overview goes here</h1>
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return <ChoiceOverview contract={contract} bets={bets} />
