@@ -1,5 +1,5 @@
 import { debounce } from 'lodash'
-import { RefObject, useMemo, useLayoutEffect, useRef, useState } from 'react'
+import { RefObject, useMemo, useRef, useState } from 'react'
 import { useSafeLayoutEffect } from './use-safe-layout-effect'
 
 type elem_size =
