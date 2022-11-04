@@ -156,13 +156,14 @@ export const ContractCard = memo(function ContractCard(props: {
             showTime={showTime}
             hideGroupLink={hideGroupLink}
           />
-          {(outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
-            <ProbOrNumericChange
-              className="py-2 px-2"
-              contract={contract as CPMMContract}
-              user={user}
-            />
-          )}
+          {!isNew &&
+            (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+              <ProbOrNumericChange
+                className="py-2 px-2"
+                contract={contract as CPMMContract}
+                user={user}
+              />
+            )}
         </Row>
         {children}
       </Col>
