@@ -1,1 +1,0 @@
-start "DEV" "C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\sdk\putty.exe" -t -i C:\Users\Phil\.ssh\google_compute_engine.ppk Phil@35.189.110.76

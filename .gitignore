@@ -8,3 +8,5 @@ node_modules
 tsconfig.tsbuildinfo
 /scripts/build
 /scripts/legacy
+/scripts/windows/ssh-dev.bat
+/scripts/windows/ssh-prod.bat

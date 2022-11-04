@@ -19,7 +19,7 @@ export default {
   },
   output: {
     filename: 'bundle.js',
-    path: path.resolve('./dist'), //./dist    C:/Users/Phil/Desktop/dist
+    path: path.resolve('./dist'),
     clean: true,
   },
   ignoreWarnings: [
