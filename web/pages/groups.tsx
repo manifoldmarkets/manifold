@@ -204,66 +204,62 @@ export function GroupCard(props: {
         className,
         itemIds?.includes(group.id) && highlightClassName
       )}
+      onClick={(e) => {
+        if (!onGroupClick) return
+        // Let the browser handle the link click (opens in new tab).
+        if (e.ctrlKey || e.metaKey) return
+
+        e.preventDefault()
+        track('select group card'),
+          {
+            slug: group.slug,
+            postId: group.id,
+          }
+        onGroupClick(group)
+      }}
     >
-      <div>
-        {creator != null && (
-          <Avatar
-            className={'absolute top-2 right-2 z-10'}
-            username={creator?.username}
-            avatarUrl={creator?.avatarUrl}
-            noLink={false}
-            size={12}
-          />
-        )}
-      </div>
-
-      <Row className="items-center justify-between gap-2">
-        <span className="text-xl">{group.name}</span>
-        {pinned && (
-          <Row>
-            <FeaturedPill />
-          </Row>
-        )}
-      </Row>
-      <Row>{totalContracts} questions</Row>
-      <Row className="text-sm text-gray-500">
-        <GroupMembersList group={group} />
-      </Row>
-      <Row>
-        <div className="text-sm text-gray-500">{group.about}</div>
-      </Row>
-      {isMember != null && user != null && (
-        <div className={'mt-2 h-full items-start justify-end'}>
-          <JoinOrLeaveGroupButton
-            group={group}
-            className={'z-10 w-24'}
-            user={user}
-            isMember={isMember}
-          />
+      <Link
+        className={onGroupClick ? 'pointer-events-none' : ''}
+        href={groupPath(group.slug)}
+      >
+        <div>
+          {creator != null && (
+            <Avatar
+              className={'absolute top-2 right-2 z-10'}
+              username={creator?.username}
+              avatarUrl={creator?.avatarUrl}
+              noLink={false}
+              size={12}
+            />
+          )}
         </div>
-      )}
-      {onGroupClick ? (
-        <a
-          className="absolute top-0 left-0 right-0 bottom-0"
-          onClick={(e) => {
-            // Let the browser handle the link click (opens in new tab).
-            if (e.ctrlKey || e.metaKey) return
 
-            e.preventDefault()
-            track('select group card'),
-              {
-                slug: group.slug,
-                postId: group.id,
-              }
-            onGroupClick(group)
-          }}
-        />
-      ) : (
-        <Link
-          href={groupPath(group.slug)}
-          className="absolute left-0 right-0 top-0 bottom-0 z-0"
-        />
-      )}
+        <Row className="items-center justify-between gap-2">
+          <span className="text-xl">{group.name}</span>
+          {pinned && (
+            <Row>
+              <FeaturedPill />
+            </Row>
+          )}
+        </Row>
+        <Row>{totalContracts} questions</Row>
+        <Row className="text-sm text-gray-500">
+          <GroupMembersList group={group} />
+        </Row>
+        <Row>
+          <div className="text-sm text-gray-500">{group.about}</div>
+        </Row>
+        {isMember != null && user != null && (
+          <div className={'z-10 mt-2 h-full items-start justify-end'}>
+            <JoinOrLeaveGroupButton
+              group={group}
+              className={'z-10 w-24'}
+              user={user}
+              isMember={isMember}
+            />
+          </div>
+        )}
+      </Link>
     </Card>
   )
 }
