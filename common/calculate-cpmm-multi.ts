@@ -103,21 +103,16 @@ export function test() {
     C: 100,
   }
 
-  console.log('pool', pool, 'k', getK(pool))
-  console.log('prob before', getProb(pool, 'C'))
+  console.log('pool', pool, 'k', getK(pool), 'probs', poolToProbs(pool))
 
   const { newPool, shares } = buy(pool, 'C', 10)
-  console.log('shares', shares, pool, 'newPool', newPool, 'newK', getK(newPool))
+  console.log('shares', shares, 'newPool', newPool, 'newK', getK(newPool))
 
   const { newPool: poolAfterSale, saleAmount } = sell(newPool, 'C', shares)
   console.log(
-    'pool after sale',
-    poolAfterSale,
     'sale amount',
     saleAmount,
-    'k',
-    getK(poolAfterSale),
-    'probs',
+    poolAfterSale,
     poolToProbs(poolAfterSale)
   )
 
@@ -127,44 +122,10 @@ export function test() {
     1000000000
   )
   console.log(
-    'poolAfterShortSell',
-    poolAfterShortSell,
-    'gained shares',
+    'after short sell',
     gainedShares,
-    'probs',
-    poolToProbs(poolAfterShortSell),
-    'k',
-    getK(poolAfterShortSell)
-  )
-
-  const { newPool: poolAfterBuy, shares: sharesBought } = buy(
     poolAfterShortSell,
-    'A',
-    10
+    poolToProbs(poolAfterShortSell)
   )
-  console.log(
-    'poolAfterBuy',
-    poolAfterBuy,
-    'gained shares',
-    sharesBought,
-    'probs',
-    poolToProbs(poolAfterBuy),
-    'k',
-    getK(poolAfterBuy)
-  )
-  const { newPool: poolAfterBuy2, shares: sharesBought2 } = buy(
-    poolAfterShortSell,
-    'C',
-    10
-  )
-  console.log(
-    'poolAfterBuy',
-    poolAfterBuy2,
-    'gained shares',
-    sharesBought2,
-    'probs',
-    poolToProbs(poolAfterBuy2),
-    'k',
-    getK(poolAfterBuy2)
-  )
+  console.log('k', getK(poolAfterShortSell))
 }

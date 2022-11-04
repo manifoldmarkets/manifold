@@ -4,7 +4,6 @@ import { JSONContent } from '@tiptap/core'
 import { GroupLink } from 'common/group'
 
 export type AnyMechanism = DPM | CPMM
-// | CPMM_MULTI
 export type AnyOutcomeType =
   | Binary
   | MultipleChoice
@@ -19,7 +18,6 @@ export type AnyContractType =
   | (DPM & FreeResponse)
   | (DPM & Numeric)
   | (DPM & MultipleChoice)
-// | (CPMM_MULTI & FreeResponse)
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -103,12 +101,6 @@ export type CPMM = {
     week: number
     month: number
   }
-}
-
-export type CPMM_MULTI = {
-  mechanism: 'cpmm-multi-1'
-  pool: { [outcome: string]: number }
-  subsidyPool: number
 }
 
 export type Binary = {
