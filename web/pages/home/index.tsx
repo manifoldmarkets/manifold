@@ -87,7 +87,11 @@ export async function getStaticProps() {
 export default function Home(props: { globalConfig: GlobalConfig }) {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser)
+  const groups = useMemberGroupsSubscription(user)
+  const shouldFilterDestiny = !groups?.find((g) => g.slug === 'destinygg')
+  const userBlockFacetFilters = getUsersBlockFacetFilters(privateUser).concat(
+    shouldFilterDestiny ? ['groupSlugs:-destinygg'] : []
+  )
   const isAdmin = useAdmin()
   const globalConfig = useGlobalConfig() ?? props.globalConfig
   useRedirectIfSignedOut()
@@ -116,7 +120,6 @@ export default function Home(props: { globalConfig: GlobalConfig }) {
     user?.id ?? '_'
   )
 
-  const groups = useMemberGroupsSubscription(user)
   const trendingGroups = useTrendingGroups()
   const groupContracts = useContractsByDailyScoreGroups(
     groups?.map((g) => g.slug),
