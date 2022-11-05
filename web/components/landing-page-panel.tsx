@@ -15,9 +15,46 @@ import SquiggleVerticalIcon from 'web/lib/icons/squiggle_vertical'
 import clsx from 'clsx'
 import { Button } from './buttons/button'
 import { ManifoldLogo } from './nav/manifold-logo'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import SquiggleHorizontalIcon from 'web/lib/icons/squiggle_horizontal'
 import TypewriterComponent from 'typewriter-effect'
+import EquilateralLeftTriangle from 'web/lib/icons/equilateral-left-triangle'
+import EquilateralRightTriangle from 'web/lib/icons/equilateral-right-triangle'
+import CountUp from 'react-countup'
+import Particles from 'react-tsparticles'
+import { useCallback } from 'preact/hooks'
+import { Container, Engine } from 'tsparticles-engine'
+import { loadSlim } from 'tsparticles-slim'
+
+export type PageNumber = 0 | 1 | 2
+
+export function getNextPageNumber(pageNumber: PageNumber): PageNumber {
+  switch (pageNumber) {
+    case 0:
+      return 1
+    case 1:
+      return 2
+    case 2:
+      return 0
+  }
+}
+
+export function PaginationCircle(props: {
+  currentPageNumber: PageNumber
+  pageNumber: PageNumber
+  onClick: () => void
+}) {
+  const { currentPageNumber, pageNumber, onClick } = props
+  return (
+    <div
+      onClick={() => onClick()}
+      className={clsx(
+        'h-1.5 w-1.5 rounded-full',
+        currentPageNumber === pageNumber ? 'bg-fuchsia-400' : 'bg-indigo-400'
+      )}
+    />
+  )
+}
 
 export function LandingPagePanel(props: { hotContracts: Contract[] }) {
   const { hotContracts } = props
@@ -28,7 +65,22 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
   const mobile_height = 'h-96'
 
   const [isButtonHover, setIsButtonHovered] = useState(false)
-  const [pageNumber, setPageNumber] = useState<0 | 1 | 2>(0)
+  const [pageNumber, setPageNumber] = useState<PageNumber>(1)
+  // const [timeoutEnabled, setTimeoutEnabled] = useState(true)
+  const [currTimeoutId, setTimeoutId] = useState<
+    NodeJS.Timeout | undefined | null
+  >(null)
+
+  // useEffect(() => {
+  //   if (currTimeoutId) {
+  //     clearTimeout(currTimeoutId)
+  //   }
+  //   const newTimeoutId = setTimeout(
+  //     () => setPageNumber(getNextPageNumber(pageNumber)),
+  //     5000
+  //   )
+  //   setTimeoutId(newTimeoutId)
+  // }, [pageNumber])
 
   return (
     <>
@@ -39,18 +91,50 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
         )}
       >
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
-          {/* <SignedOutHomepage0 onTimeout={() => setPageNumber(1)} /> */}
-          <SignedOutHomepage1 onTimeout={() => setPageNumber(2)} />
+          {pageNumber === 0 && <SignedOutHomepage0 />}
+          {pageNumber === 1 && <SignedOutHomepage1 isMobile={isMobile} />}
+          {pageNumber === 2 && <></>}
           {!isMobile && (
             <div className="absolute right-0 bottom-0 z-20 h-full">
               <SquiggleVerticalIcon className={clsx('text-indigo-300')} />
             </div>
           )}
           {isMobile && (
-            <div className="absolute right-0 -bottom-0.5 z-20 w-full">
+            <div className="absolute right-0 -bottom-0.5 z-20 w-full items-center">
               <SquiggleHorizontalIcon className={clsx('text-indigo-300')} />
             </div>
           )}
+          <div
+            className={clsx(
+              'absolute',
+              isMobile ? 'right-0 h-full w-8' : 'bottom-0 h-8 w-full'
+            )}
+          >
+            <div
+              className={clsx(
+                'gap-2',
+                isMobile ? 'mt-40 ml-3 flex flex-col' : 'ml-40 flex flex-row'
+              )}
+            >
+              <PaginationCircle
+                currentPageNumber={pageNumber}
+                pageNumber={0}
+                onClick={() => {
+                  setPageNumber(0)
+                }}
+              />
+              <PaginationCircle
+                currentPageNumber={pageNumber}
+                pageNumber={1}
+                onClick={() => setPageNumber(1)}
+              />
+              <PaginationCircle
+                currentPageNumber={pageNumber}
+                pageNumber={2}
+                onClick={() => setPageNumber(2)}
+              />
+            </div>
+          </div>
         </div>
         <div
           className={clsx(
@@ -130,9 +214,7 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
   )
 }
 
-export function SignedOutHomepage0(props: { onTimeout: () => void }) {
-  const { onTimeout } = props
-  setTimeout(() => onTimeout, 5000)
+export function SignedOutHomepage0(props: {}) {
   const text = 'Ask any question'
   return (
     <>
@@ -142,7 +224,7 @@ export function SignedOutHomepage0(props: { onTimeout: () => void }) {
       <div className="animate-slide-in-1 absolute top-[33px] left-[33px] text-xl text-indigo-300 sm:top-[17px]">
         {text}
       </div>
-      <Col className="animate-slide-in-4 absolute top-[80px] left-[32px] z-10 h-32 w-72 gap-2 rounded-md bg-white px-4 py-2 drop-shadow sm:top-[64px]">
+      <Col className="animate-slide-in-4 absolute top-[70px] left-[32px] z-10 h-32 w-72 gap-2 rounded-md bg-white px-4 py-2 drop-shadow sm:top-[58px]">
         <Row className="items-center gap-2">
           <div className="h-5 w-5 rounded-full bg-red-300" />
           <div className="text-greyscale-4">You</div>
@@ -157,15 +239,17 @@ export function SignedOutHomepage0(props: { onTimeout: () => void }) {
           }}
         />
       </Col>
-      <div className="animate-slide-in-3 absolute top-[88px] left-[40px] h-32 w-72 rounded-md bg-teal-200 sm:top-[72px]" />
+      <div className="animate-slide-in-3 absolute top-[88px] left-[40px] h-32 w-72 rounded-md bg-teal-200 sm:top-[65px]" />
     </>
   )
 }
 
-export function SignedOutHomepage1(props: { onTimeout: () => void }) {
-  const { onTimeout } = props
-  setTimeout(() => onTimeout, 5000)
+export function SignedOutHomepage1(props: { isMobile: boolean }) {
+  const startPredictMs = 2200
+  const { isMobile } = props
   const text = 'Predict with play money'
+  const [shouldPercentChange, setShouldPercentChange] = useState(false)
+  setTimeout(() => setShouldPercentChange(true), startPredictMs)
   return (
     <>
       <div className="animate-slide-in-2 absolute top-[32px] left-[32px] z-10 text-xl text-white sm:top-[16px]">
@@ -174,17 +258,154 @@ export function SignedOutHomepage1(props: { onTimeout: () => void }) {
       <div className="animate-slide-in-1 absolute top-[33px] left-[33px] text-xl text-indigo-300 sm:top-[17px]">
         {text}
       </div>
-      <Col className="animate-slide-in-4 absolute top-[80px] left-[32px] z-10 h-36 w-[350px] gap-1 rounded-md bg-white px-4 py-2 drop-shadow sm:top-[64px]">
+      <Col className="animate-slide-in-4 absolute top-[70px] left-[32px] z-10 h-32 w-72 gap-1 rounded-md bg-white px-4 py-2 drop-shadow sm:top-[58px]">
         <Row className="items-center gap-1">
           <UserCircleIcon className="h-5 w-5 text-blue-300" />
           <div className="text-greyscale-4 text-sm">Your friend</div>
         </Row>
         <div>Will Stacy ask me out tomorrow?</div>
-        <div className="bg-greyscale-1.5 z-10 mt-4 h-10 w-72 overflow-hidden rounded-md drop-shadow">
-          <div className="absolute left-0 h-full w-48 bg-indigo-200" />
-        </div>
-        <div className="absolute top-[68px] left-6 -z-10 mt-4 h-10 w-72 overflow-hidden rounded-md bg-teal-200" />
       </Col>
+      <div
+        className={clsx(
+          'animate-slide-in-4 bg-greyscale-1.5 absolute left-[48px] z-20 mt-2 h-10 w-60 rounded-md drop-shadow',
+          isMobile ? 'top-[130px]' : 'top-[114px]'
+        )}
+      >
+        <div
+          className={clsx(
+            'h-full rounded-l-md bg-indigo-200 transition-all duration-1000 ease-out',
+            shouldPercentChange ? 'w-[120px]' : 'w-48'
+          )}
+        />
+        <EquilateralLeftTriangle
+          className={clsx(
+            'animate-press-3x absolute left-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
+          )}
+        />
+        <EquilateralLeftTriangle
+          className={clsx(
+            'text-greyscale-5 absolute left-[11px] top-[11px] z-0 h-6 w-6'
+          )}
+        />
+        <div className="absolute top-[6px] left-[100px] z-30 text-xl font-semibold">
+          {shouldPercentChange && (
+            <CountUp start={75} end={50} duration={0.8} suffix="%" />
+          )}
+          {!shouldPercentChange && <div>75%</div>}
+        </div>
+        <EquilateralRightTriangle
+          className={clsx(
+            'absolute right-[8px] top-[7px] z-10 h-6 w-6 text-indigo-700'
+          )}
+        />
+        <EquilateralRightTriangle
+          className={clsx(
+            'text-greyscale-5 absolute right-[7px] top-[11px] z-0 h-6 w-6'
+          )}
+        />
+      </div>
+      <div
+        className={clsx(
+          'animate-slide-in-3 absolute left-[56px] z-10 mt-2 h-10 w-60 rounded-md bg-teal-200',
+          isMobile ? 'top-[138px]' : 'top-[122px]'
+        )}
+      />
+      <SpendManaParticles />
     </>
+  )
+}
+
+export function SpendManaParticles() {
+  const particlesInit = useCallback(async (engine: Engine) => {
+    // you can initialize the tsParticles instance (engine) here, adding custom shapes or presets
+    // this loads the tsparticles package bundle, it's the easiest method for getting everything ready
+    // starting from v2 you can add only the features you need reducing the bundle size
+    await loadSlim(engine)
+  }, [])
+
+  const particlesLoaded = useCallback(
+    async (container: Container | undefined) => {
+      await console.log(container)
+    },
+    []
+  )
+  return (
+    <Particles
+      id="tsparticles"
+      init={particlesInit}
+      loaded={particlesLoaded}
+      options={{
+        background: {
+          color: {
+            value: '#0d47a1',
+          },
+        },
+        fpsLimit: 120,
+        interactivity: {
+          events: {
+            onClick: {
+              enable: true,
+              mode: 'push',
+            },
+            onHover: {
+              enable: true,
+              mode: 'repulse',
+            },
+            resize: true,
+          },
+          modes: {
+            push: {
+              quantity: 4,
+            },
+            repulse: {
+              distance: 200,
+              duration: 0.4,
+            },
+          },
+        },
+        particles: {
+          color: {
+            value: '#ffffff',
+          },
+          links: {
+            color: '#ffffff',
+            distance: 150,
+            enable: true,
+            opacity: 0.5,
+            width: 1,
+          },
+          collisions: {
+            enable: true,
+          },
+          move: {
+            direction: 'none',
+            enable: true,
+            outModes: {
+              default: 'bounce',
+            },
+            random: false,
+            speed: 6,
+            straight: false,
+          },
+          number: {
+            density: {
+              enable: true,
+              area: 800,
+            },
+            value: 80,
+          },
+          opacity: {
+            value: 0.5,
+          },
+          shape: {
+            type: 'circle',
+          },
+          size: {
+            value: { min: 1, max: 5 },
+          },
+        },
+        detectRetina: true,
+      }}
+    />
   )
 }
