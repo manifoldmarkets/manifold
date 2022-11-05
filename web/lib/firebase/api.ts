@@ -78,6 +78,10 @@ export function sellBet(params: any) {
   return call(getFunctionUrl('sellbet'), 'POST', params)
 }
 
+export function logSwipe(params: any) {
+  return call(getFunctionUrl('logswipe'), 'POST', params)
+}
+
 export function claimManalink(params: any) {
   return call(getFunctionUrl('claimmanalink'), 'POST', params)
 }

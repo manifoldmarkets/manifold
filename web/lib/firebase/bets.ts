@@ -200,3 +200,8 @@ export function listenForLiveBets(
   )
   return listenForValues<Bet>(betsQuery, setBets)
 }
+
+export async function getSwipes(userId: string) {
+  const swipeCollection = collection(db, `/private-users/${userId}/seenMarkets`)
+  return getValues(swipeCollection)
+}
