@@ -5,6 +5,10 @@ import { checkoutURL } from 'web/lib/service/stripe'
 import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { FundsSelector } from './bet/yes-no-selector'
+import { getNativePlatform } from 'web/lib/native/is-native'
+import { Title } from './widgets/title'
+import { OtherWaysToGetMana } from './native/add-funds-ios'
+import { ControlledTabs, Tabs, UncontrolledTabs } from './layout/tabs'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -12,19 +16,53 @@ export function AddFundsModal(props: {
 }) {
   const { open, setOpen } = props
 
+  const { isNative, platform } = getNativePlatform() ?? {}
+  const hidePayment = isNative && platform === 'ios'
+
+  return (
+    <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
+      {hidePayment ? (
+        <>
+          <Title text="Get Mana" />
+          <OtherWaysToGetMana includeBuyNote />
+        </>
+      ) : (
+        <Tabs
+          currentPageForAnalytics="buy modal"
+          tabs={[
+            {
+              title: 'Buy Mana',
+              content: <BuyManaTab />,
+            },
+            {
+              title: "I'm Broke",
+              content: (
+                <>
+                  <div className="mt-6 mb-4">
+                    Here are some other ways to get mana:
+                  </div>
+                  <OtherWaysToGetMana />
+                </>
+              ),
+            },
+          ]}
+        />
+      )}
+    </Modal>
+  )
+}
+
+function BuyManaTab() {
   const user = useUser()
 
   const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
     2500
   )
-
   return (
-    <Modal open={open} setOpen={setOpen} className="rounded-md bg-white p-8">
-      <div className="mb-6 text-xl text-indigo-700">Get Mana</div>
-
-      <div className="mb-6 text-gray-700">
-        Buy mana (M$) to trade in your favorite markets. <br /> (Not redeemable
-        for cash.)
+    <>
+      <div className="mt-6 mb-4">
+        Buy mana (M$) to trade in your favorite markets.
+        <div className="italic">Not redeemable for cash.</div>
       </div>
 
       <div className="mb-2 text-sm text-gray-500">Amount</div>
@@ -35,8 +73,8 @@ export function AddFundsModal(props: {
         <div className="text-xl">{manaToUSD(amountSelected)}</div>
       </div>
 
-      <div className="flex">
-        <Button color="gray-white" onClick={() => setOpen(false)}>
+      <div className="mt-2 flex gap-2">
+        <Button color="gray" onClick={() => setOpen(false)}>
           Back
         </Button>
 
@@ -53,6 +91,6 @@ export function AddFundsModal(props: {
           </Button>
         </form>
       </div>
-    </Modal>
+    </>
   )
 }
