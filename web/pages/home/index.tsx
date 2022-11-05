@@ -482,7 +482,7 @@ function LatestPostsSection(props: { latestPosts: Post[] }) {
   )
 }
 
-function FeaturedSection(props: {
+export function FeaturedSection(props: {
   globalConfig: GlobalConfig
   pinned: JSX.Element[]
   isAdmin: boolean

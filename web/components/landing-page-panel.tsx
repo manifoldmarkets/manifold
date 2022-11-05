@@ -50,15 +50,13 @@ export function PaginationCircle(props: {
       onClick={() => onClick()}
       className={clsx(
         'h-1.5 w-1.5 rounded-full',
-        currentPageNumber === pageNumber ? 'bg-fuchsia-400' : 'bg-indigo-400'
+        currentPageNumber === pageNumber ? 'bg-white' : 'bg-indigo-400'
       )}
     />
   )
 }
 
-export function LandingPagePanel(props: { hotContracts: Contract[] }) {
-  const { hotContracts } = props
-
+export function LandingPagePanel() {
   useTracking('view landing page')
   const isMobile = useIsMobile()
   const desktop_height = 'h-60' //240px
@@ -71,16 +69,16 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
     NodeJS.Timeout | undefined | null
   >(null)
 
-  // useEffect(() => {
-  //   if (currTimeoutId) {
-  //     clearTimeout(currTimeoutId)
-  //   }
-  //   const newTimeoutId = setTimeout(
-  //     () => setPageNumber(getNextPageNumber(pageNumber)),
-  //     5000
-  //   )
-  //   setTimeoutId(newTimeoutId)
-  // }, [pageNumber])
+  useEffect(() => {
+    if (currTimeoutId) {
+      clearTimeout(currTimeoutId)
+    }
+    const newTimeoutId = setTimeout(
+      () => setPageNumber(getNextPageNumber(pageNumber)),
+      5500
+    )
+    setTimeoutId(newTimeoutId)
+  }, [pageNumber])
 
   return (
     <>
@@ -91,17 +89,17 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
         )}
       >
         <div className="relative h-4/5 w-full rounded-t-xl bg-indigo-700 sm:h-full sm:w-3/5 sm:rounded-l-xl sm:rounded-r-none">
-          {pageNumber === 0 && <SignedOutHomepage0 />}
-          {pageNumber === 1 && <SignedOutHomepage1 isMobile={isMobile} />}
-          {pageNumber === 2 && <></>}
+          {pageNumber === 0 && <LandingPage0 isMobile={isMobile} />}
+          {pageNumber === 1 && <LandingPage1 isMobile={isMobile} />}
+          {pageNumber === 2 && <LandingPage2 isMobile={isMobile} />}
           {!isMobile && (
             <div className="absolute right-0 bottom-0 z-20 h-full">
-              <SquiggleVerticalIcon className={clsx('text-indigo-300')} />
+              <SquiggleVerticalIcon className={clsx('text-indigo-200')} />
             </div>
           )}
           {isMobile && (
             <div className="absolute right-0 -bottom-0.5 z-20 w-full items-center">
-              <SquiggleHorizontalIcon className={clsx('text-indigo-300')} />
+              <SquiggleHorizontalIcon className={clsx('text-indigo-200')} />
             </div>
           )}
           <div
@@ -138,37 +136,11 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
         </div>
         <div
           className={clsx(
-            'z-30 w-full bg-indigo-300 sm:w-2/5',
+            'z-30 w-full bg-indigo-200 sm:w-2/5',
             isMobile ? 'h-1/5 rounded-b-xl' : `${desktop_height} rounded-r-xl`
           )}
         >
-          <Row className="absolute right-4 top-2 items-center gap-2">
-            {isMobile && (
-              <img
-                className="transition-all group-hover:rotate-12"
-                src={'/logo-white.svg'}
-                width={24}
-                height={24}
-                alt=""
-              />
-            )}
-            {!isMobile && (
-              <img
-                className="transition-all group-hover:rotate-12"
-                src={'/logo.svg'}
-                width={24}
-                height={24}
-                alt=""
-              />
-            )}
-            <div
-              className={clsx(
-                'font-major-mono sm:text-greyscale-7 text-sm lowercase text-white sm:whitespace-nowrap'
-              )}
-            >
-              Manifold Markets
-            </div>
-          </Row>
+          <LandingPageManifoldMarketsLogo isMobile={isMobile} />
           <div
             className="absolute bottom-16 right-8 z-30 md:right-12"
             onMouseEnter={() => setIsButtonHovered(true)}
@@ -209,24 +181,45 @@ export function LandingPagePanel(props: { hotContracts: Contract[] }) {
           </div>
         </div>
       </div>
-      <ContractsGrid contracts={hotContracts?.slice(0, 10) || []} />
     </>
   )
 }
 
-export function SignedOutHomepage0(props: {}) {
+export function LandingPage0(props: { isMobile: boolean }) {
+  const { isMobile } = props
   const text = 'Ask any question'
   return (
     <>
-      <div className="animate-slide-in-2 absolute top-[32px] left-[32px] z-10 text-xl text-white sm:top-[16px]">
+      <div
+        className={clsx(
+          'sm: absolute z-10 text-xl text-white',
+          isMobile
+            ? 'animate-slide-up-1 left-[20px] top-[32px]'
+            : 'animate-slide-in-2 left-[32px] top-[16px]'
+        )}
+      >
         {text}
       </div>
-      <div className="animate-slide-in-1 absolute top-[33px] left-[33px] text-xl text-indigo-300 sm:top-[17px]">
+      <div
+        className={clsx(
+          'sm: absolute text-xl text-indigo-300',
+          isMobile
+            ? 'animate-slide-up-2 left-[21px] top-[33px]'
+            : 'animate-slide-in-1 left-[33px] top-[17px]'
+        )}
+      >
         {text}
       </div>
-      <Col className="animate-slide-in-4 absolute top-[70px] left-[32px] z-10 h-32 w-72 gap-2 rounded-md bg-white px-4 py-2 drop-shadow sm:top-[58px]">
+      <Col
+        className={clsx(
+          'absolute z-10 h-32 w-72 gap-2 rounded-md bg-white px-4 py-2 drop-shadow',
+          isMobile
+            ? 'animate-slide-up-3 top-[70px] left-[20px]'
+            : 'animate-slide-in-4 top-[58px] left-[32px]'
+        )}
+      >
         <Row className="items-center gap-2">
-          <div className="h-5 w-5 rounded-full bg-red-300" />
+          <UserCircleIcon className="h-5 w-5 text-red-300" />
           <div className="text-greyscale-4">You</div>
         </Row>
         <TypewriterComponent
@@ -239,26 +232,87 @@ export function SignedOutHomepage0(props: {}) {
           }}
         />
       </Col>
-      <div className="animate-slide-in-3 absolute top-[88px] left-[40px] h-32 w-72 rounded-md bg-teal-200 sm:top-[65px]" />
+      <div
+        className={clsx(
+          'absolute h-32 w-72 rounded-md bg-teal-200',
+          isMobile
+            ? 'animate-slide-up-4 left-[28px] top-[80px]'
+            : 'animate-slide-in-3 left-[40px] top-[65px]'
+        )}
+      />
     </>
   )
 }
 
-export function SignedOutHomepage1(props: { isMobile: boolean }) {
-  const startPredictMs = 2200
+export function LandingPageManifoldMarketsLogo(props: { isMobile: boolean }) {
   const { isMobile } = props
+  return (
+    <Row className="absolute right-4 top-2 items-center gap-2">
+      {isMobile && (
+        <img
+          className="transition-all group-hover:rotate-12"
+          src={'/logo-white.svg'}
+          width={24}
+          height={24}
+          alt=""
+        />
+      )}
+      {!isMobile && (
+        <img
+          className="transition-all group-hover:rotate-12"
+          src={'/logo.svg'}
+          width={24}
+          height={24}
+          alt=""
+        />
+      )}
+      <div
+        className={clsx(
+          'font-major-mono sm:text-greyscale-7 text-sm lowercase text-white sm:whitespace-nowrap'
+        )}
+      >
+        Manifold Markets
+      </div>
+    </Row>
+  )
+}
+
+export function LandingPage1(props: { isMobile: boolean }) {
+  const { isMobile } = props
+  const startPredictMs = 2200
   const text = 'Predict with play money'
   const [shouldPercentChange, setShouldPercentChange] = useState(false)
   setTimeout(() => setShouldPercentChange(true), startPredictMs)
   return (
     <>
-      <div className="animate-slide-in-2 absolute top-[32px] left-[32px] z-10 text-xl text-white sm:top-[16px]">
+      <div
+        className={clsx(
+          'absolute z-10 text-xl text-white',
+          isMobile
+            ? 'animate-slide-up-1 left-[20px] top-[32px]'
+            : 'animate-slide-in-2 left-[32px] top-[16px]'
+        )}
+      >
         {text}
       </div>
-      <div className="animate-slide-in-1 absolute top-[33px] left-[33px] text-xl text-indigo-300 sm:top-[17px]">
+      <div
+        className={clsx(
+          'absolute text-xl text-indigo-300',
+          isMobile
+            ? 'animate-slide-up-2 left-[21px] top-[33px]'
+            : 'animate-slide-in-1 left-[33px] top-[17px] '
+        )}
+      >
         {text}
       </div>
-      <Col className="animate-slide-in-4 absolute top-[70px] left-[32px] z-10 h-32 w-72 gap-1 rounded-md bg-white px-4 py-2 drop-shadow sm:top-[58px]">
+      <Col
+        className={clsx(
+          'absolute z-10 h-32 w-72 gap-1 rounded-md bg-white px-4 py-2 drop-shadow',
+          isMobile
+            ? 'animate-slide-up-3 left-[20px] top-[70px]'
+            : 'animate-slide-in-4 left-[32px] top-[58px]'
+        )}
+      >
         <Row className="items-center gap-1">
           <UserCircleIcon className="h-5 w-5 text-blue-300" />
           <div className="text-greyscale-4 text-sm">Your friend</div>
@@ -267,8 +321,10 @@ export function SignedOutHomepage1(props: { isMobile: boolean }) {
       </Col>
       <div
         className={clsx(
-          'animate-slide-in-4 bg-greyscale-1.5 absolute left-[48px] z-20 mt-2 h-10 w-60 rounded-md drop-shadow',
-          isMobile ? 'top-[130px]' : 'top-[114px]'
+          'bg-greyscale-1.5 absolute z-20 mt-2 h-10 w-60 rounded-md drop-shadow',
+          isMobile
+            ? 'animate-slide-up-3-big left-[36px] top-[130px]'
+            : 'animate-slide-in-4 left-[48px] top-[114px]'
         )}
       >
         <div
@@ -306,11 +362,42 @@ export function SignedOutHomepage1(props: { isMobile: boolean }) {
       </div>
       <div
         className={clsx(
-          'animate-slide-in-3 absolute left-[56px] z-10 mt-2 h-10 w-60 rounded-md bg-teal-200',
-          isMobile ? 'top-[138px]' : 'top-[122px]'
+          'absolute z-10 mt-2 h-10 w-60 rounded-md bg-teal-200',
+          isMobile
+            ? 'animate-slide-up-4-big left-[44px] top-[138px]'
+            : 'animate-slide-in-3 left-[56px] top-[122px]'
         )}
       />
-      <SpendManaParticles />
+      {/* <SpendManaParticles /> */}
+    </>
+  )
+}
+
+export function LandingPage2(props: { isMobile: boolean }) {
+  const { isMobile } = props
+  const text = 'Profit'
+  return (
+    <>
+      <div
+        className={clsx(
+          'absolute z-10 text-xl text-white',
+          isMobile
+            ? 'animate-slide-up-1 left-[20px] top-[32px]'
+            : 'animate-slide-in-2 left-[32px] top-[16px]'
+        )}
+      >
+        {text}
+      </div>
+      <div
+        className={clsx(
+          'absolute text-xl text-indigo-300',
+          isMobile
+            ? 'animate-slide-up-2 left-[21px] top-[33px]'
+            : 'animate-slide-in-1 left-[33px] top-[17px]'
+        )}
+      >
+        {text}
+      </div>
     </>
   )
 }

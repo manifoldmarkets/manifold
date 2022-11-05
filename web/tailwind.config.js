@@ -50,7 +50,7 @@ module.exports = {
             transform: 'translateX(-100%)',
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
-          '19%': {
+          '19.5%': {
             transform: 'translateX(0%)',
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
@@ -85,13 +85,63 @@ module.exports = {
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
-        'slide-in-4': {
+        'slide-up-1': {
           '0%': {
-            transform: 'translateX(-100%)',
+            transform: 'translateY(100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '19.5%': {
+            transform: 'translateY(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-up-2': {
+          '0%': {
+            transform: 'translateY(100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '20%': {
+            transform: 'translateY(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-up-3': {
+          '0%': {
+            transform: 'translateY(100%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '34%': {
+            transform: 'translateY(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-up-4': {
+          '0%': {
+            transform: 'translateY(100%)',
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
           '36%': {
-            transform: 'translateX(0%)',
+            transform: 'translateY(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-up-3-big': {
+          '0%': {
+            transform: 'translateY(400%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '34%': {
+            transform: 'translateY(0%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
+        'slide-up-4-big': {
+          '0%': {
+            transform: 'translateY(400%)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '36%': {
+            transform: 'translateY(0%)',
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
@@ -113,6 +163,12 @@ module.exports = {
         'slide-in-2': 'slide-in-2 4s',
         'slide-in-3': 'slide-in-3 4s',
         'slide-in-4': 'slide-in-4 4s',
+        'slide-up-1': 'slide-up-1 4s',
+        'slide-up-2': 'slide-up-2 4s',
+        'slide-up-3': 'slide-up-3 4s',
+        'slide-up-4': 'slide-up-4 4s',
+        'slide-up-3-big': 'slide-up-3-big 4s',
+        'slide-up-4-big': 'slide-up-4-big 4s',
         'press-3x': 'press-3x 3s',
       },
       colors: {
