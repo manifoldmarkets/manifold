@@ -63,7 +63,12 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                     <SiteLink className="relative" href={`/${entry.username}`}>
                       <Row className="items-center gap-4">
                         <Avatar avatarUrl={entry.avatarUrl} size={8} />
-                        <div className="truncate">{entry.name} {BOT_USERNAMES.includes(entry.username) && <BotBadge />}</div>
+                        <div className="truncate">
+                          {entry.name}{' '}
+                          {BOT_USERNAMES.includes(entry.username) && (
+                            <BotBadge />
+                          )}
+                        </div>
                       </Row>
                     </SiteLink>
                   </td>
