@@ -94,6 +94,9 @@ export function ContractsGrid(props: {
               showImage={
                 showImageOnTopContract && (index == 0 || index === lastIndex)
               }
+              className={clsx(
+                contractIds?.includes(contract.id) && highlightClassName
+              )}
             />
           ) : (
             <ContractCard
