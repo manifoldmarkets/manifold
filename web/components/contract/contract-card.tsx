@@ -410,9 +410,16 @@ export const ContractCardWithPosition = memo(
     onClick?: () => void
     className?: string
     showImage?: boolean
+    showTime?: ShowTime
   }) {
-    const { noLinkAvatar, showDailyProfit, className, showImage, onClick } =
-      props
+    const {
+      noLinkAvatar,
+      showDailyProfit,
+      className,
+      showImage,
+      showTime,
+      onClick,
+    } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as CPMMBinaryContract
 
@@ -425,6 +432,7 @@ export const ContractCardWithPosition = memo(
         contract={contract}
         noLinkAvatar={noLinkAvatar}
         showImage={showImage}
+        showTime={showTime}
         onClick={onClick}
         className={clsx(
           className,

@@ -91,6 +91,7 @@ export function ContractsGrid(props: {
                 onContractClick ? () => onContractClick(contract) : undefined
               }
               contract={contract as CPMMBinaryContract}
+              showTime={showTime}
               showImage={
                 showImageOnTopContract && (index == 0 || index === lastIndex)
               }
