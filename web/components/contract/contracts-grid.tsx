@@ -87,6 +87,9 @@ export function ContractsGrid(props: {
           contract.mechanism === 'cpmm-1' ? (
             <ContractCardWithPosition
               key={contract.id}
+              onClick={
+                onContractClick ? () => onContractClick(contract) : undefined
+              }
               contract={contract as CPMMBinaryContract}
               showImage={
                 showImageOnTopContract && (index == 0 || index === lastIndex)
