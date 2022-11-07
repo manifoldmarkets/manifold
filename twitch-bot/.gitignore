@@ -1,0 +1,12 @@
+node_modules
+/Manifold notes.txt
+/server/dist
+/server/data
+.next
+/web/out
+/.env
+tsconfig.tsbuildinfo
+/scripts/build
+/scripts/legacy
+/scripts/windows/ssh-dev.bat
+/scripts/windows/ssh-prod.bat
