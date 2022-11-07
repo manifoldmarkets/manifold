@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
-import { groupBy, keyBy } from 'lodash'
+import { groupBy, keyBy, sortBy } from 'lodash'
 import { getValues, invokeFunction, log, payUser, writeAsync } from './utils'
 import { Bet } from '../../common/bet'
 import { Contract } from '../../common/contract'
@@ -9,6 +9,7 @@ import { getUserLoanUpdates, isUserEligibleForLoan } from '../../common/loans'
 import { createLoanIncomeNotification } from './create-notification'
 import { filterDefined } from '../../common/util/array'
 import { newEndpointNoAuth } from './api'
+import { batchedWaitAll } from '../../common/util/promise'
 
 const firestore = admin.firestore()
 
@@ -35,13 +36,24 @@ export const updateloans = newEndpointNoAuth(
 async function updateLoansCore() {
   log('Updating loans...')
 
-  const [users, contracts, bets] = await Promise.all([
+  const [users, contracts] = await Promise.all([
     getValues<User>(firestore.collection('users')),
     getValues<Contract>(
       firestore.collection('contracts').where('isResolved', '==', false)
     ),
-    getValues<Bet>(firestore.collectionGroup('bets')),
   ])
+
+  const contractBets = await batchedWaitAll(
+    contracts.map(
+      (contract) => async () =>
+        getValues<Bet>(
+          firestore.collection('contracts').doc(contract.id).collection('bets')
+        )
+    ),
+    100
+  )
+  const bets = sortBy(contractBets.flat(), b => b.createdTime)
+
   log(
     `Loaded ${users.length} users, ${contracts.length} contracts, and ${bets.length} bets.`
   )

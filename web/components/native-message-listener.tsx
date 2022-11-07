@@ -23,7 +23,7 @@ export const NativeMessageListener = () => {
     const { type, data } = event
     console.log('Received native event: ', event)
     if (type === 'setIsNative') {
-      setIsNative(true)
+      setIsNative(true, data.platform)
     } else if (type === 'nativeFbUser') {
       await setFirebaseUserViaJson(data, app, true)
     } else if (type === 'pushNotificationPermissionStatus') {

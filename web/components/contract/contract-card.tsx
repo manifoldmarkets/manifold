@@ -46,7 +46,6 @@ import { ProbOrNumericChange } from './prob-change-table'
 import { Spacer } from '../layout/spacer'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { DAY_MS } from 'common/util/time'
-import NewContractBadge from '../new-contract-badge'
 import { ContractMetrics } from 'common/calculate-metrics'
 
 export const ContractCard = memo(function ContractCard(props: {
@@ -116,7 +115,7 @@ export const ContractCard = memo(function ContractCard(props: {
             <AvatarDetails contract={contract} noLink={noLinkAvatar} />
             <Row className="gap-1">
               {pinned && <FeaturedPill />}
-              {isNew && <NewContractBadge />}
+            {/* {isNew && <NewContractBadge />} */}
             </Row>
           </Row>
         )}
@@ -145,7 +144,7 @@ export const ContractCard = memo(function ContractCard(props: {
           {!hasImage && !hideQuestion && (
             <div
               className={clsx(
-                'break-anywhere text-greyscale-7 pb-2 text-lg font-medium',
+                'break-anywhere text-greyscale-7 text-md pb-2 font-medium',
                 questionClass
               )}
             >
@@ -165,13 +164,14 @@ export const ContractCard = memo(function ContractCard(props: {
             hideGroupLink={hideGroupLink}
           />
 
-          {(outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
-            <ProbOrNumericChange
-              className="py-2 px-2"
-              contract={contract as CPMMContract}
-              user={user}
-            />
-          )}
+          {!isNew &&
+            (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
+              <ProbOrNumericChange
+                className="py-2 px-2"
+                contract={contract as CPMMContract}
+                user={user}
+              />
+            )}
         </Row>
         {children}
       </Col>
@@ -402,22 +402,17 @@ export function PseudoNumericResolutionOrExpectation(props: {
   )
 }
 
-export const ContractCardProbChange = memo(
-  function ContractCardProbChange(props: {
+export const ContractCardWithPosition = memo(
+  function ContractCardWithPosition(props: {
     contract: CPMMContract
     noLinkAvatar?: boolean
-    showPosition?: boolean
     showDailyProfit?: boolean
+    onClick?: () => void
     className?: string
     showImage?: boolean
   }) {
-    const {
-      noLinkAvatar,
-      showPosition,
-      showDailyProfit,
-      className,
-      showImage,
-    } = props
+    const { noLinkAvatar, showDailyProfit, className, showImage, onClick } =
+      props
     const contract = (useContract(props.contract.id) ??
       props.contract) as CPMMBinaryContract
 
@@ -430,12 +425,13 @@ export const ContractCardProbChange = memo(
         contract={contract}
         noLinkAvatar={noLinkAvatar}
         showImage={showImage}
+        onClick={onClick}
         className={clsx(
           className,
           'mb-4 break-inside-avoid-column overflow-hidden'
         )}
       >
-        {showPosition && user && metrics && metrics.hasShares ? (
+        {user && metrics && metrics.hasShares ? (
           <MetricsFooter
             contract={contract}
             metrics={metrics}
@@ -490,12 +486,10 @@ function MetricsFooter(props: {
         </div>
         <div
           className={clsx(
-            'text-sm font-semibold',
-            !profit
-              ? 'text-greyscale-6'
-              : profit > 0
-              ? 'text-teal-500'
-              : 'text-red-600'
+            'text-greyscale-6 text-sm font-semibold'
+            // : profit > 0
+            // ? 'text-teal-500'
+            // : 'text-red-600'
           )}
         >
           {profit ? formatMoney(profit) : '--'}

@@ -2,7 +2,7 @@ import { Contract } from 'web/lib/firebase/contracts'
 import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { SiteLink } from '../widgets/site-link'
-import { ContractCard, ContractCardProbChange } from './contract-card'
+import { ContractCard, ContractCardWithPosition } from './contract-card'
 import { ShowTime } from './contract-details'
 import { ContractSearch } from '../contract-search'
 import { useCallback } from 'react'
@@ -26,7 +26,6 @@ export function ContractsGrid(props: {
     hideQuickBet?: boolean
     hideGroupLink?: boolean
     noLinkAvatar?: boolean
-    showProbChange?: boolean
   }
   highlightOptions?: CardHighlightOptions
   trackingPostfix?: string
@@ -43,8 +42,7 @@ export function ContractsGrid(props: {
     trackingPostfix,
     showImageOnTopContract,
   } = props
-  const { hideQuickBet, hideGroupLink, noLinkAvatar, showProbChange } =
-    cardUIOptions || {}
+  const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
   const { itemIds: contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
     (visible: boolean) => {
@@ -70,6 +68,13 @@ export function ContractsGrid(props: {
     )
   }
 
+  const lastIndex =
+    !!contracts[0].coverImageUrl &&
+    contracts.length >= 4 &&
+    contracts.length % 2 === 0
+      ? contracts.length - 1
+      : undefined
+
   return (
     <Col className="gap-8">
       <Masonry
@@ -79,19 +84,28 @@ export function ContractsGrid(props: {
         columnClassName="pl-4 bg-clip-padding"
       >
         {contracts.map((contract, index) =>
-          showProbChange && contract.mechanism === 'cpmm-1' ? (
-            <ContractCardProbChange
+          contract.mechanism === 'cpmm-1' ? (
+            <ContractCardWithPosition
               key={contract.id}
+              onClick={
+                onContractClick ? () => onContractClick(contract) : undefined
+              }
               contract={contract as CPMMBinaryContract}
-              showPosition
-              showImage={showImageOnTopContract && (index == 0 || index == 3)}
+              showImage={
+                showImageOnTopContract && (index == 0 || index === lastIndex)
+              }
+              className={clsx(
+                contractIds?.includes(contract.id) && highlightClassName
+              )}
             />
           ) : (
             <ContractCard
               contract={contract}
               key={contract.id}
               showTime={showTime}
-              showImage={showImageOnTopContract && (index == 0 || index == 3)}
+              showImage={
+                showImageOnTopContract && (index == 0 || index === lastIndex)
+              }
               onClick={
                 onContractClick ? () => onContractClick(contract) : undefined
               }

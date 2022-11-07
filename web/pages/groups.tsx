@@ -21,6 +21,10 @@ import { GetServerSideProps } from 'next'
 import { authenticateOnServer } from 'web/lib/firebase/server-auth'
 import { useUser } from 'web/hooks/use-user'
 import { Input } from 'web/components/widgets/input'
+import { track } from '@amplitude/analytics-browser'
+import { CardHighlightOptions } from 'web/components/contract/contracts-grid'
+import { Card } from 'web/components/widgets/card'
+import { FeaturedPill } from 'web/components/contract/contract-card'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const creds = await authenticateOnServer(ctx)
@@ -115,7 +119,7 @@ export default function Groups(props: {
                       className="mb-4 w-full"
                     />
 
-                    <div className="flex flex-wrap justify-center gap-4">
+                    <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
                       {matchesOrderedByMostContractAndMembers.map((group) => (
                         <GroupCard
                           key={group.id}
@@ -143,7 +147,7 @@ export default function Groups(props: {
                             className="mb-4 w-full"
                           />
 
-                          <div className="flex flex-wrap justify-center gap-4">
+                          <div className="grid grid-cols-1 flex-wrap justify-center gap-4 sm:grid-cols-2">
                             {matchesOrderedByMostContractAndMembers
                               .filter((match) =>
                                 memberGroupIds.includes(match.id)
@@ -173,54 +177,90 @@ export default function Groups(props: {
 
 export function GroupCard(props: {
   group: Group
-  creator: User | null | undefined
-  user: User | undefined | null
-  isMember: boolean
+  creator?: User | null | undefined
+  user?: User | undefined | null
+  isMember?: boolean
   className?: string
+  onGroupClick?: (group: Group) => void
+  highlightOptions?: CardHighlightOptions
+  pinned?: boolean
 }) {
-  const { group, creator, user, isMember, className } = props
+  const {
+    group,
+    creator,
+    user,
+    isMember,
+    className,
+    onGroupClick,
+    highlightOptions,
+    pinned,
+  } = props
   const { totalContracts } = group
+  const { itemIds: itemIds, highlightClassName } = highlightOptions || {}
   return (
-    <Col
+    <Card
       className={clsx(
-        'relative min-w-[20rem] max-w-xs gap-1 rounded-xl bg-white p-6 shadow-md hover:bg-gray-100',
-        className
+        'relative min-w-[20rem]  gap-1 rounded-xl bg-white p-6  hover:bg-gray-100',
+        className,
+        itemIds?.includes(group.id) && highlightClassName
       )}
+      onClick={(e) => {
+        if (!onGroupClick) return
+        // Let the browser handle the link click (opens in new tab).
+        if (e.ctrlKey || e.metaKey) return
+
+        e.preventDefault()
+        track('select group card'),
+          {
+            slug: group.slug,
+            postId: group.id,
+          }
+        onGroupClick(group)
+      }}
     >
       <Link
+        className={onGroupClick ? 'pointer-events-none' : ''}
         href={groupPath(group.slug)}
-        className="absolute left-0 right-0 top-0 bottom-0 z-0"
-      />
-      {creator !== null && (
+      >
         <div>
-          <Avatar
-            className={'absolute top-2 right-2 z-10'}
-            username={creator?.username}
-            avatarUrl={creator?.avatarUrl}
-            noLink={false}
-            size={12}
-          />
+          {creator != null && (
+            <Avatar
+              className={'absolute top-2 right-2 z-10'}
+              username={creator?.username}
+              avatarUrl={creator?.avatarUrl}
+              noLink={false}
+              size={12}
+            />
+          )}
         </div>
-      )}
-      <Row className="items-center justify-between gap-2">
-        <span className="text-xl">{group.name}</span>
-      </Row>
-      <Row>{totalContracts} questions</Row>
-      <Row className="text-sm text-gray-500">
-        <GroupMembersList group={group} />
-      </Row>
-      <Row>
-        <div className="text-sm text-gray-500">{group.about}</div>
-      </Row>
-      <Col className={'mt-2 h-full items-start justify-end'}>
-        <JoinOrLeaveGroupButton
-          group={group}
-          className={'z-10 w-24'}
-          user={user}
-          isMember={isMember}
-        />
-      </Col>
-    </Col>
+
+        <Row className="items-center justify-between gap-2">
+          <span className="text-xl">{group.name}</span>
+          {pinned && (
+            <Row>
+              <FeaturedPill />
+            </Row>
+          )}
+        </Row>
+        <Row>{totalContracts} questions</Row>
+        <Row className="text-sm text-gray-500">
+          <GroupMembersList group={group} />
+        </Row>
+        <Row>
+          <div className="text-sm text-gray-500">{group.about}</div>
+        </Row>
+        {isMember != null && user != null && (
+          <div className={'z-10 mt-2 h-full items-start justify-end'}>
+            <JoinOrLeaveGroupButton
+              group={group}
+              className={'z-10 w-24'}
+              user={user}
+              isMember={isMember}
+            />
+          </div>
+        )}
+      </Link>
+    </Card>
   )
 }
 

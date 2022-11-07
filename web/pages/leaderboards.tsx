@@ -132,9 +132,8 @@ export default function Leaderboards(_props: {
             entries={topCreators}
             columns={[
               {
-                header: 'Total bet',
-                renderCell: (user) =>
-                  formatMoney(user.creatorVolumeCached[period]),
+                header: 'Number of traders',
+                renderCell: (user) => user.creatorTraders[period],
               },
             ]}
             highlightUsername={user?.username}

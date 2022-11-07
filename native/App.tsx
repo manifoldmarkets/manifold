@@ -107,11 +107,9 @@ export default function App() {
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener((response) => {
           console.log('notification response', response)
-          webview.current?.postMessage(
-            JSON.stringify({
-              type: 'notification',
-              data: response.notification.request.content.data,
-            })
+          communicateWithWebview(
+            'notification',
+            response.notification.request.content.data
           )
         })
     } catch (err) {
@@ -146,12 +144,7 @@ export default function App() {
           queryParams
         )}`
       )
-      webview.current?.postMessage(
-        JSON.stringify({
-          type: 'link',
-          data: path,
-        })
-      )
+      communicateWithWebview('link', path ? path : '/')
       // If we don't clear the url, we won't reopen previously opened links
       const clearUrlCacheEvent = {
         hostname: 'manifold.markets',
@@ -215,12 +208,10 @@ export default function App() {
         finalStatus = status
       }
       if (finalStatus !== 'granted') {
-        webview.current?.postMessage(
-          JSON.stringify({
-            type: 'pushNotificationPermissionStatus',
-            data: { status: finalStatus, userId },
-          })
-        )
+        communicateWithWebview('pushNotificationPermissionStatus', {
+          status: finalStatus,
+          userId,
+        })
         return null
       }
       return await getPushToken()
@@ -246,20 +237,12 @@ export default function App() {
         if (status === 'granted') {
           const token = await getPushToken()
           if (!webview.current) return
-          if (token)
-            webview.current.postMessage(
-              JSON.stringify({
-                type: 'pushToken',
-                data: { token, userId },
-              })
-            )
+          if (token) communicateWithWebview('pushToken', { token, userId })
         } else
-          webview.current?.postMessage(
-            JSON.stringify({
-              type: 'pushNotificationPermissionStatus',
-              data: { status, userId },
-            })
-          )
+          communicateWithWebview('pushNotificationPermissionStatus', {
+            status,
+            userId,
+          })
       })
     } else if (type === 'copyToClipboard') {
       Clipboard.setString(payload)
@@ -267,13 +250,7 @@ export default function App() {
     // User needs to enable push notifications
     else if (type === 'promptEnablePushNotifications') {
       registerForPushNotificationsAsync().then((token) => {
-        if (token)
-          webview.current?.postMessage(
-            JSON.stringify({
-              type: 'pushToken',
-              data: { token, userId },
-            })
-          )
+        if (token) communicateWithWebview('pushToken', { token, userId })
       })
     } else if (type === 'signOut' && (fbUser || auth.currentUser)) {
       console.log('signOut called')
@@ -306,6 +283,20 @@ export default function App() {
     } else {
       console.log('Unhandled nativeEvent.data: ', data)
     }
+  }
+
+  const tellWebviewToSetNativeFlag = () => {
+    if (hasSetNativeFlag) return
+    communicateWithWebview('setIsNative', { platform: Platform.OS })
+  }
+
+  const communicateWithWebview = (type: string, data: object | string) => {
+    webview.current?.postMessage(
+      JSON.stringify({
+        type,
+        data,
+      })
+    )
   }
 
   const width = Dimensions.get('window').width //full width
@@ -467,18 +458,9 @@ export default function App() {
             })
           }}
           onTouchStart={() => {
-            if (!hasSetNativeFlag && webview.current) {
-              console.log('setting is native')
-              webview.current.postMessage(
-                JSON.stringify({
-                  type: 'setIsNative',
-                  data: {},
-                })
-              )
-            }
+            tellWebviewToSetNativeFlag()
           }}
           onLoadStart={() => {
-            console.log('onLoadStart')
             setCurrentHostStatus({ ...currentHostStatus, loading: true })
           }}
           onNavigationStateChange={(navState) => {
@@ -492,16 +474,7 @@ export default function App() {
                 : currentHostStatus.previousHomeUrl,
               previousUrl: currentHostStatus.url,
             })
-
-            if (!hasSetNativeFlag && webview.current) {
-              console.log('setting is native')
-              webview.current.postMessage(
-                JSON.stringify({
-                  type: 'setIsNative',
-                  data: {},
-                })
-              )
-            }
+            tellWebviewToSetNativeFlag()
           }}
           onMessage={handleMessageFromWebview}
         />

@@ -40,6 +40,13 @@ export type User = {
     allTime: number
   }
 
+  creatorTraders: {
+    daily: number
+    weekly: number
+    monthly: number
+    allTime: number
+  }
+
   fractionResolvedCorrectly: number
 
   nextLoanCached: number
@@ -97,6 +104,7 @@ export type PrivateUser = {
   blockedByUserIds: string[]
   blockedContractIds: string[]
   blockedGroupSlugs: string[]
+  hasSignedEula?: boolean
 }
 
 export type PortfolioMetrics = {
