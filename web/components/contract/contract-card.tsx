@@ -115,7 +115,7 @@ export const ContractCard = memo(function ContractCard(props: {
             <AvatarDetails contract={contract} noLink={noLinkAvatar} />
             <Row className="gap-1">
               {pinned && <FeaturedPill />}
-            {/* {isNew && <NewContractBadge />} */}
+              {/* {isNew && <NewContractBadge />} */}
             </Row>
           </Row>
         )}
