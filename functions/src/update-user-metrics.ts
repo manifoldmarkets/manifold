@@ -67,6 +67,7 @@ export async function updateUserMetrics() {
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorVolume = calculateCreatorVolume(userContracts)
       const newCreatorTraders = calculateCreatorTraders(userContracts)
+
       const newPortfolio = calculateNewPortfolioMetrics(
         user,
         contractsById,
@@ -127,7 +128,7 @@ export async function updateUserMetrics() {
         user: user,
         fields: {
           creatorVolumeCached: newCreatorVolume,
-          creatorTradersCached: newCreatorTraders,
+          creatorTraders: newCreatorTraders,
           profitCached: newProfit,
           nextLoanCached: nextLoanPayout ?? 0,
           fractionResolvedCorrectly: newFractionResolvedCorrectly,

@@ -193,23 +193,10 @@ export const calculateCreatorTraders = (userContracts: Contract[]) => {
   let monthlyCreatorTraders = 0
 
   userContracts.forEach((contract) => {
-    const counts = contract.cachedUniqueBettorCount
-    if (counts) {
-      const reversedCounts = counts.slice().reverse()
-      allTimeCreatorTraders += reversedCounts[0].count
-      const yesterdayTraders =
-        reversedCounts.find((c) => c.time < Date.now() - DAY_MS)?.count ?? 0
-      dailyCreatorTraders += allTimeCreatorTraders - yesterdayTraders
-
-      const lastWeekTraders =
-        reversedCounts.find((c) => c.time < Date.now() - 7 * DAY_MS)?.count ?? 0
-      weeklyCreatorTraders += allTimeCreatorTraders - lastWeekTraders
-
-      const lastMonthTraders =
-        reversedCounts.find((c) => c.time < Date.now() - 30 * DAY_MS)?.count ??
-        0
-      monthlyCreatorTraders += allTimeCreatorTraders - lastMonthTraders
-    }
+    allTimeCreatorTraders += contract.uniqueBettorCount ?? 0
+    dailyCreatorTraders += contract.uniqueBettors24Hours ?? 0
+    weeklyCreatorTraders += contract.uniqueBettors7Days ?? 0
+    monthlyCreatorTraders += contract.uniqueBettors30Days ?? 0
   })
 
   return {
