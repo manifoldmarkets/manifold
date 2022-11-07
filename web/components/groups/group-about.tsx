@@ -41,6 +41,7 @@ import { CreatePostForm } from '../posts/create-post'
 import { Modal } from '../layout/modal'
 import { track } from 'web/lib/service/analytics'
 import { HideGroupButton } from 'web/components/buttons/hide-group-button'
+import { Spacer } from '../layout/spacer'
 
 export function GroupAbout(props: {
   group: Group
@@ -179,15 +180,18 @@ function GroupFeatured(props: {
   if (!group.pinnedItems || group.pinnedItems.length == 0) return <></>
 
   return isEditable || (group.pinnedItems && group?.pinnedItems.length > 0) ? (
-    <PinnedItems
-      posts={posts}
-      group={group}
-      isEditable={isEditable}
-      pinned={pinned}
-      onDeleteClicked={onDeleteClicked}
-      onSubmit={onSubmit}
-      modalMessage={'Pin posts or markets to the overview of this group.'}
-    />
+    <div className="relative">
+      {isEditable && <Spacer h={12} />}
+      <PinnedItems
+        posts={posts}
+        group={group}
+        isEditable={isEditable}
+        pinned={pinned}
+        onDeleteClicked={onDeleteClicked}
+        onSubmit={onSubmit}
+        modalMessage={'Pin posts or markets to the overview of this group.'}
+      />
+    </div>
   ) : (
     <LoadingIndicator />
   )
