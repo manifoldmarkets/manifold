@@ -36,6 +36,7 @@ import { Bet } from '../../common/bet'
 import { getCloseDate, getGroupForMarket } from './helpers/openai-utils'
 import { htmlToRichText } from '../../common/util/parse'
 import { marked } from 'marked'
+import { certMintAndPool } from './helpers/cert'
 
 const descSchema: z.ZodType<JSONContent> = z.lazy(() =>
   z.intersection(
@@ -349,6 +350,11 @@ export async function createMarketHelper(body: any, auth: AuthedUser) {
     )
 
     await anteBetDoc.set(anteBet)
+  } else if (outcomeType === 'CERT') {
+    const DEFAULT_SHARES = 10_000
+    // Unlike other contracts which initializing info into the contract's doc or subcollection,
+    // certs have the mint and pool specified in txn
+    await certMintAndPool(providerId, contract.id, DEFAULT_SHARES, ante)
   }
 
   return contract

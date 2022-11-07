@@ -20,10 +20,12 @@ import {
   NumericContract,
   PseudoNumericContract,
   BinaryContract,
+  CertContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
 import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
+import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -189,6 +191,26 @@ const PseudoNumericOverview = (props: {
   )
 }
 
+function CertOverview(props: { contract: CertContract }) {
+  const { contract } = props
+  const txns = useCertTxns(contract.id)
+
+  // Show one div for each of the txns descriptions
+  return (
+    <Col className="gap-1 md:gap-2">
+      <h2>Cert Overview</h2>
+      {txns.map((txn, i) => (
+        <div
+          key={i}
+          className="rounded-lg bg-indigo-100 px-2 py-4 text-lg text-indigo-700"
+        >
+          {txn.description}
+        </div>
+      ))}
+    </Col>
+  )
+}
+
 export const ContractOverview = (props: {
   contract: Contract
   bets: Bet[]
@@ -202,7 +224,7 @@ export const ContractOverview = (props: {
     case 'PSEUDO_NUMERIC':
       return <PseudoNumericOverview contract={contract} bets={bets} />
     case 'CERT':
-      return <h1>Cert overview goes here</h1>
+      return <CertOverview contract={contract} />
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE':
       return <ChoiceOverview contract={contract} bets={bets} />
