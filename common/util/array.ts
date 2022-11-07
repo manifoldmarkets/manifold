@@ -1,23 +1,14 @@
-import { isEqual } from 'lodash'
+import { compact, flattenDeep, isEqual } from 'lodash'
 
 export function filterDefined<T>(array: (T | null | undefined)[]) {
   return array.filter((item) => item !== null && item !== undefined) as T[]
 }
 
-export function buildArray<T>(
-  ...params: (T | T[] | false | undefined | null)[]
-) {
-  const array: T[] = []
+type Falsey = false | undefined | null | 0 | ''
+type FalseyValueArray<T> = T | Falsey | FalseyValueArray<T>[]
 
-  for (const el of params) {
-    if (Array.isArray(el)) {
-      array.push(...el)
-    } else if (el) {
-      array.push(el)
-    }
-  }
-
-  return array
+export function buildArray<T>(...params: FalseyValueArray<T>[]) {
+  return compact(flattenDeep(params)) as T[]
 }
 
 export function groupConsecutive<T, U>(xs: T[], key: (x: T) => U) {
