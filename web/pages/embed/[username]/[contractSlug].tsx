@@ -1,8 +1,7 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { useEffect, useState } from 'react'
-import { BetInline } from 'web/components/bet/bet-inline'
+import { useEffect } from 'react'
 import {
   BinaryResolutionOrChance,
   ContractCard,
@@ -108,19 +107,13 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
 
   const { setElem, width: graphWidth, height: graphHeight } = useMeasureSize()
 
-  const [betPanelOpen, setBetPanelOpen] = useState(false)
-
-  const [probAfter, setProbAfter] = useState<number>()
-
   return (
     <Col className="h-[100vh] w-full bg-white p-4">
       <Row className="justify-between gap-4 px-2">
         <div className="text-xl text-indigo-700 md:text-2xl">
           <SiteLink href={href}>{question}</SiteLink>
         </div>
-        {isBinary && (
-          <BinaryResolutionOrChance contract={contract} probAfter={probAfter} />
-        )}
+        {isBinary && <BinaryResolutionOrChance contract={contract} />}
 
         {isPseudoNumeric && (
           <PseudoNumericResolutionOrExpectation contract={contract} />
@@ -140,15 +133,6 @@ function ContractSmolView({ contract, bets }: EmbedProps) {
       </Row>
 
       <Spacer h={2} />
-
-      {(isBinary || isPseudoNumeric) && betPanelOpen && (
-        <BetInline
-          contract={contract as any}
-          setProbAfter={setProbAfter}
-          onClose={() => setBetPanelOpen(false)}
-          className="self-center"
-        />
-      )}
 
       <div className="mx-1 mb-2 min-h-0 flex-1" ref={setElem}>
         {graphWidth != null && graphHeight != null && (
