@@ -86,7 +86,6 @@ export function ContractSearch(props: {
     hideGroupLink?: boolean
     hideQuickBet?: boolean
     noLinkAvatar?: boolean
-    showProbChange?: boolean
   }
   headerClassName?: string
   persistPrefix?: string
@@ -129,7 +128,6 @@ export function ContractSearch(props: {
       numPages: 1,
       pages: [] as Contract[][],
       showTime: null as ShowTime | null,
-      showProbChange: false,
     },
     !persistPrefix
       ? undefined
@@ -183,9 +181,8 @@ export function ContractSearch(props: {
         const newPage = results.hits as any as Contract[]
         const showTime =
           sort === 'close-date' || sort === 'resolve-date' ? sort : null
-        const showProbChange = sort === 'daily-score'
         const pages = freshQuery ? [newPage] : [...state.pages, newPage]
-        setState({ numPages: results.nbPages, pages, showTime, showProbChange })
+        setState({ numPages: results.nbPages, pages, showTime })
         if (freshQuery && isWholePage) window.scrollTo(0, 0)
       }
     }
@@ -209,12 +206,6 @@ export function ContractSearch(props: {
       }
     }, 100)
   ).current
-
-  const updatedCardUIOptions = useMemo(() => {
-    if (cardUIOptions?.showProbChange === undefined && state.showProbChange)
-      return { ...cardUIOptions, showProbChange: true }
-    return cardUIOptions
-  }, [cardUIOptions, state.showProbChange])
 
   const contracts = state.pages
     .flat()
@@ -256,7 +247,7 @@ export function ContractSearch(props: {
           showTime={state.showTime ?? undefined}
           onContractClick={onContractClick}
           highlightOptions={highlightOptions}
-          cardUIOptions={updatedCardUIOptions}
+          cardUIOptions={cardUIOptions}
         />
       )}
     </Col>

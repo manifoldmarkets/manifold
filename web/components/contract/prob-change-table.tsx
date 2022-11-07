@@ -5,7 +5,7 @@ import { ContractMetrics } from 'common/calculate-metrics'
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { ContractCardProbChange } from './contract-card'
+import { ContractCardWithPosition } from './contract-card'
 import { User } from 'common/user'
 
 export function ProfitChangeTable(props: {
@@ -46,20 +46,18 @@ export function ProfitChangeTable(props: {
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
       <Col className="flex-1">
         {positive.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}
       </Col>
       <Col className="flex-1">
         {negative.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}
@@ -101,20 +99,18 @@ export function ProbChangeTable(props: {
     <Col className="mb-4 w-full gap-4 rounded-lg md:flex-row">
       <Col className="flex-1">
         {filteredPositiveChanges.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}
       </Col>
       <Col className="flex-1">
         {filteredNegativeChanges.map((contract) => (
-          <ContractCardProbChange
+          <ContractCardWithPosition
             key={contract.id}
             contract={contract}
-            showPosition
             showDailyProfit
           />
         ))}

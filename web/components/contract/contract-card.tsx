@@ -393,18 +393,16 @@ export function PseudoNumericResolutionOrExpectation(props: {
   )
 }
 
-export const ContractCardProbChange = memo(
-  function ContractCardProbChange(props: {
+export const ContractCardWithPosition = memo(
+  function ContractCardWithPosition(props: {
     contract: CPMMContract
     noLinkAvatar?: boolean
-    showPosition?: boolean
     showDailyProfit?: boolean
     className?: string
     showImage?: boolean
   }) {
     const {
       noLinkAvatar,
-      showPosition,
       showDailyProfit,
       className,
       showImage,
@@ -426,7 +424,7 @@ export const ContractCardProbChange = memo(
           'mb-4 break-inside-avoid-column overflow-hidden'
         )}
       >
-        {showPosition && user && metrics && metrics.hasShares ? (
+        {user && metrics && metrics.hasShares ? (
           <MetricsFooter
             contract={contract}
             metrics={metrics}

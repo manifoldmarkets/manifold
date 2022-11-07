@@ -348,7 +348,6 @@ function renderSections(
               label={label}
               contracts={contracts}
               sort="daily-score"
-              showProbChange
               icon={icon}
             />
           )
@@ -443,10 +442,9 @@ const SearchSection = memo(function SearchSection(props: {
   contracts: CPMMBinaryContract[]
   sort: Sort
   pill?: string
-  showProbChange?: boolean
   icon?: string
 }) {
-  const { label, contracts, sort, pill, showProbChange, icon } = props
+  const { label, contracts, sort, pill, icon } = props
 
   return (
     <Col>
@@ -457,7 +455,6 @@ const SearchSection = memo(function SearchSection(props: {
       />
       <ContractsGrid
         contracts={contracts}
-        cardUIOptions={{ showProbChange }}
         showImageOnTopContract={true}
       />
     </Col>
@@ -592,7 +589,6 @@ function GroupSection(props: {
       </HomeSectionHeader>
       <ContractsGrid
         contracts={contracts.slice(0, 4)}
-        cardUIOptions={{ showProbChange: true }}
         showImageOnTopContract={true}
       />
     </Col>
