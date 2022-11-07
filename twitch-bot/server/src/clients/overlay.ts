@@ -26,6 +26,7 @@ export default class OverlayClient {
     this.connectedUser = <User>this.socket.data;
     const streamName = this.stream.name;
 
+    this.socket.emit(Packet.HANDSHAKE_COMPLETE, { serverID: process.env.__BUILD_ID__ }); //!!! This is slightly naughty as it is not setting the other parameters in the packet. Should make generic handshake packet that just has build ID.
     this.socket.emit(Packet.CLEAR);
 
     const market = this.stream.featuredMarket;

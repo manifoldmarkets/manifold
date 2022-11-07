@@ -1,4 +1,5 @@
 import path from 'path';
+import webpack from 'webpack';
 
 export default {
   mode: 'production',
@@ -27,5 +28,10 @@ export default {
       module: /node_modules\/express\/lib\/view\.js/,
       message: /the request of a dependency is an expression/,
     },
+  ],
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env.__BUILD_ID__': JSON.stringify(new Date().toISOString()),
+    }),
   ],
 };

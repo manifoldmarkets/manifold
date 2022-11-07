@@ -4,5 +4,7 @@
     "source.organizeImports": true
   },
   "eslint.workingDirectories": [".common", "./server", "./web"],
-  "files.eol": "\n"
+  "files.eol": "\n",
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore"
 }

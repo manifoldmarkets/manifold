@@ -30,7 +30,8 @@ export default class DockClient {
 
     this.registerPacketHandlers();
 
-    this.socket.emit(Packet.HANDSHAKE_COMPLETE, <PacketHandshakeComplete>{ actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: MANIFOLD_API_BASE_URL });
+    const handshakePacket: PacketHandshakeComplete = { actingManifoldUserID: this.connectedUser.data.manifoldID, manifoldAPIBase: MANIFOLD_API_BASE_URL, serverID: process.env.__BUILD_ID__ };
+    this.socket.emit(Packet.HANDSHAKE_COMPLETE, handshakePacket);
     if (this.stream.featuredMarket) {
       this.socket.emit(Packet.SELECT_MARKET_ID, this.stream.featuredMarket.data.id);
     } else {

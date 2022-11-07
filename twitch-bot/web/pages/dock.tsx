@@ -24,6 +24,7 @@ import { GroupSelector } from '../components/group-selector';
 
 let socket: Socket;
 let APIBase = undefined;
+let connectedServerID: string = undefined;
 
 async function fetchMarketsInGroup(group: Group): Promise<LiteMarket[]> {
   const r = await fetch(`${APIBase}group/by-id/${group.id}/markets`);
@@ -56,6 +57,47 @@ async function getUserBalance(userID: string): Promise<number> {
   return user.balance;
 }
 
+function UpdatedPopup(props: { show: boolean }) {
+  const { show } = props;
+  enum State {
+    HIDDEN_WAIT_OPEN,
+    SHOWN,
+    HIDDEN,
+  }
+  const [state, setState] = useState<State>(State.HIDDEN);
+  useEffect(() => {
+    if (show) {
+      setState(State.HIDDEN_WAIT_OPEN);
+    } else {
+      setState(State.HIDDEN);
+    }
+  }, [show]);
+
+  useEffect(() => {
+    if (state == State.HIDDEN_WAIT_OPEN) {
+      const timeout = setTimeout(() => {
+        setState(State.SHOWN);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    } else if (state == State.SHOWN) {
+      const timeout = setTimeout(() => {
+        setState(State.HIDDEN);
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [state]);
+  return (
+    <div
+      className={clsx(
+        'bg-primary fixed top-0 z-50 w-full -translate-y-full border-b border-b-green-500 text-center text-base text-white transition-all duration-500',
+        state === State.SHOWN && '!translate-y-0 shadow-md'
+      )}
+    >
+      Dock updated<div></div>
+    </div>
+  );
+}
+
 export default () => {
   const [selectedGroup, setSelectedGroup] = useState<Group | undefined>(undefined);
   const [balance, setBalance] = useState(0);
@@ -71,6 +113,7 @@ export default () => {
   const [refreshSignal, forceRefreshGroups] = useState(0);
   const [ping, setPing] = useState(0);
   const [initialized, setInitialized] = useState(false);
+  const wasUpdated = useRef(false);
 
   const ante = CONTRACT_ANTE;
   const onSubmitNewQuestion = async () => {
@@ -102,6 +145,11 @@ export default () => {
 
   useEffect(() => {
     let pingSent = Date.now();
+
+    if (localStorage.getItem('UPDATING')) {
+      wasUpdated.current = true;
+      localStorage.removeItem('UPDATING');
+    }
 
     const params = new Proxy(new URLSearchParams(window.location.search), {
       get: (searchParams, prop) => searchParams.get(prop as string),
@@ -163,6 +211,14 @@ export default () => {
     socket.on(Packets.HANDSHAKE_COMPLETE, (p: PacketHandshakeComplete) => {
       const firstConnect = APIBase === undefined;
       APIBase = p.manifoldAPIBase;
+      if (!connectedServerID) {
+        connectedServerID = p.serverID;
+      } else {
+        if (p.serverID !== connectedServerID) {
+          localStorage.setItem('UPDATING', 'true');
+          location.reload(); // The server has been updated since we last connected, so let's refresh to make sure the client is also up to date
+        }
+      }
 
       if (firstConnect) {
         setManifoldUserID(p.actingManifoldUserID);
@@ -236,6 +292,7 @@ export default () => {
       localStorage.setItem('SELECTED_GROUP', selectedGroup && JSON.stringify({ groupID: selectedGroup.id, groupName: selectedGroup.name } as SelectedGroup));
     } else {
       const previousQuestion = localStorage.getItem('PREV_QUESTION');
+
       if (previousQuestion) {
         setQuestion(previousQuestion);
       }
@@ -248,22 +305,23 @@ export default () => {
       <Head>
         <title>Dock</title>
       </Head>
+      <UpdatedPopup show={wasUpdated.current} />
       <LoadingOverlay
         visible={connectionState != ConnectionState.CONNECTED}
         message={loadingMessage}
         loading={connectionState == ConnectionState.CONNECTING}
-        className="bg-base-200 text-slate-500"
-        spinnerBorderColor="border-slate-500"
+        className="bg-base-200"
+        spinnerBorderColor="border-white"
       />
       {initialized && (
         <div className="flex justify-center">
-          <div className="max-w-xl grow flex flex-col h-screen overflow-hidden relative">
+          <div className="relative flex h-screen max-w-xl grow flex-col overflow-hidden">
             <div className="p-2">
               <div className="flex flex-row justify-center">
                 <GroupSelector userID={manifoldUserID} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} refreshSignal={refreshSignal} APIBase={APIBase} />
                 <AdditionalControlsDropdown socket={socket} />
               </div>
-              <div className="w-full flex justify-center">
+              <div className="flex w-full justify-center">
                 <ConfirmationButton
                   openModalBtn={{
                     label: `Create and feature a question`,
@@ -284,7 +342,7 @@ export default () => {
                     getUserBalance(manifoldUserID).then((b) => setBalance(b));
                   }}
                 >
-                  <Title className="!my-0 text-lg xs:text-2xl" text={`Create a new question ${selectedGroup ? `in '${selectedGroup.name}'` : ''}`} />
+                  <Title className="xs:text-2xl !my-0 text-lg" text={`Create a new question ${selectedGroup ? `in '${selectedGroup.name}'` : ''}`} />
 
                   <form>
                     <div className="form-control w-full">
@@ -306,12 +364,12 @@ export default () => {
                   </form>
 
                   <Row className="form-control items-start">
-                    <Row className="gap-2 grow items-center justify-items-start flex">
+                    <Row className="flex grow items-center justify-items-start gap-2">
                       <span>Cost:</span>
                       <InfoTooltip text={`Cost to create your question. This amount is used to subsidize betting.`} />
                     </Row>
 
-                    <div className="label-text text-neutral pl-1 justify-self-end self-center">{`M$${ante}`} </div>
+                    <div className="label-text text-neutral self-center justify-self-end pl-1">{`M$${ante}`} </div>
                   </Row>
                   {ante > balance && (
                     <div className="-mt-4 mb-2 mr-auto self-center whitespace-nowrap text-xs font-medium tracking-wide">
@@ -327,10 +385,10 @@ export default () => {
               </div>
             </div>
 
-            <div className="p-2 overflow-y-auto relative grow flex flex-col">
+            <div className="relative flex grow flex-col overflow-y-auto p-2">
               {loadingContracts ? (
-                <div className="flex justify-center grow animate-fade">
-                  <div style={{ borderTopColor: 'transparent' }} className="w-10 h-10 border-4 border-primary border-solid rounded-full animate-spin" />
+                <div className="animate-fade flex grow justify-center">
+                  <div style={{ borderTopColor: 'transparent' }} className="border-primary h-10 w-10 animate-spin rounded-full border-4 border-solid" />
                 </div>
               ) : contracts.length > 0 ? (
                 contracts.map((contract, index) => (
@@ -341,7 +399,7 @@ export default () => {
                   </Transition>
                 ))
               ) : (
-                selectedGroup && <p className="w-full text-center text-gray-400 select-none">No applicable markets in this group</p>
+                selectedGroup && <p className="w-full select-none text-center text-gray-400">No applicable markets in this group</p>
               )}
             </div>
             <Transition
@@ -367,7 +425,7 @@ export default () => {
                 }}
               >
                 <Transition appear unmount={false} show as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 -translate-y-4" enterTo="opacity-100 translate-y-0">
-                  <div className="w-full max-w-xl grow flex flex-col justify-end">
+                  <div className="flex w-full max-w-xl grow flex-col justify-end">
                     <ResolutionPanel controlUserID={manifoldUserID} contract={selectedContract} onUnfeatureMarket={onContractUnfeature} ping={ping} />
                   </div>
                 </Transition>
@@ -409,15 +467,15 @@ function ResolutionPanel(props: { controlUserID: string; contract: LiteMarket; o
   const canResolveMarket = controlUserID === contract.creatorId;
 
   return (
-    <Col className={'bg-white rounded-md shadow-md px-4 py-4 xs:px-8 xs:py-6 cursor-default flex justify-end'} onClick={(e) => e.stopPropagation()}>
-      <Row className="justify-center items-center">
-        <div className="xs:whitespace-nowrap text-lg xs:text-2xl text-center xs:text-left">Resolve market</div>
+    <Col className={'xs:px-8 xs:py-6 flex cursor-default justify-end rounded-md bg-white px-4 py-4 shadow-md'} onClick={(e) => e.stopPropagation()}>
+      <Row className="items-center justify-center">
+        <div className="xs:whitespace-nowrap xs:text-2xl xs:text-left text-center text-lg">Resolve market</div>
         <div className="grow" />
-        <div className="min-h-10 hidden xs:block">{ping}ms</div>
+        <div className="min-h-10 xs:block hidden">{ping}ms</div>
       </Row>
 
       <p
-        className="break-words font-semibold text-indigo-700 my-3"
+        className="my-3 break-words font-semibold text-indigo-700"
         style={{
           wordBreak: 'break-word' /* For iOS safari */,
         }}

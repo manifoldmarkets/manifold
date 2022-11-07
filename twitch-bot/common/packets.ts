@@ -30,6 +30,7 @@ export type PacketUserInfo = {
 export type PacketHandshakeComplete = {
   actingManifoldUserID: string;
   manifoldAPIBase: string;
+  serverID: string;
 };
 
 export type PacketSelectMarket = AbstractMarket & {

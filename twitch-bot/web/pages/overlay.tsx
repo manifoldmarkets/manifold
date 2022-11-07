@@ -16,7 +16,7 @@ import { Row } from 'web/components/layout/row';
 
 import { ResolutionOutcome } from 'common/outcome';
 import * as Packet from 'common/packet-ids';
-import { PacketResolved, PacketSelectMarket } from 'common/packets';
+import { PacketHandshakeComplete, PacketResolved, PacketSelectMarket } from 'common/packets';
 import { AbstractMarket, NamedBet } from 'common/types/manifold-abstract-types';
 import { DisconnectDescription } from 'socket.io-client/build/esm/socket';
 import { LoadingOverlay } from 'web/components/loading-overlay';
@@ -230,6 +230,7 @@ enum Page {
   RESOLVED_GRAPH,
 }
 
+let connectedServerID = undefined;
 export default () => {
   const [page, setPage] = useState<Page>(Page.MAIN);
   const [resolvedData, setResolvedData] = useState<PacketResolved | undefined>(undefined);
@@ -253,6 +254,15 @@ export default () => {
       // These lines are commented out as a test fix not showing temporary disconnects:
       // setLoadingMessage('Connecting to server...');
       // setConnectionState(ConnectionState.CONNECTING);
+    });
+    app.socket.on(Packet.HANDSHAKE_COMPLETE, (packet: PacketHandshakeComplete) => {
+      if (!connectedServerID) {
+        connectedServerID = packet.serverID;
+      } else {
+        if (packet.serverID !== connectedServerID) {
+          location.reload(); // The server has been updated since we last connected, so let's refresh to make sure the client is also up to date
+        }
+      }
     });
     app.socket.on(Packet.RESOLVE, (packet: PacketResolved) => {
       setResolvedData(packet);
@@ -317,22 +327,22 @@ export default () => {
       >
         <div id="content" className={clsx('fixed inset-0 overflow-hidden', styles.border)}>
           <LoadingOverlay visible={connectionState != ConnectionState.CONNECTED} message={loadingMessage} loading={connectionState == ConnectionState.CONNECTING} className="bg-opacity-100" />
-          <Col className={clsx('absolute text-white bg-[#212121] leading-[normal] inset-0')} style={{ fontSize: 'calc(min(70px, 4.5vw))' }}>
+          <Col className={clsx('absolute inset-0 bg-[#212121] leading-[normal] text-white')} style={{ fontSize: 'calc(min(70px, 4.5vw))' }}>
             <Row className="items-center justify-center p-[0.25em] pt-[0.1em]">
-              <div id="question" className="pr-[0.5em] grow shrink text-center"></div>
-              <Col className="items-center justify-center justify-self-end min-w-[5.2em]">
-                <div id="chance" className="after:content-['%'] text-[2.5em] text-[#A5FF6E]"></div>
+              <div id="question" className="shrink grow pr-[0.5em] text-center"></div>
+              <Col className="min-w-[5.2em] items-center justify-center justify-self-end">
+                <div id="chance" className="text-[2.5em] text-[#A5FF6E] after:content-['%']"></div>
                 <div className="-mt-[0.3em] text-[1.0em] text-[#A5FF6E]">chance</div>
               </Col>
             </Row>
-            <Col className={clsx('relative grow shrink items-stretch min-h-0', resolvedData && 'mb-1')}>
+            <Col className={clsx('relative min-h-0 shrink grow items-stretch', resolvedData && 'mb-1')}>
               <canvas id="chart" className="absolute" style={{ aspectRatio: 'unset' }}></canvas>
             </Col>
-            <Row className={clsx('justify-end items-center p-[0.2em]', resolvedData && 'hidden')}>
-              <Col className="grow shrink items-start justify-end max-h-[3.6em] h-[3.6em] overflow-hidden">
-                <Col id="transactions" className="grow shrink h-full">
+            <Row className={clsx('items-center justify-end p-[0.2em]', resolvedData && 'hidden')}>
+              <Col className="h-[3.6em] max-h-[3.6em] shrink grow items-start justify-end overflow-hidden">
+                <Col id="transactions" className="h-full shrink grow">
                   <div id="transaction-template" className={clsx(styles.bet, 'text-[1em]')}>
-                    <div id="name" className="font-bold inline-block truncate max-w-[65%] align-bottom"></div>{' '}
+                    <div id="name" className="inline-block max-w-[65%] truncate align-bottom font-bold"></div>{' '}
                     <div className="color inline">
                       <p className="boughtSold"></p> M$ <p className="amount"></p>
                     </div>
@@ -375,8 +385,8 @@ export default () => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Col className="absolute text-white bg-[#212121] leading-[normal] inset-0">
-                  <Col className="flex items-center text-6xl justify-center font-bold grow">
+                <Col className="absolute inset-0 bg-[#212121] leading-[normal] text-white">
+                  <Col className="flex grow items-center justify-center text-6xl font-bold">
                     <div>Resolved</div>
                     {resolvedData.outcome === ResolutionOutcome.YES ? (
                       <div className={clsx('mt-1', styles.green, styles.color)}>YES</div>
@@ -398,7 +408,7 @@ export default () => {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Col className="absolute text-white bg-[#212121] leading-[normal] inset-0 p-4 font-bold">
+                <Col className="absolute inset-0 bg-[#212121] p-4 font-bold leading-[normal] text-white">
                   <Row className="justify-between">
                     <Row className="items-center text-3xl">
                       <div>Resolved</div>
@@ -411,12 +421,12 @@ export default () => {
                         <div className={clsx('', styles.blue, styles.color)}>N/A</div>
                       )}
                     </Row>
-                    <Col className="items-center text-1xl text-center">
+                    <Col className="text-1xl items-center text-center">
                       <div>{resolvedData.uniqueTraders} unique</div>
                       <div>trader{resolvedData.uniqueTraders === 1 ? '' : 's'}!</div>
                     </Col>
                   </Row>
-                  <Col className="grow mt-5 text-xl">
+                  <Col className="mt-5 grow text-xl">
                     <div className="text-green-400">Top Winners:</div>
                     <div className="font-normal">
                       {resolvedData.topWinners.map((winner, index) => (
