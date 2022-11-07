@@ -27,7 +27,7 @@ export async function mintAndPoolCert(
     toType: 'USER',
     token: 'SHARE',
     amount: mintShares,
-    description: `user/${userId} minted ${mintShares} shares`,
+    description: `USER/${userId} minted ${mintShares} shares`,
   }
   batch.set(ref1, certMintTxn)
 
@@ -46,7 +46,7 @@ export async function mintAndPoolCert(
     toType: 'CONTRACT',
     token: 'SHARE',
     amount: poolShares,
-    description: `user/${userId} added ${poolShares} shares to pool`,
+    description: `USER/${userId} added ${poolShares} shares to pool`,
   }
   batch.set(ref2, certTransferTxn)
 
@@ -62,7 +62,7 @@ export async function mintAndPoolCert(
     toType: 'CONTRACT',
     token: 'M$',
     amount: poolMana,
-    description: `user/${userId} added ${formatMoney(poolMana)} to pool`,
+    description: `USER/${userId} added ${formatMoney(poolMana)} to pool`,
   }
   batch.set(ref3, certPayManaTxn)
 
@@ -93,7 +93,7 @@ export function buyFromPool(
     toType: 'USER',
     token: 'SHARE',
     amount: shares,
-    description: `user/${userId} bought ${shares} shares from pool`,
+    description: `USER/${userId} bought ${shares} shares from pool`,
   }
   transaction.set(ref1, certTransferTxn)
 
@@ -110,7 +110,7 @@ export function buyFromPool(
     toType: 'CONTRACT',
     token: 'M$',
     amount: mana,
-    description: `user/${userId} paid ${formatMoney(mana)} to pool`,
+    description: `USER/${userId} paid ${formatMoney(mana)} to pool`,
   }
   transaction.set(ref2, certPayManaTxn)
 }

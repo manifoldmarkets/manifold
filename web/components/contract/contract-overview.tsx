@@ -38,6 +38,7 @@ import {
 import { formatMoney } from 'common/util/format'
 import { Title } from '../widgets/title'
 import { swapCert } from 'web/lib/firebase/api'
+import { CertOverview } from './cert-overview'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -199,82 +200,6 @@ const PseudoNumericOverview = (props: {
         fullHeight={250}
         mobileHeight={150}
       />
-    </Col>
-  )
-}
-
-function CertOverview(props: { contract: CertContract }) {
-  const { contract } = props
-  const txns = useCertTxns(contract.id)
-
-  // Show one div for each of the txns time & descriptions
-  return (
-    <Col className="gap-1 md:gap-2">
-      <BuyCertWidget contract={contract} />
-
-      <Title>Overview</Title>
-      <div className="rounded-lg bg-yellow-100 px-2 py-4 text-yellow-700">
-        Pool: {JSON.stringify(contract.pool)}
-      </div>
-      {txns.map((txn, i) => (
-        <div key={i} className="rounded-lg px-2 py-1 text-gray-500">
-          {txn.description} <RelativeTimestamp time={txn.createdTime} />
-        </div>
-      ))}
-    </Col>
-  )
-}
-
-// A form and a button, to let the user input a certain amount of mana and display the amount of shares they will get
-function BuyCertWidget(props: { contract: CertContract }) {
-  const { contract } = props
-  const [amount, setAmount] = useState(10)
-  const shares = calculateShares(contract.pool, amount)
-  const pricePerShare = amount / shares
-
-  function formatPrice(price: number) {
-    return ENV_CONFIG.moneyMoniker + price.toFixed(2)
-  }
-
-  return (
-    // Make it look like a nice card
-    <Col className="max-w-md gap-2 rounded-lg bg-gray-100 p-4">
-      <Title>Buy "{contract.question}"</Title>
-      <Row className="gap-2">
-        <Col>
-          <label htmlFor="amount">{ENV_CONFIG.moneyMoniker} Amount</label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(parseInt(e.target.value))}
-          />
-        </Col>
-        <Col>
-          <label htmlFor="shares">Shares purchased</label>
-          <input
-            className="border-none bg-gray-100"
-            type="number"
-            value={shares}
-            readOnly
-          />
-        </Col>
-      </Row>
-      <Row>
-        <br /> Average price per share: {formatPrice(pricePerShare)}
-        <br /> Cert price: {formatPrice(calculatePrice(contract.pool))} {' => '}
-        {formatPrice(calculatePriceAfterBuy(contract.pool, amount))}
-      </Row>
-      <Button
-        onClick={async () => {
-          console.log('buying', amount, 'shares')
-          await swapCert({
-            certId: contract.id,
-            amount,
-          })
-        }}
-      >
-        Buy
-      </Button>
     </Col>
   )
 }
