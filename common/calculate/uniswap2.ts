@@ -9,24 +9,30 @@ export function calculateShares(
   // Calculate shares purchasable with this amount of mana
   // Holding the Uniswapv2 constant of k = mana * shares
   // TODO: Should this be done in log space for precision?
+  return pool['SHARE'] - afterSwap(pool, 'M$', mana)['SHARE']
+}
+
+// Returns the new pool after the specified number of tokens are
+// swapped into the pool
+export function afterSwap(
+  pool: { [outcome: string]: number },
+  token: 'M$' | 'SHARE',
+  amount: number
+) {
   const k = pool['M$'] * pool['SHARE']
-  const newPoolShares = k / (pool['M$'] + mana)
-  return pool['SHARE'] - newPoolShares
+  const other = token === 'M$' ? 'SHARE' : 'M$'
+  return {
+    [token]: pool[token] + amount,
+    [other]: k / (pool[token] + amount),
+  }
 }
 
 export function calculatePriceAfterBuy(
   pool: { [outcome: string]: number },
   mana: number
 ) {
-  const newPool = {
-    M$: pool['M$'] + mana,
-    SHARE: pool['SHARE'] - calculateShares(pool, mana),
-  }
-  return calculatePrice(newPool)
+  return calculatePrice(afterSwap(pool, 'M$', mana))
 }
-
-// Cert could be implemented using multi-cpmm with n=2, hardcoded for 'M$' and 'SHARE'
-// Actually, bad idea because multi-cpmm is for probabilities
 
 /* 
 txns for minting:

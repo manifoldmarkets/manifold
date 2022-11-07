@@ -37,6 +37,7 @@ import {
 } from 'common/calculate/uniswap2'
 import { formatMoney } from 'common/util/format'
 import { Title } from '../widgets/title'
+import { swapCert } from 'web/lib/firebase/api'
 
 const OverviewQuestion = (props: { text: string }) => (
   <Linkify className="text-lg text-indigo-700 sm:text-2xl" text={props.text} />
@@ -209,7 +210,6 @@ function CertOverview(props: { contract: CertContract }) {
   // Show one div for each of the txns time & descriptions
   return (
     <Col className="gap-1 md:gap-2">
-      <Title>Buy Certs</Title>
       <BuyCertWidget contract={contract} />
 
       <Title>Overview</Title>
@@ -239,6 +239,7 @@ function BuyCertWidget(props: { contract: CertContract }) {
   return (
     // Make it look like a nice card
     <Col className="max-w-md gap-2 rounded-lg bg-gray-100 p-4">
+      <Title>Buy "{contract.question}"</Title>
       <Row className="gap-2">
         <Col>
           <label htmlFor="amount">{ENV_CONFIG.moneyMoniker} Amount</label>
@@ -264,8 +265,12 @@ function BuyCertWidget(props: { contract: CertContract }) {
         {formatPrice(calculatePriceAfterBuy(contract.pool, amount))}
       </Row>
       <Button
-        onClick={() => {
+        onClick={async () => {
           console.log('buying', amount, 'shares')
+          await swapCert({
+            certId: contract.id,
+            amount,
+          })
         }}
       >
         Buy

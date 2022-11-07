@@ -13,6 +13,7 @@ import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
 import { createanswer } from './create-answer'
+import { swapcert } from './swap-cert'
 import { placebet } from './place-bet'
 import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
@@ -55,6 +56,7 @@ addJsonEndpointRoute('/changeuserinfo', changeuserinfo)
 addJsonEndpointRoute('/createuser', createuser)
 addJsonEndpointRoute('/createanswer', createanswer)
 addJsonEndpointRoute('/createcomment', createcomment)
+addJsonEndpointRoute('/swapcert', swapcert)
 addJsonEndpointRoute('/placebet', placebet)
 addJsonEndpointRoute('/cancelbet', cancelbet)
 addJsonEndpointRoute('/sellbet', sellbet)
