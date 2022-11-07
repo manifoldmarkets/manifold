@@ -1,7 +1,7 @@
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import {
   BinaryResolutionOrChance,
   ContractCard,
