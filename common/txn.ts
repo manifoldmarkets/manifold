@@ -9,6 +9,12 @@ type AnyTxnType =
   | BettingStreakBonus
   | CancelUniqueBettorBonus
   | CommentBountyRefund
+  | CertMint
+  | CertTransfer
+  | CertPayMana
+  | CertDividend
+  | CertBurn
+
 type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
@@ -22,7 +28,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' // | 'USD' | MarketOutcome
+  token: 'M$' | 'SHARE' // | 'USD' | MarketOutcome
 
   category:
     | 'CHARITY'
@@ -34,6 +40,11 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
     | 'CANCEL_UNIQUE_BETTOR_BONUS'
     | 'COMMENT_BOUNTY'
     | 'REFUND_COMMENT_BOUNTY'
+    | 'CERT_MINT' // Create a new cert
+    | 'CERT_TRANSFER' // Transfer cert ownership
+    | 'CERT_PAY_MANA' // Transfer mana for a cert
+    | 'CERT_DIVIDEND' // Cert holder pays out dividends
+    | 'CERT_BURN' // Destroy a cert
 
   // Any extra data
   data?: { [key: string]: any }
@@ -41,6 +52,47 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   // Human-readable description
   description?: string
 } & T
+
+type CertId = {
+  // TODO: should certIds be in data?
+  certId: string
+}
+
+type CertMint = {
+  category: 'CERT_MINT'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'SHARE'
+}
+
+// TODO: want some kind of ID that ties these together?
+type CertTransfer = {
+  category: 'CERT_TRANSFER'
+  fromType: 'USER' | 'CONTRACT'
+  toType: 'USER' | 'CONTRACT'
+  token: 'SHARE'
+}
+
+type CertPayMana = {
+  category: 'CERT_PAY_MANA'
+  fromType: 'USER' | 'CONTRACT'
+  toType: 'USER' | 'CONTRACT'
+  token: 'M$'
+}
+
+type CertDividend = {
+  category: 'CERT_DIVIDEND'
+  fromType: 'USER'
+  toType: 'USER'
+  token: 'M$'
+}
+
+type CertBurn = {
+  category: 'CERT_BURN'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'SHARE'
+}
 
 type Donation = {
   fromType: 'USER'
@@ -138,3 +190,9 @@ export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
 export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
 export type CommentBountyDepositTxn = Txn & CommentBountyDeposit
 export type CommentBountyWithdrawalTxn = Txn & CommentBountyWithdrawal
+export type CertTxn = Txn & CertId
+export type CertMintTxn = CertTxn & CertMint
+export type CertTransferTxn = CertTxn & CertTransfer
+export type CertPayManaTxn = CertTxn & CertPayMana
+export type CertDividendTxn = CertTxn & CertDividend
+export type CertBurnTxn = CertTxn & CertBurn
