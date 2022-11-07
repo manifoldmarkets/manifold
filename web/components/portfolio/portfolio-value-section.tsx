@@ -288,7 +288,7 @@ function AddFundsButton({ userId }: { userId?: string }) {
         color="gray-outline"
         onClick={() => setOpen(true)}
       >
-        Add {ENV_CONFIG.moneyMoniker}
+        Get more {ENV_CONFIG.moneyMoniker}
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
     </>

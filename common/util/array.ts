@@ -4,7 +4,8 @@ export function filterDefined<T>(array: (T | null | undefined)[]) {
   return array.filter((item) => item !== null && item !== undefined) as T[]
 }
 
-type FalseyValueArray<T> = T | false | undefined | null | FalseyValueArray<T>[]
+type Falsey = false | undefined | null | 0 | ''
+type FalseyValueArray<T> = T | Falsey | FalseyValueArray<T>[]
 
 export function buildArray<T>(...params: FalseyValueArray<T>[]) {
   return compact(flattenDeep(params)) as T[]

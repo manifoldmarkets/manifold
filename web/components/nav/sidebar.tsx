@@ -9,6 +9,7 @@ import {
   ChartBarIcon,
   LogoutIcon,
   BeakerIcon,
+  GiftIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
@@ -112,13 +113,7 @@ const getDesktopNav = (loggedIn: boolean) =>
         href: '/leaderboards',
         icon: ChartBarIcon,
       },
-    ],
-
-    !loggedIn && {
-      name: 'Help & About',
-      href: 'https://help.manifold.markets/',
-      icon: BookOpenIcon,
-    }
+    ]
   )
 
 function getMoreDesktopNavigation(loggedIn: boolean) {
@@ -128,14 +123,12 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
 
   return buildArray(
     { name: 'Tournaments', href: '/tournaments' },
-    // loggedIn && { name: 'Get M$', href: '/add-funds', icon: CashIcon },
     { name: 'Groups', href: '/groups' },
     loggedIn && { name: 'Refer a friend', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
     { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' }
-    // { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' },
   )
 }
 
@@ -148,8 +141,7 @@ const getMobileNav = (loggedIn: boolean) => {
     { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
     loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },
-    // { name: 'Charity', href: '/charity', icon: HeartIcon },
-    // loggedIn && { name: 'Get M$', href: '/add-funds', icon: CashIcon },
+    loggedIn && { name: 'Refer a friend', href: '/referrals', icon: GiftIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon }
   )
 }
