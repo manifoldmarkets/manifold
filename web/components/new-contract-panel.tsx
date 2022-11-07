@@ -207,6 +207,8 @@ export function NewContractPanel(props: {
         isFree: false,
       })
       editor?.commands.clearContent(true)
+      // force clear save, because it can fail if editor unrenders
+      localStorage.removeItem(`text create market`)
       await router.push(contractPath(result as Contract))
     } catch (e) {
       console.error('error creating contract', e, (e as any).details)
