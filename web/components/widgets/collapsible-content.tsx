@@ -15,8 +15,8 @@ import {
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
-const COLLAPSIBLE_HEIGHT = 370
-const START_COLLAPSED_HEIGHT = 800
+const COLLAPSIBLE_HEIGHT = 45
+const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
   onClick: () => void
@@ -50,9 +50,10 @@ export function CollapsibleContent(props: {
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
     useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
+
   useSafeLayoutEffect(() => {
     if (contentRef.current) {
-      if (contentRef.current.offsetHeight > START_COLLAPSED_HEIGHT) {
+      if (contentRef.current.offsetHeight > SHOW_COLLAPSE_TRESHOLD) {
         setShouldAllowCollapseOfContent(true)
       }
     }
@@ -63,6 +64,7 @@ export function CollapsibleContent(props: {
       <ActuallyCollapsibleContent content={content} contractId={contractId} />
     )
   }
+
   return (
     <div ref={contentRef}>
       <Content content={content} />
@@ -76,7 +78,7 @@ function ActuallyCollapsibleContent(props: {
   contractId: string
 }) {
   const { content, contractId } = props
-  const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(true, {
+  const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(false, {
     store: storageStore(safeLocalStorage()),
     key: `isCollapsed-contract-${contractId}`,
   })
@@ -94,7 +96,7 @@ function ActuallyCollapsibleContent(props: {
         {isCollapsed && (
           <>
             <div className="absolute bottom-0 w-full">
-              <div className="h-16 bg-gradient-to-t from-gray-100" />
+              <div className="h-12 bg-gradient-to-t from-gray-100" />
             </div>
           </>
         )}
