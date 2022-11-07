@@ -13,6 +13,7 @@ import {
   calculateNewPortfolioMetrics,
   calculateNewProfit,
   calculateMetricsByContract,
+  calculateCreatorTraders,
 } from '../../common/calculate-metrics'
 import { batchedWaitAll } from '../../common/util/promise'
 import { newEndpointNoAuth } from './api'
@@ -65,6 +66,8 @@ export async function updateUserMetrics() {
       const betsByContractId = groupBy(currentBets, (b) => b.contractId)
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorVolume = calculateCreatorVolume(userContracts)
+      const newCreatorTraders = calculateCreatorTraders(userContracts)
+
       const newPortfolio = calculateNewPortfolioMetrics(
         user,
         contractsById,
@@ -125,6 +128,7 @@ export async function updateUserMetrics() {
         user: user,
         fields: {
           creatorVolumeCached: newCreatorVolume,
+          creatorTraders: newCreatorTraders,
           profitCached: newProfit,
           nextLoanCached: nextLoanPayout ?? 0,
           fractionResolvedCorrectly: newFractionResolvedCorrectly,
