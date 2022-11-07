@@ -1,7 +1,28 @@
-import { CertMintTxn, Txn } from 'common/txn'
-
-export function getPrice(pool: { [outcome: string]: number }) {
+export function calculatePrice(pool: { [outcome: string]: number }) {
   return pool['M$'] / pool['SHARE']
+}
+
+export function calculateShares(
+  pool: { [outcome: string]: number },
+  mana: number
+) {
+  // Calculate shares purchasable with this amount of mana
+  // Holding the Uniswapv2 constant of k = mana * shares
+  // TODO: Should this be done in log space for precision?
+  const k = pool['M$'] * pool['SHARE']
+  const newPoolShares = k / (pool['M$'] + mana)
+  return pool['SHARE'] - newPoolShares
+}
+
+export function calculatePriceAfterBuy(
+  pool: { [outcome: string]: number },
+  mana: number
+) {
+  const newPool = {
+    M$: pool['M$'] + mana,
+    SHARE: pool['SHARE'] - calculateShares(pool, mana),
+  }
+  return calculatePrice(newPool)
 }
 
 // Cert could be implemented using multi-cpmm with n=2, hardcoded for 'M$' and 'SHARE'
