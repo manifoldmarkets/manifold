@@ -8,7 +8,7 @@ import { FundsSelector } from './bet/yes-no-selector'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { Title } from './widgets/title'
 import { OtherWaysToGetMana } from './native/add-funds-ios'
-import { ControlledTabs, Tabs, UncontrolledTabs } from './layout/tabs'
+import { Tabs } from './layout/tabs'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -32,7 +32,7 @@ export function AddFundsModal(props: {
           tabs={[
             {
               title: 'Buy Mana',
-              content: <BuyManaTab />,
+              content: <BuyManaTab onClose={() => setOpen(false)} />,
             },
             {
               title: "I'm Broke",
@@ -52,7 +52,8 @@ export function AddFundsModal(props: {
   )
 }
 
-function BuyManaTab() {
+function BuyManaTab(props: { onClose: () => void }) {
+  const { onClose } = props
   const user = useUser()
 
   const [amountSelected, setAmountSelected] = useState<1000 | 2500 | 10000>(
@@ -74,7 +75,7 @@ function BuyManaTab() {
       </div>
 
       <div className="mt-2 flex gap-2">
-        <Button color="gray" onClick={() => setOpen(false)}>
+        <Button color="gray" onClick={onClose}>
           Back
         </Button>
 
