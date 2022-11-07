@@ -6,10 +6,11 @@ import { useMemo, useState } from 'react'
 import TinderCard from 'react-tinder-card'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { useUserSwipes } from 'web/hooks/use-user-bets'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { logSwipe, placeBet } from 'web/lib/firebase/api'
+import { placeBet } from 'web/lib/firebase/api'
+import { logSwipe } from 'web/lib/firebase/views'
 import {
   getBinaryProbPercent,
   getTrendingContracts,
@@ -75,6 +76,8 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
   const { contract, onLeave } = props
   const { question, description, coverImageUrl, id: contractId } = contract
 
+  const userId = useUser()?.id
+
   const [amount, setAmount] = useState(10)
   const onClickMoney = () => setAmount?.((amount) => amount + betTapAdd)
 
@@ -92,7 +95,7 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
           if (direction === 'left' || direction === 'right') {
             const outcome = direction === 'left' ? 'NO' : 'YES'
             await placeBet({ amount, outcome, contractId })
-            logSwipe({ amount, outcome, contractId })
+            userId && logSwipe({ amount, outcome, contractId, userId })
             track('swipe bet', {
               slug: contract.slug,
               contractId,
@@ -105,7 +108,7 @@ const Card = (props: { contract: BinaryContract; onLeave?: () => void }) => {
           }
           if (direction === 'up') {
             track('swipe skip', { slug: contract.slug, contractId })
-            logSwipe({ outcome: 'SKIP', contractId })
+            userId && logSwipe({ outcome: 'SKIP', contractId, userId })
           }
         }}
         onCardLeftScreen={onLeave}

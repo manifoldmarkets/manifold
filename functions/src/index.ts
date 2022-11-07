@@ -87,7 +87,6 @@ import { updategroupmetrics } from './update-group-metrics'
 import { updateloans } from './update-loans'
 import { addsubsidy } from './add-subsidy'
 import { testscheduledfunction } from './test-scheduled-function'
-import { logswipe } from './log-swipe'
 
 const toCloudFunction = ({ opts, handler }: EndpointDefinition) => {
   return onRequest(opts, handler as any)
@@ -101,7 +100,6 @@ const placeBetFunction = toCloudFunction(placebet)
 const cancelBetFunction = toCloudFunction(cancelbet)
 const sellBetFunction = toCloudFunction(sellbet)
 const sellSharesFunction = toCloudFunction(sellshares)
-const logSwipeFunction = toCloudFunction(logswipe)
 const claimManalinkFunction = toCloudFunction(claimmanalink)
 const createMarketFunction = toCloudFunction(createmarket)
 const addSubsidyFunction = toCloudFunction(addsubsidy)
@@ -134,7 +132,6 @@ export {
   cancelBetFunction as cancelbet,
   sellBetFunction as sellbet,
   sellSharesFunction as sellshares,
-  logSwipeFunction as logswipe,
   claimManalinkFunction as claimmanalink,
   createMarketFunction as createmarket,
   addSubsidyFunction as addsubsidy,
