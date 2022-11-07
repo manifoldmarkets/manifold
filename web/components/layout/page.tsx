@@ -8,17 +8,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 export function Page(props: {
   rightSidebar?: ReactNode
   className?: string
-  rightSidebarClassName?: string
   children?: ReactNode
   logoSubheading?: string
 }) {
-  const {
-    children,
-    rightSidebar,
-    className,
-    rightSidebarClassName,
-    logoSubheading,
-  } = props
+  const { children, rightSidebar, className, logoSubheading } = props
 
   const isMobile = useIsMobile()
   const bottomBarPadding = 'pb-[58px] lg:pb-0 '
@@ -42,24 +35,20 @@ export function Page(props: {
           logoSubheading={logoSubheading}
           className="sticky top-0 hidden divide-gray-300 self-start pl-2 lg:col-span-2 lg:flex"
         />
-        <main
-          className={clsx(
-            'lg:col-span-8 lg:pt-6',
-            rightSidebar ? 'xl:col-span-7' : 'xl:col-span-8'
-          )}
-        >
-          {children}
-
-          {/* If right sidebar is hidden, place its content at the bottom of the page. */}
-          <div className="block xl:hidden">{rightSidebar}</div>
-        </main>
-        <aside className="hidden xl:col-span-3 xl:block">
-          <div
-            className={clsx('sticky top-4 space-y-4', rightSidebarClassName)}
+        {/* put right sidebar below main content on small or medium screens */}
+        <div className="lg:col-span-8 xl:contents">
+          <main
+            className={clsx(
+              'lg:mt-6',
+              rightSidebar ? 'col-span-7' : 'col-span-8'
+            )}
           >
-            {rightSidebar}
-          </div>
-        </aside>
+            {children}
+          </main>
+          <aside className="col-span-3">
+            <div className="top-6 xl:sticky">{rightSidebar}</div>
+          </aside>
+        </div>
       </div>
       <BottomNavBar />
     </>

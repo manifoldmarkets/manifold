@@ -3,7 +3,7 @@ import React, { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import { BetPanel } from 'web/components/bet/bet-panel'
 import { Col } from 'web/components/layout/col'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser, useUserById } from 'web/hooks/use-user'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Spacer } from 'web/components/layout/spacer'
 import {
@@ -31,7 +31,10 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { getOpenGraphProps } from 'common/contract-details'
 import { ContractDescription } from 'web/components/contract/contract-description'
-import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
+import {
+  ContractLeaderboard,
+  ContractTopTrades,
+} from 'web/components/contract/contract-leaderboard'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { Title } from 'web/components/widgets/title'
 import { usePrefetch } from 'web/hooks/use-prefetch'
@@ -44,6 +47,7 @@ import { Answer } from 'common/answer'
 import { useEvent } from 'web/hooks/use-event'
 import { CreatorSharePanel } from 'web/components/contract/creator-share-panel'
 import { useContract } from 'web/hooks/use-contracts'
+import { BAD_CREATOR_THRESHOLD } from 'web/components/contract/contract-details'
 
 const CONTRACT_BET_LOADING_OPTS = {
   filterRedemptions: true,
@@ -135,6 +139,7 @@ export function ContractPageContent(
   )
 
   const bets = useBets(contract.id, CONTRACT_BET_LOADING_OPTS) ?? props.bets
+  const creator = useUserById(contract.creatorId) ?? null
 
   const userBets = useBets(contract.id, {
     userId: user?.id ?? '_',
@@ -209,6 +214,16 @@ export function ContractPageContent(
       )}
       <Col className="w-full justify-between rounded bg-white py-6 pl-1 pr-2 sm:px-2 md:px-6 md:py-8">
         <ContractOverview contract={contract} bets={bets} />
+        {creator?.fractionResolvedCorrectly != null &&
+          creator.fractionResolvedCorrectly < BAD_CREATOR_THRESHOLD && (
+            <div className="pt-2">
+              <AlertBox
+                title="Warning"
+                text="This creator has a track record of resolving their markets incorrectly."
+              />
+            </div>
+          )}
+
         <ContractDescription className="mt-6 mb-2 px-2" contract={contract} />
 
         {isCreator ? (
@@ -244,6 +259,11 @@ export function ContractPageContent(
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               <ContractLeaderboard contract={contract} bets={bets} />
+              <ContractTopTrades
+                contract={contract}
+                bets={bets}
+                comments={comments}
+              />
             </div>
             <Spacer h={12} />
           </>

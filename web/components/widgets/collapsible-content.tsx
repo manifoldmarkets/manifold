@@ -9,12 +9,14 @@ import { Row } from '../layout/row'
 import { Content } from './editor'
 import { Button } from 'web/components/buttons/button'
 import {
-  inMemoryStore,
+  storageStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
 
-const COLLAPSIBLE_HEIGHT = 204
+const COLLAPSIBLE_HEIGHT = 45
+const SHOW_COLLAPSE_TRESHOLD = 180
 
 export function ShowMoreLessButton(props: {
   onClick: () => void
@@ -28,7 +30,7 @@ export function ShowMoreLessButton(props: {
       className={clsx('z-10 select-none bg-white text-sm', className)}
       onClick={onClick}
     >
-      <Row className="items-center gap-0.5 text-indigo-700">
+      <Row className="items-center gap-0.5 text-indigo-700 drop-shadow-2xl">
         {isCollapsed ? (
           <ChevronDoubleDownIcon className="h-4 w-4" />
         ) : (
@@ -45,63 +47,72 @@ export function CollapsibleContent(props: {
   contractId: string
 }) {
   const { content, contractId } = props
-  const [shouldTruncate, setShouldTruncate] = useState(false)
+  const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
+    useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
+
   useSafeLayoutEffect(() => {
     if (contentRef.current) {
-      if (contentRef.current.offsetHeight > COLLAPSIBLE_HEIGHT) {
-        setShouldTruncate(true)
+      if (contentRef.current.offsetHeight > SHOW_COLLAPSE_TRESHOLD) {
+        setShouldAllowCollapseOfContent(true)
       }
     }
   }, [contentRef.current?.offsetHeight])
-  const [isCollapsed, setIsCollapsed] = usePersistentState(true, {
-    store: inMemoryStore(),
+
+  if (shouldAllowCollapseOfContent) {
+    return (
+      <ActuallyCollapsibleContent content={content} contractId={contractId} />
+    )
+  }
+
+  return (
+    <div ref={contentRef}>
+      <Content content={content} />
+    </div>
+  )
+}
+
+// Moved to its own component to reduce unnecessary isCollapsed states in local storage
+function ActuallyCollapsibleContent(props: {
+  content: JSONContent | string
+  contractId: string
+}) {
+  const { content, contractId } = props
+  const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(false, {
+    store: storageStore(safeLocalStorage()),
     key: `isCollapsed-contract-${contractId}`,
   })
-
-  if (shouldTruncate) {
-    return (
+  return (
+    <div className="relative">
       <div
         style={{ height: isCollapsed ? COLLAPSIBLE_HEIGHT : 'auto' }}
-        className={clsx('transition-height relative w-full overflow-hidden')}
+        className={clsx(
+          'transition-height relative w-full overflow-hidden rounded-b-md'
+        )}
       >
-        <div ref={contentRef}>
+        <div>
           <Content content={content} />
         </div>
         {isCollapsed && (
           <>
             <div className="absolute bottom-0 w-full">
-              <div className="h-2 bg-gradient-to-t from-white" />
-              <div className="h-8 bg-white" />
+              <div className="h-12 bg-gradient-to-t from-gray-100" />
             </div>
-            <ShowMoreLessButton
-              className="absolute right-0 bottom-0"
-              onClick={() => setIsCollapsed(false)}
-              isCollapsed={isCollapsed}
-            />
           </>
         )}
-        {!isCollapsed && (
-          <Row className="w-full justify-end">
-            <ShowMoreLessButton
-              className="flex"
-              onClick={() => {
-                setIsCollapsed(true)
-                window.scrollTo({
-                  top: 0,
-                  behavior: 'smooth',
-                })
-              }}
-              isCollapsed={isCollapsed}
-            />
-          </Row>
-        )}
       </div>
-    )
-  }
-  return (
-    <div ref={contentRef}>
-      <Content content={content} />
+      <ShowMoreLessButton
+        className="absolute right-0 -bottom-8 bg-transparent"
+        onClick={() => {
+          if (!isCollapsed)
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth',
+            })
+          setIsCollapsed(!isCollapsed)
+        }}
+        isCollapsed={isCollapsed}
+      />
     </div>
   )
 }

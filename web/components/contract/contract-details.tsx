@@ -146,7 +146,7 @@ export function MarketSubheader(props: {
   const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   return (
-    <Row className="grow">
+    <Row className="relative grow">
       <Avatar
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
@@ -156,7 +156,7 @@ export function MarketSubheader(props: {
       />
 
       {!disabled && (
-        <div className="absolute mt-3 ml-[11px]">
+        <div className="absolute bottom-0 ml-5 flex h-5 w-5 items-center justify-center sm:-bottom-1">
           <MiniUserFollowButton userId={creatorId} />
         </div>
       )}
@@ -175,7 +175,7 @@ export function MarketSubheader(props: {
           {correctResolutionPercentage != null &&
             correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
               <Tooltip
-                text="This creator has a track record of creating contracts that are resolved incorrectly."
+                text="This creator has a track record of creating markets that are resolved incorrectly."
                 placement="bottom"
                 className="w-fit"
               >
@@ -497,4 +497,4 @@ function EditableCloseDate(props: {
   )
 }
 
-const BAD_CREATOR_THRESHOLD = 0.8
+export const BAD_CREATOR_THRESHOLD = 0.8

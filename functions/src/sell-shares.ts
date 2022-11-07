@@ -18,7 +18,7 @@ import { FLAT_TRADE_FEE } from '../../common/fees'
 
 const bodySchema = z.object({
   contractId: z.string(),
-  shares: z.number().optional(), // leave it out to sell all shares
+  shares: z.number().positive().optional(), // leave it out to sell all shares
   outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
 })
 

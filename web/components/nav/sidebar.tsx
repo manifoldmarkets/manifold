@@ -3,19 +3,20 @@ import {
   HomeIcon,
   SearchIcon,
   BookOpenIcon,
-  CashIcon,
-  HeartIcon,
+  UsersIcon,
   FlagIcon,
   ChatIcon,
   ChartBarIcon,
+  LogoutIcon,
+  BeakerIcon,
+  GiftIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Router, { useRouter } from 'next/router'
-
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogout, User } from 'web/lib/firebase/users'
+import { firebaseLogout } from 'web/lib/firebase/users'
 import { ManifoldLogo } from './manifold-logo'
-import { MenuButton, MenuItem } from './menu'
+import { MenuButton } from './menu'
 import { ProfileSummary } from './profile-menu'
 import NotificationsIcon from 'web/components/notifications-icon'
 import { IS_PRIVATE_MANIFOLD } from 'common/envs/constants'
@@ -32,20 +33,16 @@ import { Spacer } from '../layout/spacer'
 export default function Sidebar(props: {
   className?: string
   logoSubheading?: string
+  isMobile?: boolean
 }) {
-  const { className, logoSubheading } = props
+  const { className, logoSubheading, isMobile } = props
   const router = useRouter()
   const currentPage = router.pathname
 
   const user = useUser()
 
-  const desktopNavOptions = !user
-    ? signedOutDesktopNavigation
-    : getDesktopNavigation()
-
-  const mobileNavOptions = !user
-    ? signedOutMobileNavigation
-    : signedInMobileNavigation
+  const navOptions = isMobile ? getMobileNav(!!user) : getDesktopNav(!!user)
+  const bottomNavOptions = bottomNav(!!isMobile, !!user)
 
   const createMarketButton = user && !user.isBannedFromPosting && (
     <CreateQuestionButton />
@@ -54,7 +51,7 @@ export default function Sidebar(props: {
   return (
     <nav
       aria-label="Sidebar"
-      className={clsx('flex max-h-[100vh] flex-col', className)}
+      className={clsx('flex h-screen flex-col', className)}
     >
       <ManifoldLogo className="pt-6" twoLine />
       {logoSubheading && (
@@ -67,35 +64,26 @@ export default function Sidebar(props: {
       {user === undefined && <div className="h-[56px]" />}
       {user === null && <SignInButton className="mb-4" />}
 
-      {user && <ProfileSummary user={user} />}
+      {user && !isMobile && <ProfileSummary user={user} />}
 
-      {/* Mobile navigation */}
-      <div className="flex min-h-0 shrink flex-col gap-1 lg:hidden">
-        {mobileNavOptions.map((item) => (
+      <div className="flex flex-col gap-1">
+        {navOptions.map((item) => (
           <SidebarItem key={item.href} item={item} currentPage={currentPage} />
         ))}
 
-        {user && (
+        {!isMobile && (
           <MenuButton
-            menuItems={getMoreMobileNav()}
+            menuItems={getMoreDesktopNavigation(!!user)}
             buttonContent={<MoreButton />}
           />
         )}
 
         {createMarketButton}
       </div>
-
-      {/* Desktop navigation */}
-      <div className="hidden min-h-0 shrink flex-col items-stretch gap-1 lg:flex ">
-        {desktopNavOptions.map((item) => (
-          <SidebarItem key={item.href} item={item} currentPage={currentPage} />
+      <div className="mt-auto mb-6 flex flex-col gap-1">
+        {bottomNavOptions.map((item) => (
+          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
         ))}
-        <MenuButton
-          menuItems={getMoreDesktopNavigation(user)}
-          buttonContent={<MoreButton />}
-        />
-
-        {createMarketButton}
       </div>
     </nav>
   )
@@ -108,11 +96,11 @@ const logout = async () => {
   await Router.replace(Router.asPath)
 }
 
-function getDesktopNavigation() {
-  return buildArray(
+const getDesktopNav = (loggedIn: boolean) =>
+  buildArray(
     { name: 'Home', href: '/home', icon: HomeIcon },
     { name: 'Search', href: '/search', icon: SearchIcon },
-    {
+    loggedIn && {
       name: 'Notifications',
       href: `/notifications`,
       icon: NotificationsIcon,
@@ -120,110 +108,56 @@ function getDesktopNavigation() {
 
     !IS_PRIVATE_MANIFOLD && [
       { name: 'Midterms', href: '/midterms', icon: FlagIcon },
-      { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-    ]
-  )
-}
-
-function getMoreDesktopNavigation(user?: User | null) {
-  if (IS_PRIVATE_MANIFOLD) {
-    return [
-      { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-      {
-        name: 'Sign out',
-        href: '#',
-        onClick: logout,
+      loggedIn && {
+        name: 'Leaderboards',
+        href: '/leaderboards',
+        icon: ChartBarIcon,
       },
     ]
+  )
+
+function getMoreDesktopNavigation(loggedIn: boolean) {
+  if (IS_PRIVATE_MANIFOLD) {
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
   }
 
-  if (!user) {
-    // Signed out "More"
-    return buildArray(
-      { name: 'Tournaments', href: '/tournaments' },
-      { name: 'Leaderboards', href: '/leaderboards' },
-      { name: 'Groups', href: '/groups' },
-      { name: 'Tournaments', href: '/tournaments' },
-      { name: 'Charity', href: '/charity' },
-      { name: 'Labs', href: '/labs' },
-      { name: 'Blog', href: 'https://news.manifold.markets' },
-      { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-      { name: 'Twitter', href: 'https://twitter.com/ManifoldMarkets' }
-    )
-  }
-
-  // Signed in "More"
   return buildArray(
     { name: 'Tournaments', href: '/tournaments' },
-    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
     { name: 'Groups', href: '/groups' },
-    { name: 'Refer a friend', href: '/referrals' },
+    loggedIn && { name: 'Refer a friend', href: '/referrals' },
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    { name: 'Help & About', href: 'https://help.manifold.markets/' },
-    {
-      name: 'Sign out',
-      href: '#',
-      onClick: logout,
-    }
+    { name: 'Blog', href: 'https://news.manifold.markets' },
+    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' }
   )
 }
 
-const signedOutDesktopNavigation = [
-  { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Explore', href: '/search', icon: SearchIcon },
-  { name: 'Midterms', href: '/midterms', icon: FlagIcon },
-  {
-    name: 'Help & About',
-    href: 'https://help.manifold.markets/',
-    icon: BookOpenIcon,
-  },
-]
-
-const signedOutMobileNavigation = [
-  {
-    name: 'Help & About',
-    href: 'https://help.manifold.markets/',
-    icon: BookOpenIcon,
-  },
-  { name: 'Midterms', href: '/midterms', icon: FlagIcon },
-  { name: 'Charity', href: '/charity', icon: HeartIcon },
-  { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
-  { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-  { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh', icon: ChatIcon },
-]
-
-const signedInMobileNavigation = buildArray(
-  { name: 'Search', href: '/search', icon: SearchIcon },
-
-  !IS_PRIVATE_MANIFOLD && [
+const getMobileNav = (loggedIn: boolean) => {
+  if (IS_PRIVATE_MANIFOLD) {
+    return [{ name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon }]
+  }
+  return buildArray(
     { name: 'Midterms', href: '/midterms', icon: FlagIcon },
     { name: 'Tournaments', href: '/tournaments', icon: TrophyIcon },
     { name: 'Leaderboards', href: '/leaderboards', icon: ChartBarIcon },
-    { name: 'Get M$', href: '/add-funds', icon: CashIcon },
-  ],
-  {
-    name: 'Help & About',
-    href: 'https://help.manifold.markets/',
-    icon: BookOpenIcon,
-  }
-)
-
-function getMoreMobileNav() {
-  const signOut = {
-    name: 'Sign out',
-    href: '#',
-    onClick: logout,
-  }
-  if (IS_PRIVATE_MANIFOLD) return [signOut]
-
-  return buildArray<MenuItem>(
-    { name: 'Groups', href: '/groups' },
-    { name: 'Refer a friend', href: '/referrals' },
-    { name: 'Charity', href: '/charity' },
-    { name: 'Labs', href: '/labs' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
-    signOut
+    loggedIn && { name: 'Groups', href: '/groups', icon: UsersIcon },
+    loggedIn && { name: 'Refer a friend', href: '/referrals', icon: GiftIcon },
+    { name: 'Labs', href: '/labs', icon: BeakerIcon }
   )
 }
+
+const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
+  buildArray(
+    !IS_PRIVATE_MANIFOLD &&
+      isMobile && {
+        name: 'Discord',
+        href: 'https://discord.gg/eHQBNBqXuh',
+        icon: ChatIcon,
+      },
+    {
+      name: 'Help & About',
+      href: 'https://help.manifold.markets/',
+      icon: BookOpenIcon,
+    },
+    loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
+  )

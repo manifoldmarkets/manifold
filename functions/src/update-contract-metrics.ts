@@ -69,12 +69,25 @@ export async function updateContractMetrics() {
         }
       }
 
+      const uniqueBettors24Hours = getUniqueBettors(
+        descendingBets.filter((bet) => now - bet.createdTime < DAY_MS)
+      )
+      const uniqueBettors7Days = getUniqueBettors(
+        descendingBets.filter((bet) => now - bet.createdTime < 7 * DAY_MS)
+      )
+      const uniqueBettors30Days = getUniqueBettors(
+        descendingBets.filter((bet) => now - bet.createdTime < 30 * DAY_MS)
+      )
+
       return {
         doc: firestore.collection('contracts').doc(contract.id),
         fields: {
           volume24Hours: computeVolume(descendingBets, now - DAY_MS),
           volume7Days: computeVolume(descendingBets, now - DAY_MS * 7),
           elasticity: computeElasticity(descendingBets, contract),
+          uniqueBettors24Hours,
+          uniqueBettors7Days,
+          uniqueBettors30Days,
           ...cpmmFields,
         },
       }
@@ -84,4 +97,10 @@ export async function updateContractMetrics() {
 
   log('Writing contract metric updates...')
   await writeAsync(firestore, contractUpdates)
+}
+
+function getUniqueBettors(bets: Bet[]) {
+  const userIds = new Set<string>()
+  bets.forEach((bet) => userIds.add(bet.userId))
+  return userIds.size
 }

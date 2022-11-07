@@ -30,7 +30,11 @@ import { placeBet } from 'web/lib/firebase/api'
 import { getBinaryProbPercent } from 'web/lib/firebase/contracts'
 import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
 import { sellShares } from 'web/lib/firebase/api'
-import { calculateCpmmSale, getCpmmProbability } from 'common/calculate-cpmm'
+import {
+  calculateCpmmSale,
+  getCpmmProbability,
+  getCpmmProbabilityAfterSale,
+} from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
@@ -64,12 +68,13 @@ export function QuickBet(props: {
     contract.id
   )
 
-  const { yesShares, noShares } = useSaveBinaryShares(contract, userBets)
+  const { yesShares, noShares, hasNoShares, hasYesShares } =
+    useSaveBinaryShares(contract, userBets)
 
   const [upHover, setUpHover] = useState(false)
   const [downHover, setDownHover] = useState(false)
 
-  let previewProb = undefined
+  let previewProb: number | undefined = undefined
   try {
     previewProb = upHover
       ? getOutcomeProbabilityAfterBet(
@@ -92,7 +97,7 @@ export function QuickBet(props: {
   let sharesSold: number | undefined
   let sellOutcome: 'YES' | 'NO' | undefined
   let saleAmount: number | undefined
-  if (isCpmm && (upHover || downHover)) {
+  if (isCpmm && ((upHover && hasNoShares) || (downHover && hasYesShares))) {
     const oppositeShares = upHover ? noShares : yesShares
     if (oppositeShares) {
       sellOutcome = upHover ? 'NO' : 'YES'
@@ -100,6 +105,20 @@ export function QuickBet(props: {
       const prob = getProb(contract)
       const maxSharesSold = BET_SIZE / (sellOutcome === 'YES' ? prob : 1 - prob)
       sharesSold = Math.min(oppositeShares, maxSharesSold)
+      const probAfterSale = getCpmmProbabilityAfterSale(
+        contract,
+        sharesSold,
+        sellOutcome,
+        unfilledBets,
+        balanceByUserId
+      )
+
+      // Recompute max shares sold using prob after selling.
+      // This lower price for your shares means the max is more generous.
+      // Which fixes the issue where you sell 99% of your shares instead of all.
+      const maxSharesSold2 =
+        BET_SIZE / (sellOutcome === 'YES' ? probAfterSale : 1 - probAfterSale)
+      sharesSold = Math.min(oppositeShares, maxSharesSold2)
 
       const { cpmmState, saleValue } = calculateCpmmSale(
         contract,
@@ -133,7 +152,7 @@ export function QuickBet(props: {
     const shortQ = contract.question.slice(0, 20)
     const message =
       sellOutcome && saleAmount
-        ? `${formatMoney(saleAmount)} sold of "${shortQ}"...`
+        ? `${formatMoney(Math.round(saleAmount))} sold of "${shortQ}"...`
         : `${formatMoney(BET_SIZE)} on "${shortQ}"...`
 
     toast.promise(betPromise(), {
@@ -287,8 +306,9 @@ function quickOutcome(contract: Contract, direction: 'UP' | 'DOWN') {
 export function QuickOutcomeView(props: {
   contract: Contract
   previewProb?: number
+  numAnswersFR?: number
 }) {
-  const { contract, previewProb } = props
+  const { contract, previewProb, numAnswersFR } = props
   const { outcomeType } = contract
   const prob = previewProb ?? getProb(contract)
 
@@ -316,7 +336,7 @@ export function QuickOutcomeView(props: {
     )
   }
 
-  return <ContractCardAnswers contract={contract} />
+  return <ContractCardAnswers contract={contract} numAnswersFR={numAnswersFR} />
 }
 
 function cardText(contract: Contract, previewProb?: number) {
@@ -368,9 +388,10 @@ function cardText(contract: Contract, previewProb?: number) {
 
 export function ContractCardAnswers(props: {
   contract: FreeResponseContract | MultipleChoiceContract
+  numAnswersFR?: number
 }) {
-  const { contract } = props
-  const answers = getTopNSortedAnswers(contract, 3)
+  const { contract, numAnswersFR } = props
+  const answers = getTopNSortedAnswers(contract, numAnswersFR ?? 3)
   const answersArray = useChartAnswers(contract).map(
     (answer, _index) => answer.text
   )

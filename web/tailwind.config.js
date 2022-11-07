@@ -16,6 +16,7 @@ module.exports = {
           'Readex Pro',
           'AppleColorEmoji',
           'Segoe UI Emoji',
+          'Noto Color Emoji',
           'sans-serif',
         ],
       }

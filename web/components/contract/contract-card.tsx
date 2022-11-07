@@ -62,6 +62,9 @@ export const ContractCard = memo(function ContractCard(props: {
   showImage?: boolean
   children?: ReactNode
   pinned?: boolean
+  hideQuestion?: boolean
+  hideDetails?: boolean
+  numAnswersFR?: number
 }) {
   const {
     showTime,
@@ -76,6 +79,9 @@ export const ContractCard = memo(function ContractCard(props: {
     showImage,
     children,
     pinned,
+    hideQuestion,
+    hideDetails,
+    numAnswersFR,
   } = props
   const contract = useContract(props.contract.id) ?? props.contract
   const { isResolved, createdTime } = contract
@@ -104,15 +110,17 @@ export const ContractCard = memo(function ContractCard(props: {
       )}
     >
       <Col className="relative flex-1 gap-1 pt-2">
-        <Row className="justify-between px-4 ">
-          <AvatarDetails contract={contract} noLink={noLinkAvatar} />
-          <Row className="gap-1">
-            {pinned && <FeaturedPill />}
-            {/* {isNew && <NewContractBadge />} */}
+        {!hideDetails && (
+          <Row className="justify-between px-4 ">
+            <AvatarDetails contract={contract} noLink={noLinkAvatar} />
+            <Row className="gap-1">
+              {pinned && <FeaturedPill />}
+              {/* {isNew && <NewContractBadge />} */}
+            </Row>
           </Row>
-        </Row>
+        )}
         {/* overlay question on image */}
-        {hasImage && (
+        {hasImage && !hideQuestion && (
           <div className="relative mb-2">
             <img
               className="h-80 w-full object-cover "
@@ -133,7 +141,7 @@ export const ContractCard = memo(function ContractCard(props: {
 
         <Col className="gap-1 px-4 pb-1 ">
           {/* question is here if not overlaid on an image */}
-          {!hasImage && (
+          {!hasImage && !hideQuestion && (
             <div
               className={clsx(
                 'break-anywhere text-greyscale-7 text-md pb-2 font-medium',
@@ -146,7 +154,7 @@ export const ContractCard = memo(function ContractCard(props: {
           {showBinaryQuickBet ? (
             <QuickBet contract={contract} user={user} className="z-10" />
           ) : (
-            <QuickOutcomeView contract={contract} />
+            <QuickOutcomeView contract={contract} numAnswersFR={numAnswersFR} />
           )}
         </Col>
         <Row className={clsx('gap-1 px-4', children ? '' : 'mb-2')}>
@@ -155,6 +163,7 @@ export const ContractCard = memo(function ContractCard(props: {
             showTime={showTime}
             hideGroupLink={hideGroupLink}
           />
+
           {!isNew &&
             (outcomeType === 'BINARY' || outcomeType === 'PSEUDO_NUMERIC') && (
               <ProbOrNumericChange
@@ -393,21 +402,23 @@ export function PseudoNumericResolutionOrExpectation(props: {
   )
 }
 
-export const ContractCardProbChange = memo(
-  function ContractCardProbChange(props: {
+export const ContractCardWithPosition = memo(
+  function ContractCardWithPosition(props: {
     contract: CPMMContract
     noLinkAvatar?: boolean
-    showPosition?: boolean
     showDailyProfit?: boolean
+    onClick?: () => void
     className?: string
     showImage?: boolean
+    showTime?: ShowTime
   }) {
     const {
       noLinkAvatar,
-      showPosition,
       showDailyProfit,
       className,
       showImage,
+      showTime,
+      onClick,
     } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as CPMMBinaryContract
@@ -421,12 +432,14 @@ export const ContractCardProbChange = memo(
         contract={contract}
         noLinkAvatar={noLinkAvatar}
         showImage={showImage}
+        showTime={showTime}
+        onClick={onClick}
         className={clsx(
           className,
           'mb-4 break-inside-avoid-column overflow-hidden'
         )}
       >
-        {showPosition && user && metrics && metrics.hasShares ? (
+        {user && metrics && metrics.hasShares ? (
           <MetricsFooter
             contract={contract}
             metrics={metrics}

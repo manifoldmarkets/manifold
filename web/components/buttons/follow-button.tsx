@@ -86,9 +86,7 @@ export function MiniUserFollowButton(props: { userId: string }) {
   if (justFollowed) {
     return (
       <CheckCircleIcon
-        className={clsx(
-          'text-highlight-blue ml-3 mt-2 h-5 w-5 rounded-full bg-white sm:mr-2'
-        )}
+        className={clsx('text-highlight-blue h-5 w-5 rounded-full bg-white')}
         aria-hidden="true"
       />
     )
@@ -106,7 +104,7 @@ export function MiniUserFollowButton(props: { userId: string }) {
       <button onClick={withTracking(() => follow(user.id, userId), 'follow')}>
         <PlusCircleIcon
           className={clsx(
-            'text-highlight-blue hover:text-hover-blue mt-2 ml-3 h-5 w-5 rounded-full bg-white sm:mr-2'
+            'text-highlight-blue hover:text-hover-blue h-5 w-5 rounded-full bg-white'
           )}
           aria-hidden="true"
         />

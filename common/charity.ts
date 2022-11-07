@@ -646,8 +646,9 @@ In addition to housing impact litigation, we provide free legal aid, education a
     name: 'Kiva Microfunds',
     website: 'https://www.kiva.org/',
     preview:
-      "Kiva Microfunds seeks to provide loans to those in need by crowdsourcing funds.",
-    photo: 'https://logos-download.com/wp-content/uploads/2018/09/Kiva_logo.png',
+      'Kiva Microfunds seeks to provide loans to those in need by crowdsourcing funds.',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fdefault%2F2OHVOHaTEL.png?alt=media&token=97373c62-3214-4957-99d6-2373163be2d8',
     description: ` More than 1.7 billion people around the world are unbanked and can’t access the financial services they need. Kiva is an international nonprofit, founded in 2005 in San Francisco, with a mission to expand financial access to help underserved communities thrive.
 
 We do this by crowdfunding loans and unlocking capital for the underserved, improving the quality and cost of financial services, and addressing the underlying barriers to financial access around the world. Through Kiva's work, students can pay for tuition, women can start businesses, farmers are able to invest in equipment and families can afford needed emergency care. `,
