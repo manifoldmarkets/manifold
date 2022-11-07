@@ -1,4 +1,4 @@
-import { BinaryContract, PseudoNumericContract } from './contract'
+import { Contract, PseudoNumericContract } from './contract'
 import { formatLargeNumber, formatPercent } from './util/format'
 
 export function formatNumericProbability(
@@ -10,8 +10,8 @@ export function formatNumericProbability(
 }
 
 export const getMappedValue =
-  (contract: PseudoNumericContract | BinaryContract) => (p: number) => {
-    if (contract.outcomeType === 'BINARY') return p
+  (contract: Contract) => (p: number) => {
+    if (contract.outcomeType !== 'PSEUDO_NUMERIC') return p
 
     const { min, max, isLogScale } = contract
 
@@ -24,8 +24,8 @@ export const getMappedValue =
   }
 
 export const getFormattedMappedValue =
-  (contract: PseudoNumericContract | BinaryContract) => (p: number) => {
-    if (contract.outcomeType === 'BINARY') return formatPercent(p)
+  (contract: Contract) => (p: number) => {
+    if (contract.outcomeType !== 'PSEUDO_NUMERIC') return formatPercent(p)
 
     const value = getMappedValue(contract)(p)
     return formatLargeNumber(value)
