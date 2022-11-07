@@ -36,7 +36,10 @@ import {
   getCpmmProbabilityAfterSale,
 } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
-import { formatNumericProbability, getFormattedMappedValue } from 'common/pseudo-numeric'
+import {
+  formatNumericProbability,
+  getFormattedMappedValue,
+} from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
