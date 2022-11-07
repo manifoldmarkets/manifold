@@ -25,7 +25,7 @@ export const onUpdateContract = functions.firestore
 
     if (!previousContract.isResolved && contract.isResolved) {
       // No need to notify users of resolution, that's handled in resolve-market
-      // return await handleResolvedContract(contract)
+      return await handleResolvedContract(contract)
     } else if (previousContract.groupSlugs !== contract.groupSlugs) {
       await handleContractGroupUpdated(previousContract, contract)
     } else if (
@@ -72,10 +72,12 @@ async function handleResolvedContract(contract: Contract) {
         contractSlug: contract.slug,
         contractCreatorUsername: contract.creatorUsername,
         commentId: comment.id,
-        betAmount: bet.amount,
+        betAmount: bet.amount < 0 ? bet.amount * -1 : bet.amount,
         contractTitle: contract.question,
+        profit: profitById[topCommentBetId],
       },
     } as ProvenCorrectBadge
+    console.log('Awarding proven correct badge to user', newProvenCorrectBadge)
     // update user
     await firestore
       .collection('users')
