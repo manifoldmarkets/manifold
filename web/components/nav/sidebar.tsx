@@ -128,7 +128,12 @@ function getMoreDesktopNavigation(loggedIn: boolean) {
     { name: 'Charity', href: '/charity' },
     { name: 'Labs', href: '/labs' },
     { name: 'Blog', href: 'https://news.manifold.markets' },
-    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' }
+    { name: 'Discord', href: 'https://discord.gg/eHQBNBqXuh' },
+    {
+      name: 'Help & About',
+      href: 'https://help.manifold.markets/',
+    },
+    loggedIn && { name: 'Sign out', onClick: logout }
   )
 }
 
@@ -154,10 +159,11 @@ const bottomNav = (isMobile: boolean, loggedIn: boolean) =>
         href: 'https://discord.gg/eHQBNBqXuh',
         icon: ChatIcon,
       },
-    {
+    isMobile && {
       name: 'Help & About',
       href: 'https://help.manifold.markets/',
       icon: BookOpenIcon,
     },
-    loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
+    isMobile &&
+      loggedIn && { name: 'Sign out', icon: LogoutIcon, onClick: logout }
   )
