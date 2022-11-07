@@ -20,24 +20,10 @@ import {
   NumericContract,
   PseudoNumericContract,
   BinaryContract,
-  CertContract,
 } from 'common/contract'
 import { ContractDetails } from './contract-details'
 import { ContractReportResolution } from './contract-report-resolution'
 import { SizedContainer } from 'web/components/sized-container'
-import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
-import { RelativeTimestamp } from '../relative-timestamp'
-import { useState } from 'react'
-import { Button } from '../buttons/button'
-import { ENV_CONFIG } from 'common/envs/constants'
-import {
-  calculatePrice,
-  calculatePriceAfterBuy,
-  calculateShares,
-} from 'common/calculate/uniswap2'
-import { formatMoney } from 'common/util/format'
-import { Title } from '../widgets/title'
-import { swapCert } from 'web/lib/firebase/api'
 import { CertOverview } from './cert-overview'
 
 const OverviewQuestion = (props: { text: string }) => (
