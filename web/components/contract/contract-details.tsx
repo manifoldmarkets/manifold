@@ -146,7 +146,7 @@ export function MarketSubheader(props: {
   const correctResolutionPercentage = creator?.fractionResolvedCorrectly
   const isCreator = user?.id === creatorId
   return (
-    <Row className="grow">
+    <Row className="relative grow">
       <Avatar
         username={creatorUsername}
         avatarUrl={creatorAvatarUrl}
@@ -156,7 +156,7 @@ export function MarketSubheader(props: {
       />
 
       {!disabled && (
-        <div className="absolute mt-3 ml-[11px]">
+        <div className="absolute bottom-0 ml-5 flex h-5 w-5 items-center justify-center sm:-bottom-1">
           <MiniUserFollowButton userId={creatorId} />
         </div>
       )}
