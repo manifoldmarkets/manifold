@@ -497,4 +497,4 @@ function EditableCloseDate(props: {
   )
 }
 
-const BAD_CREATOR_THRESHOLD = 0.8
+export const BAD_CREATOR_THRESHOLD = 0.8
