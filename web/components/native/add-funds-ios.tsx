@@ -1,5 +1,3 @@
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useTracking } from 'web/hooks/use-tracking'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
