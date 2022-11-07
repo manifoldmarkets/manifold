@@ -57,7 +57,6 @@ export function BetStatusText(props: {
   const { bet, contract, hideUser, className } = props
   const { outcomeType } = contract
   const self = useUser()
-  const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isFreeResponse = outcomeType === 'FREE_RESPONSE'
   const { amount, outcome, createdTime, challengeSlug } = bet
   const [challenge, setChallenge] = React.useState<Challenge>()
