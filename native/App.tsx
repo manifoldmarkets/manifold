@@ -371,7 +371,7 @@ export default function App() {
           <ActivityIndicator
             style={styles.activityIndicator}
             size={'large'}
-            color={'green'}
+            color={'white'}
           />
         </>
       )}
