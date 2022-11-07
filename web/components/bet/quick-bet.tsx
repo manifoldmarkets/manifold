@@ -36,7 +36,10 @@ import {
   getCpmmProbabilityAfterSale,
 } from 'common/calculate-cpmm'
 import { track } from 'web/lib/service/analytics'
-import { formatNumericProbability } from 'common/pseudo-numeric'
+import {
+  formatNumericProbability,
+  getFormattedMappedValue,
+} from 'common/pseudo-numeric'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getBinaryProb } from 'common/contract-details'
 import { Row } from '../layout/row'
@@ -347,7 +350,7 @@ function cardText(contract: Contract, previewProb?: number) {
       return (
         <>
           <span className="my-auto text-sm font-normal">resolved as</span>
-          {formatPercent(resolutionProbability)}
+          {getFormattedMappedValue(contract)(resolutionProbability)}
         </>
       )
     }
@@ -363,9 +366,7 @@ function cardText(contract: Contract, previewProb?: number) {
   }
 
   if (previewProb) {
-    return outcomeType === 'PSEUDO_NUMERIC'
-      ? formatNumericProbability(previewProb, contract)
-      : formatPercent(previewProb)
+    return getFormattedMappedValue(contract)(previewProb)
   }
 
   switch (outcomeType) {
