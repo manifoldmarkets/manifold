@@ -87,14 +87,15 @@ export async function getStaticProps() {
 }
 
 const getContractsFromSlugs = async (slugs: string[]) => {
-  const contracts = await Promise.all(
-    slugs.map(async (slug) => {
-      const contract = await getContractFromSlug(slug)
-      return contract
-    })
-  )
-
-  return contracts
+  const contracts = (
+    await Promise.all(
+      slugs.map(async (slug) => {
+        const contract = await getContractFromSlug(slug)
+        return contract ?? null
+      })
+    )
+  ).filter((contract) => contract != null)
+  return contracts ?? []
 }
 
 const App = (props: {
