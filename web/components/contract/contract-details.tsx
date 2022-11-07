@@ -175,7 +175,7 @@ export function MarketSubheader(props: {
           {correctResolutionPercentage != null &&
             correctResolutionPercentage < BAD_CREATOR_THRESHOLD && (
               <Tooltip
-                text="This creator has a track record of creating contracts that are resolved incorrectly."
+                text="This creator has a track record of creating markets that are resolved incorrectly."
                 placement="bottom"
                 className="w-fit"
               >
