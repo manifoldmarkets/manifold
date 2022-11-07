@@ -6,10 +6,10 @@ import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import clsx from 'clsx'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { formatNumericProbability } from 'common/pseudo-numeric'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { getChallenge, getChallengeUrl } from 'web/lib/firebase/challenges'
 import { Challenge } from 'common/challenge'
@@ -85,21 +85,13 @@ export function BetStatusText(props: {
 
   const fromProb =
     hadPoolMatch || isFreeResponse
-      ? isPseudoNumeric
-        ? formatNumericProbability(bet.probBefore, contract)
-        : formatPercent(bet.probBefore)
-      : isPseudoNumeric
-      ? formatNumericProbability(bet.limitProb ?? bet.probBefore, contract)
-      : formatPercent(bet.limitProb ?? bet.probBefore)
+      ? getFormattedMappedValue(contract)(bet.probBefore)
+      : getFormattedMappedValue(contract)(bet.limitProb ?? bet.probBefore)
 
   const toProb =
     hadPoolMatch || isFreeResponse
-      ? isPseudoNumeric
-        ? formatNumericProbability(bet.probAfter, contract)
-        : formatPercent(bet.probAfter)
-      : isPseudoNumeric
-      ? formatNumericProbability(bet.limitProb ?? bet.probAfter, contract)
-      : formatPercent(bet.limitProb ?? bet.probAfter)
+      ? getFormattedMappedValue(contract)(bet.probAfter)
+      : getFormattedMappedValue(contract)(bet.limitProb ?? bet.probAfter)
 
   return (
     <div className={clsx('text-sm text-gray-500', className)}>
