@@ -42,8 +42,7 @@ export function ContractsGrid(props: {
     trackingPostfix,
     showImageOnTopContract,
   } = props
-  const { hideQuickBet, hideGroupLink, noLinkAvatar } =
-    cardUIOptions || {}
+  const { hideQuickBet, hideGroupLink, noLinkAvatar } = cardUIOptions || {}
   const { itemIds: contractIds, highlightClassName } = highlightOptions || {}
   const onVisibilityUpdated = useCallback(
     (visible: boolean) => {

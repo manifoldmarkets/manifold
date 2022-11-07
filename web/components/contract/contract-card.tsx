@@ -401,12 +401,7 @@ export const ContractCardWithPosition = memo(
     className?: string
     showImage?: boolean
   }) {
-    const {
-      noLinkAvatar,
-      showDailyProfit,
-      className,
-      showImage,
-    } = props
+    const { noLinkAvatar, showDailyProfit, className, showImage } = props
     const contract = (useContract(props.contract.id) ??
       props.contract) as CPMMBinaryContract
 

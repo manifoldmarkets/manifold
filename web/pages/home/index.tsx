@@ -453,10 +453,7 @@ const SearchSection = memo(function SearchSection(props: {
         href={`/search?s=${sort}${pill ? `&p=${pill}` : ''}`}
         icon={icon}
       />
-      <ContractsGrid
-        contracts={contracts}
-        showImageOnTopContract={true}
-      />
+      <ContractsGrid contracts={contracts} showImageOnTopContract={true} />
     </Col>
   )
 })
