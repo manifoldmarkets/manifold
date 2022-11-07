@@ -58,49 +58,59 @@ export function CollapsibleContent(props: {
     }
   }, [contentRef.current?.offsetHeight])
 
-  const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(true, {
-    store: storageStore(safeLocalStorage()),
-    key: `isCollapsed-contract-${contractId}`,
-  })
-
   if (shouldAllowCollapseOfContent) {
     return (
-      <div className="relative">
-        <div
-          style={{ height: isCollapsed ? COLLAPSIBLE_HEIGHT : 'auto' }}
-          className={clsx(
-            'transition-height relative w-full overflow-hidden rounded-b-md'
-          )}
-        >
-          <div ref={contentRef}>
-            <Content content={content} />
-          </div>
-          {isCollapsed && (
-            <>
-              <div className="absolute bottom-0 w-full">
-                <div className="h-16 bg-gradient-to-t from-gray-100" />
-              </div>
-            </>
-          )}
-        </div>
-        <ShowMoreLessButton
-          className="absolute right-0 -bottom-8 bg-transparent"
-          onClick={() => {
-            if (!isCollapsed)
-              window.scrollTo({
-                top: 0,
-                behavior: 'smooth',
-              })
-            setIsCollapsed(!isCollapsed)
-          }}
-          isCollapsed={isCollapsed}
-        />
-      </div>
+      <ActuallyCollapsibleContent content={content} contractId={contractId} />
     )
   }
   return (
     <div ref={contentRef}>
       <Content content={content} />
+    </div>
+  )
+}
+
+// Moved to its own component to reduce unnecessary isCollapsed states in local storage
+function ActuallyCollapsibleContent(props: {
+  content: JSONContent | string
+  contractId: string
+}) {
+  const { content, contractId } = props
+  const [isCollapsed, setIsCollapsed] = usePersistentState<boolean>(true, {
+    store: storageStore(safeLocalStorage()),
+    key: `isCollapsed-contract-${contractId}`,
+  })
+  return (
+    <div className="relative">
+      <div
+        style={{ height: isCollapsed ? COLLAPSIBLE_HEIGHT : 'auto' }}
+        className={clsx(
+          'transition-height relative w-full overflow-hidden rounded-b-md'
+        )}
+      >
+        <div>
+          <Content content={content} />
+        </div>
+        {isCollapsed && (
+          <>
+            <div className="absolute bottom-0 w-full">
+              <div className="h-16 bg-gradient-to-t from-gray-100" />
+            </div>
+          </>
+        )}
+      </div>
+      <ShowMoreLessButton
+        className="absolute right-0 -bottom-8 bg-transparent"
+        onClick={() => {
+          if (!isCollapsed)
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth',
+            })
+          setIsCollapsed(!isCollapsed)
+        }}
+        isCollapsed={isCollapsed}
+      />
     </div>
   )
 }
