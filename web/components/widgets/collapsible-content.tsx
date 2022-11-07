@@ -48,7 +48,7 @@ export function CollapsibleContent(props: {
 }) {
   const { content, contractId } = props
   const [shouldAllowCollapseOfContent, setShouldAllowCollapseOfContent] =
-    useState(true)
+    useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   useSafeLayoutEffect(() => {
     if (contentRef.current) {
