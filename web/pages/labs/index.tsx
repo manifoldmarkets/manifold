@@ -6,8 +6,10 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { SiteLink } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
+import { getNativePlatform } from 'web/lib/native/is-native'
 
 export default function LabsPage() {
+  const { isNative, platform } = getNativePlatform()
   return (
     <Page>
       <SEO
@@ -23,11 +25,14 @@ export default function LabsPage() {
           className="-ml-4 flex w-auto"
           columnClassName="pl-4 bg-clip-padding"
         >
-          <LabCard
-            title="🫀 Charity"
-            description="Turn your M$ earnings into real donations to causes you care about"
-            href="/charity"
-          />
+          {!isNative ||
+            (isNative && platform !== 'ios' && (
+              <LabCard
+                title="🫀 Charity"
+                description="Turn your M$ earnings into real donations to causes you care about"
+                href="/charity"
+              />
+            ))}
 
           {CHALLENGES_ENABLED && (
             <LabCard

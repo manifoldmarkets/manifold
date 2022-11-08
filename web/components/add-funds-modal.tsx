@@ -18,7 +18,7 @@ export function AddFundsModal(props: {
   const user = useUser()
 
   const [amountSelected, setAmountSelected] = useState<number>(2500)
-  const { isNative, platform } = getNativePlatform() ?? {}
+  const { isNative, platform } = getNativePlatform()
   if (isNative && platform === 'ios') {
     return <AddFundsIOS open={open} setOpen={setOpen} />
   }

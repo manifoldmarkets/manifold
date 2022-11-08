@@ -28,7 +28,7 @@ export default function Welcome() {
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
   const isTwitch = useIsTwitch(user)
   const TOTAL_PAGES = 4
-  const { isNative, platform } = getNativePlatform() ?? {}
+  const { isNative, platform } = getNativePlatform()
   const shouldSeeEula =
     privateUser && !privateUser?.hasSignedEula && isNative && platform === 'ios'
   function increasePage() {
