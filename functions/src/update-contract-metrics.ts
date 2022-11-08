@@ -96,8 +96,8 @@ export async function updateContractMetrics() {
       )
 
       writer.update(firestore.collection('contracts').doc(contract.id), {
-        volume24Hours: computeVolume(descendingBets, now - DAY_MS),
-        volume7Days: computeVolume(descendingBets, now - DAY_MS * 7),
+        volume24Hours: computeVolume(descendingBets, yesterday),
+        volume7Days: computeVolume(descendingBets, weekAgo),
         elasticity: computeElasticity(unfilledBets, contract),
         uniqueBettors24Hours,
         uniqueBettors7Days,
