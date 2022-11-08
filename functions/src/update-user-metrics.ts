@@ -57,13 +57,11 @@ export async function updateUserMetrics() {
   const userUpdates = await batchedWaitAll(
     users.map((user) => async () => {
       const userContracts = contractsByCreator[user.id] ?? []
-      const currentBets = (
-        await firestore
-          .collectionGroup('bets')
-          .where('userId', '==', user.id)
-          .get()
-      ).docs.map((d) => d.data() as Bet)
-      const betsByContractId = groupBy(currentBets, (b) => b.contractId)
+      const unresolvedContracts = userContracts.filter((c) => !c.isResolved)
+      const unresolvedBets = await loadUserContractBets(
+        user.id,
+        unresolvedContracts.map((c) => c.id)
+      )
       const portfolioHistory = await loadPortfolioHistory(user.id, now)
       const newCreatorVolume = calculateCreatorVolume(userContracts)
       const newCreatorTraders = calculateCreatorTraders(userContracts)
@@ -71,7 +69,7 @@ export async function updateUserMetrics() {
       const newPortfolio = calculateNewPortfolioMetrics(
         user,
         contractsById,
-        currentBets
+        unresolvedBets
       )
       const currPortfolio = portfolioHistory.current
       const didPortfolioChange =
@@ -82,8 +80,13 @@ export async function updateUserMetrics() {
 
       const newProfit = calculateNewProfit(portfolioHistory, newPortfolio)
 
+      const unresolvedBetsByContractId = groupBy(
+        unresolvedBets,
+        (b) => b.contractId
+      )
+
       const metricsByContract = calculateMetricsByContract(
-        betsByContractId,
+        unresolvedBetsByContractId,
         contractsById
       )
 
@@ -112,7 +115,7 @@ export async function updateUserMetrics() {
       }
 
       const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
-        ? getUserLoanUpdates(betsByContractId, contractsById).payout
+        ? getUserLoanUpdates(unresolvedBetsByContractId, contractsById).payout
         : undefined
 
       const userDoc = firestore.collection('users').doc(user.id)
@@ -173,6 +176,23 @@ export async function updateUserMetrics() {
 
   await revalidateStaticProps('/leaderboards')
   log('Done.')
+}
+
+const loadUserContractBets = async (userId: string, contractIds: string[]) => {
+  const betDocs = await batchedWaitAll(
+    contractIds.map((c) => async () => {
+      return await firestore
+        .collectionGroup('bets')
+        .where('userId', '==', userId)
+        .where('contractId', '==', c)
+        .get()
+    }),
+    100
+  )
+  return betDocs
+    .map((d) => d.docs)
+    .flat()
+    .map((d) => d.data() as Bet)
 }
 
 const loadPortfolioHistory = async (userId: string, now: number) => {
