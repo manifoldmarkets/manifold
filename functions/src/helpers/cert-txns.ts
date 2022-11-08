@@ -1,4 +1,9 @@
-import { CertMintTxn, CertPayManaTxn, CertTransferTxn } from 'common/txn'
+import {
+  CertDividendTxn,
+  CertMintTxn,
+  CertPayManaTxn,
+  CertTransferTxn,
+} from 'common/txn'
 import { formatMoney } from 'common/util/format'
 import * as admin from 'firebase-admin'
 
@@ -114,3 +119,104 @@ export function buyFromPool(
   }
   transaction.set(ref2, certPayManaTxn)
 }
+
+export function dividendTxns(
+  transaction: admin.firestore.Transaction,
+  providerId: string,
+  certId: string,
+  payouts: {
+    userId: string
+    payout: number
+  }[]
+) {
+  // Create one CertDividend for each recipient
+  payouts.forEach(({ userId, payout }) => {
+    const ref = firestore.collection('txns').doc()
+    const certDividendTxn: CertDividendTxn = {
+      category: 'CERT_DIVIDEND',
+      id: ref.id,
+      certId: certId,
+      createdTime: Date.now(),
+      fromId: providerId,
+      fromType: 'USER',
+      toId: userId,
+      toType: 'USER',
+      token: 'M$',
+      amount: payout,
+      description: `USER/${providerId} paid ${formatMoney(
+        payout
+      )} dividend to USER/${userId}`,
+    }
+    transaction.set(ref, certDividendTxn)
+  })
+}
+
+/* 
+txns for minting:
+{
+  fromId: 'BANK'
+  toId: 'user/alice'
+  amount: 10_000
+  token: 'SHARE'
+  description: 'user/alice mints 10_000 shares'
+}
+
+txns for initializing pool:
+{
+  fromId: 'user/alice'
+  toId: 'contract/cert1234'
+  amount: 500
+  token: 'SHARE'
+  description: 'user/alice adds 500 shares & 500 M$ to pool'
+}
+{
+  fromId: 'user/alice'
+  toId: 'contract/cert1234'
+  amount: 500
+  token: 'M$'
+  description: 'user/alice adds 500 shares & 500 M$ to pool'
+}
+
+txns for buying:
+{
+  fromId: 'user/bob'
+  toId: 'contract/cert1234'
+  amount: 500
+  token: 'M$'
+  description: 'user/bob pays 500 M$ for 250 shares'
+}
+{
+  fromId: 'contract/cert1234'
+  toId: 'user/bob'
+  amount: 250
+  token: 'SHARE'
+  description: 'user/bob pays 500 M$ for 250 shares'
+}
+
+txns for gifting:
+{
+  fromId: 'user/bob'
+  toId: 'user/charlie'
+  amount: 100
+  token: 'SHARE'
+  description: 'user/bob gifts 100 shares to user/charlie'
+}
+
+txns for sending dividends:
+{
+  fromId: 'user/alice'
+  toId: 'user/bob',
+  amount: 250
+  token: 'M$'
+  description: 'user/alice distributes 250 M$ to user/bob'
+}
+
+txns for resolving/burning: 
+{
+  fromId: 'user/alice'
+  toId: 'BANK'
+  amount: 250
+  token: 'SHARE'
+  description: 'user/alice burns 250 shares'
+}
+*/

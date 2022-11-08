@@ -1,5 +1,6 @@
 // Based on a list of CertTxns, return the current ownership of the cert
 
+import { getCertOwnership, getDividendPayouts } from 'common/calculate/cert'
 import {
   calculatePrice,
   calculatePriceAfterBuy,
@@ -8,34 +9,17 @@ import {
 import { CertContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CertTxn } from 'common/txn'
-import { sortBy } from 'lodash'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useCertTxns } from 'web/hooks/txns/use-cert-txns'
-import { swapCert } from 'web/lib/firebase/api'
+import { useUser } from 'web/hooks/use-user'
+import { dividendCert, swapCert } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Title } from '../widgets/title'
-
-// e.g. { 'user/jasldfjdkl': 900, 'contract/afsdjkla': 100 }
-function getCertOwnership(txns: CertTxn[]) {
-  const ownership: { [id: string]: number } = {}
-  const sortedTxns = sortBy(txns, 'createdTime')
-  for (const txn of sortedTxns) {
-    const fromId = `${txn.fromType}/${txn.fromId}`
-    const toId = `${txn.toType}/${txn.toId}`
-    if (txn.category === 'CERT_MINT') {
-      ownership[toId] = txn.amount
-    } else if (txn.category === 'CERT_TRANSFER') {
-      ownership[fromId] -= txn.amount
-      ownership[toId] = (ownership[toId] || 0) + txn.amount
-    }
-  }
-  return ownership
-}
 
 export function CertOverview(props: { contract: CertContract }) {
   const { contract } = props
@@ -61,6 +45,38 @@ export function CertOverview(props: { contract: CertContract }) {
           {txn.description} <RelativeTimestamp time={txn.createdTime} />
         </div>
       ))}
+
+      <PayDividendWidget contract={contract} txns={txns} />
+    </Col>
+  )
+}
+
+function PayDividendWidget(props: { contract: CertContract; txns: CertTxn[] }) {
+  const { contract, txns } = props
+  const user = useUser()
+  const [totalDividend, setTotalDividend] = useState(10_000)
+  if (!user || user.id != contract.creatorId) return null
+  const payouts = getDividendPayouts(user?.id, totalDividend, txns)
+  return (
+    <Col className="gap-2 rounded-lg bg-gray-50 p-4">
+      <Title>Pay Dividend</Title>
+      <input
+        type="number"
+        value={totalDividend}
+        onChange={(e) => setTotalDividend(parseInt(e.target.value))}
+      />
+      <p>{JSON.stringify(payouts)}</p>
+      <Button
+        color="gradient"
+        onClick={async () => {
+          await dividendCert({
+            certId: contract.id,
+            amount: totalDividend,
+          })
+        }}
+      >
+        Pay Dividend
+      </Button>
     </Col>
   )
 }
@@ -102,7 +118,6 @@ function BuyCertWidget(props: { contract: CertContract }) {
           <Spacer h={8} />
           <Button
             onClick={async () => {
-              console.log('buying', amount, 'shares')
               await swapCert({
                 certId: contract.id,
                 amount,

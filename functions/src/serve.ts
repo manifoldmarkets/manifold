@@ -14,6 +14,7 @@ import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
 import { createanswer } from './create-answer'
 import { swapcert } from './swap-cert'
+import { dividendcert } from './dividend-cert'
 import { placebet } from './place-bet'
 import { cancelbet } from './cancel-bet'
 import { sellbet } from './sell-bet'
@@ -57,6 +58,7 @@ addJsonEndpointRoute('/createuser', createuser)
 addJsonEndpointRoute('/createanswer', createanswer)
 addJsonEndpointRoute('/createcomment', createcomment)
 addJsonEndpointRoute('/swapcert', swapcert)
+addJsonEndpointRoute('/dividendcert', dividendcert)
 addJsonEndpointRoute('/placebet', placebet)
 addJsonEndpointRoute('/cancelbet', cancelbet)
 addJsonEndpointRoute('/sellbet', sellbet)
