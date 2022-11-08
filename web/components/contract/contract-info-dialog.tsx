@@ -100,10 +100,11 @@ export function ContractInfoDialog(props: {
               <Title className="!mt-0 !mb-0" text="This Market" />
               {user && (
                 <ReportButton
-                  contentType={'contract'}
-                  contentOwnerId={contract.creatorId}
-                  contentId={contract.id}
-                  contentName={'market'}
+                  report={{
+                    contentId: contract.id,
+                    contentType: 'contract',
+                    contentOwnerId: contract.creatorId,
+                  }}
                 />
               )}
               {privateUser && <BlockMarketButton contractId={contract.id} />}

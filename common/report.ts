@@ -1,5 +1,6 @@
 export type Report = {
   id: string
+  // Reporter user ID
   userId: string
   createdTime: number
   contentOwnerId: string

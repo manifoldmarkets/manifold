@@ -104,11 +104,17 @@ function LimitBet(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const [isCancelling, setIsCancelling] = useState(false)
+  const [isCancelled, setIsCancelled] = useState(false)
 
   const onCancel = () => {
-    cancelBet({ betId: bet.id })
     setIsCancelling(true)
+    cancelBet({ betId: bet.id }).then(() => {
+      setIsCancelled(false)
+      setIsCancelled(true)
+    })
   }
+
+  if (isCancelled) return <></>
 
   return (
     <tr>

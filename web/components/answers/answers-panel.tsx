@@ -163,7 +163,7 @@ export function AnswersPanel(props: {
         </Col>
       )}
 
-      {answers.length <= 1 && (
+      {answers.length === 0 && (
         <div className="pb-4 text-gray-500">No answers yet...</div>
       )}
 

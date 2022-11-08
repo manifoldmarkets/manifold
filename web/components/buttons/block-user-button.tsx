@@ -78,11 +78,12 @@ export function BlockUserButton(props: { user: User }) {
             </Button>
             <Row className={'gap-4'}>
               <ReportButton
-                contentName={user.name}
-                contentOwnerId={user.id}
-                contentId={user.id}
+                report={{
+                  contentId: user.id,
+                  contentType: 'user',
+                  contentOwnerId: user.id,
+                }}
                 noModal={true}
-                contentType={'user'}
               />
               {isBlocked ? (
                 <Button
